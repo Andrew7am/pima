@@ -1,0 +1,14 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+.vscode/
+.idea/
+graphify-out/
+.graphify_*
+scripts/seed-users.mjs
+scripts/seed-data.mjs

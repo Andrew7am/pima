@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "leaflet/dist/leaflet.css";
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Cairo", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-natural-bg: #FAF8F5;
+  --color-natural-text: #2D2D24;
+  --color-natural-sidebar: #F3F0E8;
+  --color-natural-border: #E7E5DB;
+  --color-natural-primary: #464E3D;
+  --color-natural-secondary: #867E65;
+  --color-natural-accent: #C5BCA0;
+  --color-natural-hover: #E7E2D5;
+}
+
+body {
+  font-family: var(--font-sans);
+  direction: rtl;
+  background-color: var(--color-natural-bg);
+  color: var(--color-natural-text);
+}
+

@@ -1,0 +1,1893 @@
+import React, { useState } from 'react';
+import { RetreatHouse, Booking, User, ConferenceHall, Restaurant, Attendee, RoomAllocation, Review } from '../types';
+import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
+import { Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2, Building, Settings, MessageSquare, Image, Camera, Sliders } from 'lucide-react';
+import RoomDistribution from './RoomDistribution';
+
+interface OwnerDashboardProps {
+  owner: User;
+  houses: RetreatHouse[];
+  bookings: Booking[];
+  onAddHouse: (house: RetreatHouse) => void;
+  onApproveBooking: (bookingId: string) => void;
+  onRejectBooking: (bookingId: string) => void;
+  attendees: Attendee[];
+  allocations: RoomAllocation[];
+  onUpdateAttendees: (bookingId: string, attendees: Attendee[]) => void;
+  onUpdateAllocations: (bookingId: string, allocations: RoomAllocation[]) => void;
+  onUpdateOwnerProfile?: (updatedUser: User) => void;
+  onUpdateHouse?: (house: RetreatHouse) => void;
+  reviews?: Review[];
+  onUpdateReview?: (review: Review) => void;
+}
+
+export default function OwnerDashboard({
+  owner,
+  houses,
+  bookings,
+  onAddHouse,
+  onApproveBooking,
+  onRejectBooking,
+  attendees,
+  allocations,
+  onUpdateAttendees,
+  onUpdateAllocations,
+  onUpdateOwnerProfile,
+  onUpdateHouse,
+  reviews = [],
+  onUpdateReview
+}: OwnerDashboardProps) {
+  // Tabs within Owner panel: 'stats', 'houses', 'add_house', 'bookings', 'profile', 'occupancy', 'reviews'
+  const [activeTab, setActiveTab] = useState<'stats' | 'houses' | 'add_house' | 'bookings' | 'profile' | 'occupancy' | 'reviews'>('stats');
+  const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
+
+  // Form states for profile editing
+  const [profileName, setProfileName] = useState(owner.name);
+  const [profileEmail, setProfileEmail] = useState(owner.email);
+  const [profilePhone, setProfilePhone] = useState(owner.phone);
+  const [profileOrg, setProfileOrg] = useState(owner.organizationName || '');
+  const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
+
+  React.useEffect(() => {
+    setProfileName(owner.name);
+    setProfileEmail(owner.email);
+    setProfilePhone(owner.phone);
+    setProfileOrg(owner.organizationName || '');
+    setProfileSuccessMsg('');
+  }, [owner]);
+
+  // Form states for new house
+  const [houseName, setHouseName] = useState('');
+  const [houseDesc, setHouseDesc] = useState('');
+  const [houseGov, setHouseGov] = useState(GOVERNORATES[0]);
+  const [houseAddress, setHouseAddress] = useState('');
+  const [houseLat, setHouseLat] = useState<number | null>(null);
+  const [houseLng, setHouseLng] = useState<number | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState('');
+  const [pricePerNight, setPricePerNight] = useState<number>(150);
+  const [roomsCount, setRoomsCount] = useState<number>(10);
+  const [bedsCount, setBedsCount] = useState<number>(30);
+  const [roomsDesc, setRoomsDesc] = useState('');
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [selectedSuitability, setSelectedSuitability] = useState<('youth' | 'children' | 'families' | 'retreat')[]>([]);
+  const [imageUrl, setImageUrl] = useState('');
+  const [activitiesInput, setActivitiesInput] = useState('');
+
+  // New property types & student/staff variables
+  const [propertyType, setPropertyType] = useState<'conference' | 'student' | 'staff'>('conference');
+  const [monthlyRent, setMonthlyRent] = useState<number>(1500);
+  const [studentHousingGender, setStudentHousingGender] = useState<'boys' | 'girls'>('boys');
+  const [distanceFromUniversity, setDistanceFromUniversity] = useState('');
+
+  // Form states for adding a Hall
+  const [halls, setHalls] = useState<ConferenceHall[]>([]);
+  const [hallName, setHallName] = useState('');
+  const [hallCapacity, setHallCapacity] = useState<number>(50);
+  const [hallSound, setHallSound] = useState(false);
+  const [hallProjector, setHallProjector] = useState(false);
+
+  // Calendar states
+  const [expandedCalendar, setExpandedCalendar] = useState<string | null>(null);
+  const [expandedPhotosForHouse, setExpandedPhotosForHouse] = useState<string | null>(null);
+  const [activeMonthForHouse, setActiveMonthForHouse] = useState<{ [houseId: string]: { month: number; year: number } }>({});
+
+  // States for room/services photos management
+  const [extraPhotoUrl, setExtraPhotoUrl] = useState('');
+  const [extraPhotoLabel, setExtraPhotoLabel] = useState('');
+  const [extraPhotoCategory, setExtraPhotoCategory] = useState<'room' | 'service' | 'other'>('room');
+  const [photosSuccessMsg, setPhotosSuccessMsg] = useState('');
+
+  // States for block/unblock occupancy dates
+  const [selectedBlockDate, setSelectedBlockDate] = useState('');
+  const [blockReason, setBlockReason] = useState('أعمال صيانة وتجهيز');
+  const [blockSuccessMsg, setBlockSuccessMsg] = useState('');
+
+  // States for review replies
+  const [reviewReplyText, setReviewReplyText] = useState('');
+  const [replyingToReviewId, setReplyingToReviewId] = useState<string | null>(null);
+  const [reviewsSuccessMsg, setReviewsSuccessMsg] = useState('');
+
+  const getMonthDetails = (year: number, month: number) => {
+    const firstDay = new Date(year, month - 1, 1);
+    const totalDays = new Date(year, month, 0).getDate();
+    const startDayOfWeek = firstDay.getDay(); // 0 = Sunday, 1 = Monday, ...
+    return { totalDays, startDayOfWeek };
+  };
+
+  const isDateBooked = (houseId: string, year: number, month: number, day: number) => {
+    const monthStr = month < 10 ? `0${month}` : `${month}`;
+    const dayStr = day < 10 ? `0${day}` : `${day}`;
+    const dateStr = `${year}-${monthStr}-${dayStr}`;
+    
+    // Check if manually blocked
+    const targetHouse = houses.find(h => h.id === houseId);
+    if (targetHouse && targetHouse.blockedDates && targetHouse.blockedDates.includes(dateStr)) {
+      return {
+        id: `blocked_${dateStr}`,
+        houseId,
+        houseName: targetHouse.name,
+        userId: 'admin',
+        userName: 'مغلق ومحجوز يدويًا',
+        organizationName: 'مغلق للصيانة / أعمال الخدمة ⚠️',
+        guestsCount: 0,
+        status: 'approved',
+        checkIn: dateStr,
+        checkOut: dateStr,
+        totalPrice: 0,
+        depositPaid: false,
+        depositAmount: 0,
+        createdAt: ''
+      } as Booking;
+    }
+
+    const houseBookings = bookings.filter(
+      (b) => b.houseId === houseId && (b.status === 'approved' || b.status === 'completed')
+    );
+    
+    const activeBooking = houseBookings.find((b) => {
+      return dateStr >= b.checkIn && dateStr <= b.checkOut;
+    });
+    
+    return activeBooking || null;
+  };
+
+  const handleBlockDateSubmit = (e: React.FormEvent, house: RetreatHouse) => {
+    e.preventDefault();
+    if (!selectedBlockDate) {
+      alert('الرجاء اختيار تاريخ أولاً.');
+      return;
+    }
+    const currentBlocked = house.blockedDates || [];
+    if (currentBlocked.includes(selectedBlockDate)) {
+      alert('هذا التاريخ محظور بالفعل.');
+      return;
+    }
+    
+    const updatedHouse = {
+      ...house,
+      blockedDates: [...currentBlocked, selectedBlockDate]
+    };
+    if (onUpdateHouse) {
+      onUpdateHouse(updatedHouse);
+    }
+    setBlockSuccessMsg(`تم حظر التاريخ ${selectedBlockDate} بنجاح! أصبح مغلقاً للصيانة/الخدمة.`);
+    setSelectedBlockDate('');
+    setTimeout(() => setBlockSuccessMsg(''), 4000);
+  };
+
+  const handleUnblockDate = (dateStr: string, house: RetreatHouse) => {
+    const currentBlocked = house.blockedDates || [];
+    const updatedHouse = {
+      ...house,
+      blockedDates: currentBlocked.filter((d) => d !== dateStr)
+    };
+    if (onUpdateHouse) {
+      onUpdateHouse(updatedHouse);
+    }
+    setBlockSuccessMsg(`تم إلغاء حظر التاريخ ${dateStr} بنجاح! أصبح متاحاً للحجوزات.`);
+    setTimeout(() => setBlockSuccessMsg(''), 4000);
+  };
+
+  const handleAddReplySubmit = (e: React.FormEvent, reviewId: string) => {
+    e.preventDefault();
+    if (!reviewReplyText.trim()) {
+      alert('الرجاء كتابة نص الرد أولاً.');
+      return;
+    }
+    const targetReview = reviews.find((r) => r.id === reviewId);
+    if (!targetReview) return;
+
+    const updatedReview = {
+      ...targetReview,
+      ownerReply: reviewReplyText.trim(),
+      ownerReplyCreatedAt: new Date().toISOString()
+    };
+
+    if (onUpdateReview) {
+      onUpdateReview(updatedReview);
+    }
+    
+    setReviewReplyText('');
+    setReplyingToReviewId(null);
+    setReviewsSuccessMsg('تم إرسال الرد الرسمي بنجاح وسيظهر للجميع على صفحة البيت!');
+    setTimeout(() => setReviewsSuccessMsg(''), 4000);
+  };
+
+  const handleDeleteReply = (reviewId: string) => {
+    if (!confirm('هل أنت متأكد من رغبتك في حذف هذا الرد؟')) return;
+    const targetReview = reviews.find((r) => r.id === reviewId);
+    if (!targetReview) return;
+
+    const updatedReview = {
+      ...targetReview,
+      ownerReply: undefined,
+      ownerReplyCreatedAt: undefined
+    };
+
+    if (onUpdateReview) {
+      onUpdateReview(updatedReview);
+    }
+    
+    setReviewsSuccessMsg('تم حذف الرد بنجاح.');
+    setTimeout(() => setReviewsSuccessMsg(''), 4000);
+  };
+
+  // Filter owner's houses
+  const ownerHouses = houses.filter((h) => h.ownerId === owner.id);
+  const ownerHouseIds = ownerHouses.map((h) => h.id);
+
+  // Filter bookings for owner's houses
+  const ownerBookings = bookings.filter((b) => ownerHouseIds.includes(b.houseId));
+
+  // Calculate stats
+  const totalRevenue = ownerBookings
+    .filter((b) => b.status === 'approved' || b.status === 'completed')
+    .reduce((sum, b) => sum + (b.depositPaid ? b.depositAmount : b.totalPrice * 0.15), 0); // revenue counts paid deposit or estimated 15% secure deposit
+
+  const totalFullBookingsValue = ownerBookings
+    .filter((b) => b.status === 'approved' || b.status === 'completed')
+    .reduce((sum, b) => sum + b.totalPrice, 0);
+
+  const pendingBookings = ownerBookings.filter((b) => b.status === 'pending');
+
+  const handleServiceToggle = (srv: string) => {
+    if (selectedServices.includes(srv)) {
+      setSelectedServices(selectedServices.filter((s) => s !== srv));
+    } else {
+      setSelectedServices([...selectedServices, srv]);
+    }
+  };
+
+  const handleSuitabilityToggle = (suit: 'youth' | 'children' | 'families' | 'retreat') => {
+    if (selectedSuitability.includes(suit)) {
+      setSelectedSuitability(selectedSuitability.filter((s) => s !== suit));
+    } else {
+      setSelectedSuitability([...selectedSuitability, suit]);
+    }
+  };
+
+  const handleAddHall = () => {
+    if (!hallName) return;
+    const newHall: ConferenceHall = {
+      id: `hall_${Date.now()}`,
+      name: hallName,
+      capacity: hallCapacity,
+      hasSoundSystem: hallSound,
+      hasProjector: hallProjector
+    };
+    setHalls([...halls, newHall]);
+    setHallName('');
+    setHallCapacity(50);
+    setHallSound(false);
+    setHallProjector(false);
+  };
+
+  const handleRemoveHall = (id: string) => {
+    setHalls(halls.filter((h) => h.id !== id));
+  };
+
+  const handleSubmitHouse = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (ownerHouses.length >= 1) {
+      alert('عذراً، لا يمكن تسجيل أكثر من بيت واحد لكل مالك.');
+      return;
+    }
+    if (!houseName || !houseDesc || !houseAddress) {
+      alert('يرجى ملء كافة البيانات الأساسية للبيت.');
+      return;
+    }
+
+    const isMonthly = propertyType === 'student' || propertyType === 'staff';
+
+    const newHouse: RetreatHouse = {
+      id: `house_${Date.now()}`,
+      name: houseName,
+      description: houseDesc,
+      ownerId: owner.id,
+      ownerName: owner.name,
+      governorate: houseGov,
+      address: houseAddress,
+      lat: houseLat ?? 30.0444 + (Math.random() - 0.5) * 0.4,
+      lng: houseLng ?? 31.2357 + (Math.random() - 0.5) * 0.4,
+      roomsCount,
+      bedsCount,
+      roomsDescription: roomsDesc || (isMonthly ? 'غرف سكنية مجهزة ومريحة تناسب الدراسة والعمل الهادئ.' : 'غرف فندقية نظيفة ومريحة مجهزة بحمام وتكييف.'),
+      pricePerNightPerPerson: isMonthly ? 0 : pricePerNight,
+      propertyType,
+      monthlyRent: isMonthly ? monthlyRent : undefined,
+      studentHousingGender: propertyType === 'student' ? studentHousingGender : undefined,
+      distanceFromUniversity: propertyType === 'student' ? distanceFromUniversity : undefined,
+      housingRules: isMonthly ? [
+        'المحافظة على الوقار والمبادئ المسيحية في التعامل والسلوك العام بالسكن.',
+        'مواعيد غلق الباب الخارجي بحد أقصى الساعة ١٠:٣٠ مساءً يومياً.',
+        'يمنع منعاً باتاً استقبال زوار من الجنس الآخر في غرف النوم الخاصة.',
+        'المحافظة على نظافة الغرف والهدوء لتمكين الزملاء من المذاكرة والاستراحة.'
+      ] : undefined,
+      contractTerms: isMonthly 
+        ? 'عقد إيجار مخصص للطلبة والمغتربين المسيحيين يبدأ من شهر إلى سنة كاملة قابلة للتجديد.'
+        : undefined,
+      services: selectedServices,
+      suitability: selectedSuitability.length > 0 ? selectedSuitability : ['youth', 'families'],
+      conferenceHalls: propertyType === 'conference' ? halls : [],
+      restaurants: [{ id: `rest_${Date.now()}`, name: 'المطعم الرئيسي للبيت', capacity: bedsCount, mealsServed: ['breakfast', 'lunch', 'dinner'] }],
+      activities: activitiesInput ? activitiesInput.split('،').map((a) => a.trim()) : ['مسابقات وألعاب روحية', 'عروض مسرحية'],
+      images: [
+        imageUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80'
+      ],
+      status: 'pending', // Requires admin approval first!
+      rating: 5.0,
+      reviewsCount: 0,
+      createdAt: new Date().toISOString()
+    };
+
+    onAddHouse(newHouse);
+    alert('تم إضافة العقار بنجاح! تم إرساله للمراجعة وسيظهر للجميع بمجرد تفعيله من قبل إدارة النظام.');
+    
+    // Reset fields
+    setHouseName('');
+    setHouseDesc('');
+    setHouseGov(GOVERNORATES[0]);
+    setHouseAddress('');
+    setPricePerNight(150);
+    setRoomsCount(10);
+    setBedsCount(30);
+    setRoomsDesc('');
+    setSelectedServices([]);
+    setSelectedSuitability([]);
+    setImageUrl('');
+    setHalls([]);
+    setActivitiesInput('');
+    setPropertyType('conference');
+    setMonthlyRent(1500);
+    setStudentHousingGender('boys');
+    setDistanceFromUniversity('');
+
+    setActiveTab('houses');
+  };
+
+  return (
+    <div className="space-y-4 text-right text-[#4A4A3A]">
+      {/* Header and owner name */}
+      <div className="bg-gradient-to-r from-[#4A4A3A] to-[#5A5A40] text-white rounded-3xl p-4 flex items-center justify-between">
+        <div>
+          <span className="text-[10px] text-amber-300 font-black">لوحة تحكم مالك البيوت</span>
+          <h2 className="text-sm font-extrabold">{owner.name}</h2>
+        </div>
+        <div className="flex gap-1">
+          <span className="text-[9px] bg-[#4A4A3A]/40 border border-[#D6D6C2]/40 text-white px-2 py-0.5 rounded-full">
+            {ownerHouses.length} بيت مسجل
+          </span>
+        </div>
+      </div>
+
+      {/* Internal Navigation Tabs */}
+      <div className="flex flex-wrap md:flex-nowrap border border-[#D6D6C2] bg-white p-1 rounded-2xl gap-1">
+        <button
+          id="owner-tab-stats"
+          onClick={() => setActiveTab('stats')}
+          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'stats' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          مؤشرات عامة
+        </button>
+        <button
+          id="owner-tab-houses"
+          onClick={() => setActiveTab('houses')}
+          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'houses' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          بيوتنا ({ownerHouses.length})
+        </button>
+        <button
+          id="owner-tab-bookings"
+          onClick={() => setActiveTab('bookings')}
+          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+            activeTab === 'bookings' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          الحجوزات
+          {pendingBookings.length > 0 && (
+            <span className="absolute top-1.5 left-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
+          )}
+        </button>
+        <button
+          id="owner-tab-occupancy"
+          onClick={() => setActiveTab('occupancy')}
+          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'occupancy' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          🗓️ جدول الإشغال
+        </button>
+        <button
+          id="owner-tab-reviews"
+          onClick={() => setActiveTab('reviews')}
+          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'reviews' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          💬 الردود باسمنا
+        </button>
+        <button
+          id="owner-tab-add"
+          onClick={() => ownerHouses.length === 0 && setActiveTab('add_house')}
+          disabled={ownerHouses.length >= 1}
+          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all ${
+            ownerHouses.length >= 1
+              ? 'opacity-30 cursor-not-allowed text-[#8A8A70]'
+              : activeTab === 'add_house' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40 cursor-pointer'
+          }`}
+          title={ownerHouses.length >= 1 ? 'مسموح ببيت واحد فقط لكل مالك' : 'إضافة بيت جديد'}
+        >
+          {ownerHouses.length >= 1 ? 'بيت واحد فقط ✓' : 'إضافة بيت جديد +'}
+        </button>
+        <button
+          id="owner-tab-profile"
+          onClick={() => setActiveTab('profile')}
+          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'profile' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          الإعدادات ⚙️
+        </button>
+      </div>
+
+      {/* Tab Contents */}
+
+      {/* 1. Stats and metrics */}
+      {activeTab === 'stats' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-2 text-right">
+              <Coins className="w-5 h-5 text-[#5A5A40]" />
+              <div className="text-[10px] text-[#8A8A70] font-bold">العربين المستلمة فوريًا:</div>
+              <div className="text-lg font-extrabold text-[#4A4A3A]">{totalRevenue.toLocaleString()} ج.م</div>
+              <div className="text-[9px] text-[#8A8A70]">من إجمالي {totalFullBookingsValue.toLocaleString()} ج.م حجوزات مؤكدة.</div>
+            </div>
+
+            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-2 text-right">
+              <ClipboardList className="w-5 h-5 text-[#8A8A70]" />
+              <div className="text-[10px] text-[#8A8A70] font-bold">الحجوزات المعلقة:</div>
+              <div className="text-lg font-extrabold text-[#4A4A3A]">{pendingBookings.length} حجز</div>
+              <div className="text-[9px] text-[#8A8A70]">تنتظر مراجعتك وقبولك لتأكيد التواريخ.</div>
+            </div>
+          </div>
+
+          <div className="bg-[#EBEBE0]/30 rounded-2xl p-3 border border-[#D6D6C2] flex gap-2.5 items-start text-xs text-[#4A4A3A]">
+            <Info className="w-4 h-4 text-[#8A8A70] shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-[#4A4A3A] block">نصيحة لتسويق بيوت المؤتمرات:</span>
+              <span>تأكد من إضافة كافة القاعات، والمطاعم، وتفاصيل الكنائس المتوفرة ببيتك لتظهر بصورة احترافية وتزيد من نسب الحجز للمجموعات الكبيرة.</span>
+            </div>
+          </div>
+
+          {/* Quick list of recent bookings */}
+          <div className="space-y-2">
+            <h3 className="text-xs font-extrabold text-[#4A4A3A] px-1">آخر الطلبات المستلمة:</h3>
+            {ownerBookings.length === 0 ? (
+              <p className="text-[11px] text-[#8A8A70] text-center py-4">لا توجد أي طلبات حجز مسجلة حاليًا.</p>
+            ) : (
+              <div className="space-y-2">
+                {ownerBookings.slice(0, 3).map((b) => (
+                  <div key={b.id} className="bg-white p-3 rounded-2xl border border-[#D6D6C2] flex justify-between items-center text-xs text-right">
+                    <div>
+                      <div className="font-bold text-[#4A4A3A]">{b.userName}</div>
+                      <div className="text-[10px] text-[#8A8A70]">{b.houseName} • {b.guestsCount} فرد</div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      b.status === 'approved' ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'
+                    }`}>
+                      {b.status === 'approved' ? 'مقبول' : 'قيد الانتظار'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 2. Owner's Houses */}
+      {activeTab === 'houses' && (
+        <div className="space-y-3">
+          {ownerHouses.length === 0 ? (
+            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-2">
+              <p className="text-sm text-[#4A4A3A] font-bold">لا يوجد لديك أي بيوت مسجلة باسمك بعد.</p>
+              <button
+                id="owner-add-house-shortcut"
+                onClick={() => setActiveTab('add_house')}
+                className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-xs px-4 py-2 rounded-xl cursor-pointer"
+              >
+                سجل بيتك الأول الآن
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {ownerHouses.map((house) => (
+                <div key={house.id} className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden flex flex-col text-right">
+                  <div className="relative h-28 bg-[#EBEBE0]">
+                    <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-full h-full object-cover" />
+                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-[10px] font-bold text-[#4A4A3A]">
+                      {house.governorate}
+                    </div>
+                    
+                    {/* Approval Status Badge */}
+                    <div className={`absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-extrabold ${
+                      house.status === 'approved' 
+                        ? 'bg-emerald-600 text-white' 
+                        : house.status === 'pending'
+                        ? 'bg-amber-600 text-white'
+                        : 'bg-rose-600 text-white'
+                    }`}>
+                      {house.status === 'approved' ? 'نشط ويظهر للجميع' : house.status === 'pending' ? 'بانتظار موافقة الإدارة' : 'مرفوض'}
+                    </div>
+                  </div>
+
+                  <div className="p-4 space-y-2 text-right">
+                    <h3 className="text-xs font-bold text-[#4A4A3A] line-clamp-1">{house.name}</h3>
+                    <p className="text-[11px] text-[#8A8A70] line-clamp-2 leading-relaxed">{house.description}</p>
+                    
+                    <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-[#D6D6C2] bg-[#EBEBE0]/10 rounded-xl text-[10px] font-bold text-[#4A4A3A]">
+                      <div>
+                        <div className="text-[#8A8A70] text-[9px] mb-0.5">الغرف</div>
+                        <div className="text-[#4A4A3A]">{house.roomsCount} غرفة</div>
+                      </div>
+                      <div>
+                        <div className="text-[#8A8A70] text-[9px] mb-0.5">الأسرة الكلية</div>
+                        <div className="text-[#4A4A3A]">{house.bedsCount} سرير</div>
+                      </div>
+                      <div>
+                        <div className="text-[#8A8A70] text-[9px] mb-0.5">سعر الفرد</div>
+                        <div className="text-[#5A5A40] font-black">{house.pricePerNightPerPerson} ج.م/ليلة</div>
+                      </div>
+                    </div>
+
+                    {/* Collapsible Occupancy Calendar */}
+                    <div className="border-t border-[#D6D6C2]/50 pt-2 mt-2">
+                      <button
+                        type="button"
+                        id={`toggle-cal-${house.id}`}
+                        onClick={() => {
+                          setExpandedCalendar(expandedCalendar === house.id ? null : house.id);
+                        }}
+                        className="w-full flex items-center justify-between text-[11px] font-black text-[#5A5A40] hover:text-[#4A4A3A] hover:bg-[#EBEBE0]/20 py-1.5 px-2 rounded-xl transition-all cursor-pointer"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>تقويم حجز وإشغال البيت 📅</span>
+                        </span>
+                        <span className="text-[10px] text-[#8A8A70]">
+                          {expandedCalendar === house.id ? 'إخفاء التقويم ▲' : 'عرض التقويم المالي ▼'}
+                        </span>
+                      </button>
+
+                      {expandedCalendar === house.id && (
+                        <div className="mt-2 p-3 bg-[#FBFBFA] border border-[#D6D6C2]/60 rounded-2xl space-y-3 text-right">
+                          {/* Month Toggle Tabs */}
+                          <div className="flex justify-center gap-2">
+                            {[
+                              { label: 'يوليو ٢٠٢٦', month: 7, year: 2026 },
+                              { label: 'أغسطس ٢٠٢٦', month: 8, year: 2026 }
+                            ].map((m) => {
+                              const isSelected = (activeMonthForHouse[house.id]?.month || 7) === m.month;
+                              return (
+                                <button
+                                  type="button"
+                                  key={`${m.year}-${m.month}`}
+                                  onClick={() => setActiveMonthForHouse({
+                                    ...activeMonthForHouse,
+                                    [house.id]: { month: m.month, year: m.year }
+                                  })}
+                                  className={`text-[10px] font-extrabold px-3 py-1 rounded-xl transition-all cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-[#5A5A40] text-white shadow-sm'
+                                      : 'bg-white border border-[#D6D6C2] text-[#8A8A70] hover:bg-[#EBEBE0]/30'
+                                  }`}
+                                >
+                                  {m.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Render selected month calendar */}
+                          {(() => {
+                            const curSel = activeMonthForHouse[house.id] || { month: 7, year: 2026 };
+                            const { totalDays, startDayOfWeek } = getMonthDetails(curSel.year, curSel.month);
+                            const daysArray = Array.from({ length: totalDays }, (_, i) => i + 1);
+                            const weekDays = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
+
+                            return (
+                              <div className="space-y-2.5">
+                                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black">
+                                  {weekDays.map((wd, idx) => (
+                                    <div key={idx} className="text-[#8A8A70] py-0.5">{wd}</div>
+                                  ))}
+                                  
+                                  {/* Spacers */}
+                                  {Array.from({ length: startDayOfWeek }).map((_, idx) => (
+                                    <div key={`space-${idx}`} className="py-1" />
+                                  ))}
+
+                                  {/* Days */}
+                                  {daysArray.map((day) => {
+                                    const bookingOnDay = isDateBooked(house.id, curSel.year, curSel.month, day);
+                                    return (
+                                      <div
+                                        key={day}
+                                        className={`py-1 rounded-lg border text-center transition-all relative group cursor-help ${
+                                          bookingOnDay
+                                            ? 'bg-rose-50 border-rose-200 text-rose-700 font-extrabold'
+                                            : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                                        }`}
+                                        title={
+                                          bookingOnDay
+                                            ? `محجوز: ${bookingOnDay.organizationName || bookingOnDay.userName} (${bookingOnDay.guestsCount} فرد)`
+                                            : 'شاغر ومتاح للحجز'
+                                        }
+                                      >
+                                        <span>{day}</span>
+                                        
+                                        {bookingOnDay && (
+                                          <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-rose-600" />
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                {/* Calendar Legend and Details */}
+                                <div className="pt-2 border-t border-[#D6D6C2]/40 flex flex-col gap-1.5 text-[9.5px] text-[#8A8A70] font-bold">
+                                  <div className="flex items-center justify-between">
+                                    <span className="flex items-center gap-1">
+                                      <span className="w-2.5 h-2.5 rounded bg-rose-50 border border-rose-200" />
+                                      <span>محجوز (مشغول)</span>
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                      <span className="w-2.5 h-2.5 rounded bg-emerald-50 border border-emerald-200" />
+                                      <span>شاغر (متاح)</span>
+                                    </span>
+                                  </div>
+
+                                  {/* List of bookings in this month for this house */}
+                                  {(() => {
+                                    const monthBookings = bookings.filter((b) => {
+                                      if (b.houseId !== house.id || (b.status !== 'approved' && b.status !== 'completed')) return false;
+                                      // check if booking overlaps with this month
+                                      const bStart = new Date(b.checkIn);
+                                      const bEnd = new Date(b.checkOut);
+                                      const rangeStart = new Date(curSel.year, curSel.month - 1, 1);
+                                      const rangeEnd = new Date(curSel.year, curSel.month, 0);
+                                      return bStart <= rangeEnd && bEnd >= rangeStart;
+                                    });
+
+                                    if (monthBookings.length > 0) {
+                                      return (
+                                        <div className="bg-[#EBEBE0]/20 p-2 rounded-xl border border-[#D6D6C2]/40 mt-1 space-y-1">
+                                          <div className="text-[#4A4A3A] text-[9px] font-black">الحجوزات النشطة هذا الشهر:</div>
+                                          {monthBookings.map((b) => (
+                                            <div key={b.id} className="text-[#5A5A40] text-[9px] flex items-center justify-between border-b border-[#D6D6C2]/20 pb-1 last:border-0 last:pb-0">
+                                              <span className="font-extrabold text-right truncate max-w-[130px]">
+                                                • {b.organizationName || b.userName}
+                                              </span>
+                                              <span className="font-mono text-[8px] bg-amber-50 text-amber-900 border border-amber-100 px-1 rounded">
+                                                {b.checkIn.split('-')[2]} - {b.checkOut.split('-')[2]} ({b.guestsCount} فرد)
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    }
+                                    return (
+                                      <div className="text-center py-1.5 text-[#8A8A70] text-[9px] bg-emerald-50/20 border border-emerald-100 rounded-lg">
+                                        لا توجد حجوزات مؤكدة في هذا الشهر، البيت شاغر بالكامل 🌟
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Collapsible Photo Manager */}
+                    <div className="border-t border-[#D6D6C2]/50 pt-2 mt-2">
+                      <button
+                        type="button"
+                        id={`toggle-photos-${house.id}`}
+                        onClick={() => {
+                          setExpandedPhotosForHouse(expandedPhotosForHouse === house.id ? null : house.id);
+                        }}
+                        className="w-full flex items-center justify-between text-[11px] font-black text-[#5A5A40] hover:text-[#4A4A3A] hover:bg-[#EBEBE0]/20 py-1.5 px-2 rounded-xl transition-all cursor-pointer"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Camera className="w-3.5 h-3.5 text-[#5A5A40]" />
+                          <span>إدارة صور الغرف والخدمات والمباني 📸</span>
+                        </span>
+                        <span className="text-[10px] text-[#8A8A70]">
+                          {expandedPhotosForHouse === house.id ? 'إخفاء الصور ▲' : 'إضافة وعرض الصور ▼'}
+                        </span>
+                      </button>
+
+                      {expandedPhotosForHouse === house.id && (
+                        <div className="mt-2 p-3 bg-[#FBFBFA] border border-[#D6D6C2]/60 rounded-2xl space-y-3 text-right">
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-extrabold text-[#4A4A3A]">إضافة صورة جديدة للغرف أو الخدمات:</span>
+                            <p className="text-[9px] text-[#8A8A70]">أدخل رابط الصورة لتحديث ألبوم المعاينة للخدام والمجموعات.</p>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div className="col-span-1">
+                              <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">نوع وتصنيف الصورة:</label>
+                              <select
+                                id={`photo-cat-${house.id}`}
+                                value={extraPhotoCategory}
+                                onChange={(e) => setExtraPhotoCategory(e.target.value as 'room' | 'service' | 'other')}
+                                className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none"
+                              >
+                                <option value="room">🛌 غرف النوم والأسرة</option>
+                                <option value="service">🍽️ الخدمات والمطعم والملاعب</option>
+                                <option value="other">⛪ المبنى وقاعات الاجتماعات</option>
+                              </select>
+                            </div>
+
+                            <div className="col-span-1">
+                              <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">وصف مختصر (مثال: غرفة خلوة مزدوجة):</label>
+                              <input
+                                id={`photo-label-${house.id}`}
+                                type="text"
+                                placeholder="غرفة خلوة مزدوجة"
+                                value={extraPhotoLabel}
+                                onChange={(e) => setExtraPhotoLabel(e.target.value)}
+                                className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none"
+                              />
+                            </div>
+
+                            <div className="col-span-1">
+                              <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">رابط الصورة (URL):</label>
+                              <div className="flex gap-1">
+                                <input
+                                  id={`photo-url-${house.id}`}
+                                  type="url"
+                                  placeholder="https://..."
+                                  value={extraPhotoUrl}
+                                  onChange={(e) => setExtraPhotoUrl(e.target.value)}
+                                  className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none"
+                                />
+                                <button
+                                  type="button"
+                                  id={`add-photo-btn-${house.id}`}
+                                  onClick={() => {
+                                    if (!extraPhotoUrl.trim()) {
+                                      alert('يرجى إدخال رابط صورة صحيح.');
+                                      return;
+                                    }
+                                    const labelPrefix = extraPhotoCategory === 'room' ? '🛌 غرف' : extraPhotoCategory === 'service' ? '🍽️ خدمات' : '⛪ مباني';
+                                    const descStr = extraPhotoLabel.trim() ? `${labelPrefix}: ${extraPhotoLabel.trim()}` : `${labelPrefix}`;
+                                    
+                                    const updatedHouse = {
+                                      ...house,
+                                      images: [...house.images, extraPhotoUrl.trim()],
+                                      imageDescriptions: {
+                                        ...(house.imageDescriptions || {}),
+                                        [extraPhotoUrl.trim()]: descStr
+                                      }
+                                    };
+                                    
+                                    if (onUpdateHouse) {
+                                      onUpdateHouse(updatedHouse);
+                                    }
+                                    setExtraPhotoUrl('');
+                                    setExtraPhotoLabel('');
+                                    setPhotosSuccessMsg('تم إضافة الصورة بنجاح وتحديث ألبوم البيت للزوار!');
+                                    setTimeout(() => setPhotosSuccessMsg(''), 3000);
+                                  }}
+                                  className="bg-[#5A5A40] text-white text-[10px] font-bold px-2 rounded-lg cursor-pointer hover:bg-[#4A4A3A]"
+                                >
+                                  إضافة
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {photosSuccessMsg && (
+                            <p className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-1.5 text-center font-bold">
+                              {photosSuccessMsg}
+                            </p>
+                          )}
+
+                          {/* Existing Images Gallery with Category Badges and Delete button */}
+                          <div className="space-y-1.5 pt-2 border-t border-[#D6D6C2]/40">
+                            <span className="text-[9.5px] font-extrabold text-[#4A4A3A]">الصور المضافة حالياً للبيت ({house.images.length}):</span>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              {house.images.map((img, idx) => {
+                                const desc = house.imageDescriptions?.[img] || (idx === 0 ? 'الصورة الرئيسية' : 'صورة إضافية');
+                                return (
+                                  <div key={`${img}-${idx}`} className="relative bg-white border border-[#D6D6C2] rounded-xl overflow-hidden group">
+                                    <img referrerPolicy="no-referrer" src={img} alt="بيت خلوة" className="w-full h-14 object-cover" />
+                                    <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] p-0.5 text-center truncate font-bold" title={desc}>
+                                      {desc}
+                                    </div>
+                                    {house.images.length > 1 && (
+                                      <button
+                                        type="button"
+                                        title="حذف الصورة"
+                                        onClick={() => {
+                                          if (confirm('هل أنت متأكد من رغبتك في حذف هذه الصورة من ألبوم البيت؟')) {
+                                            const updatedHouse = {
+                                              ...house,
+                                              images: house.images.filter((_, i) => i !== idx)
+                                            };
+                                            if (onUpdateHouse) {
+                                              onUpdateHouse(updatedHouse);
+                                            }
+                                          }
+                                        }}
+                                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-bold hover:bg-red-700 shadow cursor-pointer"
+                                      >
+                                        ✕
+                                      </button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. Bookings Management */}
+      {activeTab === 'bookings' && (
+        <div className="space-y-3">
+          <div className="text-xs font-bold text-[#8A8A70] px-1">إدارة طلبات الحجز المعلقة والمؤكدة:</div>
+          
+          {ownerBookings.length === 0 ? (
+            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center">
+              <p className="text-xs text-[#8A8A70]">لا يوجد أي حجوزات واردة لبيوتك بعد.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {ownerBookings.map((booking) => {
+                const isPending = booking.status === 'pending';
+
+                return (
+                  <div id={`owner-booking-${booking.id}`} key={booking.id} className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm p-4 space-y-3 text-right">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-[9px] text-[#8A8A70] font-bold">الحساب: {booking.userName}</span>
+                        <h4 className="text-xs font-bold text-[#4A4A3A] mt-0.5">{booking.houseName}</h4>
+                        <div className="text-[10px] text-[#8A8A70] font-medium">رقم الهاتف: {booking.userPhone}</div>
+                      </div>
+                      
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        booking.status === 'approved' 
+                          ? 'bg-emerald-50 text-emerald-850' 
+                          : booking.status === 'rejected'
+                          ? 'bg-rose-50 text-rose-800'
+                          : 'bg-amber-50 text-amber-800'
+                      }`}>
+                        {booking.status === 'approved' ? 'مقبول ومؤكد' : booking.status === 'rejected' ? 'مرفوض' : 'معلق'}
+                      </span>
+                    </div>
+
+                    <div className="bg-[#EBEBE0]/30 rounded-2xl p-3 grid grid-cols-2 gap-2 text-[10px] text-[#4A4A3A] font-medium border border-[#D6D6C2]">
+                      <div>تاريخ الدخول: <strong className="text-[#4A4A3A] font-bold">{booking.checkIn}</strong></div>
+                      <div>تاريخ الخروج: <strong className="text-[#4A4A3A] font-bold">{booking.checkOut}</strong></div>
+                      <div>عدد الحاضرين: <strong className="text-[#4A4A3A] font-bold">{booking.guestsCount} فرد</strong></div>
+                      <div>السعر الكلي: <strong className="text-[#5A5A40] font-extrabold">{booking.totalPrice.toLocaleString()} ج.م</strong></div>
+                    </div>
+
+                    {booking.isLargeConferenceQuote && booking.conferenceDetails && (
+                      <div className="bg-amber-50/40 p-2.5 rounded-xl border border-amber-200/60 text-[10px] text-[#4A4A3A] space-y-1">
+                        <span className="font-bold text-amber-900 block">تفاصيل طلب عرض السعر للمؤتمر:</span>
+                        <p className="italic text-slate-700">{booking.conferenceDetails.extraRequests}</p>
+                        <span className="text-amber-800 font-semibold">• مطلوب حجز القاعة والوجبات الغذائية كاملة</span>
+                      </div>
+                    )}
+
+                    {/* Pending Actions */}
+                    {isPending && (
+                      <div className="flex gap-2 justify-end pt-2">
+                        <button
+                          id={`reject-booking-btn-${booking.id}`}
+                          onClick={() => {
+                            onRejectBooking(booking.id);
+                            alert('تم رفض طلب الحجز.');
+                          }}
+                          className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-rose-50 hover:text-rose-750 text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                          <span>رفض الطلب</span>
+                        </button>
+                        <button
+                          id={`approve-booking-btn-${booking.id}`}
+                          onClick={() => {
+                            onApproveBooking(booking.id);
+                            alert('تم الموافقة على الحجز بنجاح! سيتم إخطار المستخدم.');
+                          }}
+                          className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-1.5 rounded-xl text-xs font-extrabold transition-all shadow-sm cursor-pointer"
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>قبول وتأكيد الحجز</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {!isPending && (booking.status === 'approved' || booking.status === 'completed') && (
+                      <div className="flex justify-end pt-1">
+                        <button
+                          id={`owner-allocate-btn-${booking.id}`}
+                          onClick={() => setActiveAllocationBooking(booking)}
+                          className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                        >
+                          <Building className="w-4 h-4 text-amber-700" />
+                          <span>توزيع وإدارة غرف المؤتمر 🛏️</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. Add a New Retreat House */}
+      {activeTab === 'add_house' && (
+        ownerHouses.length >= 1 ? (
+          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-8 text-center space-y-4 animate-in fade-in duration-200">
+            <div className="w-16 h-16 bg-amber-50 border border-amber-200 text-amber-600 rounded-full flex items-center justify-center mx-auto text-3xl">
+              ⚠️
+            </div>
+            <div className="space-y-1.5 max-w-md mx-auto">
+              <h3 className="text-sm font-black text-[#4A4A3A]">لقد وصلت للحد الأقصى المسموح به من البيوت!</h3>
+              <p className="text-xs text-[#8A8A70] leading-relaxed">
+                حسابك الحالي ذو صلاحية <strong>مالك بيت فردي</strong>. لا يمكنك إضافة أكثر من <strong>بيت واحد فقط ({ownerHouses[0]?.name})</strong> في لوحة التحكم هذه لضمان جودة الإشغال والمتابعة الدقيقة.
+              </p>
+              <div className="bg-[#FAF8F5] border border-[#D6D6C2] p-4 rounded-2xl text-[11px] text-[#5A5A40] text-right space-y-2 mt-2">
+                <p className="font-bold">💡 ماذا يمكنك أن تفعل الآن؟</p>
+                <p>• تعديل وإدارة تفاصيل بيتك الحالي وإضافة صور الغرف والخدمات وجدول الإشغال.</p>
+                <p>• التواصل مع الدعم الفني أو المنسق البطريركي لطلب ترقية الحساب لإدارة مجموعة بيوت متعددة.</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmitHouse} className="bg-white rounded-3xl border border-[#D6D6C2] p-5 space-y-4 text-right">
+          <div className="space-y-1 pb-2 border-b border-[#D6D6C2]">
+            <h3 className="text-xs font-extrabold text-[#4A4A3A]">تفاصيل تسجيل بيت مؤتمرات جديد</h3>
+            <p className="text-[10px] text-[#8A8A70]">يرجى ملء البيانات بدقة لتمكين الخدام والكنائس من حجز بيتك.</p>
+          </div>
+
+          <div className="space-y-3">
+            {/* Property Type selector first */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-bold text-[#8A8A70] mb-1">نوع وتصنيف العقار السكني:</label>
+                <select
+                  id="add-property-type"
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value as 'conference' | 'student' | 'staff')}
+                  className="w-full bg-white border border-[#D6D6C2] text-xs px-2.5 py-2 rounded-xl text-[#4A4A3A] focus:outline-none"
+                >
+                  <option value="conference">بيت مؤتمرات / فندق مسيحي</option>
+                  <option value="student">سكن طلاب وطالبات مغتربين</option>
+                  <option value="staff">سكن موظفين ومغتربين</option>
+                </select>
+              </div>
+
+              {propertyType === 'student' ? (
+                <div>
+                  <label className="block text-[11px] font-bold text-[#8A8A70] mb-1">فئة السكن الطلابية:</label>
+                  <select
+                    id="add-student-gender"
+                    value={studentHousingGender}
+                    onChange={(e) => setStudentHousingGender(e.target.value as 'boys' | 'girls')}
+                    className="w-full bg-white border border-[#D6D6C2] text-xs px-2.5 py-2 rounded-xl text-[#4A4A3A] focus:outline-none"
+                  >
+                    <option value="boys">بنين (شباب مسيحي)</option>
+                    <option value="girls">بنات (شابات مسيحيات)</option>
+                  </select>
+                </div>
+              ) : (
+                <div className="opacity-50 select-none">
+                  <label className="block text-[11px] font-bold text-[#8A8A70] mb-1">فئة السكن:</label>
+                  <div className="w-full bg-gray-100 border border-[#D6D6C2] text-xs px-2.5 py-2 rounded-xl text-gray-500">مشترك / عائلات مغتربة</div>
+                </div>
+              )}
+            </div>
+
+            {/* If Student / Staff monthly rent and distance config */}
+            {(propertyType === 'student' || propertyType === 'staff') && (
+              <div className="grid grid-cols-2 gap-2 p-3 bg-[#EBEBE0]/30 rounded-2xl border border-[#D6D6C2] text-right animate-fade-in">
+                <div>
+                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">الإيجار الشهري المطلوب للفرد (ج.م):</label>
+                  <input
+                    id="add-monthly-rent-input"
+                    type="number"
+                    required
+                    min={100}
+                    value={monthlyRent}
+                    onChange={(e) => setMonthlyRent(parseInt(e.target.value) || 1500)}
+                    className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-1.5 rounded-xl text-[#4A4A3A] focus:outline-none"
+                  />
+                </div>
+                {propertyType === 'student' ? (
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">القرب من الجامعة / الكلية:</label>
+                    <input
+                      id="add-university-distance"
+                      type="text"
+                      placeholder="مثال: دقيقتين من جامعة أسيوط"
+                      value={distanceFromUniversity}
+                      onChange={(e) => setDistanceFromUniversity(e.target.value)}
+                      className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-1.5 rounded-xl text-[#4A4A3A] focus:outline-none"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">القرب من المواصلات العامة:</label>
+                    <input
+                      id="add-transport-distance"
+                      type="text"
+                      placeholder="مثال: بجوار محطة مترو مارجرجس"
+                      className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-1.5 rounded-xl text-[#4A4A3A] focus:outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* House Name */}
+            <div>
+              <label className="block text-[11px] font-bold text-[#8A8A70] mb-1">
+                {propertyType === 'conference' ? 'اسم بيت المؤتمرات / الفندق المسيحي:' : 'اسم السكن المغترب:'}
+              </label>
+              <input
+                id="add-house-name"
+                type="text"
+                required
+                placeholder={propertyType === 'conference' ? 'مثال: بيت الأنبا بولا للمؤتمرات والخدمات' : 'مثال: سكن القديس يوسف للطلبة المغتربين'}
+                value={houseName}
+                onChange={(e) => setHouseName(e.target.value)}
+                className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40]"
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-[11px] font-bold text-[#8A8A70] mb-1">وصف تفصيلي للبيت ومميزاته:</label>
+              <textarea
+                id="add-house-desc"
+                rows={3}
+                required
+                placeholder="أدخل مميزات الموقع، الغرف، القاعات، الخدمات الروحية والقداسات المتوفرة..."
+                value={houseDesc}
+                onChange={(e) => setHouseDesc(e.target.value)}
+                className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40]"
+              />
+            </div>
+
+            {/* Governorate and Address */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-bold text-[#8A8A70] mb-1">المحافظة التابع لها:</label>
+                <select
+                  id="add-house-gov"
+                  value={houseGov}
+                  onChange={(e) => setHouseGov(e.target.value)}
+                  className="w-full bg-white border border-[#D6D6C2] text-xs px-2.5 py-2 rounded-xl text-[#4A4A3A] focus:outline-none"
+                >
+                  {GOVERNORATES.map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[#8A8A70] mb-1">العنوان بالتفصيل:</label>
+                <input
+                  id="add-house-address"
+                  type="text"
+                  required
+                  placeholder="الشارع، العلامة المميزة، المدينة"
+                  value={houseAddress}
+                  onChange={(e) => setHouseAddress(e.target.value)}
+                  className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40]"
+                />
+              </div>
+
+              {/* Location Picker */}
+              <div>
+                <label className="block text-[11px] font-bold text-[#8A8A70] mb-1">موقع البيت على الخريطة:</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!navigator.geolocation) {
+                      setGeoError('المتصفح لا يدعم تحديد الموقع.');
+                      return;
+                    }
+                    setGeoLoading(true);
+                    setGeoError('');
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) => {
+                        setHouseLat(pos.coords.latitude);
+                        setHouseLng(pos.coords.longitude);
+                        setGeoLoading(false);
+                      },
+                      () => {
+                        setGeoError('تعذر تحديد الموقع. تأكد من إذن الموقع في المتصفح.');
+                        setGeoLoading(false);
+                      }
+                    );
+                  }}
+                  className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl border border-[#5A5A40] text-[#5A5A40] bg-white hover:bg-[#F0EDE6] transition-colors"
+                >
+                  {geoLoading ? (
+                    <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-[#5A5A40] border-t-transparent rounded-full" />
+                  ) : (
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                  )}
+                  {geoLoading ? 'جاري تحديد الموقع...' : 'استخدم موقعي الحالي'}
+                </button>
+
+                {houseLat && houseLng && (
+                  <p className="mt-1.5 text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-emerald-500"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    تم تحديد الموقع: {houseLat.toFixed(5)}, {houseLng.toFixed(5)}
+                  </p>
+                )}
+                {geoError && (
+                  <p className="mt-1.5 text-[11px] text-red-500">{geoError}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Price & Capacity */}
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">
+                  {propertyType === 'conference' ? 'سعر الفرد لليلة (ج.م):' : 'سعر تأمين الحجز مسبقاً (ج.م):'}
+                </label>
+                <input
+                  id="add-house-price"
+                  type="number"
+                  required
+                  min={0}
+                  value={propertyType === 'conference' ? pricePerNight : 200}
+                  disabled={propertyType !== 'conference'}
+                  onChange={(e) => setPricePerNight(parseInt(e.target.value) || 150)}
+                  className="w-full bg-white disabled:bg-gray-100 border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">عدد الغرف الإجمالي:</label>
+                <input
+                  id="add-house-rooms"
+                  type="number"
+                  required
+                  min={1}
+                  value={roomsCount}
+                  onChange={(e) => setRoomsCount(parseInt(e.target.value) || 10)}
+                  className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">عدد الأسرة الكلي:</label>
+                <input
+                  id="add-house-beds"
+                  type="number"
+                  required
+                  min={1}
+                  value={bedsCount}
+                  onChange={(e) => setBedsCount(parseInt(e.target.value) || 30)}
+                  className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Suitability */}
+            <div>
+              <label className="block text-[11px] font-bold text-[#8A8A70] mb-1">مناسب من حيث الفئات لـ:</label>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {(Object.keys(SUITABILITY_MAP) as ('youth' | 'children' | 'families' | 'retreat')[]).map((key) => {
+                  const isSelected = selectedSuitability.includes(key);
+                  return (
+                    <button
+                      id={`add-suitability-${key}`}
+                      key={key}
+                      type="button"
+                      onClick={() => handleSuitabilityToggle(key)}
+                      className={`text-[10px] font-bold px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer ${
+                        isSelected 
+                          ? 'bg-[#5A5A40] border-[#5A5A40] text-white shadow-sm' 
+                          : 'bg-[#EBEBE0]/40 border border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#DEDECB]'
+                      }`}
+                    >
+                      {SUITABILITY_MAP[key]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Amenities / Services checklist */}
+            <div>
+              <label className="block text-[11px] font-bold text-[#8A8A70] mb-1">الخدمات المتوفرة والمرافق بالبيت:</label>
+              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                {AMENITIES_LIST.map((srv) => {
+                  const isChecked = selectedServices.includes(srv);
+                  return (
+                    <button
+                      id={`add-service-${srv}`}
+                      key={srv}
+                      type="button"
+                      onClick={() => handleServiceToggle(srv)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[10px] font-semibold text-right transition-all cursor-pointer ${
+                        isChecked 
+                          ? 'bg-emerald-50 border-emerald-500 text-emerald-900' 
+                          : 'bg-[#EBEBE0]/20 border border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#DEDECB]'
+                      }`}
+                    >
+                      <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${
+                        isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-300'
+                      }`}>
+                        {isChecked && <Check className="w-2.5 h-2.5" />}
+                      </span>
+                      <span>{srv}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Conference Halls Creator */}
+            <div className="bg-[#EBEBE0]/30 p-3 rounded-2xl border border-[#D6D6C2] space-y-2">
+              <label className="block text-[11px] font-bold text-[#4A4A3A]">إضافة قاعات اجتماعات ومؤتمرات كنسية:</label>
+              
+              {halls.length > 0 && (
+                <div className="space-y-1 mb-2">
+                  {halls.map((h) => (
+                    <div key={h.id} className="flex justify-between items-center bg-white px-2.5 py-1.5 rounded-lg text-[10px] border border-[#D6D6C2]">
+                      <div>
+                        <span className="font-bold text-[#4A4A3A]">{h.name}</span>
+                        <span className="text-[#8A8A70] font-medium"> (سعة {h.capacity} فرد)</span>
+                      </div>
+                      <button
+                        id={`remove-hall-${h.id}`}
+                        type="button"
+                        onClick={() => handleRemoveHall(h.id)}
+                        className="text-rose-600 hover:text-rose-800 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <input
+                  id="hall-name"
+                  type="text"
+                  placeholder="اسم القاعة (مثال: قاعة البابا شنودة الثالث)"
+                  value={hallName}
+                  onChange={(e) => setHallName(e.target.value)}
+                  className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40]"
+                />
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1">
+                    <input
+                      id="hall-capacity"
+                      type="number"
+                      placeholder="السعة الاستيعابية كأفراد"
+                      value={hallCapacity}
+                      onChange={(e) => setHallCapacity(parseInt(e.target.value) || 50)}
+                      className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40]"
+                    />
+                  </div>
+                  <button
+                    id="add-hall-btn"
+                    type="button"
+                    onClick={handleAddHall}
+                    className="bg-[#5A5A40] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shrink-0 cursor-pointer hover:bg-[#4A4A3A]"
+                  >
+                    أضف القاعة +
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Activities and Images URL */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">الأنشطة (افصل بـ "،"):</label>
+                <input
+                  id="add-house-activities"
+                  type="text"
+                  placeholder="سينما، حمام سباحة، ألعاب حركية"
+                  value={activitiesInput}
+                  onChange={(e) => setActivitiesInput(e.target.value)}
+                  className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">رابط صورة واجهة البيت:</label>
+                <input
+                  id="add-house-image-url"
+                  type="url"
+                  placeholder="https://..."
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40]"
+                />
+              </div>
+            </div>
+
+          </div>
+
+          <button
+            id="add-house-submit"
+            type="submit"
+            className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] active:bg-[#4A4A3A] text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-all text-center cursor-pointer"
+          >
+            إرسال البيت الجديد للمراجعة وتأكيده للظهور
+          </button>
+        </form>
+        )
+      )}
+
+      {/* 5. Owner Profile Settings */}
+      {activeTab === 'profile' && (
+        <div className="bg-white p-6 rounded-3xl border border-[#D6D6C2] text-right space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center gap-3 border-b border-[#EBEBE0] pb-4">
+            <div className="p-2.5 rounded-2xl bg-[#EBEBE0]/30 text-[#5A5A40] border border-[#D6D6C2]/60">
+              <Settings className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-[#4A4A3A]">إعدادات حساب مالك البيت</h3>
+              <p className="text-[10px] text-[#8A8A70]">تعديل البيانات الشخصية وبيانات التواصل لمالك بيت المؤتمرات</p>
+            </div>
+          </div>
+
+          {profileSuccessMsg && (
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-950 p-4 rounded-2xl flex items-center gap-3 text-xs font-bold animate-pulse">
+              <span className="text-lg">✅</span>
+              <span>{profileSuccessMsg}</span>
+            </div>
+          )}
+
+          <form
+            id="owner-profile-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!profileName.trim() || !profileEmail.trim() || !profilePhone.trim()) {
+                alert('يرجى ملء الحقول الإلزامية الأساسية.');
+                return;
+              }
+              
+              const updatedUser: User = {
+                ...owner,
+                name: profileName,
+                email: profileEmail,
+                phone: profilePhone,
+                organizationName: profileOrg || undefined
+              };
+
+              if (onUpdateOwnerProfile) {
+                onUpdateOwnerProfile(updatedUser);
+              }
+              setProfileSuccessMsg('تم تحديث بيانات الحساب بنجاح! تم حفظ التغييرات وتطبيقها.');
+              setTimeout(() => setProfileSuccessMsg(''), 4000);
+            }}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-[#8A8A70]">الاسم الكامل (الإلزامي) 👤:</label>
+                <input
+                  id="owner-profile-name"
+                  type="text"
+                  required
+                  value={profileName}
+                  onChange={(e) => setProfileName(e.target.value)}
+                  className="w-full bg-slate-50 border border-[#D6D6C2] text-xs px-3 py-2.5 rounded-xl text-[#4A4A3A] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#5A5A40] focus:border-[#5A5A40] transition-all"
+                  placeholder="مثال: أ. جرجس نبيل"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-[#8A8A70]">رقم الهاتف للتواصل (الإلزامي) 📞:</label>
+                <input
+                  id="owner-profile-phone"
+                  type="tel"
+                  required
+                  value={profilePhone}
+                  onChange={(e) => setProfilePhone(e.target.value)}
+                  className="w-full bg-slate-50 border border-[#D6D6C2] text-xs px-3 py-2.5 rounded-xl text-[#4A4A3A] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#5A5A40] focus:border-[#5A5A40] transition-all text-left"
+                  dir="ltr"
+                  placeholder="مثال: 01234567890"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-[#8A8A70]">البريد الإلكتروني (الإلزامي) ✉️:</label>
+                <input
+                  id="owner-profile-email"
+                  type="email"
+                  required
+                  value={profileEmail}
+                  onChange={(e) => setProfileEmail(e.target.value)}
+                  className="w-full bg-slate-50 border border-[#D6D6C2] text-xs px-3 py-2.5 rounded-xl text-[#4A4A3A] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#5A5A40] focus:border-[#5A5A40] transition-all text-left"
+                  dir="ltr"
+                  placeholder="owner@church.eg"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-bold text-[#8A8A70]">اسم جهة الإدارة / الاسم التجاري للبيت 🏨 (اختياري):</label>
+                <input
+                  id="owner-profile-org"
+                  type="text"
+                  value={profileOrg}
+                  onChange={(e) => setProfileOrg(e.target.value)}
+                  className="w-full bg-slate-50 border border-[#D6D6C2] text-xs px-3 py-2.5 rounded-xl text-[#4A4A3A] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#5A5A40] focus:border-[#5A5A40] transition-all"
+                  placeholder="مثال: إدارة دير مارمينا أو فندق سان مارك"
+                />
+              </div>
+            </div>
+
+            <div className="bg-amber-50/60 border border-amber-200/60 p-4 rounded-2xl space-y-1 text-right">
+              <span className="text-[10px] font-extrabold text-amber-950 block">🔐 معلومات الأمان وصلاحية الحساب:</span>
+              <p className="text-[9px] text-amber-900 leading-relaxed">
+                نوع الحساب الحالي هو <strong className="text-[#5A5A40]">مالك بيوت خلوات ومؤتمرات (Owner)</strong> معتمد ومفعل. هذا الحساب يخضع لإشراف ومراجعة الإدارة البطريركية لضمان جودة وأمان خدمات بيوت الكنيسة القبطية الأرثوذكسية.
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <button
+                id="owner-profile-submit-btn"
+                type="submit"
+                className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-xs font-bold py-3 rounded-xl shadow-md hover:shadow-lg active:scale-[0.99] transition-all text-center cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>💾 حفظ وتعديل بيانات الحساب</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* 6. Occupancy Schedule & Block/Unblock Management */}
+      {activeTab === 'occupancy' && (
+        <div className="bg-white p-6 rounded-3xl border border-[#D6D6C2] text-right space-y-6 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3 border-b border-[#EBEBE0] pb-4">
+            <div className="p-2.5 rounded-2xl bg-[#EBEBE0]/30 text-[#5A5A40] border border-[#D6D6C2]/60">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-[#4A4A3A]">لوحة التحكم الكاملة في أيام الإشغال والتواريخ المتاحة 🗓️</h3>
+              <p className="text-[10px] text-[#8A8A70]">حدد تواريخ أعمال الصيانة، التجهيز، أو الحجوزات اليدوية الداخلية لحظرها أو إتاحتها للجميع.</p>
+            </div>
+          </div>
+
+          {blockSuccessMsg && (
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-950 p-4 rounded-2xl flex items-center gap-3 text-xs font-bold">
+              <span className="text-lg">✅</span>
+              <span>{blockSuccessMsg}</span>
+            </div>
+          )}
+
+          {ownerHouses.length === 0 ? (
+            <div className="text-center py-8 text-xs text-[#8A8A70]">
+              لم تقم بتسجيل أي بيت خلوة باسمك حتى الآن. يرجى تسجيل بيت أولاً لتفعيل لوحة الإشغال.
+            </div>
+          ) : (() => {
+            const activeHouse = ownerHouses[0]; // Restricted to 1 house maximum
+            const blockedList = activeHouse.blockedDates || [];
+
+            return (
+              <div className="space-y-6">
+                {/* Info Card */}
+                <div className="bg-[#FAF8F5] border border-[#D6D6C2] p-4 rounded-2xl text-xs space-y-2">
+                  <span className="font-extrabold text-[#4A4A3A] block">🏨 البيت الخاضع للإدارة والتحكم: "{activeHouse.name}"</span>
+                  <p className="text-[10.5px] text-[#5A5A40] leading-relaxed">
+                    من خلال هذه اللوحة، يمكنك القيام بحظر أي تاريخ (مثل أعمال صيانة، حجز كنسي خاص بجهتكم دون المرور بالموقع). التواريخ التي يتم حظرها هنا **ستظهر فوراً كغير متاحة للحجز** للخدام ولن يستطيع أحد تقديم طلب حجز فيها.
+                  </p>
+                </div>
+
+                {/* Form and List Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Action Form */}
+                  <form 
+                    onSubmit={(e) => handleBlockDateSubmit(e, activeHouse)}
+                    className="bg-[#FBFBFA] border border-[#D6D6C2]/70 p-4 rounded-2xl space-y-4"
+                  >
+                    <span className="text-xs font-black text-[#4A4A3A] block pb-2 border-b border-[#EBEBE0]">🔒 حظر أو إغلاق تاريخ معين:</span>
+                    
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-[#8A8A70]">اختر التاريخ المطلوب 📆:</label>
+                      <input 
+                        id="block-date-picker"
+                        type="date"
+                        required
+                        min="2026-07-01"
+                        max="2026-08-31"
+                        value={selectedBlockDate}
+                        onChange={(e) => setSelectedBlockDate(e.target.value)}
+                        className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40] text-left"
+                      />
+                      <span className="text-[9px] text-[#8A8A70] block">الموسم المالي الحالي يدعم شهر يوليو وأغسطس ٢٠٢٦.</span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-[#8A8A70]">سبب الحظر أو الإشغال 📝:</label>
+                      <input 
+                        id="block-date-reason"
+                        type="text"
+                        required
+                        placeholder="مثال: صيانة دورية للغرف / حجز للمطرانية"
+                        value={blockReason}
+                        onChange={(e) => setBlockReason(e.target.value)}
+                        className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40]"
+                      />
+                    </div>
+
+                    <button
+                      id="submit-block-btn"
+                      type="submit"
+                      className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <span>🔒 حظر وإغلاق هذا التاريخ الآن</span>
+                    </button>
+                  </form>
+
+                  {/* Blocked Dates List */}
+                  <div className="bg-white border border-[#D6D6C2]/70 p-4 rounded-2xl flex flex-col space-y-3">
+                    <span className="text-xs font-black text-[#4A4A3A] block pb-2 border-b border-[#EBEBE0]">🚫 قائمة التواريخ المغلقة والمحجوزة يدوياً ({blockedList.length}):</span>
+                    
+                    {blockedList.length === 0 ? (
+                      <div className="flex-1 flex flex-col items-center justify-center py-8 text-center text-[11px] text-[#8A8A70] space-y-1">
+                        <span>🌟 لا توجد أي تواريخ محظورة يدوياً.</span>
+                        <span>البيت متاح للجميع بالكامل في الأيام غير المحجوزة تلقائياً!</span>
+                      </div>
+                    ) : (
+                      <div className="flex-1 overflow-y-auto max-h-[220px] space-y-2">
+                        {blockedList.map((dateStr) => (
+                          <div key={dateStr} className="bg-rose-50/50 border border-rose-100 p-2.5 rounded-xl flex items-center justify-between text-xs animate-in fade-in duration-200">
+                            <div>
+                              <div className="font-extrabold text-[#4A4A3A]">{dateStr}</div>
+                              <div className="text-[9px] text-rose-800 font-bold">مغلق للصيانة والخدمة ⚠️</div>
+                            </div>
+                            <button
+                              id={`unblock-btn-${dateStr}`}
+                              type="button"
+                              onClick={() => handleUnblockDate(dateStr, activeHouse)}
+                              className="bg-white hover:bg-emerald-50 border border-rose-200 hover:border-emerald-200 text-rose-700 hover:text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all shadow-sm cursor-pointer"
+                            >
+                              إلغاء الحظر 🔓
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Calendar Preview for July & August 2026 */}
+                <div className="space-y-3 pt-4 border-t border-[#EBEBE0]">
+                  <span className="text-xs font-black text-[#4A4A3A] block">📅 المعاينة الحية لجدول الإشغال الكلي:</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* July 2026 */}
+                    <div className="border border-[#D6D6C2] bg-white p-3 rounded-2xl space-y-2">
+                      <div className="text-center text-xs font-extrabold text-[#4A4A3A] pb-1.5 border-b border-[#EBEBE0]">يوليو ٢٠٢٦</div>
+                      <div className="grid grid-cols-7 gap-1 text-[9px] font-bold text-[#8A8A70] text-center mb-1">
+                        <div>ح</div><div>ن</div><div>ث</div><div>ر</div><div>خ</div><div>ج</div><div>س</div>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {/* July starts on Wednesday (3 padding days) */}
+                        {Array.from({ length: 3 }).map((_, i) => <div key={`pad-jul-${i}`} />)}
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                          const dateStr = `2026-07-${day < 10 ? '0' + day : day}`;
+                          const isBlocked = blockedList.includes(dateStr);
+                          const isBooked = isDateBooked(activeHouse.id, 2026, 7, day);
+
+                          return (
+                            <div 
+                              key={`jul-day-${day}`}
+                              className={`py-1 rounded text-center text-[10px] font-bold relative ${
+                                isBlocked 
+                                  ? 'bg-rose-600 text-white shadow-sm'
+                                  : isBooked
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                                  : 'bg-emerald-50 text-emerald-800 border border-emerald-100'
+                              }`}
+                              title={isBlocked ? 'مغلق ومحجوز يدوياً' : isBooked ? 'محجوز رسمياً' : 'شاغر ومتاح'}
+                            >
+                              {day}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* August 2026 */}
+                    <div className="border border-[#D6D6C2] bg-white p-3 rounded-2xl space-y-2">
+                      <div className="text-center text-xs font-extrabold text-[#4A4A3A] pb-1.5 border-b border-[#EBEBE0]">أغسطس ٢٠٢٦</div>
+                      <div className="grid grid-cols-7 gap-1 text-[9px] font-bold text-[#8A8A70] text-center mb-1">
+                        <div>ح</div><div>ن</div><div>ث</div><div>ر</div><div>خ</div><div>ج</div><div>س</div>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {/* August starts on Saturday (6 padding days) */}
+                        {Array.from({ length: 6 }).map((_, i) => <div key={`pad-aug-${i}`} />)}
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                          const dateStr = `2026-08-${day < 10 ? '0' + day : day}`;
+                          const isBlocked = blockedList.includes(dateStr);
+                          const isBooked = isDateBooked(activeHouse.id, 2026, 8, day);
+
+                          return (
+                            <div 
+                              key={`aug-day-${day}`}
+                              className={`py-1 rounded text-center text-[10px] font-bold relative ${
+                                isBlocked 
+                                  ? 'bg-rose-600 text-white shadow-sm'
+                                  : isBooked
+                                  ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                                  : 'bg-emerald-50 text-emerald-800 border border-emerald-100'
+                              }`}
+                              title={isBlocked ? 'مغلق ومحجوز يدوياً' : isBooked ? 'محجوز رسمياً' : 'شاغر ومتاح'}
+                            >
+                              {day}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="flex justify-center gap-4 text-[9.5px] font-bold text-[#8A8A70] pt-1">
+                    <span className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded bg-rose-600 border border-rose-700" />
+                      <span>مغلق يدويًا (صيانة / حجز داخلي)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded bg-amber-100 border border-amber-200" />
+                      <span>محجوز رسميًا (بطلب خلوة معتمد)</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded bg-emerald-50 border border-emerald-100" />
+                      <span>شاغر ومتاح للجميع</span>
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* 7. Reply to Reviews panel */}
+      {activeTab === 'reviews' && (
+        <div className="bg-white p-6 rounded-3xl border border-[#D6D6C2] text-right space-y-6 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3 border-b border-[#EBEBE0] pb-4">
+            <div className="p-2.5 rounded-2xl bg-[#EBEBE0]/30 text-[#5A5A40] border border-[#D6D6C2]/60">
+              <MessageSquare className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-[#4A4A3A]">صلاحية الرد الفوري على تقييمات الخدام باسم البيت 💬</h3>
+              <p className="text-[10px] text-[#8A8A70]">اكتب ردوداً ترحيبية رسمية باسم بيت المؤتمرات لبناء جسور الثقة مع الخدام والكهنة الزوار.</p>
+            </div>
+          </div>
+
+          {reviewsSuccessMsg && (
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-950 p-4 rounded-2xl flex items-center gap-3 text-xs font-bold animate-pulse">
+              <span className="text-lg">✅</span>
+              <span>{reviewsSuccessMsg}</span>
+            </div>
+          )}
+
+          {(() => {
+            // Get all reviews for owner's houses
+            const houseReviews = reviews.filter((r) => ownerHouseIds.includes(r.houseId));
+
+            if (houseReviews.length === 0) {
+              return (
+                <div className="text-center py-12 bg-[#FAF8F5] rounded-3xl border border-[#D6D6C2]/50 space-y-2">
+                  <p className="text-xs font-bold text-[#4A4A3A]">لا توجد أي تقييمات مكتوبة لبيتكم بعد.</p>
+                  <p className="text-[10px] text-[#8A8A70]">التقييمات المكتوبة من الخدام بعد إتمام خلوتهم ستظهر هنا فورا للرد عليها.</p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-4">
+                <span className="text-xs font-black text-[#4A4A3A] block px-1">تقييمات بيت المؤتمرات ({houseReviews.length}):</span>
+                
+                <div className="space-y-4">
+                  {houseReviews.map((rev) => (
+                    <div key={rev.id} className="bg-[#FAF8F5] border border-[#D6D6C2] rounded-3xl p-4 space-y-3 animate-in fade-in duration-200">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-extrabold text-[#4A4A3A]">{rev.userName}</span>
+                            <span className="text-[8.5px] bg-[#EBEBE0]/80 border border-[#D6D6C2]/50 text-[#5A5A40] px-1.5 py-0.5 rounded font-bold">
+                              {rev.userRole === 'owner' ? 'إدارة' : rev.userRole === 'admin' ? 'منسق بطريركي' : 'خادم كنسي'}
+                            </span>
+                          </div>
+                          <span className="text-[9.5px] text-[#8A8A70] font-medium block mt-0.5">{rev.houseName}</span>
+                        </div>
+
+                        {/* Stars */}
+                        <div className="bg-amber-50 border border-amber-200 text-amber-900 px-2 py-0.5 rounded-lg text-[10px] font-mono font-black">
+                          {rev.rating} / 5 ★
+                        </div>
+                      </div>
+
+                      {/* Criteria ratings */}
+                      <div className="flex flex-wrap gap-1.5 text-[9px] font-bold text-[#4A4A3A]">
+                        {rev.food_rating && <span className="bg-white border border-[#D6D6C2]/50 px-2 py-0.5 rounded-lg">🍗 طعام: {rev.food_rating}</span>}
+                        {rev.service_rating && <span className="bg-white border border-[#D6D6C2]/50 px-2 py-0.5 rounded-lg">🤵 خدمة: {rev.service_rating}</span>}
+                        {rev.cleanliness_rating && <span className="bg-white border border-[#D6D6C2]/50 px-2 py-0.5 rounded-lg">🧼 نظافة: {rev.cleanliness_rating}</span>}
+                        {rev.organization_rating && <span className="bg-white border border-[#D6D6C2]/50 px-2 py-0.5 rounded-lg">📋 تنظيم: {rev.organization_rating}</span>}
+                        {rev.value_rating && <span className="bg-white border border-[#D6D6C2]/50 px-2 py-0.5 rounded-lg">💰 قيمة: {rev.value_rating}</span>}
+                      </div>
+
+                      {/* Comment text */}
+                      <p className="text-[11px] text-[#4A4A3A] leading-relaxed font-medium bg-white p-3 rounded-2xl border border-[#D6D6C2]/50">
+                        "{rev.comment}"
+                      </p>
+
+                      {/* Review reply block */}
+                      {rev.ownerReply ? (
+                        <div className="bg-[#5A5A40]/5 border-r-2 border-[#5A5A40] p-3 rounded-l-2xl space-y-2">
+                          <div className="flex items-center justify-between text-[10px] font-extrabold text-[#5A5A40]">
+                            <span>رد الإدارة الحالي 🏨:</span>
+                            {rev.ownerReplyCreatedAt && (
+                              <span className="text-[8px] text-[#8A8A70] font-mono">{new Date(rev.ownerReplyCreatedAt).toLocaleDateString('ar-EG')}</span>
+                            )}
+                          </div>
+                          <p className="text-[10.5px] text-[#4A4A3A] leading-relaxed">
+                            {rev.ownerReply}
+                          </p>
+                          <div className="flex gap-2 justify-end pt-1">
+                            <button
+                              id={`edit-reply-${rev.id}`}
+                              type="button"
+                              onClick={() => {
+                                setReplyingToReviewId(rev.id);
+                                setReviewReplyText(rev.ownerReply || '');
+                              }}
+                              className="text-[9.5px] font-bold text-[#5A5A40] hover:underline"
+                            >
+                              تعديل الرد ✏️
+                            </button>
+                            <button
+                              id={`delete-reply-${rev.id}`}
+                              type="button"
+                              onClick={() => handleDeleteReply(rev.id)}
+                              className="text-[9.5px] font-bold text-red-600 hover:underline"
+                            >
+                              حذف الرد ✕
+                            </button>
+                          </div>
+                        </div>
+                      ) : replyingToReviewId === rev.id ? (
+                        <form 
+                          onSubmit={(e) => handleAddReplySubmit(e, rev.id)}
+                          className="space-y-2 pt-2 animate-in slide-in-from-top-1 duration-150"
+                        >
+                          <label className="block text-[10px] font-bold text-[#8A8A70]">اكتب ردك الرسمي باسم البيت:</label>
+                          <textarea
+                            id={`reply-textarea-${rev.id}`}
+                            required
+                            placeholder="نشكركم يا أحباء على تقييمكم الرائع وملاحظاتكم الثمينة، ونسعد دائما بخدمتكم في المسيح..."
+                            value={reviewReplyText}
+                            onChange={(e) => setReviewReplyText(e.target.value)}
+                            className="w-full bg-white border border-[#D6D6C2] rounded-xl p-2.5 text-[10.5px] text-[#4A4A3A] focus:outline-none focus:ring-1 focus:ring-[#5A5A40]"
+                            rows={3}
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              id={`submit-reply-${rev.id}`}
+                              type="submit"
+                              className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+                            >
+                              إرسال الرد الرسمي
+                            </button>
+                            <button
+                              id={`cancel-reply-${rev.id}`}
+                              type="button"
+                              onClick={() => {
+                                setReplyingToReviewId(null);
+                                setReviewReplyText('');
+                              }}
+                              className="bg-[#EBEBE0] text-[#4A4A3A] text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+                            >
+                              إلغاء
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <div className="flex justify-end">
+                          <button
+                            id={`start-reply-btn-${rev.id}`}
+                            type="button"
+                            onClick={() => {
+                              setReplyingToReviewId(rev.id);
+                              setReviewReplyText('');
+                            }}
+                            className="bg-[#5A5A40]/10 hover:bg-[#5A5A40]/20 text-[#5A5A40] text-[10.5px] font-extrabold px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1"
+                          >
+                            <span>💬 كتابة رد رسمي باسم المكان</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Smart Room Allocation Modal */}
+      {activeAllocationBooking && (() => {
+        const house = houses.find(h => h.id === activeAllocationBooking.houseId);
+        if (!house) return null;
+        return (
+          <RoomDistribution
+            booking={activeAllocationBooking}
+            house={house}
+            currentUser={owner}
+            onClose={() => setActiveAllocationBooking(null)}
+            globalAttendees={attendees}
+            globalAllocations={allocations}
+            onUpdateAttendees={onUpdateAttendees}
+            onUpdateAllocations={onUpdateAllocations}
+          />
+        );
+      })()}
+
+    </div>
+  );
+}

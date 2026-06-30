@@ -1,0 +1,6 @@
+{
+  "name": "حجز بيوت المؤتمرات",
+  "description": "تطبيق متكامل لحجز بيوت المؤتمرات والفنادق المسيحية في مصر للخدمات والكنائس والأفراد.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
