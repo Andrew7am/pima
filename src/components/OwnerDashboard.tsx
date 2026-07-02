@@ -37,9 +37,13 @@ export default function OwnerDashboard({
   reviews = [],
   onUpdateReview
 }: OwnerDashboardProps) {
-  // Tabs within Owner panel: 'stats', 'houses', 'add_house', 'bookings', 'profile', 'occupancy', 'reviews'
-  const [activeTab, setActiveTab] = useState<'stats' | 'houses' | 'add_house' | 'bookings' | 'profile' | 'occupancy' | 'reviews'>('stats');
+  // Tabs within Owner panel
+  const [activeTab, setActiveTab] = useState<'stats' | 'houses' | 'add_house' | 'bookings' | 'profile' | 'occupancy' | 'reviews' | 'financials'>('stats');
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
+  // Booking status filter for bookings tab
+  const [bookingFilter, setBookingFilter] = useState<'all' | 'new' | 'confirmed' | 'current' | 'completed' | 'cancelled'>('all');
+  // Platform commission rate (5%)
+  const PLATFORM_COMMISSION = 0.05;
 
   // Form states for profile editing
   const [profileName, setProfileName] = useState(owner.name);
@@ -251,6 +255,67 @@ export default function OwnerDashboard({
 
   const pendingBookings = ownerBookings.filter((b) => b.status === 'pending');
 
+  // ─── Enhanced statistics for the Owner Home dashboard ──────────────
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayBookings = ownerBookings.filter(
+    (b) => (b.status === 'approved' || b.status === 'completed') && b.checkIn <= todayStr && b.checkOut >= todayStr
+  );
+  const totalBookingsCount = ownerBookings.length;
+  const confirmedBookings = ownerBookings.filter((b) => b.status === 'approved' || b.status === 'completed');
+  const confirmedRevenue = confirmedBookings.reduce((sum, b) => sum + b.totalPrice, 0);
+  const platformCommissionAmount = confirmedRevenue * PLATFORM_COMMISSION;
+  const netOwnerPayout = confirmedRevenue - platformCommissionAmount;
+  const depositReceived = confirmedBookings.filter((b) => b.depositPaid).reduce((sum, b) => sum + b.depositAmount, 0);
+  const remainingBalance = confirmedRevenue - depositReceived;
+
+  // Occupancy rate for the current month
+  const now = new Date();
+  const curYear = now.getFullYear();
+  const curMonth = now.getMonth() + 1;
+  const daysInMonth = new Date(curYear, curMonth, 0).getDate();
+  const totalHouseDays = ownerHouses.length * daysInMonth;
+  const occupiedDays = ownerBookings.reduce((sum, b) => {
+    if (b.status !== 'approved' && b.status !== 'completed') return sum;
+    const bStart = new Date(b.checkIn);
+    const bEnd = new Date(b.checkOut);
+    const monthStart = new Date(curYear, curMonth - 1, 1);
+    const monthEnd = new Date(curYear, curMonth, 0);
+    if (bEnd < monthStart || bStart > monthEnd) return sum;
+    const overlapStart = bStart > monthStart ? bStart : monthStart;
+    const overlapEnd = bEnd < monthEnd ? bEnd : monthEnd;
+    const days = Math.max(0, Math.round((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    return sum + days;
+  }, 0);
+  const occupancyRate = totalHouseDays > 0 ? Math.round((occupiedDays / totalHouseDays) * 100) : 0;
+
+  // Average rating across owner's houses
+  const ownerReviews = reviews.filter((r) => ownerHouseIds.includes(r.houseId));
+  const avgRating = ownerReviews.length > 0
+    ? (ownerReviews.reduce((sum, r) => sum + r.rating, 0) / ownerReviews.length)
+    : 0;
+
+  // Categorize bookings for the Bookings tab
+  const categorizeBooking = (b: Booking): 'new' | 'confirmed' | 'current' | 'completed' | 'cancelled' => {
+    if (b.status === 'pending') return 'new';
+    if (b.status === 'rejected') return 'cancelled';
+    if (b.status === 'completed') return 'completed';
+    // approved: check if current or upcoming
+    if (b.checkIn <= todayStr && b.checkOut >= todayStr) return 'current';
+    if (b.checkOut < todayStr) return 'completed';
+    return 'confirmed';
+  };
+  const filteredOwnerBookings = bookingFilter === 'all'
+    ? ownerBookings
+    : ownerBookings.filter((b) => categorizeBooking(b) === bookingFilter);
+  const bookingCountByCategory = {
+    all: ownerBookings.length,
+    new: ownerBookings.filter((b) => categorizeBooking(b) === 'new').length,
+    confirmed: ownerBookings.filter((b) => categorizeBooking(b) === 'confirmed').length,
+    current: ownerBookings.filter((b) => categorizeBooking(b) === 'current').length,
+    completed: ownerBookings.filter((b) => categorizeBooking(b) === 'completed').length,
+    cancelled: ownerBookings.filter((b) => categorizeBooking(b) === 'cancelled').length,
+  };
+
   const handleServiceToggle = (srv: string) => {
     if (selectedServices.includes(srv)) {
       setSelectedServices(selectedServices.filter((s) => s !== srv));
@@ -433,6 +498,15 @@ export default function OwnerDashboard({
           💬 الردود باسمنا
         </button>
         <button
+          id="owner-tab-financials"
+          onClick={() => setActiveTab('financials')}
+          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'financials' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          💰 الحسابات
+        </button>
+        <button
           id="owner-tab-add"
           onClick={() => ownerHouses.length === 0 && setActiveTab('add_house')}
           disabled={ownerHouses.length >= 1}
@@ -458,22 +532,61 @@ export default function OwnerDashboard({
 
       {/* Tab Contents */}
 
-      {/* 1. Stats and metrics */}
+      {/* 1. Stats and metrics — Owner Home Dashboard */}
       {activeTab === 'stats' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-2 text-right">
-              <Coins className="w-5 h-5 text-[#5A5A40]" />
-              <div className="text-[10px] text-[#8A8A70] font-bold">العربين المستلمة فوريًا:</div>
-              <div className="text-lg font-extrabold text-[#4A4A3A]">{totalRevenue.toLocaleString()} ج.م</div>
-              <div className="text-[9px] text-[#8A8A70]">من إجمالي {totalFullBookingsValue.toLocaleString()} ج.م حجوزات مؤكدة.</div>
+          {/* Top KPIs — 6 core metrics */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-1 text-right">
+              <ClipboardList className="w-4 h-4 text-[#5A5A40]" />
+              <div className="text-[9px] text-[#8A8A70] font-bold">إجمالي الحجوزات</div>
+              <div className="text-lg font-extrabold text-[#4A4A3A]">{totalBookingsCount}</div>
             </div>
+            <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-1 text-right relative">
+              <Plus className="w-4 h-4 text-amber-600" />
+              <div className="text-[9px] text-[#8A8A70] font-bold">حجوزات جديدة</div>
+              <div className="text-lg font-extrabold text-amber-700">{pendingBookings.length}</div>
+              {pendingBookings.length > 0 && <span className="absolute top-2 left-2 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
+            </div>
+            <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-1 text-right">
+              <Calendar className="w-4 h-4 text-emerald-700" />
+              <div className="text-[9px] text-[#8A8A70] font-bold">الحجوزات اليوم</div>
+              <div className="text-lg font-extrabold text-emerald-700">{todayBookings.length}</div>
+            </div>
+            <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-1 text-right">
+              <Home className="w-4 h-4 text-[#5A5A40]" />
+              <div className="text-[9px] text-[#8A8A70] font-bold">نسبة الإشغال (شهر جاري)</div>
+              <div className="text-lg font-extrabold text-[#4A4A3A]">{occupancyRate}%</div>
+            </div>
+            <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-1 text-right">
+              <Coins className="w-4 h-4 text-[#5A5A40]" />
+              <div className="text-[9px] text-[#8A8A70] font-bold">إجمالي الإيرادات</div>
+              <div className="text-base font-extrabold text-[#4A4A3A]">{confirmedRevenue.toLocaleString()} ج.م</div>
+            </div>
+            <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-1 text-right">
+              <Star className="w-4 h-4 text-amber-500" />
+              <div className="text-[9px] text-[#8A8A70] font-bold">متوسط التقييم</div>
+              <div className="text-lg font-extrabold text-[#4A4A3A]">
+                {avgRating > 0 ? avgRating.toFixed(1) : '—'} <span className="text-[10px] text-[#8A8A70]">/ 5</span>
+              </div>
+            </div>
+          </div>
 
-            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-2 text-right">
-              <ClipboardList className="w-5 h-5 text-[#8A8A70]" />
-              <div className="text-[10px] text-[#8A8A70] font-bold">الحجوزات المعلقة:</div>
-              <div className="text-lg font-extrabold text-[#4A4A3A]">{pendingBookings.length} حجز</div>
-              <div className="text-[9px] text-[#8A8A70]">تنتظر مراجعتك وقبولك لتأكيد التواريخ.</div>
+          {/* Net owner payout after commission */}
+          <div className="bg-gradient-to-l from-emerald-50 to-white rounded-2xl p-4 border border-emerald-200 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <Coins className="w-5 h-5 text-emerald-700" />
+              <span className="text-[11px] font-black text-emerald-900">صافي مستحقاتك بعد عمولة التطبيق ({(PLATFORM_COMMISSION * 100).toFixed(0)}%)</span>
+            </div>
+            <div className="text-2xl font-extrabold text-emerald-900">{netOwnerPayout.toLocaleString()} ج.م</div>
+            <div className="text-[10px] text-emerald-800/70">
+              من إجمالي {confirmedRevenue.toLocaleString()} ج.م − عمولة {platformCommissionAmount.toLocaleString()} ج.م
+              <button
+                onClick={() => setActiveTab('financials')}
+                className="mr-2 underline font-bold text-emerald-900 hover:text-emerald-950 cursor-pointer"
+              >
+                عرض التفاصيل الكاملة ←
+              </button>
             </div>
           </div>
 
@@ -874,15 +987,45 @@ export default function OwnerDashboard({
       {/* 3. Bookings Management */}
       {activeTab === 'bookings' && (
         <div className="space-y-3">
-          <div className="text-xs font-bold text-[#8A8A70] px-1">إدارة طلبات الحجز المعلقة والمؤكدة:</div>
-          
-          {ownerBookings.length === 0 ? (
+          <div className="text-xs font-bold text-[#8A8A70] px-1">إدارة طلبات الحجز حسب الحالة:</div>
+
+          {/* Booking status filter chips */}
+          <div className="flex flex-wrap gap-1.5 bg-white border border-[#D6D6C2] p-1.5 rounded-2xl">
+            {([
+              { key: 'all', label: 'الكل', color: 'bg-[#5A5A40]' },
+              { key: 'new', label: 'جديدة', color: 'bg-amber-600' },
+              { key: 'confirmed', label: 'مؤكدة', color: 'bg-emerald-600' },
+              { key: 'current', label: 'حالية', color: 'bg-sky-600' },
+              { key: 'completed', label: 'مكتملة', color: 'bg-slate-500' },
+              { key: 'cancelled', label: 'ملغاة', color: 'bg-rose-500' },
+            ] as const).map((f) => {
+              const isSel = bookingFilter === f.key;
+              const count = bookingCountByCategory[f.key];
+              return (
+                <button
+                  key={f.key}
+                  id={`owner-booking-filter-${f.key}`}
+                  onClick={() => setBookingFilter(f.key)}
+                  className={`flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
+                    isSel ? `${f.color} text-white shadow-sm` : 'bg-[#EBEBE0]/40 text-[#8A8A70] hover:bg-[#EBEBE0]/70'
+                  }`}
+                >
+                  <span>{f.label}</span>
+                  <span className={`text-[9px] px-1.5 rounded-full ${isSel ? 'bg-white/25' : 'bg-white border border-[#D6D6C2] text-[#4A4A3A]'}`}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {filteredOwnerBookings.length === 0 ? (
             <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center">
-              <p className="text-xs text-[#8A8A70]">لا يوجد أي حجوزات واردة لبيوتك بعد.</p>
+              <p className="text-xs text-[#8A8A70]">
+                {ownerBookings.length === 0 ? 'لا يوجد أي حجوزات واردة لبيوتك بعد.' : 'لا توجد حجوزات في هذا التصنيف حالياً.'}
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
-              {ownerBookings.map((booking) => {
+              {filteredOwnerBookings.map((booking) => {
                 const isPending = booking.status === 'pending';
 
                 return (
@@ -1373,6 +1516,101 @@ export default function OwnerDashboard({
           </button>
         </form>
         )
+      )}
+
+      {/* 4b. Financials & Platform Commission */}
+      {activeTab === 'financials' && (
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          {/* Revenue overview */}
+          <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-3 text-right">
+            <h3 className="text-xs font-black text-[#4A4A3A] border-b border-[#EBEBE0] pb-2">📊 نظرة عامة على الإيرادات</h3>
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div className="bg-[#EBEBE0]/30 p-2.5 rounded-xl border border-[#D6D6C2]/60">
+                <div className="text-[9px] text-[#8A8A70] font-bold mb-0.5">إجمالي قيمة الحجوزات المؤكدة</div>
+                <div className="text-sm font-extrabold text-[#4A4A3A]">{confirmedRevenue.toLocaleString()} ج.م</div>
+              </div>
+              <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
+                <div className="text-[9px] text-emerald-800 font-bold mb-0.5">العربون المستلم</div>
+                <div className="text-sm font-extrabold text-emerald-900">{depositReceived.toLocaleString()} ج.م</div>
+              </div>
+              <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                <div className="text-[9px] text-amber-800 font-bold mb-0.5">المبلغ المتبقي (لم يُحصّل بعد)</div>
+                <div className="text-sm font-extrabold text-amber-900">{remainingBalance.toLocaleString()} ج.م</div>
+              </div>
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                <div className="text-[9px] text-slate-700 font-bold mb-0.5">عدد الحجوزات المؤكدة</div>
+                <div className="text-sm font-extrabold text-slate-800">{confirmedBookings.length} حجز</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Commission breakdown */}
+          <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-3 text-right">
+            <h3 className="text-xs font-black text-[#4A4A3A] border-b border-[#EBEBE0] pb-2">🧾 عمولة التطبيق ({(PLATFORM_COMMISSION * 100).toFixed(0)}%)</h3>
+            <div className="space-y-2 text-[11px]">
+              <div className="flex justify-between items-center bg-[#EBEBE0]/20 p-2.5 rounded-xl border border-[#D6D6C2]/50">
+                <span className="text-[#8A8A70] font-bold">إجمالي قيمة الحجوزات</span>
+                <span className="font-extrabold text-[#4A4A3A]">{confirmedRevenue.toLocaleString()} ج.م</span>
+              </div>
+              <div className="flex justify-between items-center bg-rose-50 p-2.5 rounded-xl border border-rose-200">
+                <span className="text-rose-800 font-bold">عمولة المنصة ({(PLATFORM_COMMISSION * 100).toFixed(0)}%)</span>
+                <span className="font-extrabold text-rose-900">− {platformCommissionAmount.toLocaleString()} ج.م</span>
+              </div>
+              <div className="flex justify-between items-center bg-emerald-100 p-3 rounded-xl border-2 border-emerald-400">
+                <span className="text-emerald-900 font-black">✓ صافي مستحقاتك</span>
+                <span className="text-base font-black text-emerald-900">{netOwnerPayout.toLocaleString()} ج.م</span>
+              </div>
+            </div>
+            <div className="text-[10px] text-[#8A8A70] bg-[#EBEBE0]/30 p-2 rounded-lg border border-[#D6D6C2]/40 flex items-start gap-1.5">
+              <Info className="w-3 h-3 shrink-0 mt-0.5" />
+              <span>يتم خصم عمولة التطبيق تلقائياً من كل حجز مؤكد. صافي المستحقات هو المبلغ الذي سيتم تحويله لحسابك البنكي بعد استلام الدفعة كاملة من العميل.</span>
+            </div>
+          </div>
+
+          {/* Per-booking commission ledger */}
+          <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-3 text-right">
+            <h3 className="text-xs font-black text-[#4A4A3A] border-b border-[#EBEBE0] pb-2">📝 سجل العمليات المالية</h3>
+            {confirmedBookings.length === 0 ? (
+              <p className="text-[11px] text-[#8A8A70] text-center py-3">لا توجد حجوزات مؤكدة بعد.</p>
+            ) : (
+              <div className="overflow-x-auto -mx-2">
+                <table className="min-w-full text-[10px] text-right">
+                  <thead className="bg-[#EBEBE0]/40 text-[#4A4A3A] font-extrabold">
+                    <tr>
+                      <th className="px-2 py-1.5">رقم الحجز</th>
+                      <th className="px-2 py-1.5">القيمة</th>
+                      <th className="px-2 py-1.5">العمولة ({(PLATFORM_COMMISSION * 100).toFixed(0)}%)</th>
+                      <th className="px-2 py-1.5">الصافي</th>
+                      <th className="px-2 py-1.5">الحالة</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {confirmedBookings.map((b) => {
+                      const comm = b.totalPrice * PLATFORM_COMMISSION;
+                      const net = b.totalPrice - comm;
+                      const transferred = b.depositPaid;
+                      return (
+                        <tr key={b.id} className="border-t border-[#EBEBE0]/60">
+                          <td className="px-2 py-1.5 font-mono text-[9px] text-[#8A8A70]">#{b.id.replace('booking_', '').slice(0, 8)}</td>
+                          <td className="px-2 py-1.5 font-bold text-[#4A4A3A]">{b.totalPrice.toLocaleString()}</td>
+                          <td className="px-2 py-1.5 text-rose-700 font-bold">− {comm.toLocaleString()}</td>
+                          <td className="px-2 py-1.5 text-emerald-800 font-extrabold">{net.toLocaleString()}</td>
+                          <td className="px-2 py-1.5">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                              transferred ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'
+                            }`}>
+                              {transferred ? 'تم التحويل' : 'قيد المراجعة'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* 5. Owner Profile Settings */}
