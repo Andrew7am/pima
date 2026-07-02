@@ -11,6 +11,9 @@ interface OwnerDashboardProps {
   onAddHouse: (house: RetreatHouse) => void;
   onApproveBooking: (bookingId: string) => void;
   onRejectBooking: (bookingId: string) => void;
+  onConfirmDeposit?: (bookingId: string) => void;
+  onCheckInBooking?: (bookingId: string) => void;
+  onCheckOutBooking?: (bookingId: string) => void;
   attendees: Attendee[];
   allocations: RoomAllocation[];
   onUpdateAttendees: (bookingId: string, attendees: Attendee[]) => void;
@@ -28,6 +31,9 @@ export default function OwnerDashboard({
   onAddHouse,
   onApproveBooking,
   onRejectBooking,
+  onConfirmDeposit,
+  onCheckInBooking,
+  onCheckOutBooking,
   attendees,
   allocations,
   onUpdateAttendees,
@@ -1027,6 +1033,19 @@ export default function OwnerDashboard({
             <div className="space-y-3">
               {filteredOwnerBookings.map((booking) => {
                 const isPending = booking.status === 'pending';
+                const isApproved = booking.status === 'approved';
+                const isCompleted = booking.status === 'completed';
+                const category = categorizeBooking(booking);
+                const depositAmt = booking.depositAmount || Math.round(booking.totalPrice * 0.15);
+                const remainingBalance = booking.totalPrice - (booking.depositPaid ? depositAmt : 0);
+
+                const statusBadge = (() => {
+                  if (booking.status === 'rejected') return { label: 'ملغى / مرفوض', cls: 'bg-rose-50 text-rose-800 border-rose-200' };
+                  if (booking.status === 'completed') return { label: 'مكتمل', cls: 'bg-slate-100 text-slate-700 border-slate-200' };
+                  if (isPending) return { label: 'جديد ⚠️', cls: 'bg-amber-50 text-amber-800 border-amber-200' };
+                  if (category === 'current') return { label: 'حالي (نازل الآن)', cls: 'bg-sky-50 text-sky-800 border-sky-200' };
+                  return { label: 'مؤكد', cls: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
+                })();
 
                 return (
                   <div id={`owner-booking-${booking.id}`} key={booking.id} className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm p-4 space-y-3 text-right">
@@ -1034,55 +1053,85 @@ export default function OwnerDashboard({
                       <div>
                         <span className="text-[9px] text-[#8A8A70] font-bold">الحساب: {booking.userName}</span>
                         <h4 className="text-xs font-bold text-[#4A4A3A] mt-0.5">{booking.houseName}</h4>
-                        <div className="text-[10px] text-[#8A8A70] font-medium">رقم الهاتف: {booking.userPhone}</div>
+                        <div className="text-[10px] text-[#8A8A70] font-medium">
+                          {booking.organizationName && <span>{booking.organizationName} • </span>}
+                          رقم الهاتف: {booking.userPhone}
+                        </div>
                       </div>
-                      
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        booking.status === 'approved' 
-                          ? 'bg-emerald-50 text-emerald-850' 
-                          : booking.status === 'rejected'
-                          ? 'bg-rose-50 text-rose-800'
-                          : 'bg-amber-50 text-amber-800'
-                      }`}>
-                        {booking.status === 'approved' ? 'مقبول ومؤكد' : booking.status === 'rejected' ? 'مرفوض' : 'معلق'}
+
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusBadge.cls}`}>
+                        {statusBadge.label}
                       </span>
                     </div>
 
                     <div className="bg-[#EBEBE0]/30 rounded-2xl p-3 grid grid-cols-2 gap-2 text-[10px] text-[#4A4A3A] font-medium border border-[#D6D6C2]">
-                      <div>تاريخ الدخول: <strong className="text-[#4A4A3A] font-bold">{booking.checkIn}</strong></div>
-                      <div>تاريخ الخروج: <strong className="text-[#4A4A3A] font-bold">{booking.checkOut}</strong></div>
-                      <div>عدد الحاضرين: <strong className="text-[#4A4A3A] font-bold">{booking.guestsCount} فرد</strong></div>
-                      <div>السعر الكلي: <strong className="text-[#5A5A40] font-extrabold">{booking.totalPrice.toLocaleString()} ج.م</strong></div>
+                      <div>تاريخ الوصول: <strong className="text-[#4A4A3A] font-bold">{booking.checkIn}</strong></div>
+                      <div>تاريخ المغادرة: <strong className="text-[#4A4A3A] font-bold">{booking.checkOut}</strong></div>
+                      <div>عدد الأفراد: <strong className="text-[#4A4A3A] font-bold">{booking.guestsCount} فرد</strong></div>
+                      <div>قيمة الحجز: <strong className="text-[#5A5A40] font-extrabold">{booking.totalPrice.toLocaleString()} ج.م</strong></div>
                     </div>
 
+                    {/* Financial breakdown: deposit + remaining */}
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div className={`p-2 rounded-xl border ${booking.depositPaid ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
+                        <div className="font-bold text-[9px] mb-0.5" style={{ color: booking.depositPaid ? '#065f46' : '#92400e' }}>
+                          {booking.depositPaid ? '✓ العربون المستلم' : 'العربون (لم يُستلم)'}
+                        </div>
+                        <div className="font-extrabold" style={{ color: booking.depositPaid ? '#065f46' : '#92400e' }}>
+                          {depositAmt.toLocaleString()} ج.م
+                        </div>
+                      </div>
+                      <div className="p-2 rounded-xl border bg-slate-50 border-slate-200">
+                        <div className="text-slate-700 font-bold text-[9px] mb-0.5">المبلغ المتبقي</div>
+                        <div className="text-slate-800 font-extrabold">{remainingBalance.toLocaleString()} ج.م</div>
+                      </div>
+                    </div>
+
+                    {/* Client notes / conference requests */}
                     {booking.isLargeConferenceQuote && booking.conferenceDetails && (
                       <div className="bg-amber-50/40 p-2.5 rounded-xl border border-amber-200/60 text-[10px] text-[#4A4A3A] space-y-1">
-                        <span className="font-bold text-amber-900 block">تفاصيل طلب عرض السعر للمؤتمر:</span>
+                        <span className="font-bold text-amber-900 block">📝 ملاحظات وطلبات العميل:</span>
                         <p className="italic text-slate-700">{booking.conferenceDetails.extraRequests}</p>
-                        <span className="text-amber-800 font-semibold">• مطلوب حجز القاعة والوجبات الغذائية كاملة</span>
+                        {booking.conferenceDetails.mealsIncluded && (
+                          <span className="text-amber-800 font-semibold">• مطلوب تقديم الوجبات الغذائية كاملة مع القاعة</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Check-in / Check-out timestamps */}
+                    {(booking.checkedInAt || booking.checkedOutAt) && (
+                      <div className="grid grid-cols-2 gap-2 text-[9px] text-[#8A8A70] bg-[#FBFBFA] p-2 rounded-xl border border-[#D6D6C2]/50">
+                        {booking.checkedInAt && (
+                          <div className="text-sky-800">
+                            🏠 وصل: {new Date(booking.checkedInAt).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
+                          </div>
+                        )}
+                        {booking.checkedOutAt && (
+                          <div className="text-slate-700">
+                            🚪 غادر: {new Date(booking.checkedOutAt).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* Pending Actions */}
                     {isPending && (
-                      <div className="flex gap-2 justify-end pt-2">
+                      <div className="flex gap-2 justify-end pt-2 flex-wrap">
                         <button
                           id={`reject-booking-btn-${booking.id}`}
                           onClick={() => {
-                            onRejectBooking(booking.id);
-                            alert('تم رفض طلب الحجز.');
+                            if (confirm('هل أنت متأكد من رفض هذا الحجز؟')) {
+                              onRejectBooking(booking.id);
+                            }
                           }}
-                          className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-rose-50 hover:text-rose-750 text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                          className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-rose-50 hover:text-rose-800 text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
                         >
                           <X className="w-4 h-4" />
                           <span>رفض الطلب</span>
                         </button>
                         <button
                           id={`approve-booking-btn-${booking.id}`}
-                          onClick={() => {
-                            onApproveBooking(booking.id);
-                            alert('تم الموافقة على الحجز بنجاح! سيتم إخطار المستخدم.');
-                          }}
+                          onClick={() => onApproveBooking(booking.id)}
                           className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-1.5 rounded-xl text-xs font-extrabold transition-all shadow-sm cursor-pointer"
                         >
                           <Check className="w-4 h-4" />
@@ -1091,15 +1140,66 @@ export default function OwnerDashboard({
                       </div>
                     )}
 
-                    {!isPending && (booking.status === 'approved' || booking.status === 'completed') && (
-                      <div className="flex justify-end pt-1">
+                    {/* Approved bookings: 4 workflow actions */}
+                    {isApproved && (
+                      <div className="flex gap-2 justify-end pt-2 flex-wrap">
+                        {!booking.depositPaid && onConfirmDeposit && (
+                          <button
+                            id={`confirm-deposit-btn-${booking.id}`}
+                            onClick={() => {
+                              if (confirm(`تأكيد استلام عربون بمبلغ ${depositAmt.toLocaleString()} ج.م؟`)) {
+                                onConfirmDeposit(booking.id);
+                              }
+                            }}
+                            className="flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                          >
+                            <Coins className="w-4 h-4" />
+                            <span>تأكيد استلام العربون</span>
+                          </button>
+                        )}
+                        {!booking.checkedInAt && onCheckInBooking && (
+                          <button
+                            id={`checkin-btn-${booking.id}`}
+                            onClick={() => onCheckInBooking(booking.id)}
+                            className="flex items-center gap-1 bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                          >
+                            <Home className="w-4 h-4" />
+                            <span>تسجيل وصول</span>
+                          </button>
+                        )}
+                        {booking.checkedInAt && !booking.checkedOutAt && onCheckOutBooking && (
+                          <button
+                            id={`checkout-btn-${booking.id}`}
+                            onClick={() => {
+                              if (confirm('تسجيل مغادرة العميل وإنهاء الحجز؟')) {
+                                onCheckOutBooking(booking.id);
+                              }
+                            }}
+                            className="flex items-center gap-1 bg-slate-600 hover:bg-slate-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                          >
+                            <span>🚪 تسجيل مغادرة</span>
+                          </button>
+                        )}
                         <button
                           id={`owner-allocate-btn-${booking.id}`}
                           onClick={() => setActiveAllocationBooking(booking)}
                           className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
                         >
                           <Building className="w-4 h-4 text-amber-700" />
-                          <span>توزيع وإدارة غرف المؤتمر 🛏️</span>
+                          <span>توزيع الغرف 🛏️</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {isCompleted && (
+                      <div className="flex justify-end pt-1">
+                        <button
+                          id={`owner-allocate-btn-${booking.id}`}
+                          onClick={() => setActiveAllocationBooking(booking)}
+                          className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                        >
+                          <Building className="w-4 h-4" />
+                          <span>عرض توزيع الغرف</span>
                         </button>
                       </div>
                     )}

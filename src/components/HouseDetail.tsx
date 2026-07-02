@@ -962,6 +962,17 @@ export default function HouseDetail({
               <div className="text-[#5A5A40] font-extrabold">{house.pricePerNightPerPerson} ج.م <span className="text-[10px] text-[#8A8A70] font-medium">لكل فرد / ليلة</span></div>
             )}
           </div>
+
+          {/* Privacy notice — contact info only revealed after paid booking */}
+          {!isOwnerOrAdmin && (
+            <div className="mt-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2 text-[10px] text-slate-700">
+              <span className="text-sm">🔒</span>
+              <div>
+                <span className="font-extrabold text-slate-800 block">حفاظاً على سرية بيانات المالك</span>
+                <span>لن تظهر أرقام الهاتف، الواتساب، ولا العنوان التفصيلي إلا بعد تأكيد الحجز واستلام العربون. الموقع على الخريطة يوضح المنطقة العامة.</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

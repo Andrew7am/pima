@@ -338,6 +338,58 @@ export default function App() {
     }
   };
 
+  // Owner marks that they've received the deposit in-person / off-platform
+  const handleConfirmDepositReceived = (bookingId: string) => {
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === bookingId
+          ? { ...b, depositPaid: true, depositAmount: b.depositAmount || Math.round(b.totalPrice * 0.15), paymentStatus: 'paid_deposit' }
+          : b
+      )
+    );
+    const b = bookings.find((bk) => bk.id === bookingId);
+    if (b) {
+      setNotifications((prev) => [{
+        id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
+        title: 'تم استلام العربون بنجاح ✓',
+        message: `أكد ${b.houseName} استلام العربون بمبلغ ${(b.depositAmount || Math.round(b.totalPrice * 0.15)).toLocaleString()} ج.م. الحجز مؤمن الآن.`,
+        type: 'success', isRead: false, createdAt: new Date().toISOString()
+      }, ...prev]);
+    }
+  };
+
+  // Owner marks guest as checked in (arrived on-site)
+  const handleCheckInBooking = (bookingId: string) => {
+    setBookings((prev) =>
+      prev.map((b) => (b.id === bookingId ? { ...b, checkedInAt: new Date().toISOString() } as Booking : b))
+    );
+    const b = bookings.find((bk) => bk.id === bookingId);
+    if (b) {
+      setNotifications((prev) => [{
+        id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
+        title: 'تم تسجيل وصولك 🏠',
+        message: `تم تسجيل وصولك بنجاح لبيت "${b.houseName}". نتمنى لك إقامة مباركة وممتعة!`,
+        type: 'info', isRead: false, createdAt: new Date().toISOString()
+      }, ...prev]);
+    }
+  };
+
+  // Owner marks guest as checked out (booking completed)
+  const handleCheckOutBooking = (bookingId: string) => {
+    setBookings((prev) =>
+      prev.map((b) => (b.id === bookingId ? { ...b, status: 'completed', checkedOutAt: new Date().toISOString() } as Booking : b))
+    );
+    const b = bookings.find((bk) => bk.id === bookingId);
+    if (b) {
+      setNotifications((prev) => [{
+        id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
+        title: 'شكراً لإقامتك 💚',
+        message: `تمت مغادرتك من "${b.houseName}". يسعدنا مشاركتك تقييمك للبيت لتساعد الآخرين.`,
+        type: 'success', isRead: false, createdAt: new Date().toISOString()
+      }, ...prev]);
+    }
+  };
+
   // --- Egyptian Payment System Operations ---
   const handleSubmitPayment = (payment: Payment) => {
     setPayments((prev) => [payment, ...prev]);
@@ -611,6 +663,7 @@ export default function App() {
             <UserBookings
               bookings={bookings}
               houses={houses}
+              users={users}
               currentUser={currentUser}
               onPayDeposit={handlePayDeposit}
               attendees={attendees}
@@ -631,6 +684,9 @@ export default function App() {
               onAddHouse={handleAddHouse}
               onApproveBooking={handleApproveBooking}
               onRejectBooking={handleRejectBooking}
+              onConfirmDeposit={handleConfirmDepositReceived}
+              onCheckInBooking={handleCheckInBooking}
+              onCheckOutBooking={handleCheckOutBooking}
               attendees={attendees}
               allocations={allocations}
               onUpdateAttendees={handleUpdateAttendees}

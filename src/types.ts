@@ -116,6 +116,8 @@ export interface Booking {
     mealsIncluded: boolean;
     extraRequests: string;
   };
+  checkedInAt?: string;
+  checkedOutAt?: string;
   createdAt: string;
 }
 
