@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './lib/supabase';
-import { loadHouses, loadBookings, loadReviews, loadPayments } from './lib/db';
+import {
+  loadHouses, loadBookings, loadReviews, loadPayments, loadNotifications,
+  createBooking, updateBookingStatus, updateBookingFields,
+  createReview, updateReview as updateReviewDb, createPayment,
+  createNotification, markNotificationRead,
+} from './lib/db';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment } from './types';
 import { INITIAL_USERS } from './mockData';
 
@@ -62,12 +67,16 @@ export default function App() {
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
 
   // --- Supabase Data Loading ---
-  const loadAppData = useCallback(async () => {
+  const loadAppData = useCallback(async (userId?: string) => {
     const [h, b, r, p] = await Promise.all([loadHouses(), loadBookings(), loadReviews(), loadPayments()]);
     setHouses(h);
     setBookings(b);
     setReviews(r);
     setPayments(p);
+    if (userId) {
+      const n = await loadNotifications(userId);
+      setNotifications(n);
+    }
   }, []);
 
   const loadUserProfile = useCallback(async (userId: string) => {
@@ -89,7 +98,7 @@ export default function App() {
       if (user.role === 'owner') setActiveScreen('owner_panel');
       else if (user.role === 'admin') setActiveScreen('admin_panel');
       else setActiveScreen('explore');
-      loadAppData();
+      loadAppData(user.id);
     }
     setIsAuthLoading(false);
   }, [loadAppData]);
@@ -225,7 +234,17 @@ export default function App() {
   };
 
   // --- Booking Operations ---
-  const handleBookHouse = (newBooking: Booking, pointsRedeemed: number = 0) => {
+  const handleBookHouse = async (newBooking: Booking, pointsRedeemed: number = 0) => {
+    // Persist to Supabase first — the DB's exclusion constraint enforces no double-booking
+    const res = await createBooking(newBooking);
+    if (!res.ok) {
+      if (res.error === 'DATE_CONFLICT') {
+        alert('عذراً، هذه التواريخ محجوزة الآن من عميل آخر. الرجاء اختيار تواريخ أخرى.');
+      } else {
+        alert('حدث خطأ في حفظ الحجز. حاول مرة أخرى.');
+      }
+      return;
+    }
     setBookings((prev) => [newBooking, ...prev]);
 
     // Calculate points earned for this booking (10% of booking price)
@@ -282,118 +301,140 @@ export default function App() {
   };
 
   const handlePayDeposit = (bookingId: string) => {
+    const target = bookings.find((b) => b.id === bookingId);
+    const depositAmount = target ? Math.round(target.totalPrice * 0.15) : 0;
     setBookings((prev) =>
       prev.map((b) =>
-        b.id === bookingId
-          ? { ...b, depositPaid: true, depositAmount: Math.round(b.totalPrice * 0.15) }
-          : b
+        b.id === bookingId ? { ...b, depositPaid: true, depositAmount } : b
       )
     );
+    updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' });
   };
 
   // --- Owner Operations ---
   const handleAddHouse = (newHouse: RetreatHouse) => {
     setHouses((prev) => [newHouse, ...prev]);
+    supabase.from('houses').insert({
+      id: newHouse.id, name: newHouse.name, description: newHouse.description,
+      owner_id: newHouse.ownerId, owner_name: newHouse.ownerName,
+      governorate: newHouse.governorate, address: newHouse.address,
+      lat: newHouse.lat, lng: newHouse.lng,
+      rooms_count: newHouse.roomsCount, beds_count: newHouse.bedsCount,
+      rooms_description: newHouse.roomsDescription,
+      price_per_night_per_person: newHouse.pricePerNightPerPerson,
+      services: newHouse.services, suitability: newHouse.suitability,
+      activities: newHouse.activities, images: newHouse.images,
+      conference_halls: newHouse.conferenceHalls, restaurants: newHouse.restaurants,
+      status: newHouse.status, rating: newHouse.rating, reviews_count: newHouse.reviewsCount,
+      property_type: newHouse.propertyType ?? null,
+      sea_proximity: newHouse.seaProximity ?? null,
+      student_housing_gender: newHouse.studentHousingGender ?? null,
+      distance_from_university: newHouse.distanceFromUniversity ?? null,
+      monthly_rent: newHouse.monthlyRent ?? null,
+      room_capacity: newHouse.roomCapacity ?? null,
+      housing_rules: newHouse.housingRules ?? [],
+      contract_terms: newHouse.contractTerms ?? null,
+      menu: newHouse.menu ?? null,
+      created_at: newHouse.createdAt,
+    }).then(({ error }) => { if (error) console.error('addHouse:', error); });
+  };
+
+  const pushNotification = (n: AppNotification) => {
+    setNotifications((prev) => [n, ...prev]);
+    createNotification(n);
   };
 
   const handleApproveBooking = (bookingId: string) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, status: 'approved' } : b))
-    );
-    // Find booking to notify
+    setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'approved' } : b)));
+    updateBookingStatus(bookingId, 'approved');
     const b = bookings.find((bk) => bk.id === bookingId);
     if (b) {
-      const newNotif: AppNotification = {
-        id: `notif_${Date.now()}`,
-        userId: b.userId,
-        bookingId: b.id,
+      pushNotification({
+        id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
         title: 'تم قبول وتأكيد الحجز 🎉',
-        message: `تهانينا! تم قبول وتأكيد حجزك في "${b.houseName}" للفترة من ${b.checkIn} إلى ${b.checkOut}. يمكنك الآن توزيع الغرف والمتابعة.`,
-        type: 'success',
-        isRead: false,
-        createdAt: new Date().toISOString()
-      };
-      setNotifications((prev) => [newNotif, ...prev]);
+        message: `تهانينا! تم قبول وتأكيد حجزك في "${b.houseName}" للفترة من ${b.checkIn} إلى ${b.checkOut}.`,
+        type: 'success', isRead: false, createdAt: new Date().toISOString()
+      });
     }
   };
 
   const handleRejectBooking = (bookingId: string) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, status: 'rejected' } : b))
-    );
-    // Find booking to notify
+    setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'rejected' } : b)));
+    updateBookingStatus(bookingId, 'rejected');
     const b = bookings.find((bk) => bk.id === bookingId);
     if (b) {
-      const newNotif: AppNotification = {
-        id: `notif_${Date.now()}`,
-        userId: b.userId,
-        bookingId: b.id,
+      pushNotification({
+        id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
         title: 'تم رفض طلب الحجز ⚠️',
-        message: `نأسف لإبلاغك بأنه قد تم رفض طلب حجزك في "${b.houseName}" للفترة من ${b.checkIn} إلى ${b.checkOut} لعدم توفر السعة أو لظروف خاصة.`,
-        type: 'danger',
-        isRead: false,
-        createdAt: new Date().toISOString()
-      };
-      setNotifications((prev) => [newNotif, ...prev]);
+        message: `نأسف لإبلاغك بأنه قد تم رفض طلب حجزك في "${b.houseName}" للفترة من ${b.checkIn} إلى ${b.checkOut}.`,
+        type: 'danger', isRead: false, createdAt: new Date().toISOString()
+      });
     }
   };
 
   // Owner marks that they've received the deposit in-person / off-platform
   const handleConfirmDepositReceived = (bookingId: string) => {
+    const target = bookings.find((b) => b.id === bookingId);
+    const depositAmount = target ? (target.depositAmount || Math.round(target.totalPrice * 0.15)) : 0;
     setBookings((prev) =>
       prev.map((b) =>
         b.id === bookingId
-          ? { ...b, depositPaid: true, depositAmount: b.depositAmount || Math.round(b.totalPrice * 0.15), paymentStatus: 'paid_deposit' }
+          ? { ...b, depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' }
           : b
       )
     );
-    const b = bookings.find((bk) => bk.id === bookingId);
-    if (b) {
-      setNotifications((prev) => [{
-        id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
+    updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' });
+    if (target) {
+      pushNotification({
+        id: `notif_${Date.now()}`, userId: target.userId, bookingId: target.id,
         title: 'تم استلام العربون بنجاح ✓',
-        message: `أكد ${b.houseName} استلام العربون بمبلغ ${(b.depositAmount || Math.round(b.totalPrice * 0.15)).toLocaleString()} ج.م. الحجز مؤمن الآن.`,
+        message: `أكد ${target.houseName} استلام العربون بمبلغ ${depositAmount.toLocaleString()} ج.م. الحجز مؤمن الآن.`,
         type: 'success', isRead: false, createdAt: new Date().toISOString()
-      }, ...prev]);
+      });
     }
   };
 
   // Owner marks guest as checked in (arrived on-site)
   const handleCheckInBooking = (bookingId: string) => {
+    const checkedInAt = new Date().toISOString();
     setBookings((prev) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, checkedInAt: new Date().toISOString() } as Booking : b))
+      prev.map((b) => (b.id === bookingId ? { ...b, checkedInAt } : b))
     );
+    updateBookingFields(bookingId, { checkedInAt });
     const b = bookings.find((bk) => bk.id === bookingId);
     if (b) {
-      setNotifications((prev) => [{
+      pushNotification({
         id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
         title: 'تم تسجيل وصولك 🏠',
         message: `تم تسجيل وصولك بنجاح لبيت "${b.houseName}". نتمنى لك إقامة مباركة وممتعة!`,
         type: 'info', isRead: false, createdAt: new Date().toISOString()
-      }, ...prev]);
+      });
     }
   };
 
   // Owner marks guest as checked out (booking completed)
   const handleCheckOutBooking = (bookingId: string) => {
+    const checkedOutAt = new Date().toISOString();
     setBookings((prev) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, status: 'completed', checkedOutAt: new Date().toISOString() } as Booking : b))
+      prev.map((b) => (b.id === bookingId ? { ...b, status: 'completed', checkedOutAt } : b))
     );
+    updateBookingFields(bookingId, { status: 'completed', checkedOutAt });
     const b = bookings.find((bk) => bk.id === bookingId);
     if (b) {
-      setNotifications((prev) => [{
+      pushNotification({
         id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
         title: 'شكراً لإقامتك 💚',
         message: `تمت مغادرتك من "${b.houseName}". يسعدنا مشاركتك تقييمك للبيت لتساعد الآخرين.`,
         type: 'success', isRead: false, createdAt: new Date().toISOString()
-      }, ...prev]);
+      });
     }
   };
 
   // --- Egyptian Payment System Operations ---
   const handleSubmitPayment = (payment: Payment) => {
     setPayments((prev) => [payment, ...prev]);
-    
+    createPayment(payment);
+
     // Update booking's paymentStatus
     setBookings((prevBookings) =>
       prevBookings.map((b) => {
@@ -406,6 +447,7 @@ export default function App() {
         return b;
       })
     );
+    updateBookingFields(payment.bookingId, { paymentStatus: 'pending_verification' });
 
     // Get the booking
     const b = bookings.find((bk) => bk.id === payment.bookingId);
@@ -435,6 +477,8 @@ export default function App() {
       };
 
       setNotifications((prev) => [userNotif, adminNotif, ...prev]);
+      createNotification(userNotif);
+      createNotification(adminNotif);
     }
   };
 
@@ -443,14 +487,14 @@ export default function App() {
       prevPayments.map((p) => (p.id === paymentId ? { ...p, paymentStatus: status, adminNotes } : p))
     );
 
-    // Fetch updated payments state directly for finder safety
     const payment = payments.find((p) => p.id === paymentId);
     if (payment) {
+      // Persist updated payment to Supabase
+      createPayment({ ...payment, paymentStatus: status, adminNotes });
       const b = bookings.find((bk) => bk.id === payment.bookingId);
       if (b) {
-        // If approved, update booking status to confirmed/approved, depositPaid to true, and paymentStatus to paid_deposit or paid_full
-        const updatedPaymentStatus = payment.amount >= b.totalPrice ? 'paid_full' : 'paid_deposit';
-        
+        const updatedPaymentStatus: Booking['paymentStatus'] = payment.amount >= b.totalPrice ? 'paid_full' : 'paid_deposit';
+
         setBookings((prevBookings) =>
           prevBookings.map((bk) => {
             if (bk.id === b.id) {
@@ -464,32 +508,31 @@ export default function App() {
             return bk;
           })
         );
-
-        // Notifications
+        // Persist booking update to Supabase
         if (status === 'approved') {
-          const userNotif: AppNotification = {
-            id: `notif_${Date.now()}`,
-            userId: b.userId,
-            bookingId: b.id,
-            title: 'تم تأكيد الدفع والحجز بنجاح 🎉',
-            message: `تهانينا! تم تأكيد وتأشير دفعتك بمبلغ ${payment.amount.toLocaleString('ar-EG')} ج.م كـ "مقبولة". أصبح حجزك في "${b.houseName}" مؤكداً ومضموناً الآن. ملاحظات الإدارة: ${adminNotes || 'تم التحقق بنجاح.'}`,
-            type: 'success',
-            isRead: false,
-            createdAt: new Date().toISOString()
-          };
-          setNotifications((prev) => [userNotif, ...prev]);
+          updateBookingFields(b.id, {
+            paymentStatus: updatedPaymentStatus,
+            status: 'approved',
+            depositPaid: true,
+          });
         } else {
-          const userNotif: AppNotification = {
-            id: `notif_${Date.now()}`,
-            userId: b.userId,
-            bookingId: b.id,
+          updateBookingFields(b.id, { paymentStatus: 'unpaid' });
+        }
+
+        if (status === 'approved') {
+          pushNotification({
+            id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
+            title: 'تم تأكيد الدفع والحجز بنجاح 🎉',
+            message: `تهانينا! تم تأكيد دفعتك بمبلغ ${payment.amount.toLocaleString('ar-EG')} ج.م. أصبح حجزك في "${b.houseName}" مؤكداً ومضموناً الآن. ${adminNotes ? 'ملاحظات: ' + adminNotes : ''}`,
+            type: 'success', isRead: false, createdAt: new Date().toISOString()
+          });
+        } else {
+          pushNotification({
+            id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
             title: 'تم رفض إثبات الدفع ⚠️',
-            message: `نأسف، لقد تم رفض إثبات الدفع الذي أرسلته بمبلغ ${payment.amount.toLocaleString('ar-EG')} ج.م لعدم صحة البيانات أو تعذر مطابقة التحويل. يرجى التواصل مع الإدارة أو المحاولة مجدداً بمستند صحيح. ملاحظات الإدارة: ${adminNotes || 'لم يثبت صحة التحويل.'}`,
-            type: 'danger',
-            isRead: false,
-            createdAt: new Date().toISOString()
-          };
-          setNotifications((prev) => [userNotif, ...prev]);
+            message: `نأسف، تم رفض إثبات الدفع بمبلغ ${payment.amount.toLocaleString('ar-EG')} ج.م. يرجى المحاولة مجدداً. ${adminNotes ? 'ملاحظات: ' + adminNotes : ''}`,
+            type: 'danger', isRead: false, createdAt: new Date().toISOString()
+          });
         }
       }
     }
@@ -497,15 +540,17 @@ export default function App() {
 
   // --- Admin Operations ---
   const handleApproveHouse = (houseId: string) => {
-    setHouses((prev) =>
-      prev.map((h) => (h.id === houseId ? { ...h, status: 'approved' } : h))
-    );
+    setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, status: 'approved' } : h)));
+    supabase.from('houses').update({ status: 'approved' }).eq('id', houseId).then(({ error }) => {
+      if (error) console.error('approveHouse:', error);
+    });
   };
 
   const handleRejectHouse = (houseId: string) => {
-    setHouses((prev) =>
-      prev.map((h) => (h.id === houseId ? { ...h, status: 'rejected' } : h))
-    );
+    setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, status: 'rejected' } : h)));
+    supabase.from('houses').update({ status: 'rejected' }).eq('id', houseId).then(({ error }) => {
+      if (error) console.error('rejectHouse:', error);
+    });
   };
 
   const handleToggleUserRole = (userId: string, newRole: UserRole) => {
@@ -519,30 +564,40 @@ export default function App() {
   };
 
   const handleUpdateUserProfile = (updatedUser: User) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
-    );
+    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
     if (currentUser && currentUser.id === updatedUser.id) {
       setCurrentUser(updatedUser);
-      localStorage.setItem('coptic_current_user', JSON.stringify(updatedUser));
     }
+    // Persist to Supabase
+    supabase.from('users').update({
+      name: updatedUser.name, email: updatedUser.email, phone: updatedUser.phone,
+      organization_name: updatedUser.organizationName ?? null,
+      points: updatedUser.points ?? 0,
+      favorites: updatedUser.favorites ?? [],
+    }).eq('id', updatedUser.id).then(({ error }) => {
+      if (error) console.error('updateUserProfile:', error);
+    });
   };
 
   // --- Review Operations ---
   const handleAddReview = (newReview: Review) => {
     setReviews((prev) => [newReview, ...prev]);
-    
-    // Recalculate average rating for the target retreat house
+    createReview(newReview);
+
+    // Recalculate house rating and persist
     setHouses((prevHouses) =>
       prevHouses.map((h) => {
         if (h.id === newReview.houseId) {
           const matchingReviews = [...reviews.filter((r) => r.houseId === h.id), newReview];
           const average = matchingReviews.reduce((sum, r) => sum + (r.overall_rating ?? r.rating), 0) / matchingReviews.length;
-          return {
+          const updated = {
             ...h,
             rating: parseFloat(average.toFixed(1)),
             reviewsCount: matchingReviews.length,
           };
+          supabase.from('houses').update({ rating: updated.rating, reviews_count: updated.reviewsCount })
+            .eq('id', h.id).then(({ error }) => { if (error) console.error('updateHouseRating:', error); });
+          return updated;
         }
         return h;
       })
@@ -555,29 +610,40 @@ export default function App() {
       prevHouses.map((h) => {
         if (h.id === houseId) {
           const updated = { ...h, menu: updatedMenu };
-          if (selectedHouse && selectedHouse.id === houseId) {
-            setSelectedHouse(updated);
-          }
+          if (selectedHouse && selectedHouse.id === houseId) setSelectedHouse(updated);
           return updated;
         }
         return h;
       })
     );
+    supabase.from('houses').update({ menu: updatedMenu }).eq('id', houseId)
+      .then(({ error }) => { if (error) console.error('updateHouseMenu:', error); });
   };
 
   const handleUpdateHouse = (updatedHouse: RetreatHouse) => {
     setHouses((prevHouses) =>
       prevHouses.map((h) => (h.id === updatedHouse.id ? updatedHouse : h))
     );
-    if (selectedHouse && selectedHouse.id === updatedHouse.id) {
-      setSelectedHouse(updatedHouse);
-    }
+    if (selectedHouse && selectedHouse.id === updatedHouse.id) setSelectedHouse(updatedHouse);
+    supabase.from('houses').update({
+      name: updatedHouse.name, description: updatedHouse.description,
+      address: updatedHouse.address, lat: updatedHouse.lat, lng: updatedHouse.lng,
+      images: updatedHouse.images,
+      image_descriptions: updatedHouse.imageDescriptions ?? {},
+      blocked_dates: updatedHouse.blockedDates ?? [],
+      services: updatedHouse.services, activities: updatedHouse.activities,
+      conference_halls: updatedHouse.conferenceHalls, restaurants: updatedHouse.restaurants,
+      menu: updatedHouse.menu ?? null, status: updatedHouse.status,
+    }).eq('id', updatedHouse.id).then(({ error }) => {
+      if (error) console.error('updateHouse:', error);
+    });
   };
 
   const handleUpdateReview = (updatedReview: Review) => {
     setReviews((prev) =>
       prev.map((r) => (r.id === updatedReview.id ? updatedReview : r))
     );
+    updateReviewDb(updatedReview);
   };
 
   const handleUpdateAttendees = (bookingId: string, bookingAttendees: Attendee[]) => {
@@ -598,13 +664,14 @@ export default function App() {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
+    markNotificationRead(id);
   };
 
   const handleClearNotifications = () => {
     if (currentUser) {
-      setNotifications((prev) =>
-        prev.filter((n) => n.userId !== currentUser.id)
-      );
+      setNotifications((prev) => prev.filter((n) => n.userId !== currentUser.id));
+      supabase.from('notifications').delete().eq('user_id', currentUser.id)
+        .then(({ error }) => { if (error) console.error('clearNotifications:', error); });
     }
   };
 

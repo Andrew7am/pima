@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { RetreatHouse, Booking, Review, Payment } from '../types';
+import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation } from '../types';
 
 // ─── Row → Type mappers ────────────────────────────────────────────────────
 
@@ -63,6 +63,21 @@ export function mapBooking(r: Record<string, unknown>): Booking {
     isLargeConferenceQuote: r.is_large_conference_quote as boolean,
     paymentStatus: r.payment_status as Booking['paymentStatus'] ?? undefined,
     conferenceDetails: r.conference_details as Booking['conferenceDetails'] ?? undefined,
+    checkedInAt: r.checked_in_at as string ?? undefined,
+    checkedOutAt: r.checked_out_at as string ?? undefined,
+    createdAt: r.created_at as string,
+  };
+}
+
+export function mapNotification(r: Record<string, unknown>): AppNotification {
+  return {
+    id: r.id as string,
+    userId: r.user_id as string,
+    bookingId: r.booking_id as string,
+    title: r.title as string,
+    message: r.message as string,
+    type: r.type as AppNotification['type'],
+    isRead: r.is_read as boolean,
     createdAt: r.created_at as string,
   };
 }
@@ -130,4 +145,147 @@ export async function loadPayments(): Promise<Payment[]> {
   const { data, error } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
   if (error) { console.error('loadPayments:', error); return []; }
   return (data ?? []).map(mapPayment);
+}
+
+export async function loadNotifications(userId: string): Promise<AppNotification[]> {
+  const { data, error } = await supabase
+    .from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  if (error) { console.error('loadNotifications:', error); return []; }
+  return (data ?? []).map(mapNotification);
+}
+
+// ─── Type → Row mappers (for inserts/updates) ──────────────────────────────
+
+function bookingToRow(b: Booking): Record<string, unknown> {
+  return {
+    id: b.id,
+    house_id: b.houseId,
+    house_name: b.houseName,
+    user_id: b.userId,
+    user_name: b.userName,
+    user_phone: b.userPhone,
+    user_email: b.userEmail,
+    user_role: b.userRole,
+    organization_name: b.organizationName ?? null,
+    check_in: b.checkIn,
+    check_out: b.checkOut,
+    guests_count: b.guestsCount,
+    total_price: b.totalPrice,
+    deposit_paid: b.depositPaid,
+    deposit_amount: b.depositAmount,
+    status: b.status,
+    is_large_conference_quote: b.isLargeConferenceQuote,
+    payment_status: b.paymentStatus ?? 'unpaid',
+    conference_details: b.conferenceDetails ?? null,
+    checked_in_at: b.checkedInAt ?? null,
+    checked_out_at: b.checkedOutAt ?? null,
+    created_at: b.createdAt,
+  };
+}
+
+function reviewToRow(r: Review): Record<string, unknown> {
+  return {
+    id: r.id,
+    house_id: r.houseId,
+    house_name: r.houseName ?? null,
+    user_id: r.userId,
+    user_name: r.userName,
+    user_role: r.userRole,
+    rating: r.rating,
+    food_rating: r.food_rating ?? null,
+    service_rating: r.service_rating ?? null,
+    cleanliness_rating: r.cleanliness_rating ?? null,
+    organization_rating: r.organization_rating ?? null,
+    value_rating: r.value_rating ?? null,
+    overall_rating: r.overall_rating ?? null,
+    comment: r.comment,
+    owner_reply: r.ownerReply ?? null,
+    owner_reply_created_at: r.ownerReplyCreatedAt ?? null,
+    created_at: r.createdAt,
+  };
+}
+
+function paymentToRow(p: Payment): Record<string, unknown> {
+  return {
+    id: p.id,
+    booking_id: p.bookingId,
+    user_id: p.userId,
+    user_name: p.userName,
+    amount: p.amount,
+    payment_method: p.paymentMethod,
+    payment_status: p.paymentStatus,
+    payment_date: p.paymentDate,
+    proof_image: p.proofImage ?? null,
+    transaction_reference: p.transactionReference ?? null,
+    admin_notes: p.adminNotes ?? null,
+    details: p.details ?? null,
+  };
+}
+
+// ─── Mutations ─────────────────────────────────────────────────────────────
+
+/** Returns true on success. On booking-overlap conflict Supabase returns 409. */
+export async function createBooking(b: Booking): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.from('bookings').insert(bookingToRow(b));
+  if (error) {
+    if (error.code === '23P01' || error.message.includes('exclusion')) {
+      return { ok: false, error: 'DATE_CONFLICT' };
+    }
+    console.error('createBooking:', error);
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}
+
+export async function updateBookingStatus(id: string, status: Booking['status']): Promise<boolean> {
+  const { error } = await supabase.from('bookings').update({ status }).eq('id', id);
+  if (error) console.error('updateBookingStatus:', error);
+  return !error;
+}
+
+export async function updateBookingFields(id: string, fields: Partial<Booking>): Promise<boolean> {
+  const row: Record<string, unknown> = {};
+  if (fields.status !== undefined) row.status = fields.status;
+  if (fields.depositPaid !== undefined) row.deposit_paid = fields.depositPaid;
+  if (fields.depositAmount !== undefined) row.deposit_amount = fields.depositAmount;
+  if (fields.paymentStatus !== undefined) row.payment_status = fields.paymentStatus;
+  if (fields.checkedInAt !== undefined) row.checked_in_at = fields.checkedInAt;
+  if (fields.checkedOutAt !== undefined) row.checked_out_at = fields.checkedOutAt;
+  const { error } = await supabase.from('bookings').update(row).eq('id', id);
+  if (error) console.error('updateBookingFields:', error);
+  return !error;
+}
+
+export async function createReview(r: Review): Promise<boolean> {
+  const { error } = await supabase.from('reviews').insert(reviewToRow(r));
+  if (error) console.error('createReview:', error);
+  return !error;
+}
+
+export async function updateReview(r: Review): Promise<boolean> {
+  const { error } = await supabase.from('reviews').update(reviewToRow(r)).eq('id', r.id);
+  if (error) console.error('updateReview:', error);
+  return !error;
+}
+
+export async function createPayment(p: Payment): Promise<boolean> {
+  const { error } = await supabase.from('payments').insert(paymentToRow(p));
+  if (error) console.error('createPayment:', error);
+  return !error;
+}
+
+export async function createNotification(n: AppNotification): Promise<boolean> {
+  const { error } = await supabase.from('notifications').insert({
+    id: n.id, user_id: n.userId, booking_id: n.bookingId,
+    title: n.title, message: n.message, type: n.type,
+    is_read: n.isRead, created_at: n.createdAt,
+  });
+  if (error) console.error('createNotification:', error);
+  return !error;
+}
+
+export async function markNotificationRead(id: string): Promise<boolean> {
+  const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+  if (error) console.error('markNotificationRead:', error);
+  return !error;
 }
