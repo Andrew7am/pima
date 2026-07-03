@@ -178,6 +178,39 @@ export interface RoomAllocation {
   bedNumber: number;
 }
 
+export interface Room {
+  id: string;
+  houseId: string;
+  name: string;
+  bedsCount: number;
+  pricePerNight?: number; // undefined = inherit the house's price
+  images: string[];
+  status: 'available' | 'booked' | 'maintenance';
+  createdAt: string;
+}
+
+export interface Announcement {
+  id: string;
+  houseId: string;
+  message: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface WaitlistEntry {
+  id: string;
+  houseId: string;
+  houseName: string;
+  userId: string;
+  userName: string;
+  userPhone: string;
+  checkIn: string;
+  checkOut: string;
+  guestsCount: number;
+  status: 'waiting' | 'notified' | 'expired' | 'cancelled';
+  createdAt: string;
+}
+
 export interface AppNotification {
   id: string;
   userId: string;

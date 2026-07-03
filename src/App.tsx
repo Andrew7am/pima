@@ -2,11 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './lib/supabase';
 import {
   loadHouses, loadBookings, loadReviews, loadPayments, loadNotifications, loadPointsHistory,
+  loadRooms, loadAnnouncements, loadWaitlist,
   createBooking, updateBookingStatus, updateBookingFields,
   createReview, updateReview as updateReviewDb, createPayment,
   createNotification, markNotificationRead,
+  createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
+  createAnnouncement, setAnnouncementActive,
+  createWaitlistEntry,
 } from './lib/db';
-import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction } from './types';
+import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry } from './types';
 import { INITIAL_USERS } from './mockData';
 
 // Component Imports
@@ -56,6 +60,9 @@ export default function App() {
   });
 
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
 
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -68,11 +75,17 @@ export default function App() {
 
   // --- Supabase Data Loading ---
   const loadAppData = useCallback(async (userId?: string) => {
-    const [h, b, r, p] = await Promise.all([loadHouses(), loadBookings(), loadReviews(), loadPayments()]);
+    const [h, b, r, p, rm, an, wl] = await Promise.all([
+      loadHouses(), loadBookings(), loadReviews(), loadPayments(),
+      loadRooms(), loadAnnouncements(), loadWaitlist(),
+    ]);
     setHouses(h);
     setBookings(b);
     setReviews(r);
     setPayments(p);
+    setRooms(rm);
+    setAnnouncements(an);
+    setWaitlist(wl);
     if (userId) {
       const n = await loadNotifications(userId);
       setNotifications(n);
@@ -303,6 +316,12 @@ export default function App() {
 
     setActiveScreen('bookings');
     setSelectedHouse(null);
+    return true;
+  };
+
+  const handleJoinWaitlist = (entry: WaitlistEntry): boolean => {
+    setWaitlist((prev) => [...prev, entry]);
+    createWaitlistEntry(entry);
     return true;
   };
 
@@ -651,6 +670,38 @@ export default function App() {
     });
   };
 
+  const handleAddRoom = (newRoom: Room) => {
+    setRooms((prev) => [...prev, newRoom]);
+    createRoom(newRoom);
+  };
+
+  const handleUpdateRoom = (updatedRoom: Room) => {
+    setRooms((prev) => prev.map((r) => (r.id === updatedRoom.id ? updatedRoom : r)));
+    updateRoomDb(updatedRoom);
+  };
+
+  const handleDeleteRoom = (roomId: string) => {
+    setRooms((prev) => prev.filter((r) => r.id !== roomId));
+    deleteRoomDb(roomId);
+  };
+
+  const handleAddAnnouncement = (newAnnouncement: Announcement) => {
+    // Only one active announcement per house at a time — keep the banner unambiguous
+    setAnnouncements((prev) => [
+      newAnnouncement,
+      ...prev.map((a) => (a.houseId === newAnnouncement.houseId ? { ...a, isActive: false } : a)),
+    ]);
+    createAnnouncement(newAnnouncement);
+    announcements
+      .filter((a) => a.houseId === newAnnouncement.houseId && a.isActive)
+      .forEach((a) => setAnnouncementActive(a.id, false));
+  };
+
+  const handleToggleAnnouncement = (id: string, isActive: boolean) => {
+    setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, isActive } : a)));
+    setAnnouncementActive(id, isActive);
+  };
+
   const handleUpdateReview = (updatedReview: Review) => {
     setReviews((prev) =>
       prev.map((r) => (r.id === updatedReview.id ? updatedReview : r))
@@ -729,6 +780,10 @@ export default function App() {
           onUpdateMenu={handleUpdateHouseMenu}
           isFavorited={currentUser.favorites?.includes(selectedHouse.id) || false}
           onToggleFavorite={handleToggleFavorite}
+          rooms={rooms.filter((r) => r.houseId === selectedHouse.id)}
+          announcements={announcements.filter((a) => a.houseId === selectedHouse.id && a.isActive)}
+          waitlist={waitlist}
+          onJoinWaitlist={handleJoinWaitlist}
         />
       ) : (
         // Main Screen Tabs
@@ -780,6 +835,14 @@ export default function App() {
               onUpdateHouse={handleUpdateHouse}
               reviews={reviews}
               onUpdateReview={handleUpdateReview}
+              rooms={rooms}
+              onAddRoom={handleAddRoom}
+              onUpdateRoom={handleUpdateRoom}
+              onDeleteRoom={handleDeleteRoom}
+              announcements={announcements}
+              onAddAnnouncement={handleAddAnnouncement}
+              onToggleAnnouncement={handleToggleAnnouncement}
+              waitlist={waitlist}
             />
           )}
 

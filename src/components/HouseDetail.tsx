@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { RetreatHouse, Booking, Review, User } from '../types';
+import { RetreatHouse, Booking, Review, User, Room, Announcement, WaitlistEntry } from '../types';
 import { SUITABILITY_MAP } from '../mockData';
 import { 
   ArrowRight, MapPin, BedDouble, Calendar, Users, 
@@ -20,6 +20,10 @@ interface HouseDetailProps {
   onUpdateMenu?: (houseId: string, updatedMenu: any) => void;
   isFavorited: boolean;
   onToggleFavorite: (houseId: string) => void;
+  rooms?: Room[];
+  announcements?: Announcement[];
+  waitlist?: WaitlistEntry[];
+  onJoinWaitlist?: (entry: WaitlistEntry) => boolean;
 }
 
 const GOVERNORATE_WEATHER_DATA: Record<string, {
@@ -523,7 +527,11 @@ export default function HouseDetail({
   onSubmitReview,
   onUpdateMenu,
   isFavorited,
-  onToggleFavorite
+  onToggleFavorite,
+  rooms = [],
+  announcements = [],
+  waitlist = [],
+  onJoinWaitlist
 }: HouseDetailProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
@@ -745,6 +753,45 @@ export default function HouseDetail({
   const originalTotalPrice = isMonthlyHousing
     ? (house.monthlyRent || 1500) * guestsCount * months
     : house.pricePerNightPerPerson * guestsCount * nights;
+
+  // Whether the currently selected dates/guest count would exceed remaining
+  // capacity — used to offer joining the waitlist instead of a doomed booking attempt.
+  const wouldExceedCapacity = (() => {
+    if (!checkIn || !checkOut || isMonthlyHousing) return false;
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+      const s = d.toISOString().split('T')[0];
+      if (usedBedsOnDate(s) + guestsCount > (house.bedsCount || 0)) return true;
+    }
+    return false;
+  })();
+
+  const alreadyOnWaitlist = waitlist.some(
+    (w) => w.userId === currentUser.id && w.houseId === house.id && w.checkIn === checkIn && w.checkOut === checkOut && w.status === 'waiting'
+  );
+
+  const handleJoinWaitlistClick = () => {
+    if (!onJoinWaitlist) return;
+    if (!checkIn || !checkOut || guestsCount <= 0) {
+      alert('الرجاء التأكد من إدخال كافة بيانات التواريخ والأعداد.');
+      return;
+    }
+    const ok = onJoinWaitlist({
+      id: `wl_${Date.now()}`,
+      houseId: house.id,
+      houseName: house.name,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userPhone: currentUser.phone,
+      checkIn,
+      checkOut,
+      guestsCount,
+      status: 'waiting',
+      createdAt: new Date().toISOString(),
+    });
+    if (ok) alert('تم تسجيلك في قائمة الانتظار! سيتم إشعارك فور توفر مكان لهذه التواريخ.');
+  };
 
   // Rewards system points calculation — 100 points = 1 EGP, redemption can
   // cover at most 10% of the booking price.
@@ -985,6 +1032,14 @@ export default function HouseDetail({
               <div className="text-[#5A5A40] font-extrabold">{house.pricePerNightPerPerson} ج.م <span className="text-[10px] text-[#8A8A70] font-medium">لكل فرد / ليلة</span></div>
             )}
           </div>
+
+          {/* Owner announcements */}
+          {announcements.filter((a) => a.isActive).map((a) => (
+            <div key={a.id} className="mt-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2 text-[10.5px] text-amber-900 font-bold">
+              <span className="text-sm">📢</span>
+              <span>{a.message}</span>
+            </div>
+          ))}
 
           {/* Privacy notice — contact info only revealed after paid booking */}
           {!isOwnerOrAdmin && (
@@ -1509,6 +1564,32 @@ export default function HouseDetail({
             
             <p className="text-xs text-[#8A8A70] leading-relaxed font-medium">{house.roomsDescription}</p>
 
+            {/* Actual rooms added by the owner (real availability, not the illustrative grid below) */}
+            {rooms.length > 0 && (
+              <div className="space-y-2 pt-1">
+                <span className="text-[10px] font-extrabold text-[#4A4A3A]">حالة الغرف المتاحة فعلياً:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {rooms.map((room) => (
+                    <div key={room.id} className="flex items-center justify-between bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl px-3 py-2">
+                      <div>
+                        <span className="text-[11px] font-bold text-[#4A4A3A] block">{room.name}</span>
+                        <span className="text-[9.5px] text-[#8A8A70]">
+                          {room.bedsCount} سرير{room.pricePerNight ? ` · ${room.pricePerNight} ج.م/ليلة` : ''}
+                        </span>
+                      </div>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                        room.status === 'available' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
+                        room.status === 'booked' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
+                        'bg-rose-50 text-rose-800 border border-rose-200'
+                      }`}>
+                        {room.status === 'available' ? 'متاحة' : room.status === 'booked' ? 'محجوزة' : 'صيانة'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Room Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3" dir="rtl">
               {(() => {
@@ -2020,13 +2101,30 @@ export default function HouseDetail({
                   )}
                 </div>
 
-                <button
-                  id="book-submit-btn"
-                  type="submit"
-                  className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors cursor-pointer"
-                >
-                  {isMonthlyHousing ? 'أرسل طلب التعاقد وحجز السكن للمالك' : 'احجز الآن وأرسل الطلب للمالك'}
-                </button>
+                {wouldExceedCapacity ? (
+                  <div className="space-y-2">
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[10px] text-amber-800 font-bold text-center">
+                      عذراً، البيت مكتمل الإشغال في هذه التواريخ لعدد الأفراد المطلوب.
+                    </div>
+                    <button
+                      id="join-waitlist-btn"
+                      type="button"
+                      disabled={alreadyOnWaitlist}
+                      onClick={handleJoinWaitlistClick}
+                      className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors cursor-pointer"
+                    >
+                      {alreadyOnWaitlist ? 'أنت مسجل بالفعل في قائمة الانتظار ⏳' : 'انضم لقائمة الانتظار ⏳'}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    id="book-submit-btn"
+                    type="submit"
+                    className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors cursor-pointer"
+                  >
+                    {isMonthlyHousing ? 'أرسل طلب التعاقد وحجز السكن للمالك' : 'احجز الآن وأرسل الطلب للمالك'}
+                  </button>
+                )}
               </form>
             )}
 

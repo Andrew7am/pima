@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction } from '../types';
+import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, Announcement, WaitlistEntry } from '../types';
 
 // ─── Row → Type mappers ────────────────────────────────────────────────────
 
@@ -131,6 +131,45 @@ export function mapPointsTransaction(r: Record<string, unknown>): PointsTransact
   };
 }
 
+export function mapRoom(r: Record<string, unknown>): Room {
+  return {
+    id: r.id as string,
+    houseId: r.house_id as string,
+    name: r.name as string,
+    bedsCount: r.beds_count as number,
+    pricePerNight: r.price_per_night as number ?? undefined,
+    images: (r.images as string[]) ?? [],
+    status: r.status as Room['status'],
+    createdAt: r.created_at as string,
+  };
+}
+
+export function mapAnnouncement(r: Record<string, unknown>): Announcement {
+  return {
+    id: r.id as string,
+    houseId: r.house_id as string,
+    message: r.message as string,
+    isActive: r.is_active as boolean,
+    createdAt: r.created_at as string,
+  };
+}
+
+export function mapWaitlistEntry(r: Record<string, unknown>): WaitlistEntry {
+  return {
+    id: r.id as string,
+    houseId: r.house_id as string,
+    houseName: r.house_name as string,
+    userId: r.user_id as string,
+    userName: r.user_name as string,
+    userPhone: r.user_phone as string,
+    checkIn: r.check_in as string,
+    checkOut: r.check_out as string,
+    guestsCount: r.guests_count as number,
+    status: r.status as WaitlistEntry['status'],
+    createdAt: r.created_at as string,
+  };
+}
+
 // ─── Loaders ───────────────────────────────────────────────────────────────
 
 export async function loadHouses(): Promise<RetreatHouse[]> {
@@ -169,6 +208,24 @@ export async function loadPointsHistory(userId: string): Promise<PointsTransacti
     .from('points_history').select('*').eq('user_id', userId).order('created_at', { ascending: false });
   if (error) { console.error('loadPointsHistory:', error); return []; }
   return (data ?? []).map(mapPointsTransaction);
+}
+
+export async function loadRooms(): Promise<Room[]> {
+  const { data, error } = await supabase.from('rooms').select('*').order('created_at');
+  if (error) { console.error('loadRooms:', error); return []; }
+  return (data ?? []).map(mapRoom);
+}
+
+export async function loadAnnouncements(): Promise<Announcement[]> {
+  const { data, error } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('loadAnnouncements:', error); return []; }
+  return (data ?? []).map(mapAnnouncement);
+}
+
+export async function loadWaitlist(): Promise<WaitlistEntry[]> {
+  const { data, error } = await supabase.from('waitlist').select('*').order('created_at');
+  if (error) { console.error('loadWaitlist:', error); return []; }
+  return (data ?? []).map(mapWaitlistEntry);
 }
 
 // ─── Type → Row mappers (for inserts/updates) ──────────────────────────────
@@ -236,6 +293,19 @@ function paymentToRow(p: Payment): Record<string, unknown> {
     transaction_reference: p.transactionReference ?? null,
     admin_notes: p.adminNotes ?? null,
     details: p.details ?? null,
+  };
+}
+
+function roomToRow(r: Room): Record<string, unknown> {
+  return {
+    id: r.id,
+    house_id: r.houseId,
+    name: r.name,
+    beds_count: r.bedsCount,
+    price_per_night: r.pricePerNight ?? null,
+    images: r.images,
+    status: r.status,
+    created_at: r.createdAt,
   };
 }
 
@@ -311,5 +381,53 @@ export async function createNotification(n: AppNotification): Promise<boolean> {
 export async function markNotificationRead(id: string): Promise<boolean> {
   const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
   if (error) console.error('markNotificationRead:', error);
+  return !error;
+}
+
+export async function createRoom(r: Room): Promise<boolean> {
+  const { error } = await supabase.from('rooms').insert(roomToRow(r));
+  if (error) console.error('createRoom:', error);
+  return !error;
+}
+
+export async function updateRoom(r: Room): Promise<boolean> {
+  const { error } = await supabase.from('rooms').update(roomToRow(r)).eq('id', r.id);
+  if (error) console.error('updateRoom:', error);
+  return !error;
+}
+
+export async function deleteRoom(id: string): Promise<boolean> {
+  const { error } = await supabase.from('rooms').delete().eq('id', id);
+  if (error) console.error('deleteRoom:', error);
+  return !error;
+}
+
+export async function createAnnouncement(a: Announcement): Promise<boolean> {
+  const { error } = await supabase.from('announcements').insert({
+    id: a.id, house_id: a.houseId, message: a.message, is_active: a.isActive, created_at: a.createdAt,
+  });
+  if (error) console.error('createAnnouncement:', error);
+  return !error;
+}
+
+export async function setAnnouncementActive(id: string, isActive: boolean): Promise<boolean> {
+  const { error } = await supabase.from('announcements').update({ is_active: isActive }).eq('id', id);
+  if (error) console.error('setAnnouncementActive:', error);
+  return !error;
+}
+
+export async function createWaitlistEntry(w: WaitlistEntry): Promise<boolean> {
+  const { error } = await supabase.from('waitlist').insert({
+    id: w.id, house_id: w.houseId, house_name: w.houseName, user_id: w.userId,
+    user_name: w.userName, user_phone: w.userPhone, check_in: w.checkIn, check_out: w.checkOut,
+    guests_count: w.guestsCount, status: w.status, created_at: w.createdAt,
+  });
+  if (error) console.error('createWaitlistEntry:', error);
+  return !error;
+}
+
+export async function updateWaitlistStatus(id: string, status: WaitlistEntry['status']): Promise<boolean> {
+  const { error } = await supabase.from('waitlist').update({ status }).eq('id', id);
+  if (error) console.error('updateWaitlistStatus:', error);
   return !error;
 }

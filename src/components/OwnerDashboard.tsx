@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { RetreatHouse, Booking, User, ConferenceHall, Restaurant, Attendee, RoomAllocation, Review } from '../types';
+import { RetreatHouse, Booking, User, ConferenceHall, Restaurant, Attendee, RoomAllocation, Review, Room, Announcement, WaitlistEntry } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
-import { Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2, Building, Settings, MessageSquare, Image, Camera, Sliders } from 'lucide-react';
+import { Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2, Building, Settings, MessageSquare, Image, Camera, Sliders, BedDouble, Megaphone } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
 
 interface OwnerDashboardProps {
@@ -22,6 +22,14 @@ interface OwnerDashboardProps {
   onUpdateHouse?: (house: RetreatHouse) => void;
   reviews?: Review[];
   onUpdateReview?: (review: Review) => void;
+  rooms?: Room[];
+  onAddRoom?: (room: Room) => void;
+  onUpdateRoom?: (room: Room) => void;
+  onDeleteRoom?: (roomId: string) => void;
+  announcements?: Announcement[];
+  onAddAnnouncement?: (announcement: Announcement) => void;
+  onToggleAnnouncement?: (id: string, isActive: boolean) => void;
+  waitlist?: WaitlistEntry[];
 }
 
 export default function OwnerDashboard({
@@ -41,10 +49,18 @@ export default function OwnerDashboard({
   onUpdateOwnerProfile,
   onUpdateHouse,
   reviews = [],
-  onUpdateReview
+  onUpdateReview,
+  rooms = [],
+  onAddRoom,
+  onUpdateRoom,
+  onDeleteRoom,
+  announcements = [],
+  onAddAnnouncement,
+  onToggleAnnouncement,
+  waitlist = [],
 }: OwnerDashboardProps) {
   // Tabs within Owner panel
-  const [activeTab, setActiveTab] = useState<'stats' | 'houses' | 'add_house' | 'bookings' | 'profile' | 'occupancy' | 'reviews' | 'financials'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'houses' | 'rooms' | 'add_house' | 'bookings' | 'profile' | 'occupancy' | 'reviews' | 'financials' | 'announcements' | 'waitlist'>('stats');
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
   // Booking status filter for bookings tab
   const [bookingFilter, setBookingFilter] = useState<'all' | 'new' | 'confirmed' | 'current' | 'completed' | 'cancelled'>('all');
@@ -249,6 +265,20 @@ export default function OwnerDashboard({
 
   // Filter bookings for owner's houses
   const ownerBookings = bookings.filter((b) => ownerHouseIds.includes(b.houseId));
+
+  // Filter rooms, announcements, and waitlist entries for owner's houses
+  const ownerRooms = rooms.filter((r) => ownerHouseIds.includes(r.houseId));
+  const ownerAnnouncements = announcements.filter((a) => ownerHouseIds.includes(a.houseId));
+  const ownerWaitlist = waitlist.filter((w) => ownerHouseIds.includes(w.houseId));
+
+  // Room management form state
+  const [roomName, setRoomName] = useState('');
+  const [roomBeds, setRoomBeds] = useState(2);
+  const [roomPrice, setRoomPrice] = useState('');
+  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
+
+  // Announcement form state
+  const [announcementMessage, setAnnouncementMessage] = useState('');
 
   // Calculate stats
   const totalRevenue = ownerBookings
@@ -474,6 +504,15 @@ export default function OwnerDashboard({
           بيوتنا ({ownerHouses.length})
         </button>
         <button
+          id="owner-tab-rooms"
+          onClick={() => setActiveTab('rooms')}
+          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'rooms' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          🛏️ الغرف
+        </button>
+        <button
           id="owner-tab-bookings"
           onClick={() => setActiveTab('bookings')}
           className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
@@ -502,6 +541,27 @@ export default function OwnerDashboard({
           }`}
         >
           💬 الردود باسمنا
+        </button>
+        <button
+          id="owner-tab-announcements"
+          onClick={() => setActiveTab('announcements')}
+          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'announcements' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          📢 التنبيهات
+        </button>
+        <button
+          id="owner-tab-waitlist"
+          onClick={() => setActiveTab('waitlist')}
+          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
+            activeTab === 'waitlist' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          ⏳ قائمة الانتظار
+          {ownerWaitlist.filter((w) => w.status === 'waiting').length > 0 && (
+            <span className="absolute top-1.5 left-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
+          )}
         </button>
         <button
           id="owner-tab-financials"
@@ -986,6 +1046,154 @@ export default function OwnerDashboard({
                 </div>
               ))}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* 2.5 Room Management */}
+      {activeTab === 'rooms' && (
+        <div className="space-y-3">
+          {ownerHouses.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70]">
+              أضف بيتك أولاً من تبويب "إضافة بيت جديد" قبل إدارة الغرف.
+            </div>
+          ) : (
+            <>
+              <div className="bg-white rounded-2xl border border-[#D6D6C2] p-4 space-y-3">
+                <div className="text-xs font-bold text-[#4A4A3A] flex items-center gap-1.5">
+                  <BedDouble className="w-4 h-4 text-[#5A5A40]" />
+                  {editingRoomId ? 'تعديل بيانات الغرفة' : 'إضافة غرفة جديدة'}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">اسم/رقم الغرفة:</label>
+                    <input
+                      id="room-name-input"
+                      type="text"
+                      placeholder="مثال: غرفة رقم 1"
+                      value={roomName}
+                      onChange={(e) => setRoomName(e.target.value)}
+                      className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">عدد الأسرة:</label>
+                    <input
+                      id="room-beds-input"
+                      type="number"
+                      min={1}
+                      value={roomBeds}
+                      onChange={(e) => setRoomBeds(parseInt(e.target.value) || 1)}
+                      className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">السعر لليلة (اختياري):</label>
+                    <input
+                      id="room-price-input"
+                      type="number"
+                      min={0}
+                      placeholder="سعر البيت الافتراضي"
+                      value={roomPrice}
+                      onChange={(e) => setRoomPrice(e.target.value)}
+                      className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    id="room-submit-btn"
+                    type="button"
+                    onClick={() => {
+                      if (!roomName.trim()) { alert('يرجى إدخال اسم الغرفة.'); return; }
+                      const house = ownerHouses[0];
+                      if (editingRoomId) {
+                        const existing = ownerRooms.find((r) => r.id === editingRoomId);
+                        if (existing && onUpdateRoom) {
+                          onUpdateRoom({
+                            ...existing,
+                            name: roomName.trim(),
+                            bedsCount: roomBeds,
+                            pricePerNight: roomPrice ? parseFloat(roomPrice) : undefined,
+                          });
+                        }
+                      } else if (onAddRoom) {
+                        onAddRoom({
+                          id: `room_${Date.now()}`,
+                          houseId: house.id,
+                          name: roomName.trim(),
+                          bedsCount: roomBeds,
+                          pricePerNight: roomPrice ? parseFloat(roomPrice) : undefined,
+                          images: [],
+                          status: 'available',
+                          createdAt: new Date().toISOString(),
+                        });
+                      }
+                      setRoomName(''); setRoomBeds(2); setRoomPrice(''); setEditingRoomId(null);
+                    }}
+                    className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[10px] font-bold px-4 py-2 rounded-xl cursor-pointer"
+                  >
+                    {editingRoomId ? 'حفظ التعديل' : 'إضافة الغرفة'}
+                  </button>
+                  {editingRoomId && (
+                    <button
+                      type="button"
+                      onClick={() => { setEditingRoomId(null); setRoomName(''); setRoomBeds(2); setRoomPrice(''); }}
+                      className="bg-[#EBEBE0] text-[#4A4A3A] text-[10px] font-bold px-4 py-2 rounded-xl cursor-pointer"
+                    >
+                      إلغاء
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-[#8A8A70] px-1">الغرف المضافة ({ownerRooms.length}):</div>
+                {ownerRooms.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-[#D6D6C2] p-4 text-center text-[10px] text-[#8A8A70]">
+                    لا توجد غرف مضافة بعد.
+                  </div>
+                ) : (
+                  ownerRooms.map((room) => (
+                    <div key={room.id} className="bg-white rounded-2xl border border-[#D6D6C2] p-3 flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold text-[#4A4A3A]">{room.name}</div>
+                        <div className="text-[9.5px] text-[#8A8A70]">
+                          {room.bedsCount} سرير · {room.pricePerNight ? `${room.pricePerNight} ج.م/ليلة` : 'سعر البيت الافتراضي'}
+                        </div>
+                      </div>
+                      <select
+                        value={room.status}
+                        onChange={(e) => onUpdateRoom && onUpdateRoom({ ...room, status: e.target.value as Room['status'] })}
+                        className={`text-[9.5px] font-bold border rounded-lg px-2 py-1 cursor-pointer ${
+                          room.status === 'available' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                          room.status === 'booked' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                          'bg-rose-50 text-rose-800 border-rose-200'
+                        }`}
+                      >
+                        <option value="available">متاحة</option>
+                        <option value="booked">محجوزة</option>
+                        <option value="maintenance">صيانة</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => { setEditingRoomId(room.id); setRoomName(room.name); setRoomBeds(room.bedsCount); setRoomPrice(room.pricePerNight?.toString() || ''); }}
+                        className="text-[9.5px] font-bold text-[#5A5A40] hover:underline cursor-pointer shrink-0"
+                      >
+                        تعديل
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { if (confirm('هل تريد حذف هذه الغرفة؟') && onDeleteRoom) onDeleteRoom(room.id); }}
+                        className="text-[9.5px] font-bold text-rose-600 hover:underline cursor-pointer shrink-0"
+                      >
+                        حذف
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
           )}
         </div>
       )}
@@ -2205,6 +2413,117 @@ export default function OwnerDashboard({
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* Owner Announcements */}
+      {activeTab === 'announcements' && (
+        <div className="space-y-3">
+          {ownerHouses.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70]">
+              أضف بيتك أولاً قبل نشر التنبيهات.
+            </div>
+          ) : (
+            <>
+              <div className="bg-white rounded-2xl border border-[#D6D6C2] p-4 space-y-3">
+                <div className="text-xs font-bold text-[#4A4A3A] flex items-center gap-1.5">
+                  <Megaphone className="w-4 h-4 text-[#5A5A40]" />
+                  رسالة تظهر للعملاء على صفحة البيت
+                </div>
+                <p className="text-[9.5px] text-[#8A8A70]">مثال: "يوجد خصم هذا الأسبوع" أو "المسبح مغلق للصيانة". إضافة رسالة جديدة تُلغي الرسالة السابقة تلقائياً.</p>
+                <textarea
+                  id="announcement-input"
+                  rows={2}
+                  placeholder="اكتب رسالتك هنا..."
+                  value={announcementMessage}
+                  onChange={(e) => setAnnouncementMessage(e.target.value)}
+                  className="w-full bg-white border border-[#D6D6C2] text-[11px] px-3 py-2 rounded-xl focus:outline-none"
+                />
+                <button
+                  id="announcement-submit-btn"
+                  type="button"
+                  onClick={() => {
+                    if (!announcementMessage.trim()) { alert('يرجى كتابة نص التنبيه.'); return; }
+                    if (onAddAnnouncement) {
+                      onAddAnnouncement({
+                        id: `ann_${Date.now()}`,
+                        houseId: ownerHouses[0].id,
+                        message: announcementMessage.trim(),
+                        isActive: true,
+                        createdAt: new Date().toISOString(),
+                      });
+                    }
+                    setAnnouncementMessage('');
+                  }}
+                  className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[10px] font-bold px-4 py-2 rounded-xl cursor-pointer"
+                >
+                  نشر التنبيه
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-xs font-bold text-[#8A8A70] px-1">سجل التنبيهات ({ownerAnnouncements.length}):</div>
+                {ownerAnnouncements.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-[#D6D6C2] p-4 text-center text-[10px] text-[#8A8A70]">
+                    لا توجد تنبيهات منشورة بعد.
+                  </div>
+                ) : (
+                  ownerAnnouncements.map((a) => (
+                    <div key={a.id} className="bg-white rounded-2xl border border-[#D6D6C2] p-3 flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[11px] font-bold ${a.isActive ? 'text-[#4A4A3A]' : 'text-[#BCBC9D] line-through'}`}>{a.message}</p>
+                        <span className="text-[8.5px] text-[#8A8A70]">{new Date(a.createdAt).toLocaleDateString('ar-EG')}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onToggleAnnouncement && onToggleAnnouncement(a.id, !a.isActive)}
+                        className={`text-[9.5px] font-bold px-2.5 py-1 rounded-lg shrink-0 cursor-pointer ${
+                          a.isActive ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-[#EBEBE0] text-[#8A8A70]'
+                        }`}
+                      >
+                        {a.isActive ? 'نشطة — إخفاء' : 'إظهار'}
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Waitlist */}
+      {activeTab === 'waitlist' && (
+        <div className="space-y-2">
+          <div className="text-xs font-bold text-[#8A8A70] px-1">
+            العملاء المنتظرون لتوفر مكان ({ownerWaitlist.length}):
+          </div>
+          {ownerWaitlist.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-[#D6D6C2] p-6 text-center text-[10px] text-[#8A8A70]">
+              لا يوجد عملاء في قائمة الانتظار حالياً.
+            </div>
+          ) : (
+            ownerWaitlist
+              .slice()
+              .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+              .map((w) => (
+                <div key={w.id} className="bg-white rounded-2xl border border-[#D6D6C2] p-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#4A4A3A]">{w.userName}</span>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                      w.status === 'waiting' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
+                      w.status === 'notified' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
+                      'bg-[#EBEBE0] text-[#8A8A70]'
+                    }`}>
+                      {w.status === 'waiting' ? 'بانتظار مكان' : w.status === 'notified' ? 'تم الإشعار' : w.status === 'expired' ? 'منتهية' : 'ملغاة'}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-[#8A8A70]">
+                    {w.checkIn} → {w.checkOut} · {w.guestsCount} فرد · {w.userPhone}
+                  </div>
+                </div>
+              ))
+          )}
         </div>
       )}
 
