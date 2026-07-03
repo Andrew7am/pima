@@ -15,7 +15,7 @@ interface HouseDetailProps {
   bookings: Booking[];
   reviews: Review[];
   onBack: () => void;
-  onBook: (booking: Booking, pointsRedeemed?: number) => void;
+  onBook: (booking: Booking, pointsRedeemed?: number) => Promise<boolean> | boolean | void;
   onSubmitReview: (review: Review) => void;
   onUpdateMenu?: (houseId: string, updatedMenu: any) => void;
   isFavorited: boolean;
@@ -752,7 +752,7 @@ export default function HouseDetail({
   const totalPrice = Math.max(0, originalTotalPrice - pointsToRedeem);
   const depositAmount = Math.round(totalPrice * 0.15); // 15% deposit
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!checkIn || !checkOut || guestsCount <= 0) {
       alert('الرجاء التأكد من إدخال كافة بيانات التواريخ والأعداد.');
@@ -799,9 +799,12 @@ export default function HouseDetail({
       createdAt: new Date().toISOString()
     };
 
-    onBook(newBooking, pointsToRedeem);
+    // Wait for the DB write. If the capacity trigger rejects, App.tsx
+    // already showed a specific error; we simply skip the success alert.
+    const result = await onBook(newBooking, pointsToRedeem);
+    if (result === false) return;
     alert(
-      isQuoteMode 
+      isQuoteMode
         ? 'تم إرسال طلب عرض السعر للمؤتمر الكنسي الكبير بنجاح! سيقوم مالك البيت بمراجعة الطلب وتقديم عرض سعر خاص خلال دقائق.'
         : `تم تقديم طلب الحجز بنجاح! تم كسب ${Math.round(totalPrice * 0.1)} نقطة مكافآت جديدة! ستجد تفاصيل الحجز وقبول المالك في صفحة "حجوزاتي".`
     );

@@ -234,7 +234,7 @@ export default function App() {
   };
 
   // --- Booking Operations ---
-  const handleBookHouse = async (newBooking: Booking, pointsRedeemed: number = 0) => {
+  const handleBookHouse = async (newBooking: Booking, pointsRedeemed: number = 0): Promise<boolean> => {
     // Persist to Supabase first — the DB trigger enforces bed-capacity per dates
     const res = await createBooking(newBooking);
     if (!res.ok) {
@@ -248,7 +248,7 @@ export default function App() {
       } else {
         alert('حدث خطأ في حفظ الحجز. حاول مرة أخرى.');
       }
-      return;
+      return false;
     }
     setBookings((prev) => [newBooking, ...prev]);
 
@@ -303,6 +303,7 @@ export default function App() {
 
     setActiveScreen('bookings');
     setSelectedHouse(null);
+    return true;
   };
 
   const handlePayDeposit = (bookingId: string) => {
