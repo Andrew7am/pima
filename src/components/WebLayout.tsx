@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Compass, BookOpen, ShieldAlert, Coffee, HelpCircle, Bell,
-  Trash2, Check, X, LogOut, User as UserIcon, Menu, Gift, Home
+  Trash2, Check, X, LogOut, Gift, Home
 } from 'lucide-react';
 import { User, AppNotification } from '../types';
 import Logo from './Logo';
@@ -47,7 +47,6 @@ export default function WebLayout({
   onClearNotifications,
 }: WebLayoutProps) {
   const [showNotif, setShowNotif] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const visibleNav = NAV_ITEMS.filter(item => item.roles.includes(currentUser.role));
   const unreadCount = notifications.filter(n => n.userId === currentUser.id && !n.isRead).length;
@@ -62,88 +61,19 @@ export default function WebLayout({
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[var(--color-natural-bg)]" dir="rtl">
-
-      {/* Sidebar */}
-      <aside
-        className={`flex flex-col shrink-0 bg-[var(--color-natural-sidebar)] border-l border-[var(--color-natural-border)] transition-all duration-300 ${sidebarOpen ? 'w-60' : 'w-16'}`}
-      >
-        {/* Logo */}
-        <div className={`flex items-center gap-3 px-4 py-4 border-b border-[var(--color-natural-border)] ${!sidebarOpen && 'justify-center px-2'}`}>
-          <div className="shrink-0">
-            <Logo size={32} variant="icon" />
-          </div>
-          {sidebarOpen && (
-            <span className="font-bold text-[var(--color-natural-primary)] text-lg tracking-wide">بيما</span>
-          )}
-        </div>
-
-        {/* Nav Items */}
-        <nav className="flex-1 py-4 overflow-y-auto">
-          {visibleNav.map(item => {
-            const isActive = activeScreen === item.id;
-            return (
-              <div key={item.id} className={`my-0.5 px-2 ${!sidebarOpen && 'flex justify-center'}`}>
-                <button
-                  onClick={() => setActiveScreen(item.id)}
-                  title={item.label}
-                  className={`flex items-center gap-3 py-2.5 text-sm font-medium transition-all duration-150 rounded-xl
-                    ${sidebarOpen ? 'w-full px-3' : 'w-10 h-10 justify-center'}
-                    ${isActive
-                      ? 'bg-[var(--color-natural-primary)] text-white shadow-sm'
-                      : 'text-[var(--color-natural-secondary)] hover:bg-[var(--color-natural-hover)] hover:text-[var(--color-natural-text)]'
-                    }`}
-                >
-                  {item.icon}
-                  {sidebarOpen && <span>{item.label}</span>}
-                </button>
-              </div>
-            );
-          })}
-        </nav>
-
-        {/* User Info + Logout */}
-        <div className={`border-t border-[var(--color-natural-border)] p-3 ${!sidebarOpen && 'flex flex-col items-center'}`}>
-          {sidebarOpen ? (
-            <div className="flex items-center gap-2 mb-2 px-1">
-              <div className="w-8 h-8 rounded-full bg-[var(--color-natural-primary)] text-white flex items-center justify-center text-xs font-bold shrink-0">
-                {currentUser.name.charAt(0)}
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-[var(--color-natural-text)] truncate">{currentUser.name}</p>
-                <p className="text-[10px] text-[var(--color-natural-secondary)]">{roleLabel[currentUser.role]}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-[var(--color-natural-primary)] text-white flex items-center justify-center text-xs font-bold mb-2">
-              {currentUser.name.charAt(0)}
-            </div>
-          )}
-          <button
-            onClick={onLogout}
-            title="تسجيل الخروج"
-            className={`flex items-center gap-2 text-xs text-red-500 hover:bg-red-50 rounded-lg py-2 px-3 transition-colors w-full
-              ${!sidebarOpen && 'justify-center px-2'}`}
-          >
-            <LogOut className="w-4 h-4 shrink-0" />
-            {sidebarOpen && <span>تسجيل الخروج</span>}
-          </button>
-        </div>
-      </aside>
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[var(--color-natural-bg)]" dir="rtl">
 
       {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Top Navbar */}
-        <header className="shrink-0 h-14 flex items-center justify-between px-5 bg-white border-b border-[var(--color-natural-border)] shadow-sm z-10">
-          <button
-            onClick={() => setSidebarOpen(v => !v)}
-            className="p-1.5 rounded-lg hover:bg-[var(--color-natural-hover)] text-[var(--color-natural-secondary)] transition-colors"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
+        <header className="shrink-0 h-14 flex items-center justify-between px-4 bg-white border-b border-[var(--color-natural-border)] shadow-sm z-10">
+          <div className="flex items-center gap-2 shrink-0">
+            <Logo size={28} variant="icon" />
+            <span className="font-bold text-[var(--color-natural-primary)] text-base tracking-wide">بيما</span>
+          </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {/* Notifications */}
             <div className="relative">
               <button
@@ -219,14 +149,45 @@ export default function WebLayout({
                 {currentUser.name.charAt(0)}
               </div>
             </div>
+
+            {/* Logout */}
+            <button
+              onClick={onLogout}
+              title="تسجيل الخروج"
+              className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {children}
         </main>
       </div>
+
+      {/* Bottom Navigation Bar */}
+      <nav className="shrink-0 bg-white border-t border-[var(--color-natural-border)] shadow-[0_-2px_8px_rgba(0,0,0,0.05)] flex items-stretch z-10">
+        {visibleNav.map(item => {
+          const isActive = activeScreen === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveScreen(item.id)}
+              title={item.label}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-center transition-colors duration-150
+                ${isActive
+                  ? 'text-[var(--color-natural-primary)]'
+                  : 'text-[var(--color-natural-secondary)] hover:text-[var(--color-natural-text)]'
+                }`}
+            >
+              {item.icon}
+              <span className={`text-[9.5px] font-bold leading-tight ${isActive ? 'font-black' : ''}`}>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
       {/* Backdrop for notifications on mobile */}
       {showNotif && (
