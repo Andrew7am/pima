@@ -224,15 +224,22 @@ function paymentToRow(p: Payment): Record<string, unknown> {
 
 // ─── Mutations ─────────────────────────────────────────────────────────────
 
-/** Returns true on success. On booking-overlap conflict Supabase returns 409. */
-export async function createBooking(b: Booking): Promise<{ ok: boolean; error?: string }> {
+/**
+ * Insert a new booking. The DB trigger enforces bed-capacity for overlapping dates.
+ * Returns { ok: false, error: 'INSUFFICIENT_CAPACITY', availableBeds } if the
+ * requested guests would exceed remaining capacity for these dates.
+ */
+export async function createBooking(b: Booking): Promise<{ ok: boolean; error?: string; availableBeds?: number }> {
   const { error } = await supabase.from('bookings').insert(bookingToRow(b));
   if (error) {
-    if (error.code === '23P01' || error.message.includes('exclusion')) {
-      return { ok: false, error: 'DATE_CONFLICT' };
+    const msg = error.message || '';
+    if (msg.includes('INSUFFICIENT_CAPACITY')) {
+      const match = msg.match(/Only (\d+) beds/);
+      const availableBeds = match ? parseInt(match[1], 10) : 0;
+      return { ok: false, error: 'INSUFFICIENT_CAPACITY', availableBeds };
     }
     console.error('createBooking:', error);
-    return { ok: false, error: error.message };
+    return { ok: false, error: msg };
   }
   return { ok: true };
 }

@@ -683,26 +683,42 @@ export default function HouseDetail({
 
   const approvedBookingsForThisHouse = bookings.filter((b) => b.houseId === house.id && b.status === 'approved');
   const pendingBookingsForThisHouse = bookings.filter((b) => b.houseId === house.id && b.status === 'pending');
+  const activeBookingsForThisHouse = [...approvedBookingsForThisHouse, ...pendingBookingsForThisHouse];
 
-  const allBookedRanges = [
-    ...approvedBookingsForThisHouse.map(b => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: 'approved' as const })),
-    ...pendingBookingsForThisHouse.map(b => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: 'pending' as const })),
-  ];
+  // Compute per-date used beds by summing guests_count of overlapping active bookings.
+  // A date is only "fully blocked" when used_beds >= house.bedsCount.
+  const usedBedsOnDate = (dateStr: string): number => {
+    return activeBookingsForThisHouse.reduce((sum, b) => {
+      if (dateStr >= b.checkIn && dateStr < b.checkOut) return sum + (b.guestsCount || 0);
+      return sum;
+    }, 0);
+  };
+
+  const isDateFull = (dateStr: string): boolean => {
+    if (house.blockedDates && house.blockedDates.includes(dateStr)) return true;
+    return usedBedsOnDate(dateStr) >= (house.bedsCount || 0);
+  };
+
+  // Only date ranges where capacity is FULLY used should block the calendar.
+  const allBookedRanges = activeBookingsForThisHouse
+    .filter(b => {
+      // Include this booking's range as "blocked" only if any day in it is fully booked.
+      const start = new Date(b.checkIn);
+      const end = new Date(b.checkOut);
+      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+        const s = d.toISOString().split('T')[0];
+        if (isDateFull(s)) return true;
+      }
+      return false;
+    })
+    .map(b => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: b.status as 'approved' | 'pending' }));
 
   // Simple calendar generator for July 2026 (since current year is 2026, and booking season is July)
   const JULY_2026_DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 
-  // Check if a specific date in July is booked
   const isDateBooked = (day: number) => {
     const dateStr = `2026-07-${day < 10 ? '0' + day : day}`;
-    if (house.blockedDates && house.blockedDates.includes(dateStr)) {
-      return true;
-    }
-    return approvedBookingsForThisHouse.some((b) => {
-      const checkInDay = parseInt(b.checkIn.split('-')[2]);
-      const checkOutDay = parseInt(b.checkOut.split('-')[2]);
-      return day >= checkInDay && day <= checkOutDay;
-    });
+    return isDateFull(dateStr);
   };
 
   const calculateNights = () => {

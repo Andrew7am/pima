@@ -235,11 +235,16 @@ export default function App() {
 
   // --- Booking Operations ---
   const handleBookHouse = async (newBooking: Booking, pointsRedeemed: number = 0) => {
-    // Persist to Supabase first — the DB's exclusion constraint enforces no double-booking
+    // Persist to Supabase first — the DB trigger enforces bed-capacity per dates
     const res = await createBooking(newBooking);
     if (!res.ok) {
-      if (res.error === 'DATE_CONFLICT') {
-        alert('عذراً، هذه التواريخ محجوزة الآن من عميل آخر. الرجاء اختيار تواريخ أخرى.');
+      if (res.error === 'INSUFFICIENT_CAPACITY') {
+        const avail = res.availableBeds ?? 0;
+        if (avail === 0) {
+          alert('عذراً، البيت مكتمل الإشغال في هذه التواريخ. الرجاء اختيار تواريخ أخرى.');
+        } else {
+          alert(`عذراً، لم يتبقَ سوى ${avail} سرير متاح في هذه التواريخ، وطلبك يتطلب ${newBooking.guestsCount} فرد. الرجاء تقليل عدد الأفراد أو تغيير التواريخ.`);
+        }
       } else {
         alert('حدث خطأ في حفظ الحجز. حاول مرة أخرى.');
       }
