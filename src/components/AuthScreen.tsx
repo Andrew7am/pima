@@ -182,7 +182,7 @@ export default function AuthScreen() {
                 <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">كود دعوة صديق (اختياري):</label>
                 <input type="text" placeholder="مثال: a1b2c3d4" value={referralCode} onChange={(e) => setReferralCode(e.target.value)}
                   className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none text-left" dir="ltr" />
-                <p className="text-[9px] text-[#8A8A70] mt-1">إن كان لديك كود من صديق، أدخله ليحصل على 20,000 نقطة (200 ج.م) عند إتمامك أول حجز مدفوع.</p>
+                <p className="text-[9px] text-[#8A8A70] mt-1">إن كان لديك كود من صديق، أدخله ليحصل على 2,000 نقطة (20 ج.م) عند إتمامك أول حجز مدفوع.</p>
               </div>
             </div>
 

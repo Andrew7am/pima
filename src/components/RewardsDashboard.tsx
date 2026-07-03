@@ -160,8 +160,8 @@ export default function RewardsDashboard({ currentUser, onBack }: RewardsDashboa
           <div className="flex items-start gap-2 bg-[#FDFBF7] p-2.5 rounded-2xl border border-[#D6D6C2]/40">
             <Users className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
             <div className="space-y-0.5">
-              <span className="font-bold text-[#4A4A3A]">20,000 نقطة عند دعوة صديق</span>
-              <p className="text-[#8A8A70] leading-relaxed">شارك كودك مع صديق، وستحصل على 20,000 نقطة (200 ج.م) بمجرد إتمامه أول حجز مدفوع عبر المنصة.</p>
+              <span className="font-bold text-[#4A4A3A]">2,000 نقطة عند دعوة صديق</span>
+              <p className="text-[#8A8A70] leading-relaxed">شارك كودك مع صديق، وستحصل على 2,000 نقطة (20 ج.م) بمجرد إتمامه أول حجز مدفوع عبر المنصة.</p>
             </div>
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function RewardsDashboard({ currentUser, onBack }: RewardsDashboa
             <span>كود دعوة أصدقائك</span>
           </h3>
           <p className="text-[10px] text-[#8A8A70] leading-relaxed">
-            شارك الكود التالي مع أصدقائك ليدخلوه عند إنشاء حسابهم، واحصل على 20,000 نقطة (200 ج.م) بمجرد أول حجز مدفوع لهم.
+            شارك الكود التالي مع أصدقائك ليدخلوه عند إنشاء حسابهم، واحصل على 2,000 نقطة (20 ج.م) بمجرد أول حجز مدفوع لهم.
           </p>
           <div className="flex items-center gap-2">
             <span className="flex-1 bg-white border border-emerald-300 rounded-xl px-3 py-2 text-sm font-black text-emerald-800 tracking-widest text-center" dir="ltr">

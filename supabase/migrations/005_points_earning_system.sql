@@ -58,7 +58,7 @@ $$;
 -- the real payout is still 1% of price / 2% off-season = 20% / 40% of the
 -- 5% platform commission -- loyalty spend never exceeds the platform's
 -- own margin, it's just expressed in bigger, friendlier point numbers.
--- Also pays the referrer 20,000 points (= 200 EGP) on the referred user's
+-- Also pays the referrer 2,000 points (= 20 EGP) on the referred user's
 -- first points-earning payment.
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.award_booking_points()
@@ -114,11 +114,11 @@ BEGIN
       FROM public.users WHERE id = NEW.user_id;
 
       IF referrer IS NOT NULL AND NOT referred_awarded THEN
-        UPDATE public.users SET points = points + 20000 WHERE id = referrer;
+        UPDATE public.users SET points = points + 2000 WHERE id = referrer;
         INSERT INTO public.points_history (id, user_id, amount, description, type)
         VALUES (
           'pt_ref_' || NEW.id || '_' || extract(epoch FROM clock_timestamp())::bigint,
-          referrer, 20000,
+          referrer, 2000,
           'مكافأة إحالة صديق: ' || COALESCE(referred_name, 'صديق') || ' أكمل أول حجز مدفوع',
           'earned'
         );
