@@ -33,7 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'owner_panel',  label: 'لوحة المالك',      icon: <Home className="w-5 h-5" />,      roles: ['owner'] },
   { id: 'meals',        label: 'قائمة الطعام',     icon: <Coffee className="w-5 h-5" />,    roles: ['owner'] },
   { id: 'admin_panel',  label: 'لوحة الإدارة',     icon: <ShieldAlert className="w-5 h-5" />, roles: ['admin'] },
-  { id: 'support',      label: 'الدعم الفني',      icon: <HelpCircle className="w-5 h-5" />, roles: ['individual', 'servant', 'church', 'owner'] },
+  { id: 'support',      label: 'التواصل والدعم الفني', icon: <HelpCircle className="w-5 h-5" />, roles: ['individual', 'servant', 'church', 'owner'] },
 ];
 
 export default function WebLayout({

@@ -20,6 +20,7 @@ export interface User {
   points?: number;
   pointsHistory?: PointsTransaction[];
   favorites?: string[];
+  referralCode?: string;
 }
 
 export interface ConferenceHall {

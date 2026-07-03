@@ -746,10 +746,14 @@ export default function HouseDetail({
     ? (house.monthlyRent || 1500) * guestsCount * months
     : house.pricePerNightPerPerson * guestsCount * nights;
 
-  // Rewards system points calculation
-  const maxRedeemablePoints = Math.min(currentUser.points || 0, originalTotalPrice);
+  // Rewards system points calculation — 100 points = 1 EGP, redemption can
+  // cover at most 10% of the booking price.
+  const POINTS_PER_EGP = 100;
+  const maxDiscountByPolicy = Math.round(originalTotalPrice * 0.1); // EGP
+  const maxRedeemablePoints = Math.min(currentUser.points || 0, maxDiscountByPolicy * POINTS_PER_EGP);
   const pointsToRedeem = usePoints ? maxRedeemablePoints : 0;
-  const totalPrice = Math.max(0, originalTotalPrice - pointsToRedeem);
+  const redemptionDiscount = Math.round(pointsToRedeem / POINTS_PER_EGP);
+  const totalPrice = Math.max(0, originalTotalPrice - redemptionDiscount);
   const depositAmount = Math.round(totalPrice * 0.15); // 15% deposit
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
@@ -806,7 +810,7 @@ export default function HouseDetail({
     alert(
       isQuoteMode
         ? 'تم إرسال طلب عرض السعر للمؤتمر الكنسي الكبير بنجاح! سيقوم مالك البيت بمراجعة الطلب وتقديم عرض سعر خاص خلال دقائق.'
-        : `تم تقديم طلب الحجز بنجاح! تم كسب ${Math.round(totalPrice * 0.1)} نقطة مكافآت جديدة! ستجد تفاصيل الحجز وقبول المالك في صفحة "حجوزاتي".`
+        : 'تم تقديم طلب الحجز بنجاح! ستكسب نقاط مكافآت فور تأكيد دفع العربون. ستجد تفاصيل الحجز وقبول المالك في صفحة "حجوزاتي".'
     );
   };
 
@@ -1935,6 +1939,34 @@ export default function HouseDetail({
                   />
                 </div>
 
+                {/* Points redemption toggle */}
+                {(currentUser.points || 0) > 0 && (
+                  <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-3 space-y-1.5">
+                    <label htmlFor="use-points-toggle" className="flex items-center justify-between gap-2 cursor-pointer">
+                      <span className="flex items-center gap-2">
+                        <input
+                          id="use-points-toggle"
+                          type="checkbox"
+                          checked={usePoints}
+                          onChange={(e) => setUsePoints(e.target.checked)}
+                          className="w-4 h-4 accent-emerald-600 cursor-pointer shrink-0"
+                        />
+                        <span className="text-[10.5px] font-bold text-emerald-900">
+                          استخدم نقاطك للخصم (رصيدك: {(currentUser.points || 0).toLocaleString('ar-EG')} نقطة)
+                        </span>
+                      </span>
+                      {usePoints && redemptionDiscount > 0 && (
+                        <span className="text-[10px] font-black text-emerald-700 shrink-0">
+                          -{redemptionDiscount.toLocaleString('ar-EG')} ج.م
+                        </span>
+                      )}
+                    </label>
+                    <p className="text-[9px] text-emerald-800/70 font-medium">
+                      كل 100 نقطة = 1 ج.م خصم، وتغطي النقاط 10% كحد أقصى من قيمة الحجز (حتى {maxDiscountByPolicy.toLocaleString('ar-EG')} ج.م لهذا الحجز).
+                    </p>
+                  </div>
+                )}
+
                 {/* Live pricing display */}
                 <div className="bg-[#EBEBE0]/30 border border-[#D6D6C2] rounded-2xl p-3.5 space-y-2 text-xs">
                   {isMonthlyHousing ? (
@@ -1947,6 +1979,12 @@ export default function HouseDetail({
                         <span>الإيجار الشهري للفرد:</span>
                         <span className="font-bold text-[#4A4A3A]">{house.monthlyRent} ج.م</span>
                       </div>
+                      {redemptionDiscount > 0 && (
+                        <div className="flex justify-between text-emerald-700">
+                          <span>خصم النقاط المستخدمة:</span>
+                          <span className="font-bold">-{redemptionDiscount.toLocaleString()} ج.م</span>
+                        </div>
+                      )}
                       <div className="flex justify-between font-black text-sm pt-2 border-t border-[#D6D6C2] text-[#4A4A3A]">
                         <span>الإجمالي للتعاقد:</span>
                         <span>{totalPrice.toLocaleString()} ج.م</span>
@@ -1965,6 +2003,12 @@ export default function HouseDetail({
                         <span>التسعير للفرد لليلة:</span>
                         <span className="font-bold text-[#4A4A3A]">{house.pricePerNightPerPerson} ج.م</span>
                       </div>
+                      {redemptionDiscount > 0 && (
+                        <div className="flex justify-between text-emerald-700">
+                          <span>خصم النقاط المستخدمة:</span>
+                          <span className="font-bold">-{redemptionDiscount.toLocaleString()} ج.م</span>
+                        </div>
+                      )}
                       <div className="flex justify-between font-black text-sm pt-2 border-t border-[#D6D6C2] text-[#4A4A3A]">
                         <span>الإجمالي المقدر:</span>
                         <span>{totalPrice.toLocaleString()} ج.م</span>

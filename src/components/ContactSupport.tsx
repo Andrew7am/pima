@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  Phone, Mail, Facebook, Youtube, Instagram, MessageCircle, 
+import {
+  Phone, Mail, Facebook, Instagram, MessageCircle,
   Send, AlertCircle, Info, CheckCircle2, ShieldCheck, HeartHandshake
 } from 'lucide-react';
 
@@ -90,7 +90,7 @@ export default function ContactSupport({ currentUser }: ContactSupportProps) {
             <HeartHandshake className="w-6 h-6 text-[#0A2342]" />
           </div>
           <div>
-            <h1 className="text-sm font-extrabold text-[#0A2342]">الدعم الفني وخدمة عملاء بيما</h1>
+            <h1 className="text-sm font-extrabold text-[#0A2342]">التواصل والدعم الفني وخدمة عملاء بيما</h1>
             <p className="text-[10px] text-[#8A8A70] font-bold">نسعد بخدمتكم وتلقي آرائكم واستفساراتكم على مدار الساعة</p>
           </div>
         </div>
@@ -159,7 +159,7 @@ export default function ContactSupport({ currentUser }: ContactSupportProps) {
           {/* Social Platforms */}
           <div className="pt-2">
             <span className="block text-[10px] font-extrabold text-[#8A8A70] mb-2.5">تابعونا على مواقع التواصل الاجتماعي:</span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {/* WhatsApp direct link */}
               <a 
                 href="https://wa.me/201234567890?text=سلام%20ونعمة%20أريد%20الاستفسار%20عن%20بيوت%20المؤتمرات" 
@@ -172,10 +172,10 @@ export default function ContactSupport({ currentUser }: ContactSupportProps) {
               </a>
 
               {/* Facebook */}
-              <a 
-                href="https://facebook.com/pima.retreats" 
-                target="_blank" 
-                rel="noreferrer" 
+              <a
+                href="https://www.facebook.com/share/1F27QZY4xR/?mibextid=wwXIfr"
+                target="_blank"
+                rel="noreferrer"
                 className="flex items-center justify-center gap-1.5 p-2 rounded-xl border border-[#D6D6C2]/50 hover:border-blue-600 bg-blue-50/20 text-blue-800 text-[10px] font-extrabold transition-all hover:bg-blue-50"
               >
                 <Facebook className="w-4 h-4 text-blue-600" />
@@ -183,25 +183,14 @@ export default function ContactSupport({ currentUser }: ContactSupportProps) {
               </a>
 
               {/* Instagram */}
-              <a 
-                href="https://instagram.com/pima.retreats" 
-                target="_blank" 
-                rel="noreferrer" 
+              <a
+                href="https://www.instagram.com/pima_app?igsh=Zzh2YmxsbWs5Nm82&utm_source=qr"
+                target="_blank"
+                rel="noreferrer"
                 className="flex items-center justify-center gap-1.5 p-2 rounded-xl border border-[#D6D6C2]/50 hover:border-pink-600 bg-pink-50/20 text-pink-800 text-[10px] font-extrabold transition-all hover:bg-pink-50"
               >
                 <Instagram className="w-4 h-4 text-pink-600" />
                 <span>إنستجرام</span>
-              </a>
-
-              {/* YouTube */}
-              <a 
-                href="https://youtube.com/c/PimaRetreats" 
-                target="_blank" 
-                rel="noreferrer" 
-                className="flex items-center justify-center gap-1.5 p-2 rounded-xl border border-[#D6D6C2]/50 hover:border-red-600 bg-red-50/20 text-red-800 text-[10px] font-extrabold transition-all hover:bg-red-50"
-              >
-                <Youtube className="w-4 h-4 text-red-600" />
-                <span>يوتيوب</span>
               </a>
             </div>
           </div>

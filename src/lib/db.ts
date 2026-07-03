@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation } from '../types';
+import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction } from '../types';
 
 // ─── Row → Type mappers ────────────────────────────────────────────────────
 
@@ -121,6 +121,16 @@ export function mapPayment(r: Record<string, unknown>): Payment {
   };
 }
 
+export function mapPointsTransaction(r: Record<string, unknown>): PointsTransaction {
+  return {
+    id: r.id as string,
+    date: r.created_at as string,
+    amount: r.amount as number,
+    description: r.description as string,
+    type: r.type as PointsTransaction['type'],
+  };
+}
+
 // ─── Loaders ───────────────────────────────────────────────────────────────
 
 export async function loadHouses(): Promise<RetreatHouse[]> {
@@ -152,6 +162,13 @@ export async function loadNotifications(userId: string): Promise<AppNotification
     .from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false });
   if (error) { console.error('loadNotifications:', error); return []; }
   return (data ?? []).map(mapNotification);
+}
+
+export async function loadPointsHistory(userId: string): Promise<PointsTransaction[]> {
+  const { data, error } = await supabase
+    .from('points_history').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  if (error) { console.error('loadPointsHistory:', error); return []; }
+  return (data ?? []).map(mapPointsTransaction);
 }
 
 // ─── Type → Row mappers (for inserts/updates) ──────────────────────────────

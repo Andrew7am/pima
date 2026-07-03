@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './lib/supabase';
 import {
-  loadHouses, loadBookings, loadReviews, loadPayments, loadNotifications,
+  loadHouses, loadBookings, loadReviews, loadPayments, loadNotifications, loadPointsHistory,
   createBooking, updateBookingStatus, updateBookingFields,
   createReview, updateReview as updateReviewDb, createPayment,
   createNotification, markNotificationRead,
 } from './lib/db';
-import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment } from './types';
+import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction } from './types';
 import { INITIAL_USERS } from './mockData';
 
 // Component Imports
@@ -80,7 +80,10 @@ export default function App() {
   }, []);
 
   const loadUserProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase.from('users').select('*').eq('id', userId).single();
+    const [{ data }, pointsHistory] = await Promise.all([
+      supabase.from('users').select('*').eq('id', userId).single(),
+      loadPointsHistory(userId),
+    ]);
     if (data) {
       const user: User = {
         id: data.id,
@@ -91,7 +94,9 @@ export default function App() {
         organizationName: data.organization_name ?? undefined,
         isApproved: data.is_approved ?? undefined,
         points: data.points ?? 0,
+        pointsHistory,
         favorites: data.favorites ?? [],
+        referralCode: data.referral_code ?? undefined,
         createdAt: data.created_at,
       };
       setCurrentUser(user);
@@ -102,6 +107,21 @@ export default function App() {
     }
     setIsAuthLoading(false);
   }, [loadAppData]);
+
+  // Points are earned server-side (DB trigger on bookings/reviews) so a
+  // payment confirmed by the owner/admin, or a referral bonus paid to a
+  // different user, still lands correctly under RLS. Re-pull the balance
+  // for display whenever the signed-in user is the one affected.
+  const refreshCurrentUserPoints = useCallback(async (userId: string) => {
+    const [{ data }, pointsHistory] = await Promise.all([
+      supabase.from('users').select('points').eq('id', userId).single(),
+      loadPointsHistory(userId),
+    ]);
+    setCurrentUser((prev) => {
+      if (!prev || prev.id !== userId) return prev;
+      return { ...prev, points: data?.points ?? prev.points, pointsHistory };
+    });
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -252,54 +272,34 @@ export default function App() {
     }
     setBookings((prev) => [newBooking, ...prev]);
 
-    // Calculate points earned for this booking (10% of booking price)
-    const pointsEarned = Math.round(newBooking.totalPrice * 0.1);
-
-    // Update users and currentUser points/history
-    setUsers((prevUsers) =>
-      prevUsers.map((u) => {
-        if (u.id === currentUser?.id) {
-          const currentPoints = u.points || 0;
-          const newPoints = Math.max(0, currentPoints - pointsRedeemed + pointsEarned);
-
-          const history = u.pointsHistory || [];
-          const newTransactions = [...history];
-
-          if (pointsRedeemed > 0) {
-            newTransactions.push({
-              id: `pt_red_${Date.now()}`,
-              date: new Date().toISOString(),
-              amount: pointsRedeemed,
-              description: `خصم نقاط لحجز بيت ${newBooking.houseName}`,
-              type: 'redeemed'
-            });
-          }
-
-          if (pointsEarned > 0) {
-            newTransactions.push({
-              id: `pt_earn_${Date.now() + 1}`,
-              date: new Date().toISOString(),
-              amount: pointsEarned,
-              description: `نقاط مكتسبة من حجز بيت ${newBooking.houseName}`,
-              type: 'earned'
-            });
-          }
-
-          const updatedUser: User = {
-            ...u,
-            points: newPoints,
-            pointsHistory: newTransactions
-          };
-
-          // Also update currentUser
-          setCurrentUser(updatedUser);
-          localStorage.setItem('coptic_current_user', JSON.stringify(updatedUser));
-
-          return updatedUser;
-        }
-        return u;
-      })
-    );
+    // Points are EARNED server-side only when a payment is actually confirmed
+    // (see migration 005) — never at booking time, so a pending/unpaid booking
+    // can't be used to farm points. Redemption is the one points operation
+    // safe to do client-side, since it only ever touches the acting user's
+    // own row (RLS allows that).
+    if (pointsRedeemed > 0 && currentUser) {
+      const newPoints = Math.max(0, (currentUser.points || 0) - pointsRedeemed);
+      const redemptionTx: PointsTransaction = {
+        id: `pt_red_${Date.now()}`,
+        date: new Date().toISOString(),
+        amount: pointsRedeemed,
+        description: `خصم نقاط لحجز بيت ${newBooking.houseName}`,
+        type: 'redeemed',
+      };
+      const updatedUser: User = {
+        ...currentUser,
+        points: newPoints,
+        pointsHistory: [...(currentUser.pointsHistory || []), redemptionTx],
+      };
+      setCurrentUser(updatedUser);
+      setUsers((prevUsers) => prevUsers.map((u) => (u.id === currentUser.id ? updatedUser : u)));
+      supabase.from('users').update({ points: newPoints }).eq('id', currentUser.id)
+        .then(({ error }) => { if (error) console.error('redeemPoints:', error); });
+      supabase.from('points_history').insert({
+        id: redemptionTx.id, user_id: currentUser.id, amount: redemptionTx.amount,
+        description: redemptionTx.description, type: redemptionTx.type,
+      }).then(({ error }) => { if (error) console.error('redeemPoints history:', error); });
+    }
 
     setActiveScreen('bookings');
     setSelectedHouse(null);
@@ -311,10 +311,11 @@ export default function App() {
     const depositAmount = target ? Math.round(target.totalPrice * 0.15) : 0;
     setBookings((prev) =>
       prev.map((b) =>
-        b.id === bookingId ? { ...b, depositPaid: true, depositAmount } : b
+        b.id === bookingId ? { ...b, depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' } : b
       )
     );
-    updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' });
+    updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' })
+      .then(() => { if (target && currentUser?.id === target.userId) refreshCurrentUserPoints(target.userId); });
   };
 
   // --- Owner Operations ---
@@ -389,7 +390,8 @@ export default function App() {
           : b
       )
     );
-    updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' });
+    updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' })
+      .then(() => { if (target && currentUser?.id === target.userId) refreshCurrentUserPoints(target.userId); });
     if (target) {
       pushNotification({
         id: `notif_${Date.now()}`, userId: target.userId, bookingId: target.id,
@@ -520,9 +522,10 @@ export default function App() {
             paymentStatus: updatedPaymentStatus,
             status: 'approved',
             depositPaid: true,
-          });
+          }).then(() => { if (currentUser?.id === b.userId) refreshCurrentUserPoints(b.userId); });
         } else {
-          updateBookingFields(b.id, { paymentStatus: 'unpaid' });
+          updateBookingFields(b.id, { paymentStatus: 'unpaid' })
+            .then(() => { if (currentUser?.id === b.userId) refreshCurrentUserPoints(b.userId); });
         }
 
         if (status === 'approved') {
@@ -588,7 +591,10 @@ export default function App() {
   // --- Review Operations ---
   const handleAddReview = (newReview: Review) => {
     setReviews((prev) => [newReview, ...prev]);
-    createReview(newReview);
+    // Awards +50 points server-side (migration 005 trigger on reviews insert)
+    createReview(newReview).then(() => {
+      if (currentUser?.id === newReview.userId) refreshCurrentUserPoints(newReview.userId);
+    });
 
     // Recalculate house rating and persist
     setHouses((prevHouses) =>

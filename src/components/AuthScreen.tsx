@@ -16,6 +16,7 @@ export default function AuthScreen() {
   const [phone, setPhone] = useState('');
   const [orgName, setOrgName] = useState('');
   const [password, setPassword] = useState('');
+  const [referralCode, setReferralCode] = useState('');
 
   // Sign in fields
   const [signInEmail, setSignInEmail] = useState('');
@@ -60,6 +61,7 @@ export default function AuthScreen() {
           role: selectedRole,
           phone,
           organization_name: (selectedRole === 'servant' || selectedRole === 'church' || selectedRole === 'owner') ? orgName : null,
+          referral_code: referralCode.trim() || null,
         },
       },
     });
@@ -174,6 +176,13 @@ export default function AuthScreen() {
                     className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none" />
                   <Lock className="absolute top-2.5 right-3 w-4 h-4 text-[#BCBC9D]" />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">كود دعوة صديق (اختياري):</label>
+                <input type="text" placeholder="مثال: a1b2c3d4" value={referralCode} onChange={(e) => setReferralCode(e.target.value)}
+                  className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none text-left" dir="ltr" />
+                <p className="text-[9px] text-[#8A8A70] mt-1">إن كان لديك كود من صديق، أدخله ليحصل على 20,000 نقطة (200 ج.م) عند إتمامك أول حجز مدفوع.</p>
               </div>
             </div>
 
