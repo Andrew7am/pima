@@ -692,10 +692,16 @@ export default function App() {
     return <AuthScreen />;
   }
 
+  // Navigating via sidebar should always clear any open house detail
+  const navigate = (screen: typeof activeScreen) => {
+    setSelectedHouse(null);
+    setActiveScreen(screen);
+  };
+
   return (
     <WebLayout
       activeScreen={activeScreen}
-      setActiveScreen={setActiveScreen}
+      setActiveScreen={navigate}
       currentUser={currentUser}
       onLogout={handleLogout}
       notifications={notifications}
