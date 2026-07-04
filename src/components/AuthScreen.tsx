@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { UserRole } from '../types';
-import { User as UserIcon, BookOpen, Building, Users, Lock, Mail, Phone } from 'lucide-react';
+import { User as UserIcon, BookOpen, Building, Users, Lock, Mail, Phone, MapPin, Church } from 'lucide-react';
 import Logo from './Logo';
 import { supabase } from '../lib/supabase';
+import { GOVERNORATES } from '../mockData';
 
 export default function AuthScreen() {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -17,6 +18,12 @@ export default function AuthScreen() {
   const [orgName, setOrgName] = useState('');
   const [password, setPassword] = useState('');
   const [referralCode, setReferralCode] = useState('');
+  const [age, setAge] = useState('');
+  const [village, setVillage] = useState('');
+  const [city, setCity] = useState('');
+  const [governorate, setGovernorate] = useState('');
+  const [churchName, setChurchName] = useState('');
+  const [priestName, setPriestName] = useState('');
 
   // Sign in fields
   const [signInEmail, setSignInEmail] = useState('');
@@ -39,10 +46,16 @@ export default function AuthScreen() {
     setLoading(false);
   };
 
+  const isChurchAffiliated = selectedRole === 'individual' || selectedRole === 'servant' || selectedRole === 'church';
+
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !phone || !password) {
-      setError('الرجاء ملء كافة الحقول الأساسية.');
+    if (!name || !email || !phone || !password || !age || !governorate) {
+      setError('الرجاء ملء كافة الحقول الأساسية (بما فيها السن والمحافظة).');
+      return;
+    }
+    if (isChurchAffiliated && (!churchName || !priestName)) {
+      setError('الرجاء كتابة اسم الكنيسة والأب الكاهن المسؤول.');
       return;
     }
     if (password.length < 6) {
@@ -62,6 +75,12 @@ export default function AuthScreen() {
           phone,
           organization_name: (selectedRole === 'servant' || selectedRole === 'church' || selectedRole === 'owner') ? orgName : null,
           referral_code: referralCode.trim() || null,
+          age: parseInt(age, 10),
+          village: village.trim() || null,
+          city: city.trim() || null,
+          governorate,
+          church_name: isChurchAffiliated ? churchName.trim() : null,
+          priest_name: isChurchAffiliated ? priestName.trim() : null,
         },
       },
     });
@@ -167,6 +186,55 @@ export default function AuthScreen() {
                   <input type="text" required placeholder="مثال: كنيسة العذراء بالزيتون" value={orgName} onChange={(e) => setOrgName(e.target.value)}
                     className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
                 </div>
+              )}
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">السن:</label>
+                <input type="number" required min={1} max={120} placeholder="مثال: 25" value={age} onChange={(e) => setAge(e.target.value)}
+                  className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">المحافظة:</label>
+                <div className="relative">
+                  <select required value={governorate} onChange={(e) => setGovernorate(e.target.value)}
+                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none appearance-none">
+                    <option value="" disabled>اختر المحافظة</option>
+                    {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                  <MapPin className="absolute top-2.5 right-3 w-4 h-4 text-[#BCBC9D] pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">المدينة (اختياري):</label>
+                  <input type="text" placeholder="مثال: شبين الكوم" value={city} onChange={(e) => setCity(e.target.value)}
+                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">القرية (اختياري):</label>
+                  <input type="text" placeholder="مثال: ميت حبيش" value={village} onChange={(e) => setVillage(e.target.value)}
+                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
+                </div>
+              </div>
+
+              {isChurchAffiliated && (
+                <>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">اسم الكنيسة:</label>
+                    <div className="relative">
+                      <input type="text" required placeholder="مثال: كنيسة الأنبا أنطونيوس" value={churchName} onChange={(e) => setChurchName(e.target.value)}
+                        className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none" />
+                      <Church className="absolute top-2.5 right-3 w-4 h-4 text-[#BCBC9D]" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">اسم الأب الكاهن المسؤول:</label>
+                    <input type="text" required placeholder="مثال: القس مرقس جرجس" value={priestName} onChange={(e) => setPriestName(e.target.value)}
+                      className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
+                  </div>
+                </>
               )}
 
               <div>

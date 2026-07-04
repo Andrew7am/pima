@@ -21,6 +21,12 @@ export interface User {
   pointsHistory?: PointsTransaction[];
   favorites?: string[];
   referralCode?: string;
+  age?: number;
+  village?: string;
+  city?: string;
+  governorate?: string;
+  churchName?: string;
+  priestName?: string;
 }
 
 export interface ConferenceHall {

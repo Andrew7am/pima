@@ -110,6 +110,12 @@ export default function App() {
         pointsHistory,
         favorites: data.favorites ?? [],
         referralCode: data.referral_code ?? undefined,
+        age: data.age ?? undefined,
+        village: data.village ?? undefined,
+        city: data.city ?? undefined,
+        governorate: data.governorate ?? undefined,
+        churchName: data.church_name ?? undefined,
+        priestName: data.priest_name ?? undefined,
         createdAt: data.created_at,
       };
       setCurrentUser(user);
