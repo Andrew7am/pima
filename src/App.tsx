@@ -25,6 +25,7 @@ import AuthScreen from './components/AuthScreen';
 import WeeklyMenuManager from './components/WeeklyMenuManager';
 import ContactSupport from './components/ContactSupport';
 import RewardsDashboard from './components/RewardsDashboard';
+import CompleteProfileScreen from './components/CompleteProfileScreen';
 
 export default function App() {
   // --- Persistent States from LocalStorage ---
@@ -608,6 +609,13 @@ export default function App() {
       organization_name: updatedUser.organizationName ?? null,
       points: updatedUser.points ?? 0,
       favorites: updatedUser.favorites ?? [],
+      role: updatedUser.role,
+      age: updatedUser.age ?? null,
+      village: updatedUser.village ?? null,
+      city: updatedUser.city ?? null,
+      governorate: updatedUser.governorate ?? null,
+      church_name: updatedUser.churchName ?? null,
+      priest_name: updatedUser.priestName ?? null,
     }).eq('id', updatedUser.id).then(({ error }) => {
       if (error) console.error('updateUserProfile:', error);
     });
@@ -754,6 +762,41 @@ export default function App() {
 
   if (!currentUser) {
     return <AuthScreen />;
+  }
+
+  // Google sign-in (and any pre-existing account from before these fields
+  // existed) may be missing profile details the registration form normally
+  // collects up front. Admin accounts are provisioned directly and are exempt.
+  const isChurchAffiliated = currentUser.role === 'individual' || currentUser.role === 'servant' || currentUser.role === 'church';
+  const needsOrgName = currentUser.role === 'servant' || currentUser.role === 'church' || currentUser.role === 'owner';
+  const needsProfileCompletion = currentUser.role !== 'admin' && (
+    !currentUser.phone ||
+    currentUser.age === undefined ||
+    !currentUser.governorate ||
+    (isChurchAffiliated && (!currentUser.churchName || !currentUser.priestName)) ||
+    (needsOrgName && !currentUser.organizationName)
+  );
+
+  if (needsProfileCompletion) {
+    return (
+      <CompleteProfileScreen
+        currentUser={currentUser}
+        onComplete={(fields) => {
+          handleUpdateUserProfile({
+            ...currentUser,
+            role: fields.role,
+            phone: fields.phone,
+            age: fields.age,
+            governorate: fields.governorate,
+            village: fields.village,
+            city: fields.city,
+            organizationName: fields.organizationName ?? currentUser.organizationName,
+            churchName: fields.churchName,
+            priestName: fields.priestName,
+          });
+        }}
+      />
+    );
   }
 
   // Navigating via sidebar should always clear any open house detail
