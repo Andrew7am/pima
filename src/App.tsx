@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './lib/supabase';
 import {
+  mapUser, loadUsers,
   loadHouses, loadBookings, loadReviews, loadPayments, loadNotifications, loadPointsHistory,
   loadRooms, loadAnnouncements, loadWaitlist,
   createBooking, updateBookingStatus, updateBookingFields,
@@ -11,7 +12,6 @@ import {
   createWaitlistEntry,
 } from './lib/db';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry } from './types';
-import { INITIAL_USERS } from './mockData';
 
 // Component Imports
 import InteractiveMap from './components/InteractiveMap';
@@ -26,20 +26,10 @@ import WeeklyMenuManager from './components/WeeklyMenuManager';
 import ContactSupport from './components/ContactSupport';
 import RewardsDashboard from './components/RewardsDashboard';
 import CompleteProfileScreen from './components/CompleteProfileScreen';
+import PendingApprovalScreen from './components/PendingApprovalScreen';
 
 export default function App() {
-  // --- Persistent States from LocalStorage ---
-  const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('coptic_users');
-    if (saved) {
-      const parsed: User[] = JSON.parse(saved);
-      return parsed.map(u => {
-        const initial = INITIAL_USERS.find(iu => iu.id === u.id);
-        return initial ? { ...u, ...initial } : u;
-      });
-    }
-    return INITIAL_USERS;
-  });
+  const [users, setUsers] = useState<User[]>([]);
 
   const [houses, setHouses] = useState<RetreatHouse[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -76,10 +66,11 @@ export default function App() {
 
   // --- Supabase Data Loading ---
   const loadAppData = useCallback(async (userId?: string) => {
-    const [h, b, r, p, rm, an, wl] = await Promise.all([
-      loadHouses(), loadBookings(), loadReviews(), loadPayments(),
+    const [u, h, b, r, p, rm, an, wl] = await Promise.all([
+      loadUsers(), loadHouses(), loadBookings(), loadReviews(), loadPayments(),
       loadRooms(), loadAnnouncements(), loadWaitlist(),
     ]);
+    setUsers(u);
     setHouses(h);
     setBookings(b);
     setReviews(r);
@@ -99,26 +90,7 @@ export default function App() {
       loadPointsHistory(userId),
     ]);
     if (data) {
-      const user: User = {
-        id: data.id,
-        email: data.email,
-        name: data.name,
-        role: data.role as User['role'],
-        phone: data.phone,
-        organizationName: data.organization_name ?? undefined,
-        isApproved: data.is_approved ?? undefined,
-        points: data.points ?? 0,
-        pointsHistory,
-        favorites: data.favorites ?? [],
-        referralCode: data.referral_code ?? undefined,
-        age: data.age ?? undefined,
-        village: data.village ?? undefined,
-        city: data.city ?? undefined,
-        governorate: data.governorate ?? undefined,
-        churchName: data.church_name ?? undefined,
-        priestName: data.priest_name ?? undefined,
-        createdAt: data.created_at,
-      };
+      const user: User = { ...mapUser(data), pointsHistory };
       setCurrentUser(user);
       if (user.role === 'owner') setActiveScreen('owner_panel');
       else if (user.role === 'admin') setActiveScreen('admin_panel');
@@ -616,8 +588,28 @@ export default function App() {
       governorate: updatedUser.governorate ?? null,
       church_name: updatedUser.churchName ?? null,
       priest_name: updatedUser.priestName ?? null,
+      id_card_front: updatedUser.idCardFront ?? null,
+      id_card_back: updatedUser.idCardBack ?? null,
     }).eq('id', updatedUser.id).then(({ error }) => {
       if (error) console.error('updateUserProfile:', error);
+    });
+  };
+
+  // Admin-only: approve or reject a pending servant/owner account. Requires
+  // the users_update_admin RLS policy (migration 008) since this touches
+  // someone else's row, not the caller's own.
+  const handleSetUserApproval = (userId: string, status: 'approved' | 'rejected') => {
+    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, approvalStatus: status } : u)));
+    supabase.from('users').update({ approval_status: status }).eq('id', userId).then(({ error }) => {
+      if (error) console.error('setUserApproval:', error);
+    });
+    pushNotification({
+      id: `notif_${Date.now()}`, userId, bookingId: '',
+      title: status === 'approved' ? 'تم اعتماد حسابك ✓' : 'تعذر اعتماد حسابك',
+      message: status === 'approved'
+        ? 'تهانينا! تم مراجعة حسابك والموافقة عليه، يمكنك الآن استخدام المنصة بالكامل.'
+        : 'نأسف، تعذرت الموافقة على حسابك حالياً. تواصل مع الدعم الفني لمزيد من التفاصيل.',
+      type: status === 'approved' ? 'success' : 'danger', isRead: false, createdAt: new Date().toISOString()
     });
   };
 
@@ -767,14 +759,17 @@ export default function App() {
   // Google sign-in (and any pre-existing account from before these fields
   // existed) may be missing profile details the registration form normally
   // collects up front. Admin accounts are provisioned directly and are exempt.
-  const isChurchAffiliated = currentUser.role === 'individual' || currentUser.role === 'servant' || currentUser.role === 'church';
-  const needsOrgName = currentUser.role === 'servant' || currentUser.role === 'church' || currentUser.role === 'owner';
+  const isChurchAffiliated = currentUser.role === 'individual' || currentUser.role === 'servant';
+  const needsOrgName = currentUser.role === 'servant' || currentUser.role === 'owner';
+  const needsIdCard = (currentUser.role === 'servant' || currentUser.role === 'owner') &&
+    (!currentUser.idCardFront || !currentUser.idCardBack);
   const needsProfileCompletion = currentUser.role !== 'admin' && (
     !currentUser.phone ||
     currentUser.age === undefined ||
     !currentUser.governorate ||
     (isChurchAffiliated && (!currentUser.churchName || !currentUser.priestName)) ||
-    (needsOrgName && !currentUser.organizationName)
+    (needsOrgName && !currentUser.organizationName) ||
+    needsIdCard
   );
 
   if (needsProfileCompletion) {
@@ -793,10 +788,22 @@ export default function App() {
             organizationName: fields.organizationName ?? currentUser.organizationName,
             churchName: fields.churchName,
             priestName: fields.priestName,
+            idCardFront: fields.idCardFront ?? currentUser.idCardFront,
+            idCardBack: fields.idCardBack ?? currentUser.idCardBack,
           });
         }}
       />
     );
+  }
+
+  // Servant/owner accounts need admin review before they can use the app —
+  // grandfathered existing accounts are already 'approved' (migration 008),
+  // so this only affects new signups going forward.
+  const needsApproval = (currentUser.role === 'servant' || currentUser.role === 'owner') &&
+    currentUser.approvalStatus !== 'approved';
+
+  if (needsApproval) {
+    return <PendingApprovalScreen currentUser={currentUser} onLogout={handleLogout} />;
   }
 
   // Navigating via sidebar should always clear any open house detail
@@ -910,6 +917,7 @@ export default function App() {
               onUpdateAllocations={handleUpdateAllocations}
               payments={payments}
               onVerifyPayment={handleVerifyPayment}
+              onSetUserApproval={handleSetUserApproval}
             />
           )}
 

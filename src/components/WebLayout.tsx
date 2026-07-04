@@ -27,13 +27,13 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'explore',      label: 'استكشاف البيوت', icon: <Compass className="w-5 h-5" />,   roles: ['individual', 'servant', 'church'] },
-  { id: 'bookings',     label: 'حجوزاتي',         icon: <BookOpen className="w-5 h-5" />,  roles: ['individual', 'servant', 'church'] },
-  { id: 'rewards',      label: 'المكافآت',         icon: <Gift className="w-5 h-5" />,      roles: ['individual', 'servant', 'church'] },
+  { id: 'explore',      label: 'استكشاف البيوت', icon: <Compass className="w-5 h-5" />,   roles: ['individual', 'servant'] },
+  { id: 'bookings',     label: 'حجوزاتي',         icon: <BookOpen className="w-5 h-5" />,  roles: ['individual', 'servant'] },
+  { id: 'rewards',      label: 'المكافآت',         icon: <Gift className="w-5 h-5" />,      roles: ['individual', 'servant'] },
   { id: 'owner_panel',  label: 'لوحة المالك',      icon: <Home className="w-5 h-5" />,      roles: ['owner'] },
   { id: 'meals',        label: 'قائمة الطعام',     icon: <Coffee className="w-5 h-5" />,    roles: ['owner'] },
   { id: 'admin_panel',  label: 'لوحة الإدارة',     icon: <ShieldAlert className="w-5 h-5" />, roles: ['admin'] },
-  { id: 'support',      label: 'التواصل والدعم الفني', icon: <HelpCircle className="w-5 h-5" />, roles: ['individual', 'servant', 'church', 'owner'] },
+  { id: 'support',      label: 'التواصل والدعم الفني', icon: <HelpCircle className="w-5 h-5" />, roles: ['individual', 'servant', 'owner'] },
 ];
 
 export default function WebLayout({
@@ -55,7 +55,6 @@ export default function WebLayout({
   const roleLabel: Record<string, string> = {
     individual: 'مستخدم',
     servant: 'خادم',
-    church: 'كنيسة',
     owner: 'مالك',
     admin: 'مشرف',
   };

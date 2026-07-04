@@ -1,4 +1,4 @@
-export type UserRole = 'individual' | 'servant' | 'church' | 'owner' | 'admin';
+export type UserRole = 'individual' | 'servant' | 'owner' | 'admin';
 
 export interface PointsTransaction {
   id: string;
@@ -15,7 +15,7 @@ export interface User {
   role: UserRole;
   phone: string;
   organizationName?: string; // For churches or servant groups
-  isApproved?: boolean; // For owners, reviewed by admin
+  approvalStatus?: 'pending' | 'approved' | 'rejected'; // For servant/owner, reviewed by admin
   createdAt: string;
   points?: number;
   pointsHistory?: PointsTransaction[];
@@ -27,6 +27,8 @@ export interface User {
   governorate?: string;
   churchName?: string;
   priestName?: string;
+  idCardFront?: string;
+  idCardBack?: string;
 }
 
 export interface ConferenceHall {

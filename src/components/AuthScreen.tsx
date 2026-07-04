@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserRole } from '../types';
-import { User as UserIcon, BookOpen, Building, Users, Lock, Mail, Phone, MapPin, Church } from 'lucide-react';
+import { User as UserIcon, BookOpen, Users, Lock, Mail, Phone, MapPin, Church } from 'lucide-react';
 import Logo from './Logo';
 import { supabase } from '../lib/supabase';
 import { GOVERNORATES } from '../mockData';
@@ -60,7 +60,7 @@ export default function AuthScreen() {
     setLoading(false);
   };
 
-  const isChurchAffiliated = selectedRole === 'individual' || selectedRole === 'servant' || selectedRole === 'church';
+  const isChurchAffiliated = selectedRole === 'individual' || selectedRole === 'servant';
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +87,7 @@ export default function AuthScreen() {
           name,
           role: selectedRole,
           phone,
-          organization_name: (selectedRole === 'servant' || selectedRole === 'church' || selectedRole === 'owner') ? orgName : null,
+          organization_name: (selectedRole === 'servant' || selectedRole === 'owner') ? orgName : null,
           referral_code: referralCode.trim() || null,
           age: parseInt(age, 10),
           village: village.trim() || null,
@@ -108,7 +108,6 @@ export default function AuthScreen() {
   const DEMO_ACCOUNTS = [
     { email: 'fady@gmail.com',            label: 'مينا الديب',       sub: 'فرد' },
     { email: 'mina@servant.org',          label: 'مينا الديب',       sub: 'خادم' },
-    { email: 'church_admin@outlook.com',  label: 'تامر منير',        sub: 'كنيسة' },
     { email: 'owner@church.eg',           label: 'بطرس ميلاد',       sub: 'مالك بيت' },
     { email: 'shenouda@retreat.eg',       label: 'شنودة رمسيس',      sub: 'مالك بيت' },
     { email: 'admin@church.eg',           label: 'القس مرقس جرجس',   sub: 'أدمن' },
@@ -166,14 +165,13 @@ export default function AuthScreen() {
               <p className="text-[10px] text-[#8A8A70]">اختر نوع حسابك لتخصيص محرك البحث والحجوزات.</p>
             </div>
 
-            <div className="grid grid-cols-4 gap-1.5 p-1 bg-[#EBEBE0] border border-[#D6D6C2] rounded-2xl">
-              {(['individual', 'servant', 'church', 'owner'] as UserRole[]).map((role) => {
+            <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#EBEBE0] border border-[#D6D6C2] rounded-2xl">
+              {(['individual', 'servant', 'owner'] as UserRole[]).map((role) => {
                 const isSelected = selectedRole === role;
                 let label = '';
                 let Icon = UserIcon;
                 if (role === 'individual') { label = 'فرد'; Icon = UserIcon; }
                 else if (role === 'servant') { label = 'خادم'; Icon = BookOpen; }
-                else if (role === 'church') { label = 'كنيسة'; Icon = Building; }
                 else if (role === 'owner') { label = 'صاحب بيت'; Icon = Users; }
                 return (
                   <button key={role} type="button" onClick={() => setSelectedRole(role)}
@@ -213,7 +211,7 @@ export default function AuthScreen() {
                 </div>
               </div>
 
-              {(selectedRole === 'servant' || selectedRole === 'church' || selectedRole === 'owner') && (
+              {(selectedRole === 'servant' || selectedRole === 'owner') && (
                 <div>
                   <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">
                     {selectedRole === 'owner' ? 'اسم بيت المؤتمرات / الشركة الممثلة:' : 'اسم الكنيسة / أسرة الخدمة التابع لها:'}

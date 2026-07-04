@@ -3,6 +3,30 @@ import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Att
 
 // ─── Row → Type mappers ────────────────────────────────────────────────────
 
+export function mapUser(r: Record<string, unknown>): User {
+  return {
+    id: r.id as string,
+    email: r.email as string,
+    name: r.name as string,
+    role: r.role as User['role'],
+    phone: r.phone as string,
+    organizationName: r.organization_name as string ?? undefined,
+    approvalStatus: r.approval_status as User['approvalStatus'] ?? undefined,
+    points: r.points as number ?? 0,
+    favorites: (r.favorites as string[]) ?? [],
+    referralCode: r.referral_code as string ?? undefined,
+    age: r.age as number ?? undefined,
+    village: r.village as string ?? undefined,
+    city: r.city as string ?? undefined,
+    governorate: r.governorate as string ?? undefined,
+    churchName: r.church_name as string ?? undefined,
+    priestName: r.priest_name as string ?? undefined,
+    idCardFront: r.id_card_front as string ?? undefined,
+    idCardBack: r.id_card_back as string ?? undefined,
+    createdAt: r.created_at as string,
+  };
+}
+
 export function mapHouse(r: Record<string, unknown>): RetreatHouse {
   return {
     id: r.id as string,
@@ -171,6 +195,14 @@ export function mapWaitlistEntry(r: Record<string, unknown>): WaitlistEntry {
 }
 
 // ─── Loaders ───────────────────────────────────────────────────────────────
+
+export async function loadUsers(): Promise<User[]> {
+  // RLS: a regular user only ever gets their own row back here; an admin
+  // gets everyone's (see users_select_admin policy in migration 008).
+  const { data, error } = await supabase.from('users').select('*').order('created_at');
+  if (error) { console.error('loadUsers:', error); return []; }
+  return (data ?? []).map(mapUser);
+}
 
 export async function loadHouses(): Promise<RetreatHouse[]> {
   const { data, error } = await supabase.from('houses').select('*').order('created_at');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { RetreatHouse, User, Booking, Attendee, RoomAllocation, Payment } from '../types';
-import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar } from 'lucide-react';
+import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard } from 'lucide-react';
 
 interface AdminDashboardProps {
   houses: RetreatHouse[];
@@ -15,6 +15,7 @@ interface AdminDashboardProps {
   onUpdateAllocations: (bookingId: string, allocations: RoomAllocation[]) => void;
   payments?: Payment[];
   onVerifyPayment?: (paymentId: string, status: 'approved' | 'rejected', adminNotes?: string) => void;
+  onSetUserApproval?: (userId: string, status: 'approved' | 'rejected') => void;
 }
 
 export default function AdminDashboard({
@@ -30,11 +31,15 @@ export default function AdminDashboard({
   onUpdateAllocations,
   payments = [],
   onVerifyPayment,
+  onSetUserApproval,
 }: AdminDashboardProps) {
-  // Tabs within Admin: 'moderation', 'users', 'reports', 'payments', 'bookings'
-  const [activeTab, setActiveTab] = useState<'moderation' | 'users' | 'reports' | 'payments' | 'bookings'>('moderation');
+  // Tabs within Admin: 'moderation', 'accounts', 'users', 'reports', 'payments', 'bookings'
+  const [activeTab, setActiveTab] = useState<'moderation' | 'accounts' | 'users' | 'reports' | 'payments' | 'bookings'>('moderation');
   const [notesInputs, setNotesInputs] = useState<Record<string, string>>({});
   const [selectedProofImage, setSelectedProofImage] = useState<string | null>(null);
+  const [selectedIdCardImage, setSelectedIdCardImage] = useState<string | null>(null);
+
+  const pendingAccounts = users.filter(u => (u.role === 'servant' || u.role === 'owner') && u.approvalStatus === 'pending');
 
   // Bookings search & filter states
   const [bookingSearch, setBookingSearch] = useState('');
@@ -125,6 +130,18 @@ export default function AdminDashboard({
         >
           مراجعة البيوت ({pendingHouses.length})
           {pendingHouses.length > 0 && (
+            <span className="absolute top-1.5 left-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
+          )}
+        </button>
+        <button
+          id="admin-tab-accounts"
+          onClick={() => setActiveTab('accounts')}
+          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap relative ${
+            activeTab === 'accounts' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          مراجعة الحسابات ({pendingAccounts.length})
+          {pendingAccounts.length > 0 && (
             <span className="absolute top-1.5 left-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
           )}
         </button>
@@ -238,6 +255,91 @@ export default function AdminDashboard({
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Pending servant/owner account approvals */}
+      {activeTab === 'accounts' && (
+        <div className="space-y-3">
+          <div className="text-xs font-bold text-[#8A8A70] px-1">حسابات الخدام وأصحاب البيوت بانتظار مراجعة بطاقتهم الشخصية:</div>
+
+          {pendingAccounts.length === 0 ? (
+            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-2">
+              <IdCard className="w-8 h-8 text-[#BCBC9D] mx-auto" />
+              <p className="text-sm font-bold text-[#4A4A3A]">لا توجد حسابات معلقة حالياً</p>
+              <p className="text-[11px] text-[#8A8A70]">كافة حسابات الخدام وأصحاب البيوت تمت مراجعتها.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pendingAccounts.map((acc) => (
+                <div key={acc.id} className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden text-right p-4 space-y-2.5">
+                  <div>
+                    <h3 className="text-xs font-bold text-[#4A4A3A]">{acc.name}</h3>
+                    <p className="text-[10px] text-[#8A8A70] mt-0.5">
+                      {acc.role === 'owner' ? 'صاحب بيت' : 'خادم'} · {acc.email} · {acc.phone}
+                    </p>
+                    {acc.organizationName && (
+                      <p className="text-[10px] text-[#8A8A70] mt-0.5">الجهة: {acc.organizationName}</p>
+                    )}
+                    {acc.churchName && (
+                      <p className="text-[10px] text-[#8A8A70] mt-0.5">الكنيسة: {acc.churchName} — الأب الكاهن: {acc.priestName}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => acc.idCardFront && setSelectedIdCardImage(acc.idCardFront)}
+                      className="rounded-2xl border border-[#D6D6C2] overflow-hidden bg-[#EBEBE0]/30 h-24"
+                    >
+                      {acc.idCardFront ? (
+                        <img src={acc.idCardFront} alt="وش البطاقة" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="flex items-center justify-center h-full text-[9px] text-[#8A8A70]">لا توجد صورة</span>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => acc.idCardBack && setSelectedIdCardImage(acc.idCardBack)}
+                      className="rounded-2xl border border-[#D6D6C2] overflow-hidden bg-[#EBEBE0]/30 h-24"
+                    >
+                      {acc.idCardBack ? (
+                        <img src={acc.idCardBack} alt="ضهر البطاقة" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="flex items-center justify-center h-full text-[9px] text-[#8A8A70]">لا توجد صورة</span>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2 justify-end pt-1">
+                    <button
+                      id={`reject-account-${acc.id}`}
+                      onClick={() => onSetUserApproval && onSetUserApproval(acc.id, 'rejected')}
+                      className="flex items-center gap-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>رفض الحساب</span>
+                    </button>
+                    <button
+                      id={`approve-account-${acc.id}`}
+                      onClick={() => onSetUserApproval && onSetUserApproval(acc.id, 'approved')}
+                      className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>اعتماد الحساب</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Full-size ID card viewer */}
+      {selectedIdCardImage && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setSelectedIdCardImage(null)}>
+          <img src={selectedIdCardImage} alt="صورة البطاقة" className="max-w-full max-h-full rounded-2xl" />
         </div>
       )}
 
