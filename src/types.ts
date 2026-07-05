@@ -22,8 +22,7 @@ export interface User {
   favorites?: string[];
   referralCode?: string;
   dateOfBirth?: string; // ISO date (YYYY-MM-DD); age is derived from this, never stored directly
-  village?: string;
-  city?: string;
+  address?: string; // Full address (village/city/street), free text
   governorate?: string;
   churchName?: string;
   priestName?: string;

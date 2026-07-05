@@ -12,8 +12,7 @@ interface CompleteProfileScreenProps {
     phone: string;
     dateOfBirth: string;
     governorate: string;
-    village?: string;
-    city?: string;
+    address?: string;
     organizationName?: string;
     churchName?: string;
     priestName?: string;
@@ -27,8 +26,7 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
   const [phone, setPhone] = useState(currentUser.phone || '');
   const [dateOfBirth, setDateOfBirth] = useState(currentUser.dateOfBirth || '');
   const [governorate, setGovernorate] = useState(currentUser.governorate || '');
-  const [village, setVillage] = useState(currentUser.village || '');
-  const [city, setCity] = useState(currentUser.city || '');
+  const [address, setAddress] = useState(currentUser.address || '');
   const [orgName, setOrgName] = useState(currentUser.organizationName || '');
   const [churchName, setChurchName] = useState(currentUser.churchName || '');
   const [priestName, setPriestName] = useState(currentUser.priestName || '');
@@ -68,8 +66,7 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
       phone,
       dateOfBirth,
       governorate,
-      village: village.trim() || undefined,
-      city: city.trim() || undefined,
+      address: address.trim() || undefined,
       organizationName: needsOrgName ? orgName.trim() : undefined,
       churchName: isChurchAffiliated ? churchName.trim() : undefined,
       priestName: isChurchAffiliated ? priestName.trim() : undefined,
@@ -158,17 +155,10 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">المدينة (اختياري):</label>
-                <input type="text" placeholder="مثال: شبين الكوم" value={city} onChange={(e) => setCity(e.target.value)}
-                  className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">القرية (اختياري):</label>
-                <input type="text" placeholder="مثال: ميت حبيش" value={village} onChange={(e) => setVillage(e.target.value)}
-                  className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
-              </div>
+            <div>
+              <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">العنوان بالكامل (اختياري):</label>
+              <input type="text" placeholder="مثال: مدينة شبين الكوم، قرية ميت حبيش" value={address} onChange={(e) => setAddress(e.target.value)}
+                className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
             </div>
 
             {isChurchAffiliated && (

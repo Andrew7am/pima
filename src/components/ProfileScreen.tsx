@@ -69,7 +69,10 @@ export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigat
             <InfoRow icon={UserIcon} label="السن" value={`${calculateAge(currentUser.dateOfBirth)} سنة`} />
           )}
           {currentUser.governorate && (
-            <InfoRow icon={MapPin} label="المحافظة" value={[currentUser.governorate, currentUser.city, currentUser.village].filter(Boolean).join(' - ')} />
+            <InfoRow icon={MapPin} label="المحافظة" value={currentUser.governorate} />
+          )}
+          {currentUser.address && (
+            <InfoRow icon={MapPin} label="العنوان بالكامل" value={currentUser.address} />
           )}
           {currentUser.churchName && (
             <InfoRow icon={Church} label="الكنيسة" value={`${currentUser.churchName}${currentUser.priestName ? ' — ' + currentUser.priestName : ''}`} />

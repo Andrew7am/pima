@@ -19,8 +19,7 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [referralCode, setReferralCode] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
-  const [village, setVillage] = useState('');
-  const [city, setCity] = useState('');
+  const [address, setAddress] = useState('');
   const [governorate, setGovernorate] = useState('');
   const [churchName, setChurchName] = useState('');
   const [priestName, setPriestName] = useState('');
@@ -94,8 +93,7 @@ export default function AuthScreen() {
           organization_name: (selectedRole === 'servant' || selectedRole === 'owner') ? orgName : null,
           referral_code: referralCode.trim() || null,
           date_of_birth: dateOfBirth,
-          village: village.trim() || null,
-          city: city.trim() || null,
+          address: address.trim() || null,
           governorate,
           church_name: isChurchAffiliated ? churchName.trim() : null,
           priest_name: isChurchAffiliated ? priestName.trim() : null,
@@ -246,17 +244,10 @@ export default function AuthScreen() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">المدينة (اختياري):</label>
-                  <input type="text" placeholder="مثال: شبين الكوم" value={city} onChange={(e) => setCity(e.target.value)}
-                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">القرية (اختياري):</label>
-                  <input type="text" placeholder="مثال: ميت حبيش" value={village} onChange={(e) => setVillage(e.target.value)}
-                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
-                </div>
+              <div>
+                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">العنوان بالكامل (اختياري):</label>
+                <input type="text" placeholder="مثال: مدينة شبين الكوم، قرية ميت حبيش" value={address} onChange={(e) => setAddress(e.target.value)}
+                  className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
               </div>
 
               {isChurchAffiliated && (
