@@ -38,14 +38,19 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
   const needsOrgName = role === 'servant' || role === 'owner';
   const needsIdCard = role === 'servant';
 
+  // Minimum accepted age is 6 years old
+  const minAgeDate = new Date();
+  minAgeDate.setFullYear(minAgeDate.getFullYear() - 6);
+  const maxDateOfBirth = minAgeDate.toISOString().split('T')[0];
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone || !dateOfBirth || !governorate) {
       setError('الرجاء ملء رقم الهاتف وتاريخ الميلاد والمحافظة.');
       return;
     }
-    if (new Date(dateOfBirth) > new Date()) {
-      setError('تاريخ الميلاد غير صحيح.');
+    if (new Date(dateOfBirth) > new Date(maxDateOfBirth)) {
+      setError('عذراً، يجب ألا يقل عمر المستخدم عن 6 سنوات.');
       return;
     }
     if (needsOrgName && !orgName.trim()) {
@@ -137,7 +142,7 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
             <div>
               <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">تاريخ الميلاد:</label>
               <input
-                type="date" required max={new Date().toISOString().split('T')[0]}
+                type="date" required max={maxDateOfBirth}
                 value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)}
                 className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none"
               />
