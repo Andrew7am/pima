@@ -3,6 +3,7 @@ import { User, UserRole } from '../types';
 import { User as UserIcon, BookOpen, Users, Phone, MapPin, Church, IdCard } from 'lucide-react';
 import Logo from './Logo';
 import { GOVERNORATES } from '../mockData';
+import PhotoPickerButtons from './PhotoPickerButtons';
 
 interface CompleteProfileScreenProps {
   currentUser: User;
@@ -38,12 +39,6 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
   const isChurchAffiliated = role === 'individual' || role === 'servant';
   const needsOrgName = role === 'servant' || role === 'owner';
   const needsIdCard = role === 'servant';
-
-  const readFileAsDataUrl = (file: File, setter: (dataUrl: string) => void) => {
-    const reader = new FileReader();
-    reader.onloadend = () => setter(reader.result as string);
-    reader.readAsDataURL(file);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,16 +199,12 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-[9px] font-bold text-[#8A8A70] mb-1">وش البطاقة:</label>
-                    <input type="file" accept="image/*" required={!idCardFront}
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) readFileAsDataUrl(f, setIdCardFront); }}
-                      className="w-full text-[9px] file:ml-2 file:py-1.5 file:px-2 file:rounded-lg file:border-0 file:bg-[#EBEBE0] file:text-[10px] file:font-bold file:text-[#4A4A3A]" />
+                    <PhotoPickerButtons idPrefix="id-card-front" onSelect={setIdCardFront} className="flex-col" />
                     {idCardFront && <img src={idCardFront} alt="وش البطاقة" className="mt-1.5 w-full h-20 object-cover rounded-lg border border-[#D6D6C2]" />}
                   </div>
                   <div>
                     <label className="block text-[9px] font-bold text-[#8A8A70] mb-1">ضهر البطاقة:</label>
-                    <input type="file" accept="image/*" required={!idCardBack}
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) readFileAsDataUrl(f, setIdCardBack); }}
-                      className="w-full text-[9px] file:ml-2 file:py-1.5 file:px-2 file:rounded-lg file:border-0 file:bg-[#EBEBE0] file:text-[10px] file:font-bold file:text-[#4A4A3A]" />
+                    <PhotoPickerButtons idPrefix="id-card-back" onSelect={setIdCardBack} className="flex-col" />
                     {idCardBack && <img src={idCardBack} alt="ضهر البطاقة" className="mt-1.5 w-full h-20 object-cover rounded-lg border border-[#D6D6C2]" />}
                   </div>
                 </div>

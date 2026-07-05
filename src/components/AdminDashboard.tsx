@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { RetreatHouse, User, Booking, Attendee, RoomAllocation, Payment, PlatformAnnouncement } from '../types';
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone } from 'lucide-react';
+import PhotoPickerButtons from './PhotoPickerButtons';
 
 interface AdminDashboardProps {
   houses: RetreatHouse[];
@@ -385,15 +386,11 @@ export default function AdminDashboard({
               className="w-full bg-white border border-[#D6D6C2] text-[11px] px-3 py-2 rounded-xl focus:outline-none"
             />
             <div>
-              <label className="block text-[9px] font-bold text-[#8A8A70] mb-0.5">رابط صورة (اختياري):</label>
-              <input
-                id="platform-announcement-image"
-                type="url"
-                placeholder="https://..."
-                value={annImageUrl}
-                onChange={(e) => setAnnImageUrl(e.target.value)}
-                className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2.5 py-1.5 rounded-lg focus:outline-none"
-              />
+              <label className="block text-[9px] font-bold text-[#8A8A70] mb-0.5">صورة الإعلان (اختياري):</label>
+              <PhotoPickerButtons idPrefix="platform-announcement-image" onSelect={setAnnImageUrl} />
+              {annImageUrl && (
+                <img src={annImageUrl} alt="معاينة" className="mt-1.5 w-full h-20 object-cover rounded-lg border border-[#D6D6C2]" />
+              )}
             </div>
             <div>
               <label className="block text-[9px] font-bold text-[#8A8A70] mb-0.5">ربط ببيت معيّن (اختياري):</label>

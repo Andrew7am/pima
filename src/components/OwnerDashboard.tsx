@@ -3,6 +3,7 @@ import { RetreatHouse, Booking, User, ConferenceHall, Restaurant, Attendee, Room
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import { Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2, Building, Settings, MessageSquare, Image, Camera, Sliders, BedDouble, Megaphone } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
+import PhotoPickerButtons from './PhotoPickerButtons';
 
 interface OwnerDashboardProps {
   owner: User;
@@ -918,7 +919,7 @@ export default function OwnerDashboard({
                         <div className="mt-2 p-3 bg-[#FBFBFA] border border-[#D6D6C2]/60 rounded-2xl space-y-3 text-right">
                           <div className="space-y-1">
                             <span className="text-[10px] font-extrabold text-[#4A4A3A]">إضافة صورة جديدة للغرف أو الخدمات:</span>
-                            <p className="text-[9px] text-[#8A8A70]">أدخل رابط الصورة لتحديث ألبوم المعاينة للخدام والمجموعات.</p>
+                            <p className="text-[9px] text-[#8A8A70]">اختر صورة من جهازك أو التقطها بالكاميرا لتحديث ألبوم المعاينة للخدام والمجموعات.</p>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -949,49 +950,41 @@ export default function OwnerDashboard({
                             </div>
 
                             <div className="col-span-1">
-                              <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">رابط الصورة (URL):</label>
-                              <div className="flex gap-1">
-                                <input
-                                  id={`photo-url-${house.id}`}
-                                  type="url"
-                                  placeholder="https://..."
-                                  value={extraPhotoUrl}
-                                  onChange={(e) => setExtraPhotoUrl(e.target.value)}
-                                  className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none"
-                                />
-                                <button
-                                  type="button"
-                                  id={`add-photo-btn-${house.id}`}
-                                  onClick={() => {
-                                    if (!extraPhotoUrl.trim()) {
-                                      alert('يرجى إدخال رابط صورة صحيح.');
-                                      return;
-                                    }
-                                    const labelPrefix = extraPhotoCategory === 'room' ? '🛌 غرف' : extraPhotoCategory === 'service' ? '🍽️ خدمات' : '⛪ مباني';
-                                    const descStr = extraPhotoLabel.trim() ? `${labelPrefix}: ${extraPhotoLabel.trim()}` : `${labelPrefix}`;
-                                    
-                                    const updatedHouse = {
-                                      ...house,
-                                      images: [...house.images, extraPhotoUrl.trim()],
-                                      imageDescriptions: {
-                                        ...(house.imageDescriptions || {}),
-                                        [extraPhotoUrl.trim()]: descStr
+                              <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">صورة الغرفة/الخدمة:</label>
+                              <PhotoPickerButtons idPrefix={`photo-${house.id}`} onSelect={setExtraPhotoUrl} />
+                              {extraPhotoUrl && (
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <img src={extraPhotoUrl} alt="معاينة" className="w-10 h-10 object-cover rounded-lg border border-[#D6D6C2]" />
+                                  <button
+                                    type="button"
+                                    id={`add-photo-btn-${house.id}`}
+                                    onClick={() => {
+                                      const labelPrefix = extraPhotoCategory === 'room' ? '🛌 غرف' : extraPhotoCategory === 'service' ? '🍽️ خدمات' : '⛪ مباني';
+                                      const descStr = extraPhotoLabel.trim() ? `${labelPrefix}: ${extraPhotoLabel.trim()}` : `${labelPrefix}`;
+
+                                      const updatedHouse = {
+                                        ...house,
+                                        images: [...house.images, extraPhotoUrl],
+                                        imageDescriptions: {
+                                          ...(house.imageDescriptions || {}),
+                                          [extraPhotoUrl]: descStr
+                                        }
+                                      };
+
+                                      if (onUpdateHouse) {
+                                        onUpdateHouse(updatedHouse);
                                       }
-                                    };
-                                    
-                                    if (onUpdateHouse) {
-                                      onUpdateHouse(updatedHouse);
-                                    }
-                                    setExtraPhotoUrl('');
-                                    setExtraPhotoLabel('');
-                                    setPhotosSuccessMsg('تم إضافة الصورة بنجاح وتحديث ألبوم البيت للزوار!');
-                                    setTimeout(() => setPhotosSuccessMsg(''), 3000);
-                                  }}
-                                  className="bg-[#5A5A40] text-white text-[10px] font-bold px-2 rounded-lg cursor-pointer hover:bg-[#4A4A3A]"
-                                >
-                                  إضافة
-                                </button>
-                              </div>
+                                      setExtraPhotoUrl('');
+                                      setExtraPhotoLabel('');
+                                      setPhotosSuccessMsg('تم إضافة الصورة بنجاح وتحديث ألبوم البيت للزوار!');
+                                      setTimeout(() => setPhotosSuccessMsg(''), 3000);
+                                    }}
+                                    className="flex-1 bg-[#5A5A40] text-white text-[10px] font-bold px-2 py-1.5 rounded-lg cursor-pointer hover:bg-[#4A4A3A]"
+                                  >
+                                    إضافة للألبوم
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -1801,15 +1794,11 @@ export default function OwnerDashboard({
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">رابط صورة واجهة البيت:</label>
-                <input
-                  id="add-house-image-url"
-                  type="url"
-                  placeholder="https://..."
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40]"
-                />
+                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">صورة واجهة البيت:</label>
+                <PhotoPickerButtons idPrefix="add-house-image" onSelect={setImageUrl} />
+                {imageUrl && (
+                  <img src={imageUrl} alt="معاينة صورة الواجهة" className="mt-2 w-full h-28 object-cover rounded-xl border border-[#D6D6C2]" />
+                )}
               </div>
             </div>
 
