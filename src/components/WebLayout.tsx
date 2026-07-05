@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
   Compass, BookOpen, ShieldAlert, Coffee, HelpCircle, Bell,
-  Trash2, Check, X, LogOut, Gift, Home
+  Trash2, Check, X, LogOut, UserCircle, Home
 } from 'lucide-react';
 import { User, AppNotification } from '../types';
 import Logo from './Logo';
 
-type Screen = 'explore' | 'bookings' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'rewards';
+type Screen = 'explore' | 'bookings' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile';
 
 interface WebLayoutProps {
   children: React.ReactNode;
@@ -29,7 +29,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'explore',      label: 'استكشاف البيوت', icon: <Compass className="w-5 h-5" />,   roles: ['individual', 'servant'] },
   { id: 'bookings',     label: 'حجوزاتي',         icon: <BookOpen className="w-5 h-5" />,  roles: ['individual', 'servant'] },
-  { id: 'rewards',      label: 'المكافآت',         icon: <Gift className="w-5 h-5" />,      roles: ['individual', 'servant'] },
+  { id: 'profile',      label: 'حسابي',           icon: <UserCircle className="w-5 h-5" />, roles: ['individual', 'servant'] },
   { id: 'owner_panel',  label: 'لوحة المالك',      icon: <Home className="w-5 h-5" />,      roles: ['owner'] },
   { id: 'meals',        label: 'قائمة الطعام',     icon: <Coffee className="w-5 h-5" />,    roles: ['owner'] },
   { id: 'admin_panel',  label: 'لوحة الإدارة',     icon: <ShieldAlert className="w-5 h-5" />, roles: ['admin'] },

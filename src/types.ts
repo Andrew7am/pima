@@ -219,6 +219,15 @@ export interface WaitlistEntry {
   createdAt: string;
 }
 
+export interface PlatformAnnouncement {
+  id: string;
+  message: string;
+  imageUrl?: string;
+  linkedHouseId?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export interface AppNotification {
   id: string;
   userId: string;

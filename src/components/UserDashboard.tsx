@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { RetreatHouse, User } from '../types';
+import { PlatformAnnouncement, RetreatHouse, User } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
-import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight } from 'lucide-react';
+import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, Map as MapIcon, List } from 'lucide-react';
+import AnnouncementCarousel from './AnnouncementCarousel';
+import InteractiveMap from './InteractiveMap';
 
 interface UserDashboardProps {
   houses: RetreatHouse[];
@@ -9,6 +11,7 @@ interface UserDashboardProps {
   onSelectHouse: (house: RetreatHouse) => void;
   onSelectRewards: () => void;
   onToggleFavorite: (houseId: string) => void;
+  platformAnnouncements?: PlatformAnnouncement[];
 }
 
 export default function UserDashboard({
@@ -16,8 +19,10 @@ export default function UserDashboard({
   currentUser,
   onSelectHouse,
   onSelectRewards,
-  onToggleFavorite
+  onToggleFavorite,
+  platformAnnouncements = []
 }: UserDashboardProps) {
+  const [showMap, setShowMap] = useState(false);
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGov, setSelectedGov] = useState('');
@@ -137,15 +142,14 @@ export default function UserDashboard({
   return (
     <div className="space-y-4 text-right">
       
-      {/* Top Welcome greeting */}
-      <div className="bg-[#5A5A40] text-white p-3.5 px-4 rounded-2xl shadow-sm space-y-0.5 relative overflow-hidden">
-        {/* Abstract background decorative patterns */}
-        <div className="absolute top-0 left-0 w-20 h-20 bg-[#BCBC9D]/10 rounded-full blur-xl pointer-events-none" />
-        
-        <span className="text-[9px] text-[#EBEBE0] font-bold tracking-wider">أهلاً بك يا {currentUser.name} 🌾</span>
-        <h2 className="text-xs font-black text-[#F5F5F0]">ابحث عن مكان خلوتك ومؤتمراتك القبطية بمصر</h2>
-        <p className="text-[9px] text-[#DEDECB] font-medium">مئات بيوت المؤتمرات والفنادق المسيحية المناسبة لكنائسنا وخدماتنا.</p>
-      </div>
+      {/* Top banner: rotates through admin-published announcements every ~6s,
+          always falls back to the welcome message when none are active */}
+      <AnnouncementCarousel
+        currentUser={currentUser}
+        announcements={platformAnnouncements}
+        houses={houses}
+        onSelectHouse={onSelectHouse}
+      />
 
       {/* Loyalty/Rewards Status Bar card */}
       {currentUser.role !== 'owner' && (
@@ -259,6 +263,18 @@ export default function UserDashboard({
           title="فلاتر متقدمة"
         >
           <SlidersHorizontal className="w-4 h-4" />
+        </button>
+
+        {/* Map/List View Toggle */}
+        <button
+          id="toggle-map-btn"
+          onClick={() => setShowMap(!showMap)}
+          className={`p-2 rounded-2xl border transition-all ${
+            showMap ? 'bg-[#5A5A40] border-[#5A5A40] text-white' : 'bg-white border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#DEDECB]'
+          }`}
+          title={showMap ? 'عرض القائمة' : 'عرض الخريطة التفاعلية'}
+        >
+          {showMap ? <List className="w-4 h-4" /> : <MapIcon className="w-4 h-4" />}
         </button>
 
       </div>
@@ -425,7 +441,16 @@ export default function UserDashboard({
         </div>
       )}
 
+      {/* Interactive map — every approved house with a location, always
+          in sync with the live houses list (new houses appear automatically) */}
+      {showMap && (
+        <div className="h-[420px]">
+          <InteractiveMap houses={filteredHouses} onSelectHouse={onSelectHouse} />
+        </div>
+      )}
+
       {/* Houses Feed List */}
+      {!showMap && (
       <div className="space-y-3.5 text-[#4A4A3A]">
         <div className="flex justify-between items-center px-1">
           <span className="text-xs font-extrabold text-[#4A4A3A]">الأماكن المتاحة ({filteredHouses.length}):</span>
@@ -573,6 +598,7 @@ export default function UserDashboard({
           </div>
         )}
       </div>
+      )}
 
       {/* Compare Floating Bar */}
       {comparedHouseIds.length > 0 && (

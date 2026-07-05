@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, Announcement, WaitlistEntry } from '../types';
+import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement } from '../types';
 
 // ─── Row → Type mappers ────────────────────────────────────────────────────
 
@@ -194,6 +194,17 @@ export function mapWaitlistEntry(r: Record<string, unknown>): WaitlistEntry {
   };
 }
 
+export function mapPlatformAnnouncement(r: Record<string, unknown>): PlatformAnnouncement {
+  return {
+    id: r.id as string,
+    message: r.message as string,
+    imageUrl: r.image_url as string ?? undefined,
+    linkedHouseId: r.linked_house_id as string ?? undefined,
+    isActive: r.is_active as boolean,
+    createdAt: r.created_at as string,
+  };
+}
+
 // ─── Loaders ───────────────────────────────────────────────────────────────
 
 export async function loadUsers(): Promise<User[]> {
@@ -258,6 +269,12 @@ export async function loadWaitlist(): Promise<WaitlistEntry[]> {
   const { data, error } = await supabase.from('waitlist').select('*').order('created_at');
   if (error) { console.error('loadWaitlist:', error); return []; }
   return (data ?? []).map(mapWaitlistEntry);
+}
+
+export async function loadPlatformAnnouncements(): Promise<PlatformAnnouncement[]> {
+  const { data, error } = await supabase.from('platform_announcements').select('*').order('created_at', { ascending: false });
+  if (error) { console.error('loadPlatformAnnouncements:', error); return []; }
+  return (data ?? []).map(mapPlatformAnnouncement);
 }
 
 // ─── Type → Row mappers (for inserts/updates) ──────────────────────────────
@@ -461,5 +478,26 @@ export async function createWaitlistEntry(w: WaitlistEntry): Promise<boolean> {
 export async function updateWaitlistStatus(id: string, status: WaitlistEntry['status']): Promise<boolean> {
   const { error } = await supabase.from('waitlist').update({ status }).eq('id', id);
   if (error) console.error('updateWaitlistStatus:', error);
+  return !error;
+}
+
+export async function createPlatformAnnouncement(a: PlatformAnnouncement): Promise<boolean> {
+  const { error } = await supabase.from('platform_announcements').insert({
+    id: a.id, message: a.message, image_url: a.imageUrl ?? null,
+    linked_house_id: a.linkedHouseId ?? null, is_active: a.isActive, created_at: a.createdAt,
+  });
+  if (error) console.error('createPlatformAnnouncement:', error);
+  return !error;
+}
+
+export async function setPlatformAnnouncementActive(id: string, isActive: boolean): Promise<boolean> {
+  const { error } = await supabase.from('platform_announcements').update({ is_active: isActive }).eq('id', id);
+  if (error) console.error('setPlatformAnnouncementActive:', error);
+  return !error;
+}
+
+export async function deletePlatformAnnouncement(id: string): Promise<boolean> {
+  const { error } = await supabase.from('platform_announcements').delete().eq('id', id);
+  if (error) console.error('deletePlatformAnnouncement:', error);
   return !error;
 }

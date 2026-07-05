@@ -3,18 +3,18 @@ import { supabase } from './lib/supabase';
 import {
   mapUser, loadUsers,
   loadHouses, loadBookings, loadReviews, loadPayments, loadNotifications, loadPointsHistory,
-  loadRooms, loadAnnouncements, loadWaitlist,
+  loadRooms, loadAnnouncements, loadWaitlist, loadPlatformAnnouncements,
   createBooking, updateBookingStatus, updateBookingFields,
   createReview, updateReview as updateReviewDb, createPayment,
   createNotification, markNotificationRead,
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
   createAnnouncement, setAnnouncementActive,
   createWaitlistEntry,
+  createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
 } from './lib/db';
-import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry } from './types';
+import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement } from './types';
 
 // Component Imports
-import InteractiveMap from './components/InteractiveMap';
 import UserBookings from './components/UserBookings';
 import OwnerDashboard from './components/OwnerDashboard';
 import AdminDashboard from './components/AdminDashboard';
@@ -24,7 +24,7 @@ import WebLayout from './components/WebLayout';
 import AuthScreen from './components/AuthScreen';
 import WeeklyMenuManager from './components/WeeklyMenuManager';
 import ContactSupport from './components/ContactSupport';
-import RewardsDashboard from './components/RewardsDashboard';
+import ProfileScreen from './components/ProfileScreen';
 import CompleteProfileScreen from './components/CompleteProfileScreen';
 import PendingApprovalScreen from './components/PendingApprovalScreen';
 
@@ -54,6 +54,7 @@ export default function App() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
+  const [platformAnnouncements, setPlatformAnnouncements] = useState<PlatformAnnouncement[]>([]);
 
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -61,14 +62,14 @@ export default function App() {
   });
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'rewards'>('explore');
+  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile'>('explore');
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
 
   // --- Supabase Data Loading ---
   const loadAppData = useCallback(async (userId?: string) => {
-    const [u, h, b, r, p, rm, an, wl] = await Promise.all([
+    const [u, h, b, r, p, rm, an, wl, pa] = await Promise.all([
       loadUsers(), loadHouses(), loadBookings(), loadReviews(), loadPayments(),
-      loadRooms(), loadAnnouncements(), loadWaitlist(),
+      loadRooms(), loadAnnouncements(), loadWaitlist(), loadPlatformAnnouncements(),
     ]);
     setUsers(u);
     setHouses(h);
@@ -78,6 +79,7 @@ export default function App() {
     setRooms(rm);
     setAnnouncements(an);
     setWaitlist(wl);
+    setPlatformAnnouncements(pa);
     if (userId) {
       const n = await loadNotifications(userId);
       setNotifications(n);
@@ -708,6 +710,22 @@ export default function App() {
     setAnnouncementActive(id, isActive);
   };
 
+  // --- Platform-wide announcement carousel (admin-only) ---
+  const handleAddPlatformAnnouncement = (a: PlatformAnnouncement) => {
+    setPlatformAnnouncements((prev) => [a, ...prev]);
+    createPlatformAnnouncement(a);
+  };
+
+  const handleTogglePlatformAnnouncement = (id: string, isActive: boolean) => {
+    setPlatformAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, isActive } : a)));
+    setPlatformAnnouncementActive(id, isActive);
+  };
+
+  const handleDeletePlatformAnnouncement = (id: string) => {
+    setPlatformAnnouncements((prev) => prev.filter((a) => a.id !== id));
+    deletePlatformAnnouncement(id);
+  };
+
   const handleUpdateReview = (updatedReview: Review) => {
     setReviews((prev) =>
       prev.map((r) => (r.id === updatedReview.id ? updatedReview : r))
@@ -849,8 +867,9 @@ export default function App() {
               houses={houses}
               currentUser={currentUser}
               onSelectHouse={(h) => setSelectedHouse(h)}
-              onSelectRewards={() => setActiveScreen('rewards')}
+              onSelectRewards={() => setActiveScreen('profile')}
               onToggleFavorite={handleToggleFavorite}
+              platformAnnouncements={platformAnnouncements.filter((a) => a.isActive)}
             />
           )}
 
@@ -918,12 +937,18 @@ export default function App() {
               payments={payments}
               onVerifyPayment={handleVerifyPayment}
               onSetUserApproval={handleSetUserApproval}
+              platformAnnouncements={platformAnnouncements}
+              onAddPlatformAnnouncement={handleAddPlatformAnnouncement}
+              onTogglePlatformAnnouncement={handleTogglePlatformAnnouncement}
+              onDeletePlatformAnnouncement={handleDeletePlatformAnnouncement}
             />
           )}
 
-          {activeScreen === 'rewards' && (
-            <RewardsDashboard
+          {activeScreen === 'profile' && (
+            <ProfileScreen
               currentUser={currentUser}
+              onUpdateProfile={handleUpdateUserProfile}
+              onLogout={handleLogout}
               onBack={() => setActiveScreen('explore')}
             />
           )}

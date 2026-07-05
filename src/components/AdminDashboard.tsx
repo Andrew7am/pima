@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { RetreatHouse, User, Booking, Attendee, RoomAllocation, Payment } from '../types';
-import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard } from 'lucide-react';
+import { RetreatHouse, User, Booking, Attendee, RoomAllocation, Payment, PlatformAnnouncement } from '../types';
+import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone } from 'lucide-react';
 
 interface AdminDashboardProps {
   houses: RetreatHouse[];
@@ -16,6 +16,10 @@ interface AdminDashboardProps {
   payments?: Payment[];
   onVerifyPayment?: (paymentId: string, status: 'approved' | 'rejected', adminNotes?: string) => void;
   onSetUserApproval?: (userId: string, status: 'approved' | 'rejected') => void;
+  platformAnnouncements?: PlatformAnnouncement[];
+  onAddPlatformAnnouncement?: (a: PlatformAnnouncement) => void;
+  onTogglePlatformAnnouncement?: (id: string, isActive: boolean) => void;
+  onDeletePlatformAnnouncement?: (id: string) => void;
 }
 
 export default function AdminDashboard({
@@ -32,12 +36,21 @@ export default function AdminDashboard({
   payments = [],
   onVerifyPayment,
   onSetUserApproval,
+  platformAnnouncements = [],
+  onAddPlatformAnnouncement,
+  onTogglePlatformAnnouncement,
+  onDeletePlatformAnnouncement,
 }: AdminDashboardProps) {
-  // Tabs within Admin: 'moderation', 'accounts', 'users', 'reports', 'payments', 'bookings'
-  const [activeTab, setActiveTab] = useState<'moderation' | 'accounts' | 'users' | 'reports' | 'payments' | 'bookings'>('moderation');
+  // Tabs within Admin: 'moderation', 'accounts', 'announcements', 'users', 'reports', 'payments', 'bookings'
+  const [activeTab, setActiveTab] = useState<'moderation' | 'accounts' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings'>('moderation');
   const [notesInputs, setNotesInputs] = useState<Record<string, string>>({});
   const [selectedProofImage, setSelectedProofImage] = useState<string | null>(null);
   const [selectedIdCardImage, setSelectedIdCardImage] = useState<string | null>(null);
+
+  // Platform announcement form state
+  const [annMessage, setAnnMessage] = useState('');
+  const [annImageUrl, setAnnImageUrl] = useState('');
+  const [annHouseId, setAnnHouseId] = useState('');
 
   const pendingAccounts = users.filter(u => (u.role === 'servant' || u.role === 'owner') && u.approvalStatus === 'pending');
 
@@ -144,6 +157,15 @@ export default function AdminDashboard({
           {pendingAccounts.length > 0 && (
             <span className="absolute top-1.5 left-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
           )}
+        </button>
+        <button
+          id="admin-tab-announcements"
+          onClick={() => setActiveTab('announcements')}
+          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'announcements' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          الإعلانات ({platformAnnouncements.length})
         </button>
         <button
           id="admin-tab-payments"
@@ -340,6 +362,115 @@ export default function AdminDashboard({
       {selectedIdCardImage && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setSelectedIdCardImage(null)}>
           <img src={selectedIdCardImage} alt="صورة البطاقة" className="max-w-full max-h-full rounded-2xl" />
+        </div>
+      )}
+
+      {/* Platform-wide announcement carousel (admin-only) */}
+      {activeTab === 'announcements' && (
+        <div className="space-y-3">
+          <div className="bg-white rounded-2xl border border-[#D6D6C2] p-4 space-y-3">
+            <div className="text-xs font-bold text-[#4A4A3A] flex items-center gap-1.5">
+              <Megaphone className="w-4 h-4 text-[#5A5A40]" />
+              إعلان جديد يظهر لجميع المستخدمين
+            </div>
+            <p className="text-[9.5px] text-[#8A8A70]">
+              يظهر ضمن شريط دوّار أعلى شاشة الاستكشاف كل بضع ثوانٍ. يمكن ربطه ببيت معيّن ليفتح صفحته عند الضغط عليه.
+            </p>
+            <textarea
+              id="platform-announcement-message"
+              rows={2}
+              placeholder="نص الإعلان..."
+              value={annMessage}
+              onChange={(e) => setAnnMessage(e.target.value)}
+              className="w-full bg-white border border-[#D6D6C2] text-[11px] px-3 py-2 rounded-xl focus:outline-none"
+            />
+            <div>
+              <label className="block text-[9px] font-bold text-[#8A8A70] mb-0.5">رابط صورة (اختياري):</label>
+              <input
+                id="platform-announcement-image"
+                type="url"
+                placeholder="https://..."
+                value={annImageUrl}
+                onChange={(e) => setAnnImageUrl(e.target.value)}
+                className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2.5 py-1.5 rounded-lg focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[9px] font-bold text-[#8A8A70] mb-0.5">ربط ببيت معيّن (اختياري):</label>
+              <select
+                id="platform-announcement-house"
+                value={annHouseId}
+                onChange={(e) => setAnnHouseId(e.target.value)}
+                className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2.5 py-1.5 rounded-lg focus:outline-none"
+              >
+                <option value="">بدون ربط</option>
+                {houses.filter((h) => h.status === 'approved').map((h) => (
+                  <option key={h.id} value={h.id}>{h.name}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              id="platform-announcement-submit-btn"
+              type="button"
+              onClick={() => {
+                if (!annMessage.trim()) { alert('يرجى كتابة نص الإعلان.'); return; }
+                if (onAddPlatformAnnouncement) {
+                  onAddPlatformAnnouncement({
+                    id: `pann_${Date.now()}`,
+                    message: annMessage.trim(),
+                    imageUrl: annImageUrl.trim() || undefined,
+                    linkedHouseId: annHouseId || undefined,
+                    isActive: true,
+                    createdAt: new Date().toISOString(),
+                  });
+                }
+                setAnnMessage(''); setAnnImageUrl(''); setAnnHouseId('');
+              }}
+              className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[10px] font-bold px-4 py-2 rounded-xl cursor-pointer"
+            >
+              نشر الإعلان
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-xs font-bold text-[#8A8A70] px-1">الإعلانات المنشورة ({platformAnnouncements.length}):</div>
+            {platformAnnouncements.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-[#D6D6C2] p-4 text-center text-[10px] text-[#8A8A70]">
+                لا توجد إعلانات منشورة بعد.
+              </div>
+            ) : (
+              platformAnnouncements.map((a) => {
+                const linkedHouse = a.linkedHouseId ? houses.find((h) => h.id === a.linkedHouseId) : undefined;
+                return (
+                  <div key={a.id} className="bg-white rounded-2xl border border-[#D6D6C2] p-3 flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[11px] font-bold ${a.isActive ? 'text-[#4A4A3A]' : 'text-[#BCBC9D] line-through'}`}>{a.message}</p>
+                      <span className="text-[8.5px] text-[#8A8A70]">
+                        {new Date(a.createdAt).toLocaleDateString('ar-EG')}
+                        {linkedHouse && ` · مرتبط بـ${linkedHouse.name}`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onTogglePlatformAnnouncement && onTogglePlatformAnnouncement(a.id, !a.isActive)}
+                      className={`text-[9.5px] font-bold px-2.5 py-1 rounded-lg shrink-0 cursor-pointer ${
+                        a.isActive ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-[#EBEBE0] text-[#8A8A70]'
+                      }`}
+                    >
+                      {a.isActive ? 'نشط — إخفاء' : 'إظهار'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { if (confirm('حذف هذا الإعلان نهائياً؟') && onDeletePlatformAnnouncement) onDeletePlatformAnnouncement(a.id); }}
+                      className="text-[9.5px] font-bold text-rose-600 hover:underline cursor-pointer shrink-0"
+                    >
+                      حذف
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
 
