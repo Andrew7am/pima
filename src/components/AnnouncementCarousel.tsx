@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PlatformAnnouncement, RetreatHouse, User } from '../types';
 
 interface AnnouncementCarouselProps {
@@ -13,21 +14,28 @@ const ROTATE_MS = 6000;
 export default function AnnouncementCarousel({ currentUser, announcements, houses, onSelectHouse }: AnnouncementCarouselProps) {
   const [index, setIndex] = useState(0);
 
-  // Slide 0 is always the default welcome message, so the banner never looks
-  // empty before an admin has published any announcements.
-  const slideCount = 1 + announcements.length;
+  // The welcome message only appears when there's nothing else to show —
+  // once an admin publishes an announcement, the carousel is announcements-only.
+  const hasAnnouncements = announcements.length > 0;
+  const slideCount = hasAnnouncements ? announcements.length : 1;
 
+  const goNext = () => setIndex((i) => (i + 1) % slideCount);
+  const goPrev = () => setIndex((i) => (i - 1 + slideCount) % slideCount);
+
+  // Restart the auto-advance countdown whenever the slide changes, so a
+  // manual click doesn't get immediately overridden by a pending timer.
   useEffect(() => {
     if (slideCount <= 1) return;
-    const timer = setInterval(() => setIndex((i) => (i + 1) % slideCount), ROTATE_MS);
+    const timer = setInterval(goNext, ROTATE_MS);
     return () => clearInterval(timer);
-  }, [slideCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slideCount, index]);
 
   useEffect(() => {
     if (index >= slideCount) setIndex(0);
   }, [slideCount, index]);
 
-  const activeAnnouncement = index > 0 ? announcements[index - 1] : null;
+  const activeAnnouncement = hasAnnouncements ? announcements[index] : null;
   const linkedHouse = activeAnnouncement?.linkedHouseId
     ? houses.find((h) => h.id === activeAnnouncement.linkedHouseId)
     : undefined;
@@ -64,14 +72,33 @@ export default function AnnouncementCarousel({ currentUser, announcements, house
       )}
 
       {slideCount > 1 && (
-        <div className="flex items-center gap-1 pt-1.5 relative">
-          {Array.from({ length: slideCount }).map((_, i) => (
-            <span
-              key={i}
-              className={`h-1 rounded-full transition-all ${i === index ? 'w-4 bg-[#C5A059]' : 'w-1 bg-white/30'}`}
-            />
-          ))}
-        </div>
+        <>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); goPrev(); }}
+            className="absolute top-1/2 -translate-y-1/2 right-1.5 bg-white/15 hover:bg-white/25 rounded-full p-1 transition-colors"
+            title="السابق"
+          >
+            <ChevronRight className="w-3.5 h-3.5 text-white" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); goNext(); }}
+            className="absolute top-1/2 -translate-y-1/2 left-1.5 bg-white/15 hover:bg-white/25 rounded-full p-1 transition-colors"
+            title="التالي"
+          >
+            <ChevronLeft className="w-3.5 h-3.5 text-white" />
+          </button>
+
+          <div className="flex items-center gap-1 pt-1.5 relative">
+            {Array.from({ length: slideCount }).map((_, i) => (
+              <span
+                key={i}
+                className={`h-1 rounded-full transition-all ${i === index ? 'w-4 bg-[#C5A059]' : 'w-1 bg-white/30'}`}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
