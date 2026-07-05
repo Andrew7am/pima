@@ -220,6 +220,12 @@ export async function loadHouses(): Promise<RetreatHouse[]> {
   return (data ?? []).map(mapHouse);
 }
 
+export async function deleteHouse(houseId: string): Promise<boolean> {
+  const { error } = await supabase.from('houses').delete().eq('id', houseId);
+  if (error) { console.error('deleteHouse:', error); return false; }
+  return true;
+}
+
 export async function loadBookings(): Promise<Booking[]> {
   const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
   if (error) { console.error('loadBookings:', error); return []; }

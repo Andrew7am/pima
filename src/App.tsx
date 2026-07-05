@@ -2,13 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './lib/supabase';
 import {
   mapUser, loadUsers,
-  loadHouses, loadBookings, loadReviews, loadPayments, loadNotifications, loadPointsHistory,
+  loadHouses, deleteHouse, loadBookings, loadReviews, loadPayments, loadNotifications, loadPointsHistory,
   loadRooms, loadAnnouncements, loadWaitlist, loadPlatformAnnouncements,
   createBooking, updateBookingStatus, updateBookingFields,
   createReview, updateReview as updateReviewDb, createPayment,
   createNotification, markNotificationRead,
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
-  createAnnouncement, setAnnouncementActive,
   createWaitlistEntry,
   createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
 } from './lib/db';
@@ -681,16 +680,32 @@ export default function App() {
     if (selectedHouse && selectedHouse.id === updatedHouse.id) setSelectedHouse(updatedHouse);
     supabase.from('houses').update({
       name: updatedHouse.name, description: updatedHouse.description,
+      governorate: updatedHouse.governorate,
       address: updatedHouse.address, lat: updatedHouse.lat, lng: updatedHouse.lng,
+      rooms_count: updatedHouse.roomsCount, beds_count: updatedHouse.bedsCount,
+      rooms_description: updatedHouse.roomsDescription,
+      price_per_night_per_person: updatedHouse.pricePerNightPerPerson,
       images: updatedHouse.images,
       image_descriptions: updatedHouse.imageDescriptions ?? {},
       blocked_dates: updatedHouse.blockedDates ?? [],
-      services: updatedHouse.services, activities: updatedHouse.activities,
+      services: updatedHouse.services, activities: updatedHouse.activities, suitability: updatedHouse.suitability,
       conference_halls: updatedHouse.conferenceHalls, restaurants: updatedHouse.restaurants,
+      property_type: updatedHouse.propertyType ?? null,
+      student_housing_gender: updatedHouse.studentHousingGender ?? null,
+      distance_from_university: updatedHouse.distanceFromUniversity ?? null,
+      monthly_rent: updatedHouse.monthlyRent ?? null,
+      housing_rules: updatedHouse.housingRules ?? [],
+      contract_terms: updatedHouse.contractTerms ?? null,
       menu: updatedHouse.menu ?? null, status: updatedHouse.status,
     }).eq('id', updatedHouse.id).then(({ error }) => {
       if (error) console.error('updateHouse:', error);
     });
+  };
+
+  const handleDeleteHouse = (houseId: string) => {
+    setHouses((prev) => prev.filter((h) => h.id !== houseId));
+    if (selectedHouse && selectedHouse.id === houseId) setSelectedHouse(null);
+    deleteHouse(houseId);
   };
 
   const handleAddRoom = (newRoom: Room) => {
@@ -706,23 +721,6 @@ export default function App() {
   const handleDeleteRoom = (roomId: string) => {
     setRooms((prev) => prev.filter((r) => r.id !== roomId));
     deleteRoomDb(roomId);
-  };
-
-  const handleAddAnnouncement = (newAnnouncement: Announcement) => {
-    // Only one active announcement per house at a time — keep the banner unambiguous
-    setAnnouncements((prev) => [
-      newAnnouncement,
-      ...prev.map((a) => (a.houseId === newAnnouncement.houseId ? { ...a, isActive: false } : a)),
-    ]);
-    createAnnouncement(newAnnouncement);
-    announcements
-      .filter((a) => a.houseId === newAnnouncement.houseId && a.isActive)
-      .forEach((a) => setAnnouncementActive(a.id, false));
-  };
-
-  const handleToggleAnnouncement = (id: string, isActive: boolean) => {
-    setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, isActive } : a)));
-    setAnnouncementActive(id, isActive);
   };
 
   // --- Platform-wide announcement carousel (admin-only) ---
@@ -919,6 +917,8 @@ export default function App() {
               houses={houses}
               bookings={bookings}
               onAddHouse={handleAddHouse}
+              onUpdateHouse={handleUpdateHouse}
+              onDeleteHouse={handleDeleteHouse}
               onApproveBooking={handleApproveBooking}
               onRejectBooking={handleRejectBooking}
               onConfirmDeposit={handleConfirmDepositReceived}
@@ -928,17 +928,12 @@ export default function App() {
               allocations={allocations}
               onUpdateAttendees={handleUpdateAttendees}
               onUpdateAllocations={handleUpdateAllocations}
-              onUpdateOwnerProfile={handleUpdateUserProfile}
-              onUpdateHouse={handleUpdateHouse}
               reviews={reviews}
               onUpdateReview={handleUpdateReview}
               rooms={rooms}
               onAddRoom={handleAddRoom}
               onUpdateRoom={handleUpdateRoom}
               onDeleteRoom={handleDeleteRoom}
-              announcements={announcements}
-              onAddAnnouncement={handleAddAnnouncement}
-              onToggleAnnouncement={handleToggleAnnouncement}
               waitlist={waitlist}
             />
           )}

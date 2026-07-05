@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { RetreatHouse, Booking, User, ConferenceHall, Restaurant, Attendee, RoomAllocation, Review, Room, Announcement, WaitlistEntry } from '../types';
+import { RetreatHouse, Booking, User, ConferenceHall, Restaurant, Attendee, RoomAllocation, Review, Room, WaitlistEntry } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
-import { Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2, Building, Settings, MessageSquare, Image, Camera, Sliders, BedDouble, Megaphone } from 'lucide-react';
+import { Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2, Building, Settings, MessageSquare, Image, Camera, Sliders, BedDouble, Phone, Mail, Lock } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
 import PhotoPickerButtons from './PhotoPickerButtons';
 
@@ -10,6 +10,7 @@ interface OwnerDashboardProps {
   houses: RetreatHouse[];
   bookings: Booking[];
   onAddHouse: (house: RetreatHouse) => void;
+  onDeleteHouse?: (houseId: string) => void;
   onApproveBooking: (bookingId: string) => void;
   onRejectBooking: (bookingId: string) => void;
   onConfirmDeposit?: (bookingId: string) => void;
@@ -19,7 +20,6 @@ interface OwnerDashboardProps {
   allocations: RoomAllocation[];
   onUpdateAttendees: (bookingId: string, attendees: Attendee[]) => void;
   onUpdateAllocations: (bookingId: string, allocations: RoomAllocation[]) => void;
-  onUpdateOwnerProfile?: (updatedUser: User) => void;
   onUpdateHouse?: (house: RetreatHouse) => void;
   reviews?: Review[];
   onUpdateReview?: (review: Review) => void;
@@ -27,9 +27,6 @@ interface OwnerDashboardProps {
   onAddRoom?: (room: Room) => void;
   onUpdateRoom?: (room: Room) => void;
   onDeleteRoom?: (roomId: string) => void;
-  announcements?: Announcement[];
-  onAddAnnouncement?: (announcement: Announcement) => void;
-  onToggleAnnouncement?: (id: string, isActive: boolean) => void;
   waitlist?: WaitlistEntry[];
 }
 
@@ -38,6 +35,7 @@ export default function OwnerDashboard({
   houses,
   bookings,
   onAddHouse,
+  onDeleteHouse,
   onApproveBooking,
   onRejectBooking,
   onConfirmDeposit,
@@ -47,7 +45,6 @@ export default function OwnerDashboard({
   allocations,
   onUpdateAttendees,
   onUpdateAllocations,
-  onUpdateOwnerProfile,
   onUpdateHouse,
   reviews = [],
   onUpdateReview,
@@ -55,33 +52,20 @@ export default function OwnerDashboard({
   onAddRoom,
   onUpdateRoom,
   onDeleteRoom,
-  announcements = [],
-  onAddAnnouncement,
-  onToggleAnnouncement,
   waitlist = [],
 }: OwnerDashboardProps) {
   // Tabs within Owner panel
-  const [activeTab, setActiveTab] = useState<'stats' | 'houses' | 'rooms' | 'add_house' | 'bookings' | 'profile' | 'occupancy' | 'reviews' | 'financials' | 'announcements' | 'waitlist'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'houses' | 'rooms' | 'add_house' | 'bookings' | 'profile' | 'occupancy' | 'reviews' | 'financials' | 'waitlist'>('stats');
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
   // Booking status filter for bookings tab
   const [bookingFilter, setBookingFilter] = useState<'all' | 'new' | 'confirmed' | 'current' | 'completed' | 'cancelled'>('all');
   // Platform commission rate (5%)
   const PLATFORM_COMMISSION = 0.05;
 
-  // Form states for profile editing
-  const [profileName, setProfileName] = useState(owner.name);
-  const [profileEmail, setProfileEmail] = useState(owner.email);
-  const [profilePhone, setProfilePhone] = useState(owner.phone);
-  const [profileOrg, setProfileOrg] = useState(owner.organizationName || '');
-  const [profileSuccessMsg, setProfileSuccessMsg] = useState('');
-
-  React.useEffect(() => {
-    setProfileName(owner.name);
-    setProfileEmail(owner.email);
-    setProfilePhone(owner.phone);
-    setProfileOrg(owner.organizationName || '');
-    setProfileSuccessMsg('');
-  }, [owner]);
+  // Stats period filter — lets the owner scope profit/booking KPIs to a time range
+  const [statsPeriod, setStatsPeriod] = useState<'all' | '7d' | '30d' | 'month' | 'custom'>('all');
+  const [statsCustomFrom, setStatsCustomFrom] = useState('');
+  const [statsCustomTo, setStatsCustomTo] = useState('');
 
   // Form states for new house
   const [houseName, setHouseName] = useState('');
@@ -267,9 +251,8 @@ export default function OwnerDashboard({
   // Filter bookings for owner's houses
   const ownerBookings = bookings.filter((b) => ownerHouseIds.includes(b.houseId));
 
-  // Filter rooms, announcements, and waitlist entries for owner's houses
+  // Filter rooms and waitlist entries for owner's houses
   const ownerRooms = rooms.filter((r) => ownerHouseIds.includes(r.houseId));
-  const ownerAnnouncements = announcements.filter((a) => ownerHouseIds.includes(a.houseId));
   const ownerWaitlist = waitlist.filter((w) => ownerHouseIds.includes(w.houseId));
 
   // Room management form state
@@ -277,9 +260,6 @@ export default function OwnerDashboard({
   const [roomBeds, setRoomBeds] = useState(2);
   const [roomPrice, setRoomPrice] = useState('');
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
-
-  // Announcement form state
-  const [announcementMessage, setAnnouncementMessage] = useState('');
 
   // Calculate stats
   const totalRevenue = ownerBookings
@@ -297,7 +277,6 @@ export default function OwnerDashboard({
   const todayBookings = ownerBookings.filter(
     (b) => (b.status === 'approved' || b.status === 'completed') && b.checkIn <= todayStr && b.checkOut >= todayStr
   );
-  const totalBookingsCount = ownerBookings.length;
   const confirmedBookings = ownerBookings.filter((b) => b.status === 'approved' || b.status === 'completed');
   const confirmedRevenue = confirmedBookings.reduce((sum, b) => sum + b.totalPrice, 0);
   const platformCommissionAmount = confirmedRevenue * PLATFORM_COMMISSION;
@@ -330,6 +309,28 @@ export default function OwnerDashboard({
   const avgRating = ownerReviews.length > 0
     ? (ownerReviews.reduce((sum, r) => sum + r.rating, 0) / ownerReviews.length)
     : 0;
+
+  // Period-scoped bookings/profit for the stats tab filter — bounded by check-in date
+  const statsPeriodBounds = (() => {
+    const end = new Date();
+    if (statsPeriod === '7d') { const start = new Date(); start.setDate(start.getDate() - 7); return { start, end }; }
+    if (statsPeriod === '30d') { const start = new Date(); start.setDate(start.getDate() - 30); return { start, end }; }
+    if (statsPeriod === 'month') { const start = new Date(end.getFullYear(), end.getMonth(), 1); return { start, end }; }
+    if (statsPeriod === 'custom' && statsCustomFrom && statsCustomTo) {
+      return { start: new Date(statsCustomFrom), end: new Date(statsCustomTo) };
+    }
+    return null; // 'all'
+  })();
+  const periodBookings = statsPeriodBounds
+    ? ownerBookings.filter((b) => {
+        const checkIn = new Date(b.checkIn);
+        return checkIn >= statsPeriodBounds.start && checkIn <= statsPeriodBounds.end;
+      })
+    : ownerBookings;
+  const periodConfirmedBookings = periodBookings.filter((b) => b.status === 'approved' || b.status === 'completed');
+  const periodConfirmedRevenue = periodConfirmedBookings.reduce((sum, b) => sum + b.totalPrice, 0);
+  const periodPlatformCommission = periodConfirmedRevenue * PLATFORM_COMMISSION;
+  const periodNetPayout = periodConfirmedRevenue - periodPlatformCommission;
 
   // Categorize bookings for the Bookings tab
   const categorizeBooking = (b: Booking): 'new' | 'confirmed' | 'current' | 'completed' | 'cancelled' => {
@@ -389,18 +390,74 @@ export default function OwnerDashboard({
     setHalls(halls.filter((h) => h.id !== id));
   };
 
+  // Loads an existing house's data into the add/edit form fields so the
+  // same form doubles as the "edit my house" screen once one exists.
+  const populateFormFromHouse = (house: RetreatHouse) => {
+    setHouseName(house.name);
+    setHouseDesc(house.description);
+    setHouseGov(house.governorate);
+    setHouseAddress(house.address);
+    setHouseLat(house.lat);
+    setHouseLng(house.lng);
+    setPricePerNight(house.pricePerNightPerPerson || 150);
+    setRoomsCount(house.roomsCount);
+    setBedsCount(house.bedsCount);
+    setRoomsDesc(house.roomsDescription || '');
+    setSelectedServices(house.services || []);
+    setSelectedSuitability(house.suitability || []);
+    setImageUrl(house.images?.[0] || '');
+    setActivitiesInput((house.activities || []).join('، '));
+    setPropertyType(house.propertyType || 'conference');
+    setMonthlyRent(house.monthlyRent || 1500);
+    setStudentHousingGender(house.studentHousingGender === 'girls' ? 'girls' : 'boys');
+    setDistanceFromUniversity(house.distanceFromUniversity || '');
+    setHalls(house.conferenceHalls || []);
+  };
+
   const handleSubmitHouse = (e: React.FormEvent) => {
     e.preventDefault();
-    if (ownerHouses.length >= 1) {
-      alert('عذراً، لا يمكن تسجيل أكثر من بيت واحد لكل مالك.');
-      return;
-    }
     if (!houseName || !houseDesc || !houseAddress) {
       alert('يرجى ملء كافة البيانات الأساسية للبيت.');
       return;
     }
 
     const isMonthly = propertyType === 'student' || propertyType === 'staff';
+
+    // Editing the existing house (owners are capped at one) instead of creating a new one
+    if (ownerHouses.length >= 1) {
+      const existing = ownerHouses[0];
+      const updatedImages = imageUrl && imageUrl !== existing.images[0]
+        ? [imageUrl, ...existing.images.slice(1)]
+        : existing.images;
+
+      const updatedHouse: RetreatHouse = {
+        ...existing,
+        name: houseName,
+        description: houseDesc,
+        governorate: houseGov,
+        address: houseAddress,
+        lat: houseLat ?? existing.lat,
+        lng: houseLng ?? existing.lng,
+        roomsCount,
+        bedsCount,
+        roomsDescription: roomsDesc || existing.roomsDescription,
+        pricePerNightPerPerson: isMonthly ? 0 : pricePerNight,
+        propertyType,
+        monthlyRent: isMonthly ? monthlyRent : undefined,
+        studentHousingGender: propertyType === 'student' ? studentHousingGender : undefined,
+        distanceFromUniversity: propertyType === 'student' ? distanceFromUniversity : undefined,
+        services: selectedServices,
+        suitability: selectedSuitability.length > 0 ? selectedSuitability : existing.suitability,
+        conferenceHalls: propertyType === 'conference' ? halls : [],
+        activities: activitiesInput ? activitiesInput.split('،').map((a) => a.trim()) : existing.activities,
+        images: updatedImages,
+      };
+
+      if (onUpdateHouse) onUpdateHouse(updatedHouse);
+      alert('تم حفظ تعديلات بيتك بنجاح!');
+      setActiveTab('houses');
+      return;
+    }
 
     const newHouse: RetreatHouse = {
       id: `house_${Date.now()}`,
@@ -544,15 +601,6 @@ export default function OwnerDashboard({
           💬 الردود باسمنا
         </button>
         <button
-          id="owner-tab-announcements"
-          onClick={() => setActiveTab('announcements')}
-          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'announcements' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          📢 التنبيهات
-        </button>
-        <button
           id="owner-tab-waitlist"
           onClick={() => setActiveTab('waitlist')}
           className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer relative ${
@@ -575,16 +623,16 @@ export default function OwnerDashboard({
         </button>
         <button
           id="owner-tab-add"
-          onClick={() => ownerHouses.length === 0 && setActiveTab('add_house')}
-          disabled={ownerHouses.length >= 1}
-          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all ${
-            ownerHouses.length >= 1
-              ? 'opacity-30 cursor-not-allowed text-[#8A8A70]'
-              : activeTab === 'add_house' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40 cursor-pointer'
+          onClick={() => {
+            if (ownerHouses.length >= 1) populateFormFromHouse(ownerHouses[0]);
+            setActiveTab('add_house');
+          }}
+          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'add_house' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
           }`}
-          title={ownerHouses.length >= 1 ? 'مسموح ببيت واحد فقط لكل مالك' : 'إضافة بيت جديد'}
+          title={ownerHouses.length >= 1 ? 'تعديل بيانات بيتك الحالي' : 'إضافة بيت جديد'}
         >
-          {ownerHouses.length >= 1 ? 'بيت واحد فقط ✓' : 'إضافة بيت جديد +'}
+          {ownerHouses.length >= 1 ? 'تعديل بيانات البيت ✏️' : 'إضافة بيت جديد +'}
         </button>
         <button
           id="owner-tab-profile"
@@ -593,7 +641,7 @@ export default function OwnerDashboard({
             activeTab === 'profile' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
           }`}
         >
-          الإعدادات ⚙️
+          الملف الشخصي 👤
         </button>
       </div>
 
@@ -602,12 +650,54 @@ export default function OwnerDashboard({
       {/* 1. Stats and metrics — Owner Home Dashboard */}
       {activeTab === 'stats' && (
         <div className="space-y-4">
+          {/* Period filter — scopes bookings/profit KPIs below to a time range */}
+          <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-2">
+            <span className="text-[10px] font-bold text-[#8A8A70]">عرض بيانات الحجوزات والربح عن:</span>
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                { key: 'all', label: 'كل الوقت' },
+                { key: '7d', label: 'آخر ٧ أيام' },
+                { key: '30d', label: 'آخر ٣٠ يوم' },
+                { key: 'month', label: 'هذا الشهر' },
+                { key: 'custom', label: 'مدة مخصصة' },
+              ] as const).map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => setStatsPeriod(p.key)}
+                  className={`text-[9.5px] font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    statsPeriod === p.key ? 'bg-[#5A5A40] text-white' : 'bg-[#EBEBE0]/50 text-[#4A4A3A] hover:bg-[#DEDECB]'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            {statsPeriod === 'custom' && (
+              <div className="flex items-center gap-1.5 pt-1">
+                <input
+                  type="date"
+                  value={statsCustomFrom}
+                  onChange={(e) => setStatsCustomFrom(e.target.value)}
+                  className="flex-1 bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none"
+                />
+                <span className="text-[9px] text-[#8A8A70] shrink-0">إلى</span>
+                <input
+                  type="date"
+                  value={statsCustomTo}
+                  onChange={(e) => setStatsCustomTo(e.target.value)}
+                  className="flex-1 bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none"
+                />
+              </div>
+            )}
+          </div>
+
           {/* Top KPIs — 6 core metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-1 text-right">
               <ClipboardList className="w-4 h-4 text-[#5A5A40]" />
-              <div className="text-[9px] text-[#8A8A70] font-bold">إجمالي الحجوزات</div>
-              <div className="text-lg font-extrabold text-[#4A4A3A]">{totalBookingsCount}</div>
+              <div className="text-[9px] text-[#8A8A70] font-bold">إجمالي الحجوزات (المدة المحددة)</div>
+              <div className="text-lg font-extrabold text-[#4A4A3A]">{periodBookings.length}</div>
             </div>
             <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-1 text-right relative">
               <Plus className="w-4 h-4 text-amber-600" />
@@ -627,8 +717,8 @@ export default function OwnerDashboard({
             </div>
             <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-1 text-right">
               <Coins className="w-4 h-4 text-[#5A5A40]" />
-              <div className="text-[9px] text-[#8A8A70] font-bold">إجمالي الإيرادات</div>
-              <div className="text-base font-extrabold text-[#4A4A3A]">{confirmedRevenue.toLocaleString()} ج.م</div>
+              <div className="text-[9px] text-[#8A8A70] font-bold">إجمالي الإيرادات (المدة المحددة)</div>
+              <div className="text-base font-extrabold text-[#4A4A3A]">{periodConfirmedRevenue.toLocaleString()} ج.م</div>
             </div>
             <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-1 text-right">
               <Star className="w-4 h-4 text-amber-500" />
@@ -639,15 +729,15 @@ export default function OwnerDashboard({
             </div>
           </div>
 
-          {/* Net owner payout after commission */}
+          {/* Net owner payout after commission, scoped to the selected period */}
           <div className="bg-gradient-to-l from-emerald-50 to-white rounded-2xl p-4 border border-emerald-200 space-y-1.5">
             <div className="flex items-center gap-2">
               <Coins className="w-5 h-5 text-emerald-700" />
               <span className="text-[11px] font-black text-emerald-900">صافي مستحقاتك بعد عمولة التطبيق ({(PLATFORM_COMMISSION * 100).toFixed(0)}%)</span>
             </div>
-            <div className="text-2xl font-extrabold text-emerald-900">{netOwnerPayout.toLocaleString()} ج.م</div>
+            <div className="text-2xl font-extrabold text-emerald-900">{periodNetPayout.toLocaleString()} ج.م</div>
             <div className="text-[10px] text-emerald-800/70">
-              من إجمالي {confirmedRevenue.toLocaleString()} ج.م − عمولة {platformCommissionAmount.toLocaleString()} ج.م
+              من إجمالي {periodConfirmedRevenue.toLocaleString()} ج.م − عمولة {periodPlatformCommission.toLocaleString()} ج.م
               <button
                 onClick={() => setActiveTab('financials')}
                 className="mr-2 underline font-bold text-emerald-900 hover:text-emerald-950 cursor-pointer"
@@ -1035,6 +1125,23 @@ export default function OwnerDashboard({
                         </div>
                       )}
                     </div>
+
+                    {/* Delete house — owners are capped at one, so this is the only way to replace it */}
+                    <div className="border-t border-[#D6D6C2]/50 pt-2 mt-2">
+                      <button
+                        type="button"
+                        id={`delete-house-${house.id}`}
+                        onClick={() => {
+                          if (confirm(`هل أنت متأكد من رغبتك في حذف بيت "${house.name}" نهائياً؟ سيتم حذف كل الحجوزات والغرف المرتبطة به ولا يمكن التراجع عن هذا الإجراء.`)) {
+                            onDeleteHouse && onDeleteHouse(house.id);
+                          }
+                        }}
+                        className="w-full flex items-center justify-center gap-1.5 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl py-2 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>حذف البيت نهائياً</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1414,28 +1521,16 @@ export default function OwnerDashboard({
 
       {/* 4. Add a New Retreat House */}
       {activeTab === 'add_house' && (
-        ownerHouses.length >= 1 ? (
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-8 text-center space-y-4 animate-in fade-in duration-200">
-            <div className="w-16 h-16 bg-amber-50 border border-amber-200 text-amber-600 rounded-full flex items-center justify-center mx-auto text-3xl">
-              ⚠️
-            </div>
-            <div className="space-y-1.5 max-w-md mx-auto">
-              <h3 className="text-sm font-black text-[#4A4A3A]">لقد وصلت للحد الأقصى المسموح به من البيوت!</h3>
-              <p className="text-xs text-[#8A8A70] leading-relaxed">
-                حسابك الحالي ذو صلاحية <strong>مالك بيت فردي</strong>. لا يمكنك إضافة أكثر من <strong>بيت واحد فقط ({ownerHouses[0]?.name})</strong> في لوحة التحكم هذه لضمان جودة الإشغال والمتابعة الدقيقة.
-              </p>
-              <div className="bg-[#FAF8F5] border border-[#D6D6C2] p-4 rounded-2xl text-[11px] text-[#5A5A40] text-right space-y-2 mt-2">
-                <p className="font-bold">💡 ماذا يمكنك أن تفعل الآن؟</p>
-                <p>• تعديل وإدارة تفاصيل بيتك الحالي وإضافة صور الغرف والخدمات وجدول الإشغال.</p>
-                <p>• التواصل مع الدعم الفني أو المنسق البطريركي لطلب ترقية الحساب لإدارة مجموعة بيوت متعددة.</p>
-              </div>
-            </div>
-          </div>
-        ) : (
           <form onSubmit={handleSubmitHouse} className="bg-white rounded-3xl border border-[#D6D6C2] p-5 space-y-4 text-right">
           <div className="space-y-1 pb-2 border-b border-[#D6D6C2]">
-            <h3 className="text-xs font-extrabold text-[#4A4A3A]">تفاصيل تسجيل بيت مؤتمرات جديد</h3>
-            <p className="text-[10px] text-[#8A8A70]">يرجى ملء البيانات بدقة لتمكين الخدام والكنائس من حجز بيتك.</p>
+            <h3 className="text-xs font-extrabold text-[#4A4A3A]">
+              {ownerHouses.length >= 1 ? 'تعديل بيانات بيتك الحالي' : 'تفاصيل تسجيل بيت مؤتمرات جديد'}
+            </h3>
+            <p className="text-[10px] text-[#8A8A70]">
+              {ownerHouses.length >= 1
+                ? 'عدّل أي بيانات تريد تحديثها — الأسعار، الغرف، الخدمات وغيرها — وستُحفظ التعديلات مباشرة.'
+                : 'يرجى ملء البيانات بدقة لتمكين الخدام والكنائس من حجز بيتك.'}
+            </p>
           </div>
 
           <div className="space-y-3">
@@ -1809,10 +1904,9 @@ export default function OwnerDashboard({
             type="submit"
             className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] active:bg-[#4A4A3A] text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-all text-center cursor-pointer"
           >
-            إرسال البيت الجديد للمراجعة وتأكيده للظهور
+            {ownerHouses.length >= 1 ? 'حفظ التعديلات' : 'إرسال البيت الجديد للمراجعة وتأكيده للظهور'}
           </button>
         </form>
-        )
       )}
 
       {/* 4b. Financials & Platform Commission */}
@@ -1912,121 +2006,65 @@ export default function OwnerDashboard({
 
       {/* 5. Owner Profile Settings */}
       {activeTab === 'profile' && (
-        <div className="bg-white p-6 rounded-3xl border border-[#D6D6C2] text-right space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <div className="flex items-center gap-3 border-b border-[#EBEBE0] pb-4">
-            <div className="p-2.5 rounded-2xl bg-[#EBEBE0]/30 text-[#5A5A40] border border-[#D6D6C2]/60">
-              <Settings className="w-5 h-5" />
+        <div className="bg-white p-6 rounded-3xl border border-[#D6D6C2] text-right space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center justify-between gap-3 border-b border-[#EBEBE0] pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-[#EBEBE0]/30 text-[#5A5A40] border border-[#D6D6C2]/60">
+                <Settings className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-[#4A4A3A]">الملف الشخصي لمالك البيت</h3>
+                <p className="text-[10px] text-[#8A8A70]">بياناتك الشخصية وبيانات التواصل المسجلة لدى الإدارة</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-black text-[#4A4A3A]">إعدادات حساب مالك البيت</h3>
-              <p className="text-[10px] text-[#8A8A70]">تعديل البيانات الشخصية وبيانات التواصل لمالك بيت المؤتمرات</p>
-            </div>
+            <span className="text-[9px] font-bold text-[#8A8A70] flex items-center gap-1 shrink-0">
+              <Lock className="w-3 h-3" /> غير قابلة للتعديل
+            </span>
           </div>
 
-          {profileSuccessMsg && (
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-950 p-4 rounded-2xl flex items-center gap-3 text-xs font-bold animate-pulse">
-              <span className="text-lg">✅</span>
-              <span>{profileSuccessMsg}</span>
-            </div>
-          )}
+          <p className="text-[9.5px] text-[#8A8A70] leading-relaxed -mt-2">
+            هذه البيانات ثابتة بعد إنشاء الحساب لضمان مطابقتها لسجلات الإدارة. لتصحيح أي خطأ، تواصل مع الدعم الفني.
+          </p>
 
-          <form
-            id="owner-profile-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!profileName.trim() || !profileEmail.trim() || !profilePhone.trim()) {
-                alert('يرجى ملء الحقول الإلزامية الأساسية.');
-                return;
-              }
-              
-              const updatedUser: User = {
-                ...owner,
-                name: profileName,
-                email: profileEmail,
-                phone: profilePhone,
-                organizationName: profileOrg || undefined
-              };
-
-              if (onUpdateOwnerProfile) {
-                onUpdateOwnerProfile(updatedUser);
-              }
-              setProfileSuccessMsg('تم تحديث بيانات الحساب بنجاح! تم حفظ التغييرات وتطبيقها.');
-              setTimeout(() => setProfileSuccessMsg(''), 4000);
-            }}
-            className="space-y-4"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-[#8A8A70]">الاسم الكامل (الإلزامي) 👤:</label>
-                <input
-                  id="owner-profile-name"
-                  type="text"
-                  required
-                  value={profileName}
-                  onChange={(e) => setProfileName(e.target.value)}
-                  className="w-full bg-slate-50 border border-[#D6D6C2] text-xs px-3 py-2.5 rounded-xl text-[#4A4A3A] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#5A5A40] focus:border-[#5A5A40] transition-all"
-                  placeholder="مثال: أ. جرجس نبيل"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-[#8A8A70]">رقم الهاتف للتواصل (الإلزامي) 📞:</label>
-                <input
-                  id="owner-profile-phone"
-                  type="tel"
-                  required
-                  value={profilePhone}
-                  onChange={(e) => setProfilePhone(e.target.value)}
-                  className="w-full bg-slate-50 border border-[#D6D6C2] text-xs px-3 py-2.5 rounded-xl text-[#4A4A3A] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#5A5A40] focus:border-[#5A5A40] transition-all text-left"
-                  dir="ltr"
-                  placeholder="مثال: 01234567890"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-[#8A8A70]">البريد الإلكتروني (الإلزامي) ✉️:</label>
-                <input
-                  id="owner-profile-email"
-                  type="email"
-                  required
-                  value={profileEmail}
-                  onChange={(e) => setProfileEmail(e.target.value)}
-                  className="w-full bg-slate-50 border border-[#D6D6C2] text-xs px-3 py-2.5 rounded-xl text-[#4A4A3A] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#5A5A40] focus:border-[#5A5A40] transition-all text-left"
-                  dir="ltr"
-                  placeholder="owner@church.eg"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-[#8A8A70]">اسم جهة الإدارة / الاسم التجاري للبيت 🏨 (اختياري):</label>
-                <input
-                  id="owner-profile-org"
-                  type="text"
-                  value={profileOrg}
-                  onChange={(e) => setProfileOrg(e.target.value)}
-                  className="w-full bg-slate-50 border border-[#D6D6C2] text-xs px-3 py-2.5 rounded-xl text-[#4A4A3A] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#5A5A40] focus:border-[#5A5A40] transition-all"
-                  placeholder="مثال: إدارة دير مارمينا أو فندق سان مارك"
-                />
+          <div className="space-y-2 text-[11px]">
+            <div className="flex items-center gap-2 bg-[#FDFBF7] p-2.5 rounded-2xl border border-[#D6D6C2]/40">
+              <ShieldAlert className="w-4 h-4 text-[#5A5A40] shrink-0" />
+              <div>
+                <span className="text-[9px] text-[#8A8A70] font-bold block">الاسم الكامل</span>
+                <span className="font-bold text-[#4A4A3A]">{owner.name}</span>
               </div>
             </div>
-
-            <div className="bg-amber-50/60 border border-amber-200/60 p-4 rounded-2xl space-y-1 text-right">
-              <span className="text-[10px] font-extrabold text-amber-950 block">🔐 معلومات الأمان وصلاحية الحساب:</span>
-              <p className="text-[9px] text-amber-900 leading-relaxed">
-                نوع الحساب الحالي هو <strong className="text-[#5A5A40]">مالك بيوت خلوات ومؤتمرات (Owner)</strong> معتمد ومفعل. هذا الحساب يخضع لإشراف ومراجعة الإدارة البطريركية لضمان جودة وأمان خدمات بيوت الكنيسة القبطية الأرثوذكسية.
-              </p>
+            <div className="flex items-center gap-2 bg-[#FDFBF7] p-2.5 rounded-2xl border border-[#D6D6C2]/40">
+              <Mail className="w-4 h-4 text-[#5A5A40] shrink-0" />
+              <div>
+                <span className="text-[9px] text-[#8A8A70] font-bold block">البريد الإلكتروني</span>
+                <span className="font-bold text-[#4A4A3A]" dir="ltr">{owner.email}</span>
+              </div>
             </div>
-
-            <div className="pt-2">
-              <button
-                id="owner-profile-submit-btn"
-                type="submit"
-                className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-xs font-bold py-3 rounded-xl shadow-md hover:shadow-lg active:scale-[0.99] transition-all text-center cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <span>💾 حفظ وتعديل بيانات الحساب</span>
-              </button>
+            <div className="flex items-center gap-2 bg-[#FDFBF7] p-2.5 rounded-2xl border border-[#D6D6C2]/40">
+              <Phone className="w-4 h-4 text-[#5A5A40] shrink-0" />
+              <div>
+                <span className="text-[9px] text-[#8A8A70] font-bold block">رقم الهاتف</span>
+                <span className="font-bold text-[#4A4A3A]" dir="ltr">{owner.phone}</span>
+              </div>
             </div>
-          </form>
+            {owner.organizationName && (
+              <div className="flex items-center gap-2 bg-[#FDFBF7] p-2.5 rounded-2xl border border-[#D6D6C2]/40">
+                <Building className="w-4 h-4 text-[#5A5A40] shrink-0" />
+                <div>
+                  <span className="text-[9px] text-[#8A8A70] font-bold block">اسم جهة الإدارة / الاسم التجاري</span>
+                  <span className="font-bold text-[#4A4A3A]">{owner.organizationName}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-amber-50/60 border border-amber-200/60 p-4 rounded-2xl space-y-1 text-right">
+            <span className="text-[10px] font-extrabold text-amber-950 block">🔐 معلومات الأمان وصلاحية الحساب:</span>
+            <p className="text-[9px] text-amber-900 leading-relaxed">
+              نوع الحساب الحالي هو <strong className="text-[#5A5A40]">مالك بيوت خلوات ومؤتمرات (Owner)</strong> معتمد ومفعل. هذا الحساب يخضع لإشراف ومراجعة الإدارة البطريركية لضمان جودة وأمان خدمات بيوت الكنيسة القبطية الأرثوذكسية.
+            </p>
+          </div>
         </div>
       )}
 
@@ -2406,81 +2444,6 @@ export default function OwnerDashboard({
       )}
 
       {/* Owner Announcements */}
-      {activeTab === 'announcements' && (
-        <div className="space-y-3">
-          {ownerHouses.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70]">
-              أضف بيتك أولاً قبل نشر التنبيهات.
-            </div>
-          ) : (
-            <>
-              <div className="bg-white rounded-2xl border border-[#D6D6C2] p-4 space-y-3">
-                <div className="text-xs font-bold text-[#4A4A3A] flex items-center gap-1.5">
-                  <Megaphone className="w-4 h-4 text-[#5A5A40]" />
-                  رسالة تظهر للعملاء على صفحة البيت
-                </div>
-                <p className="text-[9.5px] text-[#8A8A70]">مثال: "يوجد خصم هذا الأسبوع" أو "المسبح مغلق للصيانة". إضافة رسالة جديدة تُلغي الرسالة السابقة تلقائياً.</p>
-                <textarea
-                  id="announcement-input"
-                  rows={2}
-                  placeholder="اكتب رسالتك هنا..."
-                  value={announcementMessage}
-                  onChange={(e) => setAnnouncementMessage(e.target.value)}
-                  className="w-full bg-white border border-[#D6D6C2] text-[11px] px-3 py-2 rounded-xl focus:outline-none"
-                />
-                <button
-                  id="announcement-submit-btn"
-                  type="button"
-                  onClick={() => {
-                    if (!announcementMessage.trim()) { alert('يرجى كتابة نص التنبيه.'); return; }
-                    if (onAddAnnouncement) {
-                      onAddAnnouncement({
-                        id: `ann_${Date.now()}`,
-                        houseId: ownerHouses[0].id,
-                        message: announcementMessage.trim(),
-                        isActive: true,
-                        createdAt: new Date().toISOString(),
-                      });
-                    }
-                    setAnnouncementMessage('');
-                  }}
-                  className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[10px] font-bold px-4 py-2 rounded-xl cursor-pointer"
-                >
-                  نشر التنبيه
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-xs font-bold text-[#8A8A70] px-1">سجل التنبيهات ({ownerAnnouncements.length}):</div>
-                {ownerAnnouncements.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-[#D6D6C2] p-4 text-center text-[10px] text-[#8A8A70]">
-                    لا توجد تنبيهات منشورة بعد.
-                  </div>
-                ) : (
-                  ownerAnnouncements.map((a) => (
-                    <div key={a.id} className="bg-white rounded-2xl border border-[#D6D6C2] p-3 flex items-center justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-[11px] font-bold ${a.isActive ? 'text-[#4A4A3A]' : 'text-[#BCBC9D] line-through'}`}>{a.message}</p>
-                        <span className="text-[8.5px] text-[#8A8A70]">{new Date(a.createdAt).toLocaleDateString('ar-EG')}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => onToggleAnnouncement && onToggleAnnouncement(a.id, !a.isActive)}
-                        className={`text-[9.5px] font-bold px-2.5 py-1 rounded-lg shrink-0 cursor-pointer ${
-                          a.isActive ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-[#EBEBE0] text-[#8A8A70]'
-                        }`}
-                      >
-                        {a.isActive ? 'نشطة — إخفاء' : 'إظهار'}
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
       {/* Waitlist */}
       {activeTab === 'waitlist' && (
         <div className="space-y-2">
