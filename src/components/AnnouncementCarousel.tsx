@@ -42,33 +42,42 @@ export default function AnnouncementCarousel({ currentUser, announcements, house
 
   return (
     <div
-      className={`bg-[#5A5A40] text-white p-3.5 px-4 rounded-2xl shadow-sm space-y-0.5 relative overflow-hidden ${linkedHouse ? 'cursor-pointer' : ''}`}
+      className={`relative h-48 rounded-3xl shadow-sm overflow-hidden text-white ${linkedHouse ? 'cursor-pointer' : ''} ${
+        activeAnnouncement?.imageUrl ? '' : 'bg-gradient-to-br from-[#5A5A40] to-[#3D3D2B]'
+      }`}
       onClick={() => linkedHouse && onSelectHouse(linkedHouse)}
     >
-      <div className="absolute top-0 left-0 w-20 h-20 bg-[#BCBC9D]/10 rounded-full blur-xl pointer-events-none" />
+      {activeAnnouncement?.imageUrl && (
+        <img
+          src={activeAnnouncement.imageUrl}
+          alt=""
+          referrerPolicy="no-referrer"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      )}
+      {/* Gradient overlay for text legibility over any background image */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
 
-      <div className={slideCount > 1 ? 'pr-7 pl-7' : ''}>
+      <div className={`relative h-full flex flex-col justify-end p-4 gap-1.5 ${slideCount > 1 ? 'pr-9 pl-9' : ''}`}>
         {activeAnnouncement ? (
           <>
-            {activeAnnouncement.imageUrl && (
-              <img
-                src={activeAnnouncement.imageUrl}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover opacity-25"
-              />
-            )}
-            <span className="text-[9px] text-[#EBEBE0] font-bold tracking-wider relative">📢 إعلان</span>
-            <h2 className="text-xs font-black text-[#F5F5F0] relative leading-relaxed">{activeAnnouncement.message}</h2>
+            <span className="text-[10px] text-[#EBEBE0] font-bold tracking-wider">📢 إعلان</span>
+            <h2 className="text-base font-black text-white leading-snug line-clamp-2">{activeAnnouncement.message}</h2>
             {linkedHouse && (
-              <p className="text-[9px] text-[#DEDECB] font-medium relative">{linkedHouse.name} — اضغط لعرض التفاصيل ←</p>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onSelectHouse(linkedHouse); }}
+                className="mt-1 self-start bg-[#C5A059] hover:bg-[#B7924A] text-[#0A2342] text-xs font-extrabold px-4 py-1.5 rounded-full shadow-sm transition-colors"
+              >
+                عرض {linkedHouse.name} ←
+              </button>
             )}
           </>
         ) : (
           <>
-            <span className="text-[9px] text-[#EBEBE0] font-bold tracking-wider">أهلاً بك يا {currentUser.name} 🌾</span>
-            <h2 className="text-xs font-black text-[#F5F5F0]">ابحث عن مكان خلوتك ومؤتمراتك القبطية بمصر</h2>
-            <p className="text-[9px] text-[#DEDECB] font-medium">مئات بيوت المؤتمرات والفنادق المسيحية المناسبة لكنائسنا وخدماتنا.</p>
+            <span className="text-[10px] text-[#EBEBE0] font-bold tracking-wider">أهلاً بك يا {currentUser.name} 🌾</span>
+            <h2 className="text-base font-black text-white leading-snug">ابحث عن مكان خلوتك ومؤتمراتك القبطية بمصر</h2>
+            <p className="text-[11px] text-[#DEDECB] font-medium leading-relaxed">مئات بيوت المؤتمرات والفنادق المسيحية المناسبة لكنائسنا وخدماتنا.</p>
           </>
         )}
       </div>
@@ -78,25 +87,25 @@ export default function AnnouncementCarousel({ currentUser, announcements, house
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); goPrev(); }}
-            className="absolute top-1/2 -translate-y-1/2 right-1.5 bg-white/15 hover:bg-white/25 rounded-full p-1 transition-colors"
+            className="absolute top-1/2 -translate-y-1/2 right-2.5 bg-white/20 hover:bg-white/30 rounded-full p-1.5 transition-colors"
             title="السابق"
           >
-            <ChevronRight className="w-3.5 h-3.5 text-white" />
+            <ChevronRight className="w-4 h-4 text-white" />
           </button>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); goNext(); }}
-            className="absolute top-1/2 -translate-y-1/2 left-1.5 bg-white/15 hover:bg-white/25 rounded-full p-1 transition-colors"
+            className="absolute top-1/2 -translate-y-1/2 left-2.5 bg-white/20 hover:bg-white/30 rounded-full p-1.5 transition-colors"
             title="التالي"
           >
-            <ChevronLeft className="w-3.5 h-3.5 text-white" />
+            <ChevronLeft className="w-4 h-4 text-white" />
           </button>
 
-          <div className="flex items-center gap-1 pt-1.5 relative">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
             {Array.from({ length: slideCount }).map((_, i) => (
               <span
                 key={i}
-                className={`h-1 rounded-full transition-all ${i === index ? 'w-4 bg-[#C5A059]' : 'w-1 bg-white/30'}`}
+                className={`h-1.5 rounded-full transition-all ${i === index ? 'w-5 bg-[#C5A059]' : 'w-1.5 bg-white/40'}`}
               />
             ))}
           </div>

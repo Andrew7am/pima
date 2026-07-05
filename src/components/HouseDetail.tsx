@@ -5,7 +5,7 @@ import {
   ArrowRight, MapPin, BedDouble, Calendar, Users, 
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
   Utensils, Volume2, Monitor, HelpCircle, Send, CheckCircle2,
-  Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Heart, Share2, Copy,
+  Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Heart, Copy,
   Calculator, TrendingDown, TrendingUp, Coins, Bus
 } from 'lucide-react';
 
@@ -534,31 +534,7 @@ export default function HouseDetail({
   onJoinWaitlist
 }: HouseDetailProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [isCopied, setIsCopied] = useState(false);
 
-  const handleShare = async () => {
-    const shareData = {
-      title: house.name,
-      text: `اكتشف بيت المؤتمرات: ${house.name} في محافظة ${house.governorate} لخلوتكم ومؤتمراتكم القادمة.`,
-      url: window.location.href,
-    };
-
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        console.log("Error sharing:", err);
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
-      } catch (err) {
-        console.log("Error copying link:", err);
-      }
-    }
-  };
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     services: true,
     menu: false,
@@ -913,20 +889,6 @@ export default function HouseDetail({
         
         {/* Actions button group */}
         <div className="flex items-center gap-2">
-          {/* Share button */}
-          <button
-            id={`share-detail-${house.id}`}
-            onClick={handleShare}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-all shadow-xs ${
-              isCopied 
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                : 'bg-white border-[#D6D6C2] text-[#8A8A70] hover:bg-[#FDFBF7]'
-            }`}
-          >
-            <Share2 className="w-3.5 h-3.5 text-sky-600" />
-            <span>{isCopied ? 'تم نسخ الرابط!' : 'مشاركة'}</span>
-          </button>
-
           {/* Favorite toggle button */}
           <button
             id={`toggle-fav-detail-${house.id}`}
@@ -1054,33 +1016,30 @@ export default function HouseDetail({
         </div>
       </div>
 
+      {/* About section — moved up front so it's the first thing visitors read */}
+      <AccordionItem
+        id="services"
+        title="نبذة عن المكان"
+        isOpen={openSections.services}
+        onToggle={() => toggleSection('services')}
+        icon={Award}
+      >
+        <div className="space-y-3 text-right">
+          <p className="text-xs text-[#4A4A3A] leading-relaxed font-medium">{house.description}</p>
+
+          {house.propertyType === 'student' && house.distanceFromUniversity && (
+            <div className="bg-amber-50/70 border border-amber-200/50 p-3 rounded-2xl text-xs font-bold text-amber-900 mt-2">
+              🏫 القرب من الجامعة والمواصلات: {house.distanceFromUniversity}
+            </div>
+          )}
+        </div>
+      </AccordionItem>
+
       {/* Grid with description and features */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-right">
-        
-        {/* Left column: Overview, Rooms, Halls, Restaurants */}
+
+        {/* Left column: Rooms, Halls, Restaurants */}
         <div className="space-y-4">
-          
-          {/* Services Section */}
-          <AccordionItem
-            id="services"
-            title="خدمات البيت والمؤتمرات"
-            isOpen={openSections.services}
-            onToggle={() => toggleSection('services')}
-            icon={Award}
-          >
-            <div className="space-y-3 text-right">
-              <div className="space-y-1.5">
-                <span className="font-extrabold text-[#0A2342] text-[11px] block">نبذة عن البيت الكنسي:</span>
-                <p className="text-xs text-[#4A4A3A] leading-relaxed font-medium">{house.description}</p>
-              </div>
-              
-              {house.propertyType === 'student' && house.distanceFromUniversity && (
-                <div className="bg-amber-50/70 border border-amber-200/50 p-3 rounded-2xl text-xs font-bold text-amber-900 mt-2">
-                  🏫 القرب من الجامعة والمواصلات: {house.distanceFromUniversity}
-                </div>
-              )}
-            </div>
-          </AccordionItem>
 
           {/* Weekly Restaurant Menu Display or Editor */}
           <AccordionItem
