@@ -18,7 +18,7 @@ export default function AuthScreen() {
   const [orgName, setOrgName] = useState('');
   const [password, setPassword] = useState('');
   const [referralCode, setReferralCode] = useState('');
-  const [age, setAge] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [village, setVillage] = useState('');
   const [city, setCity] = useState('');
   const [governorate, setGovernorate] = useState('');
@@ -64,8 +64,12 @@ export default function AuthScreen() {
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !phone || !password || !age || !governorate) {
-      setError('الرجاء ملء كافة الحقول الأساسية (بما فيها السن والمحافظة).');
+    if (!name || !email || !phone || !password || !dateOfBirth || !governorate) {
+      setError('الرجاء ملء كافة الحقول الأساسية (بما فيها تاريخ الميلاد والمحافظة).');
+      return;
+    }
+    if (new Date(dateOfBirth) > new Date()) {
+      setError('تاريخ الميلاد غير صحيح.');
       return;
     }
     if (isChurchAffiliated && (!churchName || !priestName)) {
@@ -89,7 +93,7 @@ export default function AuthScreen() {
           phone,
           organization_name: (selectedRole === 'servant' || selectedRole === 'owner') ? orgName : null,
           referral_code: referralCode.trim() || null,
-          age: parseInt(age, 10),
+          date_of_birth: dateOfBirth,
           village: village.trim() || null,
           city: city.trim() || null,
           governorate,
@@ -222,9 +226,12 @@ export default function AuthScreen() {
               )}
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">السن:</label>
-                <input type="number" required min={1} max={120} placeholder="مثال: 25" value={age} onChange={(e) => setAge(e.target.value)}
-                  className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
+                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">تاريخ الميلاد:</label>
+                <input
+                  type="date" required max={new Date().toISOString().split('T')[0]}
+                  value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none"
+                />
               </div>
 
               <div>

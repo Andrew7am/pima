@@ -584,7 +584,7 @@ export default function App() {
       points: updatedUser.points ?? 0,
       favorites: updatedUser.favorites ?? [],
       role: updatedUser.role,
-      age: updatedUser.age ?? null,
+      date_of_birth: updatedUser.dateOfBirth ?? null,
       village: updatedUser.village ?? null,
       city: updatedUser.city ?? null,
       governorate: updatedUser.governorate ?? null,
@@ -783,7 +783,7 @@ export default function App() {
     (!currentUser.idCardFront || !currentUser.idCardBack);
   const needsProfileCompletion = currentUser.role !== 'admin' && (
     !currentUser.phone ||
-    currentUser.age === undefined ||
+    currentUser.dateOfBirth === undefined ||
     !currentUser.governorate ||
     (isChurchAffiliated && (!currentUser.churchName || !currentUser.priestName)) ||
     (needsOrgName && !currentUser.organizationName) ||
@@ -799,7 +799,7 @@ export default function App() {
             ...currentUser,
             role: fields.role,
             phone: fields.phone,
-            age: fields.age,
+            dateOfBirth: fields.dateOfBirth,
             governorate: fields.governorate,
             village: fields.village,
             city: fields.city,
@@ -947,7 +947,6 @@ export default function App() {
           {activeScreen === 'profile' && (
             <ProfileScreen
               currentUser={currentUser}
-              onUpdateProfile={handleUpdateUserProfile}
               onLogout={handleLogout}
               onBack={() => setActiveScreen('explore')}
             />

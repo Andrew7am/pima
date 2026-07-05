@@ -21,7 +21,7 @@ export interface User {
   pointsHistory?: PointsTransaction[];
   favorites?: string[];
   referralCode?: string;
-  age?: number;
+  dateOfBirth?: string; // ISO date (YYYY-MM-DD); age is derived from this, never stored directly
   village?: string;
   city?: string;
   governorate?: string;

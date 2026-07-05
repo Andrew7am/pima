@@ -15,7 +15,7 @@ export function mapUser(r: Record<string, unknown>): User {
     points: r.points as number ?? 0,
     favorites: (r.favorites as string[]) ?? [],
     referralCode: r.referral_code as string ?? undefined,
-    age: r.age as number ?? undefined,
+    dateOfBirth: r.date_of_birth as string ?? undefined,
     village: r.village as string ?? undefined,
     city: r.city as string ?? undefined,
     governorate: r.governorate as string ?? undefined,

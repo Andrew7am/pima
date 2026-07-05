@@ -9,7 +9,7 @@ interface CompleteProfileScreenProps {
   onComplete: (fields: {
     role: UserRole;
     phone: string;
-    age: number;
+    dateOfBirth: string;
     governorate: string;
     village?: string;
     city?: string;
@@ -24,7 +24,7 @@ interface CompleteProfileScreenProps {
 export default function CompleteProfileScreen({ currentUser, onComplete }: CompleteProfileScreenProps) {
   const [role, setRole] = useState<UserRole>(currentUser.role === 'admin' ? 'individual' : currentUser.role);
   const [phone, setPhone] = useState(currentUser.phone || '');
-  const [age, setAge] = useState(currentUser.age?.toString() || '');
+  const [dateOfBirth, setDateOfBirth] = useState(currentUser.dateOfBirth || '');
   const [governorate, setGovernorate] = useState(currentUser.governorate || '');
   const [village, setVillage] = useState(currentUser.village || '');
   const [city, setCity] = useState(currentUser.city || '');
@@ -47,8 +47,12 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone || !age || !governorate) {
-      setError('الرجاء ملء رقم الهاتف والسن والمحافظة.');
+    if (!phone || !dateOfBirth || !governorate) {
+      setError('الرجاء ملء رقم الهاتف وتاريخ الميلاد والمحافظة.');
+      return;
+    }
+    if (new Date(dateOfBirth) > new Date()) {
+      setError('تاريخ الميلاد غير صحيح.');
       return;
     }
     if (needsOrgName && !orgName.trim()) {
@@ -67,7 +71,7 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
     onComplete({
       role,
       phone,
-      age: parseInt(age, 10),
+      dateOfBirth,
       governorate,
       village: village.trim() || undefined,
       city: city.trim() || undefined,
@@ -139,9 +143,12 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
             )}
 
             <div>
-              <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">السن:</label>
-              <input type="number" required min={1} max={120} placeholder="مثال: 25" value={age} onChange={(e) => setAge(e.target.value)}
-                className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
+              <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">تاريخ الميلاد:</label>
+              <input
+                type="date" required max={new Date().toISOString().split('T')[0]}
+                value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)}
+                className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none"
+              />
             </div>
 
             <div>
