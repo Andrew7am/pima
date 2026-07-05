@@ -47,29 +47,31 @@ export default function AnnouncementCarousel({ currentUser, announcements, house
     >
       <div className="absolute top-0 left-0 w-20 h-20 bg-[#BCBC9D]/10 rounded-full blur-xl pointer-events-none" />
 
-      {activeAnnouncement ? (
-        <>
-          {activeAnnouncement.imageUrl && (
-            <img
-              src={activeAnnouncement.imageUrl}
-              alt=""
-              referrerPolicy="no-referrer"
-              className="absolute inset-0 w-full h-full object-cover opacity-25"
-            />
-          )}
-          <span className="text-[9px] text-[#EBEBE0] font-bold tracking-wider relative">📢 إعلان</span>
-          <h2 className="text-xs font-black text-[#F5F5F0] relative leading-relaxed">{activeAnnouncement.message}</h2>
-          {linkedHouse && (
-            <p className="text-[9px] text-[#DEDECB] font-medium relative">{linkedHouse.name} — اضغط لعرض التفاصيل ←</p>
-          )}
-        </>
-      ) : (
-        <>
-          <span className="text-[9px] text-[#EBEBE0] font-bold tracking-wider">أهلاً بك يا {currentUser.name} 🌾</span>
-          <h2 className="text-xs font-black text-[#F5F5F0]">ابحث عن مكان خلوتك ومؤتمراتك القبطية بمصر</h2>
-          <p className="text-[9px] text-[#DEDECB] font-medium">مئات بيوت المؤتمرات والفنادق المسيحية المناسبة لكنائسنا وخدماتنا.</p>
-        </>
-      )}
+      <div className={slideCount > 1 ? 'pr-7 pl-7' : ''}>
+        {activeAnnouncement ? (
+          <>
+            {activeAnnouncement.imageUrl && (
+              <img
+                src={activeAnnouncement.imageUrl}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 w-full h-full object-cover opacity-25"
+              />
+            )}
+            <span className="text-[9px] text-[#EBEBE0] font-bold tracking-wider relative">📢 إعلان</span>
+            <h2 className="text-xs font-black text-[#F5F5F0] relative leading-relaxed">{activeAnnouncement.message}</h2>
+            {linkedHouse && (
+              <p className="text-[9px] text-[#DEDECB] font-medium relative">{linkedHouse.name} — اضغط لعرض التفاصيل ←</p>
+            )}
+          </>
+        ) : (
+          <>
+            <span className="text-[9px] text-[#EBEBE0] font-bold tracking-wider">أهلاً بك يا {currentUser.name} 🌾</span>
+            <h2 className="text-xs font-black text-[#F5F5F0]">ابحث عن مكان خلوتك ومؤتمراتك القبطية بمصر</h2>
+            <p className="text-[9px] text-[#DEDECB] font-medium">مئات بيوت المؤتمرات والفنادق المسيحية المناسبة لكنائسنا وخدماتنا.</p>
+          </>
+        )}
+      </div>
 
       {slideCount > 1 && (
         <>

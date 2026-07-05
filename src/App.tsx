@@ -27,6 +27,7 @@ import ContactSupport from './components/ContactSupport';
 import ProfileScreen from './components/ProfileScreen';
 import CompleteProfileScreen from './components/CompleteProfileScreen';
 import PendingApprovalScreen from './components/PendingApprovalScreen';
+import InteractiveMap from './components/InteractiveMap';
 
 export default function App() {
   const [users, setUsers] = useState<User[]>([]);
@@ -62,7 +63,7 @@ export default function App() {
   });
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile'>('explore');
+  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile'>('explore');
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
 
   // --- Supabase Data Loading ---
@@ -873,6 +874,14 @@ export default function App() {
             />
           )}
 
+          {activeScreen === 'map' && (
+            // Interactive map — every approved house with a location, always
+            // in sync with the live houses list (new houses appear automatically)
+            <div className="h-[calc(100dvh-180px)]">
+              <InteractiveMap houses={houses} onSelectHouse={(h) => setSelectedHouse(h)} />
+            </div>
+          )}
+
           {activeScreen === 'bookings' && (
             // User bookings & quotes tracker
             <UserBookings
@@ -949,6 +958,7 @@ export default function App() {
               currentUser={currentUser}
               onLogout={handleLogout}
               onBack={() => setActiveScreen('explore')}
+              onNavigateSupport={() => setActiveScreen('support')}
             />
           )}
 
@@ -960,9 +970,10 @@ export default function App() {
           )}
 
           {activeScreen === 'support' && (
-            // Contact & Technical Support screen
+            // Contact & Technical Support screen — reached from Profile, not the bottom nav
             <ContactSupport
               currentUser={currentUser}
+              onBack={() => setActiveScreen('profile')}
             />
           )}
         </>

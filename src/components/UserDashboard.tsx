@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { PlatformAnnouncement, RetreatHouse, User } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
-import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, Map as MapIcon, List } from 'lucide-react';
+import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight } from 'lucide-react';
 import AnnouncementCarousel from './AnnouncementCarousel';
-import InteractiveMap from './InteractiveMap';
 
 interface UserDashboardProps {
   houses: RetreatHouse[];
@@ -22,7 +21,6 @@ export default function UserDashboard({
   onToggleFavorite,
   platformAnnouncements = []
 }: UserDashboardProps) {
-  const [showMap, setShowMap] = useState(false);
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGov, setSelectedGov] = useState('');
@@ -239,7 +237,7 @@ export default function UserDashboard({
         </button>
       </div>
 
-      {/* Search Bar & Map Toggle */}
+      {/* Search Bar & Filters Toggle */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <input
@@ -264,19 +262,6 @@ export default function UserDashboard({
         >
           <SlidersHorizontal className="w-4 h-4" />
         </button>
-
-        {/* Map/List View Toggle */}
-        <button
-          id="toggle-map-btn"
-          onClick={() => setShowMap(!showMap)}
-          className={`p-2 rounded-2xl border transition-all ${
-            showMap ? 'bg-[#5A5A40] border-[#5A5A40] text-white' : 'bg-white border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#DEDECB]'
-          }`}
-          title={showMap ? 'عرض القائمة' : 'عرض الخريطة التفاعلية'}
-        >
-          {showMap ? <List className="w-4 h-4" /> : <MapIcon className="w-4 h-4" />}
-        </button>
-
       </div>
 
       {/* Advanced Filters Expandable Drawer */}
@@ -441,16 +426,7 @@ export default function UserDashboard({
         </div>
       )}
 
-      {/* Interactive map — every approved house with a location, always
-          in sync with the live houses list (new houses appear automatically) */}
-      {showMap && (
-        <div className="h-[420px]">
-          <InteractiveMap houses={filteredHouses} onSelectHouse={onSelectHouse} />
-        </div>
-      )}
-
       {/* Houses Feed List */}
-      {!showMap && (
       <div className="space-y-3.5 text-[#4A4A3A]">
         <div className="flex justify-between items-center px-1">
           <span className="text-xs font-extrabold text-[#4A4A3A]">الأماكن المتاحة ({filteredHouses.length}):</span>
@@ -598,7 +574,6 @@ export default function UserDashboard({
           </div>
         )}
       </div>
-      )}
 
       {/* Compare Floating Bar */}
       {comparedHouseIds.length > 0 && (

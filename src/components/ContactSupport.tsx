@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Phone, Mail, Facebook, Instagram, MessageCircle,
-  Send, AlertCircle, Info, CheckCircle2, ShieldCheck, HeartHandshake
+  Send, AlertCircle, Info, CheckCircle2, ShieldCheck, HeartHandshake, ChevronRight
 } from 'lucide-react';
 
 interface ContactSupportProps {
@@ -10,6 +10,7 @@ interface ContactSupportProps {
     phone: string;
     email: string;
   };
+  onBack?: () => void;
 }
 
 interface SupportTicket {
@@ -21,7 +22,7 @@ interface SupportTicket {
   createdAt: string;
 }
 
-export default function ContactSupport({ currentUser }: ContactSupportProps) {
+export default function ContactSupport({ currentUser, onBack }: ContactSupportProps) {
   const [ticketType, setTicketType] = useState<'technical' | 'suggestion' | 'feedback'>('technical');
   const [subject, setSubject] = useState('');
   const [details, setDetails] = useState('');
@@ -80,7 +81,17 @@ export default function ContactSupport({ currentUser }: ContactSupportProps) {
 
   return (
     <div className="space-y-4 pb-12 text-right text-[#4A4A3A]" dir="rtl">
-      
+
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-[10px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] transition-colors cursor-pointer"
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+          <span>رجوع لحسابي</span>
+        </button>
+      )}
+
       {/* Title & Brand Intro */}
       <div className="bg-white rounded-3xl p-5 border border-[#D6D6C2] shadow-sm relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-l from-[#0A2342] to-[#C5A059]" />

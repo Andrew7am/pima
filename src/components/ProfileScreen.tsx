@@ -1,12 +1,13 @@
 import React from 'react';
 import { User } from '../types';
-import { User as UserIcon, Phone, MapPin, Church, LogOut, Lock } from 'lucide-react';
+import { User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft } from 'lucide-react';
 import RewardsDashboard from './RewardsDashboard';
 
 interface ProfileScreenProps {
   currentUser: User;
   onLogout: () => void;
   onBack: () => void;
+  onNavigateSupport: () => void;
 }
 
 function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
@@ -32,7 +33,7 @@ function calculateAge(dateOfBirth: string): number {
   return age;
 }
 
-export default function ProfileScreen({ currentUser, onLogout, onBack }: ProfileScreenProps) {
+export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigateSupport }: ProfileScreenProps) {
   const roleLabel = currentUser.role === 'servant' ? 'خادم' : currentUser.role === 'owner' ? 'صاحب بيت' : 'مستخدم';
 
   return (
@@ -79,6 +80,18 @@ export default function ProfileScreen({ currentUser, onLogout, onBack }: Profile
 
       {/* Rewards & points, folded into Profile */}
       <RewardsDashboard currentUser={currentUser} onBack={onBack} />
+
+      {/* Support entry point, folded into Profile instead of its own nav tab */}
+      <button
+        onClick={onNavigateSupport}
+        className="w-full flex items-center justify-between gap-2 bg-white border border-[#D6D6C2] rounded-2xl p-3.5 hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+      >
+        <div className="flex items-center gap-2">
+          <HelpCircle className="w-4 h-4 text-[#5A5A40]" />
+          <span className="text-xs font-bold text-[#4A4A3A]">التواصل والدعم الفني</span>
+        </div>
+        <ChevronLeft className="w-4 h-4 text-[#8A8A70]" />
+      </button>
 
       <button
         onClick={onLogout}
