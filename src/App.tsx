@@ -761,7 +761,7 @@ export default function App() {
   // collects up front. Admin accounts are provisioned directly and are exempt.
   const isChurchAffiliated = currentUser.role === 'individual' || currentUser.role === 'servant';
   const needsOrgName = currentUser.role === 'servant' || currentUser.role === 'owner';
-  const needsIdCard = (currentUser.role === 'servant' || currentUser.role === 'owner') &&
+  const needsIdCard = currentUser.role === 'servant' &&
     (!currentUser.idCardFront || !currentUser.idCardBack);
   const needsProfileCompletion = currentUser.role !== 'admin' && (
     !currentUser.phone ||

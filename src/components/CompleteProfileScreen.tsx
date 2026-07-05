@@ -37,7 +37,7 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
 
   const isChurchAffiliated = role === 'individual' || role === 'servant';
   const needsOrgName = role === 'servant' || role === 'owner';
-  const needsIdCard = role === 'servant' || role === 'owner';
+  const needsIdCard = role === 'servant';
 
   const readFileAsDataUrl = (file: File, setter: (dataUrl: string) => void) => {
     const reader = new FileReader();
