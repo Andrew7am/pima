@@ -5,7 +5,7 @@ import {
   ArrowRight, MapPin, BedDouble, Calendar, Users, 
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
   Utensils, Volume2, Monitor, HelpCircle, Send, CheckCircle2,
-  Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Heart, Copy,
+  Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Heart, Copy, Share2,
   Calculator, TrendingDown, TrendingUp, Coins, Bus
 } from 'lucide-react';
 
@@ -534,6 +534,34 @@ export default function HouseDetail({
   onJoinWaitlist
 }: HouseDetailProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isCopied, setIsCopied] = useState(false);
+
+  // Deep link to this specific house — read back on load via ?house=<id>
+  // (see App.tsx) instead of sharing the bare site URL.
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}${window.location.pathname}?house=${house.id}`;
+    const shareData = {
+      title: house.name,
+      text: `اكتشف بيت المؤتمرات: ${house.name} في محافظة ${house.governorate} لخلوتكم ومؤتمراتكم القادمة.`,
+      url: shareUrl,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log("Error sharing:", err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      } catch (err) {
+        console.log("Error copying link:", err);
+      }
+    }
+  };
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     services: true,
@@ -889,6 +917,20 @@ export default function HouseDetail({
         
         {/* Actions button group */}
         <div className="flex items-center gap-2">
+          {/* Share button — links directly to this house, not the site root */}
+          <button
+            id={`share-detail-${house.id}`}
+            onClick={handleShare}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-all shadow-xs ${
+              isCopied
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                : 'bg-white border-[#D6D6C2] text-[#8A8A70] hover:bg-[#FDFBF7]'
+            }`}
+          >
+            <Share2 className="w-3.5 h-3.5 text-sky-600" />
+            <span>{isCopied ? 'تم نسخ الرابط!' : 'مشاركة'}</span>
+          </button>
+
           {/* Favorite toggle button */}
           <button
             id={`toggle-fav-detail-${house.id}`}

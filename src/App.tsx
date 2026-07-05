@@ -132,6 +132,21 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, [loadUserProfile]);
 
+  // Deep link support: opening a shared house link (?house=<id>) jumps
+  // straight to that house once its data is loaded. The query param is
+  // stripped right after so navigating away and back doesn't reopen it.
+  useEffect(() => {
+    if (houses.length === 0) return;
+    const houseId = new URLSearchParams(window.location.search).get('house');
+    if (!houseId) return;
+    const house = houses.find((h) => h.id === houseId);
+    if (house) {
+      setSelectedHouse(house);
+      setActiveScreen('explore');
+    }
+    window.history.replaceState({}, '', window.location.pathname);
+  }, [houses]);
+
   // --- Smart Notification Generator (3 Days Before Check-in) ---
   useEffect(() => {
     if (!currentUser) return;
