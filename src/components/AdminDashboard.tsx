@@ -9,6 +9,8 @@ interface AdminDashboardProps {
   bookings: Booking[];
   onApproveHouse: (houseId: string) => void;
   onRejectHouse: (houseId: string) => void;
+  onApproveHouseEdit?: (houseId: string) => void;
+  onRejectHouseEdit?: (houseId: string) => void;
   onToggleUserRole: (userId: string, newRole: User['role']) => void;
   attendees: Attendee[];
   allocations: RoomAllocation[];
@@ -29,6 +31,8 @@ export default function AdminDashboard({
   bookings,
   onApproveHouse,
   onRejectHouse,
+  onApproveHouseEdit,
+  onRejectHouseEdit,
   onToggleUserRole,
   attendees,
   allocations,
@@ -105,6 +109,35 @@ export default function AdminDashboard({
 
   // Filter pending houses
   const pendingHouses = houses.filter((h) => h.status === 'pending');
+  // Already-approved houses with an owner-submitted edit awaiting review
+  const pendingHouseEdits = houses.filter((h) => h.pendingEdit);
+
+  // Only the fields that actually changed vs. the live house, for a clean diff view
+  const HOUSE_EDIT_DIFF_FIELDS: { key: keyof RetreatHouse; label: string; suffix?: string }[] = [
+    { key: 'name', label: 'الاسم' },
+    { key: 'pricePerNightPerPerson', label: 'سعر الفرد/ليلة', suffix: ' ج.م' },
+    { key: 'monthlyRent', label: 'الإيجار الشهري', suffix: ' ج.م' },
+    { key: 'roomsCount', label: 'عدد الغرف' },
+    { key: 'bedsCount', label: 'عدد الأسرة' },
+    { key: 'governorate', label: 'المحافظة' },
+    { key: 'address', label: 'العنوان' },
+    { key: 'description', label: 'الوصف' },
+    { key: 'roomsDescription', label: 'وصف الغرف' },
+  ];
+  const getHouseEditDiff = (house: RetreatHouse) => {
+    const pending = house.pendingEdit || {};
+    const rows = HOUSE_EDIT_DIFF_FIELDS.filter(
+      (f) => pending[f.key] !== undefined && pending[f.key] !== house[f.key]
+    );
+    const arrayFieldsChanged: string[] = [];
+    const changed = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b);
+    if (pending.services && changed(pending.services, house.services)) arrayFieldsChanged.push('الخدمات والمرافق');
+    if (pending.suitability && changed(pending.suitability, house.suitability)) arrayFieldsChanged.push('الفئات المناسبة');
+    if (pending.activities && changed(pending.activities, house.activities)) arrayFieldsChanged.push('الأنشطة');
+    if (pending.images && changed(pending.images, house.images)) arrayFieldsChanged.push('صور البيت');
+    if (pending.conferenceHalls && changed(pending.conferenceHalls, house.conferenceHalls)) arrayFieldsChanged.push('قاعات المؤتمرات');
+    return { rows, arrayFieldsChanged };
+  };
 
   // Booking Report calculations
   const totalApprovedBookingsCount = bookings.filter((b) => b.status === 'approved' || b.status === 'completed').length;
@@ -142,8 +175,8 @@ export default function AdminDashboard({
             activeTab === 'moderation' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
           }`}
         >
-          مراجعة البيوت ({pendingHouses.length})
-          {pendingHouses.length > 0 && (
+          مراجعة البيوت ({pendingHouses.length + pendingHouseEdits.length})
+          {(pendingHouses.length + pendingHouseEdits.length) > 0 && (
             <span className="absolute top-1.5 left-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
           )}
         </button>
@@ -214,69 +247,143 @@ export default function AdminDashboard({
 
       {/* Moderation Panel */}
       {activeTab === 'moderation' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="text-xs font-bold text-[#8A8A70] px-1">البيوت الجديدة المرسلة بانتظار الاعتماد للظهور:</div>
 
-          {pendingHouses.length === 0 ? (
+          {pendingHouses.length === 0 && pendingHouseEdits.length === 0 ? (
             <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-2">
               <Building className="w-8 h-8 text-[#BCBC9D] mx-auto" />
-              <p className="text-sm font-bold text-[#4A4A3A]">لا توجد أي بيوت معلقة حالياً</p>
+              <p className="text-sm font-bold text-[#4A4A3A]">لا توجد أي بيوت أو تعديلات معلقة حالياً</p>
               <p className="text-[11px] text-[#8A8A70]">كافة بيوت المؤتمرات والفنادق مراجعة ومقرة بنجاح.</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {pendingHouses.map((house) => (
-                <div key={house.id} className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden text-right">
-                  <div className="h-24 bg-[#EBEBE0] relative">
-                    <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-full h-full object-cover" />
-                    <span className="absolute top-2 right-2 bg-[#5A5A40]/90 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[9px] font-bold">
-                      {house.governorate}
-                    </span>
-                  </div>
+            <>
+              {pendingHouses.length > 0 && (
+                <div className="space-y-3">
+                  {pendingHouses.map((house) => (
+                    <div key={house.id} className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden text-right">
+                      <div className="h-24 bg-[#EBEBE0] relative">
+                        <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-full h-full object-cover" />
+                        <span className="absolute top-2 right-2 bg-[#5A5A40]/90 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[9px] font-bold">
+                          {house.governorate}
+                        </span>
+                      </div>
 
-                  <div className="p-4 space-y-2.5">
-                    <div>
-                      <h3 className="text-xs font-bold text-[#4A4A3A]">{house.name}</h3>
-                      <p className="text-[10px] text-[#8A8A70] mt-0.5">صاحب البيت: {house.ownerName}</p>
+                      <div className="p-4 space-y-2.5">
+                        <div>
+                          <h3 className="text-xs font-bold text-[#4A4A3A]">{house.name}</h3>
+                          <p className="text-[10px] text-[#8A8A70] mt-0.5">صاحب البيت: {house.ownerName}</p>
+                        </div>
+
+                        <p className="text-[11px] text-[#4A4A3A] leading-relaxed line-clamp-2">{house.description}</p>
+
+                        <div className="bg-[#EBEBE0]/30 rounded-2xl p-2.5 grid grid-cols-3 gap-1.5 text-center text-[10px] text-[#4A4A3A] font-bold border border-[#D6D6C2]">
+                          <div>الغرف: {house.roomsCount}</div>
+                          <div>الأسرة: {house.bedsCount}</div>
+                          <div>سعر الفرد: {house.pricePerNightPerPerson} ج.م</div>
+                        </div>
+
+                        {/* Moderation buttons */}
+                        <div className="flex gap-2 justify-end pt-2">
+                          <button
+                            id={`reject-house-${house.id}`}
+                            onClick={() => {
+                              onRejectHouse(house.id);
+                              alert('تم رفض البيت وسيظل غير مرئي للمستخدمين.');
+                            }}
+                            className="flex items-center gap-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span>رفض البيت</span>
+                          </button>
+                          <button
+                            id={`approve-house-${house.id}`}
+                            onClick={() => {
+                              onApproveHouse(house.id);
+                              alert('تم اعتماد البيت ونشره بنجاح للجمهور ببيوت المؤتمرات!');
+                            }}
+                            className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>اعتماد وموافقة للظهور</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
-
-                    <p className="text-[11px] text-[#4A4A3A] leading-relaxed line-clamp-2">{house.description}</p>
-
-                    <div className="bg-[#EBEBE0]/30 rounded-2xl p-2.5 grid grid-cols-3 gap-1.5 text-center text-[10px] text-[#4A4A3A] font-bold border border-[#D6D6C2]">
-                      <div>الغرف: {house.roomsCount}</div>
-                      <div>الأسرة: {house.bedsCount}</div>
-                      <div>سعر الفرد: {house.pricePerNightPerPerson} ج.م</div>
-                    </div>
-
-                    {/* Moderation buttons */}
-                    <div className="flex gap-2 justify-end pt-2">
-                      <button
-                        id={`reject-house-${house.id}`}
-                        onClick={() => {
-                          onRejectHouse(house.id);
-                          alert('تم رفض البيت وسيظل غير مرئي للمستخدمين.');
-                        }}
-                        className="flex items-center gap-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                        <span>رفض البيت</span>
-                      </button>
-                      <button
-                        id={`approve-house-${house.id}`}
-                        onClick={() => {
-                          onApproveHouse(house.id);
-                          alert('تم اعتماد البيت ونشره بنجاح للجمهور ببيوت المؤتمرات!');
-                        }}
-                        className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>اعتماد وموافقة للظهور</span>
-                      </button>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+
+              {pendingHouseEdits.length > 0 && (
+                <div className="space-y-3">
+                  <div className="text-xs font-bold text-[#8A8A70] px-1 border-t border-[#D6D6C2] pt-3">
+                    طلبات تعديل بيانات بيوت قائمة (بانتظار الموافقة):
+                  </div>
+                  {pendingHouseEdits.map((house) => {
+                    const { rows, arrayFieldsChanged } = getHouseEditDiff(house);
+                    return (
+                      <div key={house.id} className="bg-white rounded-3xl border border-amber-200 shadow-sm p-4 space-y-2.5 text-right">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xs font-bold text-[#4A4A3A]">{house.name}</h3>
+                          <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
+                            تعديل قيد المراجعة
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[#8A8A70]">صاحب البيت: {house.ownerName}</p>
+
+                        {rows.length === 0 && arrayFieldsChanged.length === 0 ? (
+                          <p className="text-[10px] text-[#8A8A70]">لا توجد تغييرات ظاهرة في الحقول الأساسية.</p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {rows.map((f) => (
+                              <div key={f.key as string} className="bg-[#EBEBE0]/30 rounded-xl p-2 text-[10px] border border-[#D6D6C2]">
+                                <span className="font-bold text-[#4A4A3A] block mb-0.5">{f.label}:</span>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-rose-600 line-through">{String(house[f.key] ?? '-')}{f.suffix || ''}</span>
+                                  <span className="text-[#8A8A70]">←</span>
+                                  <span className="text-emerald-700 font-bold">{String(house.pendingEdit?.[f.key] ?? '-')}{f.suffix || ''}</span>
+                                </div>
+                              </div>
+                            ))}
+                            {arrayFieldsChanged.length > 0 && (
+                              <div className="bg-[#EBEBE0]/30 rounded-xl p-2 text-[10px] border border-[#D6D6C2]">
+                                <span className="font-bold text-[#4A4A3A]">تم أيضاً تعديل: </span>
+                                <span className="text-[#5A5A40]">{arrayFieldsChanged.join('، ')}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2 justify-end pt-1.5">
+                          <button
+                            id={`reject-house-edit-${house.id}`}
+                            onClick={() => {
+                              onRejectHouseEdit && onRejectHouseEdit(house.id);
+                              alert('تم رفض طلب التعديل، ستبقى بيانات البيت كما كانت.');
+                            }}
+                            className="flex items-center gap-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span>رفض التعديل</span>
+                          </button>
+                          <button
+                            id={`approve-house-edit-${house.id}`}
+                            onClick={() => {
+                              onApproveHouseEdit && onApproveHouseEdit(house.id);
+                              alert('تم اعتماد التعديل وتطبيقه على بيانات البيت.');
+                            }}
+                            className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>اعتماد التعديل</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

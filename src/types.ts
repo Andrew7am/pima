@@ -79,6 +79,9 @@ export interface RetreatHouse {
   roomCapacity?: number;
   housingRules?: string[];
   contractTerms?: string;
+  // Owner-submitted edits to an already-approved house wait here for admin
+  // review instead of applying immediately — only editable/listing fields.
+  pendingEdit?: Partial<RetreatHouse>;
   menu?: {
     isIncluded: boolean;
     extraMealPrice?: number;

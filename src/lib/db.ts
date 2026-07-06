@@ -62,6 +62,7 @@ export function mapHouse(r: Record<string, unknown>): RetreatHouse {
     contractTerms: r.contract_terms as string ?? undefined,
     menu: r.menu as RetreatHouse['menu'] ?? undefined,
     imageDescriptions: r.image_descriptions as Record<string, string> ?? undefined,
+    pendingEdit: r.pending_edit as Partial<RetreatHouse> ?? undefined,
   };
 }
 

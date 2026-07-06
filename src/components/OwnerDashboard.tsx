@@ -21,6 +21,7 @@ interface OwnerDashboardProps {
   onUpdateAttendees: (bookingId: string, attendees: Attendee[]) => void;
   onUpdateAllocations: (bookingId: string, allocations: RoomAllocation[]) => void;
   onUpdateHouse?: (house: RetreatHouse) => void;
+  onRequestHouseEdit?: (houseId: string, changes: Partial<RetreatHouse>) => void;
   reviews?: Review[];
   onUpdateReview?: (review: Review) => void;
   rooms?: Room[];
@@ -46,6 +47,7 @@ export default function OwnerDashboard({
   onUpdateAttendees,
   onUpdateAllocations,
   onUpdateHouse,
+  onRequestHouseEdit,
   reviews = [],
   onUpdateReview,
   rooms = [],
@@ -55,7 +57,7 @@ export default function OwnerDashboard({
   waitlist = [],
 }: OwnerDashboardProps) {
   // Tabs within Owner panel
-  const [activeTab, setActiveTab] = useState<'stats' | 'houses' | 'rooms' | 'add_house' | 'bookings' | 'profile' | 'occupancy' | 'reviews' | 'financials' | 'waitlist'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'rooms' | 'add_house' | 'bookings' | 'profile' | 'occupancy' | 'reviews' | 'financials' | 'waitlist'>('stats');
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
   // Booking status filter for bookings tab
   const [bookingFilter, setBookingFilter] = useState<'all' | 'new' | 'confirmed' | 'current' | 'completed' | 'cancelled'>('all');
@@ -63,7 +65,7 @@ export default function OwnerDashboard({
   const PLATFORM_COMMISSION = 0.05;
 
   // Stats period filter — lets the owner scope profit/booking KPIs to a time range
-  const [statsPeriod, setStatsPeriod] = useState<'all' | '7d' | '30d' | 'month' | 'custom'>('all');
+  const [statsPeriod, setStatsPeriod] = useState<'today' | '7d' | '30d' | 'month' | 'all' | 'custom'>('all');
   const [statsCustomFrom, setStatsCustomFrom] = useState('');
   const [statsCustomTo, setStatsCustomTo] = useState('');
 
@@ -98,10 +100,8 @@ export default function OwnerDashboard({
   const [hallSound, setHallSound] = useState(false);
   const [hallProjector, setHallProjector] = useState(false);
 
-  // Calendar states
-  const [expandedCalendar, setExpandedCalendar] = useState<string | null>(null);
+  // Photo manager expand/collapse (lives in the edit-house tab)
   const [expandedPhotosForHouse, setExpandedPhotosForHouse] = useState<string | null>(null);
-  const [activeMonthForHouse, setActiveMonthForHouse] = useState<{ [houseId: string]: { month: number; year: number } }>({});
 
   // States for room/services photos management
   const [extraPhotoUrl, setExtraPhotoUrl] = useState('');
@@ -118,13 +118,6 @@ export default function OwnerDashboard({
   const [reviewReplyText, setReviewReplyText] = useState('');
   const [replyingToReviewId, setReplyingToReviewId] = useState<string | null>(null);
   const [reviewsSuccessMsg, setReviewsSuccessMsg] = useState('');
-
-  const getMonthDetails = (year: number, month: number) => {
-    const firstDay = new Date(year, month - 1, 1);
-    const totalDays = new Date(year, month, 0).getDate();
-    const startDayOfWeek = firstDay.getDay(); // 0 = Sunday, 1 = Monday, ...
-    return { totalDays, startDayOfWeek };
-  };
 
   const isDateBooked = (houseId: string, year: number, month: number, day: number) => {
     const monthStr = month < 10 ? `0${month}` : `${month}`;
@@ -313,6 +306,7 @@ export default function OwnerDashboard({
   // Period-scoped bookings/profit for the stats tab filter — bounded by check-in date
   const statsPeriodBounds = (() => {
     const end = new Date();
+    if (statsPeriod === 'today') { const start = new Date(); start.setHours(0, 0, 0, 0); return { start, end }; }
     if (statsPeriod === '7d') { const start = new Date(); start.setDate(start.getDate() - 7); return { start, end }; }
     if (statsPeriod === '30d') { const start = new Date(); start.setDate(start.getDate() - 30); return { start, end }; }
     if (statsPeriod === 'month') { const start = new Date(end.getFullYear(), end.getMonth(), 1); return { start, end }; }
@@ -390,6 +384,31 @@ export default function OwnerDashboard({
     setHalls(halls.filter((h) => h.id !== id));
   };
 
+  // Only these fields are owner-editable post-approval — everything else
+  // (id, ownerId, status, rating, etc.) is excluded from edit requests.
+  const editableHouseFields = (h: RetreatHouse): Partial<RetreatHouse> => ({
+    name: h.name, description: h.description, governorate: h.governorate, address: h.address,
+    lat: h.lat, lng: h.lng, roomsCount: h.roomsCount, bedsCount: h.bedsCount,
+    roomsDescription: h.roomsDescription, pricePerNightPerPerson: h.pricePerNightPerPerson,
+    propertyType: h.propertyType, monthlyRent: h.monthlyRent, studentHousingGender: h.studentHousingGender,
+    distanceFromUniversity: h.distanceFromUniversity, services: h.services, suitability: h.suitability,
+    conferenceHalls: h.conferenceHalls, activities: h.activities, images: h.images,
+    imageDescriptions: h.imageDescriptions,
+  });
+
+  // The owner's working draft: their live house merged with any edit
+  // they've already submitted but that's still awaiting admin approval.
+  const getEditBase = (house: RetreatHouse): RetreatHouse =>
+    house.pendingEdit ? { ...house, ...house.pendingEdit } : house;
+
+  // Stages a change as a pending edit request instead of applying it
+  // directly — admin must approve it before it goes live.
+  const requestHouseEdit = (house: RetreatHouse, partial: Partial<RetreatHouse>) => {
+    if (!onRequestHouseEdit) return;
+    const base = getEditBase(house);
+    onRequestHouseEdit(house.id, editableHouseFields({ ...base, ...partial }));
+  };
+
   // Loads an existing house's data into the add/edit form fields so the
   // same form doubles as the "edit my house" screen once one exists.
   const populateFormFromHouse = (house: RetreatHouse) => {
@@ -423,39 +442,37 @@ export default function OwnerDashboard({
 
     const isMonthly = propertyType === 'student' || propertyType === 'staff';
 
-    // Editing the existing house (owners are capped at one) instead of creating a new one
+    // Editing the existing house (owners are capped at one) instead of creating a new one.
+    // This is staged as a pending edit — the admin must approve it before it goes live.
     if (ownerHouses.length >= 1) {
       const existing = ownerHouses[0];
-      const updatedImages = imageUrl && imageUrl !== existing.images[0]
-        ? [imageUrl, ...existing.images.slice(1)]
-        : existing.images;
+      const base = getEditBase(existing);
+      const updatedImages = imageUrl && imageUrl !== base.images[0]
+        ? [imageUrl, ...base.images.slice(1)]
+        : base.images;
 
-      const updatedHouse: RetreatHouse = {
-        ...existing,
+      requestHouseEdit(existing, {
         name: houseName,
         description: houseDesc,
         governorate: houseGov,
         address: houseAddress,
-        lat: houseLat ?? existing.lat,
-        lng: houseLng ?? existing.lng,
+        lat: houseLat ?? base.lat,
+        lng: houseLng ?? base.lng,
         roomsCount,
         bedsCount,
-        roomsDescription: roomsDesc || existing.roomsDescription,
+        roomsDescription: roomsDesc || base.roomsDescription,
         pricePerNightPerPerson: isMonthly ? 0 : pricePerNight,
         propertyType,
         monthlyRent: isMonthly ? monthlyRent : undefined,
         studentHousingGender: propertyType === 'student' ? studentHousingGender : undefined,
         distanceFromUniversity: propertyType === 'student' ? distanceFromUniversity : undefined,
         services: selectedServices,
-        suitability: selectedSuitability.length > 0 ? selectedSuitability : existing.suitability,
+        suitability: selectedSuitability.length > 0 ? selectedSuitability : base.suitability,
         conferenceHalls: propertyType === 'conference' ? halls : [],
-        activities: activitiesInput ? activitiesInput.split('،').map((a) => a.trim()) : existing.activities,
+        activities: activitiesInput ? activitiesInput.split('،').map((a) => a.trim()) : base.activities,
         images: updatedImages,
-      };
-
-      if (onUpdateHouse) onUpdateHouse(updatedHouse);
-      alert('تم حفظ تعديلات بيتك بنجاح!');
-      setActiveTab('houses');
+      });
+      alert('تم إرسال تعديلاتك للإدارة للمراجعة، وستُطبق بعد الموافقة عليها.');
       return;
     }
 
@@ -523,7 +540,7 @@ export default function OwnerDashboard({
     setStudentHousingGender('boys');
     setDistanceFromUniversity('');
 
-    setActiveTab('houses');
+    setActiveTab('stats');
   };
 
   return (
@@ -551,15 +568,6 @@ export default function OwnerDashboard({
           }`}
         >
           مؤشرات عامة
-        </button>
-        <button
-          id="owner-tab-houses"
-          onClick={() => setActiveTab('houses')}
-          className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'houses' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          بيوتنا ({ownerHouses.length})
         </button>
         <button
           id="owner-tab-rooms"
@@ -624,7 +632,7 @@ export default function OwnerDashboard({
         <button
           id="owner-tab-add"
           onClick={() => {
-            if (ownerHouses.length >= 1) populateFormFromHouse(ownerHouses[0]);
+            if (ownerHouses.length >= 1) populateFormFromHouse(getEditBase(ownerHouses[0]));
             setActiveTab('add_house');
           }}
           className={`flex-1 text-center py-2 px-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -655,10 +663,11 @@ export default function OwnerDashboard({
             <span className="text-[10px] font-bold text-[#8A8A70]">عرض بيانات الحجوزات والربح عن:</span>
             <div className="flex flex-wrap gap-1.5">
               {([
-                { key: 'all', label: 'كل الوقت' },
+                { key: 'today', label: 'اليوم' },
                 { key: '7d', label: 'آخر ٧ أيام' },
                 { key: '30d', label: 'آخر ٣٠ يوم' },
                 { key: 'month', label: 'هذا الشهر' },
+                { key: 'all', label: 'كل الوقت' },
                 { key: 'custom', label: 'مدة مخصصة' },
               ] as const).map((p) => (
                 <button
@@ -778,375 +787,6 @@ export default function OwnerDashboard({
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* 2. Owner's Houses */}
-      {activeTab === 'houses' && (
-        <div className="space-y-3">
-          {ownerHouses.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-2">
-              <p className="text-sm text-[#4A4A3A] font-bold">لا يوجد لديك أي بيوت مسجلة باسمك بعد.</p>
-              <button
-                id="owner-add-house-shortcut"
-                onClick={() => setActiveTab('add_house')}
-                className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-xs px-4 py-2 rounded-xl cursor-pointer"
-              >
-                سجل بيتك الأول الآن
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {ownerHouses.map((house) => (
-                <div key={house.id} className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden flex flex-col text-right">
-                  <div className="relative h-28 bg-[#EBEBE0]">
-                    <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-full h-full object-cover" />
-                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-[10px] font-bold text-[#4A4A3A]">
-                      {house.governorate}
-                    </div>
-                    
-                    {/* Approval Status Badge */}
-                    <div className={`absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-extrabold ${
-                      house.status === 'approved' 
-                        ? 'bg-emerald-600 text-white' 
-                        : house.status === 'pending'
-                        ? 'bg-amber-600 text-white'
-                        : 'bg-rose-600 text-white'
-                    }`}>
-                      {house.status === 'approved' ? 'نشط ويظهر للجميع' : house.status === 'pending' ? 'بانتظار موافقة الإدارة' : 'مرفوض'}
-                    </div>
-                  </div>
-
-                  <div className="p-4 space-y-2 text-right">
-                    <h3 className="text-xs font-bold text-[#4A4A3A] line-clamp-1">{house.name}</h3>
-                    <p className="text-[11px] text-[#8A8A70] line-clamp-2 leading-relaxed">{house.description}</p>
-                    
-                    <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-[#D6D6C2] bg-[#EBEBE0]/10 rounded-xl text-[10px] font-bold text-[#4A4A3A]">
-                      <div>
-                        <div className="text-[#8A8A70] text-[9px] mb-0.5">الغرف</div>
-                        <div className="text-[#4A4A3A]">{house.roomsCount} غرفة</div>
-                      </div>
-                      <div>
-                        <div className="text-[#8A8A70] text-[9px] mb-0.5">الأسرة الكلية</div>
-                        <div className="text-[#4A4A3A]">{house.bedsCount} سرير</div>
-                      </div>
-                      <div>
-                        <div className="text-[#8A8A70] text-[9px] mb-0.5">سعر الفرد</div>
-                        <div className="text-[#5A5A40] font-black">{house.pricePerNightPerPerson} ج.م/ليلة</div>
-                      </div>
-                    </div>
-
-                    {/* Collapsible Occupancy Calendar */}
-                    <div className="border-t border-[#D6D6C2]/50 pt-2 mt-2">
-                      <button
-                        type="button"
-                        id={`toggle-cal-${house.id}`}
-                        onClick={() => {
-                          setExpandedCalendar(expandedCalendar === house.id ? null : house.id);
-                        }}
-                        className="w-full flex items-center justify-between text-[11px] font-black text-[#5A5A40] hover:text-[#4A4A3A] hover:bg-[#EBEBE0]/20 py-1.5 px-2 rounded-xl transition-all cursor-pointer"
-                      >
-                        <span className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>تقويم حجز وإشغال البيت 📅</span>
-                        </span>
-                        <span className="text-[10px] text-[#8A8A70]">
-                          {expandedCalendar === house.id ? 'إخفاء التقويم ▲' : 'عرض التقويم المالي ▼'}
-                        </span>
-                      </button>
-
-                      {expandedCalendar === house.id && (
-                        <div className="mt-2 p-3 bg-[#FBFBFA] border border-[#D6D6C2]/60 rounded-2xl space-y-3 text-right">
-                          {/* Month Toggle Tabs */}
-                          <div className="flex justify-center gap-2">
-                            {[
-                              { label: 'يوليو ٢٠٢٦', month: 7, year: 2026 },
-                              { label: 'أغسطس ٢٠٢٦', month: 8, year: 2026 }
-                            ].map((m) => {
-                              const isSelected = (activeMonthForHouse[house.id]?.month || 7) === m.month;
-                              return (
-                                <button
-                                  type="button"
-                                  key={`${m.year}-${m.month}`}
-                                  onClick={() => setActiveMonthForHouse({
-                                    ...activeMonthForHouse,
-                                    [house.id]: { month: m.month, year: m.year }
-                                  })}
-                                  className={`text-[10px] font-extrabold px-3 py-1 rounded-xl transition-all cursor-pointer ${
-                                    isSelected
-                                      ? 'bg-[#5A5A40] text-white shadow-sm'
-                                      : 'bg-white border border-[#D6D6C2] text-[#8A8A70] hover:bg-[#EBEBE0]/30'
-                                  }`}
-                                >
-                                  {m.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          {/* Render selected month calendar */}
-                          {(() => {
-                            const curSel = activeMonthForHouse[house.id] || { month: 7, year: 2026 };
-                            const { totalDays, startDayOfWeek } = getMonthDetails(curSel.year, curSel.month);
-                            const daysArray = Array.from({ length: totalDays }, (_, i) => i + 1);
-                            const weekDays = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
-
-                            return (
-                              <div className="space-y-2.5">
-                                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black">
-                                  {weekDays.map((wd, idx) => (
-                                    <div key={idx} className="text-[#8A8A70] py-0.5">{wd}</div>
-                                  ))}
-                                  
-                                  {/* Spacers */}
-                                  {Array.from({ length: startDayOfWeek }).map((_, idx) => (
-                                    <div key={`space-${idx}`} className="py-1" />
-                                  ))}
-
-                                  {/* Days */}
-                                  {daysArray.map((day) => {
-                                    const bookingOnDay = isDateBooked(house.id, curSel.year, curSel.month, day);
-                                    return (
-                                      <div
-                                        key={day}
-                                        className={`py-1 rounded-lg border text-center transition-all relative group cursor-help ${
-                                          bookingOnDay
-                                            ? 'bg-rose-50 border-rose-200 text-rose-700 font-extrabold'
-                                            : 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                                        }`}
-                                        title={
-                                          bookingOnDay
-                                            ? `محجوز: ${bookingOnDay.organizationName || bookingOnDay.userName} (${bookingOnDay.guestsCount} فرد)`
-                                            : 'شاغر ومتاح للحجز'
-                                        }
-                                      >
-                                        <span>{day}</span>
-                                        
-                                        {bookingOnDay && (
-                                          <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-rose-600" />
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-
-                                {/* Calendar Legend and Details */}
-                                <div className="pt-2 border-t border-[#D6D6C2]/40 flex flex-col gap-1.5 text-[9.5px] text-[#8A8A70] font-bold">
-                                  <div className="flex items-center justify-between">
-                                    <span className="flex items-center gap-1">
-                                      <span className="w-2.5 h-2.5 rounded bg-rose-50 border border-rose-200" />
-                                      <span>محجوز (مشغول)</span>
-                                    </span>
-                                    <span className="flex items-center gap-1">
-                                      <span className="w-2.5 h-2.5 rounded bg-emerald-50 border border-emerald-200" />
-                                      <span>شاغر (متاح)</span>
-                                    </span>
-                                  </div>
-
-                                  {/* List of bookings in this month for this house */}
-                                  {(() => {
-                                    const monthBookings = bookings.filter((b) => {
-                                      if (b.houseId !== house.id || (b.status !== 'approved' && b.status !== 'completed')) return false;
-                                      // check if booking overlaps with this month
-                                      const bStart = new Date(b.checkIn);
-                                      const bEnd = new Date(b.checkOut);
-                                      const rangeStart = new Date(curSel.year, curSel.month - 1, 1);
-                                      const rangeEnd = new Date(curSel.year, curSel.month, 0);
-                                      return bStart <= rangeEnd && bEnd >= rangeStart;
-                                    });
-
-                                    if (monthBookings.length > 0) {
-                                      return (
-                                        <div className="bg-[#EBEBE0]/20 p-2 rounded-xl border border-[#D6D6C2]/40 mt-1 space-y-1">
-                                          <div className="text-[#4A4A3A] text-[9px] font-black">الحجوزات النشطة هذا الشهر:</div>
-                                          {monthBookings.map((b) => (
-                                            <div key={b.id} className="text-[#5A5A40] text-[9px] flex items-center justify-between border-b border-[#D6D6C2]/20 pb-1 last:border-0 last:pb-0">
-                                              <span className="font-extrabold text-right truncate max-w-[130px]">
-                                                • {b.organizationName || b.userName}
-                                              </span>
-                                              <span className="font-mono text-[8px] bg-amber-50 text-amber-900 border border-amber-100 px-1 rounded">
-                                                {b.checkIn.split('-')[2]} - {b.checkOut.split('-')[2]} ({b.guestsCount} فرد)
-                                              </span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      );
-                                    }
-                                    return (
-                                      <div className="text-center py-1.5 text-[#8A8A70] text-[9px] bg-emerald-50/20 border border-emerald-100 rounded-lg">
-                                        لا توجد حجوزات مؤكدة في هذا الشهر، البيت شاغر بالكامل 🌟
-                                      </div>
-                                    );
-                                  })()}
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Collapsible Photo Manager */}
-                    <div className="border-t border-[#D6D6C2]/50 pt-2 mt-2">
-                      <button
-                        type="button"
-                        id={`toggle-photos-${house.id}`}
-                        onClick={() => {
-                          setExpandedPhotosForHouse(expandedPhotosForHouse === house.id ? null : house.id);
-                        }}
-                        className="w-full flex items-center justify-between text-[11px] font-black text-[#5A5A40] hover:text-[#4A4A3A] hover:bg-[#EBEBE0]/20 py-1.5 px-2 rounded-xl transition-all cursor-pointer"
-                      >
-                        <span className="flex items-center gap-1.5">
-                          <Camera className="w-3.5 h-3.5 text-[#5A5A40]" />
-                          <span>إدارة صور الغرف والخدمات والمباني 📸</span>
-                        </span>
-                        <span className="text-[10px] text-[#8A8A70]">
-                          {expandedPhotosForHouse === house.id ? 'إخفاء الصور ▲' : 'إضافة وعرض الصور ▼'}
-                        </span>
-                      </button>
-
-                      {expandedPhotosForHouse === house.id && (
-                        <div className="mt-2 p-3 bg-[#FBFBFA] border border-[#D6D6C2]/60 rounded-2xl space-y-3 text-right">
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-extrabold text-[#4A4A3A]">إضافة صورة جديدة للغرف أو الخدمات:</span>
-                            <p className="text-[9px] text-[#8A8A70]">اختر صورة من جهازك أو التقطها بالكاميرا لتحديث ألبوم المعاينة للخدام والمجموعات.</p>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            <div className="col-span-1">
-                              <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">نوع وتصنيف الصورة:</label>
-                              <select
-                                id={`photo-cat-${house.id}`}
-                                value={extraPhotoCategory}
-                                onChange={(e) => setExtraPhotoCategory(e.target.value as 'room' | 'service' | 'other')}
-                                className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none"
-                              >
-                                <option value="room">🛌 غرف النوم والأسرة</option>
-                                <option value="service">🍽️ الخدمات والمطعم والملاعب</option>
-                                <option value="other">⛪ المبنى وقاعات الاجتماعات</option>
-                              </select>
-                            </div>
-
-                            <div className="col-span-1">
-                              <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">وصف مختصر (مثال: غرفة خلوة مزدوجة):</label>
-                              <input
-                                id={`photo-label-${house.id}`}
-                                type="text"
-                                placeholder="غرفة خلوة مزدوجة"
-                                value={extraPhotoLabel}
-                                onChange={(e) => setExtraPhotoLabel(e.target.value)}
-                                className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none"
-                              />
-                            </div>
-
-                            <div className="col-span-1">
-                              <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">صورة الغرفة/الخدمة:</label>
-                              <PhotoPickerButtons idPrefix={`photo-${house.id}`} onSelect={setExtraPhotoUrl} />
-                              {extraPhotoUrl && (
-                                <div className="flex items-center gap-2 mt-1.5">
-                                  <img src={extraPhotoUrl} alt="معاينة" className="w-10 h-10 object-cover rounded-lg border border-[#D6D6C2]" />
-                                  <button
-                                    type="button"
-                                    id={`add-photo-btn-${house.id}`}
-                                    onClick={() => {
-                                      const labelPrefix = extraPhotoCategory === 'room' ? '🛌 غرف' : extraPhotoCategory === 'service' ? '🍽️ خدمات' : '⛪ مباني';
-                                      const descStr = extraPhotoLabel.trim() ? `${labelPrefix}: ${extraPhotoLabel.trim()}` : `${labelPrefix}`;
-
-                                      const updatedHouse = {
-                                        ...house,
-                                        images: [...house.images, extraPhotoUrl],
-                                        imageDescriptions: {
-                                          ...(house.imageDescriptions || {}),
-                                          [extraPhotoUrl]: descStr
-                                        }
-                                      };
-
-                                      if (onUpdateHouse) {
-                                        onUpdateHouse(updatedHouse);
-                                      }
-                                      setExtraPhotoUrl('');
-                                      setExtraPhotoLabel('');
-                                      setPhotosSuccessMsg('تم إضافة الصورة بنجاح وتحديث ألبوم البيت للزوار!');
-                                      setTimeout(() => setPhotosSuccessMsg(''), 3000);
-                                    }}
-                                    className="flex-1 bg-[#5A5A40] text-white text-[10px] font-bold px-2 py-1.5 rounded-lg cursor-pointer hover:bg-[#4A4A3A]"
-                                  >
-                                    إضافة للألبوم
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {photosSuccessMsg && (
-                            <p className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-1.5 text-center font-bold">
-                              {photosSuccessMsg}
-                            </p>
-                          )}
-
-                          {/* Existing Images Gallery with Category Badges and Delete button */}
-                          <div className="space-y-1.5 pt-2 border-t border-[#D6D6C2]/40">
-                            <span className="text-[9.5px] font-extrabold text-[#4A4A3A]">الصور المضافة حالياً للبيت ({house.images.length}):</span>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                              {house.images.map((img, idx) => {
-                                const desc = house.imageDescriptions?.[img] || (idx === 0 ? 'الصورة الرئيسية' : 'صورة إضافية');
-                                return (
-                                  <div key={`${img}-${idx}`} className="relative bg-white border border-[#D6D6C2] rounded-xl overflow-hidden group">
-                                    <img referrerPolicy="no-referrer" src={img} alt="بيت خلوة" className="w-full h-14 object-cover" />
-                                    <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] p-0.5 text-center truncate font-bold" title={desc}>
-                                      {desc}
-                                    </div>
-                                    {house.images.length > 1 && (
-                                      <button
-                                        type="button"
-                                        title="حذف الصورة"
-                                        onClick={() => {
-                                          if (confirm('هل أنت متأكد من رغبتك في حذف هذه الصورة من ألبوم البيت؟')) {
-                                            const updatedHouse = {
-                                              ...house,
-                                              images: house.images.filter((_, i) => i !== idx)
-                                            };
-                                            if (onUpdateHouse) {
-                                              onUpdateHouse(updatedHouse);
-                                            }
-                                          }
-                                        }}
-                                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-bold hover:bg-red-700 shadow cursor-pointer"
-                                      >
-                                        ✕
-                                      </button>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Delete house — owners are capped at one, so this is the only way to replace it */}
-                    <div className="border-t border-[#D6D6C2]/50 pt-2 mt-2">
-                      <button
-                        type="button"
-                        id={`delete-house-${house.id}`}
-                        onClick={() => {
-                          if (confirm(`هل أنت متأكد من رغبتك في حذف بيت "${house.name}" نهائياً؟ سيتم حذف كل الحجوزات والغرف المرتبطة به ولا يمكن التراجع عن هذا الإجراء.`)) {
-                            onDeleteHouse && onDeleteHouse(house.id);
-                          }
-                        }}
-                        className="w-full flex items-center justify-center gap-1.5 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl py-2 transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>حذف البيت نهائياً</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
@@ -1521,6 +1161,32 @@ export default function OwnerDashboard({
 
       {/* 4. Add a New Retreat House */}
       {activeTab === 'add_house' && (
+        <div className="space-y-4">
+
+          {/* Current status + pending-edit notice, shown only while editing an existing house */}
+          {ownerHouses.length >= 1 && (
+            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#4A4A3A]">حالة البيت الحالية:</span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${
+                  ownerHouses[0].status === 'approved'
+                    ? 'bg-emerald-600 text-white'
+                    : ownerHouses[0].status === 'pending'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-rose-600 text-white'
+                }`}>
+                  {ownerHouses[0].status === 'approved' ? 'نشط ويظهر للجميع' : ownerHouses[0].status === 'pending' ? 'بانتظار موافقة الإدارة' : 'مرفوض'}
+                </span>
+              </div>
+              {ownerHouses[0].pendingEdit && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-2.5 text-[10.5px] font-bold flex items-start gap-2">
+                  <span>⏳</span>
+                  <span>لديك تعديل مُرسل بانتظار موافقة الإدارة. البيانات المعروضة أدناه هي تعديلك المقترح — لن تظهر للزوار إلا بعد اعتمادها.</span>
+                </div>
+              )}
+            </div>
+          )}
+
           <form onSubmit={handleSubmitHouse} className="bg-white rounded-3xl border border-[#D6D6C2] p-5 space-y-4 text-right">
           <div className="space-y-1 pb-2 border-b border-[#D6D6C2]">
             <h3 className="text-xs font-extrabold text-[#4A4A3A]">
@@ -1528,7 +1194,7 @@ export default function OwnerDashboard({
             </h3>
             <p className="text-[10px] text-[#8A8A70]">
               {ownerHouses.length >= 1
-                ? 'عدّل أي بيانات تريد تحديثها — الأسعار، الغرف، الخدمات وغيرها — وستُحفظ التعديلات مباشرة.'
+                ? 'عدّل أي بيانات تريد تحديثها — الأسعار، الغرف، الخدمات وغيرها — وسيتم إرسالها للإدارة للموافقة قبل تطبيقها.'
                 : 'يرجى ملء البيانات بدقة لتمكين الخدام والكنائس من حجز بيتك.'}
             </p>
           </div>
@@ -1904,9 +1570,155 @@ export default function OwnerDashboard({
             type="submit"
             className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] active:bg-[#4A4A3A] text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-all text-center cursor-pointer"
           >
-            {ownerHouses.length >= 1 ? 'حفظ التعديلات' : 'إرسال البيت الجديد للمراجعة وتأكيده للظهور'}
+            {ownerHouses.length >= 1 ? 'إرسال التعديلات للمراجعة' : 'إرسال البيت الجديد للمراجعة وتأكيده للظهور'}
           </button>
         </form>
+
+          {/* Photo manager — moved here from the removed "بيوتنا" tab. Photo
+              changes are also staged as a pending edit like everything else. */}
+          {ownerHouses.length >= 1 && (() => {
+            const house = ownerHouses[0];
+            const base = getEditBase(house);
+            return (
+              <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-3">
+                <button
+                  type="button"
+                  id={`toggle-photos-${house.id}`}
+                  onClick={() => setExpandedPhotosForHouse(expandedPhotosForHouse === house.id ? null : house.id)}
+                  className="w-full flex items-center justify-between text-[11px] font-black text-[#5A5A40] hover:text-[#4A4A3A] hover:bg-[#EBEBE0]/20 py-1.5 px-2 rounded-xl transition-all cursor-pointer"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-[#5A5A40]" />
+                    <span>إدارة صور الغرف والخدمات والمباني 📸</span>
+                  </span>
+                  <span className="text-[10px] text-[#8A8A70]">
+                    {expandedPhotosForHouse === house.id ? 'إخفاء الصور ▲' : 'إضافة وعرض الصور ▼'}
+                  </span>
+                </button>
+
+                {expandedPhotosForHouse === house.id && (
+                  <div className="p-3 bg-[#FBFBFA] border border-[#D6D6C2]/60 rounded-2xl space-y-3 text-right">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-extrabold text-[#4A4A3A]">إضافة صورة جديدة للغرف أو الخدمات:</span>
+                      <p className="text-[9px] text-[#8A8A70]">اختر صورة من جهازك أو التقطها بالكاميرا لتحديث ألبوم المعاينة للخدام والمجموعات. سيتم إرسال التغيير للإدارة للموافقة.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div className="col-span-1">
+                        <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">نوع وتصنيف الصورة:</label>
+                        <select
+                          id={`photo-cat-${house.id}`}
+                          value={extraPhotoCategory}
+                          onChange={(e) => setExtraPhotoCategory(e.target.value as 'room' | 'service' | 'other')}
+                          className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none"
+                        >
+                          <option value="room">🛌 غرف النوم والأسرة</option>
+                          <option value="service">🍽️ الخدمات والمطعم والملاعب</option>
+                          <option value="other">⛪ المبنى وقاعات الاجتماعات</option>
+                        </select>
+                      </div>
+
+                      <div className="col-span-1">
+                        <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">وصف مختصر (مثال: غرفة خلوة مزدوجة):</label>
+                        <input
+                          id={`photo-label-${house.id}`}
+                          type="text"
+                          placeholder="غرفة خلوة مزدوجة"
+                          value={extraPhotoLabel}
+                          onChange={(e) => setExtraPhotoLabel(e.target.value)}
+                          className="w-full bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="col-span-1">
+                        <label className="block text-[8.5px] font-bold text-[#8A8A70] mb-0.5">صورة الغرفة/الخدمة:</label>
+                        <PhotoPickerButtons idPrefix={`photo-${house.id}`} onSelect={setExtraPhotoUrl} />
+                        {extraPhotoUrl && (
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <img src={extraPhotoUrl} alt="معاينة" className="w-10 h-10 object-cover rounded-lg border border-[#D6D6C2]" />
+                            <button
+                              type="button"
+                              id={`add-photo-btn-${house.id}`}
+                              onClick={() => {
+                                const labelPrefix = extraPhotoCategory === 'room' ? '🛌 غرف' : extraPhotoCategory === 'service' ? '🍽️ خدمات' : '⛪ مباني';
+                                const descStr = extraPhotoLabel.trim() ? `${labelPrefix}: ${extraPhotoLabel.trim()}` : `${labelPrefix}`;
+                                requestHouseEdit(house, {
+                                  images: [...base.images, extraPhotoUrl],
+                                  imageDescriptions: { ...(base.imageDescriptions || {}), [extraPhotoUrl]: descStr },
+                                });
+                                setExtraPhotoUrl('');
+                                setExtraPhotoLabel('');
+                                setPhotosSuccessMsg('تم إرسال الصورة ضمن طلب تعديل بانتظار موافقة الإدارة!');
+                                setTimeout(() => setPhotosSuccessMsg(''), 3000);
+                              }}
+                              className="flex-1 bg-[#5A5A40] text-white text-[10px] font-bold px-2 py-1.5 rounded-lg cursor-pointer hover:bg-[#4A4A3A]"
+                            >
+                              إضافة للألبوم
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {photosSuccessMsg && (
+                      <p className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-1.5 text-center font-bold">
+                        {photosSuccessMsg}
+                      </p>
+                    )}
+
+                    <div className="space-y-1.5 pt-2 border-t border-[#D6D6C2]/40">
+                      <span className="text-[9.5px] font-extrabold text-[#4A4A3A]">الصور المضافة حالياً للبيت ({base.images.length}):</span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {base.images.map((img, idx) => {
+                          const desc = base.imageDescriptions?.[img] || (idx === 0 ? 'الصورة الرئيسية' : 'صورة إضافية');
+                          return (
+                            <div key={`${img}-${idx}`} className="relative bg-white border border-[#D6D6C2] rounded-xl overflow-hidden group">
+                              <img referrerPolicy="no-referrer" src={img} alt="بيت خلوة" className="w-full h-14 object-cover" />
+                              <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] p-0.5 text-center truncate font-bold" title={desc}>
+                                {desc}
+                              </div>
+                              {base.images.length > 1 && (
+                                <button
+                                  type="button"
+                                  title="حذف الصورة"
+                                  onClick={() => {
+                                    if (confirm('هل أنت متأكد من رغبتك في حذف هذه الصورة من ألبوم البيت؟ سيتم إرسال هذا كتعديل بانتظار الموافقة.')) {
+                                      requestHouseEdit(house, { images: base.images.filter((_, i) => i !== idx) });
+                                    }
+                                  }}
+                                  className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-bold hover:bg-red-700 shadow cursor-pointer"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Delete house — owners are capped at one, so this is the only way to replace it */}
+          {ownerHouses.length >= 1 && (
+            <button
+              type="button"
+              id={`delete-house-${ownerHouses[0].id}`}
+              onClick={() => {
+                if (confirm(`هل أنت متأكد من رغبتك في حذف بيت "${ownerHouses[0].name}" نهائياً؟ سيتم حذف كل الحجوزات والغرف المرتبطة به ولا يمكن التراجع عن هذا الإجراء.`)) {
+                  onDeleteHouse && onDeleteHouse(ownerHouses[0].id);
+                }
+              }}
+              className="w-full flex items-center justify-center gap-1.5 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl py-2.5 transition-colors cursor-pointer bg-white"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>حذف البيت نهائياً</span>
+            </button>
+          )}
+        </div>
       )}
 
       {/* 4b. Financials & Platform Commission */}

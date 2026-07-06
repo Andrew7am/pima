@@ -673,32 +673,63 @@ export default function App() {
       .then(({ error }) => { if (error) console.error('updateHouseMenu:', error); });
   };
 
+  // Shared column mapping so a full house update (owner form) and an
+  // approved pending-edit merge (admin) never drift out of sync again.
+  const houseUpdatePayload = (h: RetreatHouse) => ({
+    name: h.name, description: h.description,
+    governorate: h.governorate,
+    address: h.address, lat: h.lat, lng: h.lng,
+    rooms_count: h.roomsCount, beds_count: h.bedsCount,
+    rooms_description: h.roomsDescription,
+    price_per_night_per_person: h.pricePerNightPerPerson,
+    images: h.images,
+    image_descriptions: h.imageDescriptions ?? {},
+    blocked_dates: h.blockedDates ?? [],
+    services: h.services, activities: h.activities, suitability: h.suitability,
+    conference_halls: h.conferenceHalls, restaurants: h.restaurants,
+    property_type: h.propertyType ?? null,
+    student_housing_gender: h.studentHousingGender ?? null,
+    distance_from_university: h.distanceFromUniversity ?? null,
+    monthly_rent: h.monthlyRent ?? null,
+    housing_rules: h.housingRules ?? [],
+    contract_terms: h.contractTerms ?? null,
+    menu: h.menu ?? null, status: h.status,
+  });
+
   const handleUpdateHouse = (updatedHouse: RetreatHouse) => {
     setHouses((prevHouses) =>
       prevHouses.map((h) => (h.id === updatedHouse.id ? updatedHouse : h))
     );
     if (selectedHouse && selectedHouse.id === updatedHouse.id) setSelectedHouse(updatedHouse);
-    supabase.from('houses').update({
-      name: updatedHouse.name, description: updatedHouse.description,
-      governorate: updatedHouse.governorate,
-      address: updatedHouse.address, lat: updatedHouse.lat, lng: updatedHouse.lng,
-      rooms_count: updatedHouse.roomsCount, beds_count: updatedHouse.bedsCount,
-      rooms_description: updatedHouse.roomsDescription,
-      price_per_night_per_person: updatedHouse.pricePerNightPerPerson,
-      images: updatedHouse.images,
-      image_descriptions: updatedHouse.imageDescriptions ?? {},
-      blocked_dates: updatedHouse.blockedDates ?? [],
-      services: updatedHouse.services, activities: updatedHouse.activities, suitability: updatedHouse.suitability,
-      conference_halls: updatedHouse.conferenceHalls, restaurants: updatedHouse.restaurants,
-      property_type: updatedHouse.propertyType ?? null,
-      student_housing_gender: updatedHouse.studentHousingGender ?? null,
-      distance_from_university: updatedHouse.distanceFromUniversity ?? null,
-      monthly_rent: updatedHouse.monthlyRent ?? null,
-      housing_rules: updatedHouse.housingRules ?? [],
-      contract_terms: updatedHouse.contractTerms ?? null,
-      menu: updatedHouse.menu ?? null, status: updatedHouse.status,
-    }).eq('id', updatedHouse.id).then(({ error }) => {
+    supabase.from('houses').update(houseUpdatePayload(updatedHouse)).eq('id', updatedHouse.id).then(({ error }) => {
       if (error) console.error('updateHouse:', error);
+    });
+  };
+
+  // Owner-submitted edits to an already-approved house are staged here
+  // instead of applying immediately — the admin approves or rejects them.
+  const handleRequestHouseEdit = (houseId: string, changes: Partial<RetreatHouse>) => {
+    setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, pendingEdit: changes } : h)));
+    supabase.from('houses').update({ pending_edit: changes }).eq('id', houseId).then(({ error }) => {
+      if (error) console.error('requestHouseEdit:', error);
+    });
+  };
+
+  const handleApproveHouseEdit = (houseId: string) => {
+    const house = houses.find((h) => h.id === houseId);
+    if (!house?.pendingEdit) return;
+    const merged: RetreatHouse = { ...house, ...house.pendingEdit, pendingEdit: undefined };
+    setHouses((prev) => prev.map((h) => (h.id === houseId ? merged : h)));
+    if (selectedHouse && selectedHouse.id === houseId) setSelectedHouse(merged);
+    supabase.from('houses').update({ ...houseUpdatePayload(merged), pending_edit: null }).eq('id', houseId).then(({ error }) => {
+      if (error) console.error('approveHouseEdit:', error);
+    });
+  };
+
+  const handleRejectHouseEdit = (houseId: string) => {
+    setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, pendingEdit: undefined } : h)));
+    supabase.from('houses').update({ pending_edit: null }).eq('id', houseId).then(({ error }) => {
+      if (error) console.error('rejectHouseEdit:', error);
     });
   };
 
@@ -918,6 +949,7 @@ export default function App() {
               bookings={bookings}
               onAddHouse={handleAddHouse}
               onUpdateHouse={handleUpdateHouse}
+              onRequestHouseEdit={handleRequestHouseEdit}
               onDeleteHouse={handleDeleteHouse}
               onApproveBooking={handleApproveBooking}
               onRejectBooking={handleRejectBooking}
@@ -946,6 +978,8 @@ export default function App() {
               bookings={bookings}
               onApproveHouse={handleApproveHouse}
               onRejectHouse={handleRejectHouse}
+              onApproveHouseEdit={handleApproveHouseEdit}
+              onRejectHouseEdit={handleRejectHouseEdit}
               onToggleUserRole={handleToggleUserRole}
               attendees={attendees}
               allocations={allocations}
