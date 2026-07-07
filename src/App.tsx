@@ -5,7 +5,7 @@ import {
   loadHouses, deleteHouse, loadBookings, loadReviews, loadPayments, loadNotifications, loadPointsHistory,
   loadRooms, loadAnnouncements, loadWaitlist, loadPlatformAnnouncements,
   createBooking, updateBookingStatus, updateBookingFields,
-  createReview, updateReview as updateReviewDb, createPayment,
+  createReview, updateReview as updateReviewDb, createPayment, updatePaymentStatus,
   createNotification, markNotificationRead,
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
   createWaitlistEntry,
@@ -513,7 +513,7 @@ export default function App() {
     const payment = payments.find((p) => p.id === paymentId);
     if (payment) {
       // Persist updated payment to Supabase
-      createPayment({ ...payment, paymentStatus: status, adminNotes });
+      updatePaymentStatus(paymentId, status, adminNotes);
       const b = bookings.find((bk) => bk.id === payment.bookingId);
       if (b) {
         const updatedPaymentStatus: Booking['paymentStatus'] = payment.amount >= b.totalPrice ? 'paid_full' : 'paid_deposit';

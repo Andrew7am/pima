@@ -423,6 +423,12 @@ export async function createPayment(p: Payment): Promise<boolean> {
   return !error;
 }
 
+export async function updatePaymentStatus(id: string, status: Payment['paymentStatus'], adminNotes?: string): Promise<boolean> {
+  const { error } = await supabase.from('payments').update({ payment_status: status, admin_notes: adminNotes ?? null }).eq('id', id);
+  if (error) console.error('updatePaymentStatus:', error);
+  return !error;
+}
+
 export async function createNotification(n: AppNotification): Promise<boolean> {
   const { error } = await supabase.from('notifications').insert({
     id: n.id, user_id: n.userId, booking_id: n.bookingId,
