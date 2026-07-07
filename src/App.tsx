@@ -282,32 +282,38 @@ export default function App() {
     setBookings((prev) => [newBooking, ...prev]);
 
     // Points are EARNED server-side only when a payment is actually confirmed
-    // (see migration 005) — never at booking time, so a pending/unpaid booking
-    // can't be used to farm points. Redemption is the one points operation
-    // safe to do client-side, since it only ever touches the acting user's
-    // own row (RLS allows that).
+    // (see migration 005) — never at booking time. Redemption goes through the
+    // redeem_points() SECURITY DEFINER function (migration 017), which validates
+    // the balance server-side; the old client-side `update({ points })` path is
+    // now blocked by the privileged-column protection trigger so a user can no
+    // longer just grant themselves points from the browser console.
     if (pointsRedeemed > 0 && currentUser) {
-      const newPoints = Math.max(0, (currentUser.points || 0) - pointsRedeemed);
-      const redemptionTx: PointsTransaction = {
-        id: `pt_red_${Date.now()}`,
-        date: new Date().toISOString(),
-        amount: pointsRedeemed,
-        description: `خصم نقاط لحجز بيت ${newBooking.houseName}`,
-        type: 'redeemed',
-      };
-      const updatedUser: User = {
-        ...currentUser,
-        points: newPoints,
-        pointsHistory: [...(currentUser.pointsHistory || []), redemptionTx],
-      };
-      setCurrentUser(updatedUser);
-      setUsers((prevUsers) => prevUsers.map((u) => (u.id === currentUser.id ? updatedUser : u)));
-      supabase.from('users').update({ points: newPoints }).eq('id', currentUser.id)
-        .then(({ error }) => { if (error) console.error('redeemPoints:', error); });
-      supabase.from('points_history').insert({
-        id: redemptionTx.id, user_id: currentUser.id, amount: redemptionTx.amount,
-        description: redemptionTx.description, type: redemptionTx.type,
-      }).then(({ error }) => { if (error) console.error('redeemPoints history:', error); });
+      const description = `خصم نقاط لحجز بيت ${newBooking.houseName}`;
+      const { data: remaining, error } = await supabase.rpc('redeem_points', {
+        p_amount: pointsRedeemed,
+        p_description: description,
+      });
+      if (error) {
+        console.error('redeemPoints:', error);
+      } else {
+        const redemptionTx: PointsTransaction = {
+          id: `pt_red_${Date.now()}`,
+          date: new Date().toISOString(),
+          amount: pointsRedeemed,
+          description,
+          type: 'redeemed',
+        };
+        const newPoints = typeof remaining === 'number'
+          ? remaining
+          : Math.max(0, (currentUser.points || 0) - pointsRedeemed);
+        const updatedUser: User = {
+          ...currentUser,
+          points: newPoints,
+          pointsHistory: [...(currentUser.pointsHistory || []), redemptionTx],
+        };
+        setCurrentUser(updatedUser);
+        setUsers((prevUsers) => prevUsers.map((u) => (u.id === currentUser.id ? updatedUser : u)));
+      }
     }
 
     setActiveScreen('bookings');
