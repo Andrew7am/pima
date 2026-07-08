@@ -6,7 +6,7 @@ import {
   loadRooms, loadAnnouncements, loadWaitlist, loadPlatformAnnouncements,
   createBooking, updateBookingStatus, updateBookingFields,
   createReview, updateReview as updateReviewDb, createPayment, updatePaymentStatus,
-  createNotification, markNotificationRead,
+  markNotificationRead,
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
   createWaitlistEntry,
   createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
@@ -367,9 +367,19 @@ export default function App() {
     }).then(({ error }) => { if (error) console.error('addHouse:', error); });
   };
 
+  // Notifications are created server-side through the authorized
+  // emit_notification RPC (migration 021) — a raw client INSERT is blocked
+  // (no INSERT policy) so notifications can't be forged. The local push is
+  // optimistic for the acting user's own view.
   const pushNotification = (n: AppNotification) => {
     setNotifications((prev) => [n, ...prev]);
-    createNotification(n);
+    supabase.rpc('emit_notification', {
+      p_target: n.userId,
+      p_booking: n.bookingId || '',
+      p_title: n.title,
+      p_message: n.message,
+      p_type: n.type,
+    }).then(({ error }) => { if (error) console.error('emit_notification:', error); });
   };
 
   const handleApproveBooking = (bookingId: string) => {
@@ -478,37 +488,10 @@ export default function App() {
     );
     updateBookingFields(payment.bookingId, { paymentStatus: 'pending_verification' });
 
-    // Get the booking
-    const b = bookings.find((bk) => bk.id === payment.bookingId);
-    if (b) {
-      // Create user notification
-      const userNotif: AppNotification = {
-        id: `notif_${Date.now()}`,
-        userId: b.userId,
-        bookingId: b.id,
-        title: 'تم إرسال إثبات الدفع بنجاح ⏳',
-        message: `تم استلام تفاصيل وإثبات الدفع الخاص بك بمبلغ ${payment.amount.toLocaleString('ar-EG')} ج.م وجاري المراجعة والتحقق من قبل الإدارة لتأكيد الحجز.`,
-        type: 'info',
-        isRead: false,
-        createdAt: new Date().toISOString()
-      };
-
-      // Create admin notification
-      const adminNotif: AppNotification = {
-        id: `notif_admin_${Date.now()}`,
-        userId: 'user_admin',
-        bookingId: b.id,
-        title: 'إثبات دفع جديد بانتظار المراجعة 💸',
-        message: `قام المستخدم "${b.userName}" بتقديم إثبات دفع بمبلغ ${payment.amount.toLocaleString('ar-EG')} ج.م للحجز الخاص به في "${b.houseName}".`,
-        type: 'info',
-        isRead: false,
-        createdAt: new Date().toISOString()
-      };
-
-      setNotifications((prev) => [userNotif, adminNotif, ...prev]);
-      createNotification(userNotif);
-      createNotification(adminNotif);
-    }
+    // The guest "proof received" and per-admin "new payment to review"
+    // notifications are created server-side by the payments-insert trigger
+    // (migration 021), which also fixes the old hardcoded 'user_admin'
+    // recipient that never existed.
   };
 
   const handleVerifyPayment = (paymentId: string, status: 'approved' | 'rejected', adminNotes?: string) => {
@@ -636,29 +619,28 @@ export default function App() {
   };
 
   // --- Review Operations ---
-  const handleAddReview = (newReview: Review) => {
+  const handleAddReview = async (newReview: Review) => {
+    // Optimistic insert; rolled back if the DB rejects it.
     setReviews((prev) => [newReview, ...prev]);
-    // Awards +50 points server-side (migration 005 trigger on reviews insert)
-    createReview(newReview).then(() => {
-      if (currentUser?.id === newReview.userId) refreshCurrentUserPoints(newReview.userId);
-    });
 
-    // Recalculate house rating and persist
+    // Awards points server-side (migration 005) and enforces the
+    // "must have a confirmed booking" rule (migration 020).
+    const ok = await createReview(newReview);
+    if (!ok) {
+      setReviews((prev) => prev.filter((r) => r.id !== newReview.id));
+      alert('لا يمكنك تقييم هذا البيت إلا بعد أن يكون لديك حجز مؤكد به.');
+      return;
+    }
+    if (currentUser?.id === newReview.userId) refreshCurrentUserPoints(newReview.userId);
+
+    // House rating + reviews_count are recomputed server-side by the
+    // migration-020 trigger; reflect it optimistically for immediate UI.
     setHouses((prevHouses) =>
       prevHouses.map((h) => {
-        if (h.id === newReview.houseId) {
-          const matchingReviews = [...reviews.filter((r) => r.houseId === h.id), newReview];
-          const average = matchingReviews.reduce((sum, r) => sum + (r.overall_rating ?? r.rating), 0) / matchingReviews.length;
-          const updated = {
-            ...h,
-            rating: parseFloat(average.toFixed(1)),
-            reviewsCount: matchingReviews.length,
-          };
-          supabase.from('houses').update({ rating: updated.rating, reviews_count: updated.reviewsCount })
-            .eq('id', h.id).then(({ error }) => { if (error) console.error('updateHouseRating:', error); });
-          return updated;
-        }
-        return h;
+        if (h.id !== newReview.houseId) return h;
+        const matchingReviews = [...reviews.filter((r) => r.houseId === h.id), newReview];
+        const average = matchingReviews.reduce((sum, r) => sum + (r.overall_rating ?? r.rating), 0) / matchingReviews.length;
+        return { ...h, rating: parseFloat(average.toFixed(1)), reviewsCount: matchingReviews.length };
       })
     );
   };
