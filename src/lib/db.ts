@@ -20,8 +20,6 @@ export function mapUser(r: Record<string, unknown>): User {
     governorate: r.governorate as string ?? undefined,
     churchName: r.church_name as string ?? undefined,
     priestName: r.priest_name as string ?? undefined,
-    idCardFront: r.id_card_front as string ?? undefined,
-    idCardBack: r.id_card_back as string ?? undefined,
     createdAt: r.created_at as string,
   };
 }

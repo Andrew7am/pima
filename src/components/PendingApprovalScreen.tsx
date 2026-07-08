@@ -1,6 +1,6 @@
 import React from 'react';
 import { User } from '../types';
-import { Clock, XCircle, LogOut } from 'lucide-react';
+import { Clock, XCircle, LogOut, MessageCircle } from 'lucide-react';
 import Logo from './Logo';
 
 interface PendingApprovalScreenProps {
@@ -32,12 +32,28 @@ export default function PendingApprovalScreen({ currentUser, onLogout }: Pending
             </p>
           </div>
         ) : (
-          <div className="space-y-1.5">
-            <h2 className="text-sm font-bold text-[#4A4A3A]">حسابك قيد المراجعة</h2>
-            <p className="text-[11px] text-[#8A8A70] leading-relaxed">
-              أهلاً بك يا {currentUser.name}! بياناتك وصورة بطاقتك وصلت بنجاح، وفريقنا بيراجع حسابك دلوقتي.
-              هتقدر تستخدم المنصة بمجرد الموافقة عليه من الإدارة.
-            </p>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <h2 className="text-sm font-bold text-[#4A4A3A]">حسابك قيد المراجعة</h2>
+              <p className="text-[11px] text-[#8A8A70] leading-relaxed">
+                أهلاً بك يا {currentUser.name}! بياناتك وصلت بنجاح، وفريقنا بيراجع حسابك دلوقتي.
+                هتقدر تستخدم المنصة بمجرد الموافقة عليه من الإدارة.
+              </p>
+            </div>
+            {currentUser.role === 'servant' && (
+              <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-3 text-[10px] text-amber-900 leading-relaxed text-right">
+                📱 لازم كمان ترسل صورة بطاقتك الشخصية (وش وضهر) على واتساب الدعم الفني عشان تكتمل المراجعة.
+              </div>
+            )}
+            <a
+              href="https://wa.me/201234567890?text=سلام%20ونعمة%2C%20عايز%20أرسل%20صورة%20بطاقتي%20الشخصية%20لاستكمال%20مراجعة%20حسابي"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs font-bold py-2.5 hover:bg-emerald-100 transition-colors"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>تواصل واتساب</span>
+            </a>
           </div>
         )}
 

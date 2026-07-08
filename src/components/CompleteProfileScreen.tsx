@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { User, UserRole } from '../types';
-import { User as UserIcon, BookOpen, Users, Phone, MapPin, Church, IdCard } from 'lucide-react';
+import { User as UserIcon, BookOpen, Users, Phone, MapPin, Church } from 'lucide-react';
 import Logo from './Logo';
 import { GOVERNORATES } from '../mockData';
-import PhotoPickerButtons from './PhotoPickerButtons';
 
 interface CompleteProfileScreenProps {
   currentUser: User;
@@ -16,8 +15,6 @@ interface CompleteProfileScreenProps {
     organizationName?: string;
     churchName?: string;
     priestName?: string;
-    idCardFront?: string;
-    idCardBack?: string;
   }) => void;
 }
 
@@ -30,13 +27,10 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
   const [orgName, setOrgName] = useState(currentUser.organizationName || '');
   const [churchName, setChurchName] = useState(currentUser.churchName || '');
   const [priestName, setPriestName] = useState(currentUser.priestName || '');
-  const [idCardFront, setIdCardFront] = useState(currentUser.idCardFront || '');
-  const [idCardBack, setIdCardBack] = useState(currentUser.idCardBack || '');
   const [error, setError] = useState('');
 
   const isChurchAffiliated = role === 'individual' || role === 'servant';
   const needsOrgName = role === 'servant' || role === 'owner';
-  const needsIdCard = role === 'servant';
 
   // Minimum accepted age is 6 years old
   const minAgeDate = new Date();
@@ -61,10 +55,6 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
       setError('الرجاء كتابة اسم الكنيسة والأب الكاهن المسؤول.');
       return;
     }
-    if (needsIdCard && (!idCardFront || !idCardBack)) {
-      setError('الرجاء رفع صورة بطاقتك الشخصية (وش وضهر).');
-      return;
-    }
     setError('');
     onComplete({
       role,
@@ -75,8 +65,6 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
       organizationName: needsOrgName ? orgName.trim() : undefined,
       churchName: isChurchAffiliated ? churchName.trim() : undefined,
       priestName: isChurchAffiliated ? priestName.trim() : undefined,
-      idCardFront: needsIdCard ? idCardFront : undefined,
-      idCardBack: needsIdCard ? idCardBack : undefined,
     });
   };
 
@@ -184,25 +172,9 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
               </>
             )}
 
-            {needsIdCard && (
-              <div className="space-y-2 pt-1 border-t border-[#D6D6C2]/60">
-                <div className="flex items-center gap-1.5 pt-2">
-                  <IdCard className="w-4 h-4 text-[#5A5A40]" />
-                  <span className="text-[10px] font-bold text-[#4A4A3A]">صورة البطاقة الشخصية (إجباري):</span>
-                </div>
-                <p className="text-[9px] text-[#8A8A70]">مطلوبة لمراجعة حسابك والموافقة عليه من الإدارة.</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[9px] font-bold text-[#8A8A70] mb-1">وش البطاقة:</label>
-                    <PhotoPickerButtons idPrefix="id-card-front" onSelect={setIdCardFront} className="flex-col" />
-                    {idCardFront && <img src={idCardFront} alt="وش البطاقة" className="mt-1.5 w-full h-20 object-cover rounded-lg border border-[#D6D6C2]" />}
-                  </div>
-                  <div>
-                    <label className="block text-[9px] font-bold text-[#8A8A70] mb-1">ضهر البطاقة:</label>
-                    <PhotoPickerButtons idPrefix="id-card-back" onSelect={setIdCardBack} className="flex-col" />
-                    {idCardBack && <img src={idCardBack} alt="ضهر البطاقة" className="mt-1.5 w-full h-20 object-cover rounded-lg border border-[#D6D6C2]" />}
-                  </div>
-                </div>
+            {role === 'servant' && (
+              <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-3 text-[10px] text-amber-900 leading-relaxed">
+                📱 بعد حفظ بياناتك، حسابك هيكون بانتظار المراجعة. برجاء إرسال صورة بطاقتك الشخصية (وش وضهر) على واتساب الدعم الفني لاستكمال التحقق واعتماد حسابك.
               </div>
             )}
           </div>

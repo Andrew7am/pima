@@ -26,8 +26,6 @@ export interface User {
   governorate?: string;
   churchName?: string;
   priestName?: string;
-  idCardFront?: string;
-  idCardBack?: string;
 }
 
 export interface ConferenceHall {

@@ -50,7 +50,6 @@ export default function AdminDashboard({
   const [activeTab, setActiveTab] = useState<'moderation' | 'accounts' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings'>('moderation');
   const [notesInputs, setNotesInputs] = useState<Record<string, string>>({});
   const [selectedProofImage, setSelectedProofImage] = useState<string | null>(null);
-  const [selectedIdCardImage, setSelectedIdCardImage] = useState<string | null>(null);
 
   // Platform announcement form state
   const [annMessage, setAnnMessage] = useState('');
@@ -391,7 +390,7 @@ export default function AdminDashboard({
       {/* Pending servant/owner account approvals */}
       {activeTab === 'accounts' && (
         <div className="space-y-3">
-          <div className="text-xs font-bold text-[#8A8A70] px-1">حسابات الخدام وأصحاب البيوت بانتظار مراجعة بطاقتهم الشخصية:</div>
+          <div className="text-xs font-bold text-[#8A8A70] px-1">حسابات الخدام وأصحاب البيوت بانتظار المراجعة والاعتماد:</div>
 
           {pendingAccounts.length === 0 ? (
             <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-2">
@@ -416,30 +415,16 @@ export default function AdminDashboard({
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => acc.idCardFront && setSelectedIdCardImage(acc.idCardFront)}
-                      className="rounded-2xl border border-[#D6D6C2] overflow-hidden bg-[#EBEBE0]/30 h-24"
-                    >
-                      {acc.idCardFront ? (
-                        <img src={acc.idCardFront} alt="وش البطاقة" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="flex items-center justify-center h-full text-[9px] text-[#8A8A70]">لا توجد صورة</span>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => acc.idCardBack && setSelectedIdCardImage(acc.idCardBack)}
-                      className="rounded-2xl border border-[#D6D6C2] overflow-hidden bg-[#EBEBE0]/30 h-24"
-                    >
-                      {acc.idCardBack ? (
-                        <img src={acc.idCardBack} alt="ضهر البطاقة" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="flex items-center justify-center h-full text-[9px] text-[#8A8A70]">لا توجد صورة</span>
-                      )}
-                    </button>
-                  </div>
+                  {/* ID verification happens out-of-band on WhatsApp, not in-app */}
+                  <a
+                    href={`https://wa.me/2${acc.phone.replace(/^0/, '')}?text=${encodeURIComponent('سلام ونعمة، برجاء إرسال صورة بطاقتك الشخصية (وش وضهر) لاستكمال مراجعة حسابك على بيما.')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-[10.5px] font-bold py-2.5 hover:bg-emerald-100 transition-colors"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>تواصل واتساب لمراجعة البطاقة الشخصية</span>
+                  </a>
 
                   <div className="flex gap-2 justify-end pt-1">
                     <button
@@ -463,13 +448,6 @@ export default function AdminDashboard({
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {/* Full-size ID card viewer */}
-      {selectedIdCardImage && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setSelectedIdCardImage(null)}>
-          <img src={selectedIdCardImage} alt="صورة البطاقة" className="max-w-full max-h-full rounded-2xl" />
         </div>
       )}
 

@@ -593,8 +593,6 @@ export default function App() {
       governorate: updatedUser.governorate ?? null,
       church_name: updatedUser.churchName ?? null,
       priest_name: updatedUser.priestName ?? null,
-      id_card_front: updatedUser.idCardFront ?? null,
-      id_card_back: updatedUser.idCardBack ?? null,
     }).eq('id', updatedUser.id).then(({ error }) => {
       if (error) console.error('updateUserProfile:', error);
     });
@@ -811,15 +809,12 @@ export default function App() {
   // collects up front. Admin accounts are provisioned directly and are exempt.
   const isChurchAffiliated = currentUser.role === 'individual' || currentUser.role === 'servant';
   const needsOrgName = currentUser.role === 'servant' || currentUser.role === 'owner';
-  const needsIdCard = currentUser.role === 'servant' &&
-    (!currentUser.idCardFront || !currentUser.idCardBack);
   const needsProfileCompletion = currentUser.role !== 'admin' && (
     !currentUser.phone ||
     currentUser.dateOfBirth === undefined ||
     !currentUser.governorate ||
     (isChurchAffiliated && (!currentUser.churchName || !currentUser.priestName)) ||
-    (needsOrgName && !currentUser.organizationName) ||
-    needsIdCard
+    (needsOrgName && !currentUser.organizationName)
   );
 
   if (needsProfileCompletion) {
@@ -837,8 +832,6 @@ export default function App() {
             organizationName: fields.organizationName ?? currentUser.organizationName,
             churchName: fields.churchName,
             priestName: fields.priestName,
-            idCardFront: fields.idCardFront ?? currentUser.idCardFront,
-            idCardBack: fields.idCardBack ?? currentUser.idCardBack,
           });
         }}
       />
