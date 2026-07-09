@@ -122,6 +122,17 @@ export default function App() {
     });
   }, []);
 
+  // House rating/reviewsCount are recomputed server-side by the migration-020
+  // trigger whenever a review is added/deleted — re-pull the real value
+  // instead of trusting a locally-guessed average (same principle as
+  // refreshCurrentUserPoints and the booking price/deposit fix).
+  const refreshHouseRating = useCallback(async (houseId: string) => {
+    const { data } = await supabase.from('houses').select('rating, reviews_count').eq('id', houseId).single();
+    if (data) {
+      setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, rating: Number(data.rating), reviewsCount: data.reviews_count as number } : h)));
+    }
+  }, []);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) loadUserProfile(session.user.id);
@@ -339,7 +350,7 @@ export default function App() {
 
   const handlePayDeposit = (bookingId: string) => {
     const target = bookings.find((b) => b.id === bookingId);
-    const depositAmount = target ? Math.round(target.totalPrice * 0.15) : 0;
+    const depositAmount = target ? Math.round(target.totalPrice * settings.depositRate) : 0;
     setBookings((prev) =>
       prev.map((b) =>
         b.id === bookingId ? { ...b, depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' } : b
@@ -423,7 +434,9 @@ export default function App() {
   // Owner marks that they've received the deposit in-person / off-platform
   const handleConfirmDepositReceived = (bookingId: string) => {
     const target = bookings.find((b) => b.id === bookingId);
-    const depositAmount = target ? (target.depositAmount || Math.round(target.totalPrice * 0.15)) : 0;
+    // Fallback only fires if depositAmount was somehow never set — use the
+    // live admin-configured rate (migration 024), not a stale hard-coded one.
+    const depositAmount = target ? (target.depositAmount || Math.round(target.totalPrice * settings.depositRate)) : 0;
     setBookings((prev) =>
       prev.map((b) =>
         b.id === bookingId
@@ -668,22 +681,14 @@ export default function App() {
     }
   };
 
-  // Delete a spam / abusive review. Admin-only via reviews_delete_admin;
-  // the house rating is recomputed server-side afterwards (migration 020).
-  const handleDeleteReview = (reviewId: string) => {
+  // Delete a spam / abusive review. Admin-only via reviews_delete_admin.
+  // Re-pulls the house's real rating from the server (migration-020 trigger)
+  // instead of guessing an average locally.
+  const handleDeleteReview = async (reviewId: string) => {
     const target = reviews.find((r) => r.id === reviewId);
     setReviews((prev) => prev.filter((r) => r.id !== reviewId));
-    deleteReviewDb(reviewId);
-    if (target) {
-      setHouses((prev) => prev.map((h) => {
-        if (h.id !== target.houseId) return h;
-        const remaining = reviews.filter((r) => r.houseId === h.id && r.id !== reviewId);
-        const avg = remaining.length
-          ? parseFloat((remaining.reduce((s, r) => s + (r.overall_rating ?? r.rating), 0) / remaining.length).toFixed(1))
-          : 0;
-        return { ...h, rating: avg, reviewsCount: remaining.length };
-      }));
-    }
+    await deleteReviewDb(reviewId);
+    if (target) refreshHouseRating(target.houseId);
   };
 
   // --- Review Operations ---
@@ -702,15 +707,8 @@ export default function App() {
     if (currentUser?.id === newReview.userId) refreshCurrentUserPoints(newReview.userId);
 
     // House rating + reviews_count are recomputed server-side by the
-    // migration-020 trigger; reflect it optimistically for immediate UI.
-    setHouses((prevHouses) =>
-      prevHouses.map((h) => {
-        if (h.id !== newReview.houseId) return h;
-        const matchingReviews = [...reviews.filter((r) => r.houseId === h.id), newReview];
-        const average = matchingReviews.reduce((sum, r) => sum + (r.overall_rating ?? r.rating), 0) / matchingReviews.length;
-        return { ...h, rating: parseFloat(average.toFixed(1)), reviewsCount: matchingReviews.length };
-      })
-    );
+    // migration-020 trigger — pull the real value rather than guessing.
+    refreshHouseRating(newReview.houseId);
   };
 
   // --- Menu Operations ---
@@ -995,6 +993,7 @@ export default function App() {
               onUpdateAllocations={handleUpdateAllocations}
               payments={payments}
               onSubmitPayment={handleSubmitPayment}
+              settings={settings}
             />
           )}
 

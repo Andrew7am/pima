@@ -256,15 +256,6 @@ export default function OwnerDashboard({
   const [roomPrice, setRoomPrice] = useState('');
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
 
-  // Calculate stats
-  const totalRevenue = ownerBookings
-    .filter((b) => b.status === 'approved' || b.status === 'completed')
-    .reduce((sum, b) => sum + (b.depositPaid ? b.depositAmount : b.totalPrice * 0.15), 0); // revenue counts paid deposit or estimated 15% secure deposit
-
-  const totalFullBookingsValue = ownerBookings
-    .filter((b) => b.status === 'approved' || b.status === 'completed')
-    .reduce((sum, b) => sum + b.totalPrice, 0);
-
   const pendingBookings = ownerBookings.filter((b) => b.status === 'pending');
 
   // ─── Enhanced statistics for the Owner Home dashboard ──────────────
@@ -986,7 +977,7 @@ export default function OwnerDashboard({
                 const isApproved = booking.status === 'approved';
                 const isCompleted = booking.status === 'completed';
                 const category = categorizeBooking(booking);
-                const depositAmt = booking.depositAmount || Math.round(booking.totalPrice * 0.15);
+                const depositAmt = booking.depositAmount || Math.round(booking.totalPrice * settings.depositRate);
                 const remainingBalance = booking.totalPrice - (booking.depositPaid ? depositAmt : 0);
 
                 const statusBadge = (() => {

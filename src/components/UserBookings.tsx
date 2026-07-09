@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Booking, User, RetreatHouse, Attendee, RoomAllocation, Payment } from '../types';
+import { Booking, User, RetreatHouse, Attendee, RoomAllocation, Payment, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { 
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
   Printer, Building, AlertTriangle, Bell, Smartphone, CreditCard, 
@@ -20,6 +20,7 @@ interface UserBookingsProps {
   onUpdateAllocations: (bookingId: string, allocations: RoomAllocation[]) => void;
   payments: Payment[];
   onSubmitPayment: (payment: Payment) => void;
+  settings?: PlatformSettings;
 }
 
 const DEFAULT_CHECKLIST_ITEMS = [
@@ -118,7 +119,8 @@ export default function UserBookings({
   onUpdateAttendees,
   onUpdateAllocations,
   payments,
-  onSubmitPayment
+  onSubmitPayment,
+  settings = DEFAULT_PLATFORM_SETTINGS
 }: UserBookingsProps) {
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
@@ -373,7 +375,7 @@ export default function UserBookings({
   const handleEgyptianPaymentSubmit = (e: React.FormEvent, booking: Booking) => {
     e.preventDefault();
 
-    const depositMin = Math.round(booking.totalPrice * 0.15);
+    const depositMin = Math.round(booking.totalPrice * settings.depositRate);
     const amount = parseFloat(paymentAmount) || depositMin;
 
     if (amount <= 0) {
@@ -590,7 +592,7 @@ export default function UserBookings({
                 {canPayDeposit && (
                   <div className="px-4 py-2.5 bg-amber-50/70 border-b border-[#D6D6C2]/60 flex items-center gap-2 text-[10px] text-amber-950 font-bold">
                     <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
-                    <span>تنبيه السداد: يرجى إرسال عربون جدية الحجز بقيمة {Math.round(booking.totalPrice * 0.15).toLocaleString('ar-EG')} ج.م (15%) لتثبيت الحجز والغرف بالبيت.</span>
+                    <span>تنبيه السداد: يرجى إرسال عربون جدية الحجز بقيمة {Math.round(booking.totalPrice * settings.depositRate).toLocaleString('ar-EG')} ج.م ({Math.round(settings.depositRate * 100)}%) لتثبيت الحجز والغرف بالبيت.</span>
                   </div>
                 )}
 
@@ -801,7 +803,7 @@ export default function UserBookings({
                         id={`pay-deposit-btn-${booking.id}`}
                         onClick={() => {
                           setIsPaying(booking.id);
-                          setPaymentAmount(Math.round(booking.totalPrice * 0.15).toString());
+                          setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString());
                         }}
                         className="bg-[#464E3D] hover:bg-[#343A2D] text-white border border-[#464E3D] px-3.5 py-1 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer shadow-sm"
                       >
@@ -870,14 +872,14 @@ export default function UserBookings({
                       <div className="bg-white p-3 rounded-2xl border border-[#E7E5DB] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner">
                         <div className="space-y-0.5">
                           <label className="block text-[10px] font-bold text-[#867E65]">مبلغ الدفع المقترح (ج.م):</label>
-                          <p className="text-[9px] text-[#867E65]">الحد الأدنى للعربون (15%): {Math.round(booking.totalPrice * 0.15).toLocaleString('ar-EG')} ج.م / التكلفة الكلية: {booking.totalPrice.toLocaleString('ar-EG')} ج.م</p>
+                          <p className="text-[9px] text-[#867E65]">الحد الأدنى للعربون ({Math.round(settings.depositRate * 100)}%): {Math.round(booking.totalPrice * settings.depositRate).toLocaleString('ar-EG')} ج.م / التكلفة الكلية: {booking.totalPrice.toLocaleString('ar-EG')} ج.م</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <input
                             id="payment-amount-input"
                             type="number"
                             required
-                            min={Math.round(booking.totalPrice * 0.15)}
+                            min={Math.round(booking.totalPrice * settings.depositRate)}
                             max={booking.totalPrice}
                             value={paymentAmount}
                             onChange={(e) => {
@@ -1134,7 +1136,7 @@ export default function UserBookings({
                                 <button
                                   id="generate-mock-receipt-btn"
                                   type="button"
-                                  onClick={() => handleGenerateMockProof(parseFloat(paymentAmount) || Math.round(booking.totalPrice * 0.15))}
+                                  onClick={() => handleGenerateMockProof(parseFloat(paymentAmount) || Math.round(booking.totalPrice * settings.depositRate))}
                                   className="bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-bold py-1.5 px-3 rounded-xl transition-all w-full flex items-center justify-center gap-1 cursor-pointer"
                                 >
                                   <Check className="w-3 h-3" />
@@ -1165,7 +1167,7 @@ export default function UserBookings({
                       {/* Action buttons */}
                       <div className="flex items-center justify-between border-t border-[#E7E5DB] pt-3">
                         <span className="text-[10px] text-[#867E65] font-bold">
-                          المبلغ الذي سيتم تقييده: <strong className="text-[#2D2D24] font-extrabold text-xs">{(parseFloat(paymentAmount) || Math.round(booking.totalPrice * 0.15)).toLocaleString('ar-EG')} ج.م</strong>
+                          المبلغ الذي سيتم تقييده: <strong className="text-[#2D2D24] font-extrabold text-xs">{(parseFloat(paymentAmount) || Math.round(booking.totalPrice * settings.depositRate)).toLocaleString('ar-EG')} ج.م</strong>
                         </span>
                         
                         <div className="flex gap-2">
