@@ -392,12 +392,19 @@ function roomToRow(r: Room): Record<string, unknown> {
 // ─── Mutations ─────────────────────────────────────────────────────────────
 
 /**
- * Insert a new booking. The DB trigger enforces bed-capacity for overlapping dates.
+ * Insert a new booking. The DB trigger enforces bed-capacity for overlapping
+ * dates, and (migration 018/024) recomputes total_price/deposit_amount from
+ * the house's live rate and the platform's current deposit/redemption
+ * settings — so if the client's numbers were stale (e.g. an admin changed
+ * the deposit rate while this form was open), the DB silently corrects them
+ * rather than trusting what was submitted. We select the row back so the
+ * caller reflects the actual persisted (corrected) values, not its own
+ * possibly-stale guess.
  * Returns { ok: false, error: 'INSUFFICIENT_CAPACITY', availableBeds } if the
  * requested guests would exceed remaining capacity for these dates.
  */
-export async function createBooking(b: Booking): Promise<{ ok: boolean; error?: string; availableBeds?: number }> {
-  const { error } = await supabase.from('bookings').insert(bookingToRow(b));
+export async function createBooking(b: Booking): Promise<{ ok: boolean; error?: string; availableBeds?: number; booking?: Booking }> {
+  const { data, error } = await supabase.from('bookings').insert(bookingToRow(b)).select().single();
   if (error) {
     const msg = error.message || '';
     if (msg.includes('INSUFFICIENT_CAPACITY')) {
@@ -408,7 +415,7 @@ export async function createBooking(b: Booking): Promise<{ ok: boolean; error?: 
     console.error('createBooking:', error);
     return { ok: false, error: msg };
   }
-  return { ok: true };
+  return { ok: true, booking: data ? mapBooking(data) : b };
 }
 
 export async function updateBookingStatus(id: string, status: Booking['status']): Promise<boolean> {

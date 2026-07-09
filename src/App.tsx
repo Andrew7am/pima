@@ -284,7 +284,12 @@ export default function App() {
       }
       return false;
     }
-    setBookings((prev) => [newBooking, ...prev]);
+    // Use the server-persisted row, not the client's copy — the DB trigger
+    // may have recomputed total_price/deposit_amount against the current
+    // platform settings (e.g. if the deposit rate changed after this form
+    // loaded), and we want the UI to reflect what was actually saved.
+    const savedBooking = res.booking ?? newBooking;
+    setBookings((prev) => [savedBooking, ...prev]);
 
     // Points are EARNED server-side only when a payment is actually confirmed
     // (see migration 005) — never at booking time. Redemption goes through the
