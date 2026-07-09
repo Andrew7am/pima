@@ -5,7 +5,7 @@ import {
   loadHouses, deleteHouse, loadBookings, loadReviews, loadPayments, loadNotifications, loadPointsHistory,
   loadRooms, loadAnnouncements, loadWaitlist, loadPlatformAnnouncements,
   createBooking, updateBookingStatus, updateBookingFields,
-  createReview, updateReview as updateReviewDb, createPayment, updatePaymentStatus,
+  createReview, updateReview as updateReviewDb, deleteReview as deleteReviewDb, createPayment, updatePaymentStatus,
   markNotificationRead,
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
   createWaitlistEntry,
@@ -26,6 +26,7 @@ import ContactSupport from './components/ContactSupport';
 import ProfileScreen from './components/ProfileScreen';
 import CompleteProfileScreen from './components/CompleteProfileScreen';
 import PendingApprovalScreen from './components/PendingApprovalScreen';
+import BannedScreen from './components/BannedScreen';
 import InteractiveMap from './components/InteractiveMap';
 
 export default function App() {
@@ -616,6 +617,59 @@ export default function App() {
     });
   };
 
+  // --- Admin control powers (migration 023) ---
+
+  // Take down an approved house (or bring a suspended one back). Admin-only
+  // via houses_update_admin; the owner-protection trigger (019) skips admins.
+  const handleSuspendHouse = (houseId: string, suspend: boolean) => {
+    const newStatus: RetreatHouse['status'] = suspend ? 'suspended' : 'approved';
+    setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, status: newStatus } : h)));
+    if (selectedHouse?.id === houseId) setSelectedHouse((prev) => (prev ? { ...prev, status: newStatus } : prev));
+    supabase.from('houses').update({ status: newStatus }).eq('id', houseId)
+      .then(({ error }) => { if (error) console.error('suspendHouse:', error); });
+  };
+
+  // Ban / unban any account. is_banned is admin-only (locked by the
+  // migration-023 protection trigger for everyone else).
+  const handleBanUser = (userId: string, banned: boolean) => {
+    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isBanned: banned } : u)));
+    supabase.from('users').update({ is_banned: banned }).eq('id', userId)
+      .then(({ error }) => { if (error) console.error('banUser:', error); });
+  };
+
+  // Cancel any booking (fraud / dispute). Admin-only via bookings_update_admin.
+  const handleAdminCancelBooking = (bookingId: string) => {
+    setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'rejected' } : b)));
+    updateBookingStatus(bookingId, 'rejected');
+    const b = bookings.find((bk) => bk.id === bookingId);
+    if (b) {
+      pushNotification({
+        id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
+        title: 'تم إلغاء الحجز من الإدارة',
+        message: `نأسف لإبلاغك بأن إدارة المنصة قامت بإلغاء حجزك في "${b.houseName}". للاستفسار تواصل مع الدعم الفني.`,
+        type: 'danger', isRead: false, createdAt: new Date().toISOString(),
+      });
+    }
+  };
+
+  // Delete a spam / abusive review. Admin-only via reviews_delete_admin;
+  // the house rating is recomputed server-side afterwards (migration 020).
+  const handleDeleteReview = (reviewId: string) => {
+    const target = reviews.find((r) => r.id === reviewId);
+    setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    deleteReviewDb(reviewId);
+    if (target) {
+      setHouses((prev) => prev.map((h) => {
+        if (h.id !== target.houseId) return h;
+        const remaining = reviews.filter((r) => r.houseId === h.id && r.id !== reviewId);
+        const avg = remaining.length
+          ? parseFloat((remaining.reduce((s, r) => s + (r.overall_rating ?? r.rating), 0) / remaining.length).toFixed(1))
+          : 0;
+        return { ...h, rating: avg, reviewsCount: remaining.length };
+      }));
+    }
+  };
+
   // --- Review Operations ---
   const handleAddReview = async (newReview: Review) => {
     // Optimistic insert; rolled back if the DB rejects it.
@@ -838,6 +892,11 @@ export default function App() {
     );
   }
 
+  // Banned accounts (admin action, migration 023) are blocked from the app entirely.
+  if (currentUser.isBanned) {
+    return <BannedScreen currentUser={currentUser} onLogout={handleLogout} />;
+  }
+
   // Servant/owner accounts need admin review before they can use the app —
   // grandfathered existing accounts are already 'approved' (migration 008),
   // so this only affects new signups going forward.
@@ -957,11 +1016,16 @@ export default function App() {
               houses={houses}
               users={users}
               bookings={bookings}
+              reviews={reviews}
               onApproveHouse={handleApproveHouse}
               onRejectHouse={handleRejectHouse}
               onApproveHouseEdit={handleApproveHouseEdit}
               onRejectHouseEdit={handleRejectHouseEdit}
               onToggleUserRole={handleToggleUserRole}
+              onSuspendHouse={handleSuspendHouse}
+              onBanUser={handleBanUser}
+              onCancelBooking={handleAdminCancelBooking}
+              onDeleteReview={handleDeleteReview}
               attendees={attendees}
               allocations={allocations}
               onUpdateAttendees={handleUpdateAttendees}

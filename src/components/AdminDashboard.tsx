@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
-import { RetreatHouse, User, Booking, Attendee, RoomAllocation, Payment, PlatformAnnouncement } from '../types';
-import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone } from 'lucide-react';
+import { RetreatHouse, User, Booking, Attendee, RoomAllocation, Payment, PlatformAnnouncement, Review } from '../types';
+import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
 
 interface AdminDashboardProps {
   houses: RetreatHouse[];
   users: User[];
   bookings: Booking[];
+  reviews?: Review[];
   onApproveHouse: (houseId: string) => void;
   onRejectHouse: (houseId: string) => void;
   onApproveHouseEdit?: (houseId: string) => void;
   onRejectHouseEdit?: (houseId: string) => void;
   onToggleUserRole: (userId: string, newRole: User['role']) => void;
+  onSuspendHouse?: (houseId: string, suspend: boolean) => void;
+  onBanUser?: (userId: string, banned: boolean) => void;
+  onCancelBooking?: (bookingId: string) => void;
+  onDeleteReview?: (reviewId: string) => void;
   attendees: Attendee[];
   allocations: RoomAllocation[];
   onUpdateAttendees: (bookingId: string, attendees: Attendee[]) => void;
@@ -29,11 +34,16 @@ export default function AdminDashboard({
   houses,
   users,
   bookings,
+  reviews = [],
   onApproveHouse,
   onRejectHouse,
   onApproveHouseEdit,
   onRejectHouseEdit,
   onToggleUserRole,
+  onSuspendHouse,
+  onBanUser,
+  onCancelBooking,
+  onDeleteReview,
   attendees,
   allocations,
   onUpdateAttendees,
@@ -46,8 +56,8 @@ export default function AdminDashboard({
   onTogglePlatformAnnouncement,
   onDeletePlatformAnnouncement,
 }: AdminDashboardProps) {
-  // Tabs within Admin: 'moderation', 'accounts', 'announcements', 'users', 'reports', 'payments', 'bookings'
-  const [activeTab, setActiveTab] = useState<'moderation' | 'accounts' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings'>('moderation');
+  // Tabs within Admin
+  const [activeTab, setActiveTab] = useState<'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings'>('moderation');
   const [notesInputs, setNotesInputs] = useState<Record<string, string>>({});
   const [selectedProofImage, setSelectedProofImage] = useState<string | null>(null);
 
@@ -190,6 +200,24 @@ export default function AdminDashboard({
           {pendingAccounts.length > 0 && (
             <span className="absolute top-1.5 left-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
           )}
+        </button>
+        <button
+          id="admin-tab-houses"
+          onClick={() => setActiveTab('houses')}
+          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'houses' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          إدارة البيوت ({houses.length})
+        </button>
+        <button
+          id="admin-tab-reviews"
+          onClick={() => setActiveTab('reviews')}
+          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'reviews' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          المراجعات ({reviews.length})
         </button>
         <button
           id="admin-tab-announcements"
@@ -451,6 +479,101 @@ export default function AdminDashboard({
         </div>
       )}
 
+      {/* Houses control — suspend / reactivate any house */}
+      {activeTab === 'houses' && (
+        <div className="space-y-3">
+          <div className="text-xs font-bold text-[#8A8A70] px-1">التحكم في كل بيوت المنصة (إيقاف / إعادة تفعيل):</div>
+          {houses.length === 0 ? (
+            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center">
+              <Home className="w-8 h-8 text-[#BCBC9D] mx-auto mb-2" />
+              <p className="text-sm font-bold text-[#4A4A3A]">لا توجد بيوت مسجلة بعد</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {houses.map((house) => {
+                const statusLabel = house.status === 'approved' ? 'نشط' : house.status === 'pending' ? 'قيد المراجعة' : house.status === 'suspended' ? 'موقوف من الإدارة' : 'مرفوض';
+                const statusClass = house.status === 'approved' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : house.status === 'pending' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-rose-50 text-rose-800 border-rose-200';
+                const owner = users.find((u) => u.id === house.ownerId);
+                return (
+                  <div key={house.id} className="bg-white p-3 rounded-2xl border border-[#D6D6C2] flex items-center gap-3 text-right">
+                    <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-14 h-14 rounded-xl object-cover shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-[#4A4A3A] truncate">{house.name}</div>
+                      <div className="text-[9.5px] text-[#8A8A70] mt-0.5">{house.governorate} · {owner?.name || house.ownerName}</div>
+                      <span className={`inline-block mt-1 text-[8.5px] font-bold px-2 py-0.5 rounded border ${statusClass}`}>{statusLabel}</span>
+                    </div>
+                    {(house.status === 'approved' || house.status === 'suspended') && (
+                      <button
+                        id={`toggle-house-suspend-${house.id}`}
+                        onClick={() => {
+                          const suspend = house.status === 'approved';
+                          if (!suspend || confirm(`إيقاف بيت "${house.name}"؟ هيختفي من المنصة فوراً لحد ما تعيد تفعيله.`)) {
+                            onSuspendHouse && onSuspendHouse(house.id, suspend);
+                          }
+                        }}
+                        className={`shrink-0 flex items-center gap-1 text-[10px] font-bold px-3 py-2 rounded-xl border transition-all cursor-pointer ${
+                          house.status === 'approved'
+                            ? 'bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100'
+                            : 'bg-emerald-700 border-emerald-700 text-white hover:bg-emerald-800'
+                        }`}
+                      >
+                        <Power className="w-3.5 h-3.5" />
+                        <span>{house.status === 'approved' ? 'إيقاف' : 'إعادة تفعيل'}</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Reviews moderation — delete spam / abusive reviews */}
+      {activeTab === 'reviews' && (
+        <div className="space-y-3">
+          <div className="text-xs font-bold text-[#8A8A70] px-1">مراجعة وحذف التقييمات المسيئة أو الوهمية:</div>
+          {reviews.length === 0 ? (
+            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center">
+              <Star className="w-8 h-8 text-[#BCBC9D] mx-auto mb-2" />
+              <p className="text-sm font-bold text-[#4A4A3A]">لا توجد مراجعات بعد</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {[...reviews].sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1)).map((rev) => {
+                const house = houses.find((h) => h.id === rev.houseId);
+                return (
+                  <div key={rev.id} className="bg-white p-3 rounded-2xl border border-[#D6D6C2] text-right space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-bold text-[#4A4A3A]">{rev.userName}</div>
+                        <div className="text-[9px] text-[#8A8A70]">في: {house?.name || rev.houseName || rev.houseId}</div>
+                      </div>
+                      <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-600 shrink-0">
+                        <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                        {(rev.overall_rating ?? rev.rating).toFixed(1)}
+                      </span>
+                    </div>
+                    {rev.comment && <p className="text-[10.5px] text-[#4A4A3A] leading-relaxed bg-[#FAF8F5] rounded-xl p-2 border border-[#E7E5DB]">{rev.comment}</p>}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[8.5px] text-[#BCBC9D]">{new Date(rev.createdAt).toLocaleDateString('ar-EG')}</span>
+                      <button
+                        id={`delete-review-${rev.id}`}
+                        onClick={() => { if (confirm('حذف هذه المراجعة نهائياً؟ سيُعاد حساب تقييم البيت تلقائياً.')) onDeleteReview && onDeleteReview(rev.id); }}
+                        className="flex items-center gap-1 text-[10px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>حذف</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Platform-wide announcement carousel (admin-only) */}
       {activeTab === 'announcements' && (
         <div className="space-y-3">
@@ -563,9 +686,12 @@ export default function AdminDashboard({
 
           <div className="space-y-2">
             {users.map((usr) => (
-              <div key={usr.id} className="bg-white p-3.5 rounded-2xl border border-[#D6D6C2] flex items-center justify-between text-right">
+              <div key={usr.id} className={`bg-white p-3.5 rounded-2xl border flex items-center justify-between text-right ${usr.isBanned ? 'border-rose-200 ring-1 ring-rose-50' : 'border-[#D6D6C2]'}`}>
                 <div>
-                  <div className="text-xs font-bold text-[#4A4A3A]">{usr.name}</div>
+                  <div className="text-xs font-bold text-[#4A4A3A] flex items-center gap-1.5">
+                    {usr.name}
+                    {usr.isBanned && <span className="text-[8px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded">محظور</span>}
+                  </div>
                   <div className="text-[10px] text-[#8A8A70] mt-0.5">{usr.email}</div>
                   {usr.organizationName && (
                     <div className="text-[9px] text-[#5A5A40] font-black mt-0.5">{usr.organizationName}</div>
@@ -574,9 +700,9 @@ export default function AdminDashboard({
 
                 <div className="flex flex-col items-end gap-1.5">
                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${
-                    usr.role === 'admin' 
-                      ? 'bg-red-50 text-red-800 border-red-200' 
-                      : usr.role === 'owner' 
+                    usr.role === 'admin'
+                      ? 'bg-red-50 text-red-800 border-red-200'
+                      : usr.role === 'owner'
                       ? 'bg-[#EBEBE0] text-[#5A5A40] border-[#BCBC9D]'
                       : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                   }`}>
@@ -595,6 +721,26 @@ export default function AdminDashboard({
                       <option value="servant">ترقية لخادم كنسي</option>
                       <option value="owner">ترقية لصاحب بيت</option>
                     </select>
+                  )}
+
+                  {/* Ban / unban — admin can't ban other admins */}
+                  {usr.role !== 'admin' && (
+                    <button
+                      id={`toggle-ban-${usr.id}`}
+                      onClick={() => {
+                        if (usr.isBanned || confirm(`حظر المستخدم "${usr.name}"؟ لن يتمكن من استخدام المنصة نهائياً حتى ترفع الحظر.`)) {
+                          onBanUser && onBanUser(usr.id, !usr.isBanned);
+                        }
+                      }}
+                      className={`flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-lg border transition-colors cursor-pointer ${
+                        usr.isBanned
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                          : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'
+                      }`}
+                    >
+                      <Ban className="w-3 h-3" />
+                      <span>{usr.isBanned ? 'رفع الحظر' : 'حظر'}</span>
+                    </button>
                   )}
                 </div>
               </div>
@@ -1025,6 +1171,16 @@ export default function AdminDashboard({
                           <MessageCircle className="w-4 h-4 text-white shrink-0" />
                           <span>إرسال تذكير عبر واتساب 💬</span>
                         </a>
+                        {booking.status !== 'rejected' && booking.status !== 'completed' && (
+                          <button
+                            id={`admin-cancel-booking-${booking.id}`}
+                            onClick={() => { if (confirm(`إلغاء حجز "${booking.userName}" في "${booking.houseName}" نهائياً؟`)) onCancelBooking && onCancelBooking(booking.id); }}
+                            className="shrink-0 flex items-center gap-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span>إلغاء الحجز</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -26,6 +26,7 @@ export interface User {
   governorate?: string;
   churchName?: string;
   priestName?: string;
+  isBanned?: boolean;
 }
 
 export interface ConferenceHall {
@@ -63,7 +64,7 @@ export interface RetreatHouse {
   restaurants: Restaurant[];
   activities: string[]; // ["مسرح", "ألعاب ترفيهية", "مساحة خضراء", "بينج بونج وبلياردو", "سينما"]
   images: string[];
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'suspended';
   rating: number;
   reviewsCount: number;
   createdAt: string;

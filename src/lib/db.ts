@@ -20,6 +20,7 @@ export function mapUser(r: Record<string, unknown>): User {
     governorate: r.governorate as string ?? undefined,
     churchName: r.church_name as string ?? undefined,
     priestName: r.priest_name as string ?? undefined,
+    isBanned: (r.is_banned as boolean) ?? false,
     createdAt: r.created_at as string,
   };
 }
@@ -412,6 +413,12 @@ export async function createReview(r: Review): Promise<boolean> {
 export async function updateReview(r: Review): Promise<boolean> {
   const { error } = await supabase.from('reviews').update(reviewToRow(r)).eq('id', r.id);
   if (error) console.error('updateReview:', error);
+  return !error;
+}
+
+export async function deleteReview(id: string): Promise<boolean> {
+  const { error } = await supabase.from('reviews').delete().eq('id', id);
+  if (error) console.error('deleteReview:', error);
   return !error;
 }
 
