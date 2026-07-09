@@ -61,6 +61,11 @@ export default function AdminDashboard({
   const [notesInputs, setNotesInputs] = useState<Record<string, string>>({});
   const [selectedProofImage, setSelectedProofImage] = useState<string | null>(null);
 
+  // Financial dashboard period filter (mirrors the owner dashboard's)
+  const [finPeriod, setFinPeriod] = useState<'today' | '7d' | '30d' | 'month' | 'all' | 'custom'>('all');
+  const [finFrom, setFinFrom] = useState('');
+  const [finTo, setFinTo] = useState('');
+
   // Platform announcement form state
   const [annMessage, setAnnMessage] = useState('');
   const [annImageUrl, setAnnImageUrl] = useState('');
@@ -160,6 +165,78 @@ export default function AdminDashboard({
 
   const totalRegisteredUsers = users.length;
   const totalHousesApproved = houses.filter(h => h.status === 'approved').length;
+
+  // ─── Financial dashboard ────────────────────────────────────────────
+  // Commission rate (Phase 3 will make this configurable from settings).
+  const PLATFORM_COMMISSION = 0.05;
+
+  // Period bounds — everything is scoped by the booking's check-in date so
+  // "collected" and "expected" line up on the same time axis.
+  const finBounds = (() => {
+    const end = new Date();
+    if (finPeriod === 'today') { const s = new Date(); s.setHours(0, 0, 0, 0); return { start: s, end }; }
+    if (finPeriod === '7d') { const s = new Date(); s.setDate(s.getDate() - 7); return { start: s, end }; }
+    if (finPeriod === '30d') { const s = new Date(); s.setDate(s.getDate() - 30); return { start: s, end }; }
+    if (finPeriod === 'month') { return { start: new Date(end.getFullYear(), end.getMonth(), 1), end }; }
+    if (finPeriod === 'custom' && finFrom && finTo) { return { start: new Date(finFrom), end: new Date(finTo) }; }
+    return null; // all
+  })();
+  const bookingInPeriod = (b: Booking) => {
+    if (!finBounds) return true;
+    const d = new Date(b.checkIn);
+    return d >= finBounds.start && d <= finBounds.end;
+  };
+
+  const periodBookings = bookings.filter(bookingInPeriod);
+  const periodConfirmed = periodBookings.filter((b) => b.status === 'approved' || b.status === 'completed');
+
+  // Expected = confirmed bookings' total price. Collected = admin-approved
+  // payments whose booking falls in the period.
+  const expectedRevenue = periodConfirmed.reduce((sum, b) => sum + b.totalPrice, 0);
+  const periodBookingIds = new Set(periodBookings.map((b) => b.id));
+  const collectedRevenue = payments
+    .filter((p) => p.paymentStatus === 'approved' && periodBookingIds.has(p.bookingId))
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  const expectedCommission = Math.round(expectedRevenue * PLATFORM_COMMISSION);
+  const collectedCommission = Math.round(collectedRevenue * PLATFORM_COMMISSION);
+  const ownersNetFromCollected = collectedRevenue - collectedCommission;
+  const outstanding = Math.max(0, expectedRevenue - collectedRevenue);
+
+  // Per-owner breakdown from collected payments (who to pay out, and how much)
+  const houseOwnerId: Record<string, string> = {};
+  houses.forEach((h) => { houseOwnerId[h.id] = h.ownerId; });
+  const bookingHouseId: Record<string, string> = {};
+  bookings.forEach((b) => { bookingHouseId[b.id] = b.houseId; });
+
+  const ownerAgg: Record<string, { name: string; collected: number; expected: number }> = {};
+  periodConfirmed.forEach((b) => {
+    const oid = houseOwnerId[b.houseId];
+    if (!oid) return;
+    if (!ownerAgg[oid]) ownerAgg[oid] = { name: users.find((u) => u.id === oid)?.name || 'مالك', collected: 0, expected: 0 };
+    ownerAgg[oid].expected += b.totalPrice;
+  });
+  payments.filter((p) => p.paymentStatus === 'approved' && periodBookingIds.has(p.bookingId)).forEach((p) => {
+    const hid = bookingHouseId[p.bookingId];
+    const oid = hid ? houseOwnerId[hid] : undefined;
+    if (!oid) return;
+    if (!ownerAgg[oid]) ownerAgg[oid] = { name: users.find((u) => u.id === oid)?.name || 'مالك', collected: 0, expected: 0 };
+    ownerAgg[oid].collected += p.amount;
+  });
+  const ownerRows = Object.entries(ownerAgg)
+    .map(([id, v]) => ({ id, ...v, net: Math.round(v.collected * (1 - PLATFORM_COMMISSION)) }))
+    .sort((a, b) => b.collected - a.collected);
+
+  // Top houses by collected revenue
+  const houseCollected: Record<string, number> = {};
+  payments.filter((p) => p.paymentStatus === 'approved' && periodBookingIds.has(p.bookingId)).forEach((p) => {
+    const hid = bookingHouseId[p.bookingId];
+    if (hid) houseCollected[hid] = (houseCollected[hid] || 0) + p.amount;
+  });
+  const topHouses = Object.entries(houseCollected)
+    .map(([id, amount]) => ({ id, name: houses.find((h) => h.id === id)?.name || id, amount }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
 
   return (
     <div className="space-y-4 text-right text-[#4A4A3A]">
@@ -268,7 +345,7 @@ export default function AdminDashboard({
             activeTab === 'reports' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
           }`}
         >
-          تقارير الحجوزات
+          💰 المالية والتقارير
         </button>
       </div>
 
@@ -752,19 +829,141 @@ export default function AdminDashboard({
       {/* Booking Reports */}
       {activeTab === 'reports' && (
         <div className="space-y-4">
+          {/* Period filter */}
+          <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-2">
+            <span className="text-[10px] font-bold text-[#8A8A70]">عرض الأرقام المالية عن فترة (حسب تاريخ الدخول):</span>
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                { key: 'today', label: 'اليوم' },
+                { key: '7d', label: 'آخر ٧ أيام' },
+                { key: '30d', label: 'آخر ٣٠ يوم' },
+                { key: 'month', label: 'هذا الشهر' },
+                { key: 'all', label: 'كل الوقت' },
+                { key: 'custom', label: 'مدة مخصصة' },
+              ] as const).map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => setFinPeriod(p.key)}
+                  className={`text-[9.5px] font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    finPeriod === p.key ? 'bg-[#5A5A40] text-white' : 'bg-[#EBEBE0]/50 text-[#4A4A3A] hover:bg-[#DEDECB]'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            {finPeriod === 'custom' && (
+              <div className="flex items-center gap-1.5 pt-1">
+                <input type="date" value={finFrom} onChange={(e) => setFinFrom(e.target.value)} className="flex-1 bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                <span className="text-[9px] text-[#8A8A70] shrink-0">إلى</span>
+                <input type="date" value={finTo} onChange={(e) => setFinTo(e.target.value)} className="flex-1 bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+              </div>
+            )}
+          </div>
+
+          {/* Collected vs Expected — side by side */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-gradient-to-br from-emerald-50 to-white p-4 rounded-3xl border border-emerald-200 space-y-1">
+              <CheckCircle2 className="w-5 h-5 text-emerald-700" />
+              <div className="text-[10px] text-emerald-900 font-bold">المحصّل فعلاً</div>
+              <div className="text-lg font-black text-emerald-900">{collectedRevenue.toLocaleString()} ج.م</div>
+              <div className="text-[9px] text-emerald-800/70">من دفعات معتمدة</div>
+            </div>
+            <div className="bg-gradient-to-br from-[#EBEBE0]/40 to-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
+              <TrendingUp className="w-5 h-5 text-[#5A5A40]" />
+              <div className="text-[10px] text-[#8A8A70] font-bold">المتوقع الكلي</div>
+              <div className="text-lg font-black text-[#4A4A3A]">{expectedRevenue.toLocaleString()} ج.م</div>
+              <div className="text-[9px] text-[#8A8A70]">قيمة الحجوزات المؤكدة</div>
+            </div>
+          </div>
+
+          {/* Commission — the business's cut */}
+          <div className="bg-[#0A2342] text-white rounded-3xl p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <Coins className="w-5 h-5 text-[#C5A059]" />
+              <span className="text-[11px] font-black text-[#C5A059]">عمولة المنصة ({(PLATFORM_COMMISSION * 100).toFixed(0)}%)</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="text-[9px] text-white/60 font-bold">من المحصّل فعلاً</div>
+                <div className="text-xl font-black text-white">{collectedCommission.toLocaleString()} ج.م</div>
+              </div>
+              <div>
+                <div className="text-[9px] text-white/60 font-bold">المتوقعة (كل الحجوزات)</div>
+                <div className="text-xl font-black text-white/80">{expectedCommission.toLocaleString()} ج.م</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Owner payouts + outstanding */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
+              <DollarSign className="w-5 h-5 text-emerald-700" />
+              <div className="text-[10px] text-[#8A8A70] font-bold">مستحقات الملّاك (صافي المحصّل)</div>
+              <div className="text-lg font-black text-emerald-800">{ownersNetFromCollected.toLocaleString()} ج.م</div>
+              <div className="text-[9px] text-[#8A8A70]">بعد خصم عمولتك</div>
+            </div>
+            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
+              <AlertTriangle className="w-5 h-5 text-amber-600" />
+              <div className="text-[10px] text-[#8A8A70] font-bold">متبقٍ لم يُحصّل بعد</div>
+              <div className="text-lg font-black text-amber-700">{outstanding.toLocaleString()} ج.م</div>
+              <div className="text-[9px] text-[#8A8A70]">المتوقع − المحصّل</div>
+            </div>
+          </div>
+
+          {/* Per-owner breakdown */}
+          <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] space-y-2">
+            <h3 className="text-xs font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">مستحقات كل صاحب بيت</h3>
+            {ownerRows.length === 0 ? (
+              <p className="text-[10px] text-[#8A8A70] text-center py-3">لا توجد حجوزات في هذه الفترة.</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-4 gap-1 text-[8.5px] font-bold text-[#8A8A70] pb-1 border-b border-[#EBEBE0]">
+                  <span>المالك</span>
+                  <span className="text-center">المحصّل</span>
+                  <span className="text-center">عمولتك</span>
+                  <span className="text-center">صافي مستحقاته</span>
+                </div>
+                {ownerRows.map((o) => (
+                  <div key={o.id} className="grid grid-cols-4 gap-1 text-[10px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0 items-center">
+                    <span className="font-bold text-[#4A4A3A] truncate">{o.name}</span>
+                    <span className="text-center text-emerald-800 font-bold">{o.collected.toLocaleString()}</span>
+                    <span className="text-center text-[#C5A059] font-bold">{Math.round(o.collected * PLATFORM_COMMISSION).toLocaleString()}</span>
+                    <span className="text-center text-[#0A2342] font-black">{o.net.toLocaleString()}</span>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+
+          {/* Top houses by revenue */}
+          {topHouses.length > 0 && (
+            <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] space-y-2">
+              <h3 className="text-xs font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أكثر البيوت دخلاً</h3>
+              {topHouses.map((h, i) => (
+                <div key={h.id} className="flex items-center justify-between text-[10.5px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0">
+                  <span className="font-bold text-[#4A4A3A] truncate flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-full bg-[#EBEBE0] text-[#5A5A40] text-[8px] font-black flex items-center justify-center shrink-0">{i + 1}</span>
+                    {h.name}
+                  </span>
+                  <span className="font-black text-emerald-800 shrink-0">{h.amount.toLocaleString()} ج.م</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Booking-level context stats */}
           <div className="grid grid-cols-2 gap-3 text-right">
             <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
-              <TrendingUp className="w-5 h-5 text-[#5A5A40]" />
-              <div className="text-[10px] text-[#8A8A70] font-bold">قيمة الحجوزات المقررة:</div>
-              <div className="text-lg font-black text-[#4A4A3A]">{totalBookingsValue.toLocaleString()} ج.م</div>
-              <div className="text-[9px] text-[#8A8A70]">لعدد {totalApprovedBookingsCount} حجز مكتمل.</div>
+              <BarChart3 className="w-5 h-5 text-[#5A5A40]" />
+              <div className="text-[10px] text-[#8A8A70] font-bold">حجوزات مؤكدة (الفترة):</div>
+              <div className="text-lg font-black text-[#4A4A3A]">{periodConfirmed.length}</div>
             </div>
-
             <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
               <Users className="w-5 h-5 text-[#8A8A70]" />
               <div className="text-[10px] text-[#8A8A70] font-bold">متوسط الحضور بالرحلة:</div>
               <div className="text-lg font-black text-[#4A4A3A]">{averageBookingSize} فرد</div>
-              <div className="text-[9px] text-[#8A8A70]">للمؤتمرات والخلوات المكتملة.</div>
             </div>
           </div>
 
