@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
-import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement } from '../types';
+import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings } from '../types';
+import { DEFAULT_PLATFORM_SETTINGS } from '../types';
 
 // ─── Row → Type mappers ────────────────────────────────────────────────────
 
@@ -280,6 +281,31 @@ export async function loadPlatformAnnouncements(): Promise<PlatformAnnouncement[
   const { data, error } = await supabase.from('platform_announcements').select('*').order('created_at', { ascending: false });
   if (error) { console.error('loadPlatformAnnouncements:', error); return []; }
   return (data ?? []).map(mapPlatformAnnouncement);
+}
+
+export async function loadPlatformSettings(): Promise<PlatformSettings> {
+  const { data, error } = await supabase.from('platform_settings').select('*').eq('id', 1).single();
+  if (error || !data) { if (error) console.error('loadPlatformSettings:', error); return DEFAULT_PLATFORM_SETTINGS; }
+  return {
+    commissionRate: Number(data.commission_rate) ?? DEFAULT_PLATFORM_SETTINGS.commissionRate,
+    depositRate: Number(data.deposit_rate) ?? DEFAULT_PLATFORM_SETTINGS.depositRate,
+    pointsPerEgp: Number(data.points_per_egp) ?? DEFAULT_PLATFORM_SETTINGS.pointsPerEgp,
+    maxRedemptionPct: Number(data.max_redemption_pct) ?? DEFAULT_PLATFORM_SETTINGS.maxRedemptionPct,
+    referralBonusPoints: Number(data.referral_bonus_points) ?? DEFAULT_PLATFORM_SETTINGS.referralBonusPoints,
+  };
+}
+
+export async function updatePlatformSettings(s: PlatformSettings): Promise<boolean> {
+  const { error } = await supabase.from('platform_settings').update({
+    commission_rate: s.commissionRate,
+    deposit_rate: s.depositRate,
+    points_per_egp: s.pointsPerEgp,
+    max_redemption_pct: s.maxRedemptionPct,
+    referral_bonus_points: s.referralBonusPoints,
+    updated_at: new Date().toISOString(),
+  }).eq('id', 1);
+  if (error) console.error('updatePlatformSettings:', error);
+  return !error;
 }
 
 // ─── Type → Row mappers (for inserts/updates) ──────────────────────────────

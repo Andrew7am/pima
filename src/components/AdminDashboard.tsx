@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RetreatHouse, User, Booking, Attendee, RoomAllocation, Payment, PlatformAnnouncement, Review } from '../types';
+import { RetreatHouse, User, Booking, Attendee, RoomAllocation, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
 
@@ -28,6 +28,8 @@ interface AdminDashboardProps {
   onAddPlatformAnnouncement?: (a: PlatformAnnouncement) => void;
   onTogglePlatformAnnouncement?: (id: string, isActive: boolean) => void;
   onDeletePlatformAnnouncement?: (id: string) => void;
+  settings?: PlatformSettings;
+  onUpdateSettings?: (s: PlatformSettings) => void;
 }
 
 export default function AdminDashboard({
@@ -55,9 +57,15 @@ export default function AdminDashboard({
   onAddPlatformAnnouncement,
   onTogglePlatformAnnouncement,
   onDeletePlatformAnnouncement,
+  settings = DEFAULT_PLATFORM_SETTINGS,
+  onUpdateSettings,
 }: AdminDashboardProps) {
   // Tabs within Admin
-  const [activeTab, setActiveTab] = useState<'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings'>('moderation');
+  const [activeTab, setActiveTab] = useState<'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings' | 'settings'>('moderation');
+  // Draft copy of settings for the settings form
+  const [settingsDraft, setSettingsDraft] = useState(settings);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  React.useEffect(() => { setSettingsDraft(settings); }, [settings]);
   const [notesInputs, setNotesInputs] = useState<Record<string, string>>({});
   const [selectedProofImage, setSelectedProofImage] = useState<string | null>(null);
 
@@ -167,8 +175,8 @@ export default function AdminDashboard({
   const totalHousesApproved = houses.filter(h => h.status === 'approved').length;
 
   // ─── Financial dashboard ────────────────────────────────────────────
-  // Commission rate (Phase 3 will make this configurable from settings).
-  const PLATFORM_COMMISSION = 0.05;
+  // Commission rate is admin-configurable (migration 024).
+  const PLATFORM_COMMISSION = settings.commissionRate;
 
   // Period bounds — everything is scoped by the booking's check-in date so
   // "collected" and "expected" line up on the same time axis.
@@ -346,6 +354,15 @@ export default function AdminDashboard({
           }`}
         >
           💰 المالية والتقارير
+        </button>
+        <button
+          id="admin-tab-settings"
+          onClick={() => setActiveTab('settings')}
+          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'settings' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          ⚙️ إعدادات المنصة
         </button>
       </div>
 
@@ -553,6 +570,71 @@ export default function AdminDashboard({
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Platform economics settings (admin-configurable, migration 024) */}
+      {activeTab === 'settings' && (
+        <div className="space-y-3">
+          <div className="text-xs font-bold text-[#8A8A70] px-1">التحكم في اقتصاد المنصة — يُطبَّق فوراً على الحسابات والأسعار:</div>
+          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-4">
+            {([
+              { key: 'commissionRate', label: 'نسبة عمولة المنصة', suffix: '%', factor: 100, hint: 'حصتك من كل حجز (على المستحقات والتقارير).' },
+              { key: 'depositRate', label: 'نسبة العربون المقدّم', suffix: '%', factor: 100, hint: 'النسبة اللي يدفعها العميل مقدماً لتأكيد الحجز.' },
+              { key: 'maxRedemptionPct', label: 'أقصى خصم بالنقاط من الحجز', suffix: '%', factor: 100, hint: 'أقصى نسبة من قيمة الحجز ممكن تتدفع بالنقاط.' },
+              { key: 'pointsPerEgp', label: 'نقاط مقابل الجنيه (الاستبدال)', suffix: 'نقطة = ١ ج.م', factor: 1, hint: 'كل كام نقطة تساوي جنيه عند الخصم.' },
+              { key: 'referralBonusPoints', label: 'مكافأة دعوة صديق', suffix: 'نقطة', factor: 1, hint: 'نقاط تُمنح للمُحيل عند أول حجز مدفوع لصديقه.' },
+            ] as const).map((f) => (
+              <div key={f.key} className="space-y-1">
+                <label className="block text-[11px] font-bold text-[#4A4A3A]">{f.label}</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    id={`setting-${f.key}`}
+                    type="number"
+                    min={0}
+                    step={f.factor === 100 ? 0.5 : 1}
+                    value={f.factor === 100 ? +(settingsDraft[f.key] * 100).toFixed(2) : settingsDraft[f.key]}
+                    onChange={(e) => {
+                      const raw = parseFloat(e.target.value) || 0;
+                      setSettingsDraft((prev) => ({ ...prev, [f.key]: f.factor === 100 ? raw / 100 : Math.round(raw) }));
+                    }}
+                    className="w-28 bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40]"
+                  />
+                  <span className="text-[10px] text-[#8A8A70] font-bold">{f.suffix}</span>
+                </div>
+                <p className="text-[9px] text-[#8A8A70]">{f.hint}</p>
+              </div>
+            ))}
+
+            {settingsSaved && (
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10.5px] font-bold rounded-xl px-3 py-2 text-center">
+                ✅ تم حفظ الإعدادات وتطبيقها.
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                id="save-settings-btn"
+                onClick={() => {
+                  onUpdateSettings && onUpdateSettings(settingsDraft);
+                  setSettingsSaved(true);
+                  setTimeout(() => setSettingsSaved(false), 3000);
+                }}
+                className="flex-1 bg-[#0A2342] hover:bg-[#071930] text-white text-xs font-bold py-2.5 rounded-xl transition-colors cursor-pointer"
+              >
+                💾 حفظ وتطبيق
+              </button>
+              <button
+                onClick={() => setSettingsDraft(settings)}
+                className="bg-[#EBEBE0] text-[#4A4A3A] text-xs font-bold py-2.5 px-4 rounded-xl cursor-pointer"
+              >
+                تراجع
+              </button>
+            </div>
+          </div>
+          <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-3 text-[9.5px] text-amber-900 leading-relaxed">
+            ⚠️ التغييرات بتأثر على الحجوزات الجديدة والدفعات الجاية. نسبة العمولة والعربون والنقاط بتتطبّق على السيرفر كمان مش بس في العرض.
+          </div>
         </div>
       )}
 

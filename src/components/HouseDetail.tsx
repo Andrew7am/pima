@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { RetreatHouse, Booking, Review, User, Room, Announcement, WaitlistEntry } from '../types';
+import { RetreatHouse, Booking, Review, User, Room, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { SUITABILITY_MAP } from '../mockData';
 import { 
   ArrowRight, MapPin, BedDouble, Calendar, Users, 
@@ -24,6 +24,7 @@ interface HouseDetailProps {
   announcements?: Announcement[];
   waitlist?: WaitlistEntry[];
   onJoinWaitlist?: (entry: WaitlistEntry) => boolean;
+  settings?: PlatformSettings;
 }
 
 const GOVERNORATE_WEATHER_DATA: Record<string, {
@@ -531,7 +532,8 @@ export default function HouseDetail({
   rooms = [],
   announcements = [],
   waitlist = [],
-  onJoinWaitlist
+  onJoinWaitlist,
+  settings = DEFAULT_PLATFORM_SETTINGS
 }: HouseDetailProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
@@ -797,15 +799,16 @@ export default function HouseDetail({
     if (ok) alert('تم تسجيلك في قائمة الانتظار! سيتم إشعارك فور توفر مكان لهذه التواريخ.');
   };
 
-  // Rewards system points calculation — 100 points = 1 EGP, redemption can
-  // cover at most 10% of the booking price.
-  const POINTS_PER_EGP = 100;
-  const maxDiscountByPolicy = Math.round(originalTotalPrice * 0.1); // EGP
+  // Rewards system points calculation — rates are admin-configurable
+  // (migration 024): pointsPerEgp for redemption, maxRedemptionPct as the
+  // cap on how much of a booking points can cover.
+  const POINTS_PER_EGP = settings.pointsPerEgp;
+  const maxDiscountByPolicy = Math.round(originalTotalPrice * settings.maxRedemptionPct); // EGP
   const maxRedeemablePoints = Math.min(currentUser.points || 0, maxDiscountByPolicy * POINTS_PER_EGP);
   const pointsToRedeem = usePoints ? maxRedeemablePoints : 0;
   const redemptionDiscount = Math.round(pointsToRedeem / POINTS_PER_EGP);
   const totalPrice = Math.max(0, originalTotalPrice - redemptionDiscount);
-  const depositAmount = Math.round(totalPrice * 0.15); // 15% deposit
+  const depositAmount = Math.round(totalPrice * settings.depositRate); // configurable deposit
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -10,8 +10,9 @@ import {
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
   createWaitlistEntry,
   createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
+  loadPlatformSettings, updatePlatformSettings,
 } from './lib/db';
-import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement } from './types';
+import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from './types';
 
 // Component Imports
 import UserBookings from './components/UserBookings';
@@ -56,6 +57,7 @@ export default function App() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
   const [platformAnnouncements, setPlatformAnnouncements] = useState<PlatformAnnouncement[]>([]);
+  const [settings, setSettings] = useState<PlatformSettings>(DEFAULT_PLATFORM_SETTINGS);
 
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -68,9 +70,10 @@ export default function App() {
 
   // --- Supabase Data Loading ---
   const loadAppData = useCallback(async (userId?: string) => {
-    const [u, h, b, r, p, rm, an, wl, pa] = await Promise.all([
+    const [u, h, b, r, p, rm, an, wl, pa, st] = await Promise.all([
       loadUsers(), loadHouses(), loadBookings(), loadReviews(), loadPayments(),
       loadRooms(), loadAnnouncements(), loadWaitlist(), loadPlatformAnnouncements(),
+      loadPlatformSettings(),
     ]);
     setUsers(u);
     setHouses(h);
@@ -81,6 +84,7 @@ export default function App() {
     setAnnouncements(an);
     setWaitlist(wl);
     setPlatformAnnouncements(pa);
+    setSettings(st);
     if (userId) {
       const n = await loadNotifications(userId);
       setNotifications(n);
@@ -617,6 +621,13 @@ export default function App() {
     });
   };
 
+  // Admin edits the platform economics (migration 024). Optimistic; the
+  // update RLS-fails silently for non-admins, so only admins persist.
+  const handleUpdateSettings = (next: PlatformSettings) => {
+    setSettings(next);
+    updatePlatformSettings(next);
+  };
+
   // --- Admin control powers (migration 023) ---
 
   // Take down an approved house (or bring a suspended one back). Admin-only
@@ -941,6 +952,7 @@ export default function App() {
           announcements={announcements.filter((a) => a.houseId === selectedHouse.id && a.isActive)}
           waitlist={waitlist}
           onJoinWaitlist={handleJoinWaitlist}
+          settings={settings}
         />
       ) : (
         // Main Screen Tabs
@@ -987,6 +999,7 @@ export default function App() {
               owner={currentUser}
               houses={houses}
               bookings={bookings}
+              settings={settings}
               onAddHouse={handleAddHouse}
               onUpdateHouse={handleUpdateHouse}
               onRequestHouseEdit={handleRequestHouseEdit}
@@ -1037,6 +1050,8 @@ export default function App() {
               onAddPlatformAnnouncement={handleAddPlatformAnnouncement}
               onTogglePlatformAnnouncement={handleTogglePlatformAnnouncement}
               onDeletePlatformAnnouncement={handleDeletePlatformAnnouncement}
+              settings={settings}
+              onUpdateSettings={handleUpdateSettings}
             />
           )}
 

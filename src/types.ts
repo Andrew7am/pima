@@ -229,6 +229,22 @@ export interface PlatformAnnouncement {
   createdAt: string;
 }
 
+export interface PlatformSettings {
+  commissionRate: number;    // 0.05 = 5% platform cut
+  depositRate: number;       // 0.15 = 15% upfront deposit
+  pointsPerEgp: number;      // 100 points = 1 EGP on redemption
+  maxRedemptionPct: number;  // 0.10 = points can cover up to 10% of a booking
+  referralBonusPoints: number;
+}
+
+export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
+  commissionRate: 0.05,
+  depositRate: 0.15,
+  pointsPerEgp: 100,
+  maxRedemptionPct: 0.10,
+  referralBonusPoints: 2000,
+};
+
 export interface AppNotification {
   id: string;
   userId: string;

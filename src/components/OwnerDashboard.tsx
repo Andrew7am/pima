@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RetreatHouse, Booking, User, ConferenceHall, Restaurant, Attendee, RoomAllocation, Review, Room, WaitlistEntry } from '../types';
+import { RetreatHouse, Booking, User, ConferenceHall, Restaurant, Attendee, RoomAllocation, Review, Room, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import { Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2, Building, Settings, MessageSquare, Image, Camera, Sliders, BedDouble, Phone, Mail, Lock } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
@@ -9,6 +9,7 @@ interface OwnerDashboardProps {
   owner: User;
   houses: RetreatHouse[];
   bookings: Booking[];
+  settings?: PlatformSettings;
   onAddHouse: (house: RetreatHouse) => void;
   onDeleteHouse?: (houseId: string) => void;
   onApproveBooking: (bookingId: string) => void;
@@ -35,6 +36,7 @@ export default function OwnerDashboard({
   owner,
   houses,
   bookings,
+  settings = DEFAULT_PLATFORM_SETTINGS,
   onAddHouse,
   onDeleteHouse,
   onApproveBooking,
@@ -61,8 +63,8 @@ export default function OwnerDashboard({
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
   // Booking status filter for bookings tab
   const [bookingFilter, setBookingFilter] = useState<'all' | 'new' | 'confirmed' | 'current' | 'completed' | 'cancelled'>('all');
-  // Platform commission rate (5%)
-  const PLATFORM_COMMISSION = 0.05;
+  // Platform commission rate (admin-configurable, migration 024)
+  const PLATFORM_COMMISSION = settings.commissionRate;
 
   // Stats period filter — lets the owner scope profit/booking KPIs to a time range
   const [statsPeriod, setStatsPeriod] = useState<'today' | '7d' | '30d' | 'month' | 'all' | 'custom'>('all');
