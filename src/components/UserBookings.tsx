@@ -451,10 +451,11 @@ export default function UserBookings({
 
     onSubmitPayment(newPayment);
 
-    // If online card payment, we also confirm booking deposit right away
-    if (selectedMethod === 'online') {
-      onPayDeposit(booking.id);
-    }
+    // All methods — including online card — go to pending_verification and
+    // await owner/admin confirmation. There's no real payment gateway wired
+    // up, so auto-confirming an "online" payment would let a guest confirm a
+    // booking (and earn loyalty points) for unverified funds; the server-side
+    // booking guard (migration 027) blocks that guest-side write anyway.
 
     // Reset states
     setIsPaying(null);
