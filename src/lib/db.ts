@@ -279,16 +279,29 @@ export async function loadPointsHistory(userId: string): Promise<PointsTransacti
   return (data ?? []).map(mapPointsTransaction);
 }
 
-export async function loadAttendees(): Promise<Attendee[]> {
-  const { data, error } = await supabase.from('attendees').select('*');
-  if (error) { console.error('loadAttendees:', error); return []; }
+// Scoped to one booking, not a full-table load: attendees/allocations are
+// only ever needed by the RoomDistribution modal for the booking currently
+// open, and pulling every row on every page load was a real contributor to
+// egress (the whole DB is ~37MB but was being re-fetched wholesale on every
+// login/refresh).
+export async function loadAttendeesForBooking(bookingId: string): Promise<Attendee[]> {
+  const { data, error } = await supabase.from('attendees').select('*').eq('booking_id', bookingId);
+  if (error) { console.error('loadAttendeesForBooking:', error); return []; }
   return (data ?? []).map(mapAttendee);
 }
 
-export async function loadAllocations(): Promise<RoomAllocation[]> {
-  const { data, error } = await supabase.from('room_allocations').select('*');
-  if (error) { console.error('loadAllocations:', error); return []; }
+export async function loadAllocationsForBooking(bookingId: string): Promise<RoomAllocation[]> {
+  const { data, error } = await supabase.from('room_allocations').select('*').eq('booking_id', bookingId);
+  if (error) { console.error('loadAllocationsForBooking:', error); return []; }
   return (data ?? []).map(mapRoomAllocation);
+}
+
+// head:true skips the row data entirely (just the count), for the admin
+// platform-stats tile — avoids pulling every allocation row just to show a number.
+export async function loadAllocationsCount(): Promise<number> {
+  const { count, error } = await supabase.from('room_allocations').select('*', { count: 'exact', head: true });
+  if (error) { console.error('loadAllocationsCount:', error); return 0; }
+  return count ?? 0;
 }
 
 export async function loadRooms(): Promise<Room[]> {

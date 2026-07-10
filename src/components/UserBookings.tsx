@@ -18,6 +18,7 @@ interface UserBookingsProps {
   allocations: RoomAllocation[];
   onUpdateAttendees: (bookingId: string, attendees: Attendee[]) => void;
   onUpdateAllocations: (bookingId: string, allocations: RoomAllocation[]) => void;
+  onOpenRoomDistribution?: (bookingId: string) => void;
   payments: Payment[];
   onSubmitPayment: (payment: Payment) => void;
   settings?: PlatformSettings;
@@ -118,6 +119,7 @@ export default function UserBookings({
   allocations,
   onUpdateAttendees,
   onUpdateAllocations,
+  onOpenRoomDistribution,
   payments,
   onSubmitPayment,
   settings = DEFAULT_PLATFORM_SETTINGS
@@ -749,7 +751,7 @@ export default function UserBookings({
                     {(booking.status === 'approved' || booking.status === 'completed') && (
                       <button
                         id={`booking-allocation-btn-${booking.id}`}
-                        onClick={() => setActiveAllocationBooking(booking)}
+                        onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
                         className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
                       >
                         <Building className="w-3.5 h-3.5 text-amber-700" />

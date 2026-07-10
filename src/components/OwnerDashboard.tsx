@@ -21,6 +21,7 @@ interface OwnerDashboardProps {
   allocations: RoomAllocation[];
   onUpdateAttendees: (bookingId: string, attendees: Attendee[]) => void;
   onUpdateAllocations: (bookingId: string, allocations: RoomAllocation[]) => void;
+  onOpenRoomDistribution?: (bookingId: string) => void;
   onUpdateHouse?: (house: RetreatHouse) => void;
   onRequestHouseEdit?: (houseId: string, changes: Partial<RetreatHouse>) => void;
   reviews?: Review[];
@@ -48,6 +49,7 @@ export default function OwnerDashboard({
   allocations,
   onUpdateAttendees,
   onUpdateAllocations,
+  onOpenRoomDistribution,
   onUpdateHouse,
   onRequestHouseEdit,
   reviews = [],
@@ -1123,7 +1125,7 @@ export default function OwnerDashboard({
                         )}
                         <button
                           id={`owner-allocate-btn-${booking.id}`}
-                          onClick={() => setActiveAllocationBooking(booking)}
+                          onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
                           className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
                         >
                           <Building className="w-4 h-4 text-amber-700" />
@@ -1136,7 +1138,7 @@ export default function OwnerDashboard({
                       <div className="flex justify-end pt-1">
                         <button
                           id={`owner-allocate-btn-${booking.id}`}
-                          onClick={() => setActiveAllocationBooking(booking)}
+                          onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
                           className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
                         >
                           <Building className="w-4 h-4" />

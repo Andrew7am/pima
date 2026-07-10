@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RetreatHouse, User, Booking, Attendee, RoomAllocation, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
+import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
 
@@ -17,10 +17,7 @@ interface AdminDashboardProps {
   onBanUser?: (userId: string, banned: boolean) => void;
   onCancelBooking?: (bookingId: string) => void;
   onDeleteReview?: (reviewId: string) => void;
-  attendees: Attendee[];
-  allocations: RoomAllocation[];
-  onUpdateAttendees: (bookingId: string, attendees: Attendee[]) => void;
-  onUpdateAllocations: (bookingId: string, allocations: RoomAllocation[]) => void;
+  allocationsCount?: number;
   payments?: Payment[];
   onVerifyPayment?: (paymentId: string, status: 'approved' | 'rejected', adminNotes?: string) => void;
   onSetUserApproval?: (userId: string, status: 'approved' | 'rejected') => void;
@@ -46,10 +43,7 @@ export default function AdminDashboard({
   onBanUser,
   onCancelBooking,
   onDeleteReview,
-  attendees,
-  allocations,
-  onUpdateAttendees,
-  onUpdateAllocations,
+  allocationsCount = 0,
   payments = [],
   onVerifyPayment,
   onSetUserApproval,
@@ -1063,7 +1057,7 @@ export default function AdminDashboard({
               </div>
               <div className="flex justify-between items-center py-1.5 border-b border-[#D6D6C2]/60">
                 <span className="text-[#8A8A70]">إجمالي الزوار المسكنين تلقائياً بالمنصة:</span>
-                <span className="font-bold text-[#5A5A40]">{allocations.length} فرد</span>
+                <span className="font-bold text-[#5A5A40]">{allocationsCount} فرد</span>
               </div>
               <div className="flex justify-between items-center py-1.5">
                 <span className="text-[#8A8A70]">الطلبات قيد المراجعة حاليًا:</span>

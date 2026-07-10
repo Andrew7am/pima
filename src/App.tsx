@@ -4,7 +4,7 @@ import {
   mapUser, loadUsers,
   loadHouses, deleteHouse, loadBookings, loadReviews, loadPayments, loadNotifications, loadPointsHistory,
   loadRooms, loadAnnouncements, loadWaitlist, loadPlatformAnnouncements,
-  loadAttendees, loadAllocations, saveAttendeesForBooking, saveAllocationsForBooking,
+  loadAttendeesForBooking, loadAllocationsForBooking, saveAttendeesForBooking, saveAllocationsForBooking, loadAllocationsCount,
   createBooking, updateBookingStatus, updateBookingFields,
   createReview, updateReview as updateReviewDb, deleteReview as deleteReviewDb, createPayment, updatePaymentStatus,
   markNotificationRead,
@@ -40,6 +40,7 @@ export default function App() {
 
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [allocations, setAllocations] = useState<RoomAllocation[]>([]);
+  const [allocationsCount, setAllocationsCount] = useState(0);
 
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
     const saved = localStorage.getItem('coptic_notifications');
@@ -64,10 +65,10 @@ export default function App() {
 
   // --- Supabase Data Loading ---
   const loadAppData = useCallback(async (userId?: string) => {
-    const [u, h, b, r, p, rm, an, wl, pa, st, at, al] = await Promise.all([
+    const [u, h, b, r, p, rm, an, wl, pa, st, ac] = await Promise.all([
       loadUsers(), loadHouses(), loadBookings(), loadReviews(), loadPayments(),
       loadRooms(), loadAnnouncements(), loadWaitlist(), loadPlatformAnnouncements(),
-      loadPlatformSettings(), loadAttendees(), loadAllocations(),
+      loadPlatformSettings(), loadAllocationsCount(),
     ]);
     setUsers(u);
     setHouses(h);
@@ -79,8 +80,7 @@ export default function App() {
     setWaitlist(wl);
     setPlatformAnnouncements(pa);
     setSettings(st);
-    setAttendees(at);
-    setAllocations(al);
+    setAllocationsCount(ac);
     if (userId) {
       const n = await loadNotifications(userId);
       setNotifications(n);
@@ -129,12 +129,11 @@ export default function App() {
     }
   }, []);
 
+  // onAuthStateChange fires immediately with the current session right after
+  // subscribing (INITIAL_SESSION), so a separate getSession() call here was
+  // redundant — it made loadAppData's 10 full-table queries fire 2-3x on
+  // every single page load, which was the dominant contributor to egress.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) loadUserProfile(session.user.id);
-      else setIsAuthLoading(false);
-    });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) loadUserProfile(session.user.id);
       else { setCurrentUser(null); setIsAuthLoading(false); }
@@ -827,6 +826,18 @@ export default function App() {
     updateReviewDb(updatedReview);
   };
 
+  // Attendees/allocations aren't part of loadAppData (see loadAttendeesForBooking
+  // comment in db.ts) — pull them in only when RoomDistribution is about to open
+  // for a specific booking, not on every login/page load.
+  const handleOpenRoomDistribution = useCallback(async (bookingId: string) => {
+    const [bookingAttendees, bookingAllocations] = await Promise.all([
+      loadAttendeesForBooking(bookingId),
+      loadAllocationsForBooking(bookingId),
+    ]);
+    setAttendees(prev => [...prev.filter(a => a.bookingId !== bookingId), ...bookingAttendees]);
+    setAllocations(prev => [...prev.filter(al => al.bookingId !== bookingId), ...bookingAllocations]);
+  }, []);
+
   const handleUpdateAttendees = (bookingId: string, bookingAttendees: Attendee[]) => {
     setAttendees(prev => {
       const filtered = prev.filter(a => a.bookingId !== bookingId);
@@ -989,6 +1000,7 @@ export default function App() {
               allocations={allocations}
               onUpdateAttendees={handleUpdateAttendees}
               onUpdateAllocations={handleUpdateAllocations}
+              onOpenRoomDistribution={handleOpenRoomDistribution}
               payments={payments}
               onSubmitPayment={handleSubmitPayment}
               settings={settings}
@@ -1015,6 +1027,7 @@ export default function App() {
               allocations={allocations}
               onUpdateAttendees={handleUpdateAttendees}
               onUpdateAllocations={handleUpdateAllocations}
+              onOpenRoomDistribution={handleOpenRoomDistribution}
               reviews={reviews}
               onUpdateReview={handleUpdateReview}
               rooms={rooms}
@@ -1041,10 +1054,7 @@ export default function App() {
               onBanUser={handleBanUser}
               onCancelBooking={handleAdminCancelBooking}
               onDeleteReview={handleDeleteReview}
-              attendees={attendees}
-              allocations={allocations}
-              onUpdateAttendees={handleUpdateAttendees}
-              onUpdateAllocations={handleUpdateAllocations}
+              allocationsCount={allocationsCount}
               payments={payments}
               onVerifyPayment={handleVerifyPayment}
               onSetUserApproval={handleSetUserApproval}
