@@ -343,16 +343,14 @@ export default function App() {
     return true;
   };
 
-  const handlePayDeposit = (bookingId: string) => {
+  const handleCancelBooking = async (bookingId: string) => {
     const target = bookings.find((b) => b.id === bookingId);
-    const depositAmount = target ? Math.round(target.totalPrice * settings.depositRate) : 0;
-    setBookings((prev) =>
-      prev.map((b) =>
-        b.id === bookingId ? { ...b, depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' } : b
-      )
-    );
-    updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' })
-      .then(() => { if (target && currentUser?.id === target.userId) refreshCurrentUserPoints(target.userId); });
+    if (!target || target.status !== 'pending') return;
+    setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, status: 'cancelled' } : b));
+    const ok = await updateBookingStatus(bookingId, 'cancelled');
+    if (!ok) {
+      setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, status: 'pending' } : b));
+    }
   };
 
   // --- Owner Operations ---
@@ -995,7 +993,7 @@ export default function App() {
               houses={houses}
               users={users}
               currentUser={currentUser}
-              onPayDeposit={handlePayDeposit}
+              onCancelBooking={handleCancelBooking}
               attendees={attendees}
               allocations={allocations}
               onUpdateAttendees={handleUpdateAttendees}

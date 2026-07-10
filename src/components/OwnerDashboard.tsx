@@ -983,7 +983,8 @@ export default function OwnerDashboard({
                 const remainingBalance = booking.totalPrice - (booking.depositPaid ? depositAmt : 0);
 
                 const statusBadge = (() => {
-                  if (booking.status === 'rejected') return { label: 'ملغى / مرفوض', cls: 'bg-rose-50 text-rose-800 border-rose-200' };
+                  if (booking.status === 'rejected') return { label: 'مرفوض', cls: 'bg-rose-50 text-rose-800 border-rose-200' };
+                  if (booking.status === 'cancelled') return { label: 'ملغى من المستخدم', cls: 'bg-slate-50 text-slate-600 border-slate-200' };
                   if (booking.status === 'completed') return { label: 'مكتمل', cls: 'bg-slate-100 text-slate-700 border-slate-200' };
                   if (isPending) return { label: 'جديد ⚠️', cls: 'bg-amber-50 text-amber-800 border-amber-200' };
                   if (category === 'current') return { label: 'حالي (نازل الآن)', cls: 'bg-sky-50 text-sky-800 border-sky-200' };

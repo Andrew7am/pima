@@ -13,7 +13,7 @@ interface UserBookingsProps {
   houses: RetreatHouse[];
   users?: User[];
   currentUser: User;
-  onPayDeposit: (bookingId: string) => void;
+  onCancelBooking?: (bookingId: string) => void;
   attendees: Attendee[];
   allocations: RoomAllocation[];
   onUpdateAttendees: (bookingId: string, attendees: Attendee[]) => void;
@@ -114,7 +114,7 @@ export default function UserBookings({
   houses,
   users = [],
   currentUser,
-  onPayDeposit,
+  onCancelBooking,
   attendees,
   allocations,
   onUpdateAttendees,
@@ -321,6 +321,12 @@ export default function UserBookings({
           label: 'تمت الزيارة',
           color: 'bg-[#EBEBE0]/30 text-[#4A4A3A] border-[#D6D6C2]',
           icon: CheckCircle2,
+        };
+      case 'cancelled':
+        return {
+          label: 'ملغى',
+          color: 'bg-slate-50 text-slate-600 border-slate-200',
+          icon: XCircle,
         };
     }
   };
@@ -748,6 +754,17 @@ export default function UserBookings({
                   </div>
 
                   <div className="flex items-center gap-1.5">
+                    {/* Cancel pending booking */}
+                    {booking.status === 'pending' && (
+                      <button
+                        onClick={() => { if (confirm('هل أنت متأكد من إلغاء هذا الحجز؟')) onCancelBooking?.(booking.id); }}
+                        className="flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
+                      >
+                        <XCircle className="w-3.5 h-3.5 text-red-600" />
+                        <span>إلغاء الحجز</span>
+                      </button>
+                    )}
+
                     {/* Room distribution feature (visible for approved or completed bookings) */}
                     {(booking.status === 'approved' || booking.status === 'completed') && (
                       <button

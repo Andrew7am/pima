@@ -1393,6 +1393,11 @@ export default function AdminDashboard({
                             مرفوض ✕
                           </span>
                         )}
+                        {booking.status === 'cancelled' && (
+                          <span className="text-[9px] font-bold bg-slate-50 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-full">
+                            ملغى من المستخدم
+                          </span>
+                        )}
 
                         {remaining > 0 ? (
                           <span className="text-[9px] font-bold bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full">
@@ -1446,7 +1451,7 @@ export default function AdminDashboard({
                           <MessageCircle className="w-4 h-4 text-white shrink-0" />
                           <span>إرسال تذكير عبر واتساب 💬</span>
                         </a>
-                        {booking.status !== 'rejected' && booking.status !== 'completed' && (
+                        {booking.status !== 'rejected' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
                           <button
                             id={`admin-cancel-booking-${booking.id}`}
                             onClick={() => { if (confirm(`إلغاء حجز "${booking.userName}" في "${booking.houseName}" نهائياً؟`)) onCancelBooking && onCancelBooking(booking.id); }}

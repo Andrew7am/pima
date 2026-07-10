@@ -118,7 +118,7 @@ export interface Booking {
   totalPrice: number;
   depositPaid: boolean;
   depositAmount: number;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  status: 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
   isLargeConferenceQuote: boolean;
   paymentStatus?: 'unpaid' | 'pending_verification' | 'paid_deposit' | 'paid_full';
   conferenceDetails?: {

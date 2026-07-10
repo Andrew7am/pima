@@ -483,7 +483,7 @@ export async function updateBookingFields(id: string, fields: Partial<Booking>):
 }
 
 export async function createReview(r: Review): Promise<boolean> {
-  const { error } = await supabase.from('reviews').insert(reviewToRow(r));
+  const { error } = await supabase.from('reviews').upsert(reviewToRow(r), { onConflict: 'user_id,house_id' });
   if (error) console.error('createReview:', error);
   return !error;
 }
