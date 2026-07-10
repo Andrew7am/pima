@@ -155,6 +155,26 @@ export function mapPointsTransaction(r: Record<string, unknown>): PointsTransact
   };
 }
 
+export function mapAttendee(r: Record<string, unknown>): Attendee {
+  return {
+    id: r.id as string,
+    bookingId: r.booking_id as string,
+    name: r.name as string,
+    gender: r.gender as Attendee['gender'],
+    groupType: r.group_type as Attendee['groupType'],
+  };
+}
+
+export function mapRoomAllocation(r: Record<string, unknown>): RoomAllocation {
+  return {
+    id: r.id as string,
+    bookingId: r.booking_id as string,
+    attendeeId: r.attendee_id as string,
+    roomId: r.room_id as string,
+    bedNumber: r.bed_number as number,
+  };
+}
+
 export function mapRoom(r: Record<string, unknown>): Room {
   return {
     id: r.id as string,
@@ -257,6 +277,18 @@ export async function loadPointsHistory(userId: string): Promise<PointsTransacti
     .from('points_history').select('*').eq('user_id', userId).order('created_at', { ascending: false });
   if (error) { console.error('loadPointsHistory:', error); return []; }
   return (data ?? []).map(mapPointsTransaction);
+}
+
+export async function loadAttendees(): Promise<Attendee[]> {
+  const { data, error } = await supabase.from('attendees').select('*');
+  if (error) { console.error('loadAttendees:', error); return []; }
+  return (data ?? []).map(mapAttendee);
+}
+
+export async function loadAllocations(): Promise<RoomAllocation[]> {
+  const { data, error } = await supabase.from('room_allocations').select('*');
+  if (error) { console.error('loadAllocations:', error); return []; }
+  return (data ?? []).map(mapRoomAllocation);
 }
 
 export async function loadRooms(): Promise<Room[]> {
@@ -465,6 +497,41 @@ export async function updatePaymentStatus(id: string, status: Payment['paymentSt
   const { error } = await supabase.from('payments').update({ payment_status: status, admin_notes: adminNotes ?? null }).eq('id', id);
   if (error) console.error('updatePaymentStatus:', error);
   return !error;
+}
+
+// Attendees/allocations arrive from RoomDistribution as the full replacement
+// list for one booking (not deltas), so each save upserts by id (preserves
+// unchanged rows — an UPDATE, not a DELETE/INSERT, so it doesn't cascade-wipe
+// room_allocations tied to an untouched attendee) then deletes rows that
+// dropped out of the new list.
+export async function saveAttendeesForBooking(bookingId: string, attendees: Attendee[]): Promise<boolean> {
+  if (attendees.length > 0) {
+    const rows = attendees.map((a) => ({
+      id: a.id, booking_id: bookingId, name: a.name, gender: a.gender, group_type: a.groupType,
+    }));
+    const { error } = await supabase.from('attendees').upsert(rows);
+    if (error) { console.error('saveAttendeesForBooking upsert:', error); return false; }
+  }
+  let query = supabase.from('attendees').delete().eq('booking_id', bookingId);
+  if (attendees.length > 0) query = query.not('id', 'in', `(${attendees.map((a) => a.id).join(',')})`);
+  const { error } = await query;
+  if (error) { console.error('saveAttendeesForBooking delete:', error); return false; }
+  return true;
+}
+
+export async function saveAllocationsForBooking(bookingId: string, allocations: RoomAllocation[]): Promise<boolean> {
+  if (allocations.length > 0) {
+    const rows = allocations.map((al) => ({
+      id: al.id, booking_id: bookingId, attendee_id: al.attendeeId, room_id: al.roomId, bed_number: al.bedNumber,
+    }));
+    const { error } = await supabase.from('room_allocations').upsert(rows);
+    if (error) { console.error('saveAllocationsForBooking upsert:', error); return false; }
+  }
+  let query = supabase.from('room_allocations').delete().eq('booking_id', bookingId);
+  if (allocations.length > 0) query = query.not('id', 'in', `(${allocations.map((al) => al.id).join(',')})`);
+  const { error } = await query;
+  if (error) { console.error('saveAllocationsForBooking delete:', error); return false; }
+  return true;
 }
 
 export async function createNotification(n: AppNotification): Promise<boolean> {

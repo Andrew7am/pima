@@ -4,6 +4,7 @@ import {
   mapUser, loadUsers,
   loadHouses, deleteHouse, loadBookings, loadReviews, loadPayments, loadNotifications, loadPointsHistory,
   loadRooms, loadAnnouncements, loadWaitlist, loadPlatformAnnouncements,
+  loadAttendees, loadAllocations, saveAttendeesForBooking, saveAllocationsForBooking,
   createBooking, updateBookingStatus, updateBookingFields,
   createReview, updateReview as updateReviewDb, deleteReview as deleteReviewDb, createPayment, updatePaymentStatus,
   markNotificationRead,
@@ -37,15 +38,8 @@ export default function App() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
 
-  const [attendees, setAttendees] = useState<Attendee[]>(() => {
-    const saved = localStorage.getItem('coptic_attendees');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [allocations, setAllocations] = useState<RoomAllocation[]>(() => {
-    const saved = localStorage.getItem('coptic_allocations');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [allocations, setAllocations] = useState<RoomAllocation[]>([]);
 
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
     const saved = localStorage.getItem('coptic_notifications');
@@ -70,10 +64,10 @@ export default function App() {
 
   // --- Supabase Data Loading ---
   const loadAppData = useCallback(async (userId?: string) => {
-    const [u, h, b, r, p, rm, an, wl, pa, st] = await Promise.all([
+    const [u, h, b, r, p, rm, an, wl, pa, st, at, al] = await Promise.all([
       loadUsers(), loadHouses(), loadBookings(), loadReviews(), loadPayments(),
       loadRooms(), loadAnnouncements(), loadWaitlist(), loadPlatformAnnouncements(),
-      loadPlatformSettings(),
+      loadPlatformSettings(), loadAttendees(), loadAllocations(),
     ]);
     setUsers(u);
     setHouses(h);
@@ -85,6 +79,8 @@ export default function App() {
     setWaitlist(wl);
     setPlatformAnnouncements(pa);
     setSettings(st);
+    setAttendees(at);
+    setAllocations(al);
     if (userId) {
       const n = await loadNotifications(userId);
       setNotifications(n);
@@ -836,6 +832,7 @@ export default function App() {
       const filtered = prev.filter(a => a.bookingId !== bookingId);
       return [...filtered, ...bookingAttendees];
     });
+    saveAttendeesForBooking(bookingId, bookingAttendees);
   };
 
   const handleUpdateAllocations = (bookingId: string, bookingAllocations: RoomAllocation[]) => {
@@ -843,6 +840,7 @@ export default function App() {
       const filtered = prev.filter(al => al.bookingId !== bookingId);
       return [...filtered, ...bookingAllocations];
     });
+    saveAllocationsForBooking(bookingId, bookingAllocations);
   };
 
   const handleMarkNotificationAsRead = (id: string) => {
