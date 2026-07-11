@@ -198,6 +198,11 @@ export default function AuthScreen() {
           ) : (
             <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
               <div className="space-y-1">
+                <button type="button" onClick={() => { setIsForgotMode(false); setError(''); }}
+                  className="flex items-center gap-1 text-[10px] text-[#8A8A70] hover:text-[#0A2342] font-bold mb-1">
+                  <span>→</span>
+                  <span>رجوع لتسجيل الدخول</span>
+                </button>
                 <h2 className="text-xs font-bold text-[#4A4A3A]">إعادة تعيين كلمة المرور:</h2>
                 <p className="text-[10px] text-[#8A8A70]">أدخل بريدك الإلكتروني المسجل، وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.</p>
               </div>
@@ -227,6 +232,11 @@ export default function AuthScreen() {
         ) : isRegisterMode ? (
           <form onSubmit={handleRegisterSubmit} className="space-y-4">
             <div className="space-y-1">
+              <button type="button" onClick={() => { setIsRegisterMode(false); setError(''); }}
+                className="flex items-center gap-1 text-[10px] text-[#8A8A70] hover:text-[#0A2342] font-bold mb-1">
+                <span>→</span>
+                <span>رجوع لتسجيل الدخول</span>
+              </button>
               <h2 className="text-xs font-bold text-[#4A4A3A]">إنشاء حساب جديد بالمنصة:</h2>
               <p className="text-[10px] text-[#8A8A70]">اختر نوع حسابك لتخصيص محرك البحث والحجوزات.</p>
             </div>
