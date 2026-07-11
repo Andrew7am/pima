@@ -14,8 +14,9 @@ import {
   loadPlatformSettings, updatePlatformSettings,
   deleteOwnAccount,
   getHouseOwnerContact,
+  loadAuditLog,
 } from './lib/db';
-import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from './types';
+import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry } from './types';
 
 // Component Imports
 import UserBookings from './components/UserBookings';
@@ -28,6 +29,7 @@ import AuthScreen from './components/AuthScreen';
 import WeeklyMenuManager from './components/WeeklyMenuManager';
 import ContactSupport from './components/ContactSupport';
 import ProfileScreen from './components/ProfileScreen';
+import PrivacyPolicy from './components/PrivacyPolicy';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import CompleteProfileScreen from './components/CompleteProfileScreen';
 import PendingApprovalScreen from './components/PendingApprovalScreen';
@@ -45,6 +47,7 @@ export default function App() {
   const [allocations, setAllocations] = useState<RoomAllocation[]>([]);
   const [allocationsCount, setAllocationsCount] = useState(0);
   const [ownerContacts, setOwnerContacts] = useState<Record<string, { name: string; phone: string }>>({});
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
 
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
     const saved = localStorage.getItem('coptic_notifications');
@@ -65,7 +68,7 @@ export default function App() {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile'>('explore');
+  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy'>('explore');
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
 
   // --- Supabase Data Loading ---
@@ -187,6 +190,13 @@ export default function App() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeScreen, currentUser?.id, houses.length]);
+
+  // Audit log (migration 032) — admin-only table via RLS, fetched only when
+  // the admin actually opens the admin panel, not on every login.
+  useEffect(() => {
+    if (activeScreen !== 'admin_panel' || currentUser?.role !== 'admin') return;
+    loadAuditLog().then(setAuditLog);
+  }, [activeScreen, currentUser?.role]);
 
   // --- Smart Notification Generator (3 Days Before Check-in) ---
   useEffect(() => {
@@ -1119,6 +1129,7 @@ export default function App() {
               onDeletePlatformAnnouncement={handleDeletePlatformAnnouncement}
               settings={settings}
               onUpdateSettings={handleUpdateSettings}
+              auditLog={auditLog}
             />
           )}
 
@@ -1128,6 +1139,7 @@ export default function App() {
               onLogout={handleLogout}
               onBack={() => setActiveScreen('explore')}
               onNavigateSupport={() => setActiveScreen('support')}
+              onNavigatePrivacy={() => setActiveScreen('privacy')}
               onDeleteAccount={handleDeleteAccount}
             />
           )}
@@ -1145,6 +1157,11 @@ export default function App() {
               currentUser={currentUser}
               onBack={() => setActiveScreen('profile')}
             />
+          )}
+
+          {activeScreen === 'privacy' && (
+            // Privacy policy & terms — reached from Profile, not the bottom nav
+            <PrivacyPolicy onBack={() => setActiveScreen('profile')} />
           )}
         </>
       )}

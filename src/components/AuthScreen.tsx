@@ -4,10 +4,12 @@ import { User as UserIcon, BookOpen, Users, Lock, Mail, Phone, MapPin, Church } 
 import Logo from './Logo';
 import { supabase } from '../lib/supabase';
 import { GOVERNORATES } from '../mockData';
+import PrivacyPolicy from './PrivacyPolicy';
 
 export default function AuthScreen() {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [isForgotMode, setIsForgotMode] = useState(false);
+  const [isViewingPrivacy, setIsViewingPrivacy] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>('individual');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -146,6 +148,16 @@ export default function AuthScreen() {
     if (error) setError('تأكد من تشغيل الـ seed أولاً.');
     setLoading(false);
   };
+
+  if (isViewingPrivacy) {
+    return (
+      <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center p-4 font-sans antialiased text-right">
+        <div className="w-full max-w-md">
+          <PrivacyPolicy onBack={() => setIsViewingPrivacy(false)} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center p-4 font-sans select-none antialiased text-right">
@@ -436,6 +448,13 @@ export default function AuthScreen() {
           </div>
         </div>
         )}
+
+        <div className="text-center pt-1">
+          <button type="button" onClick={() => setIsViewingPrivacy(true)}
+            className="text-[9px] text-[#8A8A70] hover:text-[#4A4A3A] underline">
+            سياسة الخصوصية وشروط الاستخدام
+          </button>
+        </div>
 
       </div>
     </div>

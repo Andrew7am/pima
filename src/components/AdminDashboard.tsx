@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
+import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry } from '../types';
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
 
@@ -27,6 +27,7 @@ interface AdminDashboardProps {
   onDeletePlatformAnnouncement?: (id: string) => void;
   settings?: PlatformSettings;
   onUpdateSettings?: (s: PlatformSettings) => void;
+  auditLog?: AuditLogEntry[];
 }
 
 export default function AdminDashboard({
@@ -53,9 +54,10 @@ export default function AdminDashboard({
   onDeletePlatformAnnouncement,
   settings = DEFAULT_PLATFORM_SETTINGS,
   onUpdateSettings,
+  auditLog = [],
 }: AdminDashboardProps) {
   // Tabs within Admin
-  const [activeTab, setActiveTab] = useState<'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings' | 'settings'>('moderation');
+  const [activeTab, setActiveTab] = useState<'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings' | 'settings' | 'audit'>('moderation');
   // Draft copy of settings for the settings form
   const [settingsDraft, setSettingsDraft] = useState(settings);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -358,6 +360,15 @@ export default function AdminDashboard({
         >
           ⚙️ إعدادات المنصة
         </button>
+        <button
+          id="admin-tab-audit"
+          onClick={() => setActiveTab('audit')}
+          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'audit' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          📜 سجل التدقيق
+        </button>
       </div>
 
       {/* Moderation Panel */}
@@ -629,6 +640,43 @@ export default function AdminDashboard({
           <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-3 text-[9.5px] text-amber-900 leading-relaxed">
             ⚠️ التغييرات بتأثر على الحجوزات الجديدة والدفعات الجاية. نسبة العمولة والعربون والنقاط بتتطبّق على السيرفر كمان مش بس في العرض.
           </div>
+        </div>
+      )}
+
+      {/* Audit log — who approved/rejected/banned what, and when (migration 032) */}
+      {activeTab === 'audit' && (
+        <div className="space-y-3">
+          <div className="text-xs font-bold text-[#8A8A70] px-1">
+            سجل قرارات الإدارة (آخر {auditLog.length} إجراء) — مين وافق أو رفض أو حظر إيه وإمتى:
+          </div>
+          {auditLog.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70]">
+              لا توجد إجراءات إدارية مسجلة بعد.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {auditLog.map((entry) => {
+                const actionLabels: Record<string, string> = {
+                  booking_status_changed: 'تغيير حالة حجز',
+                  house_status_changed: 'تغيير حالة بيت',
+                  user_approval_changed: 'تغيير اعتماد حساب',
+                  user_ban_changed: 'تغيير حالة حظر',
+                };
+                return (
+                  <div key={entry.id} className="bg-white rounded-2xl border border-[#D6D6C2] p-3 text-[10.5px] space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-[#0A2342]">{actionLabels[entry.action] || entry.action}</span>
+                      <span className="text-[#8A8A70] shrink-0">{new Date(entry.createdAt).toLocaleString('ar-EG')}</span>
+                    </div>
+                    <div className="text-[#4A4A3A]">{entry.details}</div>
+                    <div className="text-[#8A8A70]">
+                      بواسطة: {entry.actorName || 'غير معروف'} ({entry.actorRole === 'admin' ? 'أدمن' : entry.actorRole === 'owner' ? 'مالك بيت' : entry.actorRole})
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

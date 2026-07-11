@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings } from '../types';
+import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, AuditLogEntry } from '../types';
 import { DEFAULT_PLATFORM_SETTINGS } from '../types';
 
 // ─── Row → Type mappers ────────────────────────────────────────────────────
@@ -102,6 +102,20 @@ export function mapNotification(r: Record<string, unknown>): AppNotification {
     message: r.message as string,
     type: r.type as AppNotification['type'],
     isRead: r.is_read as boolean,
+    createdAt: r.created_at as string,
+  };
+}
+
+export function mapAuditLogEntry(r: Record<string, unknown>): AuditLogEntry {
+  return {
+    id: r.id as number,
+    actorId: r.actor_id as string | null,
+    actorName: r.actor_name as string | null,
+    actorRole: r.actor_role as string | null,
+    action: r.action as string,
+    targetType: r.target_type as string,
+    targetId: r.target_id as string,
+    details: r.details as string | null,
     createdAt: r.created_at as string,
   };
 }
@@ -648,4 +662,13 @@ export async function getHouseOwnerContact(bookingId: string): Promise<{ name: s
   const { data, error } = await supabase.rpc('get_house_owner_contact', { p_booking_id: bookingId });
   if (error) { console.error('getHouseOwnerContact:', error); return null; }
   return data?.[0] ?? null;
+}
+
+// Admin-only audit trail (migration 032) — RLS restricts SELECT to admins,
+// so this is a no-op empty result for anyone else. Fetched lazily when the
+// admin opens the audit tab, not as part of loadAppData.
+export async function loadAuditLog(limit: number = 100): Promise<AuditLogEntry[]> {
+  const { data, error } = await supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(limit);
+  if (error) { console.error('loadAuditLog:', error); return []; }
+  return (data ?? []).map(mapAuditLogEntry);
 }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft, Trash2 } from 'lucide-react';
+import { User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft, Trash2, ShieldCheck } from 'lucide-react';
 import RewardsDashboard from './RewardsDashboard';
 
 interface ProfileScreenProps {
@@ -8,6 +8,7 @@ interface ProfileScreenProps {
   onLogout: () => void;
   onBack: () => void;
   onNavigateSupport: () => void;
+  onNavigatePrivacy: () => void;
   onDeleteAccount: () => Promise<{ ok: boolean; error?: string }>;
 }
 
@@ -34,7 +35,7 @@ function calculateAge(dateOfBirth: string): number {
   return age;
 }
 
-export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigateSupport, onDeleteAccount }: ProfileScreenProps) {
+export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigateSupport, onNavigatePrivacy, onDeleteAccount }: ProfileScreenProps) {
   const roleLabel = currentUser.role === 'servant' ? 'خادم' : currentUser.role === 'owner' ? 'صاحب بيت' : 'مستخدم';
   const canSelfDelete = currentUser.role === 'individual' || currentUser.role === 'servant';
 
@@ -110,6 +111,17 @@ export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigat
         <div className="flex items-center gap-2">
           <HelpCircle className="w-4 h-4 text-[#5A5A40]" />
           <span className="text-xs font-bold text-[#4A4A3A]">التواصل والدعم الفني</span>
+        </div>
+        <ChevronLeft className="w-4 h-4 text-[#8A8A70]" />
+      </button>
+
+      <button
+        onClick={onNavigatePrivacy}
+        className="w-full flex items-center justify-between gap-2 bg-white border border-[#D6D6C2] rounded-2xl p-3.5 hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+      >
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-[#5A5A40]" />
+          <span className="text-xs font-bold text-[#4A4A3A]">سياسة الخصوصية وشروط الاستخدام</span>
         </div>
         <ChevronLeft className="w-4 h-4 text-[#8A8A70]" />
       </button>

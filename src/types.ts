@@ -256,3 +256,15 @@ export interface AppNotification {
   createdAt: string;
 }
 
+export interface AuditLogEntry {
+  id: number;
+  actorId: string | null;
+  actorName: string | null;
+  actorRole: string | null;
+  action: string;
+  targetType: string;
+  targetId: string;
+  details: string | null;
+  createdAt: string;
+}
+
