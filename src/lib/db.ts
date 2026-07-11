@@ -631,3 +631,15 @@ export async function deletePlatformAnnouncement(id: string): Promise<boolean> {
   if (error) console.error('deletePlatformAnnouncement:', error);
   return !error;
 }
+
+// Self-service account deletion (migration 029). Restricted server-side to
+// individual/servant roles — owners cascade-delete their houses (and thus
+// other users' bookings/reviews on them), so that path requires support.
+export async function deleteOwnAccount(): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc('delete_own_account');
+  if (error) {
+    console.error('deleteOwnAccount:', error);
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}

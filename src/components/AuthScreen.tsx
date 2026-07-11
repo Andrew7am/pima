@@ -7,9 +7,14 @@ import { GOVERNORATES } from '../mockData';
 
 export default function AuthScreen() {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [isForgotMode, setIsForgotMode] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>('individual');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Forgot-password fields
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
 
   // Register fields
   const [name, setName] = useState('');
@@ -56,6 +61,20 @@ export default function AuthScreen() {
     if (error) {
       setError('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
     }
+    setLoading(false);
+  };
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) return;
+    setLoading(true);
+    setError('');
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim().toLowerCase(), {
+      redirectTo: window.location.origin,
+    });
+    // Always show success (even on error) so we don't leak which emails are registered.
+    if (error) console.error('resetPasswordForEmail:', error);
+    setForgotSent(true);
     setLoading(false);
   };
 
@@ -165,7 +184,47 @@ export default function AuthScreen() {
           <div className="flex-1 h-px bg-[#D6D6C2]" />
         </div>
 
-        {isRegisterMode ? (
+        {isForgotMode ? (
+          forgotSent ? (
+            <div className="space-y-4 text-center py-2">
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl px-3 py-4 leading-relaxed">
+                إذا كان بريدك الإلكتروني مسجلاً لدينا، فستصلك رسالة تحتوي على رابط إعادة تعيين كلمة المرور خلال دقائق. تأكد من صندوق الرسائل غير المرغوب فيها (Spam).
+              </div>
+              <button type="button" onClick={() => { setIsForgotMode(false); setForgotSent(false); setError(''); }}
+                className="text-[10px] text-[#8A8A70] hover:text-[#4A4A3A] font-bold underline">
+                العودة لتسجيل الدخول
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <h2 className="text-xs font-bold text-[#4A4A3A]">إعادة تعيين كلمة المرور:</h2>
+                <p className="text-[10px] text-[#8A8A70]">أدخل بريدك الإلكتروني المسجل، وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.</p>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">البريد الإلكتروني:</label>
+                <div className="relative">
+                  <input type="email" required placeholder="example@church.eg" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)}
+                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2.5 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none text-left" />
+                  <Mail className="absolute top-3 right-3 w-4 h-4 text-[#BCBC9D]" />
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading}
+                className="w-full bg-[#0A2342] hover:bg-[#071930] disabled:opacity-60 text-white text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors">
+                {loading ? 'جارٍ الإرسال...' : 'إرسال رابط إعادة التعيين'}
+              </button>
+
+              <div className="text-center">
+                <button type="button" onClick={() => { setIsForgotMode(false); setError(''); }}
+                  className="text-[10px] text-[#8A8A70] hover:text-[#4A4A3A] font-bold underline">
+                  العودة لتسجيل الدخول
+                </button>
+              </div>
+            </form>
+          )
+        ) : isRegisterMode ? (
           <form onSubmit={handleRegisterSubmit} className="space-y-4">
             <div className="space-y-1">
               <h2 className="text-xs font-bold text-[#4A4A3A]">إنشاء حساب جديد بالمنصة:</h2>
@@ -326,6 +385,12 @@ export default function AuthScreen() {
                     className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2.5 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none" />
                   <Lock className="absolute top-3 right-3 w-4 h-4 text-[#BCBC9D]" />
                 </div>
+                <div className="text-left mt-1.5">
+                  <button type="button" onClick={() => { setIsForgotMode(true); setForgotSent(false); setForgotEmail(signInEmail); setError(''); }}
+                    className="text-[9.5px] text-[#8A8A70] hover:text-[#0A2342] font-bold underline">
+                    نسيت كلمة المرور؟
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -342,6 +407,7 @@ export default function AuthScreen() {
             </div>
           </form>
         )}
+        {!isForgotMode && (
         <div className="pt-4 border-t border-[#D6D6C2] space-y-2 text-right">
           <span className="block text-[10px] font-bold text-[#8A8A70]">حسابات تجريبية — كلمة المرور: pima1234</span>
           <div className="grid grid-cols-2 gap-2 text-[10px]">
@@ -359,6 +425,7 @@ export default function AuthScreen() {
             ))}
           </div>
         </div>
+        )}
 
       </div>
     </div>

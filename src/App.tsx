@@ -12,6 +12,7 @@ import {
   createWaitlistEntry,
   createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
   loadPlatformSettings, updatePlatformSettings,
+  deleteOwnAccount,
 } from './lib/db';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from './types';
 
@@ -26,6 +27,7 @@ import AuthScreen from './components/AuthScreen';
 import WeeklyMenuManager from './components/WeeklyMenuManager';
 import ContactSupport from './components/ContactSupport';
 import ProfileScreen from './components/ProfileScreen';
+import ResetPasswordScreen from './components/ResetPasswordScreen';
 import CompleteProfileScreen from './components/CompleteProfileScreen';
 import PendingApprovalScreen from './components/PendingApprovalScreen';
 import BannedScreen from './components/BannedScreen';
@@ -58,6 +60,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     return null;
   });
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   // --- UI Navigation States ---
   const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile'>('explore');
@@ -135,6 +138,7 @@ export default function App() {
   // every single page load, which was the dominant contributor to egress.
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'PASSWORD_RECOVERY') setIsPasswordRecovery(true);
       if (session) loadUserProfile(session.user.id);
       else { setCurrentUser(null); setIsAuthLoading(false); }
     });
@@ -253,6 +257,17 @@ export default function App() {
     setCurrentUser(null);
     setSelectedHouse(null);
     setActiveScreen('explore');
+  };
+
+  const handleDeleteAccount = async (): Promise<{ ok: boolean; error?: string }> => {
+    const result = await deleteOwnAccount();
+    if (result.ok) {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      setSelectedHouse(null);
+      setActiveScreen('explore');
+    }
+    return result;
   };
 
   // --- Favorite Operations ---
@@ -875,6 +890,10 @@ export default function App() {
     );
   }
 
+  if (isPasswordRecovery) {
+    return <ResetPasswordScreen onDone={() => setIsPasswordRecovery(false)} />;
+  }
+
   if (!currentUser) {
     return <AuthScreen />;
   }
@@ -1071,6 +1090,7 @@ export default function App() {
               onLogout={handleLogout}
               onBack={() => setActiveScreen('explore')}
               onNavigateSupport={() => setActiveScreen('support')}
+              onDeleteAccount={handleDeleteAccount}
             />
           )}
 

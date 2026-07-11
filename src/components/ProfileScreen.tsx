@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { User } from '../types';
-import { User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft } from 'lucide-react';
+import { User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft, Trash2 } from 'lucide-react';
 import RewardsDashboard from './RewardsDashboard';
 
 interface ProfileScreenProps {
@@ -8,6 +8,7 @@ interface ProfileScreenProps {
   onLogout: () => void;
   onBack: () => void;
   onNavigateSupport: () => void;
+  onDeleteAccount: () => Promise<{ ok: boolean; error?: string }>;
 }
 
 function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
@@ -33,8 +34,25 @@ function calculateAge(dateOfBirth: string): number {
   return age;
 }
 
-export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigateSupport }: ProfileScreenProps) {
+export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigateSupport, onDeleteAccount }: ProfileScreenProps) {
   const roleLabel = currentUser.role === 'servant' ? 'خادم' : currentUser.role === 'owner' ? 'صاحب بيت' : 'مستخدم';
+  const canSelfDelete = currentUser.role === 'individual' || currentUser.role === 'servant';
+
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    setDeleteError('');
+    const result = await onDeleteAccount();
+    if (!result.ok) {
+      setDeleteError('تعذر حذف الحساب. حاول مرة أخرى أو تواصل مع الدعم الفني.');
+      setIsDeleting(false);
+    }
+    // On success, the auth session is cleared by the caller and this screen unmounts.
+  };
 
   return (
     <div className="space-y-4 text-right animate-in fade-in duration-200 pb-8">
@@ -103,6 +121,66 @@ export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigat
         <LogOut className="w-4 h-4" />
         <span>تسجيل الخروج</span>
       </button>
+
+      {/* Danger zone: permanent account deletion */}
+      <div className="bg-white rounded-3xl p-4 border border-red-200 shadow-sm space-y-3">
+        <h3 className="text-xs font-black text-red-700 flex items-center gap-1.5">
+          <Trash2 className="w-4 h-4" />
+          حذف الحساب نهائياً
+        </h3>
+
+        {!canSelfDelete ? (
+          <p className="text-[10px] text-[#8A8A70] leading-relaxed">
+            حذف حسابات {currentUser.role === 'owner' ? 'أصحاب البيوت' : 'الإدارة'} يتم عبر الدعم الفني لضمان نقل بيانات الحجوزات المرتبطة بشكل آمن. تواصل معنا لطلب الحذف.
+          </p>
+        ) : !isConfirmingDelete ? (
+          <>
+            <p className="text-[10px] text-[#8A8A70] leading-relaxed">
+              سيتم حذف حسابك وكل بياناتك (الحجوزات، التقييمات، النقاط) نهائياً ولا يمكن التراجع عن هذا الإجراء.
+            </p>
+            <button
+              onClick={() => setIsConfirmingDelete(true)}
+              className="w-full flex items-center justify-center gap-2 text-xs font-bold text-red-600 hover:bg-red-50 border border-red-300 rounded-2xl py-2.5 transition-colors cursor-pointer"
+            >
+              حذف حسابي نهائياً
+            </button>
+          </>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-[10px] text-red-700 font-bold leading-relaxed">
+              هذا الإجراء نهائي ولا يمكن التراجع عنه. للتأكيد، اكتب كلمة "حذف" في الحقل بالأسفل.
+            </p>
+            {deleteError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-[10px] rounded-xl px-3 py-2 text-center">
+                {deleteError}
+              </div>
+            )}
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder='اكتب "حذف" للتأكيد'
+              className="w-full bg-white border border-red-300 rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none text-center"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setIsConfirmingDelete(false); setDeleteConfirmText(''); setDeleteError(''); }}
+                disabled={isDeleting}
+                className="flex-1 text-xs font-bold text-[#4A4A3A] bg-[#EBEBE0] hover:bg-[#DEDECB] rounded-xl py-2.5 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                تراجع
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={deleteConfirmText !== 'حذف' || isDeleting}
+                className="flex-1 text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed rounded-xl py-2.5 transition-colors cursor-pointer"
+              >
+                {isDeleting ? 'جارٍ الحذف...' : 'تأكيد الحذف النهائي'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
