@@ -547,16 +547,6 @@ export async function saveAllocationsForBooking(bookingId: string, allocations: 
   return true;
 }
 
-export async function createNotification(n: AppNotification): Promise<boolean> {
-  const { error } = await supabase.from('notifications').insert({
-    id: n.id, user_id: n.userId, booking_id: n.bookingId,
-    title: n.title, message: n.message, type: n.type,
-    is_read: n.isRead, created_at: n.createdAt,
-  });
-  if (error) console.error('createNotification:', error);
-  return !error;
-}
-
 export async function markNotificationRead(id: string): Promise<boolean> {
   const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
   if (error) console.error('markNotificationRead:', error);
