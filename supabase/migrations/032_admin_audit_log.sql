@@ -13,7 +13,11 @@
 -- log is about admin/owner decisions, not user self-service.
 -- ============================================================
 
-CREATE TABLE public.audit_log (
+-- Idempotent (IF NOT EXISTS / DROP...IF EXISTS everywhere) so re-running
+-- this file after a partial failure — e.g. the first run errored out
+-- partway through, after the table was created but before the triggers
+-- were — is always safe.
+CREATE TABLE IF NOT EXISTS public.audit_log (
   id          BIGSERIAL PRIMARY KEY,
   actor_id    UUID,
   actor_name  TEXT,
@@ -25,14 +29,15 @@ CREATE TABLE public.audit_log (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_audit_log_created_at ON public.audit_log(created_at DESC);
-CREATE INDEX idx_audit_log_target ON public.audit_log(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON public.audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_target ON public.audit_log(target_type, target_id);
 
 ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
 
 -- Admin-only read. No INSERT/UPDATE/DELETE policy at all — only the
 -- SECURITY DEFINER triggers below (which bypass RLS) can write, so the
 -- log can't be edited or erased from the client either.
+DROP POLICY IF EXISTS "audit_log_select_admin" ON public.audit_log;
 CREATE POLICY "audit_log_select_admin" ON public.audit_log FOR SELECT USING (public.is_admin(auth.uid()));
 
 -- ── Booking status changes by owner/admin ──────────────────────────────
