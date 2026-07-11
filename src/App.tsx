@@ -3,7 +3,7 @@ import { supabase } from './lib/supabase';
 import {
   mapUser, loadUsers,
   loadHouses, deleteHouse, loadBookings, loadReviews, loadPayments, loadNotifications, loadPointsHistory,
-  loadRooms, loadAnnouncements, loadWaitlist, loadPlatformAnnouncements,
+  loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlist, loadPlatformAnnouncements,
   loadAttendeesForBooking, loadAllocationsForBooking, saveAttendeesForBooking, saveAllocationsForBooking, loadAllocationsCount,
   createBooking, updateBookingStatus, updateBookingFields,
   createReview, updateReview as updateReviewDb, deleteReview as deleteReviewDb, createPayment, updatePaymentStatus,
@@ -13,6 +13,7 @@ import {
   createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
   loadPlatformSettings, updatePlatformSettings,
   deleteOwnAccount,
+  getHouseOwnerContact,
 } from './lib/db';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from './types';
 
@@ -43,6 +44,7 @@ export default function App() {
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [allocations, setAllocations] = useState<RoomAllocation[]>([]);
   const [allocationsCount, setAllocationsCount] = useState(0);
+  const [ownerContacts, setOwnerContacts] = useState<Record<string, { name: string; phone: string }>>({});
 
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
     const saved = localStorage.getItem('coptic_notifications');
@@ -67,10 +69,13 @@ export default function App() {
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
 
   // --- Supabase Data Loading ---
+  // rooms/announcements are NOT loaded here — they're public tables scoped to
+  // whichever house(s) are actually being viewed (see the lazy-load effects
+  // below), not fetched wholesale for every login the way they used to be.
   const loadAppData = useCallback(async (userId?: string) => {
-    const [u, h, b, r, p, rm, an, wl, pa, st, ac] = await Promise.all([
+    const [u, h, b, r, p, wl, pa, st, ac] = await Promise.all([
       loadUsers(), loadHouses(), loadBookings(), loadReviews(), loadPayments(),
-      loadRooms(), loadAnnouncements(), loadWaitlist(), loadPlatformAnnouncements(),
+      loadWaitlist(), loadPlatformAnnouncements(),
       loadPlatformSettings(), loadAllocationsCount(),
     ]);
     setUsers(u);
@@ -78,8 +83,6 @@ export default function App() {
     setBookings(b);
     setReviews(r);
     setPayments(p);
-    setRooms(rm);
-    setAnnouncements(an);
     setWaitlist(wl);
     setPlatformAnnouncements(pa);
     setSettings(st);
@@ -160,6 +163,30 @@ export default function App() {
     }
     window.history.replaceState({}, '', window.location.pathname);
   }, [houses]);
+
+  // rooms/announcements (public tables, scoped server-side by house_id — see
+  // loadAppData) are fetched lazily rather than for every login: one house's
+  // worth when its detail page opens, and every house the owner runs when
+  // they open their dashboard.
+  useEffect(() => {
+    if (!selectedHouse) return;
+    const houseId = selectedHouse.id;
+    Promise.all([loadRoomsForHouses([houseId]), loadAnnouncementsForHouses([houseId])]).then(([hRooms, hAnnouncements]) => {
+      setRooms((prev) => [...prev.filter((r) => r.houseId !== houseId), ...hRooms]);
+      setAnnouncements((prev) => [...prev.filter((a) => a.houseId !== houseId), ...hAnnouncements]);
+    });
+  }, [selectedHouse]);
+
+  useEffect(() => {
+    if (activeScreen !== 'owner_panel' || !currentUser) return;
+    const ownerHouseIds = houses.filter((h) => h.ownerId === currentUser.id).map((h) => h.id);
+    if (ownerHouseIds.length === 0) return;
+    Promise.all([loadRoomsForHouses(ownerHouseIds), loadAnnouncementsForHouses(ownerHouseIds)]).then(([oRooms, oAnnouncements]) => {
+      setRooms((prev) => [...prev.filter((r) => !ownerHouseIds.includes(r.houseId)), ...oRooms]);
+      setAnnouncements((prev) => [...prev.filter((a) => !ownerHouseIds.includes(a.houseId)), ...oAnnouncements]);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeScreen, currentUser?.id, houses.length]);
 
   // --- Smart Notification Generator (3 Days Before Check-in) ---
   useEffect(() => {
@@ -851,6 +878,16 @@ export default function App() {
     setAllocations(prev => [...prev.filter(al => al.bookingId !== bookingId), ...bookingAllocations]);
   }, []);
 
+  // House owner contact (migration 031) — only revealed once the guest's own
+  // booking is approved and deposit-paid, so fetch it lazily per booking the
+  // first time UserBookings needs to render the reveal card, not up front.
+  const handleRevealOwnerContact = useCallback(async (bookingId: string) => {
+    const contact = await getHouseOwnerContact(bookingId);
+    if (contact) {
+      setOwnerContacts((prev) => ({ ...prev, [bookingId]: contact }));
+    }
+  }, []);
+
   const handleUpdateAttendees = (bookingId: string, bookingAttendees: Attendee[]) => {
     setAttendees(prev => {
       const filtered = prev.filter(a => a.bookingId !== bookingId);
@@ -1010,7 +1047,6 @@ export default function App() {
             <UserBookings
               bookings={bookings}
               houses={houses}
-              users={users}
               currentUser={currentUser}
               onCancelBooking={handleCancelBooking}
               attendees={attendees}
@@ -1021,6 +1057,8 @@ export default function App() {
               payments={payments}
               onSubmitPayment={handleSubmitPayment}
               settings={settings}
+              ownerContacts={ownerContacts}
+              onRevealOwnerContact={handleRevealOwnerContact}
             />
           )}
 

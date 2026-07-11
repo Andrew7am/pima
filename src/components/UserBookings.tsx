@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Booking, User, RetreatHouse, Attendee, RoomAllocation, Payment, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { 
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
@@ -11,7 +11,6 @@ import RoomDistribution from './RoomDistribution';
 interface UserBookingsProps {
   bookings: Booking[];
   houses: RetreatHouse[];
-  users?: User[];
   currentUser: User;
   onCancelBooking?: (bookingId: string) => void;
   attendees: Attendee[];
@@ -22,6 +21,8 @@ interface UserBookingsProps {
   payments: Payment[];
   onSubmitPayment: (payment: Payment) => void;
   settings?: PlatformSettings;
+  ownerContacts?: Record<string, { name: string; phone: string }>;
+  onRevealOwnerContact?: (bookingId: string) => void;
 }
 
 const DEFAULT_CHECKLIST_ITEMS = [
@@ -112,7 +113,6 @@ const getThemeActivities = (theme: 'growth' | 'fellowship' | 'saints'): { id: st
 export default function UserBookings({
   bookings,
   houses,
-  users = [],
   currentUser,
   onCancelBooking,
   attendees,
@@ -122,7 +122,9 @@ export default function UserBookings({
   onOpenRoomDistribution,
   payments,
   onSubmitPayment,
-  settings = DEFAULT_PLATFORM_SETTINGS
+  settings = DEFAULT_PLATFORM_SETTINGS,
+  ownerContacts = {},
+  onRevealOwnerContact
 }: UserBookingsProps) {
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
@@ -295,6 +297,16 @@ export default function UserBookings({
 
   // Count approved and unpaid bookings for alerts
   const unpaidApprovedCount = userBookings.filter(b => b.status === 'approved' && !b.depositPaid).length;
+
+  // Fetch the house owner's contact info (migration 031) the moment a
+  // booking becomes eligible for reveal, instead of upfront for every
+  // booking — mirrors onOpenRoomDistribution's lazy-load pattern.
+  useEffect(() => {
+    userBookings
+      .filter((b) => b.status === 'approved' && b.depositPaid && !ownerContacts[b.id])
+      .forEach((b) => onRevealOwnerContact?.(b.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userBookings.map((b) => `${b.id}:${b.status}:${b.depositPaid}`).join(',')]);
 
   const getStatusBadge = (status: Booking['status']) => {
     switch (status) {
@@ -609,7 +621,7 @@ export default function UserBookings({
                 {(() => {
                   const isRevealed = booking.status === 'approved' && booking.depositPaid;
                   const house = houses.find(h => h.id === booking.houseId);
-                  const ownerUser = house ? users.find(u => u.id === house.ownerId) : undefined;
+                  const ownerContact = ownerContacts[booking.id];
 
                   if (!isRevealed) {
                     return (
@@ -623,8 +635,16 @@ export default function UserBookings({
                     );
                   }
 
-                  const ownerPhone = ownerUser?.phone || booking.userPhone;
-                  const ownerName = house?.ownerName || ownerUser?.name || 'المالك';
+                  if (!ownerContact) {
+                    return (
+                      <div className="px-4 py-3 bg-slate-50 border-b border-[#D6D6C2]/60 text-[10px] text-slate-500">
+                        جارٍ تحميل بيانات التواصل...
+                      </div>
+                    );
+                  }
+
+                  const ownerPhone = ownerContact.phone;
+                  const ownerName = house?.ownerName || ownerContact.name || 'المالك';
                   const whatsappLink = ownerPhone ? `https://wa.me/2${ownerPhone.replace(/^0/, '')}` : null;
 
                   return (

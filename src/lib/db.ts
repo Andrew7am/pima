@@ -304,15 +304,22 @@ export async function loadAllocationsCount(): Promise<number> {
   return count ?? 0;
 }
 
-export async function loadRooms(): Promise<Room[]> {
-  const { data, error } = await supabase.from('rooms').select('*').order('created_at');
-  if (error) { console.error('loadRooms:', error); return []; }
+// rooms/announcements have public SELECT policies (needed so any guest can
+// see a house's rooms/announcements on its detail page), so loading the
+// whole table on every login pulls every house's rooms/announcements
+// platform-wide. Scope to the house(s) actually being viewed instead —
+// one house on HouseDetail, all of the owner's houses on OwnerDashboard.
+export async function loadRoomsForHouses(houseIds: string[]): Promise<Room[]> {
+  if (houseIds.length === 0) return [];
+  const { data, error } = await supabase.from('rooms').select('*').in('house_id', houseIds).order('created_at');
+  if (error) { console.error('loadRoomsForHouses:', error); return []; }
   return (data ?? []).map(mapRoom);
 }
 
-export async function loadAnnouncements(): Promise<Announcement[]> {
-  const { data, error } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
-  if (error) { console.error('loadAnnouncements:', error); return []; }
+export async function loadAnnouncementsForHouses(houseIds: string[]): Promise<Announcement[]> {
+  if (houseIds.length === 0) return [];
+  const { data, error } = await supabase.from('announcements').select('*').in('house_id', houseIds).order('created_at', { ascending: false });
+  if (error) { console.error('loadAnnouncementsForHouses:', error); return []; }
   return (data ?? []).map(mapAnnouncement);
 }
 
@@ -632,4 +639,13 @@ export async function deleteOwnAccount(): Promise<{ ok: boolean; error?: string 
     return { ok: false, error: error.message };
   }
   return { ok: true };
+}
+
+// House owner contact reveal (migration 031). Only returns a row once the
+// caller's own booking on that house is approved and deposit-paid — see the
+// migration for why this can't just be a wider `users` RLS policy.
+export async function getHouseOwnerContact(bookingId: string): Promise<{ name: string; phone: string } | null> {
+  const { data, error } = await supabase.rpc('get_house_owner_contact', { p_booking_id: bookingId });
+  if (error) { console.error('getHouseOwnerContact:', error); return null; }
+  return data?.[0] ?? null;
 }
