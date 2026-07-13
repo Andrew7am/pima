@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './lib/supabase';
 import {
   mapUser, loadUsers,
-  loadHouses, deleteHouse, loadBookings, loadReviews, loadPayments, loadNotifications, loadPointsHistory,
-  loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlist, loadPlatformAnnouncements,
+  loadHouses, deleteHouse, loadBookings, loadReviews, loadReviewsForHouses, loadPayments, loadNotifications, loadPointsHistory,
+  loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlistForHouses, loadPlatformAnnouncements,
   loadAttendeesForBooking, loadAllocationsForBooking, saveAttendeesForBooking, saveAllocationsForBooking, loadAllocationsCount,
   createBooking, updateBookingStatus, updateBookingFields,
   createReview, updateReview as updateReviewDb, deleteReview as deleteReviewDb, createPayment, updatePaymentStatus,
@@ -15,6 +15,7 @@ import {
   deleteOwnAccount,
   getHouseOwnerContact,
   loadAuditLog,
+  loadPaymentProofImage,
 } from './lib/db';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry } from './types';
 
@@ -72,21 +73,20 @@ export default function App() {
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
 
   // --- Supabase Data Loading ---
-  // rooms/announcements are NOT loaded here — they're public tables scoped to
-  // whichever house(s) are actually being viewed (see the lazy-load effects
-  // below), not fetched wholesale for every login the way they used to be.
+  // rooms/announcements/reviews/waitlist are NOT loaded here — they're
+  // public/RLS-scoped tables fetched only for whichever house(s) are
+  // actually being viewed (see the lazy-load effects below), not wholesale
+  // on every login the way they used to be.
   const loadAppData = useCallback(async (userId?: string) => {
-    const [u, h, b, r, p, wl, pa, st, ac] = await Promise.all([
-      loadUsers(), loadHouses(), loadBookings(), loadReviews(), loadPayments(),
-      loadWaitlist(), loadPlatformAnnouncements(),
+    const [u, h, b, p, pa, st, ac] = await Promise.all([
+      loadUsers(), loadHouses(), loadBookings(), loadPayments(),
+      loadPlatformAnnouncements(),
       loadPlatformSettings(), loadAllocationsCount(),
     ]);
     setUsers(u);
     setHouses(h);
     setBookings(b);
-    setReviews(r);
     setPayments(p);
-    setWaitlist(wl);
     setPlatformAnnouncements(pa);
     setSettings(st);
     setAllocationsCount(ac);
@@ -174,16 +174,21 @@ export default function App() {
     window.history.replaceState({}, '', window.location.pathname);
   }, [houses]);
 
-  // rooms/announcements (public tables, scoped server-side by house_id — see
-  // loadAppData) are fetched lazily rather than for every login: one house's
-  // worth when its detail page opens, and every house the owner runs when
-  // they open their dashboard.
+  // rooms/announcements/reviews/waitlist (public/RLS-scoped tables, scoped
+  // server-side by house_id — see loadAppData) are fetched lazily rather
+  // than for every login: one house's worth when its detail page opens, and
+  // every house the owner runs when they open their dashboard.
   useEffect(() => {
     if (!selectedHouse) return;
     const houseId = selectedHouse.id;
-    Promise.all([loadRoomsForHouses([houseId]), loadAnnouncementsForHouses([houseId])]).then(([hRooms, hAnnouncements]) => {
+    Promise.all([
+      loadRoomsForHouses([houseId]), loadAnnouncementsForHouses([houseId]),
+      loadReviewsForHouses([houseId]), loadWaitlistForHouses([houseId]),
+    ]).then(([hRooms, hAnnouncements, hReviews, hWaitlist]) => {
       setRooms((prev) => [...prev.filter((r) => r.houseId !== houseId), ...hRooms]);
       setAnnouncements((prev) => [...prev.filter((a) => a.houseId !== houseId), ...hAnnouncements]);
+      setReviews((prev) => [...prev.filter((rv) => rv.houseId !== houseId), ...hReviews]);
+      setWaitlist((prev) => [...prev.filter((w) => w.houseId !== houseId), ...hWaitlist]);
     });
   }, [selectedHouse]);
 
@@ -191,18 +196,25 @@ export default function App() {
     if (activeScreen !== 'owner_panel' || !currentUser) return;
     const ownerHouseIds = houses.filter((h) => h.ownerId === currentUser.id).map((h) => h.id);
     if (ownerHouseIds.length === 0) return;
-    Promise.all([loadRoomsForHouses(ownerHouseIds), loadAnnouncementsForHouses(ownerHouseIds)]).then(([oRooms, oAnnouncements]) => {
+    Promise.all([
+      loadRoomsForHouses(ownerHouseIds), loadAnnouncementsForHouses(ownerHouseIds),
+      loadReviewsForHouses(ownerHouseIds), loadWaitlistForHouses(ownerHouseIds),
+    ]).then(([oRooms, oAnnouncements, oReviews, oWaitlist]) => {
       setRooms((prev) => [...prev.filter((r) => !ownerHouseIds.includes(r.houseId)), ...oRooms]);
       setAnnouncements((prev) => [...prev.filter((a) => !ownerHouseIds.includes(a.houseId)), ...oAnnouncements]);
+      setReviews((prev) => [...prev.filter((rv) => !ownerHouseIds.includes(rv.houseId)), ...oReviews]);
+      setWaitlist((prev) => [...prev.filter((w) => !ownerHouseIds.includes(w.houseId)), ...oWaitlist]);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeScreen, currentUser?.id, houses.length]);
 
-  // Audit log (migration 032) — admin-only table via RLS, fetched only when
-  // the admin actually opens the admin panel, not on every login.
+  // Audit log (migration 032) + full reviews (admin moderation needs every
+  // review platform-wide, not just one house's) — admin-only, fetched only
+  // when the admin actually opens the admin panel, not on every login.
   useEffect(() => {
     if (activeScreen !== 'admin_panel' || currentUser?.role !== 'admin') return;
     loadAuditLog().then(setAuditLog);
+    loadReviews().then(setReviews);
   }, [activeScreen, currentUser?.role]);
 
   // --- Smart Notification Generator (3 Days Before Check-in) ---
@@ -1137,6 +1149,7 @@ export default function App() {
               settings={settings}
               onUpdateSettings={handleUpdateSettings}
               auditLog={auditLog}
+              onLoadProofImage={loadPaymentProofImage}
             />
           )}
 

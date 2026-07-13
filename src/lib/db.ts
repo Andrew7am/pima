@@ -267,16 +267,45 @@ export async function loadBookings(): Promise<Booking[]> {
   return (data ?? []).map(mapBooking);
 }
 
+// Full platform-wide reviews — only the admin moderation tab needs this;
+// everyone else gets loadReviewsForHouses (scoped) instead.
 export async function loadReviews(): Promise<Review[]> {
   const { data, error } = await supabase.from('reviews').select('*').order('created_at', { ascending: false });
   if (error) { console.error('loadReviews:', error); return []; }
   return (data ?? []).map(mapReview);
 }
 
+// reviews has a public SELECT policy (needed so any guest can read a
+// house's reviews on its detail page), so loading the whole table on every
+// login pulls every review platform-wide. Scope to the house(s) actually
+// being viewed — one house on HouseDetail, all of the owner's houses on
+// OwnerDashboard's reply tab — same pattern as loadRoomsForHouses.
+export async function loadReviewsForHouses(houseIds: string[]): Promise<Review[]> {
+  if (houseIds.length === 0) return [];
+  const { data, error } = await supabase.from('reviews').select('*').in('house_id', houseIds).order('created_at', { ascending: false });
+  if (error) { console.error('loadReviewsForHouses:', error); return []; }
+  return (data ?? []).map(mapReview);
+}
+
+// proof_image holds a base64 data URI of the uploaded screenshot — often
+// hundreds of KB per row — and was pulled for every payment on every
+// login via loadAppData even though it's only ever displayed when the
+// admin actually reviews that specific payment. Exclude it from the
+// general load; loadPaymentProofImage fetches it on demand instead.
+// `details` (sender bank/wallet info) stays — it's small JSON, already
+// shown inline in the admin payments list.
 export async function loadPayments(): Promise<Payment[]> {
-  const { data, error } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('payments')
+    .select('id, booking_id, user_id, user_name, amount, payment_method, payment_status, payment_date, transaction_reference, admin_notes, details, created_at')
+    .order('created_at', { ascending: false });
   if (error) { console.error('loadPayments:', error); return []; }
   return (data ?? []).map(mapPayment);
+}
+
+export async function loadPaymentProofImage(paymentId: string): Promise<string | null> {
+  const { data, error } = await supabase.from('payments').select('proof_image').eq('id', paymentId).single();
+  if (error) { console.error('loadPaymentProofImage:', error); return null; }
+  return (data?.proof_image as string | null) ?? null;
 }
 
 export async function loadNotifications(userId: string): Promise<AppNotification[]> {
@@ -337,9 +366,16 @@ export async function loadAnnouncementsForHouses(houseIds: string[]): Promise<An
   return (data ?? []).map(mapAnnouncement);
 }
 
-export async function loadWaitlist(): Promise<WaitlistEntry[]> {
-  const { data, error } = await supabase.from('waitlist').select('*').order('created_at');
-  if (error) { console.error('loadWaitlist:', error); return []; }
+// RLS already scopes waitlist rows to the caller's own entries + the
+// owner's houses, but it was still fetched on every login for every role,
+// including guests who'll never open a waitlist-relevant screen. Scope to
+// the house(s) actually in view — one house on HouseDetail (to check
+// "am I already on this house's waitlist"), all of the owner's houses on
+// OwnerDashboard — same pattern as rooms/announcements/reviews.
+export async function loadWaitlistForHouses(houseIds: string[]): Promise<WaitlistEntry[]> {
+  if (houseIds.length === 0) return [];
+  const { data, error } = await supabase.from('waitlist').select('*').in('house_id', houseIds).order('created_at');
+  if (error) { console.error('loadWaitlistForHouses:', error); return []; }
   return (data ?? []).map(mapWaitlistEntry);
 }
 

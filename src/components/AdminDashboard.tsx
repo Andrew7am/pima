@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry } from '../types';
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
@@ -28,6 +28,7 @@ interface AdminDashboardProps {
   settings?: PlatformSettings;
   onUpdateSettings?: (s: PlatformSettings) => void;
   auditLog?: AuditLogEntry[];
+  onLoadProofImage?: (paymentId: string) => Promise<string | null>;
 }
 
 export default function AdminDashboard({
@@ -55,6 +56,7 @@ export default function AdminDashboard({
   settings = DEFAULT_PLATFORM_SETTINGS,
   onUpdateSettings,
   auditLog = [],
+  onLoadProofImage,
 }: AdminDashboardProps) {
   // Tabs within Admin
   const [activeTab, setActiveTab] = useState<'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings' | 'settings' | 'audit'>('moderation');
@@ -64,6 +66,26 @@ export default function AdminDashboard({
   React.useEffect(() => { setSettingsDraft(settings); }, [settings]);
   const [notesInputs, setNotesInputs] = useState<Record<string, string>>({});
   const [selectedProofImage, setSelectedProofImage] = useState<string | null>(null);
+
+  // Proof-of-payment screenshots are excluded from the general payments
+  // load (they're the single biggest per-row payload, often hundreds of KB
+  // of base64) and fetched on demand instead, only for payments actually
+  // visible once the admin opens this tab. null = fetched and empty;
+  // undefined/missing key = not fetched yet.
+  const [proofImages, setProofImages] = useState<Record<string, string | null>>({});
+  useEffect(() => {
+    if (activeTab !== 'payments' || !onLoadProofImage) return;
+    const missing = payments.filter((p) => !(p.id in proofImages));
+    if (missing.length === 0) return;
+    Promise.all(missing.map((p) => onLoadProofImage(p.id).then((img) => [p.id, img] as const))).then((results) => {
+      setProofImages((prev) => {
+        const next = { ...prev };
+        results.forEach(([id, img]) => { next[id] = img; });
+        return next;
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, payments.length]);
 
   // Financial dashboard period filter (mirrors the owner dashboard's)
   const [finPeriod, setFinPeriod] = useState<'today' | '7d' | '30d' | 'month' | 'all' | 'custom'>('all');
@@ -1145,6 +1167,8 @@ export default function AdminDashboard({
               {[...payments].reverse().map((pay) => {
                 const b = bookings.find((bk) => bk.id === pay.bookingId);
                 const isPending = pay.paymentStatus === 'pending';
+                const proofFetched = pay.id in proofImages;
+                const proofImg = proofImages[pay.id];
 
                 return (
                   <div
@@ -1314,23 +1338,28 @@ export default function AdminDashboard({
                       {/* Right side: Proof Image display */}
                       <div className="flex flex-col items-center justify-center p-3 bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl relative">
                         <span className="text-[10px] font-bold text-[#867E65] mb-2">إثبات التحويل المرفق:</span>
-                        {pay.proofImage ? (
+                        {proofImg ? (
                           <div className="space-y-2 text-center">
                             <img
-                              src={pay.proofImage}
+                              src={proofImg}
                               alt="إثبات الدفع"
                               referrerPolicy="no-referrer"
-                              onClick={() => setSelectedProofImage(pay.proofImage || null)}
+                              onClick={() => setSelectedProofImage(proofImg)}
                               className="max-h-44 max-w-full rounded-lg border border-[#E7E5DB] object-contain shadow-sm cursor-zoom-in hover:brightness-95 transition-all"
                             />
                             <button
                               id={`admin-zoom-btn-${pay.id}`}
                               type="button"
-                              onClick={() => setSelectedProofImage(pay.proofImage || null)}
+                              onClick={() => setSelectedProofImage(proofImg)}
                               className="text-[9px] text-[#464E3D] hover:underline font-bold"
                             >
                               🔍 اضغط لتكبير الصورة لرؤية التفاصيل بدقة
                             </button>
+                          </div>
+                        ) : !proofFetched ? (
+                          <div className="text-center p-6 text-[#867E65]">
+                            <Clock className="w-6 h-6 text-[#BCBC9D] mx-auto mb-1 animate-pulse" />
+                            <p className="text-[10px] font-bold">جارٍ تحميل الصورة...</p>
                           </div>
                         ) : (
                           <div className="text-center p-6 text-[#867E65]">
