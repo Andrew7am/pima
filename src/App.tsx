@@ -142,9 +142,16 @@ export default function App() {
   // subscribing (INITIAL_SESSION), so a separate getSession() call here was
   // redundant — it made loadAppData's 10 full-table queries fire 2-3x on
   // every single page load, which was the dominant contributor to egress.
+  //
+  // TOKEN_REFRESHED fires automatically (~every 55min per open tab, and also
+  // on tab refocus in some cases) purely to renew the JWT — it does NOT mean
+  // the user's data changed, so re-running loadUserProfile/loadAppData (9
+  // full-table queries) for it was pure waste, silently multiplying egress
+  // for anyone who leaves a tab open. Only reload on an actual sign-in.
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (_event === 'PASSWORD_RECOVERY') setIsPasswordRecovery(true);
+      if (_event === 'PASSWORD_RECOVERY') { setIsPasswordRecovery(true); return; }
+      if (_event === 'TOKEN_REFRESHED' || _event === 'USER_UPDATED') return;
       if (session) loadUserProfile(session.user.id);
       else { setCurrentUser(null); setIsAuthLoading(false); }
     });
