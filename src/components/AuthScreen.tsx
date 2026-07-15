@@ -205,15 +205,32 @@ export default function AuthScreen() {
       <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center p-4 font-sans antialiased text-right">
         <div className="w-full max-w-md bg-white rounded-[32px] border border-[#D6D6C2] shadow-2xl overflow-hidden text-[#4A4A3A]">
 
-          {/* 1 — Hero image */}
-          <div className="relative w-full h-56 bg-gradient-to-br from-[#EBEBE0] to-[#DEDECB]">
+          {/* 1 — Hero image. The source photo has its own logo/Arabic label
+              baked into its right third (not editable HTML), so that side
+              is faded to solid cream and our own live "PiMa" lockup — with
+              correct, up-to-date text — is drawn on top of it instead. */}
+          <div className="relative w-full h-64 bg-gradient-to-br from-[#EBEBE0] to-[#DEDECB] overflow-hidden">
             <img
               src="/pima-hero.jpg"
               alt="بيما - بيوت المؤتمرات المسيحية"
               className="w-full h-full object-cover"
+              style={{ objectPosition: '22% 38%' }}
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
             />
-            <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white/60 to-transparent" />
+            {/* Hide the source image's own baked-in logo/text on the right */}
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, transparent 38%, #FDFBF7 90%)' }} />
+            {/* Seamless blend into the card content below */}
+            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white to-transparent" />
+            {/* Our own logo lockup, replacing the hidden one, same corner */}
+            <div className="absolute top-4 right-4 flex items-center gap-2">
+              <div className="text-right leading-tight">
+                <div className="text-sm font-serif font-black text-[#0A2342]">PiMa</div>
+                <div className="text-[8px] font-bold text-[#C5A059] whitespace-nowrap">بيوت المؤتمرات المسيحية</div>
+              </div>
+              <div className="w-9 h-9 rounded-full bg-white/95 backdrop-blur flex items-center justify-center shadow-md border border-[#C5A059]/40 shrink-0">
+                <Church className="w-4 h-4 text-[#0A2342]" strokeWidth={2.2} />
+              </div>
+            </div>
           </div>
 
           <div className="p-5 space-y-4">
