@@ -1,10 +1,63 @@
 import React, { useState } from 'react';
 import { UserRole } from '../types';
-import { User as UserIcon, BookOpen, Users, Lock, Mail, Phone, MapPin, Church } from 'lucide-react';
+import {
+  User as UserIcon, BookOpen, Users, Lock, Mail, Phone, MapPin, Church,
+  Home, Calendar as CalendarIcon, ShieldCheck, UserPlus, Award, Headphones,
+  Eye, EyeOff, ChevronLeft,
+} from 'lucide-react';
 import Logo from './Logo';
 import { supabase } from '../lib/supabase';
 import { GOVERNORATES } from '../mockData';
 import PrivacyPolicy from './PrivacyPolicy';
+
+// A small ornamental Coptic-style cross used as a divider on the login screen.
+function CrossOrnament({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="2.4" fill="#C5A059" />
+      <path d="M12 4 L13 10 L11 10 Z" fill="#C5A059" />
+      <path d="M12 20 L13 14 L11 14 Z" fill="#C5A059" />
+      <path d="M4 12 L10 13 L10 11 Z" fill="#C5A059" />
+      <path d="M20 12 L14 13 L14 11 Z" fill="#C5A059" />
+    </svg>
+  );
+}
+
+function FeatureChip({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1 p-1 text-center">
+      <div className="w-9 h-9 rounded-full bg-white border border-[#EFE8D8] flex items-center justify-center shadow-sm">
+        {icon}
+      </div>
+      <div className="text-[9.5px] font-black text-[#0A2342] leading-tight">{label}</div>
+      <div className="text-[8px] text-[#8A8A70] leading-tight">{sub}</div>
+    </div>
+  );
+}
+
+function BottomChip({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1 text-center">
+      <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center border border-[#C5A059]/40">
+        {icon}
+      </div>
+      <div className="text-[9.5px] font-black text-white leading-tight">{label}</div>
+      <div className="text-[8px] text-white/70 leading-tight">{sub}</div>
+    </div>
+  );
+}
+
+// Google G icon (colored) — extracted so we don't repeat the SVG.
+function GoogleG({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 48 48">
+      <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+      <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+      <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+      <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+    </svg>
+  );
+}
 
 export default function AuthScreen() {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -13,6 +66,8 @@ export default function AuthScreen() {
   const [selectedRole, setSelectedRole] = useState<UserRole>('individual');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   // Forgot-password fields
   const [forgotEmail, setForgotEmail] = useState('');
@@ -133,27 +188,176 @@ export default function AuthScreen() {
     setLoading(false);
   };
 
-  const DEMO_ACCOUNTS = [
-    { email: 'fady@gmail.com',            label: 'مينا الديب',       sub: 'فرد' },
-    { email: 'mina@servant.org',          label: 'مينا الديب',       sub: 'خادم' },
-    { email: 'owner@church.eg',           label: 'بطرس ميلاد',       sub: 'مالك بيت' },
-    { email: 'shenouda@retreat.eg',       label: 'شنودة رمسيس',      sub: 'مالك بيت' },
-    { email: 'admin@church.eg',           label: 'القس مرقس جرجس',   sub: 'أدمن' },
-  ];
-
-  const handleDemoLogin = async (email: string) => {
-    setLoading(true);
-    setError('');
-    const { error } = await supabase.auth.signInWithPassword({ email, password: 'pima1234' });
-    if (error) setError('تأكد من تشغيل الـ seed أولاً.');
-    setLoading(false);
-  };
-
   if (isViewingPrivacy) {
     return (
       <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center p-4 font-sans antialiased text-right">
         <div className="w-full max-w-md">
           <PrivacyPolicy onBack={() => setIsViewingPrivacy(false)} />
+        </div>
+      </div>
+    );
+  }
+
+  // --- Fresh landing / login view (matches the current mobile mockup) -----
+  // Register + forgot flows keep the older compact wrapper below.
+  if (!isRegisterMode && !isForgotMode) {
+    return (
+      <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center p-4 font-sans antialiased text-right">
+        <div className="w-full max-w-md bg-white rounded-[32px] border border-[#D6D6C2] shadow-2xl overflow-hidden text-[#4A4A3A]">
+
+          {/* 1 — Hero image */}
+          <div className="relative w-full h-56 bg-gradient-to-br from-[#EBEBE0] to-[#DEDECB]">
+            <img
+              src="/pima-hero.jpg"
+              alt="بيما - بيوت المؤتمرات المسيحية"
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+            />
+            <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white/60 to-transparent" />
+          </div>
+
+          <div className="p-5 space-y-4">
+            {/* 2 — Title */}
+            <div className="text-center space-y-1">
+              <h1 className="text-lg font-black text-[#0A2342]">أهلاً بك في <span className="text-[#C5A059] font-serif">PiMa</span></h1>
+              <p className="text-[11px] text-[#8A8A70] leading-relaxed">احجز مكانك بسهولة واستمتع بتجربة روحانية مميزة</p>
+            </div>
+
+            {/* 3 — Feature chips (3 tiles) */}
+            <div className="grid grid-cols-3 gap-2 bg-[#FAF7F1] border border-[#EFE8D8] rounded-2xl p-2">
+              <FeatureChip icon={<Home className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="أكثر من مكان" sub="اختيارات متنوعة" />
+              <FeatureChip icon={<CalendarIcon className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="احجز الآن" sub="بكل سهولة" />
+              <FeatureChip icon={<ShieldCheck className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="موثوق وآمن" sub="حجوزات مؤكدة" />
+            </div>
+
+            {/* 4 — Section heading with ornaments */}
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <span className="text-[#C5A059] text-xs">◆</span>
+              <span className="text-sm font-black text-[#0A2342]">تسجيل الدخول</span>
+              <span className="text-[#C5A059] text-xs">◆</span>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-3 py-2 text-center">
+                {error}
+              </div>
+            )}
+
+            {/* 5 — Google */}
+            <button
+              type="button"
+              disabled={loading}
+              onClick={handleGoogleSignIn}
+              className="w-full flex items-center justify-center gap-2 bg-[#0A2342] hover:bg-[#071930] disabled:opacity-60 text-white text-xs font-bold py-3 rounded-xl shadow-md transition-colors"
+            >
+              <div className="bg-white rounded-full p-0.5">
+                <GoogleG className="w-3.5 h-3.5" />
+              </div>
+              <span>تسجيل الدخول بحساب Google</span>
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-[#EFE8D8]" />
+              <span className="text-[10px] text-[#8A8A70] font-bold">أو</span>
+              <div className="flex-1 h-px bg-[#EFE8D8]" />
+            </div>
+
+            {/* 6 — Form */}
+            <form onSubmit={handleSignInSubmit} className="space-y-3">
+              <div className="relative">
+                <input
+                  type="email" required placeholder="البريد الإلكتروني"
+                  value={signInEmail} onChange={(e) => setSignInEmail(e.target.value)}
+                  className="w-full bg-white border border-[#EFE8D8] rounded-2xl py-3 pr-11 pl-3 text-xs text-[#4A4A3A] focus:outline-none focus:border-[#C5A059] text-right"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3.5">
+                  <Mail className="w-4 h-4 text-[#BCBC9D]" />
+                </div>
+              </div>
+
+              <div className="relative">
+                <input
+                  type={showPass ? 'text' : 'password'} required placeholder="كلمة المرور"
+                  value={signInPassword} onChange={(e) => setSignInPassword(e.target.value)}
+                  className="w-full bg-white border border-[#EFE8D8] rounded-2xl py-3 pr-11 pl-10 text-xs text-[#4A4A3A] focus:outline-none focus:border-[#C5A059] text-right"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3.5">
+                  <Lock className="w-4 h-4 text-[#BCBC9D]" />
+                </div>
+                <button
+                  type="button" onClick={() => setShowPass((s) => !s)}
+                  className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#BCBC9D] hover:text-[#4A4A3A]"
+                >
+                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between text-[10px]">
+                <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox" checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-3.5 h-3.5 accent-[#C5A059] cursor-pointer"
+                  />
+                  <span className="text-[#4A4A3A] font-bold">تذكرني</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => { setIsForgotMode(true); setForgotSent(false); setForgotEmail(signInEmail); setError(''); }}
+                  className="text-[#8A8A70] hover:text-[#0A2342] font-bold underline"
+                >
+                  نسيت كلمة المرور؟
+                </button>
+              </div>
+
+              <button
+                type="submit" disabled={loading}
+                className="w-full flex items-center justify-center gap-2 bg-[#C5A059] hover:bg-[#B28F4D] disabled:opacity-60 text-white text-sm font-black py-3 rounded-2xl shadow-lg transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>{loading ? 'جارٍ تسجيل الدخول...' : 'تسجيل الدخول ومتابعة الحجز'}</span>
+              </button>
+            </form>
+
+            {/* 7 — Cross ornament divider */}
+            <div className="flex items-center gap-3 pt-1">
+              <div className="flex-1 h-px bg-[#EFE8D8]" />
+              <CrossOrnament className="w-4 h-4" />
+              <div className="flex-1 h-px bg-[#EFE8D8]" />
+            </div>
+
+            {/* 8 — Create-account row */}
+            <button
+              type="button"
+              onClick={() => { setIsRegisterMode(true); setError(''); }}
+              className="w-full flex items-center justify-between gap-2 bg-white border border-[#EFE8D8] rounded-2xl p-3 hover:bg-[#FAF7F1] transition-colors"
+            >
+              <div className="w-9 h-9 rounded-full bg-[#FAF7F1] border border-[#EFE8D8] flex items-center justify-center shrink-0">
+                <UserPlus className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />
+              </div>
+              <div className="flex-1 text-center text-[11px]">
+                <span className="text-[#8A8A70]">ليس لديك حساب؟ </span>
+                <span className="text-[#C5A059] font-black">إنشاء حساب جديد</span>
+              </div>
+              <span className="w-9 shrink-0" aria-hidden />
+            </button>
+          </div>
+
+          {/* 9 — Navy footer with 3 trust chips */}
+          <div className="bg-[#0A2342] px-4 pt-4 pb-3 grid grid-cols-3 gap-3">
+            <BottomChip icon={<ShieldCheck className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="حجوزات آمنة" sub="بياناتك محمية بالكامل" />
+            <BottomChip icon={<Award className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="جودة موثوقة" sub="أفضل أماكن للإقامة" />
+            <BottomChip icon={<Headphones className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="دعم على مدار الساعة" sub="نحن هنا لمساعدتك" />
+          </div>
+          <div className="bg-[#0A2342] text-center pb-3">
+            <button
+              type="button" onClick={() => setIsViewingPrivacy(true)}
+              className="text-[9px] text-white/70 hover:text-white underline"
+            >
+              سياسة الخصوصية وشروط الاستخدام
+            </button>
+          </div>
+
         </div>
       </div>
     );
@@ -241,7 +445,7 @@ export default function AuthScreen() {
               </div>
             </form>
           )
-        ) : isRegisterMode ? (
+        ) : (
           <form onSubmit={handleRegisterSubmit} className="space-y-4">
             <div className="space-y-1">
               <button type="button" onClick={() => { setIsRegisterMode(false); setError(''); }}
@@ -383,72 +587,7 @@ export default function AuthScreen() {
               </button>
             </div>
           </form>
-        ) : (
-          <form onSubmit={handleSignInSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <h2 className="text-xs font-bold text-[#4A4A3A]">تسجيل الدخول للحساب:</h2>
-              <p className="text-[10px] text-[#8A8A70]">أدخل بريدك الإلكتروني وكلمة المرور للمتابعة.</p>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">البريد الإلكتروني:</label>
-                <div className="relative">
-                  <input type="email" required placeholder="example@church.eg" value={signInEmail} onChange={(e) => setSignInEmail(e.target.value)}
-                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2.5 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none text-left" />
-                  <Mail className="absolute top-3 right-3 w-4 h-4 text-[#BCBC9D]" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">كلمة المرور:</label>
-                <div className="relative">
-                  <input type="password" required placeholder="كلمة المرور" value={signInPassword} onChange={(e) => setSignInPassword(e.target.value)}
-                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2.5 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none" />
-                  <Lock className="absolute top-3 right-3 w-4 h-4 text-[#BCBC9D]" />
-                </div>
-                <div className="text-left mt-1.5">
-                  <button type="button" onClick={() => { setIsForgotMode(true); setForgotSent(false); setForgotEmail(signInEmail); setError(''); }}
-                    className="text-[9.5px] text-[#8A8A70] hover:text-[#0A2342] font-bold underline">
-                    نسيت كلمة المرور؟
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <button type="submit" disabled={loading}
-              className="w-full bg-[#0A2342] hover:bg-[#071930] disabled:opacity-60 text-white text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors">
-              {loading ? 'جارٍ تسجيل الدخول...' : 'تسجيل الدخول ومتابعة الحجز'}
-            </button>
-
-            <div className="text-center">
-              <button type="button" onClick={() => { setIsRegisterMode(true); setError(''); }}
-                className="text-[10px] text-[#8A8A70] hover:text-[#4A4A3A] font-bold underline">
-                ليس لديك حساب؟ قم بإنشاء حسابك الفردي أو الخدمي الآن
-              </button>
-            </div>
-          </form>
         )}
-        {!isForgotMode && (
-        <div className="pt-4 border-t border-[#D6D6C2] space-y-2 text-right">
-          <span className="block text-[10px] font-bold text-[#8A8A70]">حسابات تجريبية — كلمة المرور: pima1234</span>
-          <div className="grid grid-cols-2 gap-2 text-[10px]">
-            {DEMO_ACCOUNTS.map((acc) => (
-              <button
-                key={acc.email}
-                type="button"
-                disabled={loading}
-                onClick={() => handleDemoLogin(acc.email)}
-                className="bg-[#EBEBE0] border border-[#D6D6C2] hover:bg-[#DEDECB] active:bg-[#BCBC9D] p-2 rounded-xl flex flex-col justify-start text-right transition-colors text-[#4A4A3A] disabled:opacity-50"
-              >
-                <span className="font-bold text-[#4A4A3A] truncate w-full">{acc.label}</span>
-                <span className="text-[8px] text-[#8A8A70]">{acc.sub}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-        )}
-
         <div className="text-center pt-1">
           <button type="button" onClick={() => setIsViewingPrivacy(true)}
             className="text-[9px] text-[#8A8A70] hover:text-[#4A4A3A] underline">

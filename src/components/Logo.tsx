@@ -118,7 +118,7 @@ export default function Logo({ className = '', size = 120, variant = 'full' }: L
         </div>
         <div className="flex flex-col text-right">
           <span className="text-xs font-black text-[#0A2342] leading-none tracking-wide">بيما | PiMa</span>
-          <span className="text-[8px] text-[#C5A059] font-extrabold mt-0.5">بيوت المؤتمرات القبطية</span>
+          <span className="text-[8px] text-[#C5A059] font-extrabold mt-0.5">بيوت المؤتمرات المسيحية</span>
         </div>
       </div>
     );
@@ -208,7 +208,7 @@ export default function Logo({ className = '', size = 120, variant = 'full' }: L
         {/* Arabic Brand */}
         <div className="text-right flex-1">
           <div className="text-2xl font-black text-[#0A2342] tracking-normal leading-tight">بيما</div>
-          <div className="text-[8.5px] font-bold text-[#C5A059] tracking-tighter mt-0.5">بيوت المؤتمرات القبطية</div>
+          <div className="text-[8.5px] font-bold text-[#C5A059] tracking-tighter mt-0.5">بيوت المؤتمرات المسيحية</div>
         </div>
 
         {/* Separator Line */}
@@ -224,10 +224,10 @@ export default function Logo({ className = '', size = 120, variant = 'full' }: L
         </div>
       </div>
 
-      {/* 4. Bottom Blessing Slogan & Calendar */}
-      <div className="flex items-center justify-between w-full pt-3" dir="rtl">
-        <span className="text-[9.5px] font-bold text-[#8A8A70]">احجز مكانك</span>
-        
+      {/* 4. Bottom Slogan & Calendar */}
+      <div className="flex items-center justify-center gap-3 w-full pt-3" dir="rtl">
+        <span className="text-[9.5px] font-bold text-[#8A8A70]">احجز مكانك بسهولة</span>
+
         {/* Calendar Icon Badge */}
         <div className="bg-[#0A2342] p-1.5 rounded-xl border border-[#C5A059]/40 flex items-center justify-center shadow-sm">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C5A059" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -238,8 +238,6 @@ export default function Logo({ className = '', size = 120, variant = 'full' }: L
             <polyline points="9 16 11 18 15 14" />
           </svg>
         </div>
-
-        <span className="text-[9.5px] font-bold text-[#8A8A70]">للقاء وبركة</span>
       </div>
     </div>
   );
