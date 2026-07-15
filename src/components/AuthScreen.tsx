@@ -10,7 +10,8 @@ import { supabase } from '../lib/supabase';
 import { GOVERNORATES } from '../mockData';
 import PrivacyPolicy from './PrivacyPolicy';
 
-// A small ornamental Coptic-style cross used as a divider on the login screen.
+// Small ornamental Coptic-style cross for the divider between the form
+// and the "create account" row.
 function CrossOrnament({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -19,6 +20,25 @@ function CrossOrnament({ className = '' }: { className?: string }) {
       <path d="M12 20 L13 14 L11 14 Z" fill="#C5A059" />
       <path d="M4 12 L10 13 L10 11 Z" fill="#C5A059" />
       <path d="M20 12 L14 13 L14 11 Z" fill="#C5A059" />
+    </svg>
+  );
+}
+
+// Curved leaf flourish used to frame the "تسجيل الدخول" heading — matches
+// the arabesque motifs in the mockup. `flip` mirrors it so the two sides
+// of the heading point inward toward the text.
+function LeafFlourish({ className = '', flip = false }: { className?: string; flip?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 40 12"
+      className={className}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={flip ? { transform: 'scaleX(-1)' } : undefined}
+    >
+      <path d="M2 6 Q 14 -2, 26 6" stroke="#C5A059" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+      <path d="M26 6 C 30 6, 33 3, 33 3 C 33 3, 35 6, 32 8 C 30 9, 27 8, 26 6 Z" fill="#C5A059" />
+      <circle cx="4" cy="6" r="1.3" fill="#C5A059" />
     </svg>
   );
 }
@@ -205,53 +225,65 @@ export default function AuthScreen() {
       <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center p-4 font-sans antialiased text-right">
         <div className="w-full max-w-md bg-white rounded-[32px] border border-[#D6D6C2] shadow-2xl overflow-hidden text-[#4A4A3A]">
 
-          {/* 1 — Hero image. The source photo has its own logo/Arabic label
-              baked into its right third (not editable HTML), so that side
-              is faded to solid cream and our own live "PiMa" lockup — with
-              correct, up-to-date text — is drawn on top of it instead. */}
-          <div className="relative w-full h-64 bg-gradient-to-br from-[#EBEBE0] to-[#DEDECB] overflow-hidden">
+          {/* 1 — Hero image + curved bottom wave. Full image shown as-is
+              (the user's uploaded file already has the correct
+              "المسيحية" logo baked in). A convex white SVG wave at the
+              bottom makes the transition into the content section flow
+              seamlessly instead of a hard rectangular edge, with a
+              subtle gold hairline tracing the same curve. */}
+          <div className="relative w-full">
             <img
               src="/pima-hero.jpg"
               alt="بيما - بيوت المؤتمرات المسيحية"
-              className="w-full h-full object-cover"
-              style={{ objectPosition: '22% 38%' }}
+              className="w-full h-64 object-cover object-center block"
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
             />
-            {/* Hide the source image's own baked-in logo/text on the right */}
-            <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, transparent 38%, #FDFBF7 90%)' }} />
-            {/* Seamless blend into the card content below */}
-            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white to-transparent" />
-            {/* Our own logo lockup, replacing the hidden one, same corner */}
-            <div className="absolute top-4 right-4 flex items-center gap-2">
-              <div className="text-right leading-tight">
-                <div className="text-sm font-serif font-black text-[#0A2342]">PiMa</div>
-                <div className="text-[8px] font-bold text-[#C5A059] whitespace-nowrap">بيوت المؤتمرات المسيحية</div>
-              </div>
-              <div className="w-9 h-9 rounded-full bg-white/95 backdrop-blur flex items-center justify-center shadow-md border border-[#C5A059]/40 shrink-0">
-                <Church className="w-4 h-4 text-[#0A2342]" strokeWidth={2.2} />
-              </div>
-            </div>
+            {/* Convex wave — white content bulges up into the image */}
+            <svg
+              className="absolute -bottom-px inset-x-0 w-full"
+              viewBox="0 0 400 50"
+              preserveAspectRatio="none"
+              style={{ height: 44 }}
+              aria-hidden
+            >
+              <path d="M0,50 L0,38 Q200,-14 400,38 L400,50 Z" fill="white" />
+            </svg>
+            {/* Gold hairline riding the same curve, slightly above it */}
+            <svg
+              className="absolute -bottom-px inset-x-0 w-full pointer-events-none"
+              viewBox="0 0 400 50"
+              preserveAspectRatio="none"
+              style={{ height: 44 }}
+              aria-hidden
+            >
+              <path d="M0,34 Q200,-18 400,34" fill="none" stroke="#C5A059" strokeWidth="1.2" opacity="0.85" />
+            </svg>
           </div>
 
-          <div className="p-5 space-y-4">
+          <div className="px-5 pt-2 pb-5 space-y-4">
             {/* 2 — Title */}
             <div className="text-center space-y-1">
-              <h1 className="text-lg font-black text-[#0A2342]">أهلاً بك في <span className="text-[#C5A059] font-serif">PiMa</span></h1>
-              <p className="text-[11px] text-[#8A8A70] leading-relaxed">احجز مكانك بسهولة واستمتع بتجربة روحانية مميزة</p>
+              <h1 className="text-xl font-black text-[#0A2342]">
+                أهلاً بك في <span className="text-[#C5A059] font-serif">PiMa</span>
+              </h1>
+              <p className="text-[11px] text-[#8A8A70] leading-relaxed max-w-[280px] mx-auto">
+                احجز مكانك بسهولة واستمتع بتجربة روحانية مميزة
+              </p>
             </div>
 
-            {/* 3 — Feature chips (3 tiles) */}
-            <div className="grid grid-cols-3 gap-2 bg-[#FAF7F1] border border-[#EFE8D8] rounded-2xl p-2">
+            {/* 3 — Feature chips (4 tiles per mockup) */}
+            <div className="grid grid-cols-4 gap-1.5 bg-white border border-[#EFE8D8] rounded-2xl p-2.5 shadow-sm">
               <FeatureChip icon={<Home className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="أكثر من مكان" sub="اختيارات متنوعة" />
               <FeatureChip icon={<CalendarIcon className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="احجز الآن" sub="بكل سهولة" />
               <FeatureChip icon={<ShieldCheck className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="موثوق وآمن" sub="حجوزات مؤكدة" />
+              <FeatureChip icon={<Users className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="للقاء والبركة" sub="تجارب روحانية" />
             </div>
 
-            {/* 4 — Section heading with ornaments */}
+            {/* 4 — Section heading with leaf flourishes on both sides */}
             <div className="flex items-center justify-center gap-2 pt-1">
-              <span className="text-[#C5A059] text-xs">◆</span>
-              <span className="text-sm font-black text-[#0A2342]">تسجيل الدخول</span>
-              <span className="text-[#C5A059] text-xs">◆</span>
+              <LeafFlourish className="w-10 h-3" />
+              <span className="text-base font-black text-[#0A2342] px-1">تسجيل الدخول</span>
+              <LeafFlourish className="w-10 h-3" flip />
             </div>
 
             {error && (
@@ -336,11 +368,12 @@ export default function AuthScreen() {
               </button>
             </form>
 
-            {/* 7 — Cross ornament divider */}
-            <div className="flex items-center gap-3 pt-1">
-              <div className="flex-1 h-px bg-[#EFE8D8]" />
+            {/* 7 — Cross ornament divider — matches the arabesque motif
+                on the mockup: leaf flourishes framing a small cross */}
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <LeafFlourish className="w-8 h-3" />
               <CrossOrnament className="w-4 h-4" />
-              <div className="flex-1 h-px bg-[#EFE8D8]" />
+              <LeafFlourish className="w-8 h-3" flip />
             </div>
 
             {/* 8 — Create-account row */}
