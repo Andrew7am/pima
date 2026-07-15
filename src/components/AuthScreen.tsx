@@ -233,7 +233,7 @@ export default function AuthScreen() {
               subtle gold hairline tracing the same curve. */}
           <div className="relative w-full">
             <img
-              src="/pima-hero.jpg"
+              src="/pima-hero.png"
               alt="بيما - بيوت المؤتمرات المسيحية"
               className="w-full h-64 object-cover object-center block"
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
@@ -271,12 +271,11 @@ export default function AuthScreen() {
               </p>
             </div>
 
-            {/* 3 — Feature chips (4 tiles per mockup) */}
-            <div className="grid grid-cols-4 gap-1.5 bg-white border border-[#EFE8D8] rounded-2xl p-2.5 shadow-sm">
+            {/* 3 — Feature chips (3 tiles — "للقاء والبركة" removed) */}
+            <div className="grid grid-cols-3 gap-2 bg-white border border-[#EFE8D8] rounded-2xl p-2.5 shadow-sm">
               <FeatureChip icon={<Home className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="أكثر من مكان" sub="اختيارات متنوعة" />
               <FeatureChip icon={<CalendarIcon className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="احجز الآن" sub="بكل سهولة" />
               <FeatureChip icon={<ShieldCheck className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="موثوق وآمن" sub="حجوزات مؤكدة" />
-              <FeatureChip icon={<Users className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="للقاء والبركة" sub="تجارب روحانية" />
             </div>
 
             {/* 4 — Section heading with leaf flourishes on both sides */}
