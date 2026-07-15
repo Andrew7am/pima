@@ -1,12 +1,48 @@
 import React from 'react';
 import { User } from '../types';
-import { ChevronRight, BookOpen, Zap, Coins, Trophy, Sparkles } from 'lucide-react';
+import { ChevronRight, BookOpen, Zap, Coins, Trophy, Sparkles, Music, FileText, HelpCircle } from 'lucide-react';
 import { xpToNext, xpProgressPct } from './progress';
 
 interface EntertainmentHomeProps {
   currentUser: User;
   onBack: () => void;
   onOpenTrivia: () => void;
+  onOpenWhoAmI: () => void;
+  onOpenHymns: () => void;
+  onOpenFillVerse: () => void;
+}
+
+interface GameCardProps {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  badge?: string;
+  gradient?: string;
+}
+
+function GameCard({ title, description, icon, onClick, badge = 'فردي', gradient = 'from-amber-500 to-amber-700' }: GameCardProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-amber-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
+    >
+      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform`}>
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <h4 className="text-sm font-black text-white">{title}</h4>
+          <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            {badge}
+          </span>
+        </div>
+        <p className="text-[10.5px] text-slate-400 leading-relaxed">{description}</p>
+      </div>
+      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-colors rotate-180 shrink-0" />
+    </button>
+  );
 }
 
 // Phase 1 entertainment hub — deliberately dark-themed so gameplay
@@ -16,7 +52,9 @@ interface EntertainmentHomeProps {
 // launches the solo Trivia game. More game cards (Who Am I, Hymns,
 // Fill Verse, Word Search, and online rooms) get added below this
 // one in later phases.
-export default function EntertainmentHome({ currentUser, onBack, onOpenTrivia }: EntertainmentHomeProps) {
+export default function EntertainmentHome({
+  currentUser, onBack, onOpenTrivia, onOpenWhoAmI, onOpenHymns, onOpenFillVerse,
+}: EntertainmentHomeProps) {
   const level = currentUser.level ?? 1;
   const xp = currentUser.xp ?? 0;
   const coins = currentUser.gameCoins ?? 0;
@@ -96,37 +134,46 @@ export default function EntertainmentHome({ currentUser, onBack, onOpenTrivia }:
             <h3 className="text-sm font-black text-slate-200">الألعاب المتاحة</h3>
           </div>
 
-          <button
-            type="button"
+          <GameCard
+            title="أسئلة كتابية"
+            description="٥ أسئلة سريعة من الكتاب المقدس والتراث الكنسي. اربح خبرة وعملات عن كل إجابة صحيحة."
+            icon={<BookOpen className="w-7 h-7 text-white" />}
             onClick={onOpenTrivia}
-            className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-amber-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
-          >
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
-              <BookOpen className="w-7 h-7 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h4 className="text-sm font-black text-white">أسئلة كتابية</h4>
-                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                  فردي
-                </span>
-              </div>
-              <p className="text-[10.5px] text-slate-400 leading-relaxed">
-                ٥ أسئلة سريعة من الكتاب المقدس والتراث الكنسي. اربح خبرة وعملات عن كل إجابة صحيحة.
-              </p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-colors rotate-180 shrink-0" />
-          </button>
+          />
 
-          {/* Placeholders for the games we'll add in later phases */}
+          <GameCard
+            title="من أنا؟"
+            description="خمّن شخصية كتابية من التلميحات. كل ما استخدمت تلميحات أقل، كل ما ربحت أكتر."
+            icon={<HelpCircle className="w-7 h-7 text-white" />}
+            onClick={onOpenWhoAmI}
+            gradient="from-purple-500 to-purple-700"
+          />
+
+          <GameCard
+            title="ألحان قبطية"
+            description="اختبر معلوماتك في ألحان وطقوس الكنيسة القبطية والمصطلحات الليتورجية."
+            icon={<Music className="w-7 h-7 text-white" />}
+            onClick={onOpenHymns}
+            gradient="from-rose-500 to-rose-700"
+          />
+
+          <GameCard
+            title="أكمل الآية"
+            description="آيات كتابية شهيرة بكلمة ناقصة. اختر الكلمة الصحيحة من بين ٤ خيارات."
+            icon={<FileText className="w-7 h-7 text-white" />}
+            onClick={onOpenFillVerse}
+            gradient="from-cyan-500 to-cyan-700"
+          />
+
+          {/* Placeholder for online multiplayer coming in phase 3 */}
           <div className="bg-white/[0.02] border border-white/5 border-dashed rounded-3xl p-4 flex items-center gap-3 opacity-60">
             <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
               <Sparkles className="w-5 h-5 text-slate-500" />
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-400">ألعاب أخرى قريباً</p>
+              <p className="text-xs font-bold text-slate-400">قريباً</p>
               <p className="text-[10px] text-slate-500">
-                من أنا؟ • ألحان قبطية • أكمل الآية • مباريات مباشرة
+                مباريات مباشرة • غرف خاصة • بحث عشوائي • الأصدقاء
               </p>
             </div>
           </div>

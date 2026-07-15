@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft, Trash2, ShieldCheck, Sparkles } from 'lucide-react';
+import { User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft, Trash2, ShieldCheck } from 'lucide-react';
 import RewardsDashboard from './RewardsDashboard';
 
 interface ProfileScreenProps {
@@ -9,7 +9,6 @@ interface ProfileScreenProps {
   onBack: () => void;
   onNavigateSupport: () => void;
   onNavigatePrivacy: () => void;
-  onNavigateEntertainment: () => void;
   onDeleteAccount: () => Promise<{ ok: boolean; error?: string }>;
 }
 
@@ -36,7 +35,7 @@ function calculateAge(dateOfBirth: string): number {
   return age;
 }
 
-export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigateSupport, onNavigatePrivacy, onNavigateEntertainment, onDeleteAccount }: ProfileScreenProps) {
+export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigateSupport, onNavigatePrivacy, onDeleteAccount }: ProfileScreenProps) {
   const roleLabel = currentUser.role === 'servant' ? 'خادم' : currentUser.role === 'owner' ? 'صاحب بيت' : 'مستخدم';
   const canSelfDelete = currentUser.role === 'individual' || currentUser.role === 'servant';
 
@@ -103,23 +102,6 @@ export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigat
 
       {/* Rewards & points, folded into Profile */}
       <RewardsDashboard currentUser={currentUser} onBack={onBack} />
-
-      {/* Entertainment hub — solo trivia now, more games later */}
-      <button
-        onClick={onNavigateEntertainment}
-        className="w-full flex items-center justify-between gap-2 bg-gradient-to-br from-[#132247] to-[#0A1732] border border-[#C5A059]/30 rounded-2xl p-3.5 hover:from-[#152A55] transition-colors cursor-pointer text-white shadow-md"
-      >
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-amber-300" />
-          </div>
-          <div className="text-right leading-tight">
-            <span className="block text-xs font-black">مركز الترفيه</span>
-            <span className="block text-[9px] text-slate-300">ألعاب كتابية وتحديات روحية</span>
-          </div>
-        </div>
-        <ChevronLeft className="w-4 h-4 text-amber-300" />
-      </button>
 
       {/* Support entry point, folded into Profile instead of its own nav tab */}
       <button

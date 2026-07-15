@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
   Compass, BookOpen, ShieldAlert, Coffee, Bell,
-  Trash2, Check, X, LogOut, UserCircle, Home, Map as MapIcon
+  Trash2, Check, X, LogOut, UserCircle, Home, Map as MapIcon, Sparkles
 } from 'lucide-react';
 import { User, AppNotification } from '../types';
 import Logo from './Logo';
 
-type Screen = 'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia';
+type Screen = 'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse';
 
 interface WebLayoutProps {
   children: React.ReactNode;
@@ -27,13 +27,14 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'explore',      label: 'استكشاف البيوت', icon: <Compass className="w-5 h-5" />,   roles: ['individual', 'servant'] },
-  { id: 'bookings',     label: 'حجوزاتي',         icon: <BookOpen className="w-5 h-5" />,  roles: ['individual', 'servant'] },
-  { id: 'map',          label: 'الخريطة',         icon: <MapIcon className="w-5 h-5" />,   roles: ['individual', 'servant'] },
-  { id: 'profile',      label: 'حسابي',           icon: <UserCircle className="w-5 h-5" />, roles: ['individual', 'servant'] },
-  { id: 'owner_panel',  label: 'لوحة المالك',      icon: <Home className="w-5 h-5" />,      roles: ['owner'] },
-  { id: 'meals',        label: 'قائمة الطعام',     icon: <Coffee className="w-5 h-5" />,    roles: ['owner'] },
-  { id: 'admin_panel',  label: 'لوحة الإدارة',     icon: <ShieldAlert className="w-5 h-5" />, roles: ['admin'] },
+  { id: 'explore',       label: 'استكشاف البيوت', icon: <Compass className="w-5 h-5" />,   roles: ['individual', 'servant'] },
+  { id: 'bookings',      label: 'حجوزاتي',         icon: <BookOpen className="w-5 h-5" />,  roles: ['individual', 'servant'] },
+  { id: 'entertainment', label: 'الترفيه',         icon: <Sparkles className="w-5 h-5" />,  roles: ['individual', 'servant'] },
+  { id: 'map',           label: 'الخريطة',         icon: <MapIcon className="w-5 h-5" />,   roles: ['individual', 'servant'] },
+  { id: 'profile',       label: 'حسابي',           icon: <UserCircle className="w-5 h-5" />, roles: ['individual', 'servant'] },
+  { id: 'owner_panel',   label: 'لوحة المالك',      icon: <Home className="w-5 h-5" />,      roles: ['owner'] },
+  { id: 'meals',         label: 'قائمة الطعام',     icon: <Coffee className="w-5 h-5" />,    roles: ['owner'] },
+  { id: 'admin_panel',   label: 'لوحة الإدارة',     icon: <ShieldAlert className="w-5 h-5" />, roles: ['admin'] },
 ];
 
 export default function WebLayout({

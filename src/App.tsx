@@ -33,6 +33,9 @@ import ProfileScreen from './components/ProfileScreen';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import EntertainmentHome from './entertainment/EntertainmentHome';
 import TriviaGame from './entertainment/games/TriviaGame';
+import WhoAmIGame from './entertainment/games/WhoAmIGame';
+import HymnsGame from './entertainment/games/HymnsGame';
+import FillVerseGame from './entertainment/games/FillVerseGame';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import CompleteProfileScreen from './components/CompleteProfileScreen';
 import PendingApprovalScreen from './components/PendingApprovalScreen';
@@ -71,7 +74,7 @@ export default function App() {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia'>('explore');
+  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse'>('explore');
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
 
   // --- Supabase Data Loading ---
@@ -1162,7 +1165,6 @@ export default function App() {
               onBack={() => setActiveScreen('explore')}
               onNavigateSupport={() => setActiveScreen('support')}
               onNavigatePrivacy={() => setActiveScreen('privacy')}
-              onNavigateEntertainment={() => setActiveScreen('entertainment')}
               onDeleteAccount={handleDeleteAccount}
             />
           )}
@@ -1192,11 +1194,38 @@ export default function App() {
               currentUser={currentUser}
               onBack={() => setActiveScreen('explore')}
               onOpenTrivia={() => setActiveScreen('trivia')}
+              onOpenWhoAmI={() => setActiveScreen('whoami')}
+              onOpenHymns={() => setActiveScreen('hymns')}
+              onOpenFillVerse={() => setActiveScreen('fillverse')}
             />
           )}
 
           {activeScreen === 'trivia' && (
             <TriviaGame
+              currentUser={currentUser}
+              onBack={() => setActiveScreen('entertainment')}
+              onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+            />
+          )}
+
+          {activeScreen === 'whoami' && (
+            <WhoAmIGame
+              currentUser={currentUser}
+              onBack={() => setActiveScreen('entertainment')}
+              onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+            />
+          )}
+
+          {activeScreen === 'hymns' && (
+            <HymnsGame
+              currentUser={currentUser}
+              onBack={() => setActiveScreen('entertainment')}
+              onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+            />
+          )}
+
+          {activeScreen === 'fillverse' && (
+            <FillVerseGame
               currentUser={currentUser}
               onBack={() => setActiveScreen('entertainment')}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
