@@ -19,6 +19,9 @@ export interface User {
   createdAt: string;
   points?: number;
   pointsHistory?: PointsTransaction[];
+  xp?: number;         // entertainment module — resets to overflow on level-up
+  level?: number;      // starts at 1; N -> N+1 threshold is N * 200 XP
+  gameCoins?: number;  // separate from `points` — never redeemable on bookings
   favorites?: string[];
   referralCode?: string;
   dateOfBirth?: string; // ISO date (YYYY-MM-DD); age is derived from this, never stored directly

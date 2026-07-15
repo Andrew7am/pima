@@ -31,6 +31,8 @@ import WeeklyMenuManager from './components/WeeklyMenuManager';
 import ContactSupport from './components/ContactSupport';
 import ProfileScreen from './components/ProfileScreen';
 import PrivacyPolicy from './components/PrivacyPolicy';
+import EntertainmentHome from './entertainment/EntertainmentHome';
+import TriviaGame from './entertainment/games/TriviaGame';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import CompleteProfileScreen from './components/CompleteProfileScreen';
 import PendingApprovalScreen from './components/PendingApprovalScreen';
@@ -69,7 +71,7 @@ export default function App() {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy'>('explore');
+  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia'>('explore');
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
 
   // --- Supabase Data Loading ---
@@ -1160,6 +1162,7 @@ export default function App() {
               onBack={() => setActiveScreen('explore')}
               onNavigateSupport={() => setActiveScreen('support')}
               onNavigatePrivacy={() => setActiveScreen('privacy')}
+              onNavigateEntertainment={() => setActiveScreen('entertainment')}
               onDeleteAccount={handleDeleteAccount}
             />
           )}
@@ -1182,6 +1185,22 @@ export default function App() {
           {activeScreen === 'privacy' && (
             // Privacy policy & terms — reached from Profile, not the bottom nav
             <PrivacyPolicy onBack={() => setActiveScreen('profile')} />
+          )}
+
+          {activeScreen === 'entertainment' && (
+            <EntertainmentHome
+              currentUser={currentUser}
+              onBack={() => setActiveScreen('explore')}
+              onOpenTrivia={() => setActiveScreen('trivia')}
+            />
+          )}
+
+          {activeScreen === 'trivia' && (
+            <TriviaGame
+              currentUser={currentUser}
+              onBack={() => setActiveScreen('entertainment')}
+              onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+            />
           )}
         </>
       )}

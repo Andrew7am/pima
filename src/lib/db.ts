@@ -14,6 +14,9 @@ export function mapUser(r: Record<string, unknown>): User {
     organizationName: r.organization_name as string ?? undefined,
     approvalStatus: r.approval_status as User['approvalStatus'] ?? undefined,
     points: r.points as number ?? 0,
+    xp: r.xp as number ?? 0,
+    level: r.level as number ?? 1,
+    gameCoins: r.game_coins as number ?? 0,
     favorites: (r.favorites as string[]) ?? [],
     referralCode: r.referral_code as string ?? undefined,
     dateOfBirth: r.date_of_birth as string ?? undefined,
@@ -707,4 +710,23 @@ export async function loadAuditLog(limit: number = 100): Promise<AuditLogEntry[]
   const { data, error } = await supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(limit);
   if (error) { console.error('loadAuditLog:', error); return []; }
   return (data ?? []).map(mapAuditLogEntry);
+}
+
+// Entertainment module (migration 035) — award XP + game coins after a
+// game. Level-up is computed server-side; xp/level/game_coins are all
+// protected columns so this RPC is the only path that can move them.
+// Game coins are a SEPARATE currency from booking loyalty points — they
+// spend on entertainment-only perks, never on booking discounts.
+export async function awardGameReward(
+  xp: number,
+  coins: number,
+  description: string,
+): Promise<{ xp: number; level: number; gameCoins: number } | null> {
+  const { data, error } = await supabase.rpc('award_game_reward', {
+    p_xp: xp, p_coins: coins, p_description: description,
+  });
+  if (error) { console.error('awardGameReward:', error); return null; }
+  const row = data?.[0];
+  if (!row) return null;
+  return { xp: row.new_xp, level: row.new_level, gameCoins: row.new_coins };
 }

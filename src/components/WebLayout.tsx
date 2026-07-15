@@ -6,7 +6,7 @@ import {
 import { User, AppNotification } from '../types';
 import Logo from './Logo';
 
-type Screen = 'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy';
+type Screen = 'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia';
 
 interface WebLayoutProps {
   children: React.ReactNode;
