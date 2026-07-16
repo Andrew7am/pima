@@ -1,7 +1,8 @@
 import React from 'react';
 import { User } from '../types';
-import { ChevronRight, BookOpen, Zap, Coins, Trophy, Sparkles, Music, FileText, HelpCircle } from 'lucide-react';
+import { ChevronRight, BookOpen, Zap, Coins, Trophy, Sparkles, Music, FileText, HelpCircle, Users } from 'lucide-react';
 import { xpToNext, xpProgressPct } from './progress';
+import { getLeague } from './leagues';
 
 interface EntertainmentHomeProps {
   currentUser: User;
@@ -10,6 +11,7 @@ interface EntertainmentHomeProps {
   onOpenWhoAmI: () => void;
   onOpenHymns: () => void;
   onOpenFillVerse: () => void;
+  onOpenMultiplayer: () => void;
 }
 
 interface GameCardProps {
@@ -53,8 +55,9 @@ function GameCard({ title, description, icon, onClick, badge = 'فردي', gradi
 // Fill Verse, Word Search, and online rooms) get added below this
 // one in later phases.
 export default function EntertainmentHome({
-  currentUser, onBack, onOpenTrivia, onOpenWhoAmI, onOpenHymns, onOpenFillVerse,
+  currentUser, onBack, onOpenTrivia, onOpenWhoAmI, onOpenHymns, onOpenFillVerse, onOpenMultiplayer,
 }: EntertainmentHomeProps) {
+  const league = getLeague(currentUser.rating ?? 100);
   const level = currentUser.level ?? 1;
   const xp = currentUser.xp ?? 0;
   const coins = currentUser.gameCoins ?? 0;
@@ -134,6 +137,29 @@ export default function EntertainmentHome({
             <h3 className="text-sm font-black text-slate-200">الألعاب المتاحة</h3>
           </div>
 
+          {/* Featured multiplayer CTA — league badge doubles as visual hook */}
+          <button
+            type="button"
+            onClick={onOpenMultiplayer}
+            className={`w-full text-right bg-gradient-to-br ${league.gradient} rounded-3xl p-4 flex items-center gap-4 shadow-2xl transition-all group cursor-pointer border border-white/10`}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0 text-3xl">
+              {league.badge}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h4 className="text-sm font-black text-white">مباريات مباشرة 1v1</h4>
+                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/30">
+                  {league.name}
+                </span>
+              </div>
+              <p className="text-[10.5px] text-white/85 leading-relaxed">
+                تحدى لاعبين حقيقيين، اربح تقييم واصعد الدوريات. غرف خاصة أو بحث عشوائي.
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-white/70 group-hover:text-white transition-colors rotate-180 shrink-0" />
+          </button>
+
           <GameCard
             title="أسئلة كتابية"
             description="٥ أسئلة سريعة من الكتاب المقدس والتراث الكنسي. اربح خبرة وعملات عن كل إجابة صحيحة."
@@ -165,18 +191,6 @@ export default function EntertainmentHome({
             gradient="from-cyan-500 to-cyan-700"
           />
 
-          {/* Placeholder for online multiplayer coming in phase 3 */}
-          <div className="bg-white/[0.02] border border-white/5 border-dashed rounded-3xl p-4 flex items-center gap-3 opacity-60">
-            <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5 text-slate-500" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-400">قريباً</p>
-              <p className="text-[10px] text-slate-500">
-                مباريات مباشرة • غرف خاصة • بحث عشوائي • الأصدقاء
-              </p>
-            </div>
-          </div>
         </div>
 
       </div>

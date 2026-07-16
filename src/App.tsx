@@ -36,6 +36,8 @@ import TriviaGame from './entertainment/games/TriviaGame';
 import WhoAmIGame from './entertainment/games/WhoAmIGame';
 import HymnsGame from './entertainment/games/HymnsGame';
 import FillVerseGame from './entertainment/games/FillVerseGame';
+import MultiplayerLobby from './entertainment/multiplayer/MultiplayerLobby';
+import LiveMatchGame from './entertainment/multiplayer/LiveMatchGame';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import CompleteProfileScreen from './components/CompleteProfileScreen';
 import PendingApprovalScreen from './components/PendingApprovalScreen';
@@ -74,7 +76,8 @@ export default function App() {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse'>('explore');
+  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match'>('explore');
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
 
   // --- Supabase Data Loading ---
@@ -1197,6 +1200,7 @@ export default function App() {
               onOpenWhoAmI={() => setActiveScreen('whoami')}
               onOpenHymns={() => setActiveScreen('hymns')}
               onOpenFillVerse={() => setActiveScreen('fillverse')}
+              onOpenMultiplayer={() => setActiveScreen('multiplayer_lobby')}
             />
           )}
 
@@ -1228,6 +1232,23 @@ export default function App() {
             <FillVerseGame
               currentUser={currentUser}
               onBack={() => setActiveScreen('entertainment')}
+              onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+            />
+          )}
+
+          {activeScreen === 'multiplayer_lobby' && (
+            <MultiplayerLobby
+              currentUser={currentUser}
+              onBack={() => setActiveScreen('entertainment')}
+              onEnterMatch={(roomId) => { setActiveRoomId(roomId); setActiveScreen('live_match'); }}
+            />
+          )}
+
+          {activeScreen === 'live_match' && activeRoomId && (
+            <LiveMatchGame
+              currentUser={currentUser}
+              roomId={activeRoomId}
+              onBack={() => { setActiveRoomId(null); setActiveScreen('multiplayer_lobby'); }}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
             />
           )}
