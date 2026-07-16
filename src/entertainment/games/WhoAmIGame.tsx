@@ -3,12 +3,13 @@ import { ChevronRight, Check, X as XIcon, Zap, Coins, RotateCcw, Home, HelpCircl
 import { User } from '../../types';
 import { RAW_CHARACTERS, RawCharacter } from '../data/whoAmIData';
 import { RAW_CHARACTERS_NT } from '../data/whoAmIData_NT';
-import { awardGameReward } from '../../lib/db';
+import { awardGameReward, checkAchievements } from '../../lib/db';
 
 interface WhoAmIGameProps {
   currentUser: User;
   onBack: () => void;
   onUserUpdated: (patch: Partial<User>) => void;
+  onAchievementsUnlocked?: (ids: string[]) => void;
 }
 
 const ROUND_SIZE = 5;
@@ -52,7 +53,7 @@ function buildRound(): RoundQuestion[] {
   });
 }
 
-export default function WhoAmIGame({ currentUser, onBack, onUserUpdated }: WhoAmIGameProps) {
+export default function WhoAmIGame({ currentUser, onBack, onUserUpdated, onAchievementsUnlocked }: WhoAmIGameProps) {
   const round = useMemo(buildRound, []);
 
   const [idx, setIdx] = useState(0);
@@ -99,11 +100,14 @@ export default function WhoAmIGame({ currentUser, onBack, onUserUpdated }: WhoAm
       const result = await awardGameReward(
         totalXp,
         totalCoins,
+        correctCount,
         `من أنا؟ — ${correctCount}/${round.length} إجابات صحيحة`,
       );
       if (result) {
         onUserUpdated({ xp: result.xp, level: result.level, gameCoins: result.gameCoins });
       }
+      const newlyUnlocked = await checkAchievements();
+      if (newlyUnlocked.length > 0) onAchievementsUnlocked?.(newlyUnlocked);
       setAwarding(false);
       setRewardApplied(true);
     }

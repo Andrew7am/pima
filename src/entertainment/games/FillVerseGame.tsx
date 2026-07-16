@@ -8,6 +8,7 @@ interface FillVerseGameProps {
   currentUser: User;
   onBack: () => void;
   onUserUpdated: (patch: Partial<User>) => void;
+  onAchievementsUnlocked?: (ids: string[]) => void;
 }
 
 function shuffle<T>(arr: T[]): T[] {

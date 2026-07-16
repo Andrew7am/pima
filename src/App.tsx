@@ -38,6 +38,10 @@ import HymnsGame from './entertainment/games/HymnsGame';
 import FillVerseGame from './entertainment/games/FillVerseGame';
 import MultiplayerLobby from './entertainment/multiplayer/MultiplayerLobby';
 import LiveMatchGame from './entertainment/multiplayer/LiveMatchGame';
+import AchievementsScreen from './entertainment/AchievementsScreen';
+import AchievementToast from './entertainment/AchievementToast';
+import FriendsScreen from './entertainment/FriendsScreen';
+import ChatThreadScreen from './entertainment/ChatThreadScreen';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import CompleteProfileScreen from './components/CompleteProfileScreen';
 import PendingApprovalScreen from './components/PendingApprovalScreen';
@@ -76,8 +80,17 @@ export default function App() {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match'>('explore');
+  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread'>('explore');
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  // Newly-unlocked achievement ids awaiting their celebration toast — lives
+  // here (not inside a game screen) so an unlock survives navigating away
+  // from the game that triggered it. See AchievementToast.tsx.
+  const [unlockedAchievementQueue, setUnlockedAchievementQueue] = useState<string[]>([]);
+  const handleAchievementsUnlocked = (ids: string[]) => {
+    setUnlockedAchievementQueue((prev) => [...prev, ...ids]);
+  };
+  // Which friend's chat thread is open — set right before navigating to 'chat_thread'
+  const [activeChatFriend, setActiveChatFriend] = useState<{ id: string; name: string } | null>(null);
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
 
   // --- Supabase Data Loading ---
@@ -1028,6 +1041,7 @@ export default function App() {
   };
 
   return (
+    <>
     <WebLayout
       activeScreen={activeScreen}
       setActiveScreen={navigate}
@@ -1201,6 +1215,8 @@ export default function App() {
               onOpenHymns={() => setActiveScreen('hymns')}
               onOpenFillVerse={() => setActiveScreen('fillverse')}
               onOpenMultiplayer={() => setActiveScreen('multiplayer_lobby')}
+              onOpenAchievements={() => setActiveScreen('achievements')}
+              onOpenFriends={() => setActiveScreen('friends')}
             />
           )}
 
@@ -1209,6 +1225,7 @@ export default function App() {
               currentUser={currentUser}
               onBack={() => setActiveScreen('entertainment')}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+              onAchievementsUnlocked={handleAchievementsUnlocked}
             />
           )}
 
@@ -1217,6 +1234,7 @@ export default function App() {
               currentUser={currentUser}
               onBack={() => setActiveScreen('entertainment')}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+              onAchievementsUnlocked={handleAchievementsUnlocked}
             />
           )}
 
@@ -1225,6 +1243,7 @@ export default function App() {
               currentUser={currentUser}
               onBack={() => setActiveScreen('entertainment')}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+              onAchievementsUnlocked={handleAchievementsUnlocked}
             />
           )}
 
@@ -1233,6 +1252,7 @@ export default function App() {
               currentUser={currentUser}
               onBack={() => setActiveScreen('entertainment')}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+              onAchievementsUnlocked={handleAchievementsUnlocked}
             />
           )}
 
@@ -1250,10 +1270,43 @@ export default function App() {
               roomId={activeRoomId}
               onBack={() => { setActiveRoomId(null); setActiveScreen('multiplayer_lobby'); }}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+              onAchievementsUnlocked={handleAchievementsUnlocked}
+            />
+          )}
+
+          {activeScreen === 'achievements' && (
+            <AchievementsScreen
+              currentUser={currentUser}
+              onBack={() => setActiveScreen('entertainment')}
+            />
+          )}
+
+          {activeScreen === 'friends' && (
+            <FriendsScreen
+              currentUser={currentUser}
+              onBack={() => setActiveScreen('entertainment')}
+              onOpenChat={(friendId, friendName) => {
+                setActiveChatFriend({ id: friendId, name: friendName });
+                setActiveScreen('chat_thread');
+              }}
+            />
+          )}
+
+          {activeScreen === 'chat_thread' && activeChatFriend && (
+            <ChatThreadScreen
+              currentUser={currentUser}
+              friendId={activeChatFriend.id}
+              friendName={activeChatFriend.name}
+              onBack={() => { setActiveChatFriend(null); setActiveScreen('friends'); }}
             />
           )}
         </>
       )}
     </WebLayout>
+    <AchievementToast
+      queue={unlockedAchievementQueue}
+      onShown={() => setUnlockedAchievementQueue((prev) => prev.slice(1))}
+    />
+    </>
   );
 }

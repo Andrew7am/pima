@@ -18,6 +18,10 @@ export function mapUser(r: Record<string, unknown>): User {
     level: r.level as number ?? 1,
     gameCoins: r.game_coins as number ?? 0,
     rating: r.rating as number ?? 100,
+    totalCorrectAnswers: r.total_correct_answers as number ?? 0,
+    totalGamesPlayed: r.total_games_played as number ?? 0,
+    totalMatchesWon: r.total_matches_won as number ?? 0,
+    unlockedAchievements: (r.unlocked_achievements as string[]) ?? [],
     favorites: (r.favorites as string[]) ?? [],
     referralCode: r.referral_code as string ?? undefined,
     dateOfBirth: r.date_of_birth as string ?? undefined,
@@ -713,21 +717,34 @@ export async function loadAuditLog(limit: number = 100): Promise<AuditLogEntry[]
   return (data ?? []).map(mapAuditLogEntry);
 }
 
-// Entertainment module (migration 035) — award XP + game coins after a
-// game. Level-up is computed server-side; xp/level/game_coins are all
-// protected columns so this RPC is the only path that can move them.
-// Game coins are a SEPARATE currency from booking loyalty points — they
-// spend on entertainment-only perks, never on booking discounts.
+// Entertainment module (migration 035, extended by 037) — award XP +
+// game coins after a game. Level-up is computed server-side; xp/level/
+// game_coins are all protected columns so this RPC is the only path
+// that can move them. Game coins are a SEPARATE currency from booking
+// loyalty points — they spend on entertainment-only perks, never on
+// booking discounts. `correctCount` feeds total_correct_answers/
+// total_games_played, which achievements are computed from.
 export async function awardGameReward(
   xp: number,
   coins: number,
+  correctCount: number,
   description: string,
 ): Promise<{ xp: number; level: number; gameCoins: number } | null> {
   const { data, error } = await supabase.rpc('award_game_reward', {
-    p_xp: xp, p_coins: coins, p_description: description,
+    p_xp: xp, p_coins: coins, p_correct: correctCount, p_description: description,
   });
   if (error) { console.error('awardGameReward:', error); return null; }
   const row = data?.[0];
   if (!row) return null;
   return { xp: row.new_xp, level: row.new_level, gameCoins: row.new_coins };
+}
+
+// Achievements (migration 037) — server checks all thresholds and
+// awards any newly-qualified ones atomically, returning just the ids
+// that were newly unlocked THIS call (so the UI can show a "new
+// achievement" celebration only for what actually just happened).
+export async function checkAchievements(): Promise<string[]> {
+  const { data, error } = await supabase.rpc('check_achievements');
+  if (error) { console.error('checkAchievements:', error); return []; }
+  return (data as string[]) ?? [];
 }

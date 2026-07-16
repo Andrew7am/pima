@@ -5,18 +5,20 @@ import {
   GameRoom, loadRoom, subscribeToRoom, submitAnswer, finalizeMatch, FinalizeResult,
 } from '../multiplayer';
 import { getLeague } from '../leagues';
+import { checkAchievements } from '../../lib/db';
 
 interface LiveMatchGameProps {
   currentUser: User;
   roomId: string;
   onBack: () => void;
   onUserUpdated: (patch: Partial<User>) => void;
+  onAchievementsUnlocked?: (ids: string[]) => void;
 }
 
 // Runs a 1v1 realtime match. Subscribes to the room row via
 // Supabase Realtime; every state change (opponent joining, opponent
 // answering, both answered → advance) flows through as an UPDATE.
-export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdated }: LiveMatchGameProps) {
+export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdated, onAchievementsUnlocked }: LiveMatchGameProps) {
   const [room, setRoom] = useState<GameRoom | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
@@ -53,7 +55,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     const guestDone = Object.keys(room.guest_answers).length >= total;
     if (hostDone && guestDone && room.status === 'active') {
       setFinalizing(true);
-      finalizeMatch(roomId).then((result) => {
+      finalizeMatch(roomId).then(async (result) => {
         setFinalizing(false);
         if (result) {
           setOutcome(result);
@@ -63,6 +65,8 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
           onUserUpdated({
             rating: isHost ? result.hostNewRating : result.guestNewRating,
           });
+          const newlyUnlocked = await checkAchievements();
+          if (newlyUnlocked.length > 0) onAchievementsUnlocked?.(newlyUnlocked);
         }
       });
     }
@@ -74,7 +78,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
         if (result) setOutcome(result);
       });
     }
-  }, [room, outcome, finalizing, roomId, currentUser.id, onUserUpdated]);
+  }, [room, outcome, finalizing, roomId, currentUser.id, onUserUpdated, onAchievementsUnlocked]);
 
   if (loading) {
     return (

@@ -23,6 +23,10 @@ export interface User {
   level?: number;      // starts at 1; N -> N+1 threshold is N * 200 XP
   gameCoins?: number;  // separate from `points` — never redeemable on bookings
   rating?: number;     // 1v1 competitive rating (starts at 100). See leagues.ts
+  totalCorrectAnswers?: number;   // cumulative, across all solo games
+  totalGamesPlayed?: number;      // cumulative, solo + multiplayer
+  totalMatchesWon?: number;       // cumulative, multiplayer only
+  unlockedAchievements?: string[]; // achievement ids already claimed — see achievements.ts
   favorites?: string[];
   referralCode?: string;
   dateOfBirth?: string; // ISO date (YYYY-MM-DD); age is derived from this, never stored directly

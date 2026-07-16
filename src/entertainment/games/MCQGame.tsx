@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { User } from '../../types';
 import { ChevronRight, Check, X as XIcon, Zap, Coins, RotateCcw, Home } from 'lucide-react';
-import { awardGameReward } from '../../lib/db';
+import { awardGameReward, checkAchievements } from '../../lib/db';
 
 export interface MCQQuestion {
   question: string;
@@ -14,6 +14,7 @@ interface MCQGameProps {
   currentUser: User;
   onBack: () => void;
   onUserUpdated: (patch: Partial<User>) => void;
+  onAchievementsUnlocked?: (ids: string[]) => void;
   title: string;
   icon: React.ReactNode;
   pool: MCQQuestion[];
@@ -42,6 +43,7 @@ export default function MCQGame({
   currentUser,
   onBack,
   onUserUpdated,
+  onAchievementsUnlocked,
   title,
   icon,
   pool,
@@ -80,10 +82,12 @@ export default function MCQGame({
       const wrong = questions.length - score;
       const totalXp = score * xpPerCorrect + wrong * xpPerWrong;
       const totalCoins = score * coinsPerCorrect;
-      const result = await awardGameReward(totalXp, totalCoins, rewardDescription(score, questions.length));
+      const result = await awardGameReward(totalXp, totalCoins, score, rewardDescription(score, questions.length));
       if (result) {
         onUserUpdated({ xp: result.xp, level: result.level, gameCoins: result.gameCoins });
       }
+      const newlyUnlocked = await checkAchievements();
+      if (newlyUnlocked.length > 0) onAchievementsUnlocked?.(newlyUnlocked);
       setAwarding(false);
       setRewardApplied(true);
     }
