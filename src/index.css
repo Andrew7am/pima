@@ -1,11 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Cairo", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  
+
   --color-natural-bg: #FAF8F5;
   --color-natural-text: #2D2D24;
   --color-natural-sidebar: #F3F0E8;
@@ -18,15 +18,19 @@
   /* Owner dashboard-only theme (navy/gold) — scoped via the .owner-theme
      wrapper class, never applied to body, so guest-facing screens keep
      the cream/gold --color-natural-* palette above untouched. */
-  --color-owner-bg: #F4F6FA;
+  --color-owner-bg: #F8F9FB;
   --color-owner-surface: #FFFFFF;
   --color-owner-text: #101B33;
   --color-owner-secondary: #5B6B8C;
-  --color-owner-primary: #0F1F45;
-  --color-owner-primary-hover: #0A1730;
-  --color-owner-accent: #C9A227;
+  --color-owner-primary: #0F2748;
+  --color-owner-primary-hover: #0A1B32;
+  --color-owner-accent: #C8A25A;
   --color-owner-border: #DDE3EF;
   --color-owner-hover: #E9EDF6;
+  --color-owner-success: #22C55E;
+  --color-owner-warning: #F59E0B;
+  --color-owner-danger: #EF4444;
+  --color-owner-info: #3B82F6;
 }
 
 body {
@@ -34,5 +38,11 @@ body {
   direction: rtl;
   background-color: var(--color-natural-bg);
   color: var(--color-natural-text);
+}
+
+/* Owner dashboard uses Tajawal instead of the guest-facing Cairo font —
+   scoped to .owner-theme so the rest of the app is unaffected. */
+.owner-theme {
+  font-family: "Tajawal", var(--font-sans);
 }
 

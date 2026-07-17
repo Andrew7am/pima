@@ -216,7 +216,7 @@ export interface Room {
   bedsCount: number;
   pricePerNight?: number; // undefined = inherit the house's price
   images: string[];
-  status: 'available' | 'booked' | 'maintenance';
+  status: 'available' | 'booked' | 'maintenance' | 'cleaning';
   createdAt: string;
 }
 
