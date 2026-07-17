@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { User } from '../../types';
-import { ChevronRight, Check, X as XIcon, Trophy, Users as UsersIcon, Zap, Coins, Loader2, Home, RotateCcw } from 'lucide-react';
+import { ChevronRight, Check, X as XIcon, Trophy, Users as UsersIcon, Zap, Coins, Loader2, Home, RotateCcw, Copy } from 'lucide-react';
 import {
   GameRoom, loadRoom, subscribeToRoom, submitAnswer, finalizeMatch, FinalizeResult,
 } from '../multiplayer';
@@ -21,10 +21,21 @@ interface LiveMatchGameProps {
 export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdated, onAchievementsUnlocked }: LiveMatchGameProps) {
   const [room, setRoom] = useState<GameRoom | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedOpt, setSelectedOpt] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [answerError, setAnswerError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<FinalizeResult | null>(null);
   const [finalizing, setFinalizing] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  const copyRoomCode = async () => {
+    try {
+      await navigator.clipboard.writeText(roomId);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable — the code is already shown on screen */
+    }
+  };
 
   // Initial fetch + realtime subscription
   useEffect(() => {
@@ -33,18 +44,14 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
       const r = await loadRoom(roomId);
       if (r) setRoom(r);
       setLoading(false);
-      unsub = subscribeToRoom(roomId, (updated) => {
-        setRoom(updated);
-        // selectedOpt gets reset by the separate effect below when
-        // room.current_question moves, so nothing to do here.
-      });
+      unsub = subscribeToRoom(roomId, (updated) => { setRoom(updated); });
     })();
     return () => { if (unsub) unsub(); };
   }, [roomId]);
 
-  // Reset selection whenever the room's current_question index changes
+  // Clear any stale "couldn't submit" error once the question moves on
   useEffect(() => {
-    setSelectedOpt(null);
+    setAnswerError(null);
   }, [room?.current_question]);
 
   // Trigger finalize automatically when both players finished all questions
@@ -130,10 +137,19 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
           </div>
           <h2 className="text-xl font-black text-white">في انتظار الخصم</h2>
           {room.is_private && (
-            <div className="bg-white/5 border border-white/10 rounded-2xl py-4">
+            <button
+              type="button"
+              onClick={copyRoomCode}
+              className="w-full bg-white/5 border border-white/10 hover:border-amber-500/40 rounded-2xl py-4 transition-colors cursor-pointer"
+            >
               <p className="text-[10px] text-slate-400 mb-1">كود الغرفة</p>
               <p className="text-3xl font-black text-amber-300 tracking-[0.4em] font-mono">{roomId}</p>
-            </div>
+              <p className="text-[10px] text-slate-400 font-bold mt-1 flex items-center justify-center gap-1">
+                {codeCopied
+                  ? <><Check className="w-3 h-3 text-emerald-400" /> تم النسخ</>
+                  : <><Copy className="w-3 h-3" /> اضغط للنسخ</>}
+              </p>
+            </button>
           )}
           <p className="text-[11px] text-slate-400 leading-relaxed">
             هيبدأ اللعب تلقائياً بمجرد ما لاعب تاني يدخل.
@@ -249,11 +265,25 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
 
   const handleSelect = async (i: number) => {
     if (iAnswered || submitting) return;
-    setSelectedOpt(i);
     setSubmitting(true);
-    await submitAnswer(roomId, qIdx, i);
+    setAnswerError(null);
+    const result = await submitAnswer(roomId, qIdx, i);
     setSubmitting(false);
-    // Live state will flow in via the subscription
+    if (!result) {
+      setAnswerError('تعذر إرسال إجابتك، حاول تاني.');
+      return;
+    }
+    // Reflect our own answer immediately instead of waiting on the
+    // realtime round-trip — the opponent's side still updates via
+    // subscribeToRoom, but a delayed/dropped realtime event shouldn't
+    // make our own click look like it did nothing.
+    setRoom((prev) => {
+      if (!prev) return prev;
+      const key = String(qIdx);
+      return isHost
+        ? { ...prev, host_answers: { ...prev.host_answers, [key]: i }, host_score: result.hostScore }
+        : { ...prev, guest_answers: { ...prev.guest_answers, [key]: i }, guest_score: result.guestScore };
+    });
   };
 
   return (
@@ -338,6 +368,13 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             );
           })}
         </div>
+
+        {answerError && (
+          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-200 text-[11px] font-bold rounded-2xl px-3 py-2.5 text-center flex items-center justify-center gap-2">
+            <XIcon className="w-3.5 h-3.5" />
+            {answerError}
+          </div>
+        )}
 
         {iAnswered && !bothAnswered && (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-3 text-[11px] font-bold text-slate-400 text-center flex items-center justify-center gap-2">

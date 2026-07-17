@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './lib/supabase';
 import {
   mapUser, loadUsers,
@@ -78,6 +78,11 @@ export default function App() {
     return null;
   });
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  // Mirrors currentUser?.id for the onAuthStateChange closure below, which
+  // only runs its effect once (deps: [loadUserProfile]) so it would
+  // otherwise always see the `currentUser` from its first render.
+  const currentUserIdRef = useRef<string | null>(null);
+  useEffect(() => { currentUserIdRef.current = currentUser?.id ?? null; }, [currentUser]);
 
   // --- UI Navigation States ---
   const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread'>('explore');
@@ -169,12 +174,22 @@ export default function App() {
   // the user's data changed, so re-running loadUserProfile/loadAppData (9
   // full-table queries) for it was pure waste, silently multiplying egress
   // for anyone who leaves a tab open. Only reload on an actual sign-in.
+  //
+  // SIGNED_IN has the same trap: supabase-js can re-fire it when a
+  // backgrounded tab regains focus and re-validates the existing session,
+  // even though nothing actually changed. loadUserProfile always resets
+  // activeScreen to 'explore'/'owner_panel'/'admin_panel' (128-130), so
+  // without this guard, switching tabs mid-match (e.g. to share a private
+  // room code) silently kicked the player out of the match back to the
+  // hub the moment they returned — reported as "the room closes itself".
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === 'PASSWORD_RECOVERY') { setIsPasswordRecovery(true); return; }
       if (_event === 'TOKEN_REFRESHED' || _event === 'USER_UPDATED') return;
-      if (session) loadUserProfile(session.user.id);
-      else { setCurrentUser(null); setIsAuthLoading(false); }
+      if (session) {
+        if (session.user.id === currentUserIdRef.current) return;
+        loadUserProfile(session.user.id);
+      } else { setCurrentUser(null); setIsAuthLoading(false); }
     });
 
     return () => subscription.unsubscribe();

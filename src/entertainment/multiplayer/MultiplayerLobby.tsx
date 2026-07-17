@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { User } from '../../types';
-import { ChevronRight, Trophy, Users, Zap, Search, KeyRound, Sparkles, X as XIcon, Copy, Check } from 'lucide-react';
+import { ChevronRight, Trophy, Users, Zap, Search, KeyRound, Sparkles, X as XIcon } from 'lucide-react';
 import { getLeague } from '../leagues';
 import {
   GameMode, RoomQuestion,
@@ -76,18 +76,21 @@ export default function MultiplayerLobby({ currentUser, onBack, onEnterMatch }: 
 
   const [mode, setMode] = useState<GameMode>('trivia');
   const [action, setAction] = useState<null | 'creating' | 'joining' | 'searching'>(null);
-  const [createdCode, setCreatedCode] = useState<string | null>(null);
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
-  const [copied, setCopied] = useState(false);
 
+  // Goes straight into LiveMatchGame (which already shows the room code
+  // on its own "waiting for opponent" screen, with a live realtime
+  // subscription). Previously this stopped on an intermediate "room
+  // ready" screen with no subscription of its own — a host who didn't
+  // notice the second manual "enter" button would sit there while the
+  // guest, once joined, was already alone in an active match.
   const handleCreatePrivate = async () => {
     setAction('creating'); setError('');
     const questions = buildQuestions(mode);
     const code = await createPrivateRoom(mode, questions);
     if (!code) { setError('تعذر إنشاء الغرفة'); setAction(null); return; }
-    setCreatedCode(code);
-    setAction(null);
+    onEnterMatch(code);
   };
 
   const handleJoinByCode = async () => {
@@ -116,71 +119,6 @@ export default function MultiplayerLobby({ currentUser, onBack, onEnterMatch }: 
     if (!result) { setError('تعذر البحث عن خصم'); setAction(null); return; }
     onEnterMatch(result.roomId);
   };
-
-  const copyCode = async () => {
-    if (!createdCode) return;
-    try {
-      await navigator.clipboard.writeText(createdCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard unavailable — leave visual copy prompt */
-    }
-  };
-
-  // ── PRIVATE ROOM WAITING MODAL ──────────────────────────────
-  if (createdCode) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
-        <div className="max-w-lg mx-auto px-4 sm:px-6 py-8 space-y-5 text-center" dir="rtl">
-          <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-2xl">
-            <KeyRound className="w-10 h-10 text-white" />
-          </div>
-          <h2 className="text-xl font-black text-white">غرفتك جاهزة</h2>
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            شارك الكود ده مع صاحبك عشان يدخل معاك.
-            <br />
-            الغرفة هتبدأ تلقائياً بمجرد ما ينضم.
-          </p>
-
-          <button
-            type="button"
-            onClick={copyCode}
-            className="w-full bg-white/5 border-2 border-dashed border-amber-500/40 hover:border-amber-500/70 rounded-3xl py-6 flex flex-col items-center gap-2 transition-colors cursor-pointer"
-          >
-            <span className="text-[10px] text-slate-400 font-bold">كود الدعوة</span>
-            <span className="text-4xl font-black text-amber-300 tracking-[0.4em] font-mono">{createdCode}</span>
-            <span className="text-[10px] text-slate-400 flex items-center gap-1">
-              {copied ? <><Check className="w-3 h-3 text-emerald-400" /> تم النسخ</> : <><Copy className="w-3 h-3" /> اضغط للنسخ</>}
-            </span>
-          </button>
-
-          <p className="text-[10px] text-slate-500">في انتظار انضمام لاعب...</p>
-
-          <div className="flex justify-center gap-1.5 pt-1">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" style={{ animationDelay: '150ms' }} />
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" style={{ animationDelay: '300ms' }} />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onEnterMatch(createdCode)}
-            className="w-full bg-white/5 border border-white/10 hover:bg-white/10 rounded-2xl py-2.5 text-[11px] font-bold text-slate-200 mt-4"
-          >
-            الانتقال لشاشة الانتظار المباشرة
-          </button>
-          <button
-            type="button"
-            onClick={() => { setCreatedCode(null); setAction(null); }}
-            className="text-[10px] text-slate-400 hover:text-slate-200 underline"
-          >
-            إلغاء وعمل غرفة جديدة
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // ── LOBBY ────────────────────────────────────────────────────
   return (
