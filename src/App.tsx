@@ -102,6 +102,9 @@ export default function App() {
   // Which friend's chat thread is open — set right before navigating to 'chat_thread'
   const [activeChatFriend, setActiveChatFriend] = useState<{ id: string; name: string } | null>(null);
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
+  // Keeps the owner onboarding wizard mounted through its own success
+  // screen — see the gate right before the owner shell renders.
+  const [justFinishedOnboarding, setJustFinishedOnboarding] = useState(false);
 
   // --- Supabase Data Loading ---
   // rooms/announcements/reviews/waitlist are NOT loaded here — they're
@@ -1051,7 +1054,11 @@ export default function App() {
       && ownerHouse.services.length > 0
       && ownerRooms.length > 0
       && ownerHouse.paymentMethods.length > 0;
-    if (!onboardingComplete) {
+    // Keep showing the wizard through its own success screen even once
+    // the underlying data satisfies onboardingComplete — otherwise the
+    // gate flips the instant handleSubmit's state updates land and the
+    // success screen never gets a chance to render.
+    if (!onboardingComplete || justFinishedOnboarding) {
       return (
         <OwnerOnboardingWizard
           owner={currentUser}
@@ -1061,6 +1068,8 @@ export default function App() {
           onAddRoom={handleAddRoom}
           onUpdatePaymentMethods={(house, methods) => handleUpdateHouse({ ...house, paymentMethods: methods })}
           onLogout={handleLogout}
+          onSubmitted={() => setJustFinishedOnboarding(true)}
+          onContinue={() => setJustFinishedOnboarding(false)}
         />
       );
     }

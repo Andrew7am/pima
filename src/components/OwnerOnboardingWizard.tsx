@@ -5,7 +5,7 @@ import PhotoPickerButtons from './PhotoPickerButtons';
 import Logo from './Logo';
 import {
   ChevronRight, ChevronLeft, Check, Plus, Trash2, MapPin, Home,
-  BedDouble, Sparkles, Landmark, Wallet, ClipboardCheck, LogOut,
+  BedDouble, Sparkles, Landmark, Wallet, ClipboardCheck, LogOut, PartyPopper,
 } from 'lucide-react';
 
 interface OwnerOnboardingWizardProps {
@@ -16,6 +16,14 @@ interface OwnerOnboardingWizardProps {
   onAddRoom: (room: Room) => void;
   onUpdatePaymentMethods: (house: RetreatHouse, methods: OwnerPaymentMethod[]) => void;
   onLogout: () => void;
+  // Called the instant submission succeeds — the parent keeps rendering
+  // this wizard (instead of switching straight to the dashboard the
+  // moment the underlying data satisfies the completeness gate) so the
+  // success screen below actually gets to display.
+  onSubmitted?: () => void;
+  // Called when the owner dismisses the success screen — parent then
+  // lets the completeness gate resolve to the real dashboard.
+  onContinue?: () => void;
 }
 
 const PAYMENT_TYPE_LABELS: Record<OwnerPaymentMethod['type'], string> = {
@@ -53,9 +61,21 @@ interface DraftPayment {
 // in App.tsx for the exact gate condition. Reuses the same field
 // components (PhotoPickerButtons, AMENITIES_LIST/SUITABILITY_MAP
 // checklists) as the older flat OwnerDashboard form.
+const STEP_LABELS: Record<string, string> = {
+  basics: 'معلومات أساسية',
+  photos: 'الصور',
+  services: 'الخدمات',
+  rooms: 'الغرف',
+  halls: 'القاعات',
+  payment: 'الدفع',
+  review: 'المراجعة',
+};
+
 export default function OwnerOnboardingWizard({
   owner, existingHouse, existingRooms, onCreateHouse, onAddRoom, onUpdatePaymentMethods, onLogout,
+  onSubmitted, onContinue,
 }: OwnerOnboardingWizardProps) {
+  const [submitted, setSubmitted] = useState(false);
   const needsBasics = !existingHouse;
   const needsPhotos = !existingHouse || existingHouse.images.length === 0;
   const needsServices = !existingHouse || existingHouse.services.length === 0;
@@ -212,6 +232,10 @@ export default function OwnerOnboardingWizard({
           });
         });
       }
+
+      setSubmitting(false);
+      setSubmitted(true);
+      onSubmitted?.();
     } catch (e) {
       console.error('onboarding submit:', e);
       setError('حدث خطأ أثناء الحفظ، حاول مرة أخرى.');
@@ -219,7 +243,30 @@ export default function OwnerOnboardingWizard({
     }
   };
 
-  const progressPct = ((stepIdx + 1) / steps.length) * 100;
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center p-4 font-sans antialiased" dir="rtl">
+        <div className="w-full max-w-md bg-white rounded-[28px] border border-[#D6D6C2] shadow-2xl overflow-hidden text-center p-8 space-y-4">
+          <div className="mx-auto w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center">
+            <PartyPopper className="w-10 h-10 text-emerald-600" />
+          </div>
+          <h2 className="text-lg font-black text-[#2D2D24]">تم استلام بياناتك بنجاح!</h2>
+          <p className="text-[11px] text-[#8A8A70] leading-relaxed">
+            هيقوم فريق إدارة المنصة بمراجعة بيانات بيتك، وهيظهر تلقائيًا للحجاز فور الاعتماد.
+          </p>
+          <div className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-2xl p-4 space-y-1.5 text-[11px] text-[#4A4A3A] text-right">
+            <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> تم إرسال بياناتك للمراجعة</p>
+            <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> هتوصلك إشعارات بأي تحديث في حالة المراجعة</p>
+            <p className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> بعد الاعتماد، بيتك هيظهر للحجاز على طول</p>
+          </div>
+          <button type="button" onClick={() => { setSubmitted(false); onContinue?.(); }}
+            className="w-full bg-[#5A5A40] hover:bg-[#4A4A34] text-white text-sm font-black py-3 rounded-2xl">
+            المتابعة للوحة التحكم
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center p-4 font-sans antialiased" dir="rtl">
@@ -233,12 +280,30 @@ export default function OwnerOnboardingWizard({
               تسجيل الخروج
             </button>
           </div>
-          <h2 className="text-lg font-black text-[#2D2D24]">إكمال بيانات البيت</h2>
+          <h2 className="text-lg font-black text-[#2D2D24]">إعداد بيت المؤتمرات</h2>
           <p className="text-[11px] text-[#8A8A70] mt-1 leading-relaxed">
-            محتاجين البيانات دي عشان نراجع بيتك وننشره — مش هتقدر توصل للوحة التحكم لحد ما تخلّصها.
+            خطوة {stepIdx + 1} من {steps.length}: {STEP_LABELS[step] ?? ''} — مش هتقدر توصل للوحة التحكم لحد ما تخلّص كل الخطوات.
           </p>
-          <div className="w-full h-1.5 bg-white rounded-full overflow-hidden mt-3 border border-[#D6D6C2]">
-            <div className="h-full bg-gradient-to-l from-[#5A5A40] to-[#8A8A70] rounded-full transition-all duration-300" style={{ width: `${progressPct}%` }} />
+
+          {/* Numbered step circles, connected by a line — filled/checked
+              for completed steps, highlighted for the current one. */}
+          <div className="flex items-center mt-4" dir="ltr">
+            {steps.map((s, i) => (
+              <React.Fragment key={s}>
+                <div className="flex flex-col items-center gap-1 shrink-0">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black border-2 transition-colors ${
+                    i < stepIdx ? 'bg-[#5A5A40] border-[#5A5A40] text-white'
+                      : i === stepIdx ? 'bg-white border-[#5A5A40] text-[#5A5A40]'
+                        : 'bg-white border-[#D6D6C2] text-[#BCBC9D]'
+                  }`}>
+                    {i < stepIdx ? <Check className="w-3.5 h-3.5" /> : i + 1}
+                  </div>
+                </div>
+                {i < steps.length - 1 && (
+                  <div className={`flex-1 h-0.5 mx-1 ${i < stepIdx ? 'bg-[#5A5A40]' : 'bg-[#D6D6C2]'}`} />
+                )}
+              </React.Fragment>
+            ))}
           </div>
         </div>
 
