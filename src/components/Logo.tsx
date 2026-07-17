@@ -52,7 +52,7 @@ export default function Logo({ className = '', size = 120, variant = 'full' }: L
           <circle cx="-14" cy="0" r="1.5" fill="#0A2342" />
           
           {/* Right Arm */}
-          <path d="M4,-3 L14,-5 C-14,-5 17,-2 17,0 C17,2 16,5 14,5 L4,3 Z" fill="#C5A059" />
+          <path d="M4,-3 L14,-5 C16,-5 17,-2 17,0 C17,2 16,5 14,5 L4,3 Z" fill="#C5A059" />
           <circle cx="14" cy="0" r="1.5" fill="#0A2342" />
 
           {/* Ornate diagonal petals/crossbeams */}

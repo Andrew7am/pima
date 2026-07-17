@@ -43,6 +43,16 @@ export interface ConferenceHall {
   capacity: number;
   hasSoundSystem: boolean;
   hasProjector: boolean;
+  price?: number; // per-event/per-day hall rental fee, set by the owner
+}
+
+// How a guest sends the owner their booking payment directly — replaces
+// the old platform-wide centralized InstaPay address.
+export interface OwnerPaymentMethod {
+  id: string;
+  type: 'instapay' | 'vodafone_cash' | 'etisalat_cash' | 'orange_cash' | 'we_cash' | 'bank_transfer';
+  label: string; // e.g. "إنستاباي" or a custom bank name
+  value: string; // handle / phone number / IBAN
 }
 
 export interface Restaurant {
@@ -86,6 +96,10 @@ export interface RetreatHouse {
   roomCapacity?: number;
   housingRules?: string[];
   contractTerms?: string;
+  // How the owner receives booking payments directly from the guest —
+  // required (>=1) for onboarding to count as complete. See OwnerBookings/
+  // UserBookings for where this is shown to the paying guest.
+  paymentMethods: OwnerPaymentMethod[];
   // Owner-submitted edits to an already-approved house wait here for admin
   // review instead of applying immediately — only editable/listing fields.
   pendingEdit?: Partial<RetreatHouse>;

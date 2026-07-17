@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
 import { supabase } from './lib/supabase';
 import {
   mapUser, loadUsers,
-  loadHouses, deleteHouse, loadBookings, loadReviews, loadReviewsForHouses, loadPayments, loadNotifications, loadPointsHistory,
+  loadHouses, deleteHouse, createHouse as createHouseDb, updateHouse as updateHouseDb, houseUpdatePayload as houseUpdatePayloadDb,
+  loadBookings, loadReviews, loadReviewsForHouses, loadPayments, loadNotifications, loadPointsHistory,
   loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlistForHouses, loadPlatformAnnouncements,
   loadAttendeesForBooking, loadAllocationsForBooking, saveAttendeesForBooking, saveAllocationsForBooking, loadAllocationsCount,
   createBooking, updateBookingStatus, updateBookingFields,
@@ -45,6 +49,7 @@ import ChatThreadScreen from './entertainment/ChatThreadScreen';
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import CompleteProfileScreen from './components/CompleteProfileScreen';
 import PendingApprovalScreen from './components/PendingApprovalScreen';
+import OwnerOnboardingWizard from './components/OwnerOnboardingWizard';
 import BannedScreen from './components/BannedScreen';
 import InteractiveMap from './components/InteractiveMap';
 
@@ -195,6 +200,34 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, [loadUserProfile]);
 
+  // Native Google Sign-In: AuthScreen.tsx opens the OAuth URL in a system
+  // browser tab (Browser.open, not this WebView — Google blocks OAuth
+  // inside embedded webviews). This catches the app regaining control via
+  // the custom-scheme redirect (see NATIVE_AUTH_REDIRECT in AuthScreen.tsx
+  // and the matching intent-filter in AndroidManifest.xml) and completes
+  // the session — the resulting SIGNED_IN event then flows through the
+  // onAuthStateChange handler above as normal.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const listenerPromise = CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
+      if (!url.startsWith('com.pimastay.app://auth-callback')) return;
+      await Browser.close();
+      const parsed = new URL(url);
+      const code = parsed.searchParams.get('code');
+      if (code) {
+        await supabase.auth.exchangeCodeForSession(code);
+        return;
+      }
+      const hashParams = new URLSearchParams(parsed.hash.replace(/^#/, ''));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      if (accessToken && refreshToken) {
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      }
+    });
+    return () => { listenerPromise.then((l) => l.remove()); };
+  }, []);
+
   // Deep link support: opening a shared house link (?house=<id>) jumps
   // straight to that house once its data is loaded. The query param is
   // stripped right after so navigating away and back doesn't reopen it.
@@ -229,7 +262,10 @@ export default function App() {
   }, [selectedHouse]);
 
   useEffect(() => {
-    if (activeScreen !== 'owner_panel' || !currentUser) return;
+    // Owners need their own rooms loaded even before reaching 'owner_panel'
+    // now — the onboarding-completeness gate (isOwnerOnboardingComplete)
+    // checks room count before the owner shell ever renders.
+    if ((activeScreen !== 'owner_panel' && currentUser?.role !== 'owner') || !currentUser) return;
     const ownerHouseIds = houses.filter((h) => h.ownerId === currentUser.id).map((h) => h.id);
     if (ownerHouseIds.length === 0) return;
     Promise.all([
@@ -242,7 +278,7 @@ export default function App() {
       setWaitlist((prev) => [...prev.filter((w) => !ownerHouseIds.includes(w.houseId)), ...oWaitlist]);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeScreen, currentUser?.id, houses.length]);
+  }, [activeScreen, currentUser?.id, currentUser?.role, houses.length]);
 
   // Audit log (migration 032) + full reviews (admin moderation needs every
   // review platform-wide, not just one house's) — admin-only, fetched only
@@ -463,29 +499,7 @@ export default function App() {
   // --- Owner Operations ---
   const handleAddHouse = (newHouse: RetreatHouse) => {
     setHouses((prev) => [newHouse, ...prev]);
-    supabase.from('houses').insert({
-      id: newHouse.id, name: newHouse.name, description: newHouse.description,
-      owner_id: newHouse.ownerId, owner_name: newHouse.ownerName,
-      governorate: newHouse.governorate, address: newHouse.address,
-      lat: newHouse.lat, lng: newHouse.lng,
-      rooms_count: newHouse.roomsCount, beds_count: newHouse.bedsCount,
-      rooms_description: newHouse.roomsDescription,
-      price_per_night_per_person: newHouse.pricePerNightPerPerson,
-      services: newHouse.services, suitability: newHouse.suitability,
-      activities: newHouse.activities, images: newHouse.images,
-      conference_halls: newHouse.conferenceHalls, restaurants: newHouse.restaurants,
-      status: newHouse.status, rating: newHouse.rating, reviews_count: newHouse.reviewsCount,
-      property_type: newHouse.propertyType ?? null,
-      sea_proximity: newHouse.seaProximity ?? null,
-      student_housing_gender: newHouse.studentHousingGender ?? null,
-      distance_from_university: newHouse.distanceFromUniversity ?? null,
-      monthly_rent: newHouse.monthlyRent ?? null,
-      room_capacity: newHouse.roomCapacity ?? null,
-      housing_rules: newHouse.housingRules ?? [],
-      contract_terms: newHouse.contractTerms ?? null,
-      menu: newHouse.menu ?? null,
-      created_at: newHouse.createdAt,
-    }).then(({ error }) => { if (error) console.error('addHouse:', error); });
+    createHouseDb(newHouse);
   };
 
   // Notifications are created server-side through the authorized
@@ -827,37 +841,12 @@ export default function App() {
       .then(({ error }) => { if (error) console.error('updateHouseMenu:', error); });
   };
 
-  // Shared column mapping so a full house update (owner form) and an
-  // approved pending-edit merge (admin) never drift out of sync again.
-  const houseUpdatePayload = (h: RetreatHouse) => ({
-    name: h.name, description: h.description,
-    governorate: h.governorate,
-    address: h.address, lat: h.lat, lng: h.lng,
-    rooms_count: h.roomsCount, beds_count: h.bedsCount,
-    rooms_description: h.roomsDescription,
-    price_per_night_per_person: h.pricePerNightPerPerson,
-    images: h.images,
-    image_descriptions: h.imageDescriptions ?? {},
-    blocked_dates: h.blockedDates ?? [],
-    services: h.services, activities: h.activities, suitability: h.suitability,
-    conference_halls: h.conferenceHalls, restaurants: h.restaurants,
-    property_type: h.propertyType ?? null,
-    student_housing_gender: h.studentHousingGender ?? null,
-    distance_from_university: h.distanceFromUniversity ?? null,
-    monthly_rent: h.monthlyRent ?? null,
-    housing_rules: h.housingRules ?? [],
-    contract_terms: h.contractTerms ?? null,
-    menu: h.menu ?? null, status: h.status,
-  });
-
   const handleUpdateHouse = (updatedHouse: RetreatHouse) => {
     setHouses((prevHouses) =>
       prevHouses.map((h) => (h.id === updatedHouse.id ? updatedHouse : h))
     );
     if (selectedHouse && selectedHouse.id === updatedHouse.id) setSelectedHouse(updatedHouse);
-    supabase.from('houses').update(houseUpdatePayload(updatedHouse)).eq('id', updatedHouse.id).then(({ error }) => {
-      if (error) console.error('updateHouse:', error);
-    });
+    updateHouseDb(updatedHouse);
   };
 
   // Owner-submitted edits to an already-approved house are staged here
@@ -875,7 +864,7 @@ export default function App() {
     const merged: RetreatHouse = { ...house, ...house.pendingEdit, pendingEdit: undefined };
     setHouses((prev) => prev.map((h) => (h.id === houseId ? merged : h)));
     if (selectedHouse && selectedHouse.id === houseId) setSelectedHouse(merged);
-    supabase.from('houses').update({ ...houseUpdatePayload(merged), pending_edit: null }).eq('id', houseId).then(({ error }) => {
+    supabase.from('houses').update({ ...houseUpdatePayloadDb(merged), pending_edit: null }).eq('id', houseId).then(({ error }) => {
       if (error) console.error('approveHouseEdit:', error);
     });
   };
@@ -1049,6 +1038,34 @@ export default function App() {
     return <PendingApprovalScreen currentUser={currentUser} onLogout={handleLogout} />;
   }
 
+  // A newly-approved owner (or an existing one whose house predates
+  // payment methods / priced rooms) is blocked from the rest of the
+  // owner shell until their house has: a photo, a service, a priced
+  // room, and a payment method. Same severity as the approval gate
+  // above — the wizard itself handles creating the house on first use.
+  if (currentUser.role === 'owner') {
+    const ownerHouse = houses.find((h) => h.ownerId === currentUser.id) ?? null;
+    const ownerRooms = ownerHouse ? rooms.filter((r) => r.houseId === ownerHouse.id) : [];
+    const onboardingComplete = !!ownerHouse
+      && ownerHouse.images.length > 0
+      && ownerHouse.services.length > 0
+      && ownerRooms.length > 0
+      && ownerHouse.paymentMethods.length > 0;
+    if (!onboardingComplete) {
+      return (
+        <OwnerOnboardingWizard
+          owner={currentUser}
+          existingHouse={ownerHouse}
+          existingRooms={ownerRooms}
+          onCreateHouse={handleAddHouse}
+          onAddRoom={handleAddRoom}
+          onUpdatePaymentMethods={(house, methods) => handleUpdateHouse({ ...house, paymentMethods: methods })}
+          onLogout={handleLogout}
+        />
+      );
+    }
+  }
+
   // Navigating via sidebar should always clear any open house detail
   const navigate = (screen: typeof activeScreen) => {
     setSelectedHouse(null);
@@ -1162,6 +1179,7 @@ export default function App() {
           {activeScreen === 'admin_panel' && currentUser.role === 'admin' && (
             // Master Admin dashboard
             <AdminDashboard
+              currentUser={currentUser}
               houses={houses}
               users={users}
               bookings={bookings}
@@ -1187,6 +1205,8 @@ export default function App() {
               onUpdateSettings={handleUpdateSettings}
               auditLog={auditLog}
               onLoadProofImage={loadPaymentProofImage}
+              onUpdateHouse={handleUpdateHouse}
+              onDeleteHouse={handleDeleteHouse}
             />
           )}
 

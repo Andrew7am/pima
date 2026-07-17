@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry } from '../types';
-import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home } from 'lucide-react';
+import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
+import HouseDetail from './HouseDetail';
+import { AMENITIES_LIST } from '../mockData';
 
 interface AdminDashboardProps {
+  currentUser: User;
   houses: RetreatHouse[];
   users: User[];
   bookings: Booking[];
@@ -29,9 +32,14 @@ interface AdminDashboardProps {
   onUpdateSettings?: (s: PlatformSettings) => void;
   auditLog?: AuditLogEntry[];
   onLoadProofImage?: (paymentId: string) => Promise<string | null>;
+  // Real curation powers, not just approve/reject — reuses the same
+  // generic handlers OwnerDashboard already writes through.
+  onUpdateHouse?: (house: RetreatHouse) => void;
+  onDeleteHouse?: (houseId: string) => void;
 }
 
 export default function AdminDashboard({
+  currentUser,
   houses,
   users,
   bookings,
@@ -57,6 +65,8 @@ export default function AdminDashboard({
   onUpdateSettings,
   auditLog = [],
   onLoadProofImage,
+  onUpdateHouse,
+  onDeleteHouse,
 }: AdminDashboardProps) {
   // Tabs within Admin
   const [activeTab, setActiveTab] = useState<'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings' | 'settings' | 'audit'>('moderation');
@@ -66,6 +76,26 @@ export default function AdminDashboard({
   React.useEffect(() => { setSettingsDraft(settings); }, [settings]);
   const [notesInputs, setNotesInputs] = useState<Record<string, string>>({});
   const [selectedProofImage, setSelectedProofImage] = useState<string | null>(null);
+
+  // Full house preview (reuses the guest-facing HouseDetail in read-only
+  // mode) — replaces the old 3-stat summary card so admin can actually
+  // see photos/services/halls/rooms before approving. Also a light quick-
+  // edit form for the fields most likely to need a correction, using the
+  // same generic onUpdateHouse the owner dashboard already writes through
+  // (admin already has free UPDATE rights on houses at the DB layer).
+  const [previewHouseId, setPreviewHouseId] = useState<string | null>(null);
+  const [editingHouseId, setEditingHouseId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<Partial<RetreatHouse>>({});
+  const previewHouse = houses.find((h) => h.id === previewHouseId) ?? null;
+
+  const startEdit = (house: RetreatHouse) => {
+    setEditingHouseId(house.id);
+    setEditDraft({ name: house.name, description: house.description, pricePerNightPerPerson: house.pricePerNightPerPerson, services: house.services });
+  };
+  const saveEdit = (house: RetreatHouse) => {
+    onUpdateHouse?.({ ...house, ...editDraft });
+    setEditingHouseId(null);
+  };
 
   // Proof-of-payment screenshots are excluded from the general payments
   // load (they're the single biggest per-row payload, often hundreds of KB
@@ -175,7 +205,8 @@ export default function AdminDashboard({
     if (pending.suitability && changed(pending.suitability, house.suitability)) arrayFieldsChanged.push('الفئات المناسبة');
     if (pending.activities && changed(pending.activities, house.activities)) arrayFieldsChanged.push('الأنشطة');
     if (pending.images && changed(pending.images, house.images)) arrayFieldsChanged.push('صور البيت');
-    if (pending.conferenceHalls && changed(pending.conferenceHalls, house.conferenceHalls)) arrayFieldsChanged.push('قاعات المؤتمرات');
+    if (pending.conferenceHalls && changed(pending.conferenceHalls, house.conferenceHalls)) arrayFieldsChanged.push('قاعات المؤتمرات (شاملة الأسعار)');
+    if (pending.paymentMethods && changed(pending.paymentMethods, house.paymentMethods)) arrayFieldsChanged.push('وسائل استلام الدفع');
     return { rows, arrayFieldsChanged };
   };
 
@@ -433,6 +464,14 @@ export default function AdminDashboard({
 
                         {/* Moderation buttons */}
                         <div className="flex gap-2 justify-end pt-2">
+                          <button
+                            id={`preview-house-${house.id}`}
+                            onClick={() => setPreviewHouseId(house.id)}
+                            className="flex items-center gap-1 bg-white border border-[#D6D6C2] hover:bg-[#F0EDE6] text-[#4A4A3A] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>معاينة كاملة</span>
+                          </button>
                           <button
                             id={`reject-house-${house.id}`}
                             onClick={() => {
@@ -725,6 +764,13 @@ export default function AdminDashboard({
                       <div className="text-[9.5px] text-[#8A8A70] mt-0.5">{house.governorate} · {owner?.name || house.ownerName}</div>
                       <span className={`inline-block mt-1 text-[8.5px] font-bold px-2 py-0.5 rounded border ${statusClass}`}>{statusLabel}</span>
                     </div>
+                    <button
+                      onClick={() => setPreviewHouseId(house.id)}
+                      className="shrink-0 flex items-center gap-1 text-[10px] font-bold px-3 py-2 rounded-xl border border-[#D6D6C2] bg-white text-[#4A4A3A] hover:bg-[#F0EDE6] cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>معاينة</span>
+                    </button>
                     {(house.status === 'approved' || house.status === 'suspended') && (
                       <button
                         id={`toggle-house-suspend-${house.id}`}
@@ -742,6 +788,19 @@ export default function AdminDashboard({
                       >
                         <Power className="w-3.5 h-3.5" />
                         <span>{house.status === 'approved' ? 'إيقاف' : 'إعادة تفعيل'}</span>
+                      </button>
+                    )}
+                    {onDeleteHouse && (
+                      <button
+                        onClick={() => {
+                          if (confirm(`حذف بيت "${house.name}" نهائيًا؟ ده هيمسح كل حجوزاته وغرفه ومش هترجع تاني.`)) {
+                            onDeleteHouse(house.id);
+                          }
+                        }}
+                        className="shrink-0 flex items-center gap-1 text-[10px] font-bold px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>حذف نهائي</span>
                       </button>
                     )}
                   </div>
@@ -1571,6 +1630,105 @@ export default function AdminDashboard({
                 className="max-h-[70vh] max-w-full object-contain rounded-lg"
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full house preview — replaces the old 3-stat summary card. Shows
+          exactly what a guest sees (HouseDetail in previewMode: forms
+          render but submitting is a no-op) plus an admin-only payment-
+          methods panel and a light quick-edit for the fields most likely
+          to need a correction before approving. */}
+      {previewHouse && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => { setPreviewHouseId(null); setEditingHouseId(null); }} />
+          <div className="bg-[#FAF8F5] max-w-2xl w-full max-h-[92vh] overflow-y-auto rounded-3xl relative z-10 text-right">
+            <div className="sticky top-0 bg-[#FAF8F5] border-b border-[#D6D6C2] flex items-center justify-between px-5 py-3.5 z-10">
+              <h4 className="text-sm font-black text-[#2D2D24]">معاينة: {previewHouse.name}</h4>
+              <div className="flex items-center gap-2">
+                {onUpdateHouse && editingHouseId !== previewHouse.id && (
+                  <button
+                    onClick={() => startEdit(previewHouse)}
+                    className="flex items-center gap-1 bg-white border border-[#D6D6C2] hover:bg-[#F0EDE6] text-[#4A4A3A] text-[11px] font-bold px-3 py-1.5 rounded-xl"
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> تعديل
+                  </button>
+                )}
+                <button
+                  onClick={() => { setPreviewHouseId(null); setEditingHouseId(null); }}
+                  className="bg-white hover:bg-[#F0EDE6] border border-[#D6D6C2] text-[#2D2D24] text-xs font-bold px-3 py-1.5 rounded-xl"
+                >
+                  إغلاق ✕
+                </button>
+              </div>
+            </div>
+
+            {editingHouseId === previewHouse.id ? (
+              <div className="p-5 space-y-3">
+                <input type="text" value={editDraft.name ?? ''} onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))}
+                  placeholder="اسم البيت" className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
+                <textarea value={editDraft.description ?? ''} onChange={(e) => setEditDraft((d) => ({ ...d, description: e.target.value }))}
+                  placeholder="الوصف" rows={3} className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl resize-none" />
+                <input type="number" value={editDraft.pricePerNightPerPerson ?? 0} onChange={(e) => setEditDraft((d) => ({ ...d, pricePerNightPerPerson: Number(e.target.value) }))}
+                  placeholder="السعر لليلة للفرد" className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
+                <div>
+                  <p className="text-[11px] font-bold text-[#8A8A70] mb-1.5">الخدمات:</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {AMENITIES_LIST.map((s) => {
+                      const list = editDraft.services ?? [];
+                      const active = list.includes(s);
+                      return (
+                        <button key={s} type="button"
+                          onClick={() => setEditDraft((d) => ({ ...d, services: active ? list.filter((x) => x !== s) : [...list, s] }))}
+                          className={`text-[10.5px] font-bold py-1.5 px-2 rounded-lg border ${active ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white border-[#D6D6C2] text-[#4A4A3A]'}`}>
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end pt-1">
+                  <button onClick={() => setEditingHouseId(null)} className="text-xs font-bold text-[#8A8A70] px-3 py-2">إلغاء</button>
+                  <button onClick={() => saveEdit(previewHouse)} className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 py-2 rounded-xl">
+                    حفظ التعديلات
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="px-5 pt-4">
+                  <div className="bg-white border border-[#D6D6C2] rounded-2xl p-3.5 flex items-start gap-2">
+                    <Wallet className="w-4 h-4 text-[#5A5A40] shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-black text-[#2D2D24] mb-1">وسائل استلام الدفع من صاحب البيت</p>
+                      {previewHouse.paymentMethods.length === 0 ? (
+                        <p className="text-[11px] text-rose-600 font-bold">لم يضف صاحب البيت أي وسيلة دفع بعد.</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {previewHouse.paymentMethods.map((p) => (
+                            <p key={p.id} className="text-[11px] text-[#4A4A3A]"><span className="font-bold">{p.label}:</span> {p.value}</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="p-1">
+                  <HouseDetail
+                    house={previewHouse}
+                    currentUser={currentUser}
+                    bookings={bookings}
+                    reviews={reviews.filter((r) => r.houseId === previewHouse.id)}
+                    onBack={() => setPreviewHouseId(null)}
+                    onBook={() => {}}
+                    onSubmitReview={() => {}}
+                    isFavorited={false}
+                    onToggleFavorite={() => {}}
+                    previewMode
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

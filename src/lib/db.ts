@@ -55,6 +55,7 @@ export function mapHouse(r: Record<string, unknown>): RetreatHouse {
     images: (r.images as string[]) ?? [],
     conferenceHalls: (r.conference_halls as RetreatHouse['conferenceHalls']) ?? [],
     restaurants: (r.restaurants as RetreatHouse['restaurants']) ?? [],
+    paymentMethods: (r.payment_methods as RetreatHouse['paymentMethods']) ?? [],
     status: r.status as RetreatHouse['status'],
     rating: r.rating as number,
     reviewsCount: r.reviews_count as number,
@@ -266,6 +267,67 @@ export async function loadHouses(): Promise<RetreatHouse[]> {
 export async function deleteHouse(houseId: string): Promise<boolean> {
   const { error } = await supabase.from('houses').delete().eq('id', houseId);
   if (error) { console.error('deleteHouse:', error); return false; }
+  return true;
+}
+
+export async function createHouse(h: RetreatHouse): Promise<boolean> {
+  const { error } = await supabase.from('houses').insert({
+    id: h.id, name: h.name, description: h.description,
+    owner_id: h.ownerId, owner_name: h.ownerName,
+    governorate: h.governorate, address: h.address,
+    lat: h.lat, lng: h.lng,
+    rooms_count: h.roomsCount, beds_count: h.bedsCount,
+    rooms_description: h.roomsDescription,
+    price_per_night_per_person: h.pricePerNightPerPerson,
+    services: h.services, suitability: h.suitability,
+    activities: h.activities, images: h.images,
+    conference_halls: h.conferenceHalls, restaurants: h.restaurants,
+    payment_methods: h.paymentMethods,
+    status: h.status, rating: h.rating, reviews_count: h.reviewsCount,
+    property_type: h.propertyType ?? null,
+    sea_proximity: h.seaProximity ?? null,
+    student_housing_gender: h.studentHousingGender ?? null,
+    distance_from_university: h.distanceFromUniversity ?? null,
+    monthly_rent: h.monthlyRent ?? null,
+    room_capacity: h.roomCapacity ?? null,
+    housing_rules: h.housingRules ?? [],
+    contract_terms: h.contractTerms ?? null,
+    menu: h.menu ?? null,
+    created_at: h.createdAt,
+  });
+  if (error) { console.error('createHouse:', error); return false; }
+  return true;
+}
+
+// Shared column mapping so a full house update (owner form) and an
+// approved pending-edit merge (admin) never drift out of sync again.
+export function houseUpdatePayload(h: RetreatHouse) {
+  return {
+    name: h.name, description: h.description,
+    governorate: h.governorate,
+    address: h.address, lat: h.lat, lng: h.lng,
+    rooms_count: h.roomsCount, beds_count: h.bedsCount,
+    rooms_description: h.roomsDescription,
+    price_per_night_per_person: h.pricePerNightPerPerson,
+    images: h.images,
+    image_descriptions: h.imageDescriptions ?? {},
+    blocked_dates: h.blockedDates ?? [],
+    services: h.services, activities: h.activities, suitability: h.suitability,
+    conference_halls: h.conferenceHalls, restaurants: h.restaurants,
+    payment_methods: h.paymentMethods,
+    property_type: h.propertyType ?? null,
+    student_housing_gender: h.studentHousingGender ?? null,
+    distance_from_university: h.distanceFromUniversity ?? null,
+    monthly_rent: h.monthlyRent ?? null,
+    housing_rules: h.housingRules ?? [],
+    contract_terms: h.contractTerms ?? null,
+    menu: h.menu ?? null, status: h.status,
+  };
+}
+
+export async function updateHouse(h: RetreatHouse): Promise<boolean> {
+  const { error } = await supabase.from('houses').update(houseUpdatePayload(h)).eq('id', h.id);
+  if (error) { console.error('updateHouse:', error); return false; }
   return true;
 }
 

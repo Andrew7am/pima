@@ -531,6 +531,8 @@ export default function UserBookings({
             const badge = getStatusBadge(booking.status);
             const StatusIcon = badge.icon;
             const canPayDeposit = booking.status === 'approved' && !booking.depositPaid;
+            const bookingHouse = houses.find((h) => h.id === booking.houseId);
+            const ownerPaymentFor = (type: string) => bookingHouse?.paymentMethods.find((p) => p.type === type);
 
             return (
               <div
@@ -947,7 +949,11 @@ export default function UserBookings({
                         {selectedMethod === 'instapay' && (
                           <div className="space-y-3">
                             <div className="bg-emerald-50 border border-emerald-100 p-2.5 rounded-xl text-[10px] text-emerald-950 leading-relaxed font-bold">
-                              💡 تعليمات إنستا باي: يرجى التحويل إلى عنوان الدفع (IPA) الموحد للبيت: <span className="font-mono underline text-emerald-900">copticretreats@instapay</span> أو على رقم الهاتف <span className="font-mono text-emerald-900">01014859322</span> عبر تطبيق إنستاباي.
+                              {ownerPaymentFor('instapay') ? (
+                                <>💡 تعليمات إنستا باي: يرجى التحويل مباشرة لصاحب البيت على عنوان الدفع (IPA): <span className="font-mono underline text-emerald-900">{ownerPaymentFor('instapay')!.value}</span> عبر تطبيق إنستاباي.</>
+                              ) : (
+                                <>⚠️ صاحب البيت لم يضف رقم إنستاباي بعد. تواصل معه أو اختر وسيلة دفع أخرى.</>
+                              )}
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div>
@@ -981,7 +987,14 @@ export default function UserBookings({
                         {selectedMethod === 'vodafone' && (
                           <div className="space-y-3">
                             <div className="bg-rose-50 border border-rose-100 p-2.5 rounded-xl text-[10px] text-rose-950 leading-relaxed font-bold">
-                              💡 تعليمات فودافون كاش (Vodafone Cash): يرجى إرسال المبلغ الإجمالي أو العربون إلى رقم المحفظة المعتمد: <span className="font-mono text-rose-900 underline">01014859322</span>. يرجى إضافة 1% رسوم سحب المحفظة.
+                              {(() => {
+                                const wallet = ownerPaymentFor('vodafone_cash') ?? ownerPaymentFor('etisalat_cash') ?? ownerPaymentFor('orange_cash') ?? ownerPaymentFor('we_cash');
+                                return wallet ? (
+                                  <>💡 تعليمات المحفظة ({wallet.label}): يرجى إرسال المبلغ الإجمالي أو العربون مباشرة لصاحب البيت على رقم: <span className="font-mono text-rose-900 underline">{wallet.value}</span>.</>
+                                ) : (
+                                  <>⚠️ صاحب البيت لم يضف رقم محفظة بعد. تواصل معه أو اختر وسيلة دفع أخرى.</>
+                                );
+                              })()}
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div>
@@ -1016,7 +1029,11 @@ export default function UserBookings({
                         {selectedMethod === 'bank' && (
                           <div className="space-y-3">
                             <div className="bg-indigo-50 border border-indigo-100 p-2.5 rounded-xl text-[10px] text-indigo-950 leading-relaxed font-bold">
-                              💡 تعليمات التحويل البنكي: يرجى التحويل لحساب البيت في البنك الأهلي المصري (NBE) فرع كينج مريوط، حساب رقم: <span className="font-mono text-indigo-900 underline">10034928374839</span> باسم (إدارة بيت المؤتمرات والأنشطة).
+                              {ownerPaymentFor('bank_transfer') ? (
+                                <>💡 تعليمات التحويل البنكي: يرجى التحويل مباشرة لحساب صاحب البيت — <span className="font-mono text-indigo-900 underline">{ownerPaymentFor('bank_transfer')!.value}</span>.</>
+                              ) : (
+                                <>⚠️ صاحب البيت لم يضف بيانات حساب بنكي بعد. تواصل معه أو اختر وسيلة دفع أخرى.</>
+                              )}
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div>

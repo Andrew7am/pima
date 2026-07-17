@@ -25,6 +25,10 @@ interface HouseDetailProps {
   waitlist?: WaitlistEntry[];
   onJoinWaitlist?: (entry: WaitlistEntry) => boolean;
   settings?: PlatformSettings;
+  // Read-only admin preview (pending-house review) — the booking/review
+  // forms still render (so admin can see exactly what a guest would),
+  // but submitting is a no-op instead of creating a real record.
+  previewMode?: boolean;
 }
 
 const GOVERNORATE_WEATHER_DATA: Record<string, {
@@ -533,7 +537,8 @@ export default function HouseDetail({
   announcements = [],
   waitlist = [],
   onJoinWaitlist,
-  settings = DEFAULT_PLATFORM_SETTINGS
+  settings = DEFAULT_PLATFORM_SETTINGS,
+  previewMode = false
 }: HouseDetailProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
@@ -812,6 +817,7 @@ export default function HouseDetail({
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (previewMode) { alert('معاينة فقط — التسجيل معطّل أثناء مراجعة الإدارة.'); return; }
     if (!checkIn || !checkOut || guestsCount <= 0) {
       alert('الرجاء التأكد من إدخال كافة بيانات التواريخ والأعداد.');
       return;
@@ -870,6 +876,7 @@ export default function HouseDetail({
 
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (previewMode) { alert('معاينة فقط — التقييم معطّل أثناء مراجعة الإدارة.'); return; }
     if (!newComment.trim()) return;
 
     const computedOverall = parseFloat(((foodRating + serviceRating + cleanlinessRating + organizationRating + valueRating) / 5).toFixed(1));
@@ -1742,6 +1749,9 @@ export default function HouseDetail({
                         <div>
                           <div className="font-bold text-[#4A4A3A]">{hall.name}</div>
                           <div className="text-[10px] text-[#8A8A70] font-semibold mt-0.5">تتسع لـ: {hall.capacity} فرد</div>
+                          {hall.price !== undefined && (
+                            <div className="text-[10px] text-[#5A5A40] font-bold mt-0.5">{hall.price} جنيه / اليوم</div>
+                          )}
                         </div>
                         <div className="flex gap-2">
                           {hall.hasSoundSystem && (
@@ -1941,7 +1951,7 @@ export default function HouseDetail({
                       className="w-full bg-white border border-[#D6D6C2] text-[11px] px-2.5 py-1.5 rounded-xl text-[#4A4A3A] outline-none"
                     >
                       {house.conferenceHalls.map((h) => (
-                        <option key={h.id} value={h.id}>{h.name}</option>
+                        <option key={h.id} value={h.id}>{h.name}{h.price !== undefined ? ` — ${h.price} ج/اليوم` : ''}</option>
                       ))}
                     </select>
                   </div>
