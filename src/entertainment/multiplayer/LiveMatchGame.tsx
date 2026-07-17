@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import confetti from 'canvas-confetti';
 import { User } from '../../types';
-import { ChevronRight, Check, X as XIcon, Trophy, Users as UsersIcon, Zap, Coins, Loader2, Home, RotateCcw, Copy } from 'lucide-react';
+import { ChevronRight, Check, X as XIcon, Trophy, Users as UsersIcon, Loader2, Home, RotateCcw, Copy, Lightbulb } from 'lucide-react';
 import {
   GameRoom, loadRoom, subscribeToRoom, submitAnswer, finalizeMatch, FinalizeResult,
 } from '../multiplayer';
 import { getLeague } from '../leagues';
 import { checkAchievements } from '../../lib/db';
+import RoomChat from './RoomChat';
+import AssistBar, { AssistId } from './AssistBar';
 
 interface LiveMatchGameProps {
   currentUser: User;
@@ -13,6 +17,23 @@ interface LiveMatchGameProps {
   onBack: () => void;
   onUserUpdated: (patch: Partial<User>) => void;
   onAchievementsUnlocked?: (ids: string[]) => void;
+}
+
+const QUESTION_SECONDS = 20;
+
+// Web Vibration API only — no sound. See the port plan: the original
+// prototype's sound effects were unlicensed third-party demo URLs, not
+// real bundled assets, so only haptic + confetti were ported.
+function triggerHaptic(type: 'light' | 'medium' | 'success' | 'error' | 'warning') {
+  if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+  const patterns: Record<string, number | number[]> = {
+    light: 12,
+    medium: 25,
+    success: [15, 60, 20],
+    error: [40, 60, 40],
+    warning: [30, 40, 30],
+  };
+  try { navigator.vibrate(patterns[type]); } catch { /* sandboxed iframe, ignore */ }
 }
 
 // Runs a 1v1 realtime match. Subscribes to the room row via
@@ -27,6 +48,40 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   const [finalizing, setFinalizing] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
 
+  // Assists — ported from the original prototype's SmartAssistBar. Pure
+  // client-side state (the original never persisted assist usage to its
+  // backend either): usedAssists is spent-per-MATCH, the rest reset
+  // per-question below.
+  const [usedAssists, setUsedAssists] = useState<AssistId[]>([]);
+  const [removedOptions, setRemovedOptions] = useState<number[]>([]);
+  const [hintRevealed, setHintRevealed] = useState(false);
+  const [retryArmed, setRetryArmed] = useState(false);
+  const [retryFlash, setRetryFlash] = useState(false);
+  const [playTimer, setPlayTimer] = useState(QUESTION_SECONDS);
+  const [showVsIntro, setShowVsIntro] = useState(false);
+
+  const isTimerFrozenRef = useRef(false);
+  const prevStatusRef = useRef<string | null>(null);
+  const confettiFiredRef = useRef(false);
+  const handleSelectRef = useRef<(i: number) => void>(() => {});
+
+  const isHost = room ? currentUser.id === room.host_user_id : false;
+  const meName = room ? (isHost ? room.host_name : room.guest_name) : null;
+  const oppName = room ? (isHost ? room.guest_name : room.host_name) : null;
+  const meRating = room ? (isHost ? room.host_rating : room.guest_rating) : null;
+  const oppRating = room ? (isHost ? room.guest_rating : room.host_rating) : null;
+  const meScore = room ? (isHost ? room.host_score : room.guest_score) : 0;
+  const oppScore = room ? (isHost ? room.guest_score : room.host_score) : 0;
+  const myAnswers = room ? (isHost ? room.host_answers : room.guest_answers) : {};
+  const oppAnswers = room ? (isHost ? room.guest_answers : room.host_answers) : {};
+  const qIdx = room?.current_question ?? 0;
+  const q = room?.questions?.[qIdx];
+  const myAnswer: number | undefined = myAnswers[String(qIdx)];
+  const oppAnswer: number | undefined = oppAnswers[String(qIdx)];
+  const iAnswered = myAnswer !== undefined;
+  const bothAnswered = iAnswered && oppAnswer !== undefined;
+  const showFeedback = bothAnswered;
+
   const copyRoomCode = async () => {
     try {
       await navigator.clipboard.writeText(roomId);
@@ -34,6 +89,72 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
       setTimeout(() => setCodeCopied(false), 1500);
     } catch {
       /* clipboard unavailable — the code is already shown on screen */
+    }
+  };
+
+  const handleSelect = async (i: number) => {
+    if (!room || iAnswered || submitting) return;
+    const isWrongPick = i !== -1 && q && i !== q.correctIdx;
+
+    // Retry assist: catch one wrong pick per match locally, without
+    // committing it to the server, so the player can try the same
+    // question again with a fresh timer.
+    if (isWrongPick && retryArmed) {
+      setRetryArmed(false);
+      if (i !== -1) setRemovedOptions((prev) => [...prev, i]);
+      setPlayTimer(QUESTION_SECONDS);
+      setRetryFlash(true);
+      triggerHaptic('warning');
+      setTimeout(() => setRetryFlash(false), 2000);
+      return;
+    }
+
+    setSubmitting(true);
+    setAnswerError(null);
+    const result = await submitAnswer(roomId, qIdx, i);
+    setSubmitting(false);
+    if (result.ok === false) {
+      const map: Record<string, string> = {
+        ROOM_NOT_ACTIVE: 'الغرفة مش نشطة دلوقتي — جرّب تحدّث الصفحة.',
+        ALREADY_ANSWERED: 'أنت جاوبت على السؤال ده بالفعل.',
+        NOT_A_PARTICIPANT: 'مش عضو في الغرفة دي.',
+        ROOM_NOT_FOUND: 'الغرفة مش موجودة.',
+      };
+      const readable = Object.entries(map).find(([k]) => result.error.includes(k))?.[1];
+      setAnswerError(readable ?? `تعذر إرسال إجابتك: ${result.error}`);
+      return;
+    }
+    triggerHaptic(q && i === q.correctIdx ? 'success' : 'error');
+    // Reflect our own answer immediately instead of waiting on the
+    // realtime round-trip — the opponent's side still updates via
+    // subscribeToRoom, but a delayed/dropped realtime event shouldn't
+    // make our own click look like it did nothing.
+    setRoom((prev) => {
+      if (!prev) return prev;
+      const key = String(qIdx);
+      return isHost
+        ? { ...prev, host_answers: { ...prev.host_answers, [key]: i }, host_score: result.hostScore }
+        : { ...prev, guest_answers: { ...prev.guest_answers, [key]: i }, guest_score: result.guestScore };
+    });
+  };
+
+  useEffect(() => { handleSelectRef.current = handleSelect; });
+
+  const handleUseAssist = (id: AssistId) => {
+    if (usedAssists.includes(id) || !q) return;
+    setUsedAssists((prev) => [...prev, id]);
+    triggerHaptic('light');
+    if (id === '5050') {
+      const wrongIdx = q.options.map((_, i) => i).filter((i) => i !== q.correctIdx && !removedOptions.includes(i));
+      const shuffled = [...wrongIdx].sort(() => Math.random() - 0.5);
+      setRemovedOptions((prev) => [...prev, ...shuffled.slice(0, 2)]);
+    } else if (id === 'extra_time') {
+      isTimerFrozenRef.current = true;
+      setTimeout(() => { isTimerFrozenRef.current = false; }, 10000);
+    } else if (id === 'hint') {
+      setHintRevealed(true);
+    } else if (id === 'retry') {
+      setRetryArmed(true);
     }
   };
 
@@ -49,10 +170,51 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     return () => { if (unsub) unsub(); };
   }, [roomId]);
 
-  // Clear any stale "couldn't submit" error once the question moves on
+  // Per-question resets — clears the previous question's transient UI
+  // state whenever current_question moves.
   useEffect(() => {
     setAnswerError(null);
+    setRemovedOptions([]);
+    setHintRevealed(false);
+    setRetryFlash(false);
   }, [room?.current_question]);
+
+  // 20s countdown per question — the original prototype's whole pacing
+  // mechanic (and the reason `extra_time` as an assist exists at all).
+  // Auto-submits opt_idx=-1 (a sentinel that never matches any
+  // correctIdx — submit_answer doesn't range-validate it) on timeout.
+  useEffect(() => {
+    if (!room || room.status !== 'active' || iAnswered) return;
+    setPlayTimer(QUESTION_SECONDS);
+    isTimerFrozenRef.current = false;
+    const interval = setInterval(() => {
+      if (isTimerFrozenRef.current) return;
+      setPlayTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          handleSelectRef.current(-1);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room?.current_question, room?.status, iAnswered]);
+
+  // Brief "VS" beat the instant a room flips waiting → active, mirroring
+  // the original's fixed opponent-found screen before gameplay starts.
+  useEffect(() => {
+    if (!room) return;
+    const prevStatus = prevStatusRef.current;
+    prevStatusRef.current = room.status;
+    if (prevStatus === 'waiting' && room.status === 'active') {
+      setShowVsIntro(true);
+      triggerHaptic('medium');
+      const t = setTimeout(() => setShowVsIntro(false), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [room?.status]);
 
   // Trigger finalize automatically when both players finished all questions
   useEffect(() => {
@@ -68,9 +230,9 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
           setOutcome(result);
           // Push the fresh rating (+ level potentially) to parent so the
           // Entertainment hub reflects it without a page reload
-          const isHost = currentUser.id === room.host_user_id;
+          const finishedHost = currentUser.id === room.host_user_id;
           onUserUpdated({
-            rating: isHost ? result.hostNewRating : result.guestNewRating,
+            rating: finishedHost ? result.hostNewRating : result.guestNewRating,
           });
           const newlyUnlocked = await checkAchievements();
           if (newlyUnlocked.length > 0) onAchievementsUnlocked?.(newlyUnlocked);
@@ -86,6 +248,15 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
       });
     }
   }, [room, outcome, finalizing, roomId, currentUser.id, onUserUpdated, onAchievementsUnlocked]);
+
+  // Confetti fires once, only for the winner, the moment the outcome lands.
+  useEffect(() => {
+    if (outcome && outcome.winnerUserId === currentUser.id && !confettiFiredRef.current) {
+      confettiFiredRef.current = true;
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+      triggerHaptic('success');
+    }
+  }, [outcome, currentUser.id]);
 
   if (loading) {
     return (
@@ -117,15 +288,36 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     );
   }
 
-  const isHost = currentUser.id === room.host_user_id;
-  const meName = isHost ? room.host_name : room.guest_name;
-  const oppName = isHost ? room.guest_name : room.host_name;
-  const meRating = isHost ? room.host_rating : room.guest_rating;
-  const oppRating = isHost ? room.guest_rating : room.host_rating;
-  const meScore = isHost ? room.host_score : room.guest_score;
-  const oppScore = isHost ? room.guest_score : room.host_score;
-  const myAnswers = isHost ? room.host_answers : room.guest_answers;
-  const oppAnswers = isHost ? room.guest_answers : room.host_answers;
+  // ── "VS" INTRO (brief beat right after a guest joins) ──────────
+  if (showVsIntro) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: 'spring', damping: 16 }}
+          className="max-w-md mx-auto px-6 py-10 text-center" dir="rtl"
+        >
+          <div className="flex items-center justify-center gap-6">
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-2xl font-black text-white shadow-xl">
+                {meName?.charAt(0) ?? '?'}
+              </div>
+              <span className="text-xs font-black text-white truncate max-w-[100px]">{meName}</span>
+            </div>
+            <span className="text-2xl font-black text-slate-500">VS</span>
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center text-2xl font-black text-white shadow-xl">
+                {oppName?.charAt(0) ?? '?'}
+              </div>
+              <span className="text-xs font-black text-white truncate max-w-[100px]">{oppName}</span>
+            </div>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-6 font-bold">استعد... المباراة بتبدأ!</p>
+        </motion.div>
+      </div>
+    );
+  }
 
   // ── WAITING (room still not full) ─────────────────────────────
   if (room.status === 'waiting') {
@@ -167,6 +359,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             إلغاء الغرفة والخروج
           </button>
         </div>
+        <RoomChat currentUser={currentUser} roomId={roomId} opponentName={oppName} />
       </div>
     );
   }
@@ -181,7 +374,11 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
 
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
-        <div className="max-w-lg mx-auto px-4 sm:px-6 py-8 space-y-5 text-center" dir="rtl">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-lg mx-auto px-4 sm:px-6 py-8 space-y-5 text-center" dir="rtl"
+        >
           <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center shadow-2xl text-4xl ${
             won ? 'bg-gradient-to-br from-emerald-500 to-emerald-700'
                 : draw ? 'bg-gradient-to-br from-slate-500 to-slate-700'
@@ -238,7 +435,8 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
               العودة لمركز الترفيه
             </button>
           </div>
-        </div>
+        </motion.div>
+        <RoomChat currentUser={currentUser} roomId={roomId} opponentName={oppName} />
       </div>
     );
   }
@@ -260,43 +458,8 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   }
 
   // ── ACTIVE GAMEPLAY ───────────────────────────────────────────
-  const qIdx = room.current_question;
-  const q = room.questions[qIdx];
-  const myAnswer: number | undefined = myAnswers[String(qIdx)];
-  const oppAnswer: number | undefined = oppAnswers[String(qIdx)];
-  const iAnswered = myAnswer !== undefined;
-  const bothAnswered = iAnswered && oppAnswer !== undefined;
-  const showFeedback = bothAnswered;
-
-  const handleSelect = async (i: number) => {
-    if (iAnswered || submitting) return;
-    setSubmitting(true);
-    setAnswerError(null);
-    const result = await submitAnswer(roomId, qIdx, i);
-    setSubmitting(false);
-    if (result.ok === false) {
-      const map: Record<string, string> = {
-        ROOM_NOT_ACTIVE: 'الغرفة مش نشطة دلوقتي — جرّب تحدّث الصفحة.',
-        ALREADY_ANSWERED: 'أنت جاوبت على السؤال ده بالفعل.',
-        NOT_A_PARTICIPANT: 'مش عضو في الغرفة دي.',
-        ROOM_NOT_FOUND: 'الغرفة مش موجودة.',
-      };
-      const readable = Object.entries(map).find(([k]) => result.error.includes(k))?.[1];
-      setAnswerError(readable ?? `تعذر إرسال إجابتك: ${result.error}`);
-      return;
-    }
-    // Reflect our own answer immediately instead of waiting on the
-    // realtime round-trip — the opponent's side still updates via
-    // subscribeToRoom, but a delayed/dropped realtime event shouldn't
-    // make our own click look like it did nothing.
-    setRoom((prev) => {
-      if (!prev) return prev;
-      const key = String(qIdx);
-      return isHost
-        ? { ...prev, host_answers: { ...prev.host_answers, [key]: i }, host_score: result.hostScore }
-        : { ...prev, guest_answers: { ...prev.guest_answers, [key]: i }, guest_score: result.guestScore };
-    });
-  };
+  const timerPct = (playTimer / QUESTION_SECONDS) * 100;
+  const timerLow = playTimer <= 5;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
@@ -311,9 +474,16 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             <ChevronRight className="w-4 h-4" />
             <span>خروج</span>
           </button>
-          <span className="text-[11px] font-black text-slate-400 tabular-nums">
-            {qIdx + 1}<span className="text-slate-600"> / </span>{room.questions.length}
-          </span>
+          <div className="flex items-center gap-2">
+            {!iAnswered && (
+              <span className={`text-[11px] font-black tabular-nums px-2 py-0.5 rounded-full ${timerLow ? 'bg-rose-500/20 text-rose-300 animate-pulse' : 'bg-white/5 text-slate-400'}`}>
+                {playTimer}s
+              </span>
+            )}
+            <span className="text-[11px] font-black text-slate-400 tabular-nums">
+              {qIdx + 1}<span className="text-slate-600"> / </span>{room.questions.length}
+            </span>
+          </div>
         </div>
 
         {/* Live scoreboard */}
@@ -340,46 +510,93 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
           />
         </div>
 
-        <div className="bg-gradient-to-br from-[#132247] to-[#0A1732] border border-white/10 rounded-3xl p-5 shadow-xl min-h-[110px] flex items-center">
-          <p className="text-sm sm:text-base font-black text-white leading-relaxed">{q?.question}</p>
-        </div>
+        {!iAnswered && (
+          <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-1000 linear ${timerLow ? 'bg-rose-500' : 'bg-emerald-500'}`}
+              style={{ width: `${timerPct}%` }}
+            />
+          </div>
+        )}
 
-        <div className="space-y-2.5">
-          {q?.options.map((opt, i) => {
-            const isCorrect = i === q.correctIdx;
-            const isPicked = i === myAnswer;
-            const isOppPicked = i === oppAnswer;
-            let style = 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-slate-100';
-            if (iAnswered && !showFeedback) {
-              // I've answered but opponent hasn't yet — highlight only my pick
-              if (isPicked) style = 'bg-amber-500/10 border-amber-500/40 text-amber-200';
-              else style = 'bg-white/[0.03] border-white/5 text-slate-500';
-            } else if (showFeedback) {
-              if (isCorrect) style = 'bg-emerald-500/15 border-emerald-500/50 text-emerald-200';
-              else if (isPicked) style = 'bg-rose-500/15 border-rose-500/50 text-rose-200';
-              else style = 'bg-white/[0.03] border-white/5 text-slate-500';
-            }
-            const clickable = !iAnswered && !submitting;
-            return (
-              <button
-                key={i}
-                type="button"
-                disabled={!clickable}
-                onClick={() => handleSelect(i)}
-                className={`w-full text-right text-sm font-bold px-4 py-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${style} ${clickable ? 'cursor-pointer' : ''}`}
-              >
-                <span className="flex-1 leading-relaxed">{opt}</span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {isOppPicked && showFeedback && (
-                    <span className="text-[8px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded">خصم</span>
-                  )}
-                  {showFeedback && isCorrect && <Check className="w-4 h-4 text-emerald-400" />}
-                  {showFeedback && isPicked && !isCorrect && <XIcon className="w-4 h-4 text-rose-400" />}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={qIdx}
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.25 }}
+            className="space-y-4"
+          >
+            <div className="bg-gradient-to-br from-[#132247] to-[#0A1732] border border-white/10 rounded-3xl p-5 shadow-xl min-h-[110px] flex items-center">
+              <p className="text-sm sm:text-base font-black text-white leading-relaxed">{q?.question}</p>
+            </div>
+
+            {hintRevealed && !showFeedback && q && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 text-[11.5px] text-amber-200 leading-relaxed flex items-start gap-2">
+                <Lightbulb className="w-4 h-4 shrink-0 mt-0.5" />
+                <span><span className="font-black">تلميح: </span>{q.explanation}</span>
+              </div>
+            )}
+
+            <div className="space-y-2.5">
+              {q?.options.map((opt, i) => {
+                const isCorrect = i === q.correctIdx;
+                const isPicked = i === myAnswer;
+                const isOppPicked = i === oppAnswer;
+                const isRemoved = removedOptions.includes(i);
+                let style = 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-slate-100';
+                if (isRemoved && !showFeedback) {
+                  style = 'bg-white/[0.02] border-white/5 text-slate-600 line-through opacity-50';
+                } else if (iAnswered && !showFeedback) {
+                  // I've answered but opponent hasn't yet — highlight only my pick
+                  if (isPicked) style = 'bg-amber-500/10 border-amber-500/40 text-amber-200';
+                  else style = 'bg-white/[0.03] border-white/5 text-slate-500';
+                } else if (showFeedback) {
+                  if (isCorrect) style = 'bg-emerald-500/15 border-emerald-500/50 text-emerald-200';
+                  else if (isPicked) style = 'bg-rose-500/15 border-rose-500/50 text-rose-200';
+                  else style = 'bg-white/[0.03] border-white/5 text-slate-500';
+                }
+                const clickable = !iAnswered && !submitting && !isRemoved;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    disabled={!clickable}
+                    onClick={() => handleSelect(i)}
+                    className={`w-full text-right text-sm font-bold px-4 py-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${style} ${clickable ? 'cursor-pointer' : ''}`}
+                  >
+                    <span className="flex-1 leading-relaxed">{opt}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isOppPicked && showFeedback && (
+                        <span className="text-[8px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded">خصم</span>
+                      )}
+                      {showFeedback && isCorrect && <Check className="w-4 h-4 text-emerald-400" />}
+                      {showFeedback && isPicked && !isCorrect && <XIcon className="w-4 h-4 text-rose-400" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        {!showFeedback && (
+          <AssistBar usedAssists={usedAssists} onUseAssist={handleUseAssist} userLevel={currentUser.level ?? 1} />
+        )}
+
+        <AnimatePresence>
+          {retryFlash && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="bg-rose-500/15 border border-rose-500/40 text-rose-200 text-[11px] font-black rounded-2xl px-3 py-2.5 text-center"
+            >
+              لديك فرصة إضافية! ❤️ جرّب تاني
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {answerError && (
           <div className="bg-rose-500/10 border border-rose-500/30 text-rose-200 text-[11px] font-bold rounded-2xl px-3 py-2.5 text-center flex items-center justify-center gap-2">
@@ -403,6 +620,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
         )}
 
       </div>
+      <RoomChat currentUser={currentUser} roomId={roomId} opponentName={oppName} />
     </div>
   );
 }

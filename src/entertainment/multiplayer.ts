@@ -122,3 +122,56 @@ export function subscribeToRoom(roomId: string, onChange: (room: GameRoom) => vo
     .subscribe();
   return () => { supabase.removeChannel(channel); };
 }
+
+// ── In-match chat (migration 040) ──────────────────────────────
+// Scoped to a single game_rooms row, unlike the friends-only chat in
+// social.ts — match opponents are frequently strangers, not friends.
+
+export interface RoomMessage {
+  id: number;
+  roomId: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  createdAt: string;
+}
+
+function mapRoomMessage(r: Record<string, unknown>): RoomMessage {
+  return {
+    id: r.id as number,
+    roomId: r.room_id as string,
+    senderId: r.sender_id as string,
+    senderName: r.sender_name as string,
+    content: r.content as string,
+    createdAt: r.created_at as string,
+  };
+}
+
+export async function sendRoomMessage(roomId: string, content: string): Promise<RoomMessage | null> {
+  const { data, error } = await supabase.rpc('send_room_message', { p_room_id: roomId, p_content: content });
+  if (error) { console.error('sendRoomMessage:', error); return null; }
+  return data ? mapRoomMessage(data as Record<string, unknown>) : null;
+}
+
+export async function loadRoomMessages(roomId: string): Promise<RoomMessage[]> {
+  const { data, error } = await supabase
+    .from('game_room_messages')
+    .select('*')
+    .eq('room_id', roomId)
+    .order('created_at', { ascending: true });
+  if (error) { console.error('loadRoomMessages:', error); return []; }
+  return (data ?? []).map(mapRoomMessage);
+}
+
+// Returns an unsubscribe function — caller MUST call it on unmount.
+export function subscribeToRoomMessages(roomId: string, onMessage: (msg: RoomMessage) => void): () => void {
+  const channel = supabase
+    .channel(`game_room_messages:${roomId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'game_room_messages', filter: `room_id=eq.${roomId}` },
+      (payload) => { onMessage(mapRoomMessage(payload.new as Record<string, unknown>)); },
+    )
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}
