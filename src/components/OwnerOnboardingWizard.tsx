@@ -526,23 +526,90 @@ export default function OwnerOnboardingWizard({
             </div>
           )}
 
-          {step === 'review' && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-[#5A5A40] font-black text-sm"><ClipboardCheck className="w-4 h-4" /> المراجعة والإرسال</div>
-              <p className="text-[11px] text-[#8A8A70] leading-relaxed">
-                هيتم إرسال بياناتك لإدارة المنصة للمراجعة والاعتماد قبل ما تظهر للحجاز — بالظبط زي أي بيت جديد.
-              </p>
-              <div className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-2xl p-4 space-y-1.5 text-[11px] text-[#4A4A3A]">
-                {needsBasics && <p>✓ اسم البيت: <span className="font-bold">{houseName || '—'}</span></p>}
-                {needsPhotos && <p>✓ صورة مرفوعة</p>}
-                {needsServices && <p>✓ {selectedServices.length} خدمة مختارة</p>}
-                {needsRooms && <p>✓ {draftRooms.length} غرفة مسعّرة</p>}
-                {needsBasics && propertyType === 'conference' && <p>✓ {draftHalls.length} قاعة مؤتمرات</p>}
-                {needsPayment && <p>✓ {draftPayments.length} وسيلة دفع</p>}
+          {step === 'review' && (() => {
+            // Merge what's already saved on the house (from an earlier
+            // pass, if this owner is just completing missing pieces) with
+            // whatever's being entered right now — so this shows the WHOLE
+            // house, not just the delta from this session.
+            const displayName = needsBasics ? houseName : existingHouse?.name;
+            const displayImage = imageUrl || existingHouse?.images[0];
+            const displayServices = needsServices ? selectedServices : (existingHouse?.services ?? []);
+            const displayRooms: { name: string; bedsCount: number; price: string | number }[] = [
+              ...existingRooms.map((r) => ({ name: r.name, bedsCount: r.bedsCount, price: r.pricePerNight ?? '—' })),
+              ...draftRooms.map((r) => ({ name: r.name, bedsCount: r.bedsCount, price: r.pricePerNight })),
+            ];
+            const displayHalls: { name: string; capacity: number; price?: number }[] = needsBasics
+              ? draftHalls.map((h) => ({ name: h.name, capacity: h.capacity, price: h.price ? Number(h.price) : undefined }))
+              : (existingHouse?.conferenceHalls ?? []);
+            const displayPayments: { label: string; value: string }[] = [
+              ...(existingHouse?.paymentMethods ?? []).map((p) => ({ label: p.label, value: p.value })),
+              ...draftPayments.map((p) => ({ label: p.label || PAYMENT_TYPE_LABELS[p.type], value: p.value })),
+            ];
+
+            return (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-[#5A5A40] font-black text-sm"><ClipboardCheck className="w-4 h-4" /> المراجعة والإرسال</div>
+                <p className="text-[11px] text-[#8A8A70] leading-relaxed">
+                  هيتم إرسال بياناتك لإدارة المنصة للمراجعة والاعتماد قبل ما تظهر للحجاز — بالظبط زي أي بيت جديد.
+                </p>
+
+                {displayImage && (
+                  <img src={displayImage} alt="معاينة" className="w-full h-36 object-cover rounded-2xl border border-[#D6D6C2]" />
+                )}
+
+                <div className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-2xl p-4 space-y-3 text-[11px] text-[#4A4A3A]">
+                  <p><span className="text-[#8A8A70] font-bold">اسم البيت: </span><span className="font-black">{displayName || '—'}</span></p>
+
+                  <div>
+                    <p className="text-[#8A8A70] font-bold mb-1">الخدمات والمرافق ({displayServices.length}):</p>
+                    {displayServices.length === 0 ? <p className="text-red-500">لا توجد خدمات مختارة</p> : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {displayServices.map((s) => (
+                          <span key={s} className="bg-white border border-[#D6D6C2] rounded-lg px-2 py-1 text-[10px] font-bold">{s}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-[#8A8A70] font-bold mb-1">الغرف ({displayRooms.length}):</p>
+                    {displayRooms.length === 0 ? <p className="text-red-500">لا توجد غرف مضافة</p> : (
+                      <div className="space-y-1">
+                        {displayRooms.map((r, i) => (
+                          <p key={i}>• {r.name} — {r.bedsCount} سرير — {r.price || 0} ج/الليلة</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {(propertyType === 'conference' || existingHouse?.propertyType === 'conference') && (
+                    <div>
+                      <p className="text-[#8A8A70] font-bold mb-1">قاعات المؤتمرات ({displayHalls.length}):</p>
+                      {displayHalls.length === 0 ? <p>لا توجد قاعات (اختياري)</p> : (
+                        <div className="space-y-1">
+                          {displayHalls.map((h, i) => (
+                            <p key={i}>• {h.name} — تسع {h.capacity}{h.price !== undefined ? ` — ${h.price} ج/اليوم` : ''}</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div>
+                    <p className="text-[#8A8A70] font-bold mb-1">وسائل استلام الدفع ({displayPayments.length}):</p>
+                    {displayPayments.length === 0 ? <p className="text-red-500">لا توجد وسيلة دفع</p> : (
+                      <div className="space-y-1">
+                        {displayPayments.map((p, i) => (
+                          <p key={i}>• {p.label}: {p.value}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {error && <p className="text-[11px] text-red-500">{error}</p>}
               </div>
-              {error && <p className="text-[11px] text-red-500">{error}</p>}
-            </div>
-          )}
+            );
+          })()}
 
         </div>
 
