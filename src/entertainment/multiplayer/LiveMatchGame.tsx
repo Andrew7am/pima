@@ -243,7 +243,12 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     );
   }
 
-  if (room.status === 'finished' && finalizing) {
+  // Covers both "finalize is in flight" AND the brief gap right after a
+  // finished room loads/arrives via realtime, before the effect above has
+  // had a chance to flip `finalizing` on — without this, that gap fell
+  // through to ACTIVE GAMEPLAY below and rendered clickable answer
+  // buttons for a room submit_answer would reject with ROOM_NOT_ACTIVE.
+  if (room.status === 'finished' && !outcome) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
         <div className="flex items-center gap-3 text-slate-300">
@@ -269,8 +274,15 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     setAnswerError(null);
     const result = await submitAnswer(roomId, qIdx, i);
     setSubmitting(false);
-    if (!result) {
-      setAnswerError('تعذر إرسال إجابتك، حاول تاني.');
+    if (result.ok === false) {
+      const map: Record<string, string> = {
+        ROOM_NOT_ACTIVE: 'الغرفة مش نشطة دلوقتي — جرّب تحدّث الصفحة.',
+        ALREADY_ANSWERED: 'أنت جاوبت على السؤال ده بالفعل.',
+        NOT_A_PARTICIPANT: 'مش عضو في الغرفة دي.',
+        ROOM_NOT_FOUND: 'الغرفة مش موجودة.',
+      };
+      const readable = Object.entries(map).find(([k]) => result.error.includes(k))?.[1];
+      setAnswerError(readable ?? `تعذر إرسال إجابتك: ${result.error}`);
       return;
     }
     // Reflect our own answer immediately instead of waiting on the

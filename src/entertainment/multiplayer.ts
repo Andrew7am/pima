@@ -65,16 +65,20 @@ export async function joinRoomByCode(code: string): Promise<{ ok: boolean; roomI
   return { ok: true, roomId: data as string };
 }
 
+export type SubmitAnswerResult =
+  | { ok: true; hostScore: number; guestScore: number; bothAnswered: boolean }
+  | { ok: false; error: string };
+
 export async function submitAnswer(
   roomId: string, qIdx: number, optIdx: number,
-): Promise<{ hostScore: number; guestScore: number; bothAnswered: boolean } | null> {
+): Promise<SubmitAnswerResult> {
   const { data, error } = await supabase.rpc('submit_answer', {
     p_room_id: roomId, p_q_idx: qIdx, p_opt_idx: optIdx,
   });
-  if (error) { console.error('submitAnswer:', error); return null; }
+  if (error) { console.error('submitAnswer:', error); return { ok: false, error: error.message }; }
   const row = data?.[0];
-  if (!row) return null;
-  return { hostScore: row.host_score, guestScore: row.guest_score, bothAnswered: row.both_answered };
+  if (!row) return { ok: false, error: 'EMPTY_RESPONSE' };
+  return { ok: true, hostScore: row.host_score, guestScore: row.guest_score, bothAnswered: row.both_answered };
 }
 
 export interface FinalizeResult {
