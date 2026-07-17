@@ -278,6 +278,16 @@ export interface AppNotification {
   createdAt: string;
 }
 
+export interface BookingMessage {
+  id: number;
+  bookingId: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  createdAt: string;
+  readAt?: string;
+}
+
 export interface AuditLogEntry {
   id: number;
   actorId: string | null;

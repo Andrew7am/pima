@@ -14,6 +14,19 @@
   --color-natural-secondary: #867E65;
   --color-natural-accent: #C5BCA0;
   --color-natural-hover: #E7E2D5;
+
+  /* Owner dashboard-only theme (navy/gold) — scoped via the .owner-theme
+     wrapper class, never applied to body, so guest-facing screens keep
+     the cream/gold --color-natural-* palette above untouched. */
+  --color-owner-bg: #F4F6FA;
+  --color-owner-surface: #FFFFFF;
+  --color-owner-text: #101B33;
+  --color-owner-secondary: #5B6B8C;
+  --color-owner-primary: #0F1F45;
+  --color-owner-primary-hover: #0A1730;
+  --color-owner-accent: #C9A227;
+  --color-owner-border: #DDE3EF;
+  --color-owner-hover: #E9EDF6;
 }
 
 body {

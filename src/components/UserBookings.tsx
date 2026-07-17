@@ -25,6 +25,15 @@ interface UserBookingsProps {
   onRevealOwnerContact?: (bookingId: string) => void;
 }
 
+const PAYMENT_TYPE_LABELS: Record<string, string> = {
+  instapay: 'إنستاباي',
+  vodafone_cash: 'فودافون كاش',
+  etisalat_cash: 'اتصالات كاش',
+  orange_cash: 'أورنج كاش',
+  we_cash: 'وي كاش',
+  bank_transfer: 'تحويل بنكي',
+};
+
 const DEFAULT_CHECKLIST_ITEMS = [
   { id: '1', text: 'أدوات القداس الإلهي (لوح مقدس، أواني، بخور، قربان، كؤوس، أغطية، كتب الصلوات الأرثوذكسية) ⛪', checked: false, category: 'group' as const },
   { id: '2', text: 'أجهزة الصوتيات والساوند سيستم ومايكات لاسلكية وسماعات خارجية مع التوصيلات 🎤', checked: false, category: 'group' as const },
@@ -682,6 +691,27 @@ export default function UserBookings({
                     </div>
                   );
                 })()}
+
+                {/* While pending, show the owner's payment methods as a preview so the guest
+                    knows in advance how they'll pay once approved — the actual pay/upload
+                    form only unlocks after approval (bookingHouse defined above, line ~537). */}
+                {booking.status === 'pending' && (bookingHouse?.paymentMethods?.length ?? 0) > 0 && (
+                  <div className="px-4 py-3 bg-[#FAF8F5] border-b border-[#D6D6C2]/60 space-y-1.5 text-[10px]">
+                    <div className="flex items-center gap-1.5 font-extrabold text-[#4A4A3A]">
+                      <Coins className="w-4 h-4 text-[#867E65]" />
+                      <span>وسائل الدفع المتاحة عند موافقة صاحب البيت</span>
+                    </div>
+                    <p className="text-[9px] text-[#8A8A70]">هتقدر تسدد العربون بمجرد الموافقة على حجزك عن طريق أي من الوسائل دي:</p>
+                    <div className="bg-white p-2.5 rounded-xl border border-[#E7E5DB] space-y-1.5">
+                      {bookingHouse!.paymentMethods.map((pm) => (
+                        <div key={pm.id} className="flex justify-between items-center">
+                          <span className="text-[#867E65] font-bold">{PAYMENT_TYPE_LABELS[pm.type] || pm.label}:</span>
+                          <span className="font-mono font-extrabold text-[#2D2D24]">{pm.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Smart 3-Days Check-In Reminder Banner */}
                 {(() => {

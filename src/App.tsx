@@ -25,13 +25,13 @@ import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation
 
 // Component Imports
 import UserBookings from './components/UserBookings';
-import OwnerDashboard from './components/OwnerDashboard';
+import OwnerDashboardShell from './components/owner/OwnerDashboardShell';
+import OwnerFoodMenu from './components/owner/OwnerFoodMenu';
 import AdminDashboard from './components/AdminDashboard';
 import HouseDetail from './components/HouseDetail';
 import UserDashboard from './components/UserDashboard';
 import WebLayout from './components/WebLayout';
 import AuthScreen from './components/AuthScreen';
-import WeeklyMenuManager from './components/WeeklyMenuManager';
 import ContactSupport from './components/ContactSupport';
 import ProfileScreen from './components/ProfileScreen';
 import PrivacyPolicy from './components/PrivacyPolicy';
@@ -1156,7 +1156,7 @@ export default function App() {
 
           {activeScreen === 'owner_panel' && currentUser.role === 'owner' && (
             // Owner dashboard
-            <OwnerDashboard
+            <OwnerDashboardShell
               owner={currentUser}
               houses={houses}
               bookings={bookings}
@@ -1182,6 +1182,8 @@ export default function App() {
               onUpdateRoom={handleUpdateRoom}
               onDeleteRoom={handleDeleteRoom}
               waitlist={waitlist}
+              notifications={notifications}
+              onMarkNotificationAsRead={handleMarkNotificationAsRead}
             />
           )}
 
@@ -1231,9 +1233,11 @@ export default function App() {
           )}
 
           {activeScreen === 'meals' && (
-            // Coptic Weekly Menu Manager dashboard
-            <WeeklyMenuManager
-              currentUser={currentUser}
+            // Owner food-menu editor, wired to RetreatHouse.menu (replaces the old
+            // disconnected localStorage-only WeeklyMenuManager at this route).
+            <OwnerFoodMenu
+              house={houses.find((h) => h.ownerId === currentUser.id)}
+              onUpdateHouse={handleUpdateHouse}
             />
           )}
 
