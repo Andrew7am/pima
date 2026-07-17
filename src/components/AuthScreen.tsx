@@ -5,10 +5,17 @@ import {
   Home, Calendar as CalendarIcon, ShieldCheck, UserPlus, Award, Headphones,
   Eye, EyeOff, ChevronLeft,
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import Logo from './Logo';
 import { supabase } from '../lib/supabase';
 import { GOVERNORATES } from '../mockData';
 import PrivacyPolicy from './PrivacyPolicy';
+
+// Custom scheme registered in android/app/src/main/AndroidManifest.xml —
+// must also be added to Supabase Dashboard → Authentication → URL
+// Configuration → Redirect URLs for the native flow below to work.
+const NATIVE_AUTH_REDIRECT = 'com.pimastay.app://auth-callback';
 
 // Small ornamental Coptic-style cross for the divider between the form
 // and the "create account" row.
@@ -113,6 +120,27 @@ export default function AuthScreen() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError('');
+
+    // Native app: Google blocks OAuth inside an embedded WebView, so the
+    // flow has to open in a real browser tab (Browser.open) and come back
+    // via a custom-scheme deep link — caught by the appUrlOpen listener
+    // in App.tsx, which exchanges it for a session and lands back here
+    // through the normal onAuthStateChange path.
+    if (Capacitor.isNativePlatform()) {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: NATIVE_AUTH_REDIRECT, skipBrowserRedirect: true },
+      });
+      if (error || !data?.url) {
+        setError('تعذر تسجيل الدخول بجوجل. حاول مرة أخرى.');
+        setLoading(false);
+        return;
+      }
+      await Browser.open({ url: data.url });
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin },
