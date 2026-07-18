@@ -7,6 +7,7 @@ import {
   mapUser, loadUsers,
   loadHouses, deleteHouse, createHouse as createHouseDb, updateHouse as updateHouseDb, houseUpdatePayload as houseUpdatePayloadDb,
   loadBookings, loadReviews, loadReviewsForHouses, loadPayments, loadNotifications, subscribeToNotifications, loadPointsHistory,
+  subscribeToBookingsForUser, subscribeToBookingsForHouse, subscribeToRoomsForHouse,
   loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlistForHouses, loadPlatformAnnouncements,
   loadAttendeesForBooking, loadAllocationsForBooking, saveAttendeesForBooking, saveAllocationsForBooking, loadAllocationsCount,
   createBooking, updateBookingStatus, updateBookingFields,
@@ -53,6 +54,8 @@ import PendingApprovalScreen from './components/PendingApprovalScreen';
 import OwnerOnboardingWizard from './components/OwnerOnboardingWizard';
 import BannedScreen from './components/BannedScreen';
 import InteractiveMap from './components/InteractiveMap';
+import UpdateBanner from './components/UpdateBanner';
+import { useVersionCheck } from './lib/useVersionCheck';
 
 // The 3-day check-in reminder (below) is a client-only synthetic
 // notification — it has no row in `public.notifications`, so marking it
@@ -88,6 +91,10 @@ export default function App() {
     const saved = localStorage.getItem('coptic_notifications');
     return saved ? JSON.parse(saved) : [];
   });
+
+  const [updateBannerDismissed, setUpdateBannerDismissed] = useState(false);
+  const newVersionAvailable = useVersionCheck();
+  const showUpdateBanner = newVersionAvailable && !updateBannerDismissed;
 
   const [payments, setPayments] = useState<Payment[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -234,6 +241,45 @@ export default function App() {
     });
     return unsubscribe;
   }, [currentUser?.id]);
+
+  // Live booking delivery for guests — a status change the owner makes
+  // (approve/reject/deposit/check-in/check-out) appears immediately instead
+  // of only after a reload.
+  useEffect(() => {
+    if (!currentUser?.id || currentUser.role === 'owner' || currentUser.role === 'admin') return;
+    const unsubscribe = subscribeToBookingsForUser(currentUser.id, (event, booking) => {
+      setBookings((prev) => {
+        const exists = prev.some((b) => b.id === booking.id);
+        if (event === 'INSERT' && !exists) return [booking, ...prev];
+        return prev.map((b) => (b.id === booking.id ? booking : b));
+      });
+    });
+    return unsubscribe;
+  }, [currentUser?.id, currentUser?.role]);
+
+  // Live booking + room delivery for owners — a new booking request or a
+  // guest self-cancel appears immediately; room status stays in sync across
+  // devices/tabs. Owners are capped at one house, so a single house_id filter
+  // covers everything (see the "Restricted to 1 house maximum" convention
+  // used throughout the owner dashboard).
+  const ownerHouseId = currentUser?.role === 'owner' ? houses.find((h) => h.ownerId === currentUser.id)?.id : undefined;
+  useEffect(() => {
+    if (!currentUser?.id || currentUser.role !== 'owner' || !ownerHouseId) return;
+
+    const unsubscribeBookings = subscribeToBookingsForHouse(ownerHouseId, (event, booking) => {
+      setBookings((prev) => {
+        const exists = prev.some((b) => b.id === booking.id);
+        if (event === 'INSERT' && !exists) return [booking, ...prev];
+        return prev.map((b) => (b.id === booking.id ? booking : b));
+      });
+    });
+    const unsubscribeRooms = subscribeToRoomsForHouse(
+      ownerHouseId,
+      (room) => setRooms((prev) => (prev.some((r) => r.id === room.id) ? prev.map((r) => (r.id === room.id ? room : r)) : [...prev, room])),
+      (roomId) => setRooms((prev) => prev.filter((r) => r.id !== roomId)),
+    );
+    return () => { unsubscribeBookings(); unsubscribeRooms(); };
+  }, [currentUser?.id, currentUser?.role, ownerHouseId]);
 
   // Native Google Sign-In: AuthScreen.tsx opens the OAuth URL in a system
   // browser tab (Browser.open, not this WebView — Google blocks OAuth
@@ -1369,6 +1415,9 @@ export default function App() {
       queue={unlockedAchievementQueue}
       onShown={() => setUnlockedAchievementQueue((prev) => prev.slice(1))}
     />
+    {showUpdateBanner && (
+      <UpdateBanner onReload={() => window.location.reload()} onDismiss={() => setUpdateBannerDismissed(true)} />
+    )}
     </>
   );
 }

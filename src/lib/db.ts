@@ -413,6 +413,47 @@ export function subscribeToNotifications(userId: string, onNotification: (n: App
   return () => { supabase.removeChannel(channel); };
 }
 
+// Live delivery for a guest's own bookings — status changes (approved,
+// deposit confirmed, checked in/out) and new rows appear without a reload.
+export function subscribeToBookingsForUser(userId: string, onChange: (event: 'INSERT' | 'UPDATE', booking: Booking) => void): () => void {
+  const channel = supabase
+    .channel(`bookings:user:${userId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings', filter: `user_id=eq.${userId}` },
+      (payload) => onChange('INSERT', mapBooking(payload.new as Record<string, unknown>)))
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `user_id=eq.${userId}` },
+      (payload) => onChange('UPDATE', mapBooking(payload.new as Record<string, unknown>)))
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}
+
+// Live delivery for an owner's house — new booking requests and status
+// changes appear without a reload.
+export function subscribeToBookingsForHouse(houseId: string, onChange: (event: 'INSERT' | 'UPDATE', booking: Booking) => void): () => void {
+  const channel = supabase
+    .channel(`bookings:house:${houseId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings', filter: `house_id=eq.${houseId}` },
+      (payload) => onChange('INSERT', mapBooking(payload.new as Record<string, unknown>)))
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bookings', filter: `house_id=eq.${houseId}` },
+      (payload) => onChange('UPDATE', mapBooking(payload.new as Record<string, unknown>)))
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}
+
+// Live room-status delivery — e.g. an owner edits a room's status on one
+// device/tab and it updates on another without a reload.
+export function subscribeToRoomsForHouse(houseId: string, onUpsert: (room: Room) => void, onDelete: (roomId: string) => void): () => void {
+  const channel = supabase
+    .channel(`rooms:house:${houseId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rooms', filter: `house_id=eq.${houseId}` },
+      (payload) => onUpsert(mapRoom(payload.new as Record<string, unknown>)))
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `house_id=eq.${houseId}` },
+      (payload) => onUpsert(mapRoom(payload.new as Record<string, unknown>)))
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'rooms', filter: `house_id=eq.${houseId}` },
+      (payload) => onDelete((payload.old as Record<string, unknown>).id as string))
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}
+
 export async function loadPointsHistory(userId: string): Promise<PointsTransaction[]> {
   const { data, error } = await supabase
     .from('points_history').select('*').eq('user_id', userId).order('created_at', { ascending: false });
