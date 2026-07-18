@@ -397,6 +397,22 @@ export async function loadNotifications(userId: string): Promise<AppNotification
   return (data ?? []).map(mapNotification);
 }
 
+// Live delivery — without this, a new notification (booking approved,
+// deposit confirmed, new message, etc.) never appears until the user
+// reloads the page. Returns an unsubscribe function — caller MUST call it
+// on unmount/logout.
+export function subscribeToNotifications(userId: string, onNotification: (n: AppNotification) => void): () => void {
+  const channel = supabase
+    .channel(`notifications:${userId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+      (payload) => { onNotification(mapNotification(payload.new as Record<string, unknown>)); },
+    )
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}
+
 export async function loadPointsHistory(userId: string): Promise<PointsTransaction[]> {
   const { data, error } = await supabase
     .from('points_history').select('*').eq('user_id', userId).order('created_at', { ascending: false });

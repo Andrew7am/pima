@@ -217,6 +217,7 @@ export default function OwnerDashboardShell({
   const ownerBookings = bookings.filter((b) => ownerHouseIds.includes(b.houseId));
   const ownerRooms = rooms.filter((r) => ownerHouseIds.includes(r.houseId));
   const ownerWaitlist = waitlist.filter((w) => ownerHouseIds.includes(w.houseId));
+  const unreadNotificationsCount = notifications.filter((n) => n.userId === owner.id && !n.isRead).length;
 
   const [roomName, setRoomName] = useState('');
   const [roomBeds, setRoomBeds] = useState(2);
@@ -457,7 +458,8 @@ export default function OwnerDashboardShell({
         {PRIMARY_TABS.map((t) => {
           const Icon = t.icon;
           const isSel = t.key === 'more' ? showOverflow : (activeTab === t.key && !showOverflow);
-          const showBadge = (t.key === 'bookings' && pendingBookings.length > 0) || (t.key === 'more' && ownerWaitlist.filter(w => w.status === 'waiting').length > 0);
+          const showBadge = (t.key === 'bookings' && pendingBookings.length > 0) ||
+            (t.key === 'more' && (ownerWaitlist.filter(w => w.status === 'waiting').length > 0 || unreadNotificationsCount > 0));
           return (
             <button
               key={t.key}
@@ -491,6 +493,9 @@ export default function OwnerDashboardShell({
                 >
                   <Icon className="w-3.5 h-3.5 shrink-0" />
                   <span>{item.label}</span>
+                  {item.key === 'notifications' && unreadNotificationsCount > 0 && (
+                    <span className="mr-auto text-[9px] bg-rose-500 text-white px-1.5 rounded-full">{unreadNotificationsCount}</span>
+                  )}
                 </button>
               );
             })}

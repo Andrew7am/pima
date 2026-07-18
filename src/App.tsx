@@ -6,7 +6,7 @@ import { supabase } from './lib/supabase';
 import {
   mapUser, loadUsers,
   loadHouses, deleteHouse, createHouse as createHouseDb, updateHouse as updateHouseDb, houseUpdatePayload as houseUpdatePayloadDb,
-  loadBookings, loadReviews, loadReviewsForHouses, loadPayments, loadNotifications, loadPointsHistory,
+  loadBookings, loadReviews, loadReviewsForHouses, loadPayments, loadNotifications, subscribeToNotifications, loadPointsHistory,
   loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlistForHouses, loadPlatformAnnouncements,
   loadAttendeesForBooking, loadAllocationsForBooking, saveAttendeesForBooking, saveAllocationsForBooking, loadAllocationsCount,
   createBooking, updateBookingStatus, updateBookingFields,
@@ -53,6 +53,23 @@ import PendingApprovalScreen from './components/PendingApprovalScreen';
 import OwnerOnboardingWizard from './components/OwnerOnboardingWizard';
 import BannedScreen from './components/BannedScreen';
 import InteractiveMap from './components/InteractiveMap';
+
+// The 3-day check-in reminder (below) is a client-only synthetic
+// notification — it has no row in `public.notifications`, so marking it
+// "read" server-side is a no-op and it used to regenerate unread every
+// session. Track dismissals locally instead so a user can actually get rid
+// of one for good (until the underlying condition changes and a new id is
+// generated for the next reminder cycle).
+const DISMISSED_REMINDERS_KEY = 'coptic_dismissed_reminders';
+function getDismissedReminders(): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem(DISMISSED_REMINDERS_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+function dismissReminder(id: string) {
+  const set = getDismissedReminders();
+  set.add(id);
+  localStorage.setItem(DISMISSED_REMINDERS_KEY, JSON.stringify([...set]));
+}
 
 export default function App() {
   const [users, setUsers] = useState<User[]>([]);
@@ -205,6 +222,19 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, [loadUserProfile]);
 
+  // Live notification delivery — without this, a new notification (booking
+  // approved, deposit confirmed, new message, account approved, etc.) never
+  // appears until the user reloads the page (loadNotifications is a one-shot
+  // fetch, only re-run from loadAppData at login). Dedup by id since the
+  // initial loadAppData fetch and this subscription can race on startup.
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    const unsubscribe = subscribeToNotifications(currentUser.id, (n) => {
+      setNotifications((prev) => (prev.some((existing) => existing.id === n.id) ? prev : [n, ...prev]));
+    });
+    return unsubscribe;
+  }, [currentUser?.id]);
+
   // Native Google Sign-In: AuthScreen.tsx opens the OAuth URL in a system
   // browser tab (Browser.open, not this WebView — Google blocks OAuth
   // inside embedded webviews). This catches the app regaining control via
@@ -338,8 +368,8 @@ export default function App() {
           if (remaining > 0 || isRoomsIncomplete) {
             const notifId = `reminder_3days_${booking.id}`;
 
-            // Avoid duplicate notification
-            if (!newNotifs.some((n) => n.id === notifId)) {
+            // Avoid duplicate notification, and don't resurrect one the user already dismissed.
+            if (!newNotifs.some((n) => n.id === notifId) && !getDismissedReminders().has(notifId)) {
               let msg = `موعد خلوتك في بيت "${booking.houseName}" يقترب بعد ${daysDiff} أيام (${booking.checkIn}).\n`;
               if (remaining > 0) {
                 msg += `⚠️ يرجى سداد المبلغ المتبقي وقدره ${remaining.toLocaleString('ar-EG')} ج.م.\n`;
@@ -520,10 +550,11 @@ export default function App() {
 
   // Notifications are created server-side through the authorized
   // emit_notification RPC (migration 021) — a raw client INSERT is blocked
-  // (no INSERT policy) so notifications can't be forged. The local push is
-  // optimistic for the acting user's own view.
+  // (no INSERT policy) so notifications can't be forged. `n.userId` is the
+  // recipient, not the caller, so there's nothing to push into local state
+  // here — the recipient's own session picks it up via the realtime
+  // subscription (subscribeToNotifications) once the RPC commits.
   const pushNotification = (n: AppNotification) => {
-    setNotifications((prev) => [n, ...prev]);
     supabase.rpc('emit_notification', {
       p_target: n.userId,
       p_booking: n.bookingId || '',
@@ -533,35 +564,21 @@ export default function App() {
     }).then(({ error }) => { if (error) console.error('emit_notification:', error); });
   };
 
+  // Notification on approve/reject now fires server-side (migration 047,
+  // trg_notify_guest_on_booking_update) — atomic with the status change
+  // itself, unlike the old fire-and-forget client RPC call.
   const handleApproveBooking = (bookingId: string) => {
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'approved' } : b)));
     updateBookingStatus(bookingId, 'approved');
-    const b = bookings.find((bk) => bk.id === bookingId);
-    if (b) {
-      pushNotification({
-        id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
-        title: 'تم قبول وتأكيد الحجز 🎉',
-        message: `تهانينا! تم قبول وتأكيد حجزك في "${b.houseName}" للفترة من ${b.checkIn} إلى ${b.checkOut}.`,
-        type: 'success', isRead: false, createdAt: new Date().toISOString()
-      });
-    }
   };
 
   const handleRejectBooking = (bookingId: string) => {
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'rejected' } : b)));
     updateBookingStatus(bookingId, 'rejected');
-    const b = bookings.find((bk) => bk.id === bookingId);
-    if (b) {
-      pushNotification({
-        id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
-        title: 'تم رفض طلب الحجز ⚠️',
-        message: `نأسف لإبلاغك بأنه قد تم رفض طلب حجزك في "${b.houseName}" للفترة من ${b.checkIn} إلى ${b.checkOut}.`,
-        type: 'danger', isRead: false, createdAt: new Date().toISOString()
-      });
-    }
   };
 
-  // Owner marks that they've received the deposit in-person / off-platform
+  // Owner marks that they've received the deposit in-person / off-platform.
+  // Notification fires server-side (migration 047).
   const handleConfirmDepositReceived = (bookingId: string) => {
     const target = bookings.find((b) => b.id === bookingId);
     // Fallback only fires if depositAmount was somehow never set — use the
@@ -576,50 +593,26 @@ export default function App() {
     );
     updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' })
       .then(() => { if (target && currentUser?.id === target.userId) refreshCurrentUserPoints(target.userId); });
-    if (target) {
-      pushNotification({
-        id: `notif_${Date.now()}`, userId: target.userId, bookingId: target.id,
-        title: 'تم استلام العربون بنجاح ✓',
-        message: `أكد ${target.houseName} استلام العربون بمبلغ ${depositAmount.toLocaleString()} ج.م. الحجز مؤمن الآن.`,
-        type: 'success', isRead: false, createdAt: new Date().toISOString()
-      });
-    }
   };
 
-  // Owner marks guest as checked in (arrived on-site)
+  // Owner marks guest as checked in (arrived on-site). Notification fires
+  // server-side (migration 047).
   const handleCheckInBooking = (bookingId: string) => {
     const checkedInAt = new Date().toISOString();
     setBookings((prev) =>
       prev.map((b) => (b.id === bookingId ? { ...b, checkedInAt } : b))
     );
     updateBookingFields(bookingId, { checkedInAt });
-    const b = bookings.find((bk) => bk.id === bookingId);
-    if (b) {
-      pushNotification({
-        id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
-        title: 'تم تسجيل وصولك 🏠',
-        message: `تم تسجيل وصولك بنجاح لبيت "${b.houseName}". نتمنى لك إقامة مباركة وممتعة!`,
-        type: 'info', isRead: false, createdAt: new Date().toISOString()
-      });
-    }
   };
 
-  // Owner marks guest as checked out (booking completed)
+  // Owner marks guest as checked out (booking completed). Notification
+  // fires server-side (migration 047).
   const handleCheckOutBooking = (bookingId: string) => {
     const checkedOutAt = new Date().toISOString();
     setBookings((prev) =>
       prev.map((b) => (b.id === bookingId ? { ...b, status: 'completed', checkedOutAt } : b))
     );
     updateBookingFields(bookingId, { status: 'completed', checkedOutAt });
-    const b = bookings.find((bk) => bk.id === bookingId);
-    if (b) {
-      pushNotification({
-        id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
-        title: 'شكراً لإقامتك 💚',
-        message: `تمت مغادرتك من "${b.houseName}". يسعدنا مشاركتك تقييمك للبيت لتساعد الآخرين.`,
-        type: 'success', isRead: false, createdAt: new Date().toISOString()
-      });
-    }
   };
 
   // --- Egyptian Payment System Operations ---
@@ -685,21 +678,10 @@ export default function App() {
             .then(() => { if (currentUser?.id === b.userId) refreshCurrentUserPoints(b.userId); });
         }
 
-        if (status === 'approved') {
-          pushNotification({
-            id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
-            title: 'تم تأكيد الدفع والحجز بنجاح 🎉',
-            message: `تهانينا! تم تأكيد دفعتك بمبلغ ${payment.amount.toLocaleString('ar-EG')} ج.م. أصبح حجزك في "${b.houseName}" مؤكداً ومضموناً الآن. ${adminNotes ? 'ملاحظات: ' + adminNotes : ''}`,
-            type: 'success', isRead: false, createdAt: new Date().toISOString()
-          });
-        } else {
-          pushNotification({
-            id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
-            title: 'تم رفض إثبات الدفع ⚠️',
-            message: `نأسف، تم رفض إثبات الدفع بمبلغ ${payment.amount.toLocaleString('ar-EG')} ج.م. يرجى المحاولة مجدداً. ${adminNotes ? 'ملاحظات: ' + adminNotes : ''}`,
-            type: 'danger', isRead: false, createdAt: new Date().toISOString()
-          });
-        }
+        // Notification (payment confirmed/rejected, and booking
+        // approved/deposit-received when applicable) now fires server-side
+        // (migration 047, trg_notify_guest_on_payment_update +
+        // trg_notify_guest_on_booking_update) — atomic with these writes.
       }
     }
   };
@@ -754,18 +736,11 @@ export default function App() {
   // Admin-only: approve or reject a pending servant/owner account. Requires
   // the users_update_admin RLS policy (migration 008) since this touches
   // someone else's row, not the caller's own.
+  // Notification fires server-side (migration 047, trg_notify_user_on_approval_update).
   const handleSetUserApproval = (userId: string, status: 'approved' | 'rejected') => {
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, approvalStatus: status } : u)));
     supabase.from('users').update({ approval_status: status }).eq('id', userId).then(({ error }) => {
       if (error) console.error('setUserApproval:', error);
-    });
-    pushNotification({
-      id: `notif_${Date.now()}`, userId, bookingId: '',
-      title: status === 'approved' ? 'تم اعتماد حسابك ✓' : 'تعذر اعتماد حسابك',
-      message: status === 'approved'
-        ? 'تهانينا! تم مراجعة حسابك والموافقة عليه، يمكنك الآن استخدام المنصة بالكامل.'
-        : 'نأسف، تعذرت الموافقة على حسابك حالياً. تواصل مع الدعم الفني لمزيد من التفاصيل.',
-      type: status === 'approved' ? 'success' : 'danger', isRead: false, createdAt: new Date().toISOString()
     });
   };
 
@@ -984,18 +959,28 @@ export default function App() {
     saveAllocationsForBooking(bookingId, bookingAllocations);
   };
 
-  const handleMarkNotificationAsRead = (id: string) => {
+  const handleMarkNotificationAsRead = async (id: string) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
-    markNotificationRead(id);
+    // Synthetic client-only reminders (id starts with 'reminder_') have no
+    // DB row — nothing to persist, and dismissDismissible tracks those.
+    if (id.startsWith('reminder_')) { dismissReminder(id); return; }
+    const ok = await markNotificationRead(id);
+    if (!ok) {
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: false } : n)));
+    }
   };
 
-  const handleClearNotifications = () => {
-    if (currentUser) {
-      setNotifications((prev) => prev.filter((n) => n.userId !== currentUser.id));
-      supabase.from('notifications').delete().eq('user_id', currentUser.id)
-        .then(({ error }) => { if (error) console.error('clearNotifications:', error); });
+  const handleClearNotifications = async () => {
+    if (!currentUser) return;
+    const cleared = notifications.filter((n) => n.userId === currentUser.id);
+    setNotifications((prev) => prev.filter((n) => n.userId !== currentUser.id));
+    cleared.filter((n) => n.id.startsWith('reminder_')).forEach((n) => dismissReminder(n.id));
+    const { error } = await supabase.from('notifications').delete().eq('user_id', currentUser.id);
+    if (error) {
+      console.error('clearNotifications:', error);
+      setNotifications((prev) => [...cleared, ...prev]);
     }
   };
 
