@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft, Trash2, ShieldCheck } from 'lucide-react';
+import { User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft, Trash2, ShieldCheck, Camera } from 'lucide-react';
 import RewardsDashboard from './RewardsDashboard';
+import PhotoPickerButtons from './PhotoPickerButtons';
 
 interface ProfileScreenProps {
   currentUser: User;
@@ -10,6 +11,7 @@ interface ProfileScreenProps {
   onNavigateSupport: () => void;
   onNavigatePrivacy: () => void;
   onDeleteAccount: () => Promise<{ ok: boolean; error?: string }>;
+  onUpdateAvatar: (avatarUrl: string) => void;
 }
 
 function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
@@ -35,10 +37,11 @@ function calculateAge(dateOfBirth: string): number {
   return age;
 }
 
-export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigateSupport, onNavigatePrivacy, onDeleteAccount }: ProfileScreenProps) {
+export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigateSupport, onNavigatePrivacy, onDeleteAccount, onUpdateAvatar }: ProfileScreenProps) {
   const roleLabel = currentUser.role === 'servant' ? 'خادم' : currentUser.role === 'owner' ? 'صاحب بيت' : 'مستخدم';
   const canSelfDelete = currentUser.role === 'individual' || currentUser.role === 'servant';
 
+  const [isEditingAvatar, setIsEditingAvatar] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -60,15 +63,34 @@ export default function ProfileScreen({ currentUser, onLogout, onBack, onNavigat
       {/* Header card */}
       <div className="bg-gradient-to-br from-[#0A2342] to-[#123E75] text-white rounded-3xl p-5 flex items-center gap-3 relative overflow-hidden">
         <div className="absolute -top-8 -left-8 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none" />
-        <div className="w-14 h-14 rounded-full bg-[#C5A059] text-[#0A2342] flex items-center justify-center text-xl font-black shrink-0">
-          {currentUser.name.charAt(0)}
-        </div>
+        <button
+          type="button"
+          id="profile-avatar-edit-toggle"
+          onClick={() => setIsEditingAvatar((v) => !v)}
+          className="relative w-14 h-14 rounded-full bg-[#C5A059] text-[#0A2342] flex items-center justify-center text-xl font-black shrink-0 cursor-pointer overflow-hidden"
+        >
+          {currentUser.avatarUrl ? (
+            <img src={currentUser.avatarUrl} alt="صورتك الشخصية" className="w-full h-full object-cover" />
+          ) : (
+            currentUser.name.charAt(0)
+          )}
+          <span className="absolute bottom-0 inset-x-0 bg-black/50 flex items-center justify-center py-0.5">
+            <Camera className="w-3 h-3 text-white" />
+          </span>
+        </button>
         <div className="min-w-0">
           <h2 className="text-sm font-black truncate">{currentUser.name}</h2>
           <p className="text-[10px] text-slate-300 truncate">{currentUser.email}</p>
           <span className="inline-block mt-1 text-[9px] font-bold bg-white/10 px-2 py-0.5 rounded-full">{roleLabel}</span>
         </div>
       </div>
+
+      {isEditingAvatar && (
+        <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] shadow-sm space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+          <span className="text-xs font-black text-[#0A2342] block">تغيير الصورة الشخصية</span>
+          <PhotoPickerButtons idPrefix="profile-avatar" onSelect={(dataUrl) => { onUpdateAvatar(dataUrl); setIsEditingAvatar(false); }} />
+        </div>
+      )}
 
       {/* Personal info — read-only, locked after signup */}
       <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] shadow-sm space-y-3">

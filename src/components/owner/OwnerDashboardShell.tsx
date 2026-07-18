@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
-import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification } from '../../types';
+import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification, Expense } from '../../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
 import {
   Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2,
   Building, Settings, MessageSquare, Camera, BedDouble, Phone, Mail, Lock, Menu, ChevronRight,
-  MessageCircle, Bell, BarChart3, Search,
+  MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound,
 } from 'lucide-react';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
 import OwnerMessages from './OwnerMessages';
 import OwnerNotifications from './OwnerNotifications';
 import OwnerReports from './OwnerReports';
+import OwnerFoodMenu from './OwnerFoodMenu';
+import { supabase } from '../../lib/supabase';
 
 type PrimaryTab = 'stats' | 'bookings' | 'messages' | 'reports' | 'more';
-type OverflowTab = 'rooms' | 'financials' | 'reviews' | 'house_info' | 'services' | 'occupancy' | 'notifications' | 'profile';
+type OverflowTab = 'rooms' | 'financials' | 'reviews' | 'house' | 'occupancy' | 'notifications' | 'profile';
 type ActiveTab = PrimaryTab | OverflowTab;
 
 interface OwnerDashboardShellProps {
@@ -44,14 +46,18 @@ interface OwnerDashboardShellProps {
   waitlist?: WaitlistEntry[];
   notifications?: AppNotification[];
   onMarkNotificationAsRead?: (id: string) => void;
+  expenses?: Expense[];
+  onAddExpense?: (expense: Expense) => void;
+  onDeleteExpense?: (expenseId: string) => void;
+  users?: User[];
+  onNavigateSupport?: () => void;
 }
 
 const OVERFLOW_ITEMS: { key: OverflowTab; label: string; icon: React.ElementType }[] = [
   { key: 'rooms', label: 'الغرف', icon: BedDouble },
   { key: 'financials', label: 'الحسابات', icon: Coins },
   { key: 'reviews', label: 'التقييمات', icon: MessageSquare },
-  { key: 'house_info', label: 'بيانات البيت', icon: Building },
-  { key: 'services', label: 'الخدمات', icon: ClipboardList },
+  { key: 'house', label: 'بيانات البيت', icon: Building },
   { key: 'occupancy', label: 'التقويم', icon: Calendar },
   { key: 'notifications', label: 'الإشعارات', icon: Bell },
   { key: 'profile', label: 'الإعدادات', icon: Settings },
@@ -64,6 +70,7 @@ export default function OwnerDashboardShell({
   onUpdateHouse, onRequestHouseEdit, reviews = [], onUpdateReview,
   rooms = [], onAddRoom, onUpdateRoom, onDeleteRoom, waitlist = [],
   notifications = [], onMarkNotificationAsRead,
+  expenses = [], onAddExpense, onDeleteExpense, users = [], onNavigateSupport,
 }: OwnerDashboardShellProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>('stats');
   const [showOverflow, setShowOverflow] = useState(false);
@@ -121,6 +128,29 @@ export default function OwnerDashboardShell({
 
   const [paymentDraftType, setPaymentDraftType] = useState<'instapay' | 'vodafone_cash' | 'etisalat_cash' | 'orange_cash' | 'we_cash' | 'bank_transfer'>('instapay');
   const [paymentDraftValue, setPaymentDraftValue] = useState('');
+
+  const [expenseDesc, setExpenseDesc] = useState('');
+  const [expenseAmount, setExpenseAmount] = useState('');
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) { setPasswordMsg({ text: 'كلمة السر يجب أن تكون 6 أحرف على الأقل.', ok: false }); return; }
+    if (newPassword !== confirmPassword) { setPasswordMsg({ text: 'كلمتا السر غير متطابقتين.', ok: false }); return; }
+    setPasswordSaving(true);
+    setPasswordMsg(null);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setPasswordSaving(false);
+    if (error) {
+      setPasswordMsg({ text: 'تعذر تغيير كلمة السر. حاول مرة أخرى.', ok: false });
+    } else {
+      setPasswordMsg({ text: 'تم تغيير كلمة السر بنجاح.', ok: true });
+      setNewPassword(''); setConfirmPassword('');
+    }
+  };
 
   const PAYMENT_TYPE_LABELS: Record<string, string> = {
     instapay: 'إنستاباي', vodafone_cash: 'فودافون كاش', etisalat_cash: 'اتصالات كاش',
@@ -203,6 +233,9 @@ export default function OwnerDashboardShell({
   const netOwnerPayout = confirmedRevenue - platformCommissionAmount;
   const depositReceived = confirmedBookings.filter((b) => b.depositPaid).reduce((sum, b) => sum + b.depositAmount, 0);
   const remainingBalance = confirmedRevenue - depositReceived;
+  const ownerExpenses = expenses.filter((e) => ownerHouseIds.includes(e.houseId));
+  const totalExpenses = ownerExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const netProfit = netOwnerPayout - totalExpenses;
 
   const now = new Date();
   const curYear = now.getFullYear();
@@ -314,9 +347,9 @@ export default function OwnerDashboardShell({
     setDistanceFromUniversity(house.distanceFromUniversity || ''); setHalls(house.conferenceHalls || []);
   };
 
-  const openHouseTab = (tab: 'house_info' | 'services') => {
+  const openHouseTab = () => {
     if (ownerHouses.length >= 1) populateFormFromHouse(getEditBase(ownerHouses[0]));
-    setActiveTab(tab);
+    setActiveTab('house');
     setShowOverflow(false);
   };
 
@@ -451,7 +484,7 @@ export default function OwnerDashboardShell({
                   key={item.key}
                   id={`owner-overflow-${item.key}`}
                   type="button"
-                  onClick={() => (item.key === 'house_info' || item.key === 'services') ? openHouseTab(item.key) : (() => { setActiveTab(item.key); setShowOverflow(false); })()}
+                  onClick={() => item.key === 'house' ? openHouseTab() : (() => { setActiveTab(item.key); setShowOverflow(false); })()}
                   className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[10.5px] font-bold text-right transition-all cursor-pointer ${
                     activeTab === item.key ? 'bg-[var(--color-owner-primary)] text-white' : 'text-[var(--color-owner-text)] hover:bg-[var(--color-owner-hover)]'
                   }`}
@@ -801,7 +834,7 @@ export default function OwnerDashboardShell({
       )}
 
       {/* Messages */}
-      {activeTab === 'messages' && <OwnerMessages owner={owner} ownerBookings={ownerBookings} />}
+      {activeTab === 'messages' && <OwnerMessages owner={owner} ownerBookings={ownerBookings} users={users} />}
 
       {/* Calendar / occupancy — dynamic current + next month */}
       {activeTab === 'occupancy' && (
@@ -1088,6 +1121,42 @@ export default function OwnerDashboardShell({
           </div>
 
           <div className="bg-[var(--color-owner-surface)] p-4 rounded-3xl border border-[var(--color-owner-border)] space-y-3 text-right">
+            <h3 className="text-xs font-black text-[var(--color-owner-text)] border-b border-[var(--color-owner-border)] pb-2">💸 المصروفات</h3>
+            <div className="flex gap-2">
+              <input type="text" placeholder="وصف المصروف" value={expenseDesc} onChange={(e) => setExpenseDesc(e.target.value)}
+                className="flex-1 bg-white border border-[var(--color-owner-border)] text-[10px] px-2.5 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
+              <input type="number" min={0} placeholder="المبلغ" value={expenseAmount} onChange={(e) => setExpenseAmount(e.target.value)}
+                className="w-24 bg-white border border-[var(--color-owner-border)] text-[10px] px-2.5 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
+              <button type="button" onClick={() => {
+                  const amount = parseFloat(expenseAmount);
+                  if (!expenseDesc.trim() || !amount || amount <= 0 || !ownerHouses[0]) return;
+                  onAddExpense?.({ id: `exp_${Date.now()}`, houseId: ownerHouses[0].id, description: expenseDesc.trim(), amount, expenseDate: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString() });
+                  setExpenseDesc(''); setExpenseAmount('');
+                }}
+                className="bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shrink-0 cursor-pointer">إضافة</button>
+            </div>
+            {ownerExpenses.length === 0 ? (
+              <p className="text-[10px] text-[var(--color-owner-secondary)]">لا توجد مصروفات مسجلة بعد.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {ownerExpenses.map((e) => (
+                  <div key={e.id} className="flex items-center justify-between bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-3 py-2 text-[10.5px]">
+                    <div><span className="font-bold text-[var(--color-owner-text)]">{e.description}</span><span className="text-[var(--color-owner-secondary)] mr-2">{e.expenseDate}</span></div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-rose-700">− {e.amount.toLocaleString()} ج.م</span>
+                      <button type="button" onClick={() => onDeleteExpense?.(e.id)} className="text-rose-600 hover:text-rose-800 cursor-pointer"><Trash2 className="w-3 h-3" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex justify-between items-center bg-[var(--color-owner-primary)]/10 p-3 rounded-xl border-2 border-[var(--color-owner-primary)]/30">
+              <span className="text-[var(--color-owner-primary)] font-black">💰 صافي الربح (بعد المصروفات)</span>
+              <span className="text-base font-black text-[var(--color-owner-primary)]">{netProfit.toLocaleString()} ج.م</span>
+            </div>
+          </div>
+
+          <div className="bg-[var(--color-owner-surface)] p-4 rounded-3xl border border-[var(--color-owner-border)] space-y-3 text-right">
             <h3 className="text-xs font-black text-[var(--color-owner-text)] border-b border-[var(--color-owner-border)] pb-2">📝 سجل العمليات المالية</h3>
             {confirmedBookings.length === 0 ? (
               <p className="text-[11px] text-[var(--color-owner-secondary)] text-center py-3">لا توجد حجوزات مؤكدة بعد.</p>
@@ -1186,7 +1255,9 @@ export default function OwnerDashboardShell({
       )}
 
       {/* Overflow: House Info */}
-      {activeTab === 'house_info' && (
+      {/* Unified House page — Images / Pricing / Facilities / Policies / Location / Food / Gallery,
+          in that order, merging what used to be three separate nav destinations. */}
+      {activeTab === 'house' && (
         <div className="space-y-4">
           {ownerHouses.length >= 1 && (
             <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-2">
@@ -1206,10 +1277,12 @@ export default function OwnerDashboardShell({
             </div>
           )}
 
-          <form onSubmit={handleSubmitHouse} className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-5 space-y-4 text-right">
+          <form onSubmit={handleSubmitHouse} className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-5 space-y-5 text-right">
             <div className="space-y-1 pb-2 border-b border-[var(--color-owner-border)]">
               <h3 className="text-xs font-extrabold text-[var(--color-owner-text)]">{ownerHouses.length >= 1 ? 'تعديل بيانات بيتك الحالي' : 'تفاصيل تسجيل بيت مؤتمرات جديد'}</h3>
             </div>
+
+            {/* Basic info — name/type/description, prerequisite fields not covered by the 7 named sections below */}
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -1232,6 +1305,30 @@ export default function OwnerDashboardShell({
                 )}
               </div>
 
+              <div>
+                <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">{propertyType === 'conference' ? 'اسم بيت المؤتمرات / الفندق المسيحي:' : 'اسم السكن المغترب:'}</label>
+                <input id="add-house-name" type="text" required value={houseName} onChange={(e) => setHouseName(e.target.value)}
+                  className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">وصف تفصيلي للبيت ومميزاته:</label>
+                <textarea id="add-house-desc" rows={3} required value={houseDesc} onChange={(e) => setHouseDesc(e.target.value)}
+                  className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+              </div>
+            </div>
+
+            {/* 1. Images */}
+            <div className="space-y-2 pt-3 border-t border-[var(--color-owner-border)]">
+              <div className="flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">الصور</span></div>
+              <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">صورة واجهة البيت:</label>
+              <PhotoPickerButtons idPrefix="add-house-image" onSelect={setImageUrl} />
+              {imageUrl && <img src={imageUrl} alt="معاينة صورة الواجهة" className="mt-2 w-full h-28 object-cover rounded-xl border border-[var(--color-owner-border)]" />}
+            </div>
+
+            {/* 2. Pricing */}
+            <div className="space-y-2 pt-3 border-t border-[var(--color-owner-border)]">
+              <div className="flex items-center gap-1.5"><Coins className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">السعر</span></div>
               {(propertyType === 'student' || propertyType === 'staff') && (
                 <div className="grid grid-cols-2 gap-2 p-3 bg-[var(--color-owner-hover)] rounded-2xl border border-[var(--color-owner-border)]">
                   <div>
@@ -1248,51 +1345,6 @@ export default function OwnerDashboardShell({
                   )}
                 </div>
               )}
-
-              <div>
-                <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">{propertyType === 'conference' ? 'اسم بيت المؤتمرات / الفندق المسيحي:' : 'اسم السكن المغترب:'}</label>
-                <input id="add-house-name" type="text" required value={houseName} onChange={(e) => setHouseName(e.target.value)}
-                  className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">وصف تفصيلي للبيت ومميزاته:</label>
-                <textarea id="add-house-desc" rows={3} required value={houseDesc} onChange={(e) => setHouseDesc(e.target.value)}
-                  className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">المحافظة التابع لها:</label>
-                  <select id="add-house-gov" value={houseGov} onChange={(e) => setHouseGov(e.target.value)}
-                    className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none">
-                    {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">العنوان بالتفصيل:</label>
-                  <input id="add-house-address" type="text" required value={houseAddress} onChange={(e) => setHouseAddress(e.target.value)}
-                    className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">موقع البيت على الخريطة:</label>
-                  <button type="button" onClick={() => {
-                      if (!navigator.geolocation) { setGeoError('المتصفح لا يدعم تحديد الموقع.'); return; }
-                      setGeoLoading(true); setGeoError('');
-                      navigator.geolocation.getCurrentPosition(
-                        (pos) => { setHouseLat(pos.coords.latitude); setHouseLng(pos.coords.longitude); setGeoLoading(false); },
-                        () => { setGeoError('تعذر تحديد الموقع. تأكد من إذن الموقع في المتصفح.'); setGeoLoading(false); }
-                      );
-                    }}
-                    className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl border border-[var(--color-owner-primary)] text-[var(--color-owner-primary)] bg-white hover:bg-[var(--color-owner-hover)] transition-colors">
-                    {geoLoading ? <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-[var(--color-owner-primary)] border-t-transparent rounded-full" /> : '📍'}
-                    {geoLoading ? 'جاري تحديد الموقع...' : 'استخدم موقعي الحالي'}
-                  </button>
-                  {houseLat && houseLng && <p className="mt-1.5 text-[11px] text-emerald-600 font-semibold">تم تحديد الموقع: {houseLat.toFixed(5)}, {houseLng.toFixed(5)}</p>}
-                  {geoError && <p className="mt-1.5 text-[11px] text-red-500">{geoError}</p>}
-                </div>
-              </div>
-
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">{propertyType === 'conference' ? 'سعر الفرد لليلة (ج.م):' : 'سعر تأمين الحجز مسبقاً (ج.م):'}</label>
@@ -1311,6 +1363,11 @@ export default function OwnerDashboardShell({
                     className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                 </div>
               </div>
+            </div>
+
+            {/* 3. Facilities — suitability + activities + services checklist + conference halls */}
+            <div className="space-y-3 pt-3 border-t border-[var(--color-owner-border)]">
+              <div className="flex items-center gap-1.5"><ClipboardList className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">المرافق والخدمات</span></div>
 
               <div>
                 <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">مناسب من حيث الفئات لـ:</label>
@@ -1334,35 +1391,7 @@ export default function OwnerDashboardShell({
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">صورة واجهة البيت:</label>
-                <PhotoPickerButtons idPrefix="add-house-image" onSelect={setImageUrl} />
-                {imageUrl && <img src={imageUrl} alt="معاينة صورة الواجهة" className="mt-2 w-full h-28 object-cover rounded-xl border border-[var(--color-owner-border)]" />}
-              </div>
-            </div>
-
-            <button id="add-house-submit" type="submit" className="w-full bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-all cursor-pointer">
-              {ownerHouses.length >= 1 ? 'إرسال التعديلات للمراجعة' : 'إرسال البيت الجديد للمراجعة وتأكيده للظهور'}
-            </button>
-          </form>
-
-          {ownerHouses.length >= 1 && (
-            <button type="button" onClick={() => { if (confirm(`هل أنت متأكد من رغبتك في حذف بيت "${ownerHouses[0].name}" نهائياً؟`)) onDeleteHouse?.(ownerHouses[0].id); }}
-              className="w-full flex items-center justify-center gap-1.5 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl py-2.5 transition-colors cursor-pointer bg-white">
-              <Trash2 className="w-3.5 h-3.5" /><span>حذف البيت نهائياً</span>
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Overflow: Services — amenities checklist + halls + photo manager, split out of house_info */}
-      {activeTab === 'services' && (
-        <div className="space-y-4">
-          {ownerHouses.length === 0 ? (
-            <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-6 text-center text-xs text-[var(--color-owner-secondary)]">أضف بيتك أولاً من "بيانات البيت" قبل إدارة الخدمات.</div>
-          ) : (
-            <>
-              <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-5 space-y-3 text-right">
-                <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)]">الخدمات المتوفرة والمرافق بالبيت:</label>
+                <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">الخدمات المتوفرة والمرافق بالبيت:</label>
                 <div className="grid grid-cols-2 gap-1.5">
                   {AMENITIES_LIST.map((srv) => {
                     const isChecked = selectedServices.includes(srv);
@@ -1379,111 +1408,183 @@ export default function OwnerDashboardShell({
                     );
                   })}
                 </div>
-                <button type="button" onClick={() => requestHouseEdit(ownerHouses[0], { services: selectedServices })}
-                  className="w-full bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-xs font-bold py-2 rounded-xl cursor-pointer">حفظ الخدمات</button>
+                {ownerHouses.length >= 1 && (
+                  <button type="button" onClick={() => requestHouseEdit(ownerHouses[0], { services: selectedServices })}
+                    className="w-full mt-1.5 bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] text-[10px] font-bold py-1.5 rounded-lg cursor-pointer">حفظ الخدمات الآن</button>
+                )}
               </div>
 
-              <div className="bg-[var(--color-owner-surface)] p-4 rounded-2xl border border-[var(--color-owner-border)] space-y-2">
-                <label className="block text-[11px] font-bold text-[var(--color-owner-text)]">إضافة قاعات اجتماعات ومؤتمرات كنسية:</label>
-                {halls.length > 0 && (
-                  <div className="space-y-1 mb-2">
-                    {halls.map((h) => (
-                      <div key={h.id} className="flex justify-between items-center bg-white px-2.5 py-1.5 rounded-lg text-[10px] border border-[var(--color-owner-border)]">
-                        <div><span className="font-bold text-[var(--color-owner-text)]">{h.name}</span><span className="text-[var(--color-owner-secondary)] font-medium"> (سعة {h.capacity} فرد)</span></div>
-                        <button type="button" onClick={() => handleRemoveHall(h.id)} className="text-rose-600 hover:text-rose-800 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
-                      </div>
-                    ))}
+              {ownerHouses.length >= 1 && (
+                <div className="bg-[var(--color-owner-bg)] p-3 rounded-2xl border border-[var(--color-owner-border)] space-y-2">
+                  <label className="block text-[11px] font-bold text-[var(--color-owner-text)]">إضافة قاعات اجتماعات ومؤتمرات كنسية:</label>
+                  {halls.length > 0 && (
+                    <div className="space-y-1 mb-2">
+                      {halls.map((h) => (
+                        <div key={h.id} className="flex justify-between items-center bg-white px-2.5 py-1.5 rounded-lg text-[10px] border border-[var(--color-owner-border)]">
+                          <div><span className="font-bold text-[var(--color-owner-text)]">{h.name}</span><span className="text-[var(--color-owner-secondary)] font-medium"> (سعة {h.capacity} فرد)</span></div>
+                          <button type="button" onClick={() => handleRemoveHall(h.id)} className="text-rose-600 hover:text-rose-800 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="space-y-1.5">
+                    <input type="text" placeholder="اسم القاعة" value={hallName} onChange={(e) => setHallName(e.target.value)}
+                      className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
+                    <div className="flex gap-2 items-center">
+                      <input type="number" placeholder="السعة الاستيعابية" value={hallCapacity} onChange={(e) => setHallCapacity(parseInt(e.target.value) || 50)}
+                        className="flex-1 bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
+                      <button type="button" onClick={handleAddHall} className="bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shrink-0 cursor-pointer">أضف القاعة +</button>
+                    </div>
+                    <button type="button" onClick={() => requestHouseEdit(ownerHouses[0], { conferenceHalls: halls })}
+                      className="w-full bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] text-[10px] font-bold py-1.5 rounded-lg cursor-pointer">حفظ القاعات</button>
                   </div>
-                )}
-                <div className="space-y-1.5">
-                  <input type="text" placeholder="اسم القاعة" value={hallName} onChange={(e) => setHallName(e.target.value)}
-                    className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
-                  <div className="flex gap-2 items-center">
-                    <input type="number" placeholder="السعة الاستيعابية" value={hallCapacity} onChange={(e) => setHallCapacity(parseInt(e.target.value) || 50)}
-                      className="flex-1 bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
-                    <button type="button" onClick={handleAddHall} className="bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shrink-0 cursor-pointer">أضف القاعة +</button>
-                  </div>
-                  <button type="button" onClick={() => requestHouseEdit(ownerHouses[0], { conferenceHalls: halls })}
-                    className="w-full bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] text-[10px] font-bold py-1.5 rounded-lg cursor-pointer">حفظ القاعات</button>
+                </div>
+              )}
+            </div>
+
+            {/* 4. Policies */}
+            <div className="space-y-2 pt-3 border-t border-[var(--color-owner-border)]">
+              <div className="flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">السياسات</span></div>
+              {ownerHouses.length >= 1 && (ownerHouses[0].housingRules?.length || ownerHouses[0].contractTerms) ? (
+                <div className="bg-[var(--color-owner-hover)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1.5 text-[10.5px] text-[var(--color-owner-text)]">
+                  {ownerHouses[0].contractTerms && <p className="font-bold">{ownerHouses[0].contractTerms}</p>}
+                  {ownerHouses[0].housingRules?.map((rule, i) => <p key={i}>• {rule}</p>)}
+                </div>
+              ) : (
+                <p className="text-[10px] text-[var(--color-owner-secondary)]">لا توجد سياسات خاصة مسجلة لهذا النوع من العقار.</p>
+              )}
+            </div>
+
+            {/* 5. Location */}
+            <div className="space-y-2 pt-3 border-t border-[var(--color-owner-border)]">
+              <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">الموقع</span></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">المحافظة التابع لها:</label>
+                  <select id="add-house-gov" value={houseGov} onChange={(e) => setHouseGov(e.target.value)}
+                    className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none">
+                    {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">العنوان بالتفصيل:</label>
+                  <input id="add-house-address" type="text" required value={houseAddress} onChange={(e) => setHouseAddress(e.target.value)}
+                    className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">موقع البيت على الخريطة:</label>
+                  <button type="button" onClick={() => {
+                      if (!navigator.geolocation) { setGeoError('المتصفح لا يدعم تحديد الموقع.'); return; }
+                      setGeoLoading(true); setGeoError('');
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => { setHouseLat(pos.coords.latitude); setHouseLng(pos.coords.longitude); setGeoLoading(false); },
+                        () => { setGeoError('تعذر تحديد الموقع. تأكد من إذن الموقع في المتصفح.'); setGeoLoading(false); }
+                      );
+                    }}
+                    className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl border border-[var(--color-owner-primary)] text-[var(--color-owner-primary)] bg-white hover:bg-[var(--color-owner-hover)] transition-colors">
+                    {geoLoading ? <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-[var(--color-owner-primary)] border-t-transparent rounded-full" /> : '📍'}
+                    {geoLoading ? 'جاري تحديد الموقع...' : 'استخدم موقعي الحالي'}
+                  </button>
+                  {houseLat && houseLng && <p className="mt-1.5 text-[11px] text-emerald-600 font-semibold">تم تحديد الموقع: {houseLat.toFixed(5)}, {houseLng.toFixed(5)}</p>}
+                  {geoError && <p className="mt-1.5 text-[11px] text-red-500">{geoError}</p>}
                 </div>
               </div>
+            </div>
 
-              {(() => {
-                const house = ownerHouses[0];
-                const base = getEditBase(house);
-                return (
-                  <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-3">
-                    <button type="button" onClick={() => setExpandedPhotosForHouse(expandedPhotosForHouse === house.id ? null : house.id)}
-                      className="w-full flex items-center justify-between text-[11px] font-black text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] py-1.5 px-2 rounded-xl transition-all cursor-pointer">
-                      <span className="flex items-center gap-1.5"><Camera className="w-3.5 h-3.5" /><span>إدارة صور الغرف والخدمات والمباني 📸</span></span>
-                      <span className="text-[10px] text-[var(--color-owner-secondary)]">{expandedPhotosForHouse === house.id ? 'إخفاء الصور ▲' : 'إضافة وعرض الصور ▼'}</span>
-                    </button>
-                    {expandedPhotosForHouse === house.id && (
-                      <div className="p-3 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl space-y-3 text-right">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                          <div>
-                            <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">نوع وتصنيف الصورة:</label>
-                            <select value={extraPhotoCategory} onChange={(e) => setExtraPhotoCategory(e.target.value as 'room' | 'service' | 'other')}
-                              className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none">
-                              <option value="room">🛌 غرف النوم والأسرة</option><option value="service">🍽️ الخدمات والمطعم والملاعب</option><option value="other">⛪ المبنى وقاعات الاجتماعات</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">وصف مختصر:</label>
-                            <input type="text" value={extraPhotoLabel} onChange={(e) => setExtraPhotoLabel(e.target.value)}
-                              className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
-                          </div>
-                          <div>
-                            <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">صورة الغرفة/الخدمة:</label>
-                            <PhotoPickerButtons idPrefix={`photo-${house.id}`} onSelect={setExtraPhotoUrl} />
-                            {extraPhotoUrl && (
-                              <div className="flex items-center gap-2 mt-1.5">
-                                <img src={extraPhotoUrl} alt="معاينة" className="w-10 h-10 object-cover rounded-lg border border-[var(--color-owner-border)]" />
-                                <button type="button" onClick={() => {
-                                    const labelPrefix = extraPhotoCategory === 'room' ? '🛌 غرف' : extraPhotoCategory === 'service' ? '🍽️ خدمات' : '⛪ مباني';
-                                    const descStr = extraPhotoLabel.trim() ? `${labelPrefix}: ${extraPhotoLabel.trim()}` : labelPrefix;
-                                    requestHouseEdit(house, { images: [...base.images, extraPhotoUrl], imageDescriptions: { ...(base.imageDescriptions || {}), [extraPhotoUrl]: descStr } });
-                                    setExtraPhotoUrl(''); setExtraPhotoLabel('');
-                                    setPhotosSuccessMsg('تم إرسال الصورة ضمن طلب تعديل بانتظار موافقة الإدارة!');
-                                    setTimeout(() => setPhotosSuccessMsg(''), 3000);
-                                  }}
-                                  className="flex-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-2 py-1.5 rounded-lg cursor-pointer">إضافة للألبوم</button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        {photosSuccessMsg && <p className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-1.5 text-center font-bold">{photosSuccessMsg}</p>}
-                        <div className="space-y-1.5 pt-2 border-t border-[var(--color-owner-border)]">
-                          <span className="text-[9.5px] font-extrabold text-[var(--color-owner-text)]">الصور المضافة حالياً للبيت ({base.images.length}):</span>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            {base.images.map((img, idx) => {
-                              const desc = base.imageDescriptions?.[img] || (idx === 0 ? 'الصورة الرئيسية' : 'صورة إضافية');
-                              return (
-                                <div key={`${img}-${idx}`} className="relative bg-white border border-[var(--color-owner-border)] rounded-xl overflow-hidden">
-                                  <img referrerPolicy="no-referrer" src={img} alt="بيت خلوة" className="w-full h-14 object-cover" />
-                                  <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] p-0.5 text-center truncate font-bold">{desc}</div>
-                                  {base.images.length > 1 && (
-                                    <button type="button" onClick={() => { if (confirm('حذف هذه الصورة؟')) requestHouseEdit(house, { images: base.images.filter((_, i) => i !== idx) }); }}
-                                      className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-bold hover:bg-red-700 cursor-pointer">✕</button>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
+            <button id="add-house-submit" type="submit" className="w-full bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-all cursor-pointer">
+              {ownerHouses.length >= 1 ? 'إرسال التعديلات للمراجعة' : 'إرسال البيت الجديد للمراجعة وتأكيده للظهور'}
+            </button>
+          </form>
+
+          {/* 6. Food */}
+          <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-5 space-y-3">
+            <div className="flex items-center gap-1.5 pb-2 border-b border-[var(--color-owner-border)]"><Utensils className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">الطعام</span></div>
+            <OwnerFoodMenu house={ownerHouses[0]} onUpdateHouse={onUpdateHouse} />
+          </div>
+
+          {/* 7. Gallery — photo manager */}
+          {ownerHouses.length >= 1 && (() => {
+            const house = ownerHouses[0];
+            const base = getEditBase(house);
+            return (
+              <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-3">
+                <div className="flex items-center gap-1.5 pb-2 border-b border-[var(--color-owner-border)]"><Camera className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">المعرض</span></div>
+                <button type="button" onClick={() => setExpandedPhotosForHouse(expandedPhotosForHouse === house.id ? null : house.id)}
+                  className="w-full flex items-center justify-between text-[11px] font-black text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] py-1.5 px-2 rounded-xl transition-all cursor-pointer">
+                  <span>إدارة صور الغرف والخدمات والمباني 📸</span>
+                  <span className="text-[10px] text-[var(--color-owner-secondary)]">{expandedPhotosForHouse === house.id ? 'إخفاء الصور ▲' : 'إضافة وعرض الصور ▼'}</span>
+                </button>
+                {expandedPhotosForHouse === house.id && (
+                  <div className="p-3 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl space-y-3 text-right">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div>
+                        <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">نوع وتصنيف الصورة:</label>
+                        <select value={extraPhotoCategory} onChange={(e) => setExtraPhotoCategory(e.target.value as 'room' | 'service' | 'other')}
+                          className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none">
+                          <option value="room">🛌 غرف النوم والأسرة</option><option value="service">🍽️ الخدمات والمطعم والملاعب</option><option value="other">⛪ المبنى وقاعات الاجتماعات</option>
+                        </select>
                       </div>
-                    )}
+                      <div>
+                        <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">وصف مختصر:</label>
+                        <input type="text" value={extraPhotoLabel} onChange={(e) => setExtraPhotoLabel(e.target.value)}
+                          className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">صورة الغرفة/الخدمة:</label>
+                        <PhotoPickerButtons idPrefix={`photo-${house.id}`} onSelect={setExtraPhotoUrl} />
+                        {extraPhotoUrl && (
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <img src={extraPhotoUrl} alt="معاينة" className="w-10 h-10 object-cover rounded-lg border border-[var(--color-owner-border)]" />
+                            <button type="button" onClick={() => {
+                                const labelPrefix = extraPhotoCategory === 'room' ? '🛌 غرف' : extraPhotoCategory === 'service' ? '🍽️ خدمات' : '⛪ مباني';
+                                const descStr = extraPhotoLabel.trim() ? `${labelPrefix}: ${extraPhotoLabel.trim()}` : labelPrefix;
+                                requestHouseEdit(house, { images: [...base.images, extraPhotoUrl], imageDescriptions: { ...(base.imageDescriptions || {}), [extraPhotoUrl]: descStr } });
+                                setExtraPhotoUrl(''); setExtraPhotoLabel('');
+                                setPhotosSuccessMsg('تم إرسال الصورة ضمن طلب تعديل بانتظار موافقة الإدارة!');
+                                setTimeout(() => setPhotosSuccessMsg(''), 3000);
+                              }}
+                              className="flex-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-2 py-1.5 rounded-lg cursor-pointer">إضافة للألبوم</button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {photosSuccessMsg && <p className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-1.5 text-center font-bold">{photosSuccessMsg}</p>}
+                    <div className="space-y-1.5 pt-2 border-t border-[var(--color-owner-border)]">
+                      <span className="text-[9.5px] font-extrabold text-[var(--color-owner-text)]">الصور المضافة حالياً للبيت ({base.images.length}):</span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {base.images.map((img, idx) => {
+                          const desc = base.imageDescriptions?.[img] || (idx === 0 ? 'الصورة الرئيسية' : 'صورة إضافية');
+                          return (
+                            <div key={`${img}-${idx}`} className="relative bg-white border border-[var(--color-owner-border)] rounded-xl overflow-hidden">
+                              <img referrerPolicy="no-referrer" src={img} alt="بيت خلوة" className="w-full h-14 object-cover" />
+                              <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] p-0.5 text-center truncate font-bold">{desc}</div>
+                              {base.images.length > 1 && (
+                                <button type="button" onClick={() => { if (confirm('حذف هذه الصورة؟')) requestHouseEdit(house, { images: base.images.filter((_, i) => i !== idx) }); }}
+                                  className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-bold hover:bg-red-700 cursor-pointer">✕</button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
-                );
-              })()}
-            </>
+                )}
+              </div>
+            );
+          })()}
+
+          {ownerHouses.length >= 1 && (
+            <button type="button" onClick={() => { if (confirm(`هل أنت متأكد من رغبتك في حذف بيت "${ownerHouses[0].name}" نهائياً؟`)) onDeleteHouse?.(ownerHouses[0].id); }}
+              className="w-full flex items-center justify-center gap-1.5 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl py-2.5 transition-colors cursor-pointer bg-white">
+              <Trash2 className="w-3.5 h-3.5" /><span>حذف البيت نهائياً</span>
+            </button>
           )}
         </div>
       )}
 
       {/* Overflow: Reports */}
       {activeTab === 'reports' && (
-        <OwnerReports ownerBookings={ownerBookings} confirmedRevenue={confirmedRevenue} platformCommissionAmount={platformCommissionAmount} netOwnerPayout={netOwnerPayout} occupancyRate={occupancyRate} avgRating={avgRating} />
+        <OwnerReports ownerBookings={ownerBookings} ownerReviews={ownerReviews} confirmedRevenue={confirmedRevenue} platformCommissionAmount={platformCommissionAmount} netOwnerPayout={netOwnerPayout} occupancyRate={occupancyRate} avgRating={avgRating} />
       )}
 
       {/* Overflow: Notifications */}
@@ -1565,6 +1666,32 @@ export default function OwnerDashboardShell({
               نوع الحساب الحالي هو <strong className="text-[var(--color-owner-primary)]">مالك بيوت خلوات ومؤتمرات (Owner)</strong> معتمد ومفعل.
             </p>
           </div>
+
+          {/* Security — real password change via Supabase auth */}
+          <div className="bg-[var(--color-owner-surface)] p-5 rounded-3xl border border-[var(--color-owner-border)] text-right space-y-3">
+            <div className="flex items-center gap-1.5"><KeyRound className="w-4 h-4 text-[var(--color-owner-primary)]" /><h3 className="text-xs font-black text-[var(--color-owner-text)]">تغيير كلمة السر</h3></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <input id="owner-new-password" type="password" placeholder="كلمة السر الجديدة" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                className="bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+              <input id="owner-confirm-password" type="password" placeholder="تأكيد كلمة السر" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                className="bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+            </div>
+            {passwordMsg && (
+              <p className={`text-[10px] font-bold ${passwordMsg.ok ? 'text-emerald-700' : 'text-rose-600'}`}>{passwordMsg.text}</p>
+            )}
+            <button id="owner-change-password-btn" type="button" onClick={handleChangePassword} disabled={passwordSaving || !newPassword || !confirmPassword}
+              className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] disabled:opacity-50 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer">
+              {passwordSaving ? 'جارٍ الحفظ...' : 'حفظ كلمة السر الجديدة'}
+            </button>
+          </div>
+
+          {/* Support */}
+          {onNavigateSupport && (
+            <button type="button" id="owner-support-btn" onClick={onNavigateSupport}
+              className="w-full flex items-center justify-center gap-1.5 text-[11px] font-bold text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] rounded-xl py-2.5 transition-colors cursor-pointer bg-[var(--color-owner-surface)]">
+              <HelpCircle className="w-3.5 h-3.5" /><span>تواصل مع الدعم الفني</span>
+            </button>
+          )}
         </div>
       )}
 

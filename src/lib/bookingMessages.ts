@@ -46,3 +46,33 @@ export function subscribeToBookingMessages(bookingId: string, onMessage: (msg: B
     .subscribe();
   return () => { supabase.removeChannel(channel); };
 }
+
+// "Someone is typing" — a separate Presence channel (not the message-insert
+// one above) so typing state never touches the DB. Caller gets back
+// `setTyping` (call on every keystroke, debounced by the caller) and
+// `unsubscribe` (call on unmount) sharing one channel instance.
+export function subscribeToTypingPresence(
+  bookingId: string,
+  currentUserId: string,
+  onTypingChange: (typingUserIds: string[]) => void,
+): { setTyping: (isTyping: boolean) => void; unsubscribe: () => void } {
+  const channel = supabase.channel(`booking_typing:${bookingId}`, { config: { presence: { key: currentUserId } } });
+
+  const emitState = () => {
+    const state = channel.presenceState() as Record<string, { typing?: boolean }[]>;
+    const typingUserIds = Object.entries(state)
+      .filter(([userId, presences]) => userId !== currentUserId && presences.some((p) => p.typing))
+      .map(([userId]) => userId);
+    onTypingChange(typingUserIds);
+  };
+
+  channel.on('presence', { event: 'sync' }, emitState);
+  channel.subscribe((status) => {
+    if (status === 'SUBSCRIBED') channel.track({ typing: false });
+  });
+
+  return {
+    setTyping: (isTyping: boolean) => { channel.track({ typing: isTyping }); },
+    unsubscribe: () => { supabase.removeChannel(channel); },
+  };
+}

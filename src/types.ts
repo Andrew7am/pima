@@ -35,6 +35,7 @@ export interface User {
   churchName?: string;
   priestName?: string;
   isBanned?: boolean;
+  avatarUrl?: string;
 }
 
 export interface ConferenceHall {
@@ -286,6 +287,15 @@ export interface BookingMessage {
   content: string;
   createdAt: string;
   readAt?: string;
+}
+
+export interface Expense {
+  id: string;
+  houseId: string;
+  description: string;
+  amount: number;
+  expenseDate: string;
+  createdAt: string;
 }
 
 export interface AuditLogEntry {

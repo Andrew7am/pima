@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, AuditLogEntry } from '../types';
+import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, AuditLogEntry, Expense } from '../types';
 import { DEFAULT_PLATFORM_SETTINGS } from '../types';
 
 // ─── Row → Type mappers ────────────────────────────────────────────────────
@@ -30,6 +30,7 @@ export function mapUser(r: Record<string, unknown>): User {
     churchName: r.church_name as string ?? undefined,
     priestName: r.priest_name as string ?? undefined,
     isBanned: (r.is_banned as boolean) ?? false,
+    avatarUrl: r.avatar_url as string ?? undefined,
     createdAt: r.created_at as string,
   };
 }
@@ -207,6 +208,17 @@ export function mapRoom(r: Record<string, unknown>): Room {
     pricePerNight: r.price_per_night as number ?? undefined,
     images: (r.images as string[]) ?? [],
     status: r.status as Room['status'],
+    createdAt: r.created_at as string,
+  };
+}
+
+export function mapExpense(r: Record<string, unknown>): Expense {
+  return {
+    id: r.id as string,
+    houseId: r.house_id as string,
+    description: r.description as string,
+    amount: r.amount as number,
+    expenseDate: r.expense_date as string,
     createdAt: r.created_at as string,
   };
 }
@@ -427,6 +439,27 @@ export async function loadRoomsForHouses(houseIds: string[]): Promise<Room[]> {
   const { data, error } = await supabase.from('rooms').select('*').in('house_id', houseIds).order('created_at');
   if (error) { console.error('loadRoomsForHouses:', error); return []; }
   return (data ?? []).map(mapRoom);
+}
+
+export async function loadExpensesForHouses(houseIds: string[]): Promise<Expense[]> {
+  if (houseIds.length === 0) return [];
+  const { data, error } = await supabase.from('owner_expenses').select('*').in('house_id', houseIds).order('expense_date', { ascending: false });
+  if (error) { console.error('loadExpensesForHouses:', error); return []; }
+  return (data ?? []).map(mapExpense);
+}
+
+export async function createExpense(e: Expense): Promise<boolean> {
+  const { error } = await supabase.from('owner_expenses').insert({
+    id: e.id, house_id: e.houseId, description: e.description, amount: e.amount, expense_date: e.expenseDate, created_at: e.createdAt,
+  });
+  if (error) console.error('createExpense:', error);
+  return !error;
+}
+
+export async function deleteExpense(id: string): Promise<boolean> {
+  const { error } = await supabase.from('owner_expenses').delete().eq('id', id);
+  if (error) console.error('deleteExpense:', error);
+  return !error;
 }
 
 export async function loadAnnouncementsForHouses(houseIds: string[]): Promise<Announcement[]> {

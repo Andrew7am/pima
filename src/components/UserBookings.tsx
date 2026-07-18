@@ -4,9 +4,10 @@ import {
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
   Printer, Building, AlertTriangle, Bell, Smartphone, CreditCard, 
   Coins, Upload, ShieldCheck, Image, Check, Sparkles, ListTodo, Plus, Trash2, BookOpen,
-  FileDown
+  FileDown, MessageCircle
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
+import BookingChatPanel from './BookingChatPanel';
 
 interface UserBookingsProps {
   bookings: Booking[];
@@ -138,6 +139,7 @@ export default function UserBookings({
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
   const [isPaying, setIsPaying] = useState<string | null>(null);
+  const [chatOpenBookingId, setChatOpenBookingId] = useState<string | null>(null);
   
   // Egyptian Payment System Form States
   const [selectedMethod, setSelectedMethod] = useState<'bank' | 'instapay' | 'vodafone' | 'cash' | 'online'>('instapay');
@@ -869,6 +871,19 @@ export default function UserBookings({
                       </button>
                     )}
 
+                    {/* Message the house owner — booking-scoped chat, works for any
+                        non-rejected/cancelled booking (mirrors the owner side's gate) */}
+                    {booking.status !== 'rejected' && booking.status !== 'cancelled' && (
+                      <button
+                        id={`booking-chat-btn-${booking.id}`}
+                        onClick={() => setChatOpenBookingId(chatOpenBookingId === booking.id ? null : booking.id)}
+                        className="flex items-center gap-1 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 text-sky-700" />
+                        <span>راسل صاحب البيت</span>
+                      </button>
+                    )}
+
                     {/* Egyptian Payment Trigger button */}
                     {canPayDeposit && (
                       <button
@@ -884,6 +899,19 @@ export default function UserBookings({
                     )}
                   </div>
                 </div>
+
+                {chatOpenBookingId === booking.id && (
+                  <div className="px-4 pb-4">
+                    <BookingChatPanel
+                      bookingId={booking.id}
+                      currentUserId={currentUser.id}
+                      title={houses.find((h) => h.id === booking.houseId)?.ownerName || 'صاحب البيت'}
+                      subtitle={booking.houseName}
+                      variant="guest"
+                      heightClass="h-[50vh]"
+                    />
+                  </div>
+                )}
 
                 {/* Egyptian Interactive Payment Module Dialog embedded inline */}
                 {isPaying === booking.id && (

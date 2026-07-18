@@ -14,6 +14,7 @@ import {
   markNotificationRead,
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
   createWaitlistEntry,
+  loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
   createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
   loadPlatformSettings, updatePlatformSettings,
   deleteOwnAccount,
@@ -21,7 +22,7 @@ import {
   loadAuditLog,
   loadPaymentProofImage,
 } from './lib/db';
-import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry } from './types';
+import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense } from './types';
 
 // Component Imports
 import UserBookings from './components/UserBookings';
@@ -75,6 +76,7 @@ export default function App() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [platformAnnouncements, setPlatformAnnouncements] = useState<PlatformAnnouncement[]>([]);
   const [settings, setSettings] = useState<PlatformSettings>(DEFAULT_PLATFORM_SETTINGS);
 
@@ -273,12 +275,13 @@ export default function App() {
     if (ownerHouseIds.length === 0) return;
     Promise.all([
       loadRoomsForHouses(ownerHouseIds), loadAnnouncementsForHouses(ownerHouseIds),
-      loadReviewsForHouses(ownerHouseIds), loadWaitlistForHouses(ownerHouseIds),
-    ]).then(([oRooms, oAnnouncements, oReviews, oWaitlist]) => {
+      loadReviewsForHouses(ownerHouseIds), loadWaitlistForHouses(ownerHouseIds), loadExpensesForHouses(ownerHouseIds),
+    ]).then(([oRooms, oAnnouncements, oReviews, oWaitlist, oExpenses]) => {
       setRooms((prev) => [...prev.filter((r) => !ownerHouseIds.includes(r.houseId)), ...oRooms]);
       setAnnouncements((prev) => [...prev.filter((a) => !ownerHouseIds.includes(a.houseId)), ...oAnnouncements]);
       setReviews((prev) => [...prev.filter((rv) => !ownerHouseIds.includes(rv.houseId)), ...oReviews]);
       setWaitlist((prev) => [...prev.filter((w) => !ownerHouseIds.includes(w.houseId)), ...oWaitlist]);
+      setExpenses((prev) => [...prev.filter((e) => !ownerHouseIds.includes(e.houseId)), ...oExpenses]);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeScreen, currentUser?.id, currentUser?.role, houses.length]);
@@ -487,6 +490,16 @@ export default function App() {
     setWaitlist((prev) => [...prev, entry]);
     createWaitlistEntry(entry);
     return true;
+  };
+
+  const handleAddExpense = (expense: Expense) => {
+    setExpenses((prev) => [expense, ...prev]);
+    createExpenseDb(expense);
+  };
+
+  const handleDeleteExpense = (expenseId: string) => {
+    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+    deleteExpenseDb(expenseId);
   };
 
   const handleCancelBooking = async (bookingId: string) => {
@@ -781,6 +794,16 @@ export default function App() {
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isBanned: banned } : u)));
     supabase.from('users').update({ is_banned: banned }).eq('id', userId)
       .then(({ error }) => { if (error) console.error('banUser:', error); });
+  };
+
+  // Self-service avatar update (any role) — used by ProfileScreen and, once
+  // set, surfaced in the owner's Messages conversation list/thread.
+  const handleUpdateAvatar = (avatarUrl: string) => {
+    if (!currentUser) return;
+    setCurrentUser((prev) => (prev ? { ...prev, avatarUrl } : prev));
+    setUsers((prev) => prev.map((u) => (u.id === currentUser.id ? { ...u, avatarUrl } : u)));
+    supabase.from('users').update({ avatar_url: avatarUrl }).eq('id', currentUser.id)
+      .then(({ error }) => { if (error) console.error('updateAvatar:', error); });
   };
 
   // Cancel any booking (fraud / dispute). Admin-only via bookings_update_admin.
@@ -1184,6 +1207,11 @@ export default function App() {
               waitlist={waitlist}
               notifications={notifications}
               onMarkNotificationAsRead={handleMarkNotificationAsRead}
+              expenses={expenses}
+              onAddExpense={handleAddExpense}
+              onDeleteExpense={handleDeleteExpense}
+              users={users}
+              onNavigateSupport={() => setActiveScreen('support')}
             />
           )}
 
@@ -1229,6 +1257,7 @@ export default function App() {
               onNavigateSupport={() => setActiveScreen('support')}
               onNavigatePrivacy={() => setActiveScreen('privacy')}
               onDeleteAccount={handleDeleteAccount}
+              onUpdateAvatar={handleUpdateAvatar}
             />
           )}
 
