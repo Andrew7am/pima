@@ -496,9 +496,9 @@ export default function OwnerDashboardShell({
   ];
 
   return (
-    <div className="owner-theme text-right text-[var(--color-owner-text)] lg:flex lg:gap-5 lg:items-start">
+    <div className="owner-theme text-right text-[var(--color-owner-text)] w-full max-w-full overflow-x-hidden lg:flex lg:gap-5 lg:items-start">
       {/* Desktop sidebar (right side in RTL — first in DOM) */}
-      <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-4 bg-[var(--color-owner-primary)] text-white rounded-3xl p-4 gap-1 max-h-[calc(100vh-2rem)] overflow-y-auto">
+      <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-0 bg-[var(--color-owner-primary)] text-white rounded-3xl p-4 gap-1 max-h-[calc(100vh-2rem)] overflow-y-auto">
         <div className="pb-3 mb-2 border-b border-white/10">
           <span className="text-[10px] text-[var(--color-owner-accent)] font-black block">لوحة تحكم مالك البيوت</span>
           <h2 className="text-sm font-extrabold">{owner.name}</h2>
