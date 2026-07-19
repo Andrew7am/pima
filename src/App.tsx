@@ -23,6 +23,7 @@ import {
   loadAuditLog,
   loadPaymentProofImage,
 } from './lib/db';
+import { autoAllocate } from './lib/roomAllocation';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense } from './types';
 
 // Component Imports
@@ -609,6 +610,16 @@ export default function App() {
     deleteExpenseDb(expenseId);
   };
 
+  // Cancelling/rejecting a booking frees its rooms immediately — the guest
+  // roster (attendees) stays intact for records, only the room/bed link
+  // clears, since another booking may need those beds right away.
+  const freeBookingAllocations = async (bookingId: string) => {
+    const existing = await loadAllocationsForBooking(bookingId);
+    if (existing.length === 0) return;
+    setAllocations((prev) => prev.filter((al) => al.bookingId !== bookingId));
+    await saveAllocationsForBooking(bookingId, []);
+  };
+
   const handleCancelBooking = async (bookingId: string) => {
     const target = bookings.find((b) => b.id === bookingId);
     if (!target || target.status !== 'pending') return;
@@ -616,7 +627,9 @@ export default function App() {
     const ok = await updateBookingStatus(bookingId, 'cancelled');
     if (!ok) {
       setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, status: 'pending' } : b));
+      return;
     }
+    freeBookingAllocations(bookingId);
   };
 
   // --- Owner Operations ---
@@ -652,6 +665,82 @@ export default function App() {
   const handleRejectBooking = (bookingId: string) => {
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'rejected' } : b)));
     updateBookingStatus(bookingId, 'rejected');
+    freeBookingAllocations(bookingId);
+  };
+
+  // Owner edits a booking's dates/guest-count (manual/temporary bookings,
+  // or adjusting a still-pending platform booking). If the booking already
+  // had room allocations, immediately re-run Smart allocation for just this
+  // booking against current room availability — never touches any other
+  // booking's allocations.
+  const handleUpdateBookingDetails = async (
+    bookingId: string,
+    fields: { checkIn?: string; checkOut?: string; guestsCount?: number }
+  ): Promise<boolean> => {
+    const target = bookings.find((b) => b.id === bookingId);
+    if (!target) return false;
+    const res = await updateBookingFields(bookingId, fields);
+    if (!res.ok) {
+      if (res.error === 'INSUFFICIENT_CAPACITY') {
+        const avail = res.availableBeds ?? 0;
+        alert(avail === 0
+          ? 'البيت مكتمل الإشغال في هذه التواريخ.'
+          : `لم يتبقَ سوى ${avail} سرير متاح في هذه التواريخ.`);
+      } else {
+        alert('حدث خطأ في تعديل الحجز. حاول مرة أخرى.');
+      }
+      return false;
+    }
+    const updated = { ...target, ...fields };
+    setBookings((prev) => prev.map((b) => (b.id === bookingId ? updated : b)));
+
+    const bookingAllocations = await loadAllocationsForBooking(bookingId);
+    if (bookingAllocations.length > 0) {
+      const houseRooms = rooms.filter((r) => r.houseId === updated.houseId);
+      if (houseRooms.length > 0) {
+        const bookingAttendees = await loadAttendeesForBooking(bookingId);
+        const otherAllocations = [...allocations.filter((al) => al.bookingId !== bookingId), ...bookingAllocations];
+        const newAllocations = autoAllocate(bookingAttendees, houseRooms, bookings, otherAllocations, bookingId, {
+          mode: 'smart', separateGenders: true, groupTypesTogether: true,
+          checkIn: updated.checkIn, checkOut: updated.checkOut, houseId: updated.houseId,
+        });
+        setAttendees((prev) => [...prev.filter((a) => a.bookingId !== bookingId), ...bookingAttendees]);
+        setAllocations((prev) => [...prev.filter((al) => al.bookingId !== bookingId), ...newAllocations]);
+        await saveAllocationsForBooking(bookingId, newAllocations);
+      }
+    }
+    return true;
+  };
+
+  // Owner-triggered recompute. With bookingId: unconditionally re-run Smart
+  // allocation for that one booking. Without it (house-wide): gap-filling
+  // only — skip bookings that are already fully allocated or have guests
+  // already checked in, so a live guesthouse never gets its settled
+  // bookings disruptively reshuffled by a single click.
+  const handleRecalculateAllocation = async (houseId: string, bookingId?: string): Promise<void> => {
+    const houseRooms = rooms.filter((r) => r.houseId === houseId);
+    if (houseRooms.length === 0) {
+      alert('لا توجد غرف حقيقية مسجلة لهذا البيت بعد.');
+      return;
+    }
+    const targets = bookingId
+      ? bookings.filter((b) => b.id === bookingId)
+      : bookings.filter((b) => b.houseId === houseId && (b.status === 'pending' || b.status === 'approved') && !b.checkedInAt);
+
+    for (const b of targets) {
+      const bookingAttendees = await loadAttendeesForBooking(b.id);
+      if (bookingAttendees.length === 0) continue;
+      const currentAllocations = await loadAllocationsForBooking(b.id);
+      if (!bookingId && currentAllocations.length >= bookingAttendees.length) continue;
+
+      const otherAllocations = [...allocations.filter((al) => al.bookingId !== b.id), ...currentAllocations];
+      const newAllocations = autoAllocate(bookingAttendees, houseRooms, bookings, otherAllocations, b.id, {
+        mode: 'smart', separateGenders: true, groupTypesTogether: true, checkIn: b.checkIn, checkOut: b.checkOut, houseId,
+      });
+      setAttendees((prev) => [...prev.filter((a) => a.bookingId !== b.id), ...bookingAttendees]);
+      setAllocations((prev) => [...prev.filter((al) => al.bookingId !== b.id), ...newAllocations]);
+      await saveAllocationsForBooking(b.id, newAllocations);
+    }
   };
 
   // Owner marks that they've received the deposit in-person / off-platform.
@@ -1289,6 +1378,9 @@ export default function App() {
               users={users}
               onNavigateSupport={() => setActiveScreen('support')}
               onCreateBooking={handleOwnerCreateBooking}
+              onUpdateBookingDetails={handleUpdateBookingDetails}
+              onRecalculateAllocation={handleRecalculateAllocation}
+              onLogout={handleLogout}
             />
           )}
 

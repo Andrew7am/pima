@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Booking, User, Attendee, RoomAllocation, RetreatHouse } from '../types';
-import { 
-  Users, Check, Plus, Trash2, Shield, Settings, Shuffle, ArrowLeftRight, 
-  UserMinus, UserPlus, AlertTriangle, Sparkles, RefreshCw, X, ChevronDown, CheckCircle, Save
+import { Booking, User, Attendee, RoomAllocation, RetreatHouse, Room } from '../types';
+import {
+  Users, Check, Plus, Trash2, Shield, Settings, Shuffle, ArrowLeftRight,
+  UserMinus, UserPlus, AlertTriangle, Sparkles, RefreshCw, X, ChevronDown, CheckCircle, Save, Minus
 } from 'lucide-react';
+import { autoAllocate, quickAssignRoom } from '../lib/roomAllocation';
+import { getRoomFreeBedsForRange } from '../lib/roomOccupancy';
 
 // Deterministic room generator
 export interface HouseRoom {
@@ -59,6 +61,116 @@ export function generateHouseRooms(houseId: string, roomsCount: number, bedsCoun
   return rooms;
 }
 
+// Original packing algorithm, kept verbatim as the fallback for houses that
+// haven't configured real Room rows yet (generateHouseRooms's virtual list
+// has no dates/other-booking awareness, so the real-room engine in
+// lib/roomAllocation.ts doesn't apply to it).
+function legacyAutoAllocate(
+  rooms: HouseRoom[],
+  attendees: Attendee[],
+  separateGenders: boolean,
+  groupTypesTogether: boolean,
+  bookingId: string
+): RoomAllocation[] {
+  const sortedRooms = [...rooms].sort((a, b) => b.capacity - a.capacity);
+  const tempAllocations: RoomAllocation[] = [];
+
+  if (separateGenders) {
+    const males = attendees.filter(a => a.gender === 'male');
+    const females = attendees.filter(a => a.gender === 'female');
+
+    if (groupTypesTogether) {
+      males.sort((a, b) => a.groupType.localeCompare(b.groupType));
+      females.sort((a, b) => a.groupType.localeCompare(b.groupType));
+    }
+
+    const roomOccupancies: { [roomId: string]: { currentCount: number; assignedGender: 'male' | 'female' | null } } = {};
+    sortedRooms.forEach(r => {
+      roomOccupancies[r.id] = { currentCount: 0, assignedGender: null };
+    });
+
+    let maleIdx = 0;
+    for (const room of sortedRooms) {
+      if (maleIdx >= males.length) break;
+      const occupancy = roomOccupancies[room.id];
+      if (occupancy.assignedGender === null || occupancy.assignedGender === 'male') {
+        occupancy.assignedGender = 'male';
+        const availableBeds = room.capacity - occupancy.currentCount;
+        for (let bed = 1; bed <= availableBeds; bed++) {
+          if (maleIdx >= males.length) break;
+          const attendee = males[maleIdx++];
+          tempAllocations.push({
+            id: `alloc_${bookingId}_${attendee.id}_${Date.now()}`,
+            bookingId, attendeeId: attendee.id, roomId: room.id, bedNumber: occupancy.currentCount + 1
+          });
+          occupancy.currentCount++;
+        }
+      }
+    }
+
+    let femaleIdx = 0;
+    for (const room of sortedRooms) {
+      if (femaleIdx >= females.length) break;
+      const occupancy = roomOccupancies[room.id];
+      if (occupancy.assignedGender === null) {
+        occupancy.assignedGender = 'female';
+        const availableBeds = room.capacity - occupancy.currentCount;
+        for (let bed = 1; bed <= availableBeds; bed++) {
+          if (femaleIdx >= females.length) break;
+          const attendee = females[femaleIdx++];
+          tempAllocations.push({
+            id: `alloc_${bookingId}_${attendee.id}_${Date.now()}`,
+            bookingId, attendeeId: attendee.id, roomId: room.id, bedNumber: occupancy.currentCount + 1
+          });
+          occupancy.currentCount++;
+        }
+      }
+    }
+
+    const unassignedMales = males.slice(maleIdx);
+    const unassignedFemales = females.slice(femaleIdx);
+    const allUnassigned = [...unassignedMales, ...unassignedFemales];
+
+    if (allUnassigned.length > 0) {
+      for (const room of sortedRooms) {
+        const occupancy = roomOccupancies[room.id];
+        const availableBeds = room.capacity - occupancy.currentCount;
+        if (availableBeds > 0) {
+          for (let bed = 1; bed <= availableBeds; bed++) {
+            if (allUnassigned.length === 0) break;
+            const attendee = allUnassigned.shift()!;
+            tempAllocations.push({
+              id: `alloc_${bookingId}_${attendee.id}_${Date.now()}`,
+              bookingId, attendeeId: attendee.id, roomId: room.id, bedNumber: occupancy.currentCount + 1
+            });
+            occupancy.currentCount++;
+          }
+        }
+      }
+    }
+  } else {
+    const sortedAttendees = [...attendees];
+    if (groupTypesTogether) {
+      sortedAttendees.sort((a, b) => a.groupType.localeCompare(b.groupType));
+    }
+
+    let attIdx = 0;
+    for (const room of sortedRooms) {
+      if (attIdx >= sortedAttendees.length) break;
+      for (let bed = 1; bed <= room.capacity; bed++) {
+        if (attIdx >= sortedAttendees.length) break;
+        const attendee = sortedAttendees[attIdx++];
+        tempAllocations.push({
+          id: `alloc_${bookingId}_${attendee.id}_${Date.now()}`,
+          bookingId, attendeeId: attendee.id, roomId: room.id, bedNumber: bed
+        });
+      }
+    }
+  }
+
+  return tempAllocations;
+}
+
 const COPTIC_MOCK_NAMES = [
   { name: 'مينا جرجس', gender: 'male', groupType: 'youth' },
   { name: 'كيرلس مجدي', gender: 'male', groupType: 'youth' },
@@ -101,6 +213,8 @@ interface RoomDistributionProps {
   globalAllocations: RoomAllocation[];
   onUpdateAttendees: (bookingId: string, attendees: Attendee[]) => void;
   onUpdateAllocations: (bookingId: string, allocations: RoomAllocation[]) => void;
+  houseRooms?: Room[];
+  allBookings?: Booking[];
 }
 
 export default function RoomDistribution({
@@ -111,12 +225,21 @@ export default function RoomDistribution({
   globalAttendees,
   globalAllocations,
   onUpdateAttendees,
-  onUpdateAllocations
+  onUpdateAllocations,
+  houseRooms = [],
+  allBookings = [],
 }: RoomDistributionProps) {
   // Local state initialized from globals
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [allocations, setAllocations] = useState<RoomAllocation[]>([]);
-  
+
+  // Real rooms (if this house has configured any) drive quick-mode + the
+  // date-aware Smart/Comfort engine; otherwise fall back to the legacy
+  // virtual-room algorithm unchanged.
+  const realRoomsAvailable = houseRooms.length > 0;
+  const [distributionMode, setDistributionMode] = useState<'quick' | 'detailed'>(realRoomsAvailable ? 'quick' : 'detailed');
+  const [allocMode, setAllocMode] = useState<'smart' | 'comfort'>('smart');
+
   // Configuration states
   const [separateGenders, setSeparateGenders] = useState(true);
   const [groupTypesTogether, setGroupTypesTogether] = useState(true);
@@ -132,9 +255,14 @@ export default function RoomDistribution({
   const [swapSourceAttendee, setSwapSourceAttendee] = useState<Attendee | null>(null);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'warning' | 'info' } | null>(null);
 
-  // Load house rooms
-  const rooms = generateHouseRooms(house.id, house.roomsCount, house.bedsCount);
-  const totalBedsAvailable = house.bedsCount;
+  // Load house rooms — real rooms (with per-date free-bed awareness) if the
+  // house has configured any, else the legacy generated/virtual list.
+  const rooms: HouseRoom[] = realRoomsAvailable
+    ? houseRooms.map((r) => ({ id: r.id, name: r.name, capacity: r.bedsCount }))
+    : generateHouseRooms(house.id, house.roomsCount, house.bedsCount);
+  const totalBedsAvailable = realRoomsAvailable
+    ? houseRooms.reduce((s, r) => s + r.bedsCount, 0)
+    : house.bedsCount;
 
   // Load attendees and allocations for this specific booking on mount
   useEffect(() => {
@@ -259,138 +387,21 @@ export default function RoomDistribution({
     showToast('تم مسح جميع التسكينات وتفريغ الغرف.', 'info');
   };
 
-  // MAIN AUTO-ALLOCATION ALGORITHM
+  // MAIN AUTO-ALLOCATION ALGORITHM — real rooms use the date-aware Smart/
+  // Comfort engine (lib/roomAllocation.ts); virtual rooms keep the original
+  // algorithm unchanged (legacyAutoAllocate).
   const handleAutoAllocate = () => {
     if (attendees.length === 0) {
       showToast('خطأ: لا يوجد حضور مسجلون لتوزيعهم. الرجاء إضافة حضور أولاً أو توليد قائمة افتراضية.', 'warning');
       return;
     }
 
-    // Sort rooms by Bed Capacity (largest first)
-    const sortedRooms = [...rooms].sort((a, b) => b.capacity - a.capacity);
-    const tempAllocations: RoomAllocation[] = [];
-
-    // Separate by Gender or mix
-    if (separateGenders) {
-      const males = attendees.filter(a => a.gender === 'male');
-      const females = attendees.filter(a => a.gender === 'female');
-
-      // Sort subgroups by groupType to keep them together if configured
-      if (groupTypesTogether) {
-        males.sort((a, b) => a.groupType.localeCompare(b.groupType));
-        females.sort((a, b) => a.groupType.localeCompare(b.groupType));
-      }
-
-      // Track occupancy per room
-      const roomOccupancies: { [roomId: string]: { currentCount: number; assignedGender: 'male' | 'female' | null } } = {};
-      sortedRooms.forEach(r => {
-        roomOccupancies[r.id] = { currentCount: 0, assignedGender: null };
-      });
-
-      // Distribute Males
-      let maleIdx = 0;
-      for (const room of sortedRooms) {
-        if (maleIdx >= males.length) break;
-        
-        const occupancy = roomOccupancies[room.id];
-        if (occupancy.assignedGender === null || occupancy.assignedGender === 'male') {
-          occupancy.assignedGender = 'male';
-          const availableBeds = room.capacity - occupancy.currentCount;
-          
-          for (let bed = 1; bed <= availableBeds; bed++) {
-            if (maleIdx >= males.length) break;
-            
-            const attendee = males[maleIdx++];
-            tempAllocations.push({
-              id: `alloc_${booking.id}_${attendee.id}_${Date.now()}`,
-              bookingId: booking.id,
-              attendeeId: attendee.id,
-              roomId: room.id,
-              bedNumber: occupancy.currentCount + 1
-            });
-            occupancy.currentCount++;
-          }
-        }
-      }
-
-      // Distribute Females
-      let femaleIdx = 0;
-      for (const room of sortedRooms) {
-        if (femaleIdx >= females.length) break;
-        
-        const occupancy = roomOccupancies[room.id];
-        // Only use rooms that are either completely empty (assignedGender is null) or already set to female
-        if (occupancy.assignedGender === null) {
-          occupancy.assignedGender = 'female';
-          const availableBeds = room.capacity - occupancy.currentCount;
-          
-          for (let bed = 1; bed <= availableBeds; bed++) {
-            if (femaleIdx >= females.length) break;
-            
-            const attendee = females[femaleIdx++];
-            tempAllocations.push({
-              id: `alloc_${booking.id}_${attendee.id}_${Date.now()}`,
-              bookingId: booking.id,
-              attendeeId: attendee.id,
-              roomId: room.id,
-              bedNumber: occupancy.currentCount + 1
-            });
-            occupancy.currentCount++;
-          }
-        }
-      }
-
-      // If any remaining because of segregation, place them in mixed or any left over beds
-      const unassignedMales = males.slice(maleIdx);
-      const unassignedFemales = females.slice(femaleIdx);
-      const allUnassigned = [...unassignedMales, ...unassignedFemales];
-
-      if (allUnassigned.length > 0) {
-        for (const room of sortedRooms) {
-          const occupancy = roomOccupancies[room.id];
-          const availableBeds = room.capacity - occupancy.currentCount;
-          if (availableBeds > 0) {
-            for (let bed = 1; bed <= availableBeds; bed++) {
-              if (allUnassigned.length === 0) break;
-              const attendee = allUnassigned.shift()!;
-              tempAllocations.push({
-                id: `alloc_${booking.id}_${attendee.id}_${Date.now()}`,
-                bookingId: booking.id,
-                attendeeId: attendee.id,
-                roomId: room.id,
-                bedNumber: occupancy.currentCount + 1
-              });
-              occupancy.currentCount++;
-            }
-          }
-        }
-      }
-
-    } else {
-      // Mixed assignment but keeping groups together
-      const sortedAttendees = [...attendees];
-      if (groupTypesTogether) {
-        sortedAttendees.sort((a, b) => a.groupType.localeCompare(b.groupType));
-      }
-
-      let attIdx = 0;
-      for (const room of sortedRooms) {
-        if (attIdx >= sortedAttendees.length) break;
-        
-        for (let bed = 1; bed <= room.capacity; bed++) {
-          if (attIdx >= sortedAttendees.length) break;
-          
-          const attendee = sortedAttendees[attIdx++];
-          tempAllocations.push({
-            id: `alloc_${booking.id}_${attendee.id}_${Date.now()}`,
-            bookingId: booking.id,
-            attendeeId: attendee.id,
-            roomId: room.id,
-            bedNumber: bed
-          });
-        }
-      }
-    }
+    const tempAllocations: RoomAllocation[] = realRoomsAvailable
+      ? autoAllocate(attendees, houseRooms, allBookings, globalAllocations, booking.id, {
+          mode: allocMode, separateGenders, groupTypesTogether,
+          checkIn: booking.checkIn, checkOut: booking.checkOut, houseId: house.id,
+        })
+      : legacyAutoAllocate(rooms, attendees, separateGenders, groupTypesTogether, booking.id);
 
     setAllocations(tempAllocations);
     onUpdateAllocations(booking.id, tempAllocations);
@@ -399,10 +410,29 @@ export default function RoomDistribution({
     const missingCount = attendees.length - assignedCount;
 
     if (missingCount > 0) {
-      showToast(`تم توزيع ${assignedCount} فرد بنجاح! تنبيه: لم يتم تسكين ${missingCount} فرد لعدم كفاية الأسرة المتاحة بالبيت.`, 'warning');
+      showToast(`تم توزيع ${assignedCount} فرد بنجاح! تنبيه: لم يتم تسكين ${missingCount} فرد لعدم كفاية الأسرة المتاحة${realRoomsAvailable ? ' في هذه التواريخ' : ' بالبيت'}.`, 'warning');
     } else {
       showToast(`رائع! تم التوزيع التلقائي الذكي لجميع الزوار (${assignedCount} فرد) بالكامل بنجاح! 🛏️✨`, 'success');
     }
+  };
+
+  // QUICK MODE — bed-count steppers per room, no named roster required.
+  const handleQuickAdjust = (room: HouseRoom, delta: number) => {
+    const realRoom = houseRooms.find((r) => r.id === room.id);
+    if (!realRoom) return;
+    if (delta > 0) {
+      const freeForOthers = getRoomFreeBedsForRange(realRoom, globalAllocations, allBookings, booking.checkIn, booking.checkOut, booking.id);
+      const currentInRoom = allocations.filter((al) => al.roomId === room.id).length;
+      if (currentInRoom >= freeForOthers) {
+        showToast(`لا توجد أسرة متاحة إضافية في ${room.name} لهذه التواريخ.`, 'warning');
+        return;
+      }
+    }
+    const result = quickAssignRoom(attendees, allocations, realRoom, delta, booking.id);
+    setAttendees(result.attendees);
+    setAllocations(result.allocations);
+    onUpdateAttendees(booking.id, result.attendees);
+    onUpdateAllocations(booking.id, result.allocations);
   };
 
   // Helper to check what room an attendee is currently in
@@ -425,10 +455,15 @@ export default function RoomDistribution({
     const targetRoom = rooms.find(r => r.id === targetRoomId);
     if (!targetRoom) return;
 
-    // Check capacity of target room
+    // Check capacity of target room — for real rooms, respect what OTHER
+    // bookings already hold for these dates, not just a flat capacity.
     const currentAllocatedCount = allocations.filter(al => al.roomId === targetRoomId && al.attendeeId !== attendeeId).length;
-    if (currentAllocatedCount >= targetRoom.capacity) {
-      showToast(`خطأ: لا يمكن تسكين الشخص في ${targetRoom.name} لأنها ممتلئة بالكامل (${targetRoom.capacity}/${targetRoom.capacity} أسرة).`, 'warning');
+    const realTargetRoom = houseRooms.find((r) => r.id === targetRoomId);
+    const effectiveCapacity = realTargetRoom
+      ? getRoomFreeBedsForRange(realTargetRoom, globalAllocations, allBookings, booking.checkIn, booking.checkOut, booking.id) + currentAllocatedCount
+      : targetRoom.capacity;
+    if (currentAllocatedCount >= effectiveCapacity) {
+      showToast(`خطأ: لا يمكن تسكين الشخص في ${targetRoom.name} لأنها ممتلئة بالكامل (${effectiveCapacity}/${targetRoom.capacity} أسرة متاحة).`, 'warning');
       return;
     }
 
@@ -572,6 +607,28 @@ export default function RoomDistribution({
             </div>
           )}
 
+          {/* Mode toggle — quick (bed-count only) vs detailed (named roster) */}
+          {realRoomsAvailable && (
+            <div className="bg-white rounded-2xl p-2 border border-[#D6D6C2] shadow-sm flex items-center gap-2">
+              {([
+                { key: 'quick', label: 'توزيع سريع (عدد الأسرة)' },
+                { key: 'detailed', label: 'توزيع مفصّل (بالأسماء)' },
+              ] as const).map((m) => (
+                <button
+                  key={m.key}
+                  id={`mode-${m.key}-btn`}
+                  type="button"
+                  onClick={() => setDistributionMode(m.key)}
+                  className={`flex-1 text-[10px] font-extrabold py-2 rounded-xl transition-all cursor-pointer ${
+                    distributionMode === m.key ? 'bg-[#5A5A40] text-white' : 'bg-[#FBFBFA] text-[#8A8A70] border border-[#D6D6C2]/60'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Quick Auto-Allocate Config Card */}
           <div className="bg-white rounded-2xl p-4 border border-[#D6D6C2] shadow-sm space-y-3">
             <h4 className="text-xs font-black text-[#4A4A3A] flex items-center gap-1.5">
@@ -603,11 +660,26 @@ export default function RoomDistribution({
               </label>
             </div>
 
+            {realRoomsAvailable && (
+              <div className="flex items-center gap-2 pt-2 border-t border-[#D6D6C2]/40 text-[10px] font-bold text-[#4A4A3A]">
+                <span className="text-[#8A8A70]">نمط التوزيع:</span>
+                {([
+                  { key: 'smart', label: 'ذكي (أقل عدد غرف)' },
+                  { key: 'comfort', label: 'مريح (مساحة أكبر)' },
+                ] as const).map((m) => (
+                  <label key={m.key} className="flex items-center gap-1 cursor-pointer">
+                    <input type="radio" name="alloc-mode" checked={allocMode === m.key} onChange={() => setAllocMode(m.key)} className="accent-[#5A5A40] cursor-pointer" />
+                    <span>{m.label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#D6D6C2]/40">
               <div className="text-[10px] text-[#8A8A70] font-bold">
                 توزيع ذكي مبرمج للغرف بضغطة واحدة
               </div>
-              
+
               <div className="flex gap-2">
                 {allocations.length > 0 && (
                   <button
@@ -798,7 +870,38 @@ export default function RoomDistribution({
               </span>
             </h4>
 
-            {/* Room Distribution Grid */}
+            {/* Quick mode: bed-count steppers per room, no named roster needed */}
+            {distributionMode === 'quick' && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3" dir="rtl">
+                {rooms.map((room) => {
+                  const used = allocations.filter((al) => al.roomId === room.id).length;
+                  const realRoom = houseRooms.find((r) => r.id === room.id);
+                  const freeForOthers = realRoom
+                    ? getRoomFreeBedsForRange(realRoom, globalAllocations, allBookings, booking.checkIn, booking.checkOut, booking.id)
+                    : room.capacity;
+                  const cap = Math.min(room.capacity, freeForOthers + used);
+                  return (
+                    <div key={room.id} className={`bg-white rounded-2xl border p-3 space-y-2 ${used >= cap ? 'border-[#5A5A40]/40 bg-[#EBEBE0]/10' : 'border-[#D6D6C2]'}`}>
+                      <div className="text-xs font-extrabold text-[#4A4A3A]">{room.name}</div>
+                      <div className="flex items-center justify-between">
+                        <button type="button" onClick={() => handleQuickAdjust(room, -1)} disabled={used <= 0}
+                          className="w-7 h-7 rounded-lg bg-[#FBFBFA] border border-[#D6D6C2] flex items-center justify-center disabled:opacity-30 cursor-pointer">
+                          <Minus className="w-3.5 h-3.5 text-[#4A4A3A]" />
+                        </button>
+                        <span className="text-sm font-black text-[#4A4A3A]">{used} / {cap}</span>
+                        <button type="button" onClick={() => handleQuickAdjust(room, 1)} disabled={used >= cap}
+                          className="w-7 h-7 rounded-lg bg-[#5A5A40] flex items-center justify-center disabled:opacity-30 cursor-pointer">
+                          <Plus className="w-3.5 h-3.5 text-white" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Detailed mode: Room Distribution Grid with named attendees */}
+            {distributionMode === 'detailed' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3" dir="rtl">
               {rooms.map(room => {
                 const roomAllocations = allocations.filter(al => al.roomId === room.id);
@@ -920,6 +1023,7 @@ export default function RoomDistribution({
                 );
               })}
             </div>
+            )}
           </div>
 
         </div>

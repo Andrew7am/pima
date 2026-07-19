@@ -690,7 +690,7 @@ export async function updateBookingStatus(id: string, status: Booking['status'])
   return !error;
 }
 
-export async function updateBookingFields(id: string, fields: Partial<Booking>): Promise<boolean> {
+export async function updateBookingFields(id: string, fields: Partial<Booking>): Promise<{ ok: boolean; error?: string; availableBeds?: number }> {
   const row: Record<string, unknown> = {};
   if (fields.status !== undefined) row.status = fields.status;
   if (fields.depositPaid !== undefined) row.deposit_paid = fields.depositPaid;
@@ -698,9 +698,21 @@ export async function updateBookingFields(id: string, fields: Partial<Booking>):
   if (fields.paymentStatus !== undefined) row.payment_status = fields.paymentStatus;
   if (fields.checkedInAt !== undefined) row.checked_in_at = fields.checkedInAt;
   if (fields.checkedOutAt !== undefined) row.checked_out_at = fields.checkedOutAt;
+  if (fields.checkIn !== undefined) row.check_in = fields.checkIn;
+  if (fields.checkOut !== undefined) row.check_out = fields.checkOut;
+  if (fields.guestsCount !== undefined) row.guests_count = fields.guestsCount;
   const { error } = await supabase.from('bookings').update(row).eq('id', id);
-  if (error) console.error('updateBookingFields:', error);
-  return !error;
+  if (error) {
+    const msg = error.message || '';
+    if (msg.includes('INSUFFICIENT_CAPACITY')) {
+      const match = msg.match(/Only (\d+) beds/);
+      const availableBeds = match ? parseInt(match[1], 10) : 0;
+      return { ok: false, error: 'INSUFFICIENT_CAPACITY', availableBeds };
+    }
+    console.error('updateBookingFields:', error);
+    return { ok: false, error: msg };
+  }
+  return { ok: true };
 }
 
 export async function createReview(r: Review): Promise<boolean> {

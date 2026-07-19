@@ -4,7 +4,7 @@ import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
 import {
   Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2,
   Building, Settings, MessageSquare, Camera, BedDouble, Phone, Mail, Lock, Menu, ChevronRight,
-  MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound,
+  MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown,
 } from 'lucide-react';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
@@ -12,10 +12,13 @@ import OwnerMessages from './OwnerMessages';
 import OwnerNotifications from './OwnerNotifications';
 import OwnerReports from './OwnerReports';
 import OwnerFoodMenu from './OwnerFoodMenu';
+import OwnerRoomDistributionScreen from './OwnerRoomDistribution';
+import OwnerCustomers from './OwnerCustomers';
 import { supabase } from '../../lib/supabase';
+import { getRoomBedState, getHouseRoomAvailabilityForRange } from '../../lib/roomOccupancy';
 
 type PrimaryTab = 'stats' | 'bookings' | 'messages' | 'reports' | 'more';
-type OverflowTab = 'rooms' | 'financials' | 'reviews' | 'house' | 'occupancy' | 'notifications' | 'profile';
+type OverflowTab = 'rooms' | 'financials' | 'reviews' | 'house' | 'occupancy' | 'notifications' | 'profile' | 'room_distribution' | 'customers';
 type ActiveTab = PrimaryTab | OverflowTab;
 
 interface OwnerDashboardShellProps {
@@ -52,11 +55,16 @@ interface OwnerDashboardShellProps {
   users?: User[];
   onNavigateSupport?: () => void;
   onCreateBooking?: (booking: Booking) => Promise<boolean>;
+  onUpdateBookingDetails?: (bookingId: string, fields: { checkIn?: string; checkOut?: string; guestsCount?: number }) => Promise<boolean>;
+  onRecalculateAllocation?: (houseId: string, bookingId?: string) => Promise<void>;
+  onLogout?: () => void;
 }
 
 const OVERFLOW_ITEMS: { key: OverflowTab; label: string; icon: React.ElementType }[] = [
   { key: 'rooms', label: 'الغرف', icon: BedDouble },
+  { key: 'room_distribution', label: 'توزيع الغرف', icon: Shuffle },
   { key: 'financials', label: 'الحسابات', icon: Coins },
+  { key: 'customers', label: 'العملاء', icon: Users },
   { key: 'reviews', label: 'التقييمات', icon: MessageSquare },
   { key: 'house', label: 'بيانات البيت', icon: Building },
   { key: 'occupancy', label: 'التقويم', icon: Calendar },
@@ -72,12 +80,15 @@ export default function OwnerDashboardShell({
   rooms = [], onAddRoom, onUpdateRoom, onDeleteRoom, waitlist = [],
   notifications = [], onMarkNotificationAsRead,
   expenses = [], onAddExpense, onDeleteExpense, users = [], onNavigateSupport, onCreateBooking,
+  onUpdateBookingDetails, onRecalculateAllocation, onLogout,
 }: OwnerDashboardShellProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>('stats');
   const [showOverflow, setShowOverflow] = useState(false);
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [bookingFilter, setBookingFilter] = useState<'all' | 'new' | 'pending_payment' | 'confirmed' | 'arrivals_today' | 'departures_today' | 'completed' | 'cancelled' | 'waitlist'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'manual' | 'temporary'>('all');
+  const [expandedGroup, setExpandedGroup] = useState<'bookings' | 'rooms' | null>(null);
   const [bookingSearch, setBookingSearch] = useState('');
   const [showAddBooking, setShowAddBooking] = useState(false);
   const [mbName, setMbName] = useState('');
@@ -88,6 +99,12 @@ export default function OwnerDashboardShell({
   const [mbPrice, setMbPrice] = useState('');
   const [mbType, setMbType] = useState<'manual' | 'temporary'>('manual');
   const [mbSaving, setMbSaving] = useState(false);
+  const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
+  const [editCheckIn, setEditCheckIn] = useState('');
+  const [editCheckOut, setEditCheckOut] = useState('');
+  const [editGuests, setEditGuests] = useState(1);
+  const [editSaving, setEditSaving] = useState(false);
+  const [recalcSaving, setRecalcSaving] = useState(false);
   const PLATFORM_COMMISSION = settings.commissionRate;
 
   const [statsPeriod, setStatsPeriod] = useState<'today' | '7d' | '30d' | 'month' | 'all' | 'custom'>('all');
@@ -326,7 +343,7 @@ export default function OwnerDashboardShell({
   const filteredOwnerBookings = (bookingFilter === 'all' || bookingFilter === 'waitlist'
     ? ownerBookings
     : ownerBookings.filter((b) => categorizeBooking(b) === bookingFilter)
-  ).filter(bookingMatchesSearch);
+  ).filter(bookingMatchesSearch).filter((b) => sourceFilter === 'all' || b.source === sourceFilter);
   const bookingCountByCategory = {
     all: ownerBookings.length,
     new: ownerBookings.filter((b) => categorizeBooking(b) === 'new').length,
@@ -498,14 +515,14 @@ export default function OwnerDashboardShell({
     { key: 'more', label: 'المزيد', icon: Menu },
   ];
 
-  // Desktop sidebar: the mobile 5-tab bar can't hold 12 destinations, but a
-  // desktop screen can — flat list, no overflow menu needed there.
-  const SIDEBAR_ITEMS: { key: ActiveTab; label: string; icon: React.ElementType }[] = [
+  // Desktop sidebar: نظام تنقل متداخل — الحجوزات والغرف مجموعتان قابلتان
+  // للطي (تطابق شكل الموكاب)، والباقي عناصر مباشرة.
+  const SIDEBAR_LEADING: { key: ActiveTab; label: string; icon: React.ElementType }[] = [
     { key: 'stats', label: 'لوحة التحكم', icon: Home },
-    { key: 'bookings', label: 'الحجوزات', icon: ClipboardList },
+  ];
+  const SIDEBAR_TRAILING: { key: ActiveTab; label: string; icon: React.ElementType }[] = [
     { key: 'messages', label: 'المحادثات', icon: MessageCircle },
-    { key: 'rooms', label: 'الغرف', icon: BedDouble },
-    { key: 'occupancy', label: 'التقويم', icon: Calendar },
+    { key: 'customers', label: 'العملاء', icon: Users },
     { key: 'financials', label: 'الحسابات', icon: Coins },
     { key: 'reports', label: 'التقارير', icon: BarChart3 },
     { key: 'reviews', label: 'التقييمات', icon: MessageSquare },
@@ -513,6 +530,28 @@ export default function OwnerDashboardShell({
     { key: 'notifications', label: 'الإشعارات', icon: Bell },
     { key: 'profile', label: 'الإعدادات', icon: Settings },
   ];
+
+  const renderSidebarLeaf = (item: { key: ActiveTab; label: string; icon: React.ElementType }, indent = false) => {
+    const Icon = item.icon;
+    const isSel = activeTab === item.key;
+    const badgeCount =
+      item.key === 'notifications' ? unreadNotificationsCount : 0;
+    return (
+      <button
+        key={item.key}
+        id={`owner-sidebar-${item.key}`}
+        type="button"
+        onClick={() => { if (item.key === 'house') openHouseTab(); else { setActiveTab(item.key); setShowOverflow(false); } }}
+        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-right transition-all cursor-pointer ${indent ? 'mr-3 py-2' : ''} ${
+          isSel ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
+        }`}
+      >
+        <Icon className="w-4 h-4 shrink-0" />
+        <span className="flex-1">{item.label}</span>
+        {badgeCount > 0 && <span className="text-[9px] bg-rose-500 text-white px-1.5 py-0.5 rounded-full">{badgeCount}</span>}
+      </button>
+    );
+  };
 
   return (
     <div className="owner-theme text-right text-[var(--color-owner-text)] w-full max-w-full overflow-x-hidden lg:flex lg:gap-5 lg:items-start">
@@ -522,40 +561,96 @@ export default function OwnerDashboardShell({
           <span className="text-[10px] text-[var(--color-owner-accent)] font-black block">لوحة تحكم مالك البيوت</span>
           <h2 className="text-sm font-extrabold">{owner.name}</h2>
         </div>
-        {SIDEBAR_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const isSel = activeTab === item.key;
-          const badgeCount =
-            item.key === 'bookings' ? pendingBookings.length :
-            item.key === 'notifications' ? unreadNotificationsCount : 0;
-          return (
-            <React.Fragment key={item.key}>
-              <button
-                id={`owner-sidebar-${item.key}`}
-                type="button"
-                onClick={() => { if (item.key === 'house') openHouseTab(); else { setActiveTab(item.key); setShowOverflow(false); } }}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-right transition-all cursor-pointer ${
-                  isSel ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span className="flex-1">{item.label}</span>
-                {badgeCount > 0 && <span className="text-[9px] bg-rose-500 text-white px-1.5 py-0.5 rounded-full">{badgeCount}</span>}
+
+        {SIDEBAR_LEADING.map((item) => renderSidebarLeaf(item))}
+
+        {/* الحجوزات — group */}
+        <button
+          id="owner-sidebar-group-bookings"
+          type="button"
+          onClick={() => setExpandedGroup((g) => (g === 'bookings' ? null : 'bookings'))}
+          className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-right transition-all cursor-pointer ${
+            (activeTab === 'bookings' && !showOverflow) || expandedGroup === 'bookings' ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
+          }`}
+        >
+          <ClipboardList className="w-4 h-4 shrink-0" />
+          <span className="flex-1">الحجوزات</span>
+          {pendingBookings.length > 0 && <span className="text-[9px] bg-rose-500 text-white px-1.5 py-0.5 rounded-full">{pendingBookings.length}</span>}
+          <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${expandedGroup === 'bookings' ? 'rotate-180' : ''}`} />
+        </button>
+        {expandedGroup === 'bookings' && (
+          <div className="flex flex-col gap-1">
+            <button type="button" onClick={() => { setActiveTab('bookings'); setSourceFilter('all'); setShowOverflow(false); }}
+              className={`flex items-center gap-2.5 px-3 py-2 mr-3 rounded-xl text-[11px] font-bold text-right transition-all cursor-pointer ${
+                activeTab === 'bookings' && sourceFilter === 'all' ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
+              }`}>
+              <span>جميع الحجوزات</span>
+            </button>
+            <button id="owner-sidebar-add-booking" type="button" onClick={() => { setActiveTab('bookings'); setShowOverflow(false); setShowAddBooking(true); }}
+              className="flex items-center gap-2.5 px-3 py-2 mr-3 rounded-xl text-[11px] font-bold text-right text-[var(--color-owner-accent)] hover:bg-white/10 transition-all cursor-pointer">
+              <Plus className="w-3.5 h-3.5 shrink-0" />
+              <span>إضافة حجز جديد</span>
+            </button>
+            <button type="button" onClick={() => { setActiveTab('bookings'); setSourceFilter('manual'); setShowOverflow(false); }}
+              className={`flex items-center gap-2.5 px-3 py-2 mr-3 rounded-xl text-[11px] font-bold text-right transition-all cursor-pointer ${
+                activeTab === 'bookings' && sourceFilter === 'manual' ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
+              }`}>
+              <span>الحجوزات اليدوية</span>
+            </button>
+            <button type="button" onClick={() => { setActiveTab('bookings'); setSourceFilter('temporary'); setShowOverflow(false); }}
+              className={`flex items-center gap-2.5 px-3 py-2 mr-3 rounded-xl text-[11px] font-bold text-right transition-all cursor-pointer ${
+                activeTab === 'bookings' && sourceFilter === 'temporary' ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
+              }`}>
+              <span>الحجوزات المؤقتة</span>
+            </button>
+          </div>
+        )}
+
+        {SIDEBAR_TRAILING.slice(0, 1).map((item) => renderSidebarLeaf(item))}
+
+        {/* الغرف — group */}
+        <button
+          id="owner-sidebar-group-rooms"
+          type="button"
+          onClick={() => setExpandedGroup((g) => (g === 'rooms' ? null : 'rooms'))}
+          className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-right transition-all cursor-pointer ${
+            (['rooms', 'occupancy', 'room_distribution'].includes(activeTab)) || expandedGroup === 'rooms' ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
+          }`}
+        >
+          <BedDouble className="w-4 h-4 shrink-0" />
+          <span className="flex-1">الغرف</span>
+          <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${expandedGroup === 'rooms' ? 'rotate-180' : ''}`} />
+        </button>
+        {expandedGroup === 'rooms' && (
+          <div className="flex flex-col gap-1">
+            {([
+              { key: 'rooms' as const, label: 'عرض الغرف' },
+              { key: 'occupancy' as const, label: 'خريطة الإشغال' },
+              { key: 'room_distribution' as const, label: 'توزيع الغرف' },
+            ]).map((s) => (
+              <button key={s.key} type="button" onClick={() => { setActiveTab(s.key); setShowOverflow(false); }}
+                className={`flex items-center gap-2.5 px-3 py-2 mr-3 rounded-xl text-[11px] font-bold text-right transition-all cursor-pointer ${
+                  activeTab === s.key ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
+                }`}>
+                <span>{s.label}</span>
               </button>
-              {item.key === 'bookings' && (
-                <button
-                  id="owner-sidebar-add-booking"
-                  type="button"
-                  onClick={() => { setActiveTab('bookings'); setShowOverflow(false); setShowAddBooking(true); }}
-                  className="flex items-center gap-2.5 px-3 py-2 mr-4 rounded-xl text-[11px] font-bold text-right text-[var(--color-owner-accent)] hover:bg-white/10 transition-all cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5 shrink-0" />
-                  <span>إضافة حجز جديد</span>
-                </button>
-              )}
-            </React.Fragment>
-          );
-        })}
+            ))}
+          </div>
+        )}
+
+        {SIDEBAR_TRAILING.slice(1).map((item) => renderSidebarLeaf(item))}
+
+        {onLogout && (
+          <button
+            id="owner-sidebar-logout"
+            type="button"
+            onClick={() => { if (confirm('هل تريد تسجيل الخروج؟')) onLogout(); }}
+            className="flex items-center gap-2.5 px-3 py-2.5 mt-2 pt-3 border-t border-white/10 rounded-xl text-xs font-bold text-right text-rose-200 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
+          >
+            <KeyRound className="w-4 h-4 shrink-0" />
+            <span className="flex-1">تسجيل خروج</span>
+          </button>
+        )}
       </aside>
 
       <div className="flex-1 min-w-0 space-y-4">
@@ -640,11 +735,12 @@ export default function OwnerDashboardShell({
         const monthRevenue = confirmedBookings
           .filter((b) => { const d = new Date(b.checkIn); return d.getFullYear() === curYear && d.getMonth() + 1 === curMonth; })
           .reduce((s, b) => s + b.totalPrice, 0);
+        const roomBedStates = ownerRooms.map((r) => getRoomBedState(r, allocations, ownerBookings, todayStr));
         const roomStatusCounts = {
-          available: ownerRooms.filter((r) => r.status === 'available').length,
-          booked: ownerRooms.filter((r) => r.status === 'booked').length,
-          cleaning: ownerRooms.filter((r) => r.status === 'cleaning').length,
-          maintenance: ownerRooms.filter((r) => r.status === 'maintenance').length,
+          available: roomBedStates.filter((s) => s === 'available').length,
+          booked: roomBedStates.filter((s) => s === 'partial' || s === 'full').length,
+          cleaning: roomBedStates.filter((s) => s === 'cleaning').length,
+          maintenance: roomBedStates.filter((s) => s === 'maintenance').length,
         };
         const upcomingBookings = ownerBookings
           .filter((b) => b.status === 'approved' && b.checkIn >= todayStr)
@@ -894,6 +990,63 @@ export default function OwnerDashboardShell({
                       <div className="text-slate-800 font-extrabold">{bookingRemaining.toLocaleString()} ج.م</div>
                     </div>
                   </div>
+                  {(isPending || isApproved) && onUpdateBookingDetails && (
+                    <div className="border border-[var(--color-owner-border)] rounded-2xl p-3 space-y-2">
+                      {editingBookingId === booking.id ? (
+                        <>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">الوصول</label>
+                              <input type="date" value={editCheckIn} onChange={(e) => setEditCheckIn(e.target.value)} onFocus={(e) => e.target.select()}
+                                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-lg px-2 py-1.5 text-[10px] text-[var(--color-owner-text)]" />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">المغادرة</label>
+                              <input type="date" value={editCheckOut} onChange={(e) => setEditCheckOut(e.target.value)} onFocus={(e) => e.target.select()}
+                                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-lg px-2 py-1.5 text-[10px] text-[var(--color-owner-text)]" />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">عدد الأفراد</label>
+                              <input type="number" min={1} value={editGuests} onChange={(e) => setEditGuests(parseInt(e.target.value) || 1)} onFocus={(e) => e.target.select()}
+                                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-lg px-2 py-1.5 text-[10px] text-[var(--color-owner-text)]" />
+                            </div>
+                          </div>
+                          {(() => {
+                            const house = ownerHouses.find((h) => h.id === booking.houseId);
+                            if (!house || !editCheckIn || !editCheckOut) return null;
+                            const availability = getHouseRoomAvailabilityForRange(ownerRooms, allocations, ownerBookings, house.id, editCheckIn, editCheckOut, booking.id);
+                            if (availability.length === 0) return null;
+                            const totalFree = availability.reduce((s, a) => s + a.freeBeds, 0);
+                            return totalFree < editGuests ? (
+                              <div className="bg-amber-50 border border-amber-200 rounded-xl p-2 text-[9.5px] text-amber-900 font-bold">
+                                يمكن استيعاب {totalFree} من {editGuests} فرد فقط في هذه التواريخ حسب الغرف المتاحة. سيتم قبول الحجز رغم ذلك حسب سعة البيت الكلية، لكن التوزيع على الغرف سيحتاج مراجعة يدوية.
+                              </div>
+                            ) : null;
+                          })()}
+                          <div className="flex gap-2 justify-end">
+                            <button type="button" onClick={() => setEditingBookingId(null)} className="text-[10px] font-bold text-[var(--color-owner-secondary)] px-3 py-1.5 cursor-pointer">إلغاء</button>
+                            <button
+                              type="button"
+                              disabled={editSaving}
+                              onClick={async () => {
+                                setEditSaving(true);
+                                const ok = await onUpdateBookingDetails(booking.id, { checkIn: editCheckIn, checkOut: editCheckOut, guestsCount: editGuests });
+                                setEditSaving(false);
+                                if (ok) setEditingBookingId(null);
+                              }}
+                              className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-[10px] font-extrabold px-3 py-1.5 rounded-xl cursor-pointer disabled:opacity-60"
+                            >{editSaving ? 'جارٍ الحفظ...' : 'حفظ التعديل'}</button>
+                          </div>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setEditingBookingId(booking.id); setEditCheckIn(booking.checkIn); setEditCheckOut(booking.checkOut); setEditGuests(booking.guestsCount); }}
+                          className="text-[10px] font-bold text-[var(--color-owner-primary)] hover:underline cursor-pointer"
+                        >تعديل التواريخ / عدد الأفراد</button>
+                      )}
+                    </div>
+                  )}
                   {booking.isLargeConferenceQuote && booking.conferenceDetails && (
                     <div className="bg-amber-50/40 p-2.5 rounded-xl border border-amber-200/60 text-[10px] text-[var(--color-owner-text)] space-y-1">
                       <span className="font-bold text-amber-900 block">📝 ملاحظات وطلبات العميل:</span>
@@ -942,6 +1095,14 @@ export default function OwnerDashboardShell({
                         className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
                         <Building className="w-4 h-4 text-amber-700" /><span>توزيع الغرف 🛏️</span>
                       </button>
+                      {onRecalculateAllocation && (
+                        <button
+                          disabled={recalcSaving}
+                          onClick={async () => { setRecalcSaving(true); await onRecalculateAllocation(booking.houseId, booking.id); setRecalcSaving(false); }}
+                          className="flex items-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-60">
+                          <Shuffle className="w-4 h-4" /><span>{recalcSaving ? 'جارٍ إعادة التوزيع...' : 'إعادة حساب التوزيع'}</span>
+                        </button>
+                      )}
                     </div>
                   )}
                   {isCompleted && (
@@ -1028,6 +1189,18 @@ export default function OwnerDashboardShell({
                       className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                   </div>
                 </div>
+                {(() => {
+                  const house = ownerHouses[0];
+                  if (!house || !mbCheckIn || !mbCheckOut) return null;
+                  const availability = getHouseRoomAvailabilityForRange(ownerRooms, allocations, ownerBookings, house.id, mbCheckIn, mbCheckOut);
+                  if (availability.length === 0) return null;
+                  const totalFree = availability.reduce((s, a) => s + a.freeBeds, 0);
+                  return totalFree < mbGuests ? (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[9.5px] text-amber-900 font-bold">
+                      يمكن استيعاب {totalFree} من {mbGuests} فرد فقط في هذه التواريخ حسب الغرف المتاحة حالياً. يمكنك المتابعة، لكن التوزيع على الغرف سيحتاج مراجعة يدوية بعد الحفظ.
+                    </div>
+                  ) : null;
+                })()}
                 <button
                   id="mb-submit"
                   type="button"
@@ -1039,6 +1212,21 @@ export default function OwnerDashboardShell({
                 </button>
               </div>
             )}
+
+            <div className="flex items-center gap-1.5 text-[10px] font-bold">
+              <span className="text-[var(--color-owner-secondary)] shrink-0">مصدر الحجز:</span>
+              {([
+                { key: 'all' as const, label: 'الكل' },
+                { key: 'manual' as const, label: 'يدوي 📞' },
+                { key: 'temporary' as const, label: 'مؤقت ⏳' },
+              ]).map((s) => (
+                <button key={s.key} type="button" onClick={() => setSourceFilter(s.key)}
+                  className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                    sourceFilter === s.key ? 'bg-[var(--color-owner-primary)] text-white' : 'bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[var(--color-owner-secondary)]'
+                  }`}
+                >{s.label}</button>
+              ))}
+            </div>
 
             <div className="flex flex-wrap gap-1.5 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] p-1.5 rounded-2xl">
               {([
@@ -1363,20 +1551,23 @@ export default function OwnerDashboardShell({
                       </div>
                       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
                         {ownerRooms.filter((r) => (r.floor ?? 1) === floor).map((room) => {
+                          const bedState = getRoomBedState(room, allocations, ownerBookings, todayStr);
                           const cls =
-                            room.status === 'available' ? 'bg-emerald-50 border-emerald-300 text-emerald-900' :
-                            room.status === 'booked' ? 'bg-rose-50 border-rose-300 text-rose-900' :
-                            room.status === 'cleaning' ? 'bg-amber-50 border-amber-300 text-amber-900' :
+                            bedState === 'available' ? 'bg-emerald-50 border-emerald-300 text-emerald-900' :
+                            bedState === 'partial' ? 'bg-amber-50 border-amber-300 text-amber-900' :
+                            bedState === 'full' ? 'bg-rose-50 border-rose-300 text-rose-900' :
+                            bedState === 'cleaning' ? 'bg-sky-50 border-sky-300 text-sky-900' :
                             'bg-slate-100 border-slate-300 text-slate-700';
+                          const label =
+                            bedState === 'available' ? 'متاحة' : bedState === 'partial' ? 'مشغولة جزئياً' :
+                            bedState === 'full' ? 'ممتلئة' : bedState === 'cleaning' ? 'تنظيف' : 'صيانة';
                           return (
                             <button key={room.id} type="button" onClick={() => setSelectedRoomId(selectedRoomId === room.id ? null : room.id)}
                               className={`flex flex-col items-center justify-center gap-1 aspect-square rounded-2xl border-2 p-2 text-center transition-all cursor-pointer ${cls} ${selectedRoomId === room.id ? 'ring-2 ring-[var(--color-owner-primary)]' : ''}`}
                             >
                               <BedDouble className="w-4 h-4" />
                               <span className="text-[10px] font-black truncate w-full">{room.name}</span>
-                              <span className="text-[8px] font-bold">
-                                {room.status === 'available' ? 'متاحة' : room.status === 'booked' ? 'مشغولة' : room.status === 'cleaning' ? 'تنظيف' : 'صيانة'}
-                              </span>
+                              <span className="text-[8px] font-bold">{label}</span>
                             </button>
                           );
                         })}
@@ -1395,9 +1586,12 @@ export default function OwnerDashboardShell({
                         <button type="button" onClick={() => setSelectedRoomId(null)} className="text-[var(--color-owner-secondary)] cursor-pointer"><X className="w-4 h-4" /></button>
                       </div>
                       <div className="text-[10px] text-[var(--color-owner-secondary)]">{room.bedsCount} سرير · {room.pricePerNight ? `${room.pricePerNight} ج.م/ليلة` : 'سعر البيت الافتراضي'}</div>
-                      <div className="grid grid-cols-4 gap-1.5">
+                      <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">
+                        حالة الإشغال (متاحة/مشغولة جزئياً/ممتلئة) تُحسب تلقائياً من الحجوزات. اضبط هنا فقط حالات التنظيف والصيانة اليدوية:
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5">
                         {([
-                          { key: 'available', label: 'متاحة' }, { key: 'booked', label: 'مشغولة' },
+                          { key: 'available', label: 'إلغاء الحظر (متاحة)' },
                           { key: 'cleaning', label: 'تنظيف' }, { key: 'maintenance', label: 'صيانة' },
                         ] as const).map((s) => (
                           <button key={s.key} type="button" onClick={() => onUpdateRoom && onUpdateRoom({ ...room, status: s.key })}
@@ -1462,6 +1656,20 @@ export default function OwnerDashboardShell({
           )}
         </div>
       )}
+
+      {/* Overflow: Room Distribution — house-wide view */}
+      {activeTab === 'room_distribution' && (
+        <OwnerRoomDistributionScreen
+          rooms={ownerRooms}
+          allocations={allocations}
+          bookings={ownerBookings}
+          onOpenBooking={(booking) => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
+          onRecalculateAll={async () => { if (ownerHouses[0] && onRecalculateAllocation) await onRecalculateAllocation(ownerHouses[0].id); }}
+        />
+      )}
+
+      {/* Overflow: Customers */}
+      {activeTab === 'customers' && <OwnerCustomers bookings={ownerBookings} />}
 
       {/* Overflow: Finance */}
       {activeTab === 'financials' && (
@@ -2086,7 +2294,8 @@ export default function OwnerDashboardShell({
         if (!house) return null;
         return (
           <RoomDistribution booking={activeAllocationBooking} house={house} currentUser={owner} onClose={() => setActiveAllocationBooking(null)}
-            globalAttendees={attendees} globalAllocations={allocations} onUpdateAttendees={onUpdateAttendees} onUpdateAllocations={onUpdateAllocations} />
+            globalAttendees={attendees} globalAllocations={allocations} onUpdateAttendees={onUpdateAttendees} onUpdateAllocations={onUpdateAllocations}
+            houseRooms={ownerRooms.filter((r) => r.houseId === house.id)} allBookings={ownerBookings} />
         );
       })()}
       </div>
