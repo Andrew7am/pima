@@ -94,6 +94,7 @@ export function mapBooking(r: Record<string, unknown>): Booking {
     depositPaid: r.deposit_paid as boolean,
     depositAmount: r.deposit_amount as number,
     status: r.status as Booking['status'],
+    source: r.source as Booking['source'] ?? 'platform',
     isLargeConferenceQuote: r.is_large_conference_quote as boolean,
     paymentStatus: r.payment_status as Booking['paymentStatus'] ?? undefined,
     conferenceDetails: r.conference_details as Booking['conferenceDetails'] ?? undefined,
@@ -208,6 +209,7 @@ export function mapRoom(r: Record<string, unknown>): Room {
     pricePerNight: r.price_per_night as number ?? undefined,
     images: (r.images as string[]) ?? [],
     status: r.status as Room['status'],
+    floor: r.floor as number ?? 1,
     createdAt: r.created_at as string,
   };
 }
@@ -590,6 +592,7 @@ function bookingToRow(b: Booking): Record<string, unknown> {
     deposit_paid: b.depositPaid,
     deposit_amount: b.depositAmount,
     status: b.status,
+    source: b.source ?? 'platform',
     is_large_conference_quote: b.isLargeConferenceQuote,
     payment_status: b.paymentStatus ?? 'unpaid',
     conference_details: b.conferenceDetails ?? null,
@@ -647,6 +650,7 @@ function roomToRow(r: Room): Record<string, unknown> {
     price_per_night: r.pricePerNight ?? null,
     images: r.images,
     status: r.status,
+    floor: r.floor ?? 1,
     created_at: r.createdAt,
   };
 }

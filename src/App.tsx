@@ -499,6 +499,27 @@ export default function App() {
   };
 
   // --- Booking Operations ---
+
+  // Owner records a phone/walk-in booking (source manual/temporary) on their
+  // own house. Same server-side capacity check as guest bookings; unlike
+  // handleBookHouse it doesn't navigate away or touch points.
+  const handleOwnerCreateBooking = async (newBooking: Booking): Promise<boolean> => {
+    const res = await createBooking(newBooking);
+    if (!res.ok) {
+      if (res.error === 'INSUFFICIENT_CAPACITY') {
+        const avail = res.availableBeds ?? 0;
+        alert(avail === 0
+          ? 'البيت مكتمل الإشغال في هذه التواريخ.'
+          : `لم يتبقَ سوى ${avail} سرير متاح في هذه التواريخ، والحجز يتطلب ${newBooking.guestsCount} فرد.`);
+      } else {
+        alert('حدث خطأ في حفظ الحجز. حاول مرة أخرى.');
+      }
+      return false;
+    }
+    setBookings((prev) => [res.booking ?? newBooking, ...prev]);
+    return true;
+  };
+
   const handleBookHouse = async (newBooking: Booking, pointsRedeemed: number = 0): Promise<boolean> => {
     // Persist to Supabase first — the DB trigger enforces bed-capacity per dates
     const res = await createBooking(newBooking);
@@ -1243,6 +1264,7 @@ export default function App() {
               onDeleteExpense={handleDeleteExpense}
               users={users}
               onNavigateSupport={() => setActiveScreen('support')}
+              onCreateBooking={handleOwnerCreateBooking}
             />
           )}
 

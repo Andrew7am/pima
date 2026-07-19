@@ -142,6 +142,10 @@ export interface Booking {
   depositPaid: boolean;
   depositAmount: number;
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
+  // platform = guest booked through the app; manual = owner recorded a
+  // phone/walk-in booking himself; temporary = tentative hold the owner
+  // placed to block capacity while a group decides.
+  source?: 'platform' | 'manual' | 'temporary';
   isLargeConferenceQuote: boolean;
   paymentStatus?: 'unpaid' | 'pending_verification' | 'paid_deposit' | 'paid_full';
   conferenceDetails?: {
@@ -218,6 +222,7 @@ export interface Room {
   pricePerNight?: number; // undefined = inherit the house's price
   images: string[];
   status: 'available' | 'booked' | 'maintenance' | 'cleaning';
+  floor?: number;
   createdAt: string;
 }
 
