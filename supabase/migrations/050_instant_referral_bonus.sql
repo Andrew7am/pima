@@ -11,6 +11,7 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   ref_id UUID;
+  v_referral INTEGER;
 BEGIN
   IF NEW.raw_user_meta_data->>'referral_code' IS NOT NULL THEN
     SELECT id INTO ref_id FROM public.users
@@ -31,10 +32,14 @@ BEGIN
   );
 
   IF ref_id IS NOT NULL THEN
-    UPDATE public.users SET points = points + 2000 WHERE id = ref_id;
+    -- referral_bonus_points is admin-editable (platform_settings, migration 024) — read it live, never hard-code
+    SELECT COALESCE(referral_bonus_points, 2000) INTO v_referral FROM public.platform_settings WHERE id = 1;
+    v_referral := COALESCE(v_referral, 2000);
+
+    UPDATE public.users SET points = points + v_referral WHERE id = ref_id;
     INSERT INTO public.points_history (id, user_id, amount, description, type)
     VALUES (
-      'pt_ref_' || NEW.id, ref_id, 2000,
+      'pt_ref_' || NEW.id, ref_id, v_referral,
       'مكافأة إحالة صديق: ' || COALESCE(NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)) || ' سجّل حساب جديد',
       'earned'
     );
@@ -51,15 +56,19 @@ $$;
 DO $$
 DECLARE
   r RECORD;
+  v_referral INTEGER;
 BEGIN
+  SELECT COALESCE(referral_bonus_points, 2000) INTO v_referral FROM public.platform_settings WHERE id = 1;
+  v_referral := COALESCE(v_referral, 2000);
+
   FOR r IN
     SELECT id, referred_by, name FROM public.users
     WHERE referred_by IS NOT NULL AND referral_bonus_awarded = FALSE
   LOOP
-    UPDATE public.users SET points = points + 2000 WHERE id = r.referred_by;
+    UPDATE public.users SET points = points + v_referral WHERE id = r.referred_by;
     INSERT INTO public.points_history (id, user_id, amount, description, type)
     VALUES (
-      'pt_ref_backfill_' || r.id, r.referred_by, 2000,
+      'pt_ref_backfill_' || r.id, r.referred_by, v_referral,
       'مكافأة إحالة صديق: ' || COALESCE(r.name, 'صديق') || ' سجّل حساب جديد',
       'earned'
     );
