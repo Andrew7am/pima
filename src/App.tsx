@@ -78,6 +78,11 @@ export default function App() {
   const [users, setUsers] = useState<User[]>([]);
 
   const [houses, setHouses] = useState<RetreatHouse[]>([]);
+  // Tracks whether loadAppData's houses fetch and the owner's own
+  // rooms fetch have actually landed — see the owner-onboarding gate below,
+  // which must not render the wizard while these are still unknown.
+  const [housesLoaded, setHousesLoaded] = useState(false);
+  const [ownerRoomsChecked, setOwnerRoomsChecked] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
 
@@ -145,6 +150,7 @@ export default function App() {
     ]);
     setUsers(u);
     setHouses(h);
+    setHousesLoaded(true);
     setBookings(b);
     setPayments(p);
     setPlatformAnnouncements(pa);
@@ -347,8 +353,9 @@ export default function App() {
     // now — the onboarding-completeness gate (isOwnerOnboardingComplete)
     // checks room count before the owner shell ever renders.
     if ((activeScreen !== 'owner_panel' && currentUser?.role !== 'owner') || !currentUser) return;
+    if (!housesLoaded) return; // wait for loadAppData's houses fetch before deriving ownerHouseIds from it
     const ownerHouseIds = houses.filter((h) => h.ownerId === currentUser.id).map((h) => h.id);
-    if (ownerHouseIds.length === 0) return;
+    if (ownerHouseIds.length === 0) { setOwnerRoomsChecked(true); return; }
     Promise.all([
       loadRoomsForHouses(ownerHouseIds), loadAnnouncementsForHouses(ownerHouseIds),
       loadReviewsForHouses(ownerHouseIds), loadWaitlistForHouses(ownerHouseIds), loadExpensesForHouses(ownerHouseIds),
@@ -358,9 +365,10 @@ export default function App() {
       setReviews((prev) => [...prev.filter((rv) => !ownerHouseIds.includes(rv.houseId)), ...oReviews]);
       setWaitlist((prev) => [...prev.filter((w) => !ownerHouseIds.includes(w.houseId)), ...oWaitlist]);
       setExpenses((prev) => [...prev.filter((e) => !ownerHouseIds.includes(e.houseId)), ...oExpenses]);
+      setOwnerRoomsChecked(true);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeScreen, currentUser?.id, currentUser?.role, houses.length]);
+  }, [activeScreen, currentUser?.id, currentUser?.role, houses.length, housesLoaded]);
 
   // Audit log (migration 032) + full reviews (admin moderation needs every
   // review platform-wide, not just one house's) — admin-only, fetched only
@@ -467,6 +475,8 @@ export default function App() {
     setCurrentUser(null);
     setSelectedHouse(null);
     setActiveScreen('explore');
+    setHousesLoaded(false);
+    setOwnerRoomsChecked(false);
   };
 
   const handleDeleteAccount = async (): Promise<{ ok: boolean; error?: string }> => {
@@ -1122,6 +1132,20 @@ export default function App() {
   // room, and a payment method. Same severity as the approval gate
   // above — the wizard itself handles creating the house on first use.
   if (currentUser.role === 'owner') {
+    // houses/rooms load asynchronously AFTER isAuthLoading already flips
+    // false (loadAppData isn't awaited in loadUserProfile), so on a fresh
+    // login this block used to run with houses still empty — an owner who
+    // already finished onboarding would see the wizard flash for however
+    // long those two sequential fetches took (houses, then their rooms)
+    // before flipping back to the real dashboard. Show a plain loading
+    // screen instead of guessing "incomplete" while we don't actually know yet.
+    if (!housesLoaded || !ownerRoomsChecked) {
+      return (
+        <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center">
+          <div className="text-[#8A8A70] text-sm">جارٍ تحميل بيانات بيتك...</div>
+        </div>
+      );
+    }
     const ownerHouse = houses.find((h) => h.ownerId === currentUser.id) ?? null;
     const ownerRooms = ownerHouse ? rooms.filter((r) => r.houseId === ownerHouse.id) : [];
     const onboardingComplete = !!ownerHouse

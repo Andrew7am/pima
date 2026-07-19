@@ -129,6 +129,7 @@ export default function OwnerDashboardShell({
   const [photosSuccessMsg, setPhotosSuccessMsg] = useState('');
 
   const [selectedBlockDate, setSelectedBlockDate] = useState('');
+  const [selectedBlockDateEnd, setSelectedBlockDateEnd] = useState('');
   const [blockReason, setBlockReason] = useState('أعمال صيانة وتجهيز');
   const [blockSuccessMsg, setBlockSuccessMsg] = useState('');
 
@@ -187,11 +188,29 @@ export default function OwnerDashboardShell({
   const handleBlockDateSubmit = (e: React.FormEvent, house: RetreatHouse) => {
     e.preventDefault();
     if (!selectedBlockDate) { alert('الرجاء اختيار تاريخ أولاً.'); return; }
+    const endDate = selectedBlockDateEnd || selectedBlockDate;
+    if (endDate < selectedBlockDate) { alert('تاريخ النهاية لازم يكون بعد تاريخ البداية.'); return; }
+
+    // Build every date in the range [selectedBlockDate, endDate] inclusive.
+    const rangeDates: string[] = [];
+    const cursor = new Date(selectedBlockDate);
+    const last = new Date(endDate);
+    while (cursor <= last) {
+      rangeDates.push(cursor.toISOString().split('T')[0]);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
     const currentBlocked = house.blockedDates || [];
-    if (currentBlocked.includes(selectedBlockDate)) { alert('هذا التاريخ محظور بالفعل.'); return; }
-    onUpdateHouse?.({ ...house, blockedDates: [...currentBlocked, selectedBlockDate] });
-    setBlockSuccessMsg(`تم حظر التاريخ ${selectedBlockDate} بنجاح! أصبح مغلقاً للصيانة/الخدمة.`);
+    const newDates = rangeDates.filter((d) => !currentBlocked.includes(d));
+    if (newDates.length === 0) { alert('كل التواريخ دي محظورة بالفعل.'); return; }
+    onUpdateHouse?.({ ...house, blockedDates: [...currentBlocked, ...newDates] });
+    setBlockSuccessMsg(
+      newDates.length === 1
+        ? `تم حظر التاريخ ${newDates[0]} بنجاح! أصبح مغلقاً للصيانة/الخدمة.`
+        : `تم حظر ${newDates.length} يوم بنجاح (من ${selectedBlockDate} إلى ${endDate})! أصبحوا مغلقين للصيانة/الخدمة.`
+    );
     setSelectedBlockDate('');
+    setSelectedBlockDateEnd('');
     setTimeout(() => setBlockSuccessMsg(''), 4000);
   };
 
@@ -1000,12 +1019,12 @@ export default function OwnerDashboardShell({
                   </div>
                   <div>
                     <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">عدد الأفراد:</label>
-                    <input id="mb-guests" type="number" min={1} value={mbGuests} onChange={(e) => setMbGuests(parseInt(e.target.value) || 1)}
+                    <input id="mb-guests" type="number" min={1} value={mbGuests} onChange={(e) => setMbGuests(parseInt(e.target.value) || 1)} onFocus={(e) => e.target.select()}
                       className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">إجمالي السعر (ج.م):</label>
-                    <input id="mb-price" type="number" min={0} value={mbPrice} onChange={(e) => setMbPrice(e.target.value)}
+                    <input id="mb-price" type="number" min={0} value={mbPrice} onChange={(e) => setMbPrice(e.target.value)} onFocus={(e) => e.target.select()}
                       className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                   </div>
                 </div>
@@ -1173,15 +1192,22 @@ export default function OwnerDashboardShell({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <form onSubmit={(e) => handleBlockDateSubmit(e, activeHouse)} className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] p-4 rounded-2xl space-y-4">
-                    <span className="text-xs font-black text-[var(--color-owner-text)] block pb-2 border-b border-[var(--color-owner-border)]">🔒 حظر أو إغلاق تاريخ معين:</span>
-                    <div className="space-y-1.5">
-                      <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)]">اختر التاريخ المطلوب 📆:</label>
-                      <input id="block-date-picker" type="date" required value={selectedBlockDate} onChange={(e) => setSelectedBlockDate(e.target.value)}
-                        className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none text-left" />
+                    <span className="text-xs font-black text-[var(--color-owner-text)] block pb-2 border-b border-[var(--color-owner-border)]">🔒 حظر أو إغلاق فترة معينة:</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1.5">
+                        <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)]">من تاريخ 📆:</label>
+                        <input id="block-date-picker" type="date" required value={selectedBlockDate} onChange={(e) => setSelectedBlockDate(e.target.value)}
+                          className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none text-left" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)]">إلى تاريخ (اختياري لتحديد أكتر من يوم):</label>
+                        <input id="block-date-picker-end" type="date" min={selectedBlockDate || undefined} value={selectedBlockDateEnd} onChange={(e) => setSelectedBlockDateEnd(e.target.value)}
+                          className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none text-left" />
+                      </div>
                     </div>
                     <div className="space-y-1.5">
                       <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)]">سبب الحظر أو الإشغال 📝:</label>
-                      <input id="block-date-reason" type="text" required value={blockReason} onChange={(e) => setBlockReason(e.target.value)}
+                      <input id="block-date-reason" type="text" required value={blockReason} onChange={(e) => setBlockReason(e.target.value)} onFocus={(e) => e.target.select()}
                         className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                     </div>
                     <button id="submit-block-btn" type="submit" className="w-full bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm cursor-pointer">
@@ -1275,22 +1301,22 @@ export default function OwnerDashboardShell({
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>
                     <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">اسم/رقم الغرفة:</label>
-                    <input id="room-name-input" type="text" value={roomName} onChange={(e) => setRoomName(e.target.value)}
+                    <input id="room-name-input" type="text" value={roomName} onChange={(e) => setRoomName(e.target.value)} onFocus={(e) => e.target.select()}
                       className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">عدد الأسرة:</label>
-                    <input id="room-beds-input" type="number" min={1} value={roomBeds} onChange={(e) => setRoomBeds(parseInt(e.target.value) || 1)}
+                    <input id="room-beds-input" type="number" min={1} value={roomBeds} onChange={(e) => setRoomBeds(parseInt(e.target.value) || 1)} onFocus={(e) => e.target.select()}
                       className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">الدور:</label>
-                    <input id="room-floor-input" type="number" min={0} value={roomFloor} onChange={(e) => setRoomFloor(parseInt(e.target.value) || 1)}
+                    <input id="room-floor-input" type="number" min={0} value={roomFloor} onChange={(e) => setRoomFloor(parseInt(e.target.value) || 1)} onFocus={(e) => e.target.select()}
                       className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">السعر لليلة (اختياري):</label>
-                    <input id="room-price-input" type="number" min={0} value={roomPrice} onChange={(e) => setRoomPrice(e.target.value)}
+                    <input id="room-price-input" type="number" min={0} value={roomPrice} onChange={(e) => setRoomPrice(e.target.value)} onFocus={(e) => e.target.select()}
                       className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                   </div>
                 </div>
@@ -1485,7 +1511,7 @@ export default function OwnerDashboardShell({
             <div className="flex gap-2">
               <input type="text" placeholder="وصف المصروف" value={expenseDesc} onChange={(e) => setExpenseDesc(e.target.value)}
                 className="flex-1 bg-white border border-[var(--color-owner-border)] text-[10px] px-2.5 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
-              <input type="number" min={0} placeholder="المبلغ" value={expenseAmount} onChange={(e) => setExpenseAmount(e.target.value)}
+              <input type="number" min={0} placeholder="المبلغ" value={expenseAmount} onChange={(e) => setExpenseAmount(e.target.value)} onFocus={(e) => e.target.select()}
                 className="w-24 bg-white border border-[var(--color-owner-border)] text-[10px] px-2.5 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
               <button type="button" onClick={() => {
                   const amount = parseFloat(expenseAmount);
@@ -1667,13 +1693,13 @@ export default function OwnerDashboardShell({
 
               <div>
                 <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">{propertyType === 'conference' ? 'اسم بيت المؤتمرات / الفندق المسيحي:' : 'اسم السكن المغترب:'}</label>
-                <input id="add-house-name" type="text" required value={houseName} onChange={(e) => setHouseName(e.target.value)}
+                <input id="add-house-name" type="text" required value={houseName} onChange={(e) => setHouseName(e.target.value)} onFocus={(e) => e.target.select()}
                   className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">وصف تفصيلي للبيت ومميزاته:</label>
-                <textarea id="add-house-desc" rows={3} required value={houseDesc} onChange={(e) => setHouseDesc(e.target.value)}
+                <textarea id="add-house-desc" rows={3} required value={houseDesc} onChange={(e) => setHouseDesc(e.target.value)} onFocus={(e) => e.target.select()}
                   className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
               </div>
             </div>
@@ -1693,7 +1719,7 @@ export default function OwnerDashboardShell({
                 <div className="grid grid-cols-2 gap-2 p-3 bg-[var(--color-owner-hover)] rounded-2xl border border-[var(--color-owner-border)]">
                   <div>
                     <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">الإيجار الشهري المطلوب للفرد (ج.م):</label>
-                    <input type="number" required min={100} value={monthlyRent} onChange={(e) => setMonthlyRent(parseInt(e.target.value) || 1500)}
+                    <input type="number" required min={100} value={monthlyRent} onChange={(e) => setMonthlyRent(parseInt(e.target.value) || 1500)} onFocus={(e) => e.target.select()}
                       className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                   </div>
                   {propertyType === 'student' && (
@@ -1709,17 +1735,17 @@ export default function OwnerDashboardShell({
                 <div>
                   <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">{propertyType === 'conference' ? 'سعر الفرد لليلة (ج.م):' : 'سعر تأمين الحجز مسبقاً (ج.م):'}</label>
                   <input id="add-house-price" type="number" required min={0} value={propertyType === 'conference' ? pricePerNight : 200} disabled={propertyType !== 'conference'}
-                    onChange={(e) => setPricePerNight(parseInt(e.target.value) || 150)}
+                    onChange={(e) => setPricePerNight(parseInt(e.target.value) || 150)} onFocus={(e) => e.target.select()}
                     className="w-full bg-white disabled:bg-gray-100 border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">عدد الغرف الإجمالي:</label>
-                  <input id="add-house-rooms" type="number" required min={1} value={roomsCount} onChange={(e) => setRoomsCount(parseInt(e.target.value) || 10)}
+                  <input id="add-house-rooms" type="number" required min={1} value={roomsCount} onChange={(e) => setRoomsCount(parseInt(e.target.value) || 10)} onFocus={(e) => e.target.select()}
                     className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">عدد الأسرة الكلي:</label>
-                  <input id="add-house-beds" type="number" required min={1} value={bedsCount} onChange={(e) => setBedsCount(parseInt(e.target.value) || 30)}
+                  <input id="add-house-beds" type="number" required min={1} value={bedsCount} onChange={(e) => setBedsCount(parseInt(e.target.value) || 30)} onFocus={(e) => e.target.select()}
                     className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                 </div>
               </div>
@@ -1791,7 +1817,7 @@ export default function OwnerDashboardShell({
                     <input type="text" placeholder="اسم القاعة" value={hallName} onChange={(e) => setHallName(e.target.value)}
                       className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
                     <div className="flex gap-2 items-center">
-                      <input type="number" placeholder="السعة الاستيعابية" value={hallCapacity} onChange={(e) => setHallCapacity(parseInt(e.target.value) || 50)}
+                      <input type="number" placeholder="السعة الاستيعابية" value={hallCapacity} onChange={(e) => setHallCapacity(parseInt(e.target.value) || 50)} onFocus={(e) => e.target.select()}
                         className="flex-1 bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
                       <button type="button" onClick={handleAddHall} className="bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shrink-0 cursor-pointer">أضف القاعة +</button>
                     </div>
@@ -1828,7 +1854,7 @@ export default function OwnerDashboardShell({
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">العنوان بالتفصيل:</label>
-                  <input id="add-house-address" type="text" required value={houseAddress} onChange={(e) => setHouseAddress(e.target.value)}
+                  <input id="add-house-address" type="text" required value={houseAddress} onChange={(e) => setHouseAddress(e.target.value)} onFocus={(e) => e.target.select()}
                     className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
                 </div>
                 <div className="col-span-2">

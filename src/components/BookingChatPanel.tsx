@@ -59,7 +59,10 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
     })();
 
     const unsubscribe = subscribeToBookingMessages(bookingId, (msg) => {
-      setMessages((prev) => [...prev, msg]);
+      // The realtime channel echoes the sender's own inserts back too, and
+      // handleSend below already appends optimistically — dedupe by id so a
+      // sent message doesn't show up twice.
+      setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
       if (msg.senderId !== currentUserId) markBookingMessagesRead(bookingId);
     });
 
@@ -96,7 +99,7 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     const sent = await sendBookingMessage(bookingId, content);
     setSending(false);
-    if (sent) setMessages((prev) => [...prev, sent]);
+    if (sent) setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
     else setInput(content);
   };
 
