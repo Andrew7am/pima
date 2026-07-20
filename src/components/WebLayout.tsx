@@ -12,11 +12,13 @@ interface WebLayoutProps {
   children: React.ReactNode;
   activeScreen: Screen;
   setActiveScreen: (screen: Screen) => void;
-  currentUser: User;
+  currentUser: User | null;
   onLogout: () => void;
   notifications: AppNotification[];
   onMarkNotificationAsRead: (id: string) => void;
   onClearNotifications: () => void;
+  // Guest mode only — shows the login button and routes gated taps to auth
+  onRequireLogin?: () => void;
 }
 
 interface NavItem {
@@ -37,6 +39,12 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'admin_panel',   label: 'لوحة الإدارة',     icon: <ShieldAlert className="w-5 h-5" />, roles: ['admin'] },
 ];
 
+// Logged-out visitors browse freely; anything beyond these routes to login.
+const GUEST_NAV: NavItem[] = [
+  { id: 'explore', label: 'استكشاف البيوت', icon: <Compass className="w-5 h-5" />, roles: [] },
+  { id: 'map',     label: 'الخريطة',         icon: <MapIcon className="w-5 h-5" />, roles: [] },
+];
+
 export default function WebLayout({
   children,
   activeScreen,
@@ -46,12 +54,13 @@ export default function WebLayout({
   notifications,
   onMarkNotificationAsRead,
   onClearNotifications,
+  onRequireLogin,
 }: WebLayoutProps) {
   const [showNotif, setShowNotif] = useState(false);
 
-  const visibleNav = NAV_ITEMS.filter(item => item.roles.includes(currentUser.role));
-  const unreadCount = notifications.filter(n => n.userId === currentUser.id && !n.isRead).length;
-  const userNotifications = notifications.filter(n => n.userId === currentUser.id);
+  const visibleNav = currentUser ? NAV_ITEMS.filter(item => item.roles.includes(currentUser.role)) : GUEST_NAV;
+  const unreadCount = currentUser ? notifications.filter(n => n.userId === currentUser.id && !n.isRead).length : 0;
+  const userNotifications = currentUser ? notifications.filter(n => n.userId === currentUser.id) : [];
 
   const roleLabel: Record<string, string> = {
     individual: 'مستخدم',
@@ -73,6 +82,17 @@ export default function WebLayout({
             <span className="font-bold text-[var(--color-natural-primary)] text-base tracking-wide">بيما</span>
           </div>
 
+          {!currentUser ? (
+            /* Guest header — one clear call to action, nothing else */
+            <button
+              id="guest-login-btn"
+              onClick={onRequireLogin}
+              className="flex items-center gap-1.5 bg-[var(--color-natural-primary)] hover:opacity-90 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer"
+            >
+              <UserCircle className="w-4 h-4" />
+              <span>تسجيل الدخول / إنشاء حساب</span>
+            </button>
+          ) : (
           <div className="flex items-center gap-1">
             {/* Notifications */}
             <div className="relative">
@@ -159,6 +179,7 @@ export default function WebLayout({
               <LogOut className="w-5 h-5" />
             </button>
           </div>
+          )}
         </header>
 
         {/* Page Content */}

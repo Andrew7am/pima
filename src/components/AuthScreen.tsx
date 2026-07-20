@@ -86,7 +86,13 @@ function GoogleG({ className = 'w-4 h-4' }: { className?: string }) {
   );
 }
 
-export default function AuthScreen() {
+interface AuthScreenProps {
+  // Guest mode escape hatch — when provided, shows a "browse as guest"
+  // link so a visitor who landed here isn't trapped behind login.
+  onBackToBrowse?: () => void;
+}
+
+export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [isViewingPrivacy, setIsViewingPrivacy] = useState(false);
@@ -312,6 +318,17 @@ export default function AuthScreen() {
               <span className="text-base font-black text-[#0A2342] px-1">تسجيل الدخول</span>
               <LeafFlourish className="w-10 h-3" flip />
             </div>
+
+            {onBackToBrowse && (
+              <button
+                type="button"
+                id="browse-as-guest-btn"
+                onClick={onBackToBrowse}
+                className="w-full text-center text-[11px] font-bold text-[#0A2342]/70 hover:text-[#0A2342] underline underline-offset-4 transition-colors cursor-pointer"
+              >
+                ← تصفح البيوت كزائر بدون تسجيل
+              </button>
+            )}
 
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-3 py-2 text-center">

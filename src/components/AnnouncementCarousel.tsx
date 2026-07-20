@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PlatformAnnouncement, RetreatHouse, User } from '../types';
 
 interface AnnouncementCarouselProps {
-  currentUser: User;
+  currentUser: User | null; // null = logged-out visitor
   announcements: PlatformAnnouncement[]; // already filtered to active
   houses: RetreatHouse[];
   onSelectHouse: (house: RetreatHouse) => void;
@@ -75,7 +75,7 @@ export default function AnnouncementCarousel({ currentUser, announcements, house
           </>
         ) : (
           <>
-            <span className="text-[10px] text-[#EBEBE0] font-bold tracking-wider">أهلاً بك يا {currentUser.name} 🌾</span>
+            <span className="text-[10px] text-[#EBEBE0] font-bold tracking-wider">{currentUser ? `أهلاً بك يا ${currentUser.name} 🌾` : 'أهلاً بك في بيما 🌾'}</span>
             <h2 className="text-base font-black text-white leading-snug">ابحث عن مكان خلوتك ومؤتمراتك القبطية بمصر</h2>
             <p className="text-[11px] text-[#DEDECB] font-medium leading-relaxed">مئات بيوت المؤتمرات والفنادق المسيحية المناسبة لكنائسنا وخدماتنا.</p>
           </>

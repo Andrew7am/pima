@@ -23,7 +23,7 @@ const REVIEW_RATING_LABEL = (n: number) => n >= 4.5 ? 'ممتاز' : n >= 3.5 ? 
 
 interface HouseDetailProps {
   house: RetreatHouse;
-  currentUser: User;
+  currentUser: User | null; // null = logged-out visitor browsing publicly
   bookings: Booking[];
   reviews: Review[];
   onBack: () => void;
@@ -41,6 +41,8 @@ interface HouseDetailProps {
   // forms still render (so admin can see exactly what a guest would),
   // but submitting is a no-op instead of creating a real record.
   previewMode?: boolean;
+  // Guest mode: called instead of submitting when there's no logged-in user
+  onRequireLogin?: () => void;
 }
 
 const GOVERNORATE_WEATHER_DATA: Record<string, {
@@ -550,7 +552,8 @@ export default function HouseDetail({
   waitlist = [],
   onJoinWaitlist,
   settings = DEFAULT_PLATFORM_SETTINGS,
-  previewMode = false
+  previewMode = false,
+  onRequireLogin,
 }: HouseDetailProps) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
@@ -785,10 +788,11 @@ export default function HouseDetail({
   })();
 
   const alreadyOnWaitlist = waitlist.some(
-    (w) => w.userId === currentUser.id && w.houseId === house.id && w.checkIn === checkIn && w.checkOut === checkOut && w.status === 'waiting'
+    (w) => w.userId === currentUser?.id && w.houseId === house.id && w.checkIn === checkIn && w.checkOut === checkOut && w.status === 'waiting'
   );
 
   const handleJoinWaitlistClick = () => {
+    if (!currentUser) { onRequireLogin?.(); return; }
     if (!onJoinWaitlist) return;
     if (!checkIn || !checkOut || guestsCount <= 0) {
       alert('الرجاء التأكد من إدخال كافة بيانات التواريخ والأعداد.');
@@ -815,7 +819,7 @@ export default function HouseDetail({
   // cap on how much of a booking points can cover.
   const POINTS_PER_EGP = settings.pointsPerEgp;
   const maxDiscountByPolicy = Math.round(originalTotalPrice * settings.maxRedemptionPct); // EGP
-  const maxRedeemablePoints = Math.min(currentUser.points || 0, maxDiscountByPolicy * POINTS_PER_EGP);
+  const maxRedeemablePoints = Math.min(currentUser?.points || 0, maxDiscountByPolicy * POINTS_PER_EGP);
   const pointsToRedeem = usePoints ? maxRedeemablePoints : 0;
   const redemptionDiscount = Math.round(pointsToRedeem / POINTS_PER_EGP);
   const totalPrice = Math.max(0, originalTotalPrice - redemptionDiscount);
@@ -824,6 +828,7 @@ export default function HouseDetail({
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (previewMode) { alert('معاينة فقط — التسجيل معطّل أثناء مراجعة الإدارة.'); return; }
+    if (!currentUser) { onRequireLogin?.(); return; }
     if (!checkIn || !checkOut || guestsCount <= 0) {
       alert('الرجاء التأكد من إدخال كافة بيانات التواريخ والأعداد.');
       return;
@@ -1995,8 +2000,8 @@ export default function HouseDetail({
                   />
                 </div>
 
-                {/* Points redemption toggle */}
-                {(currentUser.points || 0) > 0 && (
+                {/* Points redemption toggle — logged-in users with a balance only */}
+                {(currentUser?.points || 0) > 0 && (
                   <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-3 space-y-1.5">
                     <label htmlFor="use-points-toggle" className="flex items-center justify-between gap-2 cursor-pointer">
                       <span className="flex items-center gap-2">
@@ -2008,7 +2013,7 @@ export default function HouseDetail({
                           className="w-4 h-4 accent-emerald-600 cursor-pointer shrink-0"
                         />
                         <span className="text-[10.5px] font-bold text-emerald-900">
-                          استخدم نقاطك للخصم (رصيدك: {(currentUser.points || 0).toLocaleString('ar-EG')} نقطة)
+                          استخدم نقاطك للخصم (رصيدك: {(currentUser?.points || 0).toLocaleString('ar-EG')} نقطة)
                         </span>
                       </span>
                       {usePoints && redemptionDiscount > 0 && (
@@ -2452,7 +2457,23 @@ export default function HouseDetail({
 
         {/* 3-step guest review flow — replaces the old single-screen form */}
         <div className="pt-4 border-t border-[#D6D6C2]">
-          <ReviewWizard house={house} currentUser={currentUser} onSubmitReview={onSubmitReview} previewMode={previewMode} />
+          {currentUser ? (
+            <ReviewWizard house={house} currentUser={currentUser} onSubmitReview={onSubmitReview} previewMode={previewMode} />
+          ) : (
+            // Logged-out visitor: reviews require an account (and a real
+            // booking — enforced server-side), so prompt login instead.
+            <div className="bg-[#FAF8F5] border border-[#D6D6C2] rounded-3xl p-6 text-center space-y-2">
+              <p className="text-xs font-black text-[#4A4A3A]">عايز تشارك تجربتك في المكان ده؟</p>
+              <p className="text-[10px] text-[#8A8A70] font-medium">سجّل دخولك لكتابة تقييم بعد إقامتك.</p>
+              <button
+                type="button"
+                onClick={() => onRequireLogin?.()}
+                className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white font-extrabold text-xs px-5 py-2.5 rounded-xl transition-colors cursor-pointer"
+              >
+                تسجيل الدخول
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

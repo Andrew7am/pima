@@ -6,7 +6,7 @@ import AnnouncementCarousel from './AnnouncementCarousel';
 
 interface UserDashboardProps {
   houses: RetreatHouse[];
-  currentUser: User;
+  currentUser: User | null; // null = logged-out visitor browsing publicly
   onSelectHouse: (house: RetreatHouse) => void;
   onSelectRewards: () => void;
   onToggleFavorite: (houseId: string) => void;
@@ -84,7 +84,7 @@ export default function UserDashboard({
     const propertyType = house.propertyType || 'conference';
     if (selectedType !== 'all') {
       if (selectedType === 'favorites') {
-        const userFavs = currentUser.favorites || [];
+        const userFavs = currentUser?.favorites || [];
         if (!userFavs.includes(house.id)) return false;
       } else if (propertyType !== selectedType) {
         return false;
@@ -149,8 +149,8 @@ export default function UserDashboard({
         onSelectHouse={onSelectHouse}
       />
 
-      {/* Loyalty/Rewards Status Bar card */}
-      {currentUser.role !== 'owner' && (
+      {/* Loyalty/Rewards Status Bar card — logged-in guests only */}
+      {currentUser && currentUser.role !== 'owner' && (
         <div 
           id="loyalty-card-trigger"
           onClick={onSelectRewards} 
@@ -223,18 +223,30 @@ export default function UserDashboard({
           <Briefcase className="w-3.5 h-3.5" />
           <span>موظفين</span>
         </button>
-        <button
-          id="tab-favorites"
-          onClick={() => setSelectedType('favorites')}
-          className={`py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer ${
-            selectedType === 'favorites'
-              ? 'bg-rose-600 text-white shadow-sm'
-              : 'text-[#2D2D24] hover:bg-[#E7E2D5]'
-          }`}
-        >
-          <Heart className={`w-3.5 h-3.5 ${selectedType === 'favorites' ? 'fill-white text-white' : 'text-rose-500 fill-rose-500'}`} />
-          <span>المفضلة</span>
-        </button>
+        {currentUser ? (
+          <button
+            id="tab-favorites"
+            onClick={() => setSelectedType('favorites')}
+            className={`py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer ${
+              selectedType === 'favorites'
+                ? 'bg-rose-600 text-white shadow-sm'
+                : 'text-[#2D2D24] hover:bg-[#E7E2D5]'
+            }`}
+          >
+            <Heart className={`w-3.5 h-3.5 ${selectedType === 'favorites' ? 'fill-white text-white' : 'text-rose-500 fill-rose-500'}`} />
+            <span>المفضلة</span>
+          </button>
+        ) : (
+          // Guest: the favorites tab is a login prompt (App routes onToggleFavorite to auth)
+          <button
+            id="tab-favorites"
+            onClick={() => onToggleFavorite('')}
+            className="py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer text-[#2D2D24] hover:bg-[#E7E2D5]"
+          >
+            <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+            <span>المفضلة</span>
+          </button>
+        )}
       </div>
 
       {/* Search Bar & Filters Toggle */}
@@ -476,9 +488,9 @@ export default function UserDashboard({
                       onToggleFavorite(house.id);
                     }}
                     className="absolute top-2.5 left-16 bg-white/95 hover:bg-white text-rose-500 hover:text-rose-600 p-1.5 rounded-full flex items-center justify-center shadow transition-all duration-200 cursor-pointer"
-                    title={currentUser.favorites?.includes(house.id) ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
+                    title={currentUser?.favorites?.includes(house.id) ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
                   >
-                    <Heart className={`w-3.5 h-3.5 ${currentUser.favorites?.includes(house.id) ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+                    <Heart className={`w-3.5 h-3.5 ${currentUser?.favorites?.includes(house.id) ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
                   </button>
 
                   {/* Comparison button */}

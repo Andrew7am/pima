@@ -115,6 +115,9 @@ export default function App() {
     return null;
   });
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  // Guest mode: logged-out visitors browse houses freely; the auth screen
+  // only appears when they ask for it (or hit a gated action like booking).
+  const [showAuthScreen, setShowAuthScreen] = useState(false);
   // Mirrors currentUser?.id for the onAuthStateChange closure below, which
   // only runs its effect once (deps: [loadUserProfile]) so it would
   // otherwise always see the `currentUser` from its first render.
@@ -161,6 +164,20 @@ export default function App() {
       const n = await loadNotifications(userId);
       setNotifications(n);
     }
+  }, []);
+
+  // What a logged-out visitor needs to browse: approved houses (RLS filters
+  // to approved for anon), platform announcements, and settings. Reviews/
+  // rooms/announcements for one house load lazily when its page opens (the
+  // selectedHouse effect below — those tables have public SELECT policies).
+  const loadPublicData = useCallback(async () => {
+    const [h, pa, st] = await Promise.all([
+      loadHouses(), loadPlatformAnnouncements(), loadPlatformSettings(),
+    ]);
+    setHouses(h);
+    setHousesLoaded(true);
+    setPlatformAnnouncements(pa);
+    setSettings(st);
   }, []);
 
   const loadUserProfile = useCallback(async (userId: string) => {
@@ -230,11 +247,18 @@ export default function App() {
       if (session) {
         if (session.user.id === currentUserIdRef.current) return;
         loadUserProfile(session.user.id);
-      } else { setCurrentUser(null); setIsAuthLoading(false); }
+      } else {
+        // No session (fresh visitor or just logged out) — land on guest
+        // browsing, not the auth screen, and pull the public data set.
+        setCurrentUser(null);
+        setShowAuthScreen(false);
+        setIsAuthLoading(false);
+        loadPublicData();
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [loadUserProfile]);
+  }, [loadUserProfile, loadPublicData]);
 
   // Live notification delivery — without this, a new notification (booking
   // approved, deposit confirmed, new message, account approved, etc.) never
@@ -319,10 +343,17 @@ export default function App() {
   // Deep link support: opening a shared house link (?house=<id>) jumps
   // straight to that house once its data is loaded. The query param is
   // stripped right after so navigating away and back doesn't reopen it.
+  // localStorage fallback: web Google OAuth does a full-page redirect back
+  // to the bare origin (query params lost), so requireLogin also stashes
+  // the intended house there — restored here after the round-trip.
   useEffect(() => {
     if (houses.length === 0) return;
-    const houseId = new URLSearchParams(window.location.search).get('house');
+    let houseId = new URLSearchParams(window.location.search).get('house');
+    if (!houseId) {
+      try { houseId = localStorage.getItem('pima_pending_house'); } catch { /* storage unavailable */ }
+    }
     if (!houseId) return;
+    try { localStorage.removeItem('pima_pending_house'); } catch { /* storage unavailable */ }
     const house = houses.find((h) => h.id === houseId);
     if (house) {
       setSelectedHouse(house);
@@ -1150,6 +1181,19 @@ export default function App() {
     }
   };
 
+  // A guest hit a gated action (book/favorite/waitlist/…): remember which
+  // house they were on — both in the URL (survives the in-app auth screen)
+  // and localStorage (survives the web Google OAuth full-page redirect) —
+  // then show the auth screen. After login, the deep-link effect above
+  // reopens that same house.
+  const requireLogin = (houseId?: string) => {
+    if (houseId) {
+      window.history.replaceState({}, '', `${window.location.pathname}?house=${houseId}`);
+      try { localStorage.setItem('pima_pending_house', houseId); } catch { /* storage unavailable */ }
+    }
+    setShowAuthScreen(true);
+  };
+
   if (isAuthLoading) {
     return (
       <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center">
@@ -1163,7 +1207,62 @@ export default function App() {
   }
 
   if (!currentUser) {
-    return <AuthScreen />;
+    if (showAuthScreen) {
+      return <AuthScreen onBackToBrowse={() => setShowAuthScreen(false)} />;
+    }
+    // Guest mode — browse approved houses, house details, and the map
+    // without an account. Anything else routes to the auth screen.
+    const guestNavigate = (screen: typeof activeScreen) => {
+      if (screen !== 'explore' && screen !== 'map' && screen !== 'privacy') { requireLogin(); return; }
+      setSelectedHouse(null);
+      setActiveScreen(screen);
+    };
+    return (
+      <WebLayout
+        activeScreen={activeScreen}
+        setActiveScreen={guestNavigate}
+        currentUser={null}
+        onLogout={() => {}}
+        notifications={[]}
+        onMarkNotificationAsRead={() => {}}
+        onClearNotifications={() => {}}
+        onRequireLogin={() => requireLogin(selectedHouse?.id)}
+      >
+        {selectedHouse ? (
+          <HouseDetail
+            house={selectedHouse}
+            currentUser={null}
+            bookings={[]}
+            reviews={reviews}
+            onBack={() => setSelectedHouse(null)}
+            onBook={() => requireLogin(selectedHouse.id)}
+            onSubmitReview={() => requireLogin(selectedHouse.id)}
+            isFavorited={false}
+            onToggleFavorite={() => requireLogin(selectedHouse.id)}
+            rooms={rooms.filter((r) => r.houseId === selectedHouse.id)}
+            announcements={announcements.filter((a) => a.houseId === selectedHouse.id && a.isActive)}
+            waitlist={waitlist}
+            settings={settings}
+            onRequireLogin={() => requireLogin(selectedHouse.id)}
+          />
+        ) : activeScreen === 'map' ? (
+          <div className="h-[calc(100dvh-180px)]">
+            <InteractiveMap houses={houses} onSelectHouse={(h) => setSelectedHouse(h)} />
+          </div>
+        ) : activeScreen === 'privacy' ? (
+          <PrivacyPolicy onBack={() => setActiveScreen('explore')} />
+        ) : (
+          <UserDashboard
+            houses={houses}
+            currentUser={null}
+            onSelectHouse={(h) => setSelectedHouse(h)}
+            onSelectRewards={() => requireLogin()}
+            onToggleFavorite={() => requireLogin(selectedHouse?.id)}
+            platformAnnouncements={platformAnnouncements.filter((a) => a.isActive)}
+          />
+        )}
+      </WebLayout>
+    );
   }
 
   // Google sign-in (and any pre-existing account from before these fields
