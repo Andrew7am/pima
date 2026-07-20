@@ -283,6 +283,21 @@ export async function loadHouses(): Promise<RetreatHouse[]> {
   return (data ?? []).map(mapHouse);
 }
 
+// Aggregate free-bed count per approved house for a date range (migration
+// 053 RPC) — the only availability signal exposed to guests/regular users,
+// since booking rows themselves are RLS-locked.
+// Returns null on error (e.g. migration 053 not applied yet) so the caller
+// can simply skip the availability filter instead of hiding every house.
+export async function loadHousesAvailability(checkIn: string, checkOut: string): Promise<Record<string, number> | null> {
+  const { data, error } = await supabase.rpc('get_houses_availability', { p_check_in: checkIn, p_check_out: checkOut });
+  if (error) { console.error('loadHousesAvailability:', error); return null; }
+  const result: Record<string, number> = {};
+  for (const row of (data ?? []) as { house_id: string; free_beds: number }[]) {
+    result[row.house_id] = row.free_beds;
+  }
+  return result;
+}
+
 export async function deleteHouse(houseId: string): Promise<boolean> {
   const { error } = await supabase.from('houses').delete().eq('id', houseId);
   if (error) { console.error('deleteHouse:', error); return false; }

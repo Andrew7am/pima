@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlatformAnnouncement, RetreatHouse, User } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
-import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight } from 'lucide-react';
+import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck } from 'lucide-react';
 import AnnouncementCarousel from './AnnouncementCarousel';
+import { loadHousesAvailability } from '../lib/db';
 
 interface UserDashboardProps {
   houses: RetreatHouse[];
@@ -31,6 +32,25 @@ export default function UserDashboard({
   const [showFilters, setShowFilters] = useState(false);
   const [selectedType, setSelectedType] = useState<'all' | 'conference' | 'student' | 'staff' | 'favorites'>('all');
   const [selectedSeaProximity, setSelectedSeaProximity] = useState<'all' | 'near' | 'view' | 'beach' | 'far'>('all');
+  const [sortBy, setSortBy] = useState<'rating' | 'price_asc' | 'price_desc'>('rating');
+
+  // Real date-availability: when both dates are set, the migration-053 RPC
+  // returns aggregate free beds per house (server-side, RLS-safe — booking
+  // rows themselves are never exposed). null = no date filter active.
+  const [filterCheckIn, setFilterCheckIn] = useState('');
+  const [filterCheckOut, setFilterCheckOut] = useState('');
+  const [availability, setAvailability] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    if (!filterCheckIn || !filterCheckOut || filterCheckIn >= filterCheckOut) {
+      setAvailability(null);
+      return;
+    }
+    let cancelled = false;
+    loadHousesAvailability(filterCheckIn, filterCheckOut).then((result) => {
+      if (!cancelled) setAvailability(result);
+    });
+    return () => { cancelled = true; };
+  }, [filterCheckIn, filterCheckOut]);
 
   // House comparison states
   const [comparedHouseIds, setComparedHouseIds] = useState<string[]>([]);
@@ -134,7 +154,18 @@ export default function UserDashboard({
     // Sea proximity filter
     if (selectedSeaProximity !== 'all' && house.seaProximity !== selectedSeaProximity) return false;
 
+    // Real availability for the selected dates: enough free beds for the
+    // requested group (or at least one bed when no count was given).
+    if (availability !== null) {
+      const freeBeds = availability[house.id] ?? 0;
+      if (freeBeds < (guestCount || 1)) return false;
+    }
+
     return matchesSearch && matchesGov && matchesGuests && matchesPrice && matchesSuitability && matchesAmenities;
+  }).sort((a, b) => {
+    if (sortBy === 'price_asc') return a.pricePerNightPerPerson - b.pricePerNightPerPerson;
+    if (sortBy === 'price_desc') return b.pricePerNightPerPerson - a.pricePerNightPerPerson;
+    return b.rating - a.rating;
   });
 
   return (
@@ -312,6 +343,49 @@ export default function UserDashboard({
             </div>
           </div>
 
+          {/* Real availability by dates — checks live bookings server-side */}
+          <div className="bg-emerald-50/50 border border-emerald-200/60 rounded-2xl p-3 space-y-2">
+            <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-900">
+              <CalendarCheck className="w-3.5 h-3.5" />
+              <span>المتاح فعلياً في تواريخك (يفحص الحجوزات الحقيقية):</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] text-[#8A8A70] mb-1 font-bold">تاريخ الوصول:</label>
+                <input
+                  id="filter-checkin-input"
+                  type="date"
+                  value={filterCheckIn}
+                  onChange={(e) => setFilterCheckIn(e.target.value)}
+                  className="w-full bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 text-[#4A4A3A] focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-[#8A8A70] mb-1 font-bold">تاريخ المغادرة:</label>
+                <input
+                  id="filter-checkout-input"
+                  type="date"
+                  value={filterCheckOut}
+                  min={filterCheckIn || undefined}
+                  onChange={(e) => setFilterCheckOut(e.target.value)}
+                  className="w-full bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 text-[#4A4A3A] focus:outline-none"
+                />
+              </div>
+            </div>
+            {availability !== null && (
+              <div className="flex items-center justify-between">
+                <span className="text-[9.5px] text-emerald-800 font-bold">✅ بتشوف دلوقتي البيوت المتاحة فعلاً من {filterCheckIn} إلى {filterCheckOut}{guestCount ? ` لعدد ${guestCount} فرد` : ''}</span>
+                <button
+                  type="button"
+                  onClick={() => { setFilterCheckIn(''); setFilterCheckOut(''); }}
+                  className="text-[9.5px] font-extrabold text-rose-700 hover:underline cursor-pointer"
+                >
+                  إلغاء فلتر التواريخ
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Price night range slider */}
           <div>
             <div className="flex justify-between text-[10px] text-[#8A8A70] font-bold mb-1">
@@ -440,9 +514,18 @@ export default function UserDashboard({
 
       {/* Houses Feed List */}
       <div className="space-y-3.5 text-[#4A4A3A]">
-        <div className="flex justify-between items-center px-1">
+        <div className="flex justify-between items-center px-1 gap-2">
           <span className="text-xs font-extrabold text-[#4A4A3A]">الأماكن المتاحة ({filteredHouses.length}):</span>
-          <span className="text-[11px] text-[#8A8A70]">مرتبة حسب الأفضل تقييماً</span>
+          <select
+            id="sort-houses-select"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+            className="bg-white border border-[#D6D6C2] rounded-xl px-2 py-1 text-[10px] font-bold text-[#4A4A3A] focus:outline-none cursor-pointer"
+          >
+            <option value="rating">الأفضل تقييماً</option>
+            <option value="price_asc">الأقل سعراً</option>
+            <option value="price_desc">الأعلى سعراً</option>
+          </select>
         </div>
 
         {filteredHouses.length === 0 ? (
@@ -510,6 +593,11 @@ export default function UserDashboard({
 
                   {/* Property type or student gender badges */}
                   <div className="absolute top-12 right-3 flex flex-col gap-1 items-end">
+                    {availability !== null && (
+                      <span className="bg-emerald-600/95 backdrop-blur-sm text-white text-[8.5px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+                        ✓ متاح في تواريخك ({availability[house.id] ?? 0} سرير فاضي)
+                      </span>
+                    )}
                     {house.propertyType === 'student' && (
                       <span className={`text-[8.5px] font-extrabold px-2 py-0.5 rounded-full shadow-sm text-white ${house.studentHousingGender === 'girls' ? 'bg-[#9C4B64]' : 'bg-[#4B6B9C]'}`}>
                         {house.studentHousingGender === 'girls' ? 'سكن طالبات ♀' : 'سكن طلاب ♂'}
