@@ -16,6 +16,7 @@ import OwnerRoomDistributionScreen from './OwnerRoomDistribution';
 import OwnerCustomers from './OwnerCustomers';
 import { supabase } from '../../lib/supabase';
 import { getRoomBedState, getHouseRoomAvailabilityForRange } from '../../lib/roomOccupancy';
+import LocationPicker from '../LocationPicker';
 
 type PrimaryTab = 'stats' | 'bookings' | 'messages' | 'reports' | 'more';
 type OverflowTab = 'rooms' | 'financials' | 'reviews' | 'house' | 'occupancy' | 'notifications' | 'profile' | 'room_distribution' | 'customers';
@@ -119,6 +120,7 @@ export default function OwnerDashboardShell({
   const [houseLng, setHouseLng] = useState<number | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState('');
+  const [showManualMap, setShowManualMap] = useState(false);
   const [pricePerNight, setPricePerNight] = useState<number>(150);
   const [roomsCount, setRoomsCount] = useState<number>(10);
   const [bedsCount, setBedsCount] = useState<number>(30);
@@ -2067,20 +2069,41 @@ export default function OwnerDashboardShell({
                 </div>
                 <div className="col-span-2">
                   <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">موقع البيت على الخريطة:</label>
-                  <button type="button" onClick={() => {
-                      if (!navigator.geolocation) { setGeoError('المتصفح لا يدعم تحديد الموقع.'); return; }
-                      setGeoLoading(true); setGeoError('');
-                      navigator.geolocation.getCurrentPosition(
-                        (pos) => { setHouseLat(pos.coords.latitude); setHouseLng(pos.coords.longitude); setGeoLoading(false); },
-                        () => { setGeoError('تعذر تحديد الموقع. تأكد من إذن الموقع في المتصفح.'); setGeoLoading(false); }
-                      );
-                    }}
-                    className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl border border-[var(--color-owner-primary)] text-[var(--color-owner-primary)] bg-white hover:bg-[var(--color-owner-hover)] transition-colors">
-                    {geoLoading ? <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-[var(--color-owner-primary)] border-t-transparent rounded-full" /> : '📍'}
-                    {geoLoading ? 'جاري تحديد الموقع...' : 'استخدم موقعي الحالي'}
-                  </button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button type="button" onClick={() => {
+                        if (!navigator.geolocation) { setGeoError('المتصفح لا يدعم تحديد الموقع.'); return; }
+                        setGeoLoading(true); setGeoError('');
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => { setHouseLat(pos.coords.latitude); setHouseLng(pos.coords.longitude); setGeoLoading(false); },
+                          () => { setGeoError('تعذر تحديد الموقع. تأكد من إذن الموقع في المتصفح.'); setGeoLoading(false); }
+                        );
+                      }}
+                      className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl border border-[var(--color-owner-primary)] text-[var(--color-owner-primary)] bg-white hover:bg-[var(--color-owner-hover)] transition-colors">
+                      {geoLoading ? <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-[var(--color-owner-primary)] border-t-transparent rounded-full" /> : '📍'}
+                      {geoLoading ? 'جاري تحديد الموقع...' : 'استخدم موقعي الحالي'}
+                    </button>
+                    <button
+                      type="button"
+                      id="toggle-manual-map-btn"
+                      onClick={() => setShowManualMap((v) => !v)}
+                      className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl border border-[var(--color-owner-border)] text-[var(--color-owner-text)] bg-white hover:bg-[var(--color-owner-hover)] transition-colors"
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      {showManualMap ? 'إخفاء الخريطة' : 'أو حدد يدوياً على الخريطة'}
+                    </button>
+                  </div>
                   {houseLat && houseLng && <p className="mt-1.5 text-[11px] text-emerald-600 font-semibold">تم تحديد الموقع: {houseLat.toFixed(5)}, {houseLng.toFixed(5)}</p>}
                   {geoError && <p className="mt-1.5 text-[11px] text-red-500">{geoError}</p>}
+                  {showManualMap && (
+                    <div className="mt-2 space-y-1.5">
+                      <p className="text-[10px] text-[var(--color-owner-secondary)] font-medium">اضغط على أي نقطة بالخريطة لتحديد موقع البيت، أو اسحب الدبوس لضبطه بدقة.</p>
+                      <LocationPicker
+                        lat={houseLat ?? 30.0444}
+                        lng={houseLng ?? 31.2357}
+                        onChange={(lat, lng) => { setHouseLat(lat); setHouseLng(lng); }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
