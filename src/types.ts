@@ -196,6 +196,11 @@ export interface Review {
   createdAt: string;
   ownerReply?: string;
   ownerReplyCreatedAt?: string;
+  visitPurpose?: 'conference' | 'business_meeting' | 'training_course' | 'exhibition' | 'other';
+  likedTags?: string[];
+  problemTags?: string[];
+  problemOther?: string;
+  displayAnonymous?: boolean;
 }
 
 export interface Attendee {

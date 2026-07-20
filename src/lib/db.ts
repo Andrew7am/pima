@@ -150,6 +150,11 @@ export function mapReview(r: Record<string, unknown>): Review {
     ownerReply: r.owner_reply as string ?? undefined,
     ownerReplyCreatedAt: r.owner_reply_created_at as string ?? undefined,
     createdAt: r.created_at as string,
+    visitPurpose: r.visit_purpose as Review['visitPurpose'] ?? undefined,
+    likedTags: (r.liked_tags as string[] | null) ?? undefined,
+    problemTags: (r.problem_tags as string[] | null) ?? undefined,
+    problemOther: r.problem_other as string ?? undefined,
+    displayAnonymous: r.display_anonymous as boolean ?? false,
   };
 }
 
@@ -621,6 +626,11 @@ function reviewToRow(r: Review): Record<string, unknown> {
     owner_reply: r.ownerReply ?? null,
     owner_reply_created_at: r.ownerReplyCreatedAt ?? null,
     created_at: r.createdAt,
+    visit_purpose: r.visitPurpose ?? null,
+    liked_tags: r.likedTags ?? [],
+    problem_tags: r.problemTags ?? [],
+    problem_other: r.problemOther ?? null,
+    display_anonymous: r.displayAnonymous ?? false,
   };
 }
 

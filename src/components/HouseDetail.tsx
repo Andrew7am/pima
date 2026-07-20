@@ -1,13 +1,25 @@
 import React, { useState, useMemo } from 'react';
 import { RetreatHouse, Booking, Review, User, Room, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { SUITABILITY_MAP } from '../mockData';
+import ReviewWizard from './ReviewWizard';
 import { 
   ArrowRight, MapPin, BedDouble, Calendar, Users, 
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
   Utensils, Volume2, Monitor, HelpCircle, Send, CheckCircle2,
   Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Heart, Copy, Share2,
-  Calculator, TrendingDown, TrendingUp, Coins, Bus
+  Calculator, TrendingDown, TrendingUp, Coins, Bus, ChevronDown
 } from 'lucide-react';
+
+type ReviewCategoryFilter = 'all' | 'food' | 'service' | 'cleanliness' | 'organization' | 'value';
+const REVIEW_CATEGORY_CHIPS: { key: ReviewCategoryFilter; label: string }[] = [
+  { key: 'all', label: 'الكل' },
+  { key: 'food', label: 'الطعام' },
+  { key: 'service', label: 'الخدمة' },
+  { key: 'cleanliness', label: 'النظافة' },
+  { key: 'organization', label: 'التنظيم' },
+  { key: 'value', label: 'القيمة مقابل السعر' },
+];
+const REVIEW_RATING_LABEL = (n: number) => n >= 4.5 ? 'ممتاز' : n >= 3.5 ? 'جيد جداً' : n >= 2.5 ? 'جيد' : n >= 1.5 ? 'مقبول' : 'ضعيف';
 
 interface HouseDetailProps {
   house: RetreatHouse;
@@ -604,14 +616,8 @@ export default function HouseDetail({
   const [extraRequests, setExtraRequests] = useState('');
 
   // Review states
-  const [newComment, setNewComment] = useState('');
-  const [foodRating, setFoodRating] = useState(5);
-  const [serviceRating, setServiceRating] = useState(5);
-  const [cleanlinessRating, setCleanlinessRating] = useState(5);
-  const [organizationRating, setOrganizationRating] = useState(5);
-  const [valueRating, setValueRating] = useState(5);
-  const [showReviewSuccessModal, setShowReviewSuccessModal] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [reviewFilter, setReviewFilter] = useState<ReviewCategoryFilter>('all');
+  const [reviewsVisibleCount, setReviewsVisibleCount] = useState(5);
 
   // Interactive weekly menu states
   const [selectedMenuDay, setSelectedMenuDay] = useState<string>(house.menu?.weeklyMenu?.[0]?.day || 'السبت');
@@ -872,41 +878,6 @@ export default function HouseDetail({
         ? 'تم إرسال طلب عرض السعر للمؤتمر الكنسي الكبير بنجاح! سيقوم مالك البيت بمراجعة الطلب وتقديم عرض سعر خاص خلال دقائق.'
         : 'تم تقديم طلب الحجز بنجاح! ستكسب نقاط مكافآت فور تأكيد دفع العربون. ستجد تفاصيل الحجز وقبول المالك في صفحة "حجوزاتي".'
     );
-  };
-
-  const handleReviewSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (previewMode) { alert('معاينة فقط — التقييم معطّل أثناء مراجعة الإدارة.'); return; }
-    if (!newComment.trim()) return;
-
-    const computedOverall = parseFloat(((foodRating + serviceRating + cleanlinessRating + organizationRating + valueRating) / 5).toFixed(1));
-
-    const newReview: Review = {
-      id: `rev_${Date.now()}`,
-      houseId: house.id,
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userRole: currentUser.role,
-      rating: computedOverall,
-      food_rating: foodRating,
-      service_rating: serviceRating,
-      cleanliness_rating: cleanlinessRating,
-      organization_rating: organizationRating,
-      value_rating: valueRating,
-      overall_rating: computedOverall,
-      comment: newComment,
-      createdAt: new Date().toISOString()
-    };
-
-    onSubmitReview(newReview);
-    setNewComment('');
-    setFoodRating(5);
-    setServiceRating(5);
-    setCleanlinessRating(5);
-    setOrganizationRating(5);
-    setValueRating(5);
-    setCopiedLink(false);
-    setShowReviewSuccessModal(true);
   };
 
   return (
@@ -2303,403 +2274,187 @@ export default function HouseDetail({
 
       {/* Ratings & Reviews List */}
       <div className="bg-white rounded-3xl p-5 border border-[#D6D6C2] shadow-sm space-y-5 text-right">
-        <h3 className="text-xs font-black text-[#4A4A3A]">آراء وتقييمات خلوات الكنائس السابقة:</h3>
+        <div>
+          <h3 className="text-sm font-black text-[#4A4A3A]">تقييمات الضيوف</h3>
+          <p className="text-[10px] text-[#8A8A70] font-medium mt-0.5">آراء الضيوف عن بيت المؤتمرات</p>
+        </div>
 
         {houseReviews.length > 0 && (() => {
-          // Calculate overall averages for each dimension
-          let totalFood = 0, totalService = 0, totalClean = 0, totalOrg = 0, totalValue = 0;
-          houseReviews.forEach(r => {
-            totalFood += r.food_rating ?? r.rating;
-            totalService += r.service_rating ?? r.rating;
-            totalClean += r.cleanliness_rating ?? r.rating;
-            totalOrg += r.organization_rating ?? r.rating;
-            totalValue += r.value_rating ?? r.rating;
-          });
           const count = houseReviews.length;
-          const avgFood = parseFloat((totalFood / count).toFixed(1));
-          const avgService = parseFloat((totalService / count).toFixed(1));
-          const avgClean = parseFloat((totalClean / count).toFixed(1));
-          const avgOrg = parseFloat((totalOrg / count).toFixed(1));
-          const avgValue = parseFloat((totalValue / count).toFixed(1));
-          const overallAvg = parseFloat(((avgFood + avgService + avgClean + avgOrg + avgValue) / 5).toFixed(1));
+          const overallOf = (r: Review) => r.overall_rating ?? r.rating;
+          const overallAvg = parseFloat((houseReviews.reduce((s, r) => s + overallOf(r), 0) / count).toFixed(1));
+          const histogram: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+          houseReviews.forEach((r) => {
+            const bucket = Math.min(5, Math.max(1, Math.round(overallOf(r))));
+            histogram[bucket]++;
+          });
 
           return (
-            <div className="bg-[#FAF8F5] border border-[#D6D6C2] p-4 rounded-2xl space-y-3.5">
-              <div className="flex justify-between items-center pb-2 border-b border-[#EBEBE0]">
-                <div>
-                  <h4 className="text-[11px] font-black text-[#4A4A3A]">التحليل التفصيلي لتقييمات الخدام والمجموعات:</h4>
-                  <p className="text-[9px] text-[#8A8A70] font-medium">مستند إلى متوسط {count} تقييم مسجل لهذا البيت</p>
+            <div className="bg-[#FAF8F5] border border-[#D6D6C2] rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Left: average score */}
+              <div className="flex flex-col items-center justify-center text-center gap-1.5 sm:border-l sm:border-[#D6D6C2] sm:pl-4 py-2">
+                <span className="text-3xl font-black text-[#4A4A3A]">{overallAvg}</span>
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star key={s} className={`w-4 h-4 ${s <= Math.round(overallAvg) ? 'fill-amber-500 text-amber-500' : 'text-[#D6D6C2]'}`} />
+                  ))}
                 </div>
-                <div className="bg-amber-100/60 border border-amber-200/50 text-amber-950 px-3 py-1 rounded-xl text-center">
-                  <span className="block text-[8px] font-bold text-[#8A8A70]">التقييم العام</span>
-                  <span className="text-xs font-black text-amber-900">{overallAvg} / 5.0 ★</span>
-                </div>
+                <span className="text-[10px] font-extrabold text-amber-800">{REVIEW_RATING_LABEL(overallAvg)}</span>
+                <span className="text-[9px] text-[#8A8A70] font-medium">{count} تقييم</span>
               </div>
 
-              {/* Grid of Averages */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[10px] font-bold text-[#4A4A3A]">
-                {/* Food quality */}
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="flex items-center gap-1">🍗 جودة وجبات الطعام:</span>
-                    <span className="text-amber-700 font-extrabold">{avgFood} / 5</span>
-                  </div>
-                  <div className="w-full bg-[#EBEBE0] h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-amber-500 h-full rounded-full" style={{ width: `${(avgFood / 5) * 100}%` }} />
-                  </div>
-                </div>
-
-                {/* Service Quality */}
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="flex items-center gap-1">🤵 جودة الخدمة والتعاون:</span>
-                    <span className="text-emerald-700 font-extrabold">{avgService} / 5</span>
-                  </div>
-                  <div className="w-full bg-[#EBEBE0] h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${(avgService / 5) * 100}%` }} />
-                  </div>
-                </div>
-
-                {/* Cleanliness */}
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="flex items-center gap-1">🧼 النظافة والترتيب:</span>
-                    <span className="text-blue-700 font-extrabold">{avgClean} / 5</span>
-                  </div>
-                  <div className="w-full bg-[#EBEBE0] h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-blue-500 h-full rounded-full" style={{ width: `${(avgClean / 5) * 100}%` }} />
-                  </div>
-                </div>
-
-                {/* Organization */}
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="flex items-center gap-1">📋 التنظيم والالتزام بالاتفاق:</span>
-                    <span className="text-indigo-700 font-extrabold">{avgOrg} / 5</span>
-                  </div>
-                  <div className="w-full bg-[#EBEBE0] h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${(avgOrg / 5) * 100}%` }} />
-                  </div>
-                </div>
-
-                {/* Value for money */}
-                <div className="space-y-1 sm:col-span-2">
-                  <div className="flex justify-between items-center">
-                    <span className="flex items-center gap-1">💰 القيمة مقابل السعر والمزايا المتاحة:</span>
-                    <span className="text-rose-700 font-extrabold">{avgValue} / 5</span>
-                  </div>
-                  <div className="w-full bg-[#EBEBE0] h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-rose-500 h-full rounded-full" style={{ width: `${(avgValue / 5) * 100}%` }} />
-                  </div>
-                </div>
+              {/* Right: star distribution bar chart */}
+              <div className="space-y-1.5 justify-center flex flex-col">
+                {[5, 4, 3, 2, 1].map((star) => {
+                  const c = histogram[star];
+                  const pct = count ? Math.round((c / count) * 100) : 0;
+                  return (
+                    <div key={star} className="flex items-center gap-2 text-[9.5px] font-bold text-[#4A4A3A]">
+                      <span className="w-7 shrink-0 flex items-center gap-0.5">{star}<Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" /></span>
+                      <div className="flex-1 bg-[#EBEBE0] h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="w-14 text-left text-[#8A8A70] font-medium">{pct}% ({c})</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
         })()}
 
-        {houseReviews.length === 0 ? (
-          <p className="text-[11px] text-[#8A8A70]">لا توجد تقييمات مسجلة لهذا البيت بعد. كن أول من يضيف تقييماً خادماً للآخرين!</p>
-        ) : (
-          <div className="space-y-3">
-            {houseReviews.map((rev) => {
-              const reviewFood = rev.food_rating ?? rev.rating;
-              const reviewService = rev.service_rating ?? rev.rating;
-              const reviewClean = rev.cleanliness_rating ?? rev.rating;
-              const reviewOrg = rev.organization_rating ?? rev.rating;
-              const reviewVal = rev.value_rating ?? rev.rating;
-              const reviewOverall = rev.overall_rating ?? rev.rating;
-
-              return (
-                <div key={rev.id} className="bg-[#EBEBE0]/25 p-3.5 rounded-2xl border border-[#D6D6C2] space-y-2.5">
-                  <div className="flex justify-between items-start text-xs">
-                    <div>
-                      <span className="font-bold text-[#4A4A3A]">{rev.userName}</span>
-                      <span className="text-[9px] text-[#8A8A70] font-medium"> ({rev.userRole === 'servant' ? 'خادم' : 'فرد'})</span>
-                      <span className="text-[8px] text-[#9A9A80] font-medium block mt-0.5">
-                        {new Date(rev.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
-                      </span>
-                    </div>
-                    
-                    {/* Overall Score Badge */}
-                    <div className="bg-amber-100 text-amber-950 font-black text-[10px] px-2.5 py-0.5 rounded-full border border-amber-200">
-                      التقييم العام: {reviewOverall} / 5 ★
-                    </div>
-                  </div>
-
-                  {/* Multi-dimensional Sub-ratings pills */}
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    <span className="bg-amber-50 border border-amber-200/50 text-amber-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
-                      🍗 طعام: {reviewFood}
-                    </span>
-                    <span className="bg-emerald-50 border border-emerald-200/50 text-emerald-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
-                      🤵 خدمة: {reviewService}
-                    </span>
-                    <span className="bg-blue-50 border border-blue-200/50 text-blue-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
-                      🧼 نظافة: {reviewClean}
-                    </span>
-                    <span className="bg-indigo-50 border border-indigo-200/50 text-indigo-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
-                      📋 تنظيم: {reviewOrg}
-                    </span>
-                    <span className="bg-rose-50 border border-rose-200/50 text-rose-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
-                      💰 قيمة: {reviewVal}
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-[#4A4A3A] leading-relaxed font-medium pt-1 border-t border-[#D6D6C2]/40">
-                    {rev.comment}
-                  </p>
-
-                  {rev.ownerReply && (
-                    <div className="bg-[#5A5A40]/5 border-r-2 border-[#5A5A40] p-2.5 rounded-l-xl mt-2 text-right space-y-1">
-                      <div className="flex items-center justify-between text-[10px] font-extrabold text-[#5A5A40]">
-                        <span>رد إدارة البيت 🏨:</span>
-                        {rev.ownerReplyCreatedAt && (
-                          <span className="text-[8px] text-[#8A8A70] font-mono">{new Date(rev.ownerReplyCreatedAt).toLocaleDateString('ar-EG')}</span>
-                        )}
-                      </div>
-                      <p className="text-[10.5px] text-[#4A4A3A] leading-relaxed">
-                        {rev.ownerReply}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+        {/* Filter chips — reorders reviews by the selected category's score */}
+        {houseReviews.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {REVIEW_CATEGORY_CHIPS.map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={() => { setReviewFilter(chip.key); setReviewsVisibleCount(5); }}
+                className={`px-3 py-1.5 rounded-full text-[10px] font-extrabold border transition-all duration-200 cursor-pointer ${
+                  reviewFilter === chip.key
+                    ? 'bg-[#4A4A3A] text-white border-[#4A4A3A] scale-105'
+                    : 'bg-white text-[#4A4A3A] border-[#D6D6C2] hover:border-[#8A8A70]'
+                }`}
+              >
+                {chip.label}
+              </button>
+            ))}
           </div>
         )}
 
-        {/* Add Review Form */}
-        <form onSubmit={handleReviewSubmit} className="pt-4 border-t border-[#D6D6C2] space-y-4">
-          <div className="bg-[#FAF8F5] p-3.5 rounded-2xl border border-[#D6D6C2] space-y-3">
-            <div className="flex justify-between items-center pb-2 border-b border-[#EBEBE0]">
-              <span className="text-[11px] font-black text-[#4A4A3A] flex items-center gap-1">
-                <Award className="w-4 h-4 text-amber-500" />
-                <span>إضافة تقييم خادم تفصيلي ومحدد الأبعاد:</span>
-              </span>
-              <span className="text-[9.5px] font-bold text-amber-800 bg-amber-100/50 border border-amber-200/50 px-2 py-0.5 rounded-lg">
-                معدل التقييم التلقائي: {((foodRating + serviceRating + cleanlinessRating + organizationRating + valueRating) / 5).toFixed(1)} / 5 ★
-              </span>
-            </div>
+        {houseReviews.length === 0 ? (
+          <p className="text-[11px] text-[#8A8A70]">لا توجد تقييمات مسجلة لهذا البيت بعد. كن أول من يضيف تقييماً خادماً للآخرين!</p>
+        ) : (() => {
+          const dimensionOf = (r: Review, key: ReviewCategoryFilter) => {
+            switch (key) {
+              case 'food': return r.food_rating ?? r.rating;
+              case 'service': return r.service_rating ?? r.rating;
+              case 'cleanliness': return r.cleanliness_rating ?? r.rating;
+              case 'organization': return r.organization_rating ?? r.rating;
+              case 'value': return r.value_rating ?? r.rating;
+              default: return r.overall_rating ?? r.rating;
+            }
+          };
+          const sortedReviews = reviewFilter === 'all'
+            ? houseReviews
+            : [...houseReviews].sort((a, b) => dimensionOf(b, reviewFilter) - dimensionOf(a, reviewFilter));
+          const visibleReviews = sortedReviews.slice(0, reviewsVisibleCount);
 
-            {/* Criteria Stars Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* 1. Food Rating */}
-              <div className="flex items-center justify-between bg-white px-3 py-1.5 rounded-xl border border-[#D6D6C2]/50 text-[10px] font-bold text-[#4A4A3A]">
-                <span>🍗 جودة وجبات الطعام:</span>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((stars) => (
-                    <button
-                      id={`food-star-${stars}`}
-                      key={stars}
-                      type="button"
-                      onClick={() => setFoodRating(stars)}
-                      className="focus:outline-none p-0.5 cursor-pointer"
-                    >
-                      <Star className={`w-3.5 h-3.5 transition-colors ${stars <= foodRating ? 'text-amber-500 fill-amber-500' : 'text-[#D6D6C2] hover:text-amber-300'}`} />
-                    </button>
-                  ))}
-                </div>
+          return (
+            <>
+              <div key={reviewFilter} className="space-y-3 animate-in fade-in duration-300">
+                {visibleReviews.map((rev) => {
+                  const reviewFood = rev.food_rating ?? rev.rating;
+                  const reviewService = rev.service_rating ?? rev.rating;
+                  const reviewClean = rev.cleanliness_rating ?? rev.rating;
+                  const reviewOrg = rev.organization_rating ?? rev.rating;
+                  const reviewVal = rev.value_rating ?? rev.rating;
+                  const reviewOverall = rev.overall_rating ?? rev.rating;
+
+                  return (
+                    <div key={rev.id} className="bg-[#EBEBE0]/25 p-3.5 rounded-2xl border border-[#D6D6C2] space-y-2.5">
+                      <div className="flex justify-between items-start text-xs">
+                        <div>
+                          <span className="font-bold text-[#4A4A3A]">{rev.displayAnonymous ? 'زائر موثق' : rev.userName}</span>
+                          {!rev.displayAnonymous && (
+                            <span className="text-[9px] text-[#8A8A70] font-medium"> ({rev.userRole === 'servant' ? 'خادم' : 'فرد'})</span>
+                          )}
+                          <span className="text-[8px] text-[#9A9A80] font-medium block mt-0.5">
+                            {new Date(rev.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="flex gap-0.5">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star key={s} className={`w-3 h-3 ${s <= Math.round(reviewOverall) ? 'fill-amber-500 text-amber-500' : 'text-[#D6D6C2]'}`} />
+                            ))}
+                          </div>
+                          <span className="text-[9px] font-black text-amber-900">{reviewOverall} / 5</span>
+                        </div>
+                      </div>
+
+                      {/* Multi-dimensional Sub-ratings pills */}
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        <span className="bg-amber-50 border border-amber-200/50 text-amber-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
+                          🍗 طعام: {reviewFood}
+                        </span>
+                        <span className="bg-emerald-50 border border-emerald-200/50 text-emerald-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
+                          🤵 خدمة: {reviewService}
+                        </span>
+                        <span className="bg-blue-50 border border-blue-200/50 text-blue-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
+                          🧼 نظافة: {reviewClean}
+                        </span>
+                        <span className="bg-indigo-50 border border-indigo-200/50 text-indigo-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
+                          📋 تنظيم: {reviewOrg}
+                        </span>
+                        <span className="bg-rose-50 border border-rose-200/50 text-rose-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
+                          💰 قيمة: {reviewVal}
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-[#4A4A3A] leading-relaxed font-medium pt-1 border-t border-[#D6D6C2]/40">
+                        {rev.comment}
+                      </p>
+
+                      {rev.ownerReply && (
+                        <div className="bg-[#5A5A40]/5 border-r-2 border-[#5A5A40] p-2.5 rounded-l-xl mt-2 text-right space-y-1">
+                          <div className="flex items-center justify-between text-[10px] font-extrabold text-[#5A5A40]">
+                            <span>رد إدارة البيت 🏨:</span>
+                            {rev.ownerReplyCreatedAt && (
+                              <span className="text-[8px] text-[#8A8A70] font-mono">{new Date(rev.ownerReplyCreatedAt).toLocaleDateString('ar-EG')}</span>
+                            )}
+                          </div>
+                          <p className="text-[10.5px] text-[#4A4A3A] leading-relaxed">
+                            {rev.ownerReply}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
-              {/* 2. Service Rating */}
-              <div className="flex items-center justify-between bg-white px-3 py-1.5 rounded-xl border border-[#D6D6C2]/50 text-[10px] font-bold text-[#4A4A3A]">
-                <span>🤵 جودة الخدمة والتعاون:</span>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((stars) => (
-                    <button
-                      id={`service-star-${stars}`}
-                      key={stars}
-                      type="button"
-                      onClick={() => setServiceRating(stars)}
-                      className="focus:outline-none p-0.5 cursor-pointer"
-                    >
-                      <Star className={`w-3.5 h-3.5 transition-colors ${stars <= serviceRating ? 'text-amber-500 fill-amber-500' : 'text-[#D6D6C2] hover:text-amber-300'}`} />
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {sortedReviews.length > reviewsVisibleCount && (
+                <button
+                  type="button"
+                  onClick={() => setReviewsVisibleCount((c) => c + 5)}
+                  className="w-full flex items-center justify-center gap-1.5 bg-[#FAF8F5] hover:bg-[#EBEBE0]/50 border border-[#D6D6C2] text-[#4A4A3A] font-extrabold py-2.5 rounded-2xl text-[11px] transition-all cursor-pointer"
+                >
+                  <span>عرض المزيد</span>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </>
+          );
+        })()}
 
-              {/* 3. Cleanliness Rating */}
-              <div className="flex items-center justify-between bg-white px-3 py-1.5 rounded-xl border border-[#D6D6C2]/50 text-[10px] font-bold text-[#4A4A3A]">
-                <span>🧼 نظافة الغرف والمرافق:</span>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((stars) => (
-                    <button
-                      id={`cleanliness-star-${stars}`}
-                      key={stars}
-                      type="button"
-                      onClick={() => setCleanlinessRating(stars)}
-                      className="focus:outline-none p-0.5 cursor-pointer"
-                    >
-                      <Star className={`w-3.5 h-3.5 transition-colors ${stars <= cleanlinessRating ? 'text-amber-500 fill-amber-500' : 'text-[#D6D6C2] hover:text-amber-300'}`} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 4. Organization Rating */}
-              <div className="flex items-center justify-between bg-white px-3 py-1.5 rounded-xl border border-[#D6D6C2]/50 text-[10px] font-bold text-[#4A4A3A]">
-                <span>📋 التنظيم والالتزام بالاتفاق:</span>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((stars) => (
-                    <button
-                      id={`organization-star-${stars}`}
-                      key={stars}
-                      type="button"
-                      onClick={() => setOrganizationRating(stars)}
-                      className="focus:outline-none p-0.5 cursor-pointer"
-                    >
-                      <Star className={`w-3.5 h-3.5 transition-colors ${stars <= organizationRating ? 'text-amber-500 fill-amber-500' : 'text-[#D6D6C2] hover:text-amber-300'}`} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 5. Value Rating */}
-              <div className="flex items-center justify-between bg-white px-3 py-1.5 rounded-xl border border-[#D6D6C2]/50 text-[10px] font-bold text-[#4A4A3A] sm:col-span-2">
-                <span>💰 القيمة مقابل السعر والمزايا المتاحة:</span>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((stars) => (
-                    <button
-                      id={`value-star-${stars}`}
-                      key={stars}
-                      type="button"
-                      onClick={() => setValueRating(stars)}
-                      className="focus:outline-none p-0.5 cursor-pointer"
-                    >
-                      <Star className={`w-3.5 h-3.5 transition-colors ${stars <= valueRating ? 'text-amber-500 fill-amber-500' : 'text-[#D6D6C2] hover:text-amber-300'}`} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2">
-            <input
-              id="new-review-comment"
-              type="text"
-              required
-              placeholder="اكتب تعليقك وتجربتك بالتفصيل في خدمة البيت، ونظافته وأكله، لمساعدة باقى كنائس الخدام..."
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              className="flex-1 bg-white border border-[#D6D6C2] text-xs px-3 py-2.5 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40] font-medium"
-            />
-            <button
-              id="submit-review-btn"
-              type="submit"
-              className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white px-4 py-2.5 rounded-xl shadow-sm transition-colors cursor-pointer flex items-center justify-center"
-              title="إرسال التقييم"
-            >
-              <Send className="w-4 h-4 rotate-180" />
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Thank you and Social Media Share suggestion Modal */}
-      {showReviewSuccessModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 text-right text-[#4A4A3A]">
-          <div className="fixed inset-0 bg-black/60" onClick={() => setShowReviewSuccessModal(false)} />
-          
-          <div className="bg-white rounded-3xl max-w-md w-full border border-[#D6D6C2] shadow-2xl overflow-hidden relative z-10 animate-in zoom-in-95 duration-200">
-            {/* Header decoration */}
-            <div className="bg-[#5A5A40] text-white p-6 text-center space-y-2 relative overflow-hidden">
-              <div className="absolute -top-10 -left-10 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none" />
-              <div className="mx-auto w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-1 border border-white/25">
-                <Heart className="w-6 h-6 text-rose-300 fill-rose-400" />
-              </div>
-              <h3 className="text-sm font-extrabold tracking-wide">نشكرك من القلب على تقييمك! ❤️</h3>
-              <p className="text-[10px] text-white/80">تقييمك الأمين يدعم مئات الكنائس والخدام الآخرين بمصر</p>
-            </div>
-
-            {/* Content body */}
-            <div className="p-5 space-y-4">
-              <p className="text-xs text-[#4A4A3A] leading-relaxed">
-                تم إضافة تقييمك متعدد الأبعاد لبيت <strong className="text-[#5A5A40]">"{house.name}"</strong> بنجاح. مشاركتك لهذه التفاصيل والخبرات الروحية تساعد باقى كنائس الخدام في اتخاذ القرار الأنسب.
-              </p>
-
-              <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl space-y-2">
-                <span className="text-[11px] font-black text-amber-950 block">💡 شارك تقييمك وتجربتك للبيت:</span>
-                <p className="text-[10px] text-amber-900 leading-relaxed">
-                  هل حظيت بمؤتمر أو خلوة ممتعة ومثمرة في هذا البيت؟ شارك التقييم مع خدام كنيستك وأصدقائك لتسهيل وصولهم للمكان وخدمة الجميع!
-                </p>
-              </div>
-
-              {/* Direct shareable link */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-[#8A8A70] block">رابط مباشر لتقييمات البيت:</label>
-                <div className="flex gap-2">
-                  <input
-                    id="share-link-input"
-                    type="text"
-                    readOnly
-                    value={`https://copticretreats.eg/house/${house.id}`}
-                    className="flex-1 bg-slate-50 border border-[#D6D6C2] text-[10px] font-mono px-3 py-2 rounded-lg text-left text-[#5A5A40] focus:outline-none"
-                  />
-                  <button
-                    id="copy-link-btn"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`https://copticretreats.eg/house/${house.id}`);
-                      setCopiedLink(true);
-                      setTimeout(() => setCopiedLink(false), 2000);
-                    }}
-                    className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[10px] font-bold px-3 py-2 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
-                  >
-                    {copiedLink ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>تم النسخ!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>نسخ</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Direct social buttons */}
-              <div className="space-y-2 pt-1">
-                <span className="text-[10px] font-bold text-[#8A8A70] block">مشاركة عبر رابط مباشر:</span>
-                <div className="grid grid-cols-2 gap-2">
-                  <a
-                    id="share-whatsapp-btn"
-                    href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`شاهد تقييمي لبيت المؤتمرات "${house.name}" وتفاصيل خلوات الكنائس السابقة عبر هذا الرابط: https://copticretreats.eg/house/${house.id}`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-200 px-3 py-2 rounded-xl text-xs font-bold transition-all text-center"
-                  >
-                    <span>مشاركة واتساب 🟢</span>
-                  </a>
-                  <a
-                    id="share-facebook-btn"
-                    href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`https://copticretreats.eg/house/${house.id}`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-950 border border-blue-200 px-3 py-2 rounded-xl text-xs font-bold transition-all text-center"
-                  >
-                    <span>مشاركة فيسبوك 🔵</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal footer */}
-            <div className="bg-slate-50 p-4 border-t border-[#D6D6C2] flex justify-center">
-              <button
-                id="close-share-modal-btn"
-                onClick={() => setShowReviewSuccessModal(false)}
-                className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white px-6 py-2 rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer w-full text-center"
-              >
-                إغلاق
-              </button>
-            </div>
-          </div>
+        {/* 3-step guest review flow — replaces the old single-screen form */}
+        <div className="pt-4 border-t border-[#D6D6C2]">
+          <ReviewWizard house={house} currentUser={currentUser} onSubmitReview={onSubmitReview} previewMode={previewMode} />
         </div>
-      )}
+      </div>
 
     </div>
   );
