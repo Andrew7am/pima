@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { RetreatHouse, Booking, Review, User, Room, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { SUITABILITY_MAP } from '../mockData';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice } from '../lib/pricing';
+import { getHouseOwnerProfile, OwnerProfile } from '../lib/db';
 import { 
   ArrowRight, MapPin, BedDouble, Calendar, Users, 
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
@@ -622,6 +623,15 @@ export default function HouseDetail({
   // Review states
   const [reviewFilter, setReviewFilter] = useState<ReviewCategoryFilter>('all');
   const [reviewsVisibleCount, setReviewsVisibleCount] = useState(5);
+  // Public owner "trust card" — fetched via SECURITY DEFINER RPC (migration
+  // 056), returns first name + avatar + hosted-groups + avg-response-hours.
+  // No contact info (that's intentional — anti-disintermediation).
+  const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getHouseOwnerProfile(house.id).then((p) => { if (!cancelled) setOwnerProfile(p); });
+    return () => { cancelled = true; };
+  }, [house.id]);
 
   // Interactive weekly menu states
   const [selectedMenuDay, setSelectedMenuDay] = useState<string>(house.menu?.weeklyMenu?.[0]?.day || 'السبت');
@@ -1012,6 +1022,38 @@ export default function HouseDetail({
                 <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
                 Apple Maps
               </a>
+            </div>
+          )}
+
+          {/* Owner trust card — first name + avatar + verified badge +
+              hosted count + avg response time (all from migration 056 RPC);
+              no phone/email intentionally. */}
+          {ownerProfile && (
+            <div className="mt-3 bg-white border border-[#D6D6C2] rounded-2xl p-3 flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#5A5A40] text-white flex items-center justify-center text-base font-black shrink-0 overflow-hidden">
+                {ownerProfile.avatarUrl ? (
+                  <img src={ownerProfile.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <span>{ownerProfile.firstName.charAt(0)}</span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs font-black text-[#4A4A3A]">مضيفك: {ownerProfile.firstName}</span>
+                  {ownerProfile.verified && (
+                    <span className="text-[9px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                      <CheckCircle2 className="w-3 h-3" /><span>موثّق</span>
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-1 text-[10px] text-[#8A8A70] font-bold">
+                  {ownerProfile.hostedGroups > 0 && <span>🎉 استضاف {ownerProfile.hostedGroups} مجموعة</span>}
+                  {ownerProfile.avgResponseHours != null && (
+                    <span>⚡ يرد عادةً خلال {ownerProfile.avgResponseHours < 1 ? 'أقل من ساعة' : `${Math.round(ownerProfile.avgResponseHours)} ساعات`}</span>
+                  )}
+                </div>
+                <p className="text-[9.5px] text-[#8A8A70] font-medium mt-1">🔒 التواصل يتم داخل التطبيق فقط عبر محادثة الحجز — لضمان حقوقك وأمان بياناتك.</p>
+              </div>
             </div>
           )}
 
@@ -2098,6 +2140,26 @@ export default function HouseDetail({
                     </>
                   )}
                 </div>
+
+                {/* Loyalty earn preview — makes the reason to book through
+                    the platform (not off-platform) tangible up front. */}
+                {!isMonthlyHousing && totalPrice > 0 && (() => {
+                  // Mirror the DB trigger (migration 005/024): 1 pt per EGP
+                  // paid (deposit or full), 2× outside peak (Jul/Aug).
+                  const checkinMonth = checkIn ? new Date(checkIn).getMonth() + 1 : 0;
+                  const multiplier = checkinMonth === 7 || checkinMonth === 8 ? 1 : 2;
+                  const pointsPreview = Math.round(depositAmount * multiplier);
+                  return (
+                    <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-3 flex items-center justify-between gap-2 text-[10px]">
+                      <div className="flex items-center gap-1.5 font-extrabold text-amber-950">
+                        <Coins className="w-4 h-4 text-amber-700" />
+                        <span>هتكسب <strong className="text-amber-900">{pointsPreview.toLocaleString('ar-EG')}</strong> نقطة على العربون</span>
+                        {multiplier === 2 && <span className="text-[9px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded-full font-black">×2 موسم غير ذروة</span>}
+                      </div>
+                      <span className="text-[9px] text-amber-800/80 font-bold">= ~{Math.round(pointsPreview / settings.pointsPerEgp)} ج.م خصم في حجزك الجاي</span>
+                    </div>
+                  );
+                })()}
 
                 {/* Declared cancellation policy — shown BEFORE any money moves */}
                 <div className="bg-sky-50/60 border border-sky-200 rounded-2xl p-3 space-y-1.5 text-[10px] text-sky-950">

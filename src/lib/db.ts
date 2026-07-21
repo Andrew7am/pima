@@ -906,10 +906,29 @@ export async function deleteOwnAccount(): Promise<{ ok: boolean; error?: string 
 // House owner contact reveal (migration 031). Only returns a row once the
 // caller's own booking on that house is approved and deposit-paid — see the
 // migration for why this can't just be a wider `users` RLS policy.
-export async function getHouseOwnerContact(bookingId: string): Promise<{ name: string; phone: string } | null> {
-  const { data, error } = await supabase.rpc('get_house_owner_contact', { p_booking_id: bookingId });
-  if (error) { console.error('getHouseOwnerContact:', error); return null; }
-  return data?.[0] ?? null;
+// Owner phone/email are intentionally UNAVAILABLE — all guest↔owner
+// communication goes through booking_messages. Do NOT re-add a contact
+// reveal without checking migration 056's rationale (anti-disintermediation).
+export interface OwnerProfile {
+  firstName: string;
+  avatarUrl: string | null;
+  hostedGroups: number;
+  avgResponseHours: number | null;
+  verified: boolean;
+}
+
+export async function getHouseOwnerProfile(houseId: string): Promise<OwnerProfile | null> {
+  const { data, error } = await supabase.rpc('get_house_owner_profile', { p_house_id: houseId });
+  if (error) { console.error('getHouseOwnerProfile:', error); return null; }
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+  return {
+    firstName: (row.first_name as string) || 'المالك',
+    avatarUrl: (row.avatar_url as string) || null,
+    hostedGroups: (row.hosted_groups as number) || 0,
+    avgResponseHours: row.avg_response_hours != null ? Number(row.avg_response_hours) : null,
+    verified: Boolean(row.verified),
+  };
 }
 
 // Admin-only audit trail (migration 032) — RLS restricts SELECT to admins,

@@ -19,7 +19,6 @@ import {
   createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
   loadPlatformSettings, updatePlatformSettings,
   deleteOwnAccount,
-  getHouseOwnerContact,
   loadAuditLog,
   loadPaymentProofImage,
 } from './lib/db';
@@ -90,7 +89,6 @@ export default function App() {
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [allocations, setAllocations] = useState<RoomAllocation[]>([]);
   const [allocationsCount, setAllocationsCount] = useState(0);
-  const [ownerContacts, setOwnerContacts] = useState<Record<string, { name: string; phone: string }>>({});
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
 
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
@@ -1135,15 +1133,10 @@ export default function App() {
     setAllocations(prev => [...prev.filter(al => al.bookingId !== bookingId), ...bookingAllocations]);
   }, []);
 
-  // House owner contact (migration 031) — only revealed once the guest's own
-  // booking is approved and deposit-paid, so fetch it lazily per booking the
-  // first time UserBookings needs to render the reveal card, not up front.
-  const handleRevealOwnerContact = useCallback(async (bookingId: string) => {
-    const contact = await getHouseOwnerContact(bookingId);
-    if (contact) {
-      setOwnerContacts((prev) => ({ ...prev, [bookingId]: contact }));
-    }
-  }, []);
+  // Owner contact reveal was removed in migration 056 (anti-
+  // disintermediation): the guest talks to the owner ONLY through
+  // booking_messages. Kept the state field so any stale prop consumers
+  // still see an empty map, but no fetch fires.
 
   const handleUpdateAttendees = (bookingId: string, bookingAttendees: Attendee[]) => {
     setAttendees(prev => {
@@ -1441,8 +1434,6 @@ export default function App() {
               payments={payments}
               onSubmitPayment={handleSubmitPayment}
               settings={settings}
-              ownerContacts={ownerContacts}
-              onRevealOwnerContact={handleRevealOwnerContact}
             />
           )}
 

@@ -4,7 +4,7 @@ import {
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
   Printer, Building, AlertTriangle, Bell, Smartphone, CreditCard, 
   Coins, Upload, ShieldCheck, Image, Check, Sparkles, ListTodo, Plus, Trash2, BookOpen,
-  FileDown, MessageCircle
+  FileDown, MessageCircle, MapPin
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
 import BookingChatPanel from './BookingChatPanel';
@@ -23,8 +23,6 @@ interface UserBookingsProps {
   payments: Payment[];
   onSubmitPayment: (payment: Payment) => void;
   settings?: PlatformSettings;
-  ownerContacts?: Record<string, { name: string; phone: string }>;
-  onRevealOwnerContact?: (bookingId: string) => void;
 }
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
@@ -134,8 +132,6 @@ export default function UserBookings({
   payments,
   onSubmitPayment,
   settings = DEFAULT_PLATFORM_SETTINGS,
-  ownerContacts = {},
-  onRevealOwnerContact
 }: UserBookingsProps) {
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
@@ -313,13 +309,6 @@ export default function UserBookings({
   // Fetch the house owner's contact info (migration 031) the moment a
   // booking becomes eligible for reveal, instead of upfront for every
   // booking — mirrors onOpenRoomDistribution's lazy-load pattern.
-  useEffect(() => {
-    userBookings
-      .filter((b) => b.status === 'approved' && b.depositPaid && !ownerContacts[b.id])
-      .forEach((b) => onRevealOwnerContact?.(b.id));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userBookings.map((b) => `${b.id}:${b.status}:${b.depositPaid}`).join(',')]);
-
   const getStatusBadge = (status: Booking['status']) => {
     switch (status) {
       case 'pending':
@@ -631,66 +620,30 @@ export default function UserBookings({
                   </div>
                 )}
 
-                {/* Owner contact reveal — visible ONLY after booking is approved AND deposit is paid */}
-                {(() => {
-                  const isRevealed = booking.status === 'approved' && booking.depositPaid;
+                {/* Communication with the owner happens ONLY through the
+                    in-app chat — no phone/email reveal. The address shows
+                    up here after deposit is paid, so the group knows where
+                    to go on the day. */}
+                {booking.status === 'approved' && booking.depositPaid && (() => {
                   const house = houses.find(h => h.id === booking.houseId);
-                  const ownerContact = ownerContacts[booking.id];
-
-                  if (!isRevealed) {
-                    return (
-                      <div className="px-4 py-3 bg-slate-50 border-b border-[#D6D6C2]/60 flex items-start gap-2 text-[10px] text-slate-700">
-                        <ShieldCheck className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
-                        <div>
-                          <div className="font-extrabold text-slate-800 mb-0.5">🔒 بيانات التواصل مع المالك مخفية</div>
-                          <div className="text-slate-600">ستظهر بيانات التواصل الكاملة (رقم الهاتف، الواتساب، والعنوان التفصيلي لمسؤول الاستقبال) بعد تأكيد الحجز واستلام العربون.</div>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (!ownerContact) {
-                    return (
-                      <div className="px-4 py-3 bg-slate-50 border-b border-[#D6D6C2]/60 text-[10px] text-slate-500">
-                        جارٍ تحميل بيانات التواصل...
-                      </div>
-                    );
-                  }
-
-                  const ownerPhone = ownerContact.phone;
-                  const ownerName = house?.ownerName || ownerContact.name || 'المالك';
-                  const whatsappLink = ownerPhone ? `https://wa.me/2${ownerPhone.replace(/^0/, '')}` : null;
-
                   return (
-                    <div className="px-4 py-3 bg-emerald-50 border-b border-emerald-200 space-y-1.5 text-[10px]">
+                    <div className="px-4 py-3 bg-emerald-50 border-b border-emerald-200 space-y-2 text-[10px]">
                       <div className="flex items-center gap-1.5 font-extrabold text-emerald-900">
                         <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                        <span>✓ بيانات التواصل مع مالك البيت</span>
+                        <span>✓ حجزك مؤكد وجاهز</span>
                       </div>
-                      <div className="bg-white p-2.5 rounded-xl border border-emerald-200 space-y-1.5">
-                        <div className="flex justify-between items-center">
-                          <span className="text-emerald-800 font-bold">اسم المسؤول:</span>
-                          <span className="font-extrabold text-slate-800">{ownerName}</span>
+                      {house?.address && (
+                        <div className="bg-white p-2.5 rounded-xl border border-emerald-200 flex items-start gap-2 text-slate-700">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="text-emerald-800 font-bold mb-0.5">عنوان البيت:</div>
+                            <div>{house.address}</div>
+                          </div>
                         </div>
-                        {ownerPhone && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-emerald-800 font-bold">رقم الجوال:</span>
-                            <a href={`tel:${ownerPhone}`} className="font-mono font-extrabold text-emerald-900 underline">{ownerPhone}</a>
-                          </div>
-                        )}
-                        {whatsappLink && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-emerald-800 font-bold">واتساب:</span>
-                            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="text-emerald-900 underline font-bold">فتح المحادثة ←</a>
-                          </div>
-                        )}
-                        {house?.address && (
-                          <div className="flex justify-between items-start gap-2">
-                            <span className="text-emerald-800 font-bold shrink-0">العنوان الكامل:</span>
-                            <span className="text-slate-700 text-right">{house.address}</span>
-                          </div>
-                        )}
-                      </div>
+                      )}
+                      <p className="text-emerald-900 text-[10px] leading-relaxed">
+                        💬 لأي استفسار أو تنسيق قبل الوصول، تواصل مع صاحب البيت مباشرةً من محادثة الحجز بالأسفل — كل الرسائل محفوظة عندك.
+                      </p>
                     </div>
                   );
                 })()}
