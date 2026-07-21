@@ -13,6 +13,7 @@ import OwnerNotifications from './OwnerNotifications';
 import OwnerReports from './OwnerReports';
 import OwnerFoodMenu from './OwnerFoodMenu';
 import OwnerRoomDistributionScreen from './OwnerRoomDistribution';
+import OwnerTour from './OwnerTour';
 import OwnerCustomers from './OwnerCustomers';
 import { supabase } from '../../lib/supabase';
 import { getRoomBedState, getHouseRoomAvailabilityForRange } from '../../lib/roomOccupancy';
@@ -132,6 +133,17 @@ export default function OwnerDashboardShell({
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState('');
   const [showManualMap, setShowManualMap] = useState(false);
+  // First-run product tour — surfaces the key features (bookings, smart
+  // room distribution, in-app chat, points) that new owners won't discover
+  // cold. Auto-opens once per device, re-openable from the hero "?" button.
+  const [showTour, setShowTour] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try { return localStorage.getItem('pima_owner_tour_done') !== '1'; } catch { return false; }
+  });
+  const dismissTour = () => {
+    try { localStorage.setItem('pima_owner_tour_done', '1'); } catch { /* storage unavailable */ }
+    setShowTour(false);
+  };
   const [pricePerNight, setPricePerNight] = useState<number>(150);
   // Seasonal-rate editor drafts (saved owner-direct via onUpdateHouse —
   // no admin re-approval, like payment methods; migration 055)
@@ -805,6 +817,11 @@ export default function OwnerDashboardShell({
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
+                    <button type="button" id="hero-help-btn" onClick={() => setShowTour(true)}
+                      className="p-2 rounded-xl bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] cursor-pointer"
+                      title="جولة تعريفية">
+                      <HelpCircle className="w-4 h-4" />
+                    </button>
                     <button type="button" id="hero-notifications-btn" onClick={() => { setActiveTab('notifications'); setShowOverflow(false); }}
                       className="relative p-2 rounded-xl bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] cursor-pointer">
                       <Bell className="w-4 h-4" />
@@ -2386,6 +2403,15 @@ export default function OwnerDashboardShell({
         );
       })()}
       </div>
+
+      {/* First-run tour + on-demand "?" reopen */}
+      {showTour && (
+        <OwnerTour
+          ownerFirstName={owner.name.split(' ')[0]}
+          onClose={dismissTour}
+          onNavigateSupport={onNavigateSupport}
+        />
+      )}
     </div>
   );
 }
