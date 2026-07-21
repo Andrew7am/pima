@@ -68,8 +68,9 @@ export default function AdminDashboard({
   onUpdateHouse,
   onDeleteHouse,
 }: AdminDashboardProps) {
-  // Tabs within Admin
-  const [activeTab, setActiveTab] = useState<'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings' | 'settings' | 'audit'>('moderation');
+  // Tabs within Admin — "growth" is default: the admin's morning check
+  // (what's happening + what needs attention). Older tabs still exist.
+  const [activeTab, setActiveTab] = useState<'growth' | 'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings' | 'settings' | 'audit'>('growth');
   // Draft copy of settings for the settings form
   const [settingsDraft, setSettingsDraft] = useState(settings);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -312,6 +313,15 @@ export default function AdminDashboard({
       {/* Internal Navigation */}
       <div className="flex border border-[#D6D6C2] bg-white p-1 rounded-2xl gap-1 overflow-x-auto">
         <button
+          id="admin-tab-growth"
+          onClick={() => setActiveTab('growth')}
+          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'growth' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+          }`}
+        >
+          📈 النمو
+        </button>
+        <button
           id="admin-tab-moderation"
           onClick={() => setActiveTab('moderation')}
           className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap relative ${
@@ -423,6 +433,201 @@ export default function AdminDashboard({
           📜 سجل التدقيق
         </button>
       </div>
+
+      {/* Growth Dashboard — the admin's morning brief.
+          Everything computed client-side from already-loaded data.
+          What the project owner needs to see FIRST every day: are we
+          growing this week, where's the funnel dropping, what's hot. */}
+      {activeTab === 'growth' && (() => {
+        const now = new Date();
+        const dayMs = 86_400_000;
+        const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        const todayMs = startOfDay(now);
+        const weekAgoMs = todayMs - 7 * dayMs;
+        const twoWeeksAgoMs = todayMs - 14 * dayMs;
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+
+        const bookingTs = (b: Booking) => new Date(b.createdAt).getTime();
+        const userTs = (u: User) => new Date(u.createdAt).getTime();
+
+        const usersThisWeek = users.filter((u) => userTs(u) >= weekAgoMs).length;
+        const usersLastWeek = users.filter((u) => userTs(u) >= twoWeeksAgoMs && userTs(u) < weekAgoMs).length;
+        const bookingsThisWeek = bookings.filter((b) => bookingTs(b) >= weekAgoMs).length;
+        const bookingsLastWeek = bookings.filter((b) => bookingTs(b) >= twoWeeksAgoMs && bookingTs(b) < weekAgoMs).length;
+
+        const revThisMonth = bookings
+          .filter((b) => (b.status === 'approved' || b.status === 'completed') && bookingTs(b) >= monthStart)
+          .reduce((s, b) => s + b.totalPrice, 0);
+        const revLastMonth = bookings
+          .filter((b) => (b.status === 'approved' || b.status === 'completed') && bookingTs(b) >= lastMonthStart && bookingTs(b) < monthStart)
+          .reduce((s, b) => s + b.totalPrice, 0);
+
+        const pctChange = (curr: number, prev: number) =>
+          prev === 0 ? (curr > 0 ? '+∞' : '0') : `${curr >= prev ? '+' : ''}${Math.round(((curr - prev) / prev) * 100)}%`;
+
+        // Funnel: total non-owner/admin users → those with any booking → those with any paid booking
+        const guestUsers = users.filter((u) => u.role === 'individual' || u.role === 'servant');
+        const usersWithBooking = new Set(bookings.map((b) => b.userId));
+        const usersWithPaidBooking = new Set(
+          bookings.filter((b) => b.paymentStatus === 'paid_deposit' || b.paymentStatus === 'paid_full').map((b) => b.userId)
+        );
+        const funnelSignups = guestUsers.length;
+        const funnelBooked = guestUsers.filter((u) => usersWithBooking.has(u.id)).length;
+        const funnelPaid = guestUsers.filter((u) => usersWithPaidBooking.has(u.id)).length;
+        const pct = (n: number, d: number) => d === 0 ? 0 : Math.round((n / d) * 100);
+
+        // 14-day bookings sparkline
+        const days: { ts: number; count: number }[] = [];
+        for (let i = 13; i >= 0; i--) {
+          const startTs = todayMs - i * dayMs;
+          const endTs = startTs + dayMs;
+          days.push({ ts: startTs, count: bookings.filter((b) => bookingTs(b) >= startTs && bookingTs(b) < endTs).length });
+        }
+        const maxDay = Math.max(1, ...days.map((d) => d.count));
+
+        // Top houses this month
+        const perHouse = new Map<string, { count: number; revenue: number }>();
+        bookings
+          .filter((b) => (b.status === 'approved' || b.status === 'completed') && bookingTs(b) >= monthStart)
+          .forEach((b) => {
+            const cur = perHouse.get(b.houseId) ?? { count: 0, revenue: 0 };
+            perHouse.set(b.houseId, { count: cur.count + 1, revenue: cur.revenue + b.totalPrice });
+          });
+        const topHouses = [...perHouse.entries()]
+          .map(([houseId, v]) => ({ house: houses.find((h) => h.id === houseId), ...v }))
+          .filter((x) => x.house)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
+
+        // Recent activity feed: mix new signups + new bookings, last 7 days, sorted
+        const activity: { ts: number; icon: string; text: string }[] = [];
+        users.filter((u) => userTs(u) >= weekAgoMs).forEach((u) => {
+          activity.push({ ts: userTs(u), icon: '👤', text: `${u.name} أنشأ حساب جديد (${u.role === 'servant' ? 'خادم' : u.role === 'owner' ? 'مالك' : 'فرد'})` });
+        });
+        bookings.filter((b) => bookingTs(b) >= weekAgoMs).forEach((b) => {
+          activity.push({ ts: bookingTs(b), icon: '📅', text: `حجز جديد: ${b.organizationName || b.userName} → ${b.houseName}` });
+        });
+        activity.sort((a, b) => b.ts - a.ts);
+        const recentActivity = activity.slice(0, 8);
+
+        const KpiCard = ({ title, value, delta, suffix }: { title: string; value: number | string; delta: string; suffix?: string }) => {
+          const isUp = delta.startsWith('+') && delta !== '+0%';
+          const isDown = delta.startsWith('-');
+          return (
+            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-1">
+              <div className="text-[10px] text-[#8A8A70] font-bold">{title}</div>
+              <div className="text-xl font-black text-[#4A4A3A]">{typeof value === 'number' ? value.toLocaleString('ar-EG') : value}{suffix && <span className="text-[10px] text-[#8A8A70] font-bold mr-1">{suffix}</span>}</div>
+              <div className={`text-[10px] font-extrabold ${isUp ? 'text-emerald-700' : isDown ? 'text-rose-700' : 'text-[#8A8A70]'}`}>
+                {isUp ? '↗' : isDown ? '↘' : '→'} {delta} <span className="text-[#8A8A70] font-medium">vs الأسبوع السابق</span>
+              </div>
+            </div>
+          );
+        };
+
+        return (
+          <div className="space-y-4">
+            {/* KPI row — the four numbers to check every morning */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <KpiCard title="مستخدمين جدد (٧ أيام)" value={usersThisWeek} delta={pctChange(usersThisWeek, usersLastWeek)} />
+              <KpiCard title="حجوزات جديدة (٧ أيام)" value={bookingsThisWeek} delta={pctChange(bookingsThisWeek, bookingsLastWeek)} />
+              <KpiCard title="إيرادات هذا الشهر" value={revThisMonth} suffix="ج.م" delta={pctChange(revThisMonth, revLastMonth)} />
+              <KpiCard title="بيوت نشطة" value={houses.filter((h) => h.status === 'approved').length} delta="—" />
+            </div>
+
+            {/* 14-day bookings sparkline */}
+            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-[#4A4A3A]">الحجوزات آخر ١٤ يوم</span>
+                <span className="text-[10px] font-bold text-[#8A8A70]">{days.reduce((s, d) => s + d.count, 0)} حجز</span>
+              </div>
+              <div className="flex items-end gap-1 h-24" dir="ltr">
+                {days.map((d) => (
+                  <div key={d.ts} className="flex-1 flex flex-col items-center gap-1 group">
+                    <div className="flex-1 w-full flex items-end">
+                      <div className="w-full bg-[#5A5A40] rounded-t-md group-hover:bg-[#4A4A3A] transition-colors" style={{ height: `${(d.count / maxDay) * 100}%`, minHeight: d.count > 0 ? '4px' : '0' }} title={`${new Date(d.ts).toLocaleDateString('ar-EG')} · ${d.count} حجز`} />
+                    </div>
+                    <span className="text-[8.5px] font-bold text-[#8A8A70]">{new Date(d.ts).getDate()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Conversion funnel */}
+            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-3">
+              <span className="text-xs font-black text-[#4A4A3A]">مسار التحويل (كل الوقت)</span>
+              <div className="space-y-2">
+                {([
+                  { label: 'التسجيلات (أفراد وخدام)', value: funnelSignups, pct: 100 },
+                  { label: 'اللي بدأوا حجز', value: funnelBooked, pct: pct(funnelBooked, funnelSignups) },
+                  { label: 'اللي دفعوا فعلاً', value: funnelPaid, pct: pct(funnelPaid, funnelSignups) },
+                ]).map((step) => (
+                  <div key={step.label} className="space-y-0.5">
+                    <div className="flex justify-between items-center text-[10px] font-bold text-[#4A4A3A]">
+                      <span>{step.label}</span>
+                      <span>{step.value.toLocaleString('ar-EG')} <span className="text-[#8A8A70] font-medium">({step.pct}%)</span></span>
+                    </div>
+                    <div className="h-2 bg-[#EBEBE0]/50 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#5A5A40] rounded-full transition-all" style={{ width: `${step.pct}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {funnelSignups > 0 && (
+                <p className="text-[9px] text-[#8A8A70] font-medium">
+                  💡 {pct(funnelBooked, funnelSignups) < 20 ? 'أقل من ٢٠٪ من المسجّلين بيبدأوا حجز — فرصة تحسين في التصفح وسهولة الحجز.' : 'التحويل من التسجيل للحجز في نطاق صحي.'}
+                </p>
+              )}
+            </div>
+
+            {/* Top houses this month */}
+            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-2">
+              <span className="text-xs font-black text-[#4A4A3A]">أعلى ٥ بيوت هذا الشهر</span>
+              {topHouses.length === 0 ? (
+                <p className="text-[10px] text-[#8A8A70] text-center py-3">لا يوجد حجوزات مؤكدة هذا الشهر بعد.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {topHouses.map((row, i) => (
+                    <div key={row.house!.id} className="flex items-center gap-2 bg-[#FAF8F5] border border-[#D6D6C2] rounded-2xl p-2.5">
+                      <span className="w-6 h-6 rounded-full bg-[#5A5A40] text-white text-[10px] font-black flex items-center justify-center shrink-0">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] font-bold text-[#4A4A3A] truncate">{row.house!.name}</div>
+                        <div className="text-[9.5px] text-[#8A8A70]">{row.house!.governorate}</div>
+                      </div>
+                      <div className="text-left shrink-0">
+                        <div className="text-[11px] font-black text-[#4A4A3A]">{row.count} <span className="text-[9px] text-[#8A8A70]">حجز</span></div>
+                        <div className="text-[9px] text-[#8A8A70]">{row.revenue.toLocaleString()} ج.م</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recent activity feed */}
+            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-2">
+              <span className="text-xs font-black text-[#4A4A3A]">آخر نشاط (٧ أيام)</span>
+              {recentActivity.length === 0 ? (
+                <p className="text-[10px] text-[#8A8A70] text-center py-3">لا يوجد نشاط في آخر أسبوع.</p>
+              ) : (
+                <div className="space-y-1">
+                  {recentActivity.map((a, i) => {
+                    const mins = Math.max(0, Math.round((Date.now() - a.ts) / 60_000));
+                    const ago = mins < 60 ? `${mins} د` : mins < 1440 ? `${Math.round(mins / 60)} س` : `${Math.round(mins / 1440)} ي`;
+                    return (
+                      <div key={i} className="flex items-center gap-2 text-[10px] text-[#4A4A3A] py-1 border-b border-[#EBEBE0]/60 last:border-0">
+                        <span className="text-sm">{a.icon}</span>
+                        <span className="flex-1 min-w-0 truncate">{a.text}</span>
+                        <span className="text-[9px] text-[#8A8A70] font-bold shrink-0">منذ {ago}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Moderation Panel */}
       {activeTab === 'moderation' && (
