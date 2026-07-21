@@ -18,9 +18,20 @@ import { supabase } from '../../lib/supabase';
 import { getRoomBedState, getHouseRoomAvailabilityForRange } from '../../lib/roomOccupancy';
 import LocationPicker from '../LocationPicker';
 
-type PrimaryTab = 'stats' | 'bookings' | 'messages' | 'reports' | 'more';
+type PrimaryTab = 'stats' | 'bookings' | 'messages' | 'reports';
 type OverflowTab = 'rooms' | 'financials' | 'reviews' | 'house' | 'occupancy' | 'notifications' | 'profile' | 'room_distribution' | 'customers';
 type ActiveTab = PrimaryTab | OverflowTab;
+
+// Relative time for the activity feed — "منذ 10 دقائق" style, like the mockup.
+function timeAgo(iso: string): string {
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
+  if (mins < 1) return 'الآن';
+  if (mins < 60) return `منذ ${mins} دقيقة`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return hours === 1 ? 'منذ ساعة' : `منذ ${hours} ساعة`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? 'منذ يوم' : `منذ ${days} يوم`;
+}
 
 interface OwnerDashboardShellProps {
   owner: User;
@@ -515,12 +526,15 @@ export default function OwnerDashboardShell({
     }
   };
 
-  const PRIMARY_TABS: { key: PrimaryTab; label: string; icon: React.ElementType }[] = [
-    { key: 'stats', label: 'الرئيسية', icon: Home },
+  // Mobile bottom nav (mockup order, RTL right→left): الحجوزات، الغرف،
+  // الرئيسية (مرتفعة في النص)، المحادثات، التقارير. "المزيد" moved to the
+  // hero's menu button (toggles the same overflow panel).
+  const MOBILE_TABS: { key: ActiveTab; label: string; icon: React.ElementType; center?: boolean }[] = [
     { key: 'bookings', label: 'الحجوزات', icon: ClipboardList },
+    { key: 'rooms', label: 'الغرف', icon: BedDouble },
+    { key: 'stats', label: 'الرئيسية', icon: Home, center: true },
     { key: 'messages', label: 'المحادثات', icon: MessageCircle },
     { key: 'reports', label: 'التقارير', icon: BarChart3 },
-    { key: 'more', label: 'المزيد', icon: Menu },
   ];
 
   // Desktop sidebar: نظام تنقل متداخل — الحجوزات والغرف مجموعتان قابلتان
@@ -674,26 +688,50 @@ export default function OwnerDashboardShell({
         </div>
       </div>
 
-      {/* Primary nav: 5 always-visible destinations (mobile only — desktop uses the sidebar) */}
-      <div className="flex border border-[var(--color-owner-border)] bg-[var(--color-owner-surface)] p-1 rounded-2xl gap-1 relative lg:hidden">
-        {PRIMARY_TABS.map((t) => {
+      {/* Mobile bottom-style nav (mockup): floating rounded bar, center home
+          elevated as a dark pill, numeric badges on bookings/messages. */}
+      <div className="flex items-end border border-[var(--color-owner-border)] bg-[var(--color-owner-surface)] px-2 pb-1.5 pt-2 rounded-3xl gap-1 relative shadow-sm lg:hidden">
+        {MOBILE_TABS.map((t) => {
           const Icon = t.icon;
-          const isSel = t.key === 'more' ? showOverflow : (activeTab === t.key && !showOverflow);
-          const showBadge = (t.key === 'bookings' && pendingBookings.length > 0) ||
-            (t.key === 'more' && (ownerWaitlist.filter(w => w.status === 'waiting').length > 0 || unreadNotificationsCount > 0));
+          const isSel = activeTab === t.key && !showOverflow;
+          const badgeCount = t.key === 'bookings' ? pendingBookings.length
+            : t.key === 'messages' ? unreadNotificationsCount
+            : 0;
+          if (t.center) {
+            return (
+              <button
+                key={t.key}
+                id={`owner-primary-tab-${t.key}`}
+                type="button"
+                onClick={() => { setActiveTab(t.key); setShowOverflow(false); }}
+                className={`flex-1 flex flex-col items-center gap-0.5 -mt-6 cursor-pointer`}
+              >
+                <span className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all ${
+                  isSel ? 'bg-[var(--color-owner-primary)] text-white' : 'bg-[var(--color-owner-primary)]/85 text-white'
+                }`}>
+                  <Icon className="w-5 h-5" />
+                </span>
+                <span className={`text-[9.5px] font-bold ${isSel ? 'text-[var(--color-owner-primary)]' : 'text-[var(--color-owner-secondary)]'}`}>{t.label}</span>
+              </button>
+            );
+          }
           return (
             <button
               key={t.key}
               id={`owner-primary-tab-${t.key}`}
               type="button"
-              onClick={() => { if (t.key === 'more') { setShowOverflow((v) => !v); } else { setActiveTab(t.key); setShowOverflow(false); } }}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer relative ${
-                isSel ? 'bg-[var(--color-owner-primary)] text-white shadow-sm' : 'text-[var(--color-owner-secondary)] hover:bg-[var(--color-owner-hover)]'
+              onClick={() => { setActiveTab(t.key); setShowOverflow(false); }}
+              className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer relative ${
+                isSel ? 'text-[var(--color-owner-primary)]' : 'text-[var(--color-owner-secondary)] hover:text-[var(--color-owner-text)]'
               }`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-[18px] h-[18px]" />
               <span>{t.label}</span>
-              {showBadge && <span className="absolute top-1 left-3 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />}
+              {badgeCount > 0 && (
+                <span className="absolute -top-0.5 left-1/2 -translate-x-4 min-w-[15px] h-[15px] px-0.5 bg-rose-500 text-white text-[8.5px] font-black rounded-full flex items-center justify-center">
+                  {badgeCount > 9 ? '9+' : badgeCount}
+                </span>
+              )}
             </button>
           );
         })}
@@ -757,89 +795,169 @@ export default function OwnerDashboardShell({
 
         return (
           <div className="space-y-4">
-            {/* Welcome Card */}
-            <div className="bg-[var(--color-owner-primary)] text-white rounded-3xl p-4">
-              <span className="text-[10px] text-[var(--color-owner-accent)] font-black">{greeting} يا {owner.name.split(' ')[0]} 👋</span>
-              <h3 className="text-sm font-extrabold mt-0.5">{house ? house.name : 'مرحباً بك في بيما'}</h3>
-            </div>
-
-            {/* House Status */}
-            {house && (
-              <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3.5 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Home className="w-4 h-4 text-[var(--color-owner-primary)]" />
-                  <span className="text-xs font-bold text-[var(--color-owner-text)]">حالة البيت</span>
+            {/* ── Hero: greeting + status chip + occupancy donut over the house photo ── */}
+            <div className="relative bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] overflow-hidden shadow-sm">
+              {house?.images?.[0] && (
+                <>
+                  <img src={house.images[0]} alt="" className="absolute inset-y-0 left-0 w-1/2 h-full object-cover" />
+                  <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-l from-[var(--color-owner-surface)] via-[var(--color-owner-surface)]/60 to-transparent" />
+                </>
+              )}
+              <div className="relative p-4 sm:p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-bold text-[var(--color-owner-secondary)] truncate">{house ? house.name : 'بيما'}</div>
+                    <h3 className="text-base font-black text-[var(--color-owner-text)] mt-0.5">{greeting} يا {owner.name.split(' ')[0]} 👋</h3>
+                    <p className="text-[10px] font-bold text-[var(--color-owner-secondary)] mt-0.5">
+                      {pendingBookings.length === 0 && unpaidApproved.length === 0 ? 'كل شيء يسير بشكل رائع اليوم 💚' : `عندك ${pendingBookings.length + unpaidApproved.length} مهمة محتاجة انتباهك اليوم ⚡`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button type="button" id="hero-notifications-btn" onClick={() => { setActiveTab('notifications'); setShowOverflow(false); }}
+                      className="relative p-2 rounded-xl bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] cursor-pointer">
+                      <Bell className="w-4 h-4" />
+                      {unreadNotificationsCount > 0 && (
+                        <span className="absolute -top-1 -left-1 min-w-[15px] h-[15px] px-0.5 bg-rose-500 text-white text-[8.5px] font-black rounded-full flex items-center justify-center">
+                          {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
+                        </span>
+                      )}
+                    </button>
+                    <button type="button" id="hero-menu-btn" onClick={() => setShowOverflow((v) => !v)}
+                      className="p-2 rounded-xl bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] cursor-pointer lg:hidden">
+                      <Menu className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
-                  house.status === 'approved' ? 'bg-[var(--color-owner-success)]/10 text-emerald-700' :
-                  house.status === 'pending' ? 'bg-[var(--color-owner-warning)]/10 text-amber-700' : 'bg-[var(--color-owner-danger)]/10 text-rose-700'
-                }`}>
-                  {house.status === 'approved' ? 'نشط ويظهر للجميع' : house.status === 'pending' ? 'بانتظار موافقة الإدارة' : 'مرفوض'}
-                </span>
-              </div>
-            )}
 
-            {/* KPI row — the numbers an owner checks every morning */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1">
-                <BedDouble className="w-4 h-4 text-[var(--color-owner-primary)]" />
-                <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">إجمالي الغرف</div>
-                <div className="text-lg font-extrabold text-[var(--color-owner-text)]">{totalRooms}</div>
-              </div>
-              <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1">
-                <Users className="w-4 h-4 text-[var(--color-owner-primary)]" />
-                <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">إجمالي الأسرّة</div>
-                <div className="text-lg font-extrabold text-[var(--color-owner-text)]">{totalBeds}</div>
-              </div>
-              <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1">
-                <Home className="w-4 h-4 text-[var(--color-owner-warning)]" />
-                <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">المشغول الآن</div>
-                <div className="text-lg font-extrabold text-[var(--color-owner-text)]">{occupiedBedsNow} <span className="text-[10px] text-[var(--color-owner-secondary)]">سرير</span></div>
-              </div>
-              <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1">
-                <Check className="w-4 h-4 text-[var(--color-owner-success)]" />
-                <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">المتبقي</div>
-                <div className="text-lg font-extrabold text-[var(--color-owner-text)]">{remainingBeds} <span className="text-[10px] text-[var(--color-owner-secondary)]">سرير</span></div>
-              </div>
-              <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1 col-span-2 sm:col-span-1">
-                <Coins className="w-4 h-4 text-[var(--color-owner-accent)]" />
-                <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">إيرادات هذا الشهر</div>
-                <div className="text-base font-extrabold text-[var(--color-owner-text)]">{monthRevenue.toLocaleString()} <span className="text-[10px] text-[var(--color-owner-secondary)]">ج.م</span></div>
-              </div>
-            </div>
+                {house && (
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
+                    house.status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                    house.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${house.status === 'approved' ? 'bg-emerald-500' : house.status === 'pending' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                    {house.status === 'approved' ? 'نشط' : house.status === 'pending' ? 'قيد المراجعة' : 'مرفوض'}
+                  </span>
+                )}
 
-            {/* Occupancy donut + upcoming bookings, side by side on desktop */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-              <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-3">
-                <span className="text-xs font-black text-[var(--color-owner-text)] block">معدل الإشغال</span>
-                <div className="flex items-center gap-4">
-                  <div className="relative w-24 h-24 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-[74px] h-[74px] shrink-0">
                     <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                      <circle cx="50" cy="50" r="40" fill="none" stroke="var(--color-owner-hover)" strokeWidth="12" />
-                      <circle cx="50" cy="50" r="40" fill="none" stroke="var(--color-owner-primary)" strokeWidth="12" strokeLinecap="round"
+                      <circle cx="50" cy="50" r="40" fill="none" stroke="var(--color-owner-hover)" strokeWidth="11" />
+                      <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" strokeWidth="11" strokeLinecap="round"
                         strokeDasharray={`${(occupancyRate / 100) * 251.2} 251.2`} />
                     </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-base font-black text-[var(--color-owner-text)]">{occupancyRate}%</span>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-sm font-black text-[var(--color-owner-text)]">{occupancyRate}%</span>
                     </div>
                   </div>
-                  <div className="space-y-1 text-[10px] font-bold flex-1">
-                    {([
-                      { label: 'متاحة', count: roomStatusCounts.available, dot: 'bg-emerald-500' },
-                      { label: 'مشغولة', count: roomStatusCounts.booked, dot: 'bg-rose-500' },
-                      { label: 'تنظيف', count: roomStatusCounts.cleaning, dot: 'bg-amber-500' },
-                      { label: 'صيانة', count: roomStatusCounts.maintenance, dot: 'bg-slate-400' },
-                    ]).map((s) => (
-                      <div key={s.label} className="flex items-center justify-between gap-2">
-                        <span className="flex items-center gap-1.5 text-[var(--color-owner-secondary)]"><span className={`w-2 h-2 rounded-full ${s.dot}`} />{s.label}</span>
-                        <span className="text-[var(--color-owner-text)]">{s.count}</span>
-                      </div>
-                    ))}
+                  <div>
+                    <div className="text-xs font-black text-[var(--color-owner-text)]">إشغال اليوم</div>
+                    <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">من إجمالي الأسرّة ({occupiedBedsNow} من {totalBeds} سرير)</div>
+                    <div className="text-[10px] font-bold text-[var(--color-owner-secondary)] mt-0.5">إيرادات الشهر: <span className="text-[var(--color-owner-text)] font-black">{monthRevenue.toLocaleString()} ج.م</span></div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-2 lg:col-span-2">
+            {/* ── 4 KPI cards (mockup): colored icon chips, all clickable ── */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {([
+                { label: 'الحجوزات اليوم', value: ownerBookings.filter((b) => b.createdAt.startsWith(todayStr)).length, unit: 'جديدة', icon: ClipboardList, chip: 'bg-indigo-50 text-indigo-600', tab: 'bookings' as ActiveTab },
+                { label: 'إجمالي الغرف', value: totalRooms, unit: 'غرفة', icon: BedDouble, chip: 'bg-sky-50 text-sky-600', tab: 'rooms' as ActiveTab },
+                { label: 'المشغول الآن', value: roomStatusCounts.booked, unit: 'غرف', icon: Users, chip: 'bg-orange-50 text-orange-600', tab: 'rooms' as ActiveTab },
+                { label: 'المتبقي', value: roomStatusCounts.available, unit: 'غرف', icon: Check, chip: 'bg-emerald-50 text-emerald-600', tab: 'rooms' as ActiveTab },
+              ]).map((k) => (
+                <button key={k.label} type="button" onClick={() => { setActiveTab(k.tab); setShowOverflow(false); }}
+                  className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-3.5 flex flex-col items-center gap-1.5 text-center shadow-sm hover:shadow transition-all cursor-pointer">
+                  <span className={`w-10 h-10 rounded-2xl flex items-center justify-center ${k.chip}`}><k.icon className="w-4.5 h-4.5 w-[18px] h-[18px]" /></span>
+                  <span className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{k.label}</span>
+                  <span className="text-xl font-black text-[var(--color-owner-text)] leading-none">{k.value}</span>
+                  <span className="text-[9.5px] font-bold text-[var(--color-owner-secondary)]">{k.unit}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* ── تحتاج انتباه (mockup): derived, each row jumps to its fix ── */}
+            {(() => {
+              const attentionRooms = roomStatusCounts.cleaning + roomStatusCounts.maintenance;
+              const items: { key: string; title: string; sub: string; icon: React.ElementType; chip: string; go: () => void }[] = [];
+              if (pendingBookings.length > 0) {
+                const newest = pendingBookings.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+                items.push({ key: 'pending', title: pendingBookings.length === 1 ? 'حجز جديد بانتظار الرد' : `${pendingBookings.length} حجوزات جديدة بانتظار الرد`, sub: timeAgo(newest.createdAt), icon: ClipboardList, chip: 'bg-rose-50 text-rose-600', go: () => { setActiveTab('bookings'); setBookingFilter('new'); } });
+              }
+              if (unpaidApproved.length > 0) {
+                items.push({ key: 'unpaid', title: unpaidApproved.length === 1 ? 'عربون متأخر الدفع' : `${unpaidApproved.length} عربون متأخر الدفع`, sub: unpaidApproved.map((b) => b.organizationName || b.userName).slice(0, 2).join('، '), icon: ShieldAlert, chip: 'bg-amber-50 text-amber-600', go: () => { setActiveTab('bookings'); setBookingFilter('pending_payment'); } });
+              }
+              if (attentionRooms > 0) {
+                items.push({ key: 'rooms', title: attentionRooms === 1 ? 'غرفة تحتاج مراجعة' : `${attentionRooms} غرف تحتاج مراجعة`, sub: `${roomStatusCounts.cleaning} تنظيف · ${roomStatusCounts.maintenance} صيانة`, icon: BedDouble, chip: 'bg-emerald-50 text-emerald-600', go: () => setActiveTab('rooms') });
+              }
+              if (arrivalsToday.length > 0) {
+                items.push({ key: 'arrivals', title: `${arrivalsToday.length} وصول اليوم`, sub: arrivalsToday.map((b) => b.organizationName || b.userName).slice(0, 2).join('، '), icon: Calendar, chip: 'bg-sky-50 text-sky-600', go: () => { setActiveTab('bookings'); setBookingFilter('arrivals_today'); } });
+              }
+              if (departuresToday.length > 0) {
+                items.push({ key: 'departures', title: `${departuresToday.length} مغادرة اليوم`, sub: departuresToday.map((b) => b.organizationName || b.userName).slice(0, 2).join('، '), icon: Calendar, chip: 'bg-slate-100 text-slate-600', go: () => { setActiveTab('bookings'); setBookingFilter('departures_today'); } });
+              }
+              return (
+                <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-2.5 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-[var(--color-owner-text)]">تحتاج انتباه</span>
+                    {items.length > 0 && <span className="min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[9.5px] font-black rounded-full flex items-center justify-center">{items.length}</span>}
+                  </div>
+                  {items.length === 0 ? (
+                    <p className="text-[10px] text-[var(--color-owner-secondary)] text-center py-3">لا توجد مهام معلّقة — كل شيء تمام 🎉</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {items.map((it) => (
+                        <button key={it.key} type="button" onClick={() => { it.go(); setShowOverflow(false); }}
+                          className="w-full flex items-center gap-3 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] rounded-2xl p-2.5 text-right transition-colors cursor-pointer">
+                          <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${it.chip}`}><it.icon className="w-4 h-4" /></span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[11px] font-extrabold text-[var(--color-owner-text)] truncate">{it.title}</div>
+                            <div className="text-[9.5px] font-bold text-[var(--color-owner-secondary)] truncate">{it.sub}</div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-[var(--color-owner-secondary)] rotate-180 shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ── آخر نشاط (mockup): notifications as a timeline ── */}
+            <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-2.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-[var(--color-owner-text)]">آخر نشاط</span>
+                <button type="button" onClick={() => { setActiveTab('notifications'); setShowOverflow(false); }} className="text-[10px] font-bold text-[var(--color-owner-primary)] hover:underline cursor-pointer">عرض الكل</button>
+              </div>
+              {recentNotifications.length === 0 ? (
+                <p className="text-[10px] text-[var(--color-owner-secondary)] text-center py-3">لا يوجد نشاط بعد.</p>
+              ) : (
+                <div className="space-y-0">
+                  {recentNotifications.map((n, idx) => (
+                    <div key={n.id} className="flex items-stretch gap-2.5">
+                      <div className="flex flex-col items-center">
+                        <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                          n.type === 'success' ? 'bg-emerald-50 text-emerald-600' : n.type === 'danger' ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-600'
+                        }`}>
+                          {n.type === 'success' ? <Check className="w-3.5 h-3.5" /> : n.type === 'danger' ? <ShieldAlert className="w-3.5 h-3.5" /> : <Bell className="w-3.5 h-3.5" />}
+                        </span>
+                        {idx < recentNotifications.length - 1 && <span className="w-px flex-1 bg-[var(--color-owner-border)] my-1" />}
+                      </div>
+                      <div className="flex-1 min-w-0 pb-3">
+                        <div className="text-[11px] font-extrabold text-[var(--color-owner-text)] truncate">{n.title}</div>
+                        <div className="text-[9.5px] font-bold text-[var(--color-owner-secondary)] truncate">{n.message}</div>
+                      </div>
+                      <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] shrink-0 mt-1">{timeAgo(n.createdAt)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Upcoming bookings */}
+            <div className="grid grid-cols-1 gap-3">
+              <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-2 shadow-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-[var(--color-owner-text)]">الحجوزات القادمة</span>
                   <button type="button" onClick={() => { setActiveTab('bookings'); setShowOverflow(false); }} className="text-[10px] font-bold text-[var(--color-owner-primary)] hover:underline cursor-pointer">عرض الكل ←</button>
@@ -871,84 +989,6 @@ export default function OwnerDashboardShell({
               </div>
             </div>
 
-            {/* Today's Alerts */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1">
-                <Calendar className="w-4 h-4 text-[var(--color-owner-info)]" />
-                <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">وصول اليوم</div>
-                <div className="text-lg font-extrabold text-[var(--color-owner-text)]">{arrivalsToday.length}</div>
-              </div>
-              <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1">
-                <Calendar className="w-4 h-4 text-[var(--color-owner-secondary)]" />
-                <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">مغادرة اليوم</div>
-                <div className="text-lg font-extrabold text-[var(--color-owner-text)]">{departuresToday.length}</div>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-extrabold text-[var(--color-owner-text)] px-1">إجراءات سريعة</h3>
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { label: 'الحجوزات', icon: ClipboardList, action: () => setActiveTab('bookings') },
-                  { label: 'الغرف', icon: BedDouble, action: () => setActiveTab('rooms') },
-                  { label: 'المحادثات', icon: MessageCircle, action: () => setActiveTab('messages') },
-                  { label: 'التقارير', icon: BarChart3, action: () => setActiveTab('reports') },
-                ].map((a) => (
-                  <button key={a.label} type="button" onClick={() => { a.action(); setShowOverflow(false); }}
-                    className="flex flex-col items-center gap-1.5 bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] rounded-2xl py-3 transition-colors cursor-pointer">
-                    <a.icon className="w-4 h-4 text-[var(--color-owner-primary)]" />
-                    <span className="text-[9.5px] font-bold text-[var(--color-owner-text)]">{a.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Pending Tasks */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-extrabold text-[var(--color-owner-text)] px-1">مهام تحتاج انتباهك</h3>
-              {pendingBookings.length === 0 && unpaidApproved.length === 0 ? (
-                <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-4 text-center text-[10px] text-[var(--color-owner-secondary)]">لا توجد مهام معلّقة حالياً 🎉</div>
-              ) : (
-                <div className="space-y-2">
-                  {pendingBookings.length > 0 && (
-                    <button type="button" onClick={() => { setActiveTab('bookings'); setBookingFilter('new'); }}
-                      className="w-full flex items-center justify-between bg-[var(--color-owner-warning)]/10 border border-[var(--color-owner-warning)]/30 rounded-2xl p-3 text-right cursor-pointer">
-                      <span className="text-xs font-bold text-amber-900">{pendingBookings.length} طلب حجز جديد بانتظار الرد</span>
-                      <ChevronRight className="w-4 h-4 text-amber-700 rotate-180" />
-                    </button>
-                  )}
-                  {unpaidApproved.length > 0 && (
-                    <button type="button" onClick={() => { setActiveTab('bookings'); setBookingFilter('pending_payment'); }}
-                      className="w-full flex items-center justify-between bg-[var(--color-owner-info)]/10 border border-[var(--color-owner-info)]/30 rounded-2xl p-3 text-right cursor-pointer">
-                      <span className="text-xs font-bold text-sky-900">{unpaidApproved.length} حجز مؤكد بانتظار سداد العربون</span>
-                      <ChevronRight className="w-4 h-4 text-sky-700 rotate-180" />
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Recent Notifications */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-extrabold text-[var(--color-owner-text)] px-1">آخر الإشعارات</h3>
-              {recentNotifications.length === 0 ? (
-                <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-4 text-center text-[10px] text-[var(--color-owner-secondary)]">لا توجد إشعارات بعد.</div>
-              ) : (
-                <div className="space-y-1.5">
-                  {recentNotifications.map((n) => (
-                    <div key={n.id} className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 flex items-start gap-2">
-                      <Bell className="w-3.5 h-3.5 text-[var(--color-owner-primary)] shrink-0 mt-0.5" />
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-bold text-[var(--color-owner-text)] truncate">{n.title}</div>
-                        <div className="text-[9.5px] text-[var(--color-owner-secondary)] truncate">{n.message}</div>
-                      </div>
-                    </div>
-                  ))}
-                  <button type="button" onClick={() => { setActiveTab('notifications'); setShowOverflow(false); }} className="text-[10px] font-bold text-[var(--color-owner-primary)] hover:underline cursor-pointer px-1">عرض كل الإشعارات ←</button>
-                </div>
-              )}
-            </div>
           </div>
         );
       })()}
