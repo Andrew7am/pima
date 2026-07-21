@@ -588,7 +588,7 @@ export default function OwnerDashboardShell({
   };
 
   return (
-    <div className="owner-theme text-right text-[var(--color-owner-text)] w-full max-w-full overflow-x-hidden lg:flex lg:gap-5 lg:items-start">
+    <div className="owner-theme text-right text-[var(--color-owner-text)] w-full max-w-full overflow-x-hidden lg:flex lg:gap-5 lg:items-start pb-24 lg:pb-0">
       {/* Desktop sidebar (right side in RTL — first in DOM) */}
       <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-0 bg-[var(--color-owner-primary)] text-white rounded-3xl p-4 gap-1 max-h-[calc(100vh-2rem)] overflow-y-auto">
         <div className="pb-3 mb-2 border-b border-white/10">
@@ -700,9 +700,16 @@ export default function OwnerDashboardShell({
         </div>
       </div>
 
-      {/* Mobile bottom-style nav (mockup): floating rounded bar, center home
-          elevated as a dark pill, numeric badges on bookings/messages. */}
-      <div className="flex items-end border border-[var(--color-owner-border)] bg-[var(--color-owner-surface)] px-2 pb-1.5 pt-2 rounded-3xl gap-1 relative shadow-sm lg:hidden">
+      {/* Mobile bottom nav — fixed to the viewport (replaces the app-level
+          WebLayout bar which is hidden here). Center home elevated as a
+          dark pill; selected non-center tab gets a strong background pill
+          + shadow so it reads at a glance. Safe-area padding keeps it
+          clear of the phone's home indicator. */}
+      <nav
+        id="owner-mobile-nav"
+        className="fixed bottom-0 inset-x-0 z-40 bg-[var(--color-owner-surface)] border-t border-[var(--color-owner-border)] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex items-end px-2 pt-2 gap-1 lg:hidden"
+        style={{ paddingBottom: 'calc(6px + env(safe-area-inset-bottom))' }}
+      >
         {MOBILE_TABS.map((t) => {
           const Icon = t.icon;
           const isSel = activeTab === t.key && !showOverflow;
@@ -716,14 +723,14 @@ export default function OwnerDashboardShell({
                 id={`owner-primary-tab-${t.key}`}
                 type="button"
                 onClick={() => { setActiveTab(t.key); setShowOverflow(false); }}
-                className={`flex-1 flex flex-col items-center gap-0.5 -mt-6 cursor-pointer`}
+                className="flex-1 flex flex-col items-center gap-1 -mt-8 cursor-pointer"
               >
-                <span className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all ${
-                  isSel ? 'bg-[var(--color-owner-primary)] text-white' : 'bg-[var(--color-owner-primary)]/85 text-white'
+                <span className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ring-4 ring-[var(--color-owner-surface)] ${
+                  isSel ? 'bg-[var(--color-owner-primary)] text-white shadow-xl scale-105' : 'bg-[var(--color-owner-primary)]/85 text-white shadow-lg'
                 }`}>
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-6 h-6" />
                 </span>
-                <span className={`text-[9.5px] font-bold ${isSel ? 'text-[var(--color-owner-primary)]' : 'text-[var(--color-owner-secondary)]'}`}>{t.label}</span>
+                <span className={`text-[10px] font-black transition-colors ${isSel ? 'text-[var(--color-owner-primary)]' : 'text-[var(--color-owner-secondary)]'}`}>{t.label}</span>
               </button>
             );
           }
@@ -733,14 +740,16 @@ export default function OwnerDashboardShell({
               id={`owner-primary-tab-${t.key}`}
               type="button"
               onClick={() => { setActiveTab(t.key); setShowOverflow(false); }}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer relative ${
-                isSel ? 'text-[var(--color-owner-primary)]' : 'text-[var(--color-owner-secondary)] hover:text-[var(--color-owner-text)]'
+              className={`flex-1 flex flex-col items-center gap-1 py-2 px-1 rounded-2xl text-[10px] font-bold transition-all cursor-pointer relative ${
+                isSel
+                  ? 'bg-[var(--color-owner-primary)]/10 text-[var(--color-owner-primary)] font-black shadow-sm'
+                  : 'text-[var(--color-owner-secondary)] hover:text-[var(--color-owner-text)]'
               }`}
             >
-              <Icon className="w-[18px] h-[18px]" />
+              <Icon className={`w-[19px] h-[19px] transition-transform ${isSel ? 'scale-110' : ''}`} />
               <span>{t.label}</span>
               {badgeCount > 0 && (
-                <span className="absolute -top-0.5 left-1/2 -translate-x-4 min-w-[15px] h-[15px] px-0.5 bg-rose-500 text-white text-[8.5px] font-black rounded-full flex items-center justify-center">
+                <span className="absolute top-0.5 left-1/2 -translate-x-4 min-w-[16px] h-[16px] px-0.5 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
                   {badgeCount > 9 ? '9+' : badgeCount}
                 </span>
               )}
@@ -749,7 +758,7 @@ export default function OwnerDashboardShell({
         })}
 
         {showOverflow && (
-          <div className="absolute top-full mt-1.5 inset-x-0 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl shadow-lg p-2 grid grid-cols-2 gap-1.5 z-20">
+          <div className="absolute bottom-full mb-1.5 inset-x-2 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl shadow-lg p-2 grid grid-cols-2 gap-1.5 z-20">
             {OVERFLOW_ITEMS.map((item) => {
               const Icon = item.icon;
               return (
@@ -772,7 +781,7 @@ export default function OwnerDashboardShell({
             })}
           </div>
         )}
-      </div>
+      </nav>
 
       {/* 1. Home — overview only: welcome, house status, today's alerts, quick actions,
              pending tasks, recent notifications. No stats grid / booking list / charts here

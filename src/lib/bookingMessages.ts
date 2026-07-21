@@ -34,6 +34,47 @@ export async function markBookingMessagesRead(bookingId: string): Promise<void> 
   if (error) console.error('markBookingMessagesRead:', error);
 }
 
+// Chat-list previews: latest message per booking (single query, RLS
+// naturally scopes to bookings the caller participates in). One row per
+// booking — used to render the WhatsApp-style conversation list.
+export async function loadLatestMessagePerBooking(bookingIds: string[]): Promise<Record<string, BookingMessage>> {
+  if (bookingIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('booking_messages')
+    .select('*')
+    .in('booking_id', bookingIds)
+    .order('booking_id', { ascending: true })
+    .order('created_at', { ascending: false });
+  if (error) { console.error('loadLatestMessagePerBooking:', error); return {}; }
+  const latest: Record<string, BookingMessage> = {};
+  for (const row of data ?? []) {
+    const msg = mapBookingMessage(row as Record<string, unknown>);
+    // Take the first row per booking_id (ordered desc by created_at).
+    if (!latest[msg.bookingId]) latest[msg.bookingId] = msg;
+  }
+  return latest;
+}
+
+// Unread count per booking for the current viewer — inbound messages
+// (someone else sent) with no read_at yet. Used for the badge next to
+// each conversation row.
+export async function loadUnreadCountsPerBooking(bookingIds: string[], currentUserId: string): Promise<Record<string, number>> {
+  if (bookingIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('booking_messages')
+    .select('booking_id')
+    .in('booking_id', bookingIds)
+    .neq('sender_id', currentUserId)
+    .is('read_at', null);
+  if (error) { console.error('loadUnreadCountsPerBooking:', error); return {}; }
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const bid = row.booking_id as string;
+    counts[bid] = (counts[bid] || 0) + 1;
+  }
+  return counts;
+}
+
 // Returns an unsubscribe function — caller MUST call it on unmount.
 export function subscribeToBookingMessages(bookingId: string, onMessage: (msg: BookingMessage) => void): () => void {
   const channel = supabase
