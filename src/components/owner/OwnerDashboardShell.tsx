@@ -122,6 +122,12 @@ export default function OwnerDashboardShell({
   const [geoError, setGeoError] = useState('');
   const [showManualMap, setShowManualMap] = useState(false);
   const [pricePerNight, setPricePerNight] = useState<number>(150);
+  // Seasonal-rate editor drafts (saved owner-direct via onUpdateHouse —
+  // no admin re-approval, like payment methods; migration 055)
+  const [srLabel, setSrLabel] = useState('');
+  const [srStart, setSrStart] = useState('');
+  const [srEnd, setSrEnd] = useState('');
+  const [srPrice, setSrPrice] = useState('');
   const [roomsCount, setRoomsCount] = useState<number>(10);
   const [bedsCount, setBedsCount] = useState<number>(30);
   const [roomsDesc, setRoomsDesc] = useState('');
@@ -1959,6 +1965,67 @@ export default function OwnerDashboardShell({
                     className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                 </div>
               </div>
+
+              {/* Seasonal rates & offers — saved instantly (owner-direct,
+                  no admin review, migration 055), unlike the base form. */}
+              {ownerHouses.length >= 1 && propertyType === 'conference' && (() => {
+                const srHouse = ownerHouses[0];
+                const currentRates = srHouse.seasonalRates ?? [];
+                return (
+                  <div className="bg-amber-50/50 border border-amber-200/70 rounded-2xl p-3 space-y-2.5">
+                    <div className="text-[11px] font-black text-amber-900">🏷️ أسعار المواسم والعروض <span className="font-medium text-[10px]">(تُطبَّق فوراً بدون مراجعة الإدارة — أول موسم مطابق لليلة هو اللي بيتحسب)</span></div>
+
+                    {currentRates.length > 0 && (
+                      <div className="space-y-1.5">
+                        {currentRates.map((r) => (
+                          <div key={r.id} className="flex items-center justify-between bg-white border border-[var(--color-owner-border)] rounded-xl px-3 py-1.5 text-[10px]">
+                            <span className="font-extrabold text-[var(--color-owner-text)]">{r.label}</span>
+                            <span className="text-[var(--color-owner-secondary)] font-bold">{r.startDate} ← {r.endDate}</span>
+                            <span className="font-black text-amber-800">{r.pricePerNight} ج.م/ليلة</span>
+                            <button type="button" onClick={() => onUpdateHouse?.({ ...srHouse, seasonalRates: currentRates.filter((x) => x.id !== r.id) })}
+                              className="text-rose-600 hover:text-rose-800 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
+                      <div className="sm:col-span-1">
+                        <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">اسم الموسم/العرض:</label>
+                        <input id="sr-label-input" type="text" value={srLabel} onChange={(e) => setSrLabel(e.target.value)} onFocus={(e) => e.target.select()} placeholder="موسم الصيف"
+                          className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">من:</label>
+                        <input id="sr-start-input" type="date" value={srStart} onChange={(e) => setSrStart(e.target.value)}
+                          className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">إلى:</label>
+                        <input id="sr-end-input" type="date" value={srEnd} min={srStart || undefined} onChange={(e) => setSrEnd(e.target.value)}
+                          className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">سعر الفرد/ليلة:</label>
+                        <input id="sr-price-input" type="number" min={0} value={srPrice} onChange={(e) => setSrPrice(e.target.value)} onFocus={(e) => e.target.select()}
+                          className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                      </div>
+                      <button id="sr-add-btn" type="button" onClick={() => {
+                          const price = parseFloat(srPrice);
+                          if (!srLabel.trim() || !srStart || !srEnd || srStart > srEnd || !Number.isFinite(price) || price < 0) {
+                            alert('يرجى إدخال اسم الموسم وتاريخين صحيحين وسعر لليلة.');
+                            return;
+                          }
+                          onUpdateHouse?.({ ...srHouse, seasonalRates: [...currentRates, { id: `sr_${Date.now()}`, label: srLabel.trim(), startDate: srStart, endDate: srEnd, pricePerNight: price }] });
+                          setSrLabel(''); setSrStart(''); setSrEnd(''); setSrPrice('');
+                        }}
+                        className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-[10px] font-bold py-1.5 px-3 rounded-xl cursor-pointer">
+                        + إضافة
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* 3. Facilities — suitability + activities + services checklist + conference halls */}

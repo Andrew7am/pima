@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { RetreatHouse, Booking, Review, User, Room, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { SUITABILITY_MAP } from '../mockData';
 import ReviewWizard from './ReviewWizard';
+import { computeStayPrice } from '../lib/pricing';
 import { 
   ArrowRight, MapPin, BedDouble, Calendar, Users, 
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
@@ -770,9 +771,15 @@ export default function HouseDetail({
 
   const nights = calculateNights();
   const months = calculateMonths();
+  // Night-by-night with seasonal rates (lib/pricing.ts) — must match the
+  // server's validate_booking_price math or the booking gets rejected.
+  const stayPrice = !isMonthlyHousing && checkIn && checkOut
+    ? computeStayPrice(house, checkIn, checkOut, guestsCount)
+    : { total: 0, breakdown: [] };
   const originalTotalPrice = isMonthlyHousing
     ? (house.monthlyRent || 1500) * guestsCount * months
-    : house.pricePerNightPerPerson * guestsCount * nights;
+    : stayPrice.total;
+  const hasSeasonalNights = stayPrice.breakdown.some((row) => row.label !== null);
 
   // Whether the currently selected dates/guest count would exceed remaining
   // capacity — used to offer joining the waitlist instead of a doomed booking attempt.
@@ -2060,10 +2067,21 @@ export default function HouseDetail({
                         <span>عدد الليالي الإجمالي:</span>
                         <span className="font-bold text-[#4A4A3A]">{nights} ليلة</span>
                       </div>
-                      <div className="flex justify-between text-[#8A8A70]">
-                        <span>التسعير للفرد لليلة:</span>
-                        <span className="font-bold text-[#4A4A3A]">{house.pricePerNightPerPerson} ج.م</span>
-                      </div>
+                      {hasSeasonalNights ? (
+                        // Seasonal rates hit: show the actual per-night mix
+                        // instead of a single misleading base rate.
+                        stayPrice.breakdown.map((row) => (
+                          <div key={`${row.label ?? 'base'}-${row.rate}`} className="flex justify-between text-[#8A8A70]">
+                            <span>{row.label ? `🏷️ ${row.label}` : 'السعر الأساسي'} ({row.nights} ليلة):</span>
+                            <span className="font-bold text-[#4A4A3A]">{row.rate} ج.م/فرد</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex justify-between text-[#8A8A70]">
+                          <span>التسعير للفرد لليلة:</span>
+                          <span className="font-bold text-[#4A4A3A]">{house.pricePerNightPerPerson} ج.م</span>
+                        </div>
+                      )}
                       {redemptionDiscount > 0 && (
                         <div className="flex justify-between text-emerald-700">
                           <span>خصم النقاط المستخدمة:</span>

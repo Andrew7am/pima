@@ -47,6 +47,17 @@ export interface ConferenceHall {
   price?: number; // per-event/per-day hall rental fee, set by the owner
 }
 
+// Owner-defined seasonal rate / time-boxed offer (migration 055). First
+// matching entry (array order) wins for a given night; unmatched nights
+// use the house's base pricePerNightPerPerson.
+export interface SeasonalRate {
+  id: string;
+  label: string;       // e.g. "موسم الصيف" or "عرض نص السنة"
+  startDate: string;   // YYYY-MM-DD inclusive
+  endDate: string;     // YYYY-MM-DD inclusive
+  pricePerNight: number;
+}
+
 // How a guest sends the owner their booking payment directly — replaces
 // the old platform-wide centralized InstaPay address.
 export interface OwnerPaymentMethod {
@@ -101,6 +112,9 @@ export interface RetreatHouse {
   // required (>=1) for onboarding to count as complete. See OwnerBookings/
   // UserBookings for where this is shown to the paying guest.
   paymentMethods: OwnerPaymentMethod[];
+  // Owner-direct (no admin re-approval), like paymentMethods — see
+  // migration 055 and lib/pricing.ts for the night-by-night math.
+  seasonalRates?: SeasonalRate[];
   // Owner-submitted edits to an already-approved house wait here for admin
   // review instead of applying immediately — only editable/listing fields.
   pendingEdit?: Partial<RetreatHouse>;
