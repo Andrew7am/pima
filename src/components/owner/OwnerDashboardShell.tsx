@@ -777,10 +777,6 @@ export default function OwnerDashboardShell({
         const totalRooms = ownerRooms.length;
         const totalBeds = ownerRooms.length > 0 ? ownerRooms.reduce((s, r) => s + r.bedsCount, 0) : (house?.bedsCount ?? 0);
         const occupiedBedsNow = todayBookings.reduce((s, b) => s + b.guestsCount, 0);
-        const remainingBeds = Math.max(0, totalBeds - occupiedBedsNow);
-        const monthRevenue = confirmedBookings
-          .filter((b) => { const d = new Date(b.checkIn); return d.getFullYear() === curYear && d.getMonth() + 1 === curMonth; })
-          .reduce((s, b) => s + b.totalPrice, 0);
         const roomBedStates = ownerRooms.map((r) => getRoomBedState(r, allocations, ownerBookings, todayStr));
         const roomStatusCounts = {
           available: roomBedStates.filter((s) => s === 'available').length,
@@ -788,10 +784,6 @@ export default function OwnerDashboardShell({
           cleaning: roomBedStates.filter((s) => s === 'cleaning').length,
           maintenance: roomBedStates.filter((s) => s === 'maintenance').length,
         };
-        const upcomingBookings = ownerBookings
-          .filter((b) => b.status === 'approved' && b.checkIn >= todayStr)
-          .sort((a, b) => a.checkIn.localeCompare(b.checkIn))
-          .slice(0, 4);
 
         return (
           <div className="space-y-4">
@@ -853,7 +845,6 @@ export default function OwnerDashboardShell({
                   <div>
                     <div className="text-xs font-black text-[var(--color-owner-text)]">إشغال اليوم</div>
                     <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">من إجمالي الأسرّة ({occupiedBedsNow} من {totalBeds} سرير)</div>
-                    <div className="text-[10px] font-bold text-[var(--color-owner-secondary)] mt-0.5">إيرادات الشهر: <span className="text-[var(--color-owner-text)] font-black">{monthRevenue.toLocaleString()} ج.م</span></div>
                   </div>
                 </div>
               </div>
@@ -953,40 +944,6 @@ export default function OwnerDashboardShell({
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* Upcoming bookings */}
-            <div className="grid grid-cols-1 gap-3">
-              <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-2 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-[var(--color-owner-text)]">الحجوزات القادمة</span>
-                  <button type="button" onClick={() => { setActiveTab('bookings'); setShowOverflow(false); }} className="text-[10px] font-bold text-[var(--color-owner-primary)] hover:underline cursor-pointer">عرض الكل ←</button>
-                </div>
-                {upcomingBookings.length === 0 ? (
-                  <p className="text-[10px] text-[var(--color-owner-secondary)] text-center py-4">لا توجد حجوزات قادمة مؤكدة.</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {upcomingBookings.map((b) => (
-                      <button key={b.id} type="button" onClick={() => { setActiveTab('bookings'); setSelectedBookingId(b.id); setShowOverflow(false); }}
-                        className="w-full flex items-center gap-3 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] rounded-2xl p-2.5 text-right transition-colors cursor-pointer">
-                        <div className="w-11 shrink-0 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl py-1 text-center">
-                          <div className="text-sm font-black text-[var(--color-owner-text)] leading-tight">{new Date(b.checkIn).getDate()}</div>
-                          <div className="text-[8px] font-bold text-[var(--color-owner-secondary)]">{new Date(b.checkIn).toLocaleDateString('ar-EG', { month: 'short' })}</div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[11px] font-bold text-[var(--color-owner-text)] truncate">{b.organizationName || b.userName}</div>
-                          <div className="text-[9.5px] text-[var(--color-owner-secondary)]">{b.guestsCount} فرد · {b.checkIn} → {b.checkOut}</div>
-                        </div>
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                          b.source === 'temporary' ? 'bg-sky-50 text-sky-800 border border-sky-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                        }`}>
-                          {b.source === 'temporary' ? 'مؤقت' : 'مؤكد'}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
 
           </div>
