@@ -188,8 +188,13 @@ export default function WebLayout({
         </main>
       </div>
 
-      {/* Bottom Navigation Bar */}
-      <nav className="shrink-0 bg-white border-t border-[var(--color-natural-border)] shadow-[0_-2px_8px_rgba(0,0,0,0.05)] flex items-stretch z-10">
+      {/* Bottom Navigation Bar — hidden on desktop when the owner is on
+          their own dashboard (the OwnerDashboardShell sidebar covers the
+          same nav more completely; showing this 2-item bar on top of it
+          looks broken). Shown normally for guests/servants and on mobile. */}
+      <nav className={`shrink-0 bg-white border-t border-[var(--color-natural-border)] shadow-[0_-2px_8px_rgba(0,0,0,0.05)] flex items-stretch z-10 ${
+        currentUser?.role === 'owner' && activeScreen === 'owner_panel' ? 'lg:hidden' : ''
+      }`}>
         {visibleNav.map(item => {
           const isActive = activeScreen === item.id;
           return (
