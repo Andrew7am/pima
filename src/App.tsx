@@ -651,13 +651,18 @@ export default function App() {
     await saveAllocationsForBooking(bookingId, []);
   };
 
+  // Guests may cancel pending AND approved bookings (migration 054 amended
+  // the column guard to allow approved → cancelled). The refund entitlement
+  // per the declared policy is shown by UserBookings before confirming;
+  // the owner is notified server-side by the status-change trigger (047).
   const handleCancelBooking = async (bookingId: string) => {
     const target = bookings.find((b) => b.id === bookingId);
-    if (!target || target.status !== 'pending') return;
+    if (!target || (target.status !== 'pending' && target.status !== 'approved')) return;
+    const previousStatus = target.status;
     setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, status: 'cancelled' } : b));
     const ok = await updateBookingStatus(bookingId, 'cancelled');
     if (!ok) {
-      setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, status: 'pending' } : b));
+      setBookings((prev) => prev.map((b) => b.id === bookingId ? { ...b, status: previousStatus } : b));
       return;
     }
     freeBookingAllocations(bookingId);

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
 import BookingChatPanel from './BookingChatPanel';
+import { refundAmountFor } from '../lib/cancellationPolicy';
 
 interface UserBookingsProps {
   bookings: Booking[];
@@ -808,10 +809,22 @@ export default function UserBookings({
                   </div>
 
                   <div className="flex items-center gap-1.5">
-                    {/* Cancel pending booking */}
-                    {booking.status === 'pending' && (
+                    {/* Cancel booking (pending or approved) — the confirm
+                        shows the declared refund entitlement so the guest
+                        knows exactly what they're owed before deciding. */}
+                    {(booking.status === 'pending' || booking.status === 'approved') && (
                       <button
-                        onClick={() => { if (confirm('هل أنت متأكد من إلغاء هذا الحجز؟')) onCancelBooking?.(booking.id); }}
+                        onClick={() => {
+                          const { tier, pct, daysLeft, paid, refund } = refundAmountFor(booking, settings);
+                          const policyLine = paid <= 0
+                            ? 'لم تدفع أي مبلغ بعد — الإلغاء بدون أي التزامات.'
+                            : tier === 'full'
+                              ? `باقي ${daysLeft} يوم على الوصول — يحق لك استرداد كامل المبلغ المدفوع (${paid.toLocaleString('ar-EG')} ج.م).`
+                              : tier === 'partial'
+                                ? `باقي ${daysLeft} يوم على الوصول — يحق لك استرداد ${Math.round(pct * 100)}% من المدفوع (${refund.toLocaleString('ar-EG')} ج.م من أصل ${paid.toLocaleString('ar-EG')} ج.م).`
+                                : `باقي ${daysLeft} يوم فقط على الوصول — وفقاً لسياسة الإلغاء لا يوجد استرداد للمبلغ المدفوع (${paid.toLocaleString('ar-EG')} ج.م).`;
+                          if (confirm(`هل أنت متأكد من إلغاء هذا الحجز؟\n\n🛡️ سياسة الإلغاء: ${policyLine}`)) onCancelBooking?.(booking.id);
+                        }}
                         className="flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
                       >
                         <XCircle className="w-3.5 h-3.5 text-red-600" />

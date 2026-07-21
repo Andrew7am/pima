@@ -268,6 +268,12 @@ export interface PlatformSettings {
   pointsPerEgp: number;      // 100 points = 1 EGP on redemption
   maxRedemptionPct: number;  // 0.10 = points can cover up to 10% of a booking
   referralBonusPoints: number;
+  // Cancellation policy (migration 054): full refund when cancelling
+  // >= freeCancelDays before check-in; partialRefundPct of the paid amount
+  // when >= partialRefundDays; nothing below that.
+  freeCancelDays: number;
+  partialRefundDays: number;
+  partialRefundPct: number;
 }
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
@@ -276,6 +282,9 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   pointsPerEgp: 100,
   maxRedemptionPct: 0.10,
   referralBonusPoints: 2000,
+  freeCancelDays: 7,
+  partialRefundDays: 3,
+  partialRefundPct: 0.5,
 };
 
 export interface AppNotification {

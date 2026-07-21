@@ -576,6 +576,11 @@ export async function loadPlatformSettings(): Promise<PlatformSettings> {
     pointsPerEgp: Number(data.points_per_egp) ?? DEFAULT_PLATFORM_SETTINGS.pointsPerEgp,
     maxRedemptionPct: Number(data.max_redemption_pct) ?? DEFAULT_PLATFORM_SETTINGS.maxRedemptionPct,
     referralBonusPoints: Number(data.referral_bonus_points) ?? DEFAULT_PLATFORM_SETTINGS.referralBonusPoints,
+    // ?? inside Number() never fires (NaN is not null) — check the raw
+    // column instead so a pre-migration-054 DB falls back to defaults.
+    freeCancelDays: data.free_cancel_days != null ? Number(data.free_cancel_days) : DEFAULT_PLATFORM_SETTINGS.freeCancelDays,
+    partialRefundDays: data.partial_refund_days != null ? Number(data.partial_refund_days) : DEFAULT_PLATFORM_SETTINGS.partialRefundDays,
+    partialRefundPct: data.partial_refund_pct != null ? Number(data.partial_refund_pct) : DEFAULT_PLATFORM_SETTINGS.partialRefundPct,
   };
 }
 
@@ -586,6 +591,9 @@ export async function updatePlatformSettings(s: PlatformSettings): Promise<boole
     points_per_egp: s.pointsPerEgp,
     max_redemption_pct: s.maxRedemptionPct,
     referral_bonus_points: s.referralBonusPoints,
+    free_cancel_days: s.freeCancelDays,
+    partial_refund_days: s.partialRefundDays,
+    partial_refund_pct: s.partialRefundPct,
     updated_at: new Date().toISOString(),
   }).eq('id', 1);
   if (error) console.error('updatePlatformSettings:', error);

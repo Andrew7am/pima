@@ -2081,6 +2081,17 @@ export default function HouseDetail({
                   )}
                 </div>
 
+                {/* Declared cancellation policy — shown BEFORE any money moves */}
+                <div className="bg-sky-50/60 border border-sky-200 rounded-2xl p-3 space-y-1.5 text-[10px] text-sky-950">
+                  <div className="font-black flex items-center gap-1">🛡️ سياسة الإلغاء والاسترداد:</div>
+                  <ul className="space-y-1 font-medium pr-4 list-disc">
+                    <li>الإلغاء قبل الوصول بـ <strong>{settings.freeCancelDays} أيام أو أكثر</strong>: استرداد <strong>كامل</strong> لأي مبلغ مدفوع.</li>
+                    <li>الإلغاء قبل الوصول بـ <strong>{settings.partialRefundDays} أيام أو أكثر</strong>: استرداد <strong>{Math.round(settings.partialRefundPct * 100)}%</strong> من المدفوع.</li>
+                    <li>أقل من ذلك: لا يوجد استرداد.</li>
+                  </ul>
+                  <p className="text-[9px] text-sky-800/80 pt-0.5">يقوم المالك بإعادة المبلغ بنفس طريقة الدفع خلال أيام قليلة من الإلغاء.</p>
+                </div>
+
                 {wouldExceedCapacity ? (
                   <div className="space-y-2">
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[10px] text-amber-800 font-bold text-center">

@@ -650,6 +650,9 @@ export default function AdminDashboard({
               { key: 'maxRedemptionPct', label: 'أقصى خصم بالنقاط من الحجز', suffix: '%', factor: 100, hint: 'أقصى نسبة من قيمة الحجز ممكن تتدفع بالنقاط.' },
               { key: 'pointsPerEgp', label: 'نقاط مقابل الجنيه (الاستبدال)', suffix: 'نقطة = ١ ج.م', factor: 1, hint: 'كل كام نقطة تساوي جنيه عند الخصم.' },
               { key: 'referralBonusPoints', label: 'مكافأة دعوة صديق', suffix: 'نقطة', factor: 1, hint: 'نقاط تُمنح للمُحيل عند أول حجز مدفوع لصديقه.' },
+              { key: 'freeCancelDays', label: 'إلغاء مجاني قبل الوصول بـ', suffix: 'يوم', factor: 1, hint: 'الإلغاء قبل الوصول بهذه المدة أو أكثر = استرداد كامل.' },
+              { key: 'partialRefundDays', label: 'استرداد جزئي قبل الوصول بـ', suffix: 'يوم', factor: 1, hint: 'الإلغاء قبل الوصول بهذه المدة أو أكثر = استرداد جزئي. أقل منها = لا استرداد.' },
+              { key: 'partialRefundPct', label: 'نسبة الاسترداد الجزئي', suffix: '%', factor: 100, hint: 'النسبة المستردة من المبلغ المدفوع في نافذة الاسترداد الجزئي.' },
             ] as const).map((f) => (
               <div key={f.key} className="space-y-1">
                 <label className="block text-[11px] font-bold text-[#4A4A3A]">{f.label}</label>
