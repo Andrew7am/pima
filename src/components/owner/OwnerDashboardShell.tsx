@@ -19,8 +19,8 @@ import { supabase } from '../../lib/supabase';
 import { getRoomBedState, getHouseRoomAvailabilityForRange } from '../../lib/roomOccupancy';
 import LocationPicker from '../LocationPicker';
 
-type PrimaryTab = 'stats' | 'bookings' | 'messages' | 'reports';
-type OverflowTab = 'rooms' | 'financials' | 'reviews' | 'house' | 'occupancy' | 'notifications' | 'profile' | 'room_distribution' | 'customers';
+type PrimaryTab = 'stats' | 'bookings' | 'messages' | 'meals';
+type OverflowTab = 'rooms' | 'financials' | 'reviews' | 'house' | 'occupancy' | 'notifications' | 'profile' | 'room_distribution' | 'customers' | 'reports';
 type ActiveTab = PrimaryTab | OverflowTab;
 
 // Relative time for the activity feed — "منذ 10 دقائق" style, like the mockup.
@@ -77,6 +77,7 @@ const OVERFLOW_ITEMS: { key: OverflowTab; label: string; icon: React.ElementType
   { key: 'rooms', label: 'الغرف', icon: BedDouble },
   { key: 'room_distribution', label: 'توزيع الغرف', icon: Shuffle },
   { key: 'financials', label: 'الحسابات', icon: Coins },
+  { key: 'reports', label: 'التقارير', icon: BarChart3 },
   { key: 'customers', label: 'العملاء', icon: Users },
   { key: 'reviews', label: 'التقييمات', icon: MessageSquare },
   { key: 'house', label: 'بيانات البيت', icon: Building },
@@ -546,7 +547,7 @@ export default function OwnerDashboardShell({
     { key: 'rooms', label: 'الغرف', icon: BedDouble },
     { key: 'stats', label: 'الرئيسية', icon: Home, center: true },
     { key: 'messages', label: 'المحادثات', icon: MessageCircle },
-    { key: 'reports', label: 'التقارير', icon: BarChart3 },
+    { key: 'meals', label: 'قائمة الطعام', icon: Utensils },
   ];
 
   // Desktop sidebar: نظام تنقل متداخل — الحجوزات والغرف مجموعتان قابلتان
@@ -713,9 +714,10 @@ export default function OwnerDashboardShell({
         {MOBILE_TABS.map((t) => {
           const Icon = t.icon;
           const isSel = activeTab === t.key && !showOverflow;
-          const badgeCount = t.key === 'bookings' ? pendingBookings.length
-            : t.key === 'messages' ? unreadNotificationsCount
-            : 0;
+          // Notification count only shows once — the hero bell (top). The
+          // bookings tab keeps its own count of pending requests since
+          // that's action-required, not a notification.
+          const badgeCount = t.key === 'bookings' ? pendingBookings.length : 0;
           if (t.center) {
             return (
               <button
@@ -773,9 +775,6 @@ export default function OwnerDashboardShell({
                 >
                   <Icon className="w-3.5 h-3.5 shrink-0" />
                   <span>{item.label}</span>
-                  {item.key === 'notifications' && unreadNotificationsCount > 0 && (
-                    <span className="mr-auto text-[9px] bg-rose-500 text-white px-1.5 rounded-full">{unreadNotificationsCount}</span>
-                  )}
                 </button>
               );
             })}
@@ -2292,6 +2291,11 @@ export default function OwnerDashboardShell({
       {/* Overflow: Reports */}
       {activeTab === 'reports' && (
         <OwnerReports ownerBookings={ownerBookings} ownerReviews={ownerReviews} confirmedRevenue={confirmedRevenue} platformCommissionAmount={platformCommissionAmount} netOwnerPayout={netOwnerPayout} occupancyRate={occupancyRate} avgRating={avgRating} />
+      )}
+
+      {/* Primary: Food Menu (in the bottom nav) */}
+      {activeTab === 'meals' && ownerHouses[0] && (
+        <OwnerFoodMenu house={ownerHouses[0]} onUpdateHouse={onUpdateHouse} />
       )}
 
       {/* Overflow: Notifications */}
