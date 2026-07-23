@@ -219,6 +219,24 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      // Split the heaviest third-party libs into their own long-cached chunks
+      // so the initial app bundle is smaller and a code change doesn't bust
+      // the vendor cache. Screens are already route-level lazy-loaded.
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return undefined;
+            if (id.includes('leaflet')) return 'vendor-leaflet';
+            if (id.includes('@supabase')) return 'vendor-supabase';
+            if (id.includes('motion') || id.includes('framer-motion')) return 'vendor-motion';
+            if (id.includes('lucide-react')) return 'vendor-icons';
+            if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('react-router') || id.includes('/scheduler/')) return 'vendor-react';
+            return 'vendor';
+          },
+        },
+      },
+    },
     server: {
       port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
