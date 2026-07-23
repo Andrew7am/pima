@@ -332,6 +332,21 @@ export interface Expense {
   createdAt: string;
 }
 
+// A transfer request the owner raises against the balance Pima holds
+// (deposits collected via the platform, minus commission). Admin marks it
+// completed later — see migration 059_owner_payouts.
+export interface Payout {
+  id: string;
+  houseId: string;
+  ownerId: string;
+  amount: number;
+  status: 'pending' | 'processing' | 'completed' | 'rejected';
+  method?: string;
+  note?: string;
+  requestedAt: string;
+  completedAt?: string;
+}
+
 export interface AuditLogEntry {
   id: number;
   actorId: string | null;

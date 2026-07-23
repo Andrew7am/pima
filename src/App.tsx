@@ -16,6 +16,7 @@ import {
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
   createWaitlistEntry,
   loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
+  loadPayoutsForHouses, createPayout as createPayoutDb,
   createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
   loadPlatformSettings, updatePlatformSettings,
   deleteOwnAccount,
@@ -23,7 +24,7 @@ import {
   loadPaymentProofImage,
 } from './lib/db';
 import { autoAllocate } from './lib/roomAllocation';
-import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense } from './types';
+import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout } from './types';
 
 // Component Imports
 // Route-level code splitting: heavy, role- or navigation-gated screens load on
@@ -118,6 +119,7 @@ export default function App() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [payouts, setPayouts] = useState<Payout[]>([]);
   const [platformAnnouncements, setPlatformAnnouncements] = useState<PlatformAnnouncement[]>([]);
   const [settings, setSettings] = useState<PlatformSettings>(DEFAULT_PLATFORM_SETTINGS);
 
@@ -468,12 +470,14 @@ export default function App() {
     Promise.all([
       loadRoomsForHouses(ownerHouseIds), loadAnnouncementsForHouses(ownerHouseIds),
       loadReviewsForHouses(ownerHouseIds), loadWaitlistForHouses(ownerHouseIds), loadExpensesForHouses(ownerHouseIds),
-    ]).then(([oRooms, oAnnouncements, oReviews, oWaitlist, oExpenses]) => {
+      loadPayoutsForHouses(ownerHouseIds),
+    ]).then(([oRooms, oAnnouncements, oReviews, oWaitlist, oExpenses, oPayouts]) => {
       setRooms((prev) => [...prev.filter((r) => !ownerHouseIds.includes(r.houseId)), ...oRooms]);
       setAnnouncements((prev) => [...prev.filter((a) => !ownerHouseIds.includes(a.houseId)), ...oAnnouncements]);
       setReviews((prev) => [...prev.filter((rv) => !ownerHouseIds.includes(rv.houseId)), ...oReviews]);
       setWaitlist((prev) => [...prev.filter((w) => !ownerHouseIds.includes(w.houseId)), ...oWaitlist]);
       setExpenses((prev) => [...prev.filter((e) => !ownerHouseIds.includes(e.houseId)), ...oExpenses]);
+      setPayouts((prev) => [...prev.filter((p) => !ownerHouseIds.includes(p.houseId)), ...oPayouts]);
       setOwnerRoomsChecked(true);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -716,6 +720,12 @@ export default function App() {
   const handleDeleteExpense = (expenseId: string) => {
     setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
     deleteExpenseDb(expenseId);
+  };
+
+  const handleRequestPayout = async (payout: Payout): Promise<boolean> => {
+    const ok = await createPayoutDb(payout);
+    if (ok) setPayouts((prev) => [payout, ...prev]);
+    return ok;
   };
 
   // Cancelling/rejecting a booking frees its rooms immediately — the guest
@@ -1570,6 +1580,8 @@ export default function App() {
               expenses={expenses}
               onAddExpense={handleAddExpense}
               onDeleteExpense={handleDeleteExpense}
+              payouts={payouts}
+              onRequestPayout={handleRequestPayout}
               users={users}
               onNavigateSupport={() => setActiveScreen('support')}
               onCreateBooking={handleOwnerCreateBooking}

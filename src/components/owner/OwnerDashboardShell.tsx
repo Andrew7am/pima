@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification, Expense } from '../../types';
+import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification, Expense, Payout } from '../../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
 import {
   Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2,
@@ -67,6 +67,8 @@ interface OwnerDashboardShellProps {
   expenses?: Expense[];
   onAddExpense?: (expense: Expense) => void;
   onDeleteExpense?: (expenseId: string) => void;
+  payouts?: Payout[];
+  onRequestPayout?: (payout: Payout) => Promise<boolean>;
   users?: User[];
   onNavigateSupport?: () => void;
   onCreateBooking?: (booking: Booking) => Promise<boolean>;
@@ -95,7 +97,7 @@ export default function OwnerDashboardShell({
   onUpdateHouse, onRequestHouseEdit, reviews = [], onUpdateReview,
   rooms = [], onAddRoom, onUpdateRoom, onDeleteRoom, waitlist = [],
   notifications = [], onMarkNotificationAsRead,
-  expenses = [], onAddExpense, onDeleteExpense, users = [], onNavigateSupport, onCreateBooking,
+  expenses = [], onAddExpense, onDeleteExpense, payouts = [], onRequestPayout, users = [], onNavigateSupport, onCreateBooking,
   onUpdateBookingDetails, onRecalculateAllocation, onLogout,
 }: OwnerDashboardShellProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>('stats');
@@ -1745,6 +1747,9 @@ export default function OwnerDashboardShell({
           totalExpenses={totalExpenses}
           netProfit={netProfit}
           houseId={ownerHouses[0]?.id}
+          owner={owner}
+          payouts={payouts.filter((p) => ownerHouseIds.includes(p.houseId))}
+          onRequestPayout={onRequestPayout}
           onAddExpense={onAddExpense}
           onDeleteExpense={onDeleteExpense}
           onNavigateSupport={onNavigateSupport}

@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, AuditLogEntry, Expense } from '../types';
+import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, AuditLogEntry, Expense, Payout } from '../types';
 import { DEFAULT_PLATFORM_SETTINGS } from '../types';
 
 // ─── Row → Type mappers ────────────────────────────────────────────────────
@@ -218,6 +218,20 @@ export function mapRoom(r: Record<string, unknown>): Room {
     status: r.status as Room['status'],
     floor: r.floor as number ?? 1,
     createdAt: r.created_at as string,
+  };
+}
+
+export function mapPayout(r: Record<string, unknown>): Payout {
+  return {
+    id: r.id as string,
+    houseId: r.house_id as string,
+    ownerId: r.owner_id as string,
+    amount: Number(r.amount),
+    status: r.status as Payout['status'],
+    method: (r.method as string) ?? undefined,
+    note: (r.note as string) ?? undefined,
+    requestedAt: r.requested_at as string,
+    completedAt: (r.completed_at as string) ?? undefined,
   };
 }
 
@@ -542,6 +556,23 @@ export async function createExpense(e: Expense): Promise<boolean> {
 export async function deleteExpense(id: string): Promise<boolean> {
   const { error } = await supabase.from('owner_expenses').delete().eq('id', id);
   if (error) console.error('deleteExpense:', error);
+  return !error;
+}
+
+export async function loadPayoutsForHouses(houseIds: string[]): Promise<Payout[]> {
+  if (houseIds.length === 0) return [];
+  const { data, error } = await supabase.from('owner_payouts').select('*').in('house_id', houseIds).order('requested_at', { ascending: false });
+  // Degrade gracefully if the payouts table hasn't been migrated yet.
+  if (error) { console.error('loadPayoutsForHouses:', error); return []; }
+  return (data ?? []).map(mapPayout);
+}
+
+export async function createPayout(p: Payout): Promise<boolean> {
+  const { error } = await supabase.from('owner_payouts').insert({
+    id: p.id, house_id: p.houseId, owner_id: p.ownerId, amount: p.amount,
+    status: p.status, method: p.method ?? null, note: p.note ?? null, requested_at: p.requestedAt,
+  });
+  if (error) console.error('createPayout:', error);
   return !error;
 }
 

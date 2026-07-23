@@ -1,10 +1,10 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Booking, Expense } from '../../types';
+import { Booking, Expense, Payout, User } from '../../types';
 import {
   Wallet, Info, ArrowUpRight, ArrowDownRight, CreditCard, Receipt, Banknote,
   CheckCircle2, TrendingUp, Search, X, Plus, ChevronDown, Sparkles, Wrench,
-  Zap, Droplet, Utensils, History, Landmark, Coins, Trash2, Pencil, Bell,
+  Zap, Droplet, Utensils, History, Landmark, Coins, Trash2, Pencil, Bell, Clock,
 } from 'lucide-react';
 
 interface OwnerFinancialCenterProps {
@@ -20,10 +20,20 @@ interface OwnerFinancialCenterProps {
   totalExpenses: number;
   netProfit: number;
   houseId?: string;
+  owner?: User;
+  payouts?: Payout[];
+  onRequestPayout?: (payout: Payout) => Promise<boolean>;
   onAddExpense?: (expense: Expense) => void;
   onDeleteExpense?: (expenseId: string) => void;
   onNavigateSupport?: () => void;
 }
+
+const PAYOUT_STATUS: Record<Payout['status'], { label: string; className: string }> = {
+  pending: { label: 'قيد المراجعة', className: 'bg-amber-50 text-amber-800 border-amber-200' },
+  processing: { label: 'جارٍ التحويل', className: 'bg-sky-50 text-sky-800 border-sky-200' },
+  completed: { label: 'تم التحويل', className: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+  rejected: { label: 'مرفوض', className: 'bg-rose-50 text-rose-800 border-rose-200' },
+};
 
 // ── Small reusable primitives ──────────────────────────────────────
 
@@ -135,7 +145,7 @@ type PeriodKey = typeof PERIODS[number]['key'];
 export default function OwnerFinancialCenter({
   ownerBookings, confirmedBookings, confirmedRevenue, platformCommissionAmount, netOwnerPayout,
   depositReceived, remainingBalance, commissionRate, ownerExpenses, totalExpenses, netProfit,
-  houseId, onAddExpense, onDeleteExpense, onNavigateSupport,
+  houseId, owner, payouts = [], onRequestPayout, onAddExpense, onDeleteExpense, onNavigateSupport,
 }: OwnerFinancialCenterProps) {
   const [period, setPeriod] = useState<PeriodKey>('all');
   const [search, setSearch] = useState('');
@@ -147,6 +157,10 @@ export default function OwnerFinancialCenter({
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [swipedExpenseId, setSwipedExpenseId] = useState<string | null>(null);
   const [showExpensesPage, setShowExpensesPage] = useState(false);
+  const [showTransferSheet, setShowTransferSheet] = useState(false);
+  const [transferNote, setTransferNote] = useState('');
+  const [transferSubmitting, setTransferSubmitting] = useState(false);
+  const [transferDone, setTransferDone] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -184,7 +198,7 @@ export default function OwnerFinancialCenter({
   };
 
   // Only one bottom sheet should be visible at a time.
-  const closeAllSheets = () => { setOpenBookingId(null); setShowHistorySheet(false); setShowAddExpense(false); };
+  const closeAllSheets = () => { setOpenBookingId(null); setShowHistorySheet(false); setShowAddExpense(false); setShowTransferSheet(false); };
 
   const monthlyExpenses = useMemo(() => months.map((m) => {
     const list = ownerExpenses.filter((e) => {
@@ -232,17 +246,45 @@ export default function OwnerFinancialCenter({
 
   const openBooking = confirmedBookings.find((b) => b.id === openBookingId) || null;
 
-  // ── Donut: honest split of total booking value into commission vs net —
-  // no per-category (meals/activities) revenue is tracked in the data model,
-  // so this shows the one breakdown that's actually real.
-  const netShare = confirmedRevenue > 0 ? netOwnerPayout / confirmedRevenue : 0;
+  // ── Donut: honest 3-way split of the total booking value that mirrors the
+  // money-flow story — what Pima transfers, what the owner collects as cash,
+  // and Pima's commission. (Per-category revenue — meals/activities — isn't
+  // tracked in the data model, so a real cashflow split is shown instead.)
+  const flowSegments = (() => {
+    const commission = platformCommissionAmount;
+    const pimaTransfer = Math.max(0, depositReceived - platformCommissionAmount);
+    const cash = Math.max(0, remainingBalance);
+    const total = commission + pimaTransfer + cash || 1;
+    return [
+      { key: 'transfer', label: 'يُحوَّل لك عبر Pima', amount: pimaTransfer, color: 'var(--color-owner-primary)', share: pimaTransfer / total },
+      { key: 'cash', label: 'يُحصَّل نقدًا عند الوصول', amount: cash, color: '#22C55E', share: cash / total },
+      { key: 'commission', label: 'عمولة Pima', amount: commission, color: '#D4AF37', share: commission / total },
+    ];
+  })();
   const r = 40, circumference = 2 * Math.PI * r;
 
   // What Pima can ACTUALLY transfer to the owner: only the deposits it holds,
-  // minus the full platform commission. The rest of the net payout is cash the
-  // owner collects directly on arrival — Pima never touches it, so it must not
-  // be presented as a transferable balance. See the money-flow timeline below.
-  const availableForTransfer = Math.max(0, depositReceived - platformCommissionAmount);
+  // minus the full platform commission, and minus anything already sitting in
+  // an open (pending/processing) request. The rest of the net payout is cash
+  // the owner collects directly on arrival — Pima never touches it, so it must
+  // not be presented as a transferable balance. See the money-flow timeline.
+  const pendingPayoutTotal = payouts
+    .filter((p) => p.status === 'pending' || p.status === 'processing')
+    .reduce((s, p) => s + p.amount, 0);
+  const heldByPima = Math.max(0, depositReceived - platformCommissionAmount);
+  const availableForTransfer = Math.max(0, heldByPima - pendingPayoutTotal);
+
+  const submitTransfer = async () => {
+    if (!houseId || !owner || availableForTransfer <= 0 || !onRequestPayout) return;
+    setTransferSubmitting(true);
+    const ok = await onRequestPayout({
+      id: `payout_${Date.now()}`, houseId, ownerId: owner.id, amount: availableForTransfer,
+      status: 'pending', note: transferNote.trim() || undefined, requestedAt: new Date().toISOString(),
+    });
+    setTransferSubmitting(false);
+    if (ok) { setTransferDone(true); setTransferNote(''); }
+  };
+  const openTransferSheet = () => { closeAllSheets(); setTransferDone(false); setShowTransferSheet(true); };
 
   const submitExpense = () => {
     const amount = parseFloat(expAmount);
@@ -400,13 +442,16 @@ export default function OwnerFinancialCenter({
         </div>
 
         <div className="relative flex gap-2 mt-3">
-          <button type="button" onClick={onNavigateSupport}
+          <button type="button" onClick={openTransferSheet}
             className="flex-1 flex items-center justify-center gap-1.5 bg-[#D4AF37] text-[#1F2E4E] text-[11px] font-black py-2.5 rounded-2xl active:scale-[0.98] transition-transform">
             <ArrowUpRight className="w-3.5 h-3.5" /> طلب تحويل الآن
           </button>
           <button type="button" onClick={() => { closeAllSheets(); setShowHistorySheet(true); }}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-white/10 border border-white/15 text-white text-[11px] font-black py-2.5 rounded-2xl active:scale-[0.98] transition-transform">
+            className="relative flex-1 flex items-center justify-center gap-1.5 bg-white/10 border border-white/15 text-white text-[11px] font-black py-2.5 rounded-2xl active:scale-[0.98] transition-transform">
             <History className="w-3.5 h-3.5" /> سجل التحويلات
+            {payouts.length > 0 && (
+              <span className="absolute -top-1.5 -left-1.5 min-w-[16px] h-4 px-1 bg-[#D4AF37] text-[#1F2E4E] text-[8.5px] font-black rounded-full flex items-center justify-center">{payouts.length}</span>
+            )}
           </button>
         </div>
 
@@ -546,29 +591,29 @@ export default function OwnerFinancialCenter({
         <div className="flex items-center gap-4">
           <svg viewBox="0 0 100 100" className="w-24 h-24 shrink-0" style={{ transform: 'rotate(-90deg)' }}>
             <circle cx="50" cy="50" r={r} fill="none" stroke="var(--color-owner-bg)" strokeWidth="12" />
-            <motion.circle cx="50" cy="50" r={r} fill="none" stroke="#D4AF37" strokeWidth="12"
-              strokeDasharray={circumference} strokeLinecap="round"
-              initial={{ strokeDashoffset: circumference }} animate={{ strokeDashoffset: circumference * netShare }}
-              transition={{ duration: 0.9, ease: 'easeOut' }} />
-            <motion.circle cx="50" cy="50" r={r} fill="none" stroke="var(--color-owner-primary)" strokeWidth="12"
-              strokeDasharray={circumference} strokeLinecap="round"
-              initial={{ strokeDashoffset: 0 }} animate={{ strokeDashoffset: -circumference * (1 - netShare) }}
-              style={{ transform: `rotate(${netShare * 360}deg)`, transformOrigin: '50px 50px' }}
-              transition={{ duration: 0.9, ease: 'easeOut', delay: 0.1 }} />
+            {(() => {
+              let acc = 0;
+              return flowSegments.map((seg, i) => {
+                const rot = acc * 360;
+                acc += seg.share;
+                return (
+                  <motion.circle key={seg.key} cx="50" cy="50" r={r} fill="none" stroke={seg.color} strokeWidth="12"
+                    style={{ transform: `rotate(${rot}deg)`, transformOrigin: '50px 50px' }}
+                    initial={{ pathLength: 0 }} animate={{ pathLength: seg.share }}
+                    transition={{ duration: 0.8, ease: 'easeOut', delay: i * 0.12 }} />
+                );
+              });
+            })()}
           </svg>
           <div className="space-y-2 text-[10.5px] font-bold flex-1">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-[var(--color-owner-text)]">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ background: 'var(--color-owner-primary)' }} /> صافي مستحقاتك
-              </span>
-              <span>{Math.round(netShare * 100)}%</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-[var(--color-owner-secondary)]">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#D4AF37]" /> عمولة Pima
-              </span>
-              <span>{Math.round((1 - netShare) * 100)}%</span>
-            </div>
+            {flowSegments.map((seg) => (
+              <div key={seg.key} className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-[var(--color-owner-text)]">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: seg.color }} /> {seg.label}
+                </span>
+                <span className="text-[var(--color-owner-secondary)]">{Math.round(seg.share * 100)}%</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -752,14 +797,67 @@ export default function OwnerFinancialCenter({
         })()}
       </BottomSheet>
 
-      {/* ── Transfer history sheet (honest empty-state — no payout ledger exists yet) ── */}
+      {/* ── Transfer history sheet ───────────────────────────────── */}
       <BottomSheet open={showHistorySheet} onClose={() => setShowHistorySheet(false)} title="سجل التحويلات">
-        <div className="text-center py-6 space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--color-owner-hover)] flex items-center justify-center mx-auto"><History className="w-5 h-5 text-[var(--color-owner-secondary)]" /></div>
-          <p className="text-[11px] font-bold text-[var(--color-owner-secondary)]">لا توجد تحويلات مسجلة بعد.</p>
-          <button type="button" onClick={() => { setShowHistorySheet(false); onNavigateSupport?.(); }}
-            className="text-[10.5px] font-black text-[var(--color-owner-primary)] underline">تواصل مع الدعم لطلب أول تحويل</button>
-        </div>
+        {payouts.length === 0 ? (
+          <div className="text-center py-6 space-y-2">
+            <div className="w-12 h-12 rounded-2xl bg-[var(--color-owner-hover)] flex items-center justify-center mx-auto"><History className="w-5 h-5 text-[var(--color-owner-secondary)]" /></div>
+            <p className="text-[11px] font-bold text-[var(--color-owner-secondary)]">لا توجد تحويلات مسجلة بعد.</p>
+            <button type="button" onClick={() => { setShowHistorySheet(false); openTransferSheet(); }}
+              className="text-[10.5px] font-black text-[var(--color-owner-primary)] underline">اطلب أول تحويل الآن</button>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {payouts.map((p) => {
+              const st = PAYOUT_STATUS[p.status];
+              return (
+                <div key={p.id} className="flex items-center justify-between bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl px-3.5 py-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-[var(--color-owner-hover)] flex items-center justify-center shrink-0">
+                      {p.status === 'completed' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <Clock className="w-4 h-4 text-[var(--color-owner-secondary)]" />}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-black text-[var(--color-owner-text)]">{p.amount.toLocaleString()} ج.م</div>
+                      <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{(p.completedAt ?? p.requestedAt).split('T')[0]}</div>
+                    </div>
+                  </div>
+                  <span className={`text-[9px] font-black px-2 py-1 rounded-full border ${st.className}`}>{st.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </BottomSheet>
+
+      {/* ── Transfer request sheet ───────────────────────────────── */}
+      <BottomSheet open={showTransferSheet} onClose={() => setShowTransferSheet(false)} title="طلب تحويل">
+        {transferDone ? (
+          <div className="text-center py-6 space-y-2">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto"><CheckCircle2 className="w-7 h-7 text-emerald-600" /></div>
+            <p className="text-[12px] font-black text-[var(--color-owner-text)]">تم إرسال طلب التحويل بنجاح</p>
+            <p className="text-[10.5px] font-bold text-[var(--color-owner-secondary)] leading-relaxed">هيراجعه فريق Pima ويحوّل لك المبلغ على وسيلتك المسجلة. تقدر تتابع الحالة من "سجل التحويلات".</p>
+            <button type="button" onClick={() => { setShowTransferSheet(false); setShowHistorySheet(true); }}
+              className="text-[10.5px] font-black text-[var(--color-owner-primary)] underline">عرض سجل التحويلات</button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="bg-[var(--color-owner-bg)] rounded-2xl p-3.5 text-center">
+              <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">الرصيد المتاح للتحويل عبر Pima</div>
+              <div className="text-2xl font-black text-[var(--color-owner-text)] mt-1">{availableForTransfer.toLocaleString()} <span className="text-sm">ج.م</span></div>
+              <div className="text-[9px] font-bold text-[var(--color-owner-secondary)] mt-0.5">من العربون المحصّل ({depositReceived.toLocaleString()} ج.م) بعد خصم عمولة Pima</div>
+            </div>
+            {pendingPayoutTotal > 0 && (
+              <p className="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">لديك طلبات تحويل قيد المراجعة بقيمة {pendingPayoutTotal.toLocaleString()} ج.م، تم خصمها من الرصيد المتاح.</p>
+            )}
+            <textarea placeholder="ملاحظة للفريق (اختياري) — مثلاً وسيلة الاستلام المفضّلة" value={transferNote} onChange={(e) => setTransferNote(e.target.value)} rows={2}
+              className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[11px] px-3 py-2.5 rounded-xl text-[var(--color-owner-text)] outline-none resize-none" />
+            <button type="button" onClick={submitTransfer} disabled={availableForTransfer <= 0 || transferSubmitting || !onRequestPayout}
+              className="w-full bg-[var(--color-owner-primary)] disabled:opacity-40 text-white text-[11px] font-black py-3 rounded-2xl">
+              {transferSubmitting ? 'جارٍ الإرسال…' : availableForTransfer <= 0 ? 'لا يوجد رصيد متاح للتحويل' : `طلب تحويل ${availableForTransfer.toLocaleString()} ج.م`}
+            </button>
+            <p className="text-[9px] font-bold text-[var(--color-owner-secondary)] text-center leading-relaxed">المبلغ المتبقي من الحجوزات يُحصَّل نقدًا منك عند وصول الضيوف، وليس جزءًا من التحويل.</p>
+          </div>
+        )}
       </BottomSheet>
 
       {/* ── Add / edit expense sheet (shared) ────────────────────── */}
