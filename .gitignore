@@ -27,3 +27,4 @@ android/.idea/
 *.keystore
 *.jks
 .vercel
+supabase/apply-all.sql
