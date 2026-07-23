@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
@@ -26,35 +26,38 @@ import { autoAllocate } from './lib/roomAllocation';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense } from './types';
 
 // Component Imports
-import UserBookings from './components/UserBookings';
-import OwnerDashboardShell from './components/owner/OwnerDashboardShell';
-import OwnerFoodMenu from './components/owner/OwnerFoodMenu';
-import AdminDashboard from './components/AdminDashboard';
+// Route-level code splitting: heavy, role- or navigation-gated screens load on
+// demand so the first paint (landing / guest browsing) ships a much smaller
+// bundle. Each lazy() render site sits under a <Suspense> boundary below.
+const UserBookings = lazy(() => import('./components/UserBookings'));
+const OwnerDashboardShell = lazy(() => import('./components/owner/OwnerDashboardShell'));
+const OwnerFoodMenu = lazy(() => import('./components/owner/OwnerFoodMenu'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 import HouseDetail from './components/HouseDetail';
 import UserDashboard from './components/UserDashboard';
 import WebLayout from './components/WebLayout';
 import AuthScreen from './components/AuthScreen';
 import LandingPage from './components/LandingPage';
-import ContactSupport from './components/ContactSupport';
-import ProfileScreen from './components/ProfileScreen';
+const ContactSupport = lazy(() => import('./components/ContactSupport'));
+const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 import PrivacyPolicy from './components/PrivacyPolicy';
-import EntertainmentHome from './entertainment/EntertainmentHome';
-import TriviaGame from './entertainment/games/TriviaGame';
-import WhoAmIGame from './entertainment/games/WhoAmIGame';
-import HymnsGame from './entertainment/games/HymnsGame';
-import FillVerseGame from './entertainment/games/FillVerseGame';
-import MultiplayerLobby from './entertainment/multiplayer/MultiplayerLobby';
-import LiveMatchGame from './entertainment/multiplayer/LiveMatchGame';
-import AchievementsScreen from './entertainment/AchievementsScreen';
+const EntertainmentHome = lazy(() => import('./entertainment/EntertainmentHome'));
+const TriviaGame = lazy(() => import('./entertainment/games/TriviaGame'));
+const WhoAmIGame = lazy(() => import('./entertainment/games/WhoAmIGame'));
+const HymnsGame = lazy(() => import('./entertainment/games/HymnsGame'));
+const FillVerseGame = lazy(() => import('./entertainment/games/FillVerseGame'));
+const MultiplayerLobby = lazy(() => import('./entertainment/multiplayer/MultiplayerLobby'));
+const LiveMatchGame = lazy(() => import('./entertainment/multiplayer/LiveMatchGame'));
+const AchievementsScreen = lazy(() => import('./entertainment/AchievementsScreen'));
 import AchievementToast from './entertainment/AchievementToast';
-import FriendsScreen from './entertainment/FriendsScreen';
-import ChatThreadScreen from './entertainment/ChatThreadScreen';
+const FriendsScreen = lazy(() => import('./entertainment/FriendsScreen'));
+const ChatThreadScreen = lazy(() => import('./entertainment/ChatThreadScreen'));
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import CompleteProfileScreen from './components/CompleteProfileScreen';
 import PendingApprovalScreen from './components/PendingApprovalScreen';
-import OwnerOnboardingWizard from './components/OwnerOnboardingWizard';
+const OwnerOnboardingWizard = lazy(() => import('./components/OwnerOnboardingWizard'));
 import BannedScreen from './components/BannedScreen';
-import InteractiveMap from './components/InteractiveMap';
+const InteractiveMap = lazy(() => import('./components/InteractiveMap'));
 import UpdateBanner from './components/UpdateBanner';
 import { useVersionCheck } from './lib/useVersionCheck';
 
@@ -73,6 +76,15 @@ function dismissReminder(id: string) {
   const set = getDismissedReminders();
   set.add(id);
   localStorage.setItem(DISMISSED_REMINDERS_KEY, JSON.stringify([...set]));
+}
+
+// Shown while a lazily-loaded screen chunk is being fetched.
+function ScreenFallback() {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="w-8 h-8 border-2 border-[#3A6B4C] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 }
 
 export default function App() {
@@ -1297,6 +1309,7 @@ export default function App() {
         onClearNotifications={() => {}}
         onRequireLogin={() => requireLogin(selectedHouse?.id)}
       >
+        <Suspense fallback={<ScreenFallback />}>
         {selectedHouse ? (
           <HouseDetail
             house={selectedHouse}
@@ -1330,6 +1343,7 @@ export default function App() {
             platformAnnouncements={platformAnnouncements.filter((a) => a.isActive)}
           />
         )}
+        </Suspense>
       </WebLayout>
       <a
         href="https://wa.me/201234567890?text=%D8%B3%D9%84%D8%A7%D9%85%20%D9%88%D9%86%D8%B9%D9%85%D8%A9%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1%20%D8%B9%D9%86%20%D8%A8%D9%8A%D9%88%D8%AA%20%D8%A7%D9%84%D9%85%D8%A4%D8%AA%D9%85%D8%B1%D8%A7%D8%AA"
@@ -1428,17 +1442,19 @@ export default function App() {
     // success screen never gets a chance to render.
     if (!onboardingComplete || justFinishedOnboarding) {
       return (
-        <OwnerOnboardingWizard
-          owner={currentUser}
-          existingHouse={ownerHouse}
-          existingRooms={ownerRooms}
-          onCreateHouse={handleAddHouse}
-          onAddRoom={handleAddRoom}
-          onUpdatePaymentMethods={(house, methods) => handleUpdateHouse({ ...house, paymentMethods: methods })}
-          onLogout={handleLogout}
-          onSubmitted={() => setJustFinishedOnboarding(true)}
-          onContinue={() => setJustFinishedOnboarding(false)}
-        />
+        <Suspense fallback={<ScreenFallback />}>
+          <OwnerOnboardingWizard
+            owner={currentUser}
+            existingHouse={ownerHouse}
+            existingRooms={ownerRooms}
+            onCreateHouse={handleAddHouse}
+            onAddRoom={handleAddRoom}
+            onUpdatePaymentMethods={(house, methods) => handleUpdateHouse({ ...house, paymentMethods: methods })}
+            onLogout={handleLogout}
+            onSubmitted={() => setJustFinishedOnboarding(true)}
+            onContinue={() => setJustFinishedOnboarding(false)}
+          />
+        </Suspense>
       );
     }
   }
@@ -1461,6 +1477,7 @@ export default function App() {
       onClearNotifications={handleClearNotifications}
     >
       {/* Screen Routing & Render Logic */}
+      <Suspense fallback={<ScreenFallback />}>
       {selectedHouse ? (
         // Detailed Retreat House Screen
         <HouseDetail
@@ -1726,6 +1743,7 @@ export default function App() {
           )}
         </>
       )}
+      </Suspense>
     </WebLayout>
     {activeScreen !== 'owner_panel' && activeScreen !== 'admin_panel' && (
       <a
