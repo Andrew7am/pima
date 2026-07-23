@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronRight, Send, Loader2, MessageCircle, Paperclip, X, FileText, Download } from 'lucide-react';
+import { ChevronRight, Send, Loader2, MessageCircle, Paperclip, X, FileText, Download, Reply, Trash2 } from 'lucide-react';
 import { BookingMessage } from '../types';
-import { loadBookingMessages, sendBookingMessage, markBookingMessagesRead, subscribeToBookingMessages, subscribeToTypingPresence, OutgoingAttachment } from '../lib/bookingMessages';
+import { loadBookingMessages, sendBookingMessage, deleteBookingMessage, markBookingMessagesRead, subscribeToBookingMessages, subscribeToTypingPresence, OutgoingAttachment } from '../lib/bookingMessages';
 import { fileToAttachment } from '../lib/attachments';
 
 interface BookingChatPanelProps {
@@ -48,6 +48,8 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
   const [attachments, setAttachments] = useState<OutgoingAttachment[]>([]);
   const [attaching, setAttaching] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<BookingMessage | null>(null);
+  const [menuFor, setMenuFor] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingRef = useRef<{ setTyping: (v: boolean) => void; unsubscribe: () => void } | null>(null);
@@ -64,11 +66,11 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
     })();
 
     const unsubscribe = subscribeToBookingMessages(bookingId, (msg) => {
-      // The realtime channel echoes the sender's own inserts back too, and
-      // handleSend below already appends optimistically — dedupe by id so a
-      // sent message doesn't show up twice.
-      setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
-      if (msg.senderId !== currentUserId) markBookingMessagesRead(bookingId);
+      // INSERT echoes the sender's own row back (handleSend already appended
+      // optimistically) and UPDATE carries soft-deletes — upsert by id so a
+      // sent message never doubles and a delete flips in place.
+      setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev.map((m) => (m.id === msg.id ? msg : m)) : [...prev, msg]));
+      if (msg.senderId !== currentUserId && !msg.deletedAt) markBookingMessagesRead(bookingId);
     });
 
     const typing = subscribeToTypingPresence(bookingId, currentUserId, (typingUserIds) => {
@@ -117,25 +119,35 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
     setSending(true);
     setInput('');
     const pending = attachments;
+    const replyId = replyTo?.id;
     setAttachments([]);
+    setReplyTo(null);
     typingRef.current?.setTyping(false);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
     if (pending.length === 0) {
-      const sent = await sendBookingMessage(bookingId, content);
+      const sent = await sendBookingMessage(bookingId, content, undefined, replyId);
       setSending(false);
       if (sent) appendMessage(sent); else setInput(content);
       return;
     }
 
-    // Each attachment is its own message; the typed text rides on the first.
+    // Each attachment is its own message; the typed text + reply ride on the first.
     const failed: OutgoingAttachment[] = [];
     for (let i = 0; i < pending.length; i++) {
-      const sent = await sendBookingMessage(bookingId, i === 0 ? content : '', pending[i]);
+      const sent = await sendBookingMessage(bookingId, i === 0 ? content : '', pending[i], i === 0 ? replyId : undefined);
       if (sent) appendMessage(sent); else failed.push(pending[i]);
     }
     setSending(false);
     if (failed.length > 0) setAttachments(failed);
+  };
+
+  const handleDelete = async (id: number) => {
+    setMenuFor(null);
+    const ok = await deleteBookingMessage(id);
+    if (ok) setMessages((prev) => prev.map((m) => (m.id === id
+      ? { ...m, deletedAt: new Date().toISOString(), content: '', attachmentUrl: undefined, attachmentType: undefined, attachmentName: undefined }
+      : m)));
   };
 
   return (
@@ -167,8 +179,28 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
         ) : (
           messages.map((m) => {
             const isMine = m.senderId === currentUserId;
+            const repliedTo = m.replyToId ? messages.find((x) => x.id === m.replyToId) : undefined;
+            if (m.deletedAt) {
+              return (
+                <div key={m.id} className={`max-w-[75%] ${isMine ? 'ml-auto' : 'mr-auto'}`}>
+                  <div dir="rtl" className={`rounded-2xl px-3.5 py-2.5 text-[11px] italic ${t.secondary} bg-white/50 border ${t.border} flex items-center gap-1.5`}>
+                    <Trash2 className="w-3 h-3" /> تم حذف هذه الرسالة
+                  </div>
+                </div>
+              );
+            }
+            const repliedPreview = repliedTo
+              ? (repliedTo.deletedAt ? 'رسالة محذوفة' : (repliedTo.content || (repliedTo.attachmentType === 'image' ? '📷 صورة' : repliedTo.attachmentType === 'file' ? '📎 ملف' : '')))
+              : '';
             return (
-              <div key={m.id} className={`max-w-[75%] ${isMine ? 'ml-auto' : 'mr-auto'} space-y-1`}>
+              <div key={m.id} className={`max-w-[75%] ${isMine ? 'ml-auto' : 'mr-auto'} space-y-1 group`}>
+                {/* Quoted message */}
+                {repliedTo && (
+                  <div dir="rtl" className={`rounded-xl px-2.5 py-1.5 border-r-2 ${t.bg} border ${t.border} text-[10px]`}>
+                    <div className={`font-black ${t.accent === 'text-amber-300' ? 'text-[#8A8A70]' : t.secondary}`}>{repliedTo.senderId === currentUserId ? 'أنت' : repliedTo.senderName}</div>
+                    <div className={`${t.secondary} truncate`}>{repliedPreview}</div>
+                  </div>
+                )}
                 {m.attachmentUrl && m.attachmentType === 'image' && (
                   <button type="button" onClick={() => setLightbox(m.attachmentUrl!)} className="block">
                     <img src={m.attachmentUrl} alt={m.attachmentName || 'صورة'} className="rounded-2xl max-w-full max-h-56 object-cover border border-black/5 shadow-sm cursor-zoom-in" />
@@ -183,19 +215,55 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
                   </a>
                 )}
                 {m.content && (
-                  <div dir="rtl" className={`rounded-2xl px-3.5 py-2.5 text-xs font-medium leading-relaxed shadow-sm ${
+                  <button type="button" onClick={() => setMenuFor(menuFor === m.id ? null : m.id)}
+                    dir="rtl" className={`block text-right rounded-2xl px-3.5 py-2.5 text-xs font-medium leading-relaxed shadow-sm w-full ${
                     isMine ? `${t.primary} text-white` : `bg-white border ${t.border} ${t.text}`
                   }`}>
                     {m.content}
+                  </button>
+                )}
+                {/* Action row (reply / delete) */}
+                {menuFor === m.id && (
+                  <div className={`flex items-center gap-1 ${isMine ? 'justify-start' : 'justify-end'}`}>
+                    <button type="button" onClick={() => { setReplyTo(m); setMenuFor(null); }}
+                      className={`flex items-center gap-1 text-[9.5px] font-bold ${t.secondary} bg-white border ${t.border} rounded-lg px-2 py-1`}>
+                      <Reply className="w-3 h-3" /> رد
+                    </button>
+                    {isMine && (
+                      <button type="button" onClick={() => handleDelete(m.id)}
+                        className="flex items-center gap-1 text-[9.5px] font-bold text-rose-600 bg-white border border-rose-200 rounded-lg px-2 py-1">
+                        <Trash2 className="w-3 h-3" /> حذف
+                      </button>
+                    )}
                   </div>
                 )}
-                <p className={`text-[9px] ${t.secondary} font-bold px-1 ${isMine ? 'text-left' : 'text-right'}`}>{formatTime(m.createdAt)}</p>
+                <div className={`flex items-center gap-1.5 px-1 ${isMine ? 'justify-start' : 'justify-end'}`}>
+                  {!m.content && (
+                    <button type="button" onClick={() => setMenuFor(menuFor === m.id ? null : m.id)} className={`${t.secondary} opacity-60`}>
+                      <Reply className="w-3 h-3" />
+                    </button>
+                  )}
+                  <p className={`text-[9px] ${t.secondary} font-bold`}>{formatTime(m.createdAt)}</p>
+                </div>
               </div>
             );
           })
         )}
         <div ref={bottomRef} />
       </div>
+
+      {/* Replying-to preview */}
+      {replyTo && (
+        <div className={`shrink-0 flex items-center gap-2 px-3 pt-2 ${t.surface}`}>
+          <div className={`flex-1 min-w-0 border-r-2 ${t.bg} border ${t.border} rounded-xl px-2.5 py-1.5`}>
+            <div className={`text-[10px] font-black ${t.secondary}`}>رد على {replyTo.senderId === currentUserId ? 'رسالتك' : replyTo.senderName}</div>
+            <div className={`text-[10px] ${t.secondary} truncate`}>
+              {replyTo.deletedAt ? 'رسالة محذوفة' : (replyTo.content || (replyTo.attachmentType === 'image' ? '📷 صورة' : replyTo.attachmentType === 'file' ? '📎 ملف' : ''))}
+            </div>
+          </div>
+          <button type="button" onClick={() => setReplyTo(null)} className={`${t.secondary} p-1 shrink-0`}><X className="w-4 h-4" /></button>
+        </div>
+      )}
 
       {/* Pending attachments preview */}
       {(attachments.length > 0 || attaching) && (

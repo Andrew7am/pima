@@ -13,6 +13,8 @@ function mapBookingMessage(r: Record<string, unknown>): BookingMessage {
     attachmentUrl: (r.attachment_url as string) ?? undefined,
     attachmentType: (r.attachment_type as BookingMessage['attachmentType']) ?? undefined,
     attachmentName: (r.attachment_name as string) ?? undefined,
+    replyToId: (r.reply_to_id as number) ?? undefined,
+    deletedAt: (r.deleted_at as string) ?? undefined,
   };
 }
 
@@ -22,16 +24,23 @@ export interface OutgoingAttachment {
   name?: string;
 }
 
-export async function sendBookingMessage(bookingId: string, content: string, attachment?: OutgoingAttachment): Promise<BookingMessage | null> {
+export async function sendBookingMessage(bookingId: string, content: string, attachment?: OutgoingAttachment, replyToId?: number): Promise<BookingMessage | null> {
   const { data, error } = await supabase.rpc('send_booking_message', {
     p_booking_id: bookingId,
     p_content: content,
     p_attachment_url: attachment?.url ?? null,
     p_attachment_type: attachment?.type ?? null,
     p_attachment_name: attachment?.name ?? null,
+    p_reply_to: replyToId ?? null,
   });
   if (error) { console.error('sendBookingMessage:', error); return null; }
   return data ? mapBookingMessage(data as Record<string, unknown>) : null;
+}
+
+export async function deleteBookingMessage(id: number): Promise<boolean> {
+  const { error } = await supabase.rpc('delete_booking_message', { p_id: id });
+  if (error) { console.error('deleteBookingMessage:', error); return false; }
+  return true;
 }
 
 export async function loadBookingMessages(bookingId: string): Promise<BookingMessage[]> {
@@ -97,6 +106,13 @@ export function subscribeToBookingMessages(bookingId: string, onMessage: (msg: B
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'booking_messages', filter: `booking_id=eq.${bookingId}` },
+      (payload) => { onMessage(mapBookingMessage(payload.new as Record<string, unknown>)); },
+    )
+    // Deletes are soft (deleted_at) — they arrive as UPDATE; the caller
+    // upserts so the message flips to its "deleted" placeholder live.
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'booking_messages', filter: `booking_id=eq.${bookingId}` },
       (payload) => { onMessage(mapBookingMessage(payload.new as Record<string, unknown>)); },
     )
     .subscribe();

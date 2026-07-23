@@ -342,6 +342,8 @@ export interface BookingMessage {
   attachmentUrl?: string;
   attachmentType?: 'image' | 'file';
   attachmentName?: string;
+  replyToId?: number;   // quoted message id (resolve preview client-side)
+  deletedAt?: string;   // set = "message deleted" placeholder
 }
 
 export interface Expense {
