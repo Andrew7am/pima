@@ -124,6 +124,7 @@ export default function App() {
   const [showLanding, setShowLanding] = useState(() => {
     if (Capacitor.isNativePlatform()) return false;
     if (new URLSearchParams(window.location.search).get('house')) return false;
+    if (/^\/house\/[^/]+\/?$/.test(window.location.pathname)) return false; // prerendered house page
     try { if (localStorage.getItem('pima_seen_landing')) return false; } catch { /* ignore */ }
     return true;
   });
@@ -353,15 +354,21 @@ export default function App() {
     return () => { listenerPromise.then((l) => l.remove()); };
   }, []);
 
-  // Deep link support: opening a shared house link (?house=<id>) jumps
-  // straight to that house once its data is loaded. The query param is
-  // stripped right after so navigating away and back doesn't reopen it.
+  // Deep link support: opening a shared house link jumps straight to that
+  // house once its data is loaded. Two URL shapes resolve here — the prerendered
+  // SEO page path /house/<id>/ (see vite.config.ts seoPagesPlugin) and the
+  // legacy ?house=<id> query. The URL is normalised to "/" right after so
+  // navigating away and back doesn't reopen it.
   // localStorage fallback: web Google OAuth does a full-page redirect back
-  // to the bare origin (query params lost), so requireLogin also stashes
-  // the intended house there — restored here after the round-trip.
+  // to the bare origin (path/query lost), so requireLogin also stashes the
+  // intended house there — restored here after the round-trip.
   useEffect(() => {
     if (houses.length === 0) return;
-    let houseId = new URLSearchParams(window.location.search).get('house');
+    let houseId: string | null = new URLSearchParams(window.location.search).get('house');
+    if (!houseId) {
+      const m = window.location.pathname.match(/^\/house\/([^/]+)\/?$/);
+      if (m) houseId = decodeURIComponent(m[1]);
+    }
     if (!houseId) {
       try { houseId = localStorage.getItem('pima_pending_house'); } catch { /* storage unavailable */ }
     }
@@ -372,7 +379,7 @@ export default function App() {
       setSelectedHouse(house);
       setActiveScreen('explore');
     }
-    window.history.replaceState({}, '', window.location.pathname);
+    window.history.replaceState({}, '', '/');
   }, [houses]);
 
   // rooms/announcements/reviews/waitlist (public/RLS-scoped tables, scoped

@@ -560,10 +560,11 @@ export default function HouseDetail({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
 
-  // Deep link to this specific house — read back on load via ?house=<id>
-  // (see App.tsx) instead of sharing the bare site URL.
+  // Deep link to this specific house — shares the prerendered, crawlable
+  // /house/<id>/ URL (see vite.config.ts + App.tsx deep-link effect) so the
+  // link previews richly and is indexable, instead of the bare site URL.
   const handleShare = async () => {
-    const shareUrl = `${window.location.origin}${window.location.pathname}?house=${house.id}`;
+    const shareUrl = `${window.location.origin}/house/${house.id}/`;
     const shareData = {
       title: house.name,
       text: `اكتشف بيت المؤتمرات: ${house.name} في محافظة ${house.governorate} لخلوتكم ومؤتمراتكم القادمة.`,

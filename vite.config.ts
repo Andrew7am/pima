@@ -20,13 +20,126 @@ function versionFilePlugin(): Plugin {
   };
 }
 
-// Generates dist/sitemap.xml on every production build. Pulls the list of
-// approved houses from Supabase (anon key + RLS => only public rows) so every
-// listing gets its own crawlable URL. Fail-soft: any error still emits a valid
-// sitemap with the homepage so a build never breaks over SEO plumbing.
-function sitemapPlugin(supabaseUrl: string, anonKey: string): Plugin {
+// ---- SEO prerendering -------------------------------------------------------
+// Shape of an approved house as pulled from Supabase for static generation.
+interface SeoHouse {
+  id: string;
+  name: string;
+  description: string;
+  governorate: string;
+  address: string;
+  lat: number;
+  lng: number;
+  rooms_count: number;
+  beds_count: number;
+  price_per_night_per_person: number;
+  services: string[];
+  images: string[];
+  rating: number;
+  reviews_count: number;
+  property_type?: string;
+  created_at?: string;
+}
+
+const esc = (s: unknown) =>
+  String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const escAttr = (s: unknown) =>
+  esc(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const trunc = (s: string, n: number) => {
+  const t = String(s ?? '').replace(/\s+/g, ' ').trim();
+  return t.length > n ? `${t.slice(0, n - 1)}…` : t;
+};
+const propTypeLabel = (t?: string) =>
+  t === 'student' ? 'سكن طلاب' : t === 'staff' ? 'سكن موظفين' : 'بيت مؤتمرات';
+
+// Build the per-house <head> SEO block (replaces the SEO:START..SEO:END region).
+function houseHead(h: SeoHouse): string {
+  const label = propTypeLabel(h.property_type);
+  const title = `${h.name} — ${label} في ${h.governorate} | بيما`;
+  const desc =
+    trunc(h.description, 155) ||
+    `${label} ${h.name} في ${h.governorate} — ${h.rooms_count} غرفة و${h.beds_count} سرير بسعر ${h.price_per_night_per_person} ج.م لليلة للفرد. احجز أونلاين عبر بيما.`;
+  const url = `${SITE_URL}/house/${encodeURIComponent(h.id)}/`;
+  const img = (h.images || []).find((i) => /^https?:\/\//.test(i)) || `${SITE_URL}/pima-hero.png`;
+  const ld: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'LodgingBusiness',
+    name: h.name,
+    description: trunc(h.description, 300),
+    url,
+    image: img,
+    address: {
+      '@type': 'PostalAddress',
+      addressRegion: h.governorate,
+      addressLocality: h.governorate,
+      streetAddress: h.address || undefined,
+      addressCountry: 'EG',
+    },
+    priceRange: `${h.price_per_night_per_person} EGP`,
+  };
+  if (h.lat && h.lng) ld.geo = { '@type': 'GeoCoordinates', latitude: h.lat, longitude: h.lng };
+  if (h.reviews_count > 0 && h.rating > 0)
+    ld.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: h.rating,
+      reviewCount: h.reviews_count,
+      bestRating: 5,
+    };
+  return [
+    '<!-- SEO:START (house) -->',
+    `    <title>${esc(title)}</title>`,
+    `    <meta name="description" content="${escAttr(desc)}" />`,
+    '    <meta name="robots" content="index, follow, max-image-preview:large" />',
+    `    <link rel="canonical" href="${url}" />`,
+    '    <meta property="og:type" content="website" />',
+    '    <meta property="og:site_name" content="بيما" />',
+    '    <meta property="og:locale" content="ar_EG" />',
+    `    <meta property="og:title" content="${escAttr(title)}" />`,
+    `    <meta property="og:description" content="${escAttr(desc)}" />`,
+    `    <meta property="og:url" content="${url}" />`,
+    `    <meta property="og:image" content="${escAttr(img)}" />`,
+    `    <meta property="og:image:alt" content="${escAttr(h.name)}" />`,
+    '    <meta name="twitter:card" content="summary_large_image" />',
+    `    <meta name="twitter:title" content="${escAttr(title)}" />`,
+    `    <meta name="twitter:description" content="${escAttr(desc)}" />`,
+    `    <meta name="twitter:image" content="${escAttr(img)}" />`,
+    `    <script type="application/ld+json">\n${JSON.stringify(ld)}\n    </script>`,
+    '    <!-- SEO:END -->',
+  ].join('\n');
+}
+
+// Build the crawlable per-house shell (replaces the SHELL:START..SHELL:END region).
+function houseShell(h: SeoHouse): string {
+  const label = propTypeLabel(h.property_type);
+  const services = (h.services || []).slice(0, 12).map((s) => `<li>${esc(s)}</li>`).join('');
+  return `<!-- SHELL:START -->
+      <div style="max-width:760px;margin:0 auto;padding:24px;font-family:system-ui,'Segoe UI',Tahoma,sans-serif;color:#2D2D1F;line-height:1.9" dir="rtl">
+        <a href="/" style="color:#3A6B4C;font-weight:700;text-decoration:none">بيما — الرئيسية</a>
+        <h1 style="font-size:26px;font-weight:900;margin:16px 0 6px">${esc(h.name)}</h1>
+        <p style="color:#3A6B4C;font-weight:700;margin:0 0 12px">${esc(label)} في محافظة ${esc(h.governorate)}${h.address ? ` — ${esc(h.address)}` : ''}</p>
+        <p style="margin:0 0 16px">${esc(trunc(h.description, 500))}</p>
+        <ul style="list-style:none;padding:0;margin:0 0 16px;display:flex;flex-wrap:wrap;gap:8px 20px;font-weight:700">
+          <li>السعر: ${esc(h.price_per_night_per_person)} ج.م / ليلة للفرد</li>
+          <li>عدد الغرف: ${esc(h.rooms_count)}</li>
+          <li>عدد الأسرّة: ${esc(h.beds_count)}</li>
+          ${h.reviews_count > 0 ? `<li>التقييم: ${esc(h.rating)} من 5 (${esc(h.reviews_count)} تقييم)</li>` : ''}
+        </ul>
+        ${services ? `<h2 style="font-size:16px;font-weight:900;margin:0 0 8px">الخدمات والمرافق</h2><ul style="margin:0 0 16px;padding-inline-start:20px">${services}</ul>` : ''}
+        <p style="color:#8A8A70;font-size:13px;margin-top:20px">جارٍ تحميل التطبيق لعرض الصور والأسعار الموسمية والحجز…</p>
+        <noscript><p>لعرض الصور والحجز يلزم تفعيل JavaScript. للتواصل والحجز افتح ${escAttr(SITE_URL)}.</p></noscript>
+      </div>
+    <!-- SHELL:END -->`;
+}
+
+// Generates dist/sitemap.xml + a static, crawlable dist/house/<id>/index.html for
+// every approved house. Pulls houses from Supabase (anon key + RLS => only public
+// rows). Fail-soft: any error still emits a valid homepage-only sitemap so a build
+// never breaks over SEO plumbing. The prerendered files are the same SPA bundle
+// with the SEO <head> and #root shell swapped for house-specific content, so a
+// no-JS crawler indexes real content and React still hydrates the full app.
+function seoPagesPlugin(supabaseUrl: string, anonKey: string): Plugin {
   return {
-    name: 'sitemap',
+    name: 'seo-pages',
     apply: 'build',
     async writeBundle(options) {
       const outDir = options.dir || 'dist';
@@ -34,31 +147,52 @@ function sitemapPlugin(supabaseUrl: string, anonKey: string): Plugin {
       const urls: { loc: string; lastmod?: string; priority: string }[] = [
         { loc: `${SITE_URL}/`, lastmod: today, priority: '1.0' },
       ];
+      let template = '';
+      try {
+        template = fs.readFileSync(path.join(outDir, 'index.html'), 'utf8');
+      } catch {
+        console.warn('[seo-pages] dist/index.html missing; skipping house prerender');
+      }
+      const seoRe = /<!-- SEO:START[\s\S]*?SEO:END -->/;
+      const shellRe = /<!-- SHELL:START -->[\s\S]*?<!-- SHELL:END -->/;
+      const safeId = /^[A-Za-z0-9_-]+$/;
+
       try {
         if (supabaseUrl && anonKey) {
+          const cols =
+            'id,name,description,governorate,address,lat,lng,rooms_count,beds_count,price_per_night_per_person,services,images,rating,reviews_count,property_type,created_at';
           const res = await fetch(
-            `${supabaseUrl}/rest/v1/houses?select=id,created_at&status=eq.approved`,
+            `${supabaseUrl}/rest/v1/houses?select=${cols}&status=eq.approved`,
             { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } },
           );
           if (res.ok) {
-            const rows = (await res.json()) as { id: string; created_at?: string }[];
-            for (const r of rows) {
+            const rows = (await res.json()) as SeoHouse[];
+            let prerendered = 0;
+            for (const h of rows) {
               urls.push({
-                loc: `${SITE_URL}/?house=${encodeURIComponent(r.id)}`,
-                lastmod: (r.created_at || '').slice(0, 10) || today,
+                loc: `${SITE_URL}/house/${encodeURIComponent(h.id)}/`,
+                lastmod: (h.created_at || '').slice(0, 10) || today,
                 priority: '0.8',
               });
+              if (template && safeId.test(h.id) && seoRe.test(template) && shellRe.test(template)) {
+                const page = template.replace(seoRe, houseHead(h)).replace(shellRe, houseShell(h));
+                const dir = path.join(outDir, 'house', h.id);
+                fs.mkdirSync(dir, { recursive: true });
+                fs.writeFileSync(path.join(dir, 'index.html'), page);
+                prerendered++;
+              }
             }
-            console.log(`[sitemap] ${rows.length} approved houses included`);
+            console.log(`[seo-pages] ${rows.length} houses in sitemap, ${prerendered} prerendered`);
           } else {
-            console.warn(`[sitemap] houses fetch failed (${res.status}); homepage-only sitemap`);
+            console.warn(`[seo-pages] houses fetch failed (${res.status}); homepage-only`);
           }
         } else {
-          console.warn('[sitemap] Supabase env missing; homepage-only sitemap');
+          console.warn('[seo-pages] Supabase env missing; homepage-only sitemap');
         }
       } catch (e) {
-        console.warn('[sitemap] error; homepage-only sitemap:', (e as Error).message);
+        console.warn('[seo-pages] error; homepage-only sitemap:', (e as Error).message);
       }
+
       const body = urls
         .map(
           (u) =>
@@ -78,7 +212,7 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       versionFilePlugin(),
-      sitemapPlugin(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY),
+      seoPagesPlugin(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY),
     ],
     resolve: {
       alias: {
