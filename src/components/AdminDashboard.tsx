@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry } from '../types';
-import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet } from 'lucide-react';
+import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import HouseDetail from './HouseDetail';
 import { AMENITIES_LIST } from '../mockData';
+import { loadBookingMessages } from '../lib/bookingMessages';
+import { BookingMessage } from '../types';
 
 interface AdminDashboardProps {
   currentUser: User;
@@ -70,7 +72,7 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
   // Tabs within Admin — "growth" is default: the admin's morning check
   // (what's happening + what needs attention). Older tabs still exist.
-  const [activeTab, setActiveTab] = useState<'growth' | 'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings' | 'settings' | 'audit'>('growth');
+  const [activeTab, setActiveTab] = useState<'growth' | 'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings' | 'settings' | 'audit' | 'messages'>('growth');
   // Draft copy of settings for the settings form
   const [settingsDraft, setSettingsDraft] = useState(settings);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -133,6 +135,21 @@ export default function AdminDashboard({
   // Bookings search & filter states
   const [bookingSearch, setBookingSearch] = useState('');
   const [bookingFilter, setBookingFilter] = useState<'all' | 'pending' | 'unpaid' | 'completed'>('all');
+
+  // Users search & filter
+  const [userSearch, setUserSearch] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'individual' | 'servant' | 'owner' | 'admin' | 'banned'>('all');
+
+  // User detail view
+  const [detailUserId, setDetailUserId] = useState<string | null>(null);
+
+  // Chat viewer — admin reads booking messages for dispute resolution
+  const [chatBookingId, setChatBookingId] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<BookingMessage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+
+  // Nav section collapse (grouped navigation)
+  const [navSection, setNavSection] = useState<'overview' | 'manage' | 'finance'>('overview');
 
   const getWhatsAppLink = (phone: string, text: string) => {
     let cleanPhone = phone.replace(/\D/g, ''); // Remove all non-digits
@@ -296,6 +313,85 @@ export default function AdminDashboard({
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 5);
 
+  // Load chat messages when admin opens a booking chat
+  useEffect(() => {
+    if (!chatBookingId) { setChatMessages([]); return; }
+    setChatLoading(true);
+    loadBookingMessages(chatBookingId).then((msgs) => { setChatMessages(msgs); setChatLoading(false); });
+  }, [chatBookingId]);
+
+  // CSV export helper
+  const downloadCsv = (filename: string, headers: string[], rows: string[][]) => {
+    const bom = '﻿';
+    const csv = bom + [headers.join(','), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportUsers = () => {
+    downloadCsv('users.csv',
+      ['الاسم', 'الإيميل', 'الهاتف', 'الدور', 'الكنيسة', 'التسجيل'],
+      users.map((u) => [u.name, u.email, u.phone, u.role, u.organizationName || '', u.createdAt])
+    );
+  };
+  const exportBookings = () => {
+    downloadCsv('bookings.csv',
+      ['رقم الحجز', 'الاسم', 'البيت', 'الدخول', 'الخروج', 'الأفراد', 'الإجمالي', 'الحالة', 'المصدر'],
+      bookings.map((b) => [b.id, b.userName, b.houseName, b.checkIn, b.checkOut, String(b.guestsCount), String(b.totalPrice), b.status, b.source || 'platform'])
+    );
+  };
+  const exportFinancials = () => {
+    downloadCsv('financials.csv',
+      ['المالك', 'المحصّل', 'العمولة', 'صافي المستحقات'],
+      ownerRows.map((o) => [o.name, String(o.collected), String(Math.round(o.collected * PLATFORM_COMMISSION)), String(o.net)])
+    );
+  };
+
+  // Filtered users for the users tab
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch = !userSearch || u.name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase()) || u.phone.includes(userSearch) || (u.organizationName || '').toLowerCase().includes(userSearch.toLowerCase());
+    if (!matchesSearch) return false;
+    if (userRoleFilter === 'banned') return !!u.isBanned;
+    if (userRoleFilter === 'all') return true;
+    return u.role === userRoleFilter;
+  });
+
+  // Detail user for user detail view
+  const detailUser = detailUserId ? users.find((u) => u.id === detailUserId) : null;
+  const detailUserBookings = detailUser ? bookings.filter((b) => b.userId === detailUser.id) : [];
+  const detailUserPayments = detailUser ? payments.filter((p) => p.userId === detailUser.id) : [];
+  const detailUserReviews = detailUser ? reviews.filter((r) => r.userId === detailUser.id) : [];
+
+  // Review statistics
+  const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + (r.overall_rating ?? r.rating), 0) / reviews.length) : 0;
+  const starDist = [5, 4, 3, 2, 1].map((star) => ({ star, count: reviews.filter((r) => Math.round(r.overall_rating ?? r.rating) === star).length }));
+
+  // Tab groups for grouped navigation
+  const NAV_GROUPS: { key: 'overview' | 'manage' | 'finance'; label: string; tabs: { key: typeof activeTab; label: string; badge?: number; pulse?: boolean }[] }[] = [
+    { key: 'overview', label: 'نظرة عامة', tabs: [
+      { key: 'growth', label: 'النمو' },
+      { key: 'moderation', label: 'مراجعة البيوت', badge: pendingHouses.length + pendingHouseEdits.length, pulse: true },
+      { key: 'accounts', label: 'مراجعة الحسابات', badge: pendingAccounts.length, pulse: true },
+    ]},
+    { key: 'manage', label: 'إدارة', tabs: [
+      { key: 'houses', label: 'البيوت' },
+      { key: 'bookings', label: 'الحجوزات', badge: pendingOrUnpaidBookingsCount },
+      { key: 'users', label: 'المستخدمين' },
+      { key: 'reviews', label: 'التقييمات' },
+      { key: 'messages', label: 'المحادثات' },
+      { key: 'announcements', label: 'الإعلانات' },
+    ]},
+    { key: 'finance', label: 'المالية والنظام', tabs: [
+      { key: 'payments', label: 'الدفعيات', badge: payments.filter((p) => p.paymentStatus === 'pending').length },
+      { key: 'reports', label: 'التقارير المالية' },
+      { key: 'settings', label: 'الإعدادات' },
+      { key: 'audit', label: 'سجل التدقيق' },
+    ]},
+  ];
+
   return (
     <div className="space-y-4 text-right text-[#4A4A3A]">
       
@@ -303,135 +399,43 @@ export default function AdminDashboard({
       <div className="bg-gradient-to-r from-[#4A4A3A] to-[#5A5A40] text-white rounded-3xl p-4 flex items-center justify-between">
         <div>
           <span className="text-[10px] text-amber-300 font-bold">لوحة الإدارة والمراجعة الشاملة</span>
-          <h2 className="text-sm font-extrabold">قدس الأب / أبونا ميخائيل</h2>
+          <h2 className="text-sm font-extrabold">{currentUser.name}</h2>
         </div>
         <div className="p-1.5 bg-white/20 border border-white/30 text-white rounded-xl">
           <Shield className="w-5 h-5 text-white" />
         </div>
       </div>
 
-      {/* Internal Navigation */}
-      <div className="flex border border-[#D6D6C2] bg-white p-1 rounded-2xl gap-1 overflow-x-auto">
-        <button
-          id="admin-tab-growth"
-          onClick={() => setActiveTab('growth')}
-          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'growth' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          📈 النمو
-        </button>
-        <button
-          id="admin-tab-moderation"
-          onClick={() => setActiveTab('moderation')}
-          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap relative ${
-            activeTab === 'moderation' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          مراجعة البيوت ({pendingHouses.length + pendingHouseEdits.length})
-          {(pendingHouses.length + pendingHouseEdits.length) > 0 && (
-            <span className="absolute top-1.5 left-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
-          )}
-        </button>
-        <button
-          id="admin-tab-accounts"
-          onClick={() => setActiveTab('accounts')}
-          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap relative ${
-            activeTab === 'accounts' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          مراجعة الحسابات ({pendingAccounts.length})
-          {pendingAccounts.length > 0 && (
-            <span className="absolute top-1.5 left-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
-          )}
-        </button>
-        <button
-          id="admin-tab-houses"
-          onClick={() => setActiveTab('houses')}
-          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'houses' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          إدارة البيوت ({houses.length})
-        </button>
-        <button
-          id="admin-tab-reviews"
-          onClick={() => setActiveTab('reviews')}
-          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'reviews' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          المراجعات ({reviews.length})
-        </button>
-        <button
-          id="admin-tab-announcements"
-          onClick={() => setActiveTab('announcements')}
-          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'announcements' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          الإعلانات ({platformAnnouncements.length})
-        </button>
-        <button
-          id="admin-tab-payments"
-          onClick={() => setActiveTab('payments')}
-          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap relative ${
-            activeTab === 'payments' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          مراجعة الدفعيات ({payments.filter(p => p.paymentStatus === 'pending').length})
-          {payments.filter(p => p.paymentStatus === 'pending').length > 0 && (
-            <span className="absolute top-1.5 left-2 w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-          )}
-        </button>
-        <button
-          id="admin-tab-bookings"
-          onClick={() => setActiveTab('bookings')}
-          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap relative ${
-            activeTab === 'bookings' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          إدارة الحجوزات ({pendingOrUnpaidBookingsCount})
-          {pendingOrUnpaidBookingsCount > 0 && (
-            <span className="absolute top-1.5 left-2 w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-          )}
-        </button>
-        <button
-          id="admin-tab-users"
-          onClick={() => setActiveTab('users')}
-          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'users' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          إدارة المستخدمين ({users.length})
-        </button>
-        <button
-          id="admin-tab-reports"
-          onClick={() => setActiveTab('reports')}
-          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'reports' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          💰 المالية والتقارير
-        </button>
-        <button
-          id="admin-tab-settings"
-          onClick={() => setActiveTab('settings')}
-          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'settings' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          ⚙️ إعدادات المنصة
-        </button>
-        <button
-          id="admin-tab-audit"
-          onClick={() => setActiveTab('audit')}
-          className={`flex-1 text-center py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-            activeTab === 'audit' ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-          }`}
-        >
-          📜 سجل التدقيق
-        </button>
+      {/* Grouped Navigation */}
+      <div className="bg-white border border-[#D6D6C2] rounded-2xl overflow-hidden">
+        {/* Section selector */}
+        <div className="flex border-b border-[#D6D6C2]">
+          {NAV_GROUPS.map((g) => {
+            const hasBadge = g.tabs.some((t) => (t.badge ?? 0) > 0);
+            return (
+              <button key={g.key} onClick={() => setNavSection(g.key)}
+                className={`flex-1 text-center py-2.5 text-[11px] font-bold transition-all cursor-pointer relative ${navSection === g.key ? 'bg-[#5A5A40] text-white' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'}`}>
+                {g.label}
+                {hasBadge && navSection !== g.key && <span className="absolute top-2 left-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />}
+              </button>
+            );
+          })}
+        </div>
+        {/* Active section tabs */}
+        <div className="flex gap-1 p-1 overflow-x-auto">
+          {NAV_GROUPS.find((g) => g.key === navSection)!.tabs.map((t) => (
+            <button key={t.key} id={`admin-tab-${t.key}`} onClick={() => setActiveTab(t.key)}
+              className={`flex-1 text-center py-2 px-2 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer whitespace-nowrap relative ${activeTab === t.key ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'}`}>
+              {t.label}
+              {(t.badge ?? 0) > 0 && (
+                <>
+                  <span className="mr-1 text-[9px]">({t.badge})</span>
+                  {t.pulse && <span className="absolute top-1.5 left-1.5 w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />}
+                </>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Growth Dashboard — the admin's morning brief.
@@ -1022,6 +1026,37 @@ export default function AdminDashboard({
       {/* Reviews moderation — delete spam / abusive reviews */}
       {activeTab === 'reviews' && (
         <div className="space-y-3">
+          {/* Review statistics */}
+          {reviews.length > 0 && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-2">
+                <div className="text-[10px] text-[#8A8A70] font-bold">متوسط تقييم المنصة</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-black text-[#4A4A3A]">{avgRating.toFixed(1)}</span>
+                  <div className="flex gap-0.5">
+                    {[1,2,3,4,5].map((s) => (
+                      <Star key={s} className={`w-4 h-4 ${s <= Math.round(avgRating) ? 'fill-amber-500 text-amber-500' : 'text-[#D6D6C2]'}`} />
+                    ))}
+                  </div>
+                </div>
+                <div className="text-[9px] text-[#8A8A70]">{reviews.length} تقييم</div>
+              </div>
+              <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-1.5">
+                <div className="text-[10px] text-[#8A8A70] font-bold">توزيع النجوم</div>
+                {starDist.map((s) => (
+                  <div key={s.star} className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-bold text-[#4A4A3A] w-3">{s.star}</span>
+                    <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                    <div className="flex-1 h-2 bg-[#EBEBE0]/50 rounded-full overflow-hidden">
+                      <div className="h-full bg-amber-500 rounded-full" style={{ width: `${reviews.length > 0 ? (s.count / reviews.length) * 100 : 0}%` }} />
+                    </div>
+                    <span className="text-[8.5px] text-[#8A8A70] w-6 text-left">{s.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="text-xs font-bold text-[#8A8A70] px-1">مراجعة وحذف التقييمات المسيئة أو الوهمية:</div>
           {reviews.length === 0 ? (
             <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center">
@@ -1171,67 +1206,80 @@ export default function AdminDashboard({
 
       {/* Users Management */}
       {activeTab === 'users' && (
-        <div className="space-y-2">
-          <div className="text-xs font-bold text-[#8A8A70] px-1">إدارة حسابات المسجلين والصلاحيات:</div>
+        <div className="space-y-3">
+          {/* Search + filter + export */}
+          <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8A8A70]" />
+                <input type="text" placeholder="ابحث بالاسم أو الإيميل أو الهاتف أو الكنيسة..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)}
+                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs pr-9 pl-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D] text-right" />
+              </div>
+              <button onClick={exportUsers} className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[10px] font-bold px-3 py-2 rounded-xl cursor-pointer shrink-0">
+                <Download className="w-3.5 h-3.5" /> تصدير CSV
+              </button>
+            </div>
+            <div className="flex gap-1 overflow-x-auto">
+              {([
+                { key: 'all' as const, label: `الكل (${users.length})` },
+                { key: 'individual' as const, label: 'أفراد' },
+                { key: 'servant' as const, label: 'خدام' },
+                { key: 'owner' as const, label: 'ملّاك' },
+                { key: 'admin' as const, label: 'إدارة' },
+                { key: 'banned' as const, label: 'محظورين' },
+              ]).map((f) => (
+                <button key={f.key} onClick={() => setUserRoleFilter(f.key)}
+                  className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${userRoleFilter === f.key ? 'bg-[#5A5A40] text-white shadow-sm' : 'bg-[#FAF8F5] text-[#8A8A70] border border-[#E7E5DB] hover:bg-[#EBEBE0]/50'}`}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="text-[10px] text-[#8A8A70] px-1 font-bold">{filteredUsers.length} مستخدم</div>
 
           <div className="space-y-2">
-            {users.map((usr) => (
-              <div key={usr.id} className={`bg-white p-3.5 rounded-2xl border flex items-center justify-between text-right ${usr.isBanned ? 'border-rose-200 ring-1 ring-rose-50' : 'border-[#D6D6C2]'}`}>
-                <div>
-                  <div className="text-xs font-bold text-[#4A4A3A] flex items-center gap-1.5">
-                    {usr.name}
-                    {usr.isBanned && <span className="text-[8px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded">محظور</span>}
+            {filteredUsers.map((usr) => (
+              <div key={usr.id} className={`bg-white p-3.5 rounded-2xl border text-right ${usr.isBanned ? 'border-rose-200 ring-1 ring-rose-50' : 'border-[#D6D6C2]'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-[#4A4A3A] flex items-center gap-1.5">
+                      {usr.name}
+                      {usr.isBanned && <span className="text-[8px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded">محظور</span>}
+                    </div>
+                    <div className="text-[10px] text-[#8A8A70] mt-0.5">{usr.email} · {usr.phone}</div>
+                    {usr.organizationName && <div className="text-[9px] text-[#5A5A40] font-black mt-0.5">{usr.organizationName}</div>}
+                    <div className="text-[9px] text-[#BCBC9D] mt-0.5">
+                      تسجيل: {new Date(usr.createdAt).toLocaleDateString('ar-EG')}
+                      {usr.points ? ` · ${usr.points} نقطة` : ''}
+                    </div>
                   </div>
-                  <div className="text-[10px] text-[#8A8A70] mt-0.5">{usr.email}</div>
-                  {usr.organizationName && (
-                    <div className="text-[9px] text-[#5A5A40] font-black mt-0.5">{usr.organizationName}</div>
-                  )}
-                </div>
 
-                <div className="flex flex-col items-end gap-1.5">
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${
-                    usr.role === 'admin'
-                      ? 'bg-red-50 text-red-800 border-red-200'
-                      : usr.role === 'owner'
-                      ? 'bg-[#EBEBE0] text-[#5A5A40] border-[#BCBC9D]'
-                      : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  }`}>
-                    {usr.role === 'admin' ? 'إدارة' : usr.role === 'owner' ? 'صاحب بيت' : 'مستخدم'}
-                  </span>
-
-                  {/* Option to toggle roles for simulator */}
-                  {usr.role !== 'admin' && (
-                    <select
-                      id={`user-role-select-${usr.id}`}
-                      value={usr.role}
-                      onChange={(e) => onToggleUserRole(usr.id, e.target.value as User['role'])}
-                      className="text-[9px] bg-white border border-[#D6D6C2] rounded px-1.5 py-0.5 text-[#4A4A3A] outline-none focus:border-[#5A5A40]"
-                    >
-                      <option value="individual">ترقية لفرد</option>
-                      <option value="servant">ترقية لخادم كنسي</option>
-                      <option value="owner">ترقية لصاحب بيت</option>
-                    </select>
-                  )}
-
-                  {/* Ban / unban — admin can't ban other admins */}
-                  {usr.role !== 'admin' && (
-                    <button
-                      id={`toggle-ban-${usr.id}`}
-                      onClick={() => {
-                        if (usr.isBanned || confirm(`حظر المستخدم "${usr.name}"؟ لن يتمكن من استخدام المنصة نهائياً حتى ترفع الحظر.`)) {
-                          onBanUser && onBanUser(usr.id, !usr.isBanned);
-                        }
-                      }}
-                      className={`flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-lg border transition-colors cursor-pointer ${
-                        usr.isBanned
-                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
-                          : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'
-                      }`}
-                    >
-                      <Ban className="w-3 h-3" />
-                      <span>{usr.isBanned ? 'رفع الحظر' : 'حظر'}</span>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${
+                      usr.role === 'admin' ? 'bg-red-50 text-red-800 border-red-200' : usr.role === 'owner' ? 'bg-[#EBEBE0] text-[#5A5A40] border-[#BCBC9D]' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    }`}>
+                      {usr.role === 'admin' ? 'إدارة' : usr.role === 'owner' ? 'صاحب بيت' : usr.role === 'servant' ? 'خادم' : 'فرد'}
+                    </span>
+                    <button onClick={() => setDetailUserId(usr.id)}
+                      className="flex items-center gap-1 text-[9px] font-bold text-[#5A5A40] hover:bg-[#EBEBE0]/50 px-2 py-1 rounded-lg cursor-pointer border border-[#D6D6C2]">
+                      <Eye className="w-3 h-3" /> تفاصيل
                     </button>
-                  )}
+                    {usr.role !== 'admin' && (
+                      <select value={usr.role} onChange={(e) => onToggleUserRole(usr.id, e.target.value as User['role'])}
+                        className="text-[9px] bg-white border border-[#D6D6C2] rounded px-1.5 py-0.5 text-[#4A4A3A] outline-none focus:border-[#5A5A40]">
+                        <option value="individual">فرد</option>
+                        <option value="servant">خادم كنسي</option>
+                        <option value="owner">صاحب بيت</option>
+                      </select>
+                    )}
+                    {usr.role !== 'admin' && (
+                      <button onClick={() => { if (usr.isBanned || confirm(`حظر "${usr.name}"؟`)) onBanUser?.(usr.id, !usr.isBanned); }}
+                        className={`flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-lg border cursor-pointer ${usr.isBanned ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-700'}`}>
+                        <Ban className="w-3 h-3" /> {usr.isBanned ? 'رفع الحظر' : 'حظر'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -1401,6 +1449,16 @@ export default function AdminDashboard({
                 <span className="font-bold text-amber-700">{pendingHouses.length} بيت معلق</span>
               </div>
             </div>
+          </div>
+
+          {/* Export buttons */}
+          <div className="flex gap-2">
+            <button onClick={exportFinancials} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[10px] font-bold py-2.5 rounded-xl cursor-pointer">
+              <Download className="w-3.5 h-3.5" /> تصدير المالية CSV
+            </button>
+            <button onClick={exportBookings} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[10px] font-bold py-2.5 rounded-xl cursor-pointer">
+              <Download className="w-3.5 h-3.5" /> تصدير الحجوزات CSV
+            </button>
           </div>
 
           <div className="bg-[#5A5A40] text-white rounded-2xl p-3 flex gap-2.5 items-start text-xs leading-relaxed">
@@ -1793,8 +1851,12 @@ export default function AdminDashboard({
                           className="flex-1 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-extrabold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm text-center"
                         >
                           <MessageCircle className="w-4 h-4 text-white shrink-0" />
-                          <span>إرسال تذكير عبر واتساب 💬</span>
+                          <span>واتساب</span>
                         </a>
+                        <button onClick={() => { setActiveTab('messages'); setChatBookingId(booking.id); setNavSection('manage'); }}
+                          className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer">
+                          <MessageSquareDashed className="w-3.5 h-3.5" /> الشات
+                        </button>
                         {booking.status !== 'rejected' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
                           <button
                             id={`admin-cancel-booking-${booking.id}`}
@@ -1812,6 +1874,126 @@ export default function AdminDashboard({
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Messages tab — admin reads booking chats for dispute resolution */}
+      {activeTab === 'messages' && (
+        <div className="space-y-3">
+          <div className="text-xs font-bold text-[#8A8A70] px-1">مراجعة محادثات الحجوزات — اختر حجز لعرض المحادثة:</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {bookings.filter((b) => b.status !== 'rejected').slice(0, 50).map((b) => {
+              const isOpen = chatBookingId === b.id;
+              return (
+                <button key={b.id} onClick={() => setChatBookingId(isOpen ? null : b.id)}
+                  className={`text-right p-3 rounded-2xl border transition-all cursor-pointer ${isOpen ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white border-[#D6D6C2] hover:bg-[#FAF8F5]'}`}>
+                  <div className="text-[11px] font-bold truncate">{b.userName}</div>
+                  <div className={`text-[9px] truncate ${isOpen ? 'text-white/70' : 'text-[#8A8A70]'}`}>{b.houseName} · {b.checkIn}</div>
+                </button>
+              );
+            })}
+          </div>
+          {chatBookingId && (
+            <div className="bg-white rounded-3xl border border-[#D6D6C2] overflow-hidden">
+              <div className="bg-[#FAF8F5] border-b border-[#D6D6C2] px-4 py-3 flex items-center justify-between">
+                <div className="text-xs font-bold text-[#4A4A3A] flex items-center gap-1.5">
+                  <MessageSquareDashed className="w-4 h-4 text-[#5A5A40]" />
+                  محادثة الحجز #{chatBookingId.slice(0, 8)}
+                </div>
+                <button onClick={() => setChatBookingId(null)} className="text-[10px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] cursor-pointer">إغلاق</button>
+              </div>
+              <div className="p-4 max-h-80 overflow-y-auto space-y-2">
+                {chatLoading ? (
+                  <div className="text-center py-6 text-[10px] text-[#8A8A70] animate-pulse">جاري تحميل المحادثة...</div>
+                ) : chatMessages.length === 0 ? (
+                  <div className="text-center py-6 text-[10px] text-[#8A8A70]">لا توجد رسائل في هذا الحجز بعد.</div>
+                ) : (
+                  chatMessages.map((msg) => {
+                    const booking = bookings.find((b) => b.id === chatBookingId);
+                    const isGuest = booking && msg.senderId === booking.userId;
+                    return (
+                      <div key={msg.id} className={`flex ${isGuest ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[75%] rounded-2xl px-3 py-2 space-y-0.5 ${isGuest ? 'bg-emerald-50 border border-emerald-200' : 'bg-[#FAF8F5] border border-[#E7E5DB]'}`}>
+                          <div className="text-[9px] font-bold text-[#8A8A70]">{msg.senderName}</div>
+                          <div className="text-[11px] text-[#4A4A3A]">{msg.content}</div>
+                          <div className="text-[8px] text-[#BCBC9D]">{new Date(msg.createdAt).toLocaleString('ar-EG')}</div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* User detail modal */}
+      {detailUser && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setDetailUserId(null)} />
+          <div className="bg-[#FAF8F5] max-w-lg w-full max-h-[90vh] overflow-y-auto rounded-3xl relative z-10 text-right">
+            <div className="sticky top-0 bg-[#FAF8F5] border-b border-[#D6D6C2] px-5 py-3.5 flex items-center justify-between z-10">
+              <h4 className="text-sm font-black text-[#2D2D24]">{detailUser.name}</h4>
+              <button onClick={() => setDetailUserId(null)} className="bg-white border border-[#D6D6C2] text-[#2D2D24] text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer">إغلاق ✕</button>
+            </div>
+            <div className="p-5 space-y-4">
+              {/* User info */}
+              <div className="bg-white rounded-2xl border border-[#D6D6C2] p-4 space-y-2 text-[11px]">
+                <div className="flex justify-between"><span className="text-[#8A8A70]">الإيميل:</span><span className="font-bold">{detailUser.email}</span></div>
+                <div className="flex justify-between"><span className="text-[#8A8A70]">الهاتف:</span><span className="font-bold font-mono">{detailUser.phone}</span></div>
+                <div className="flex justify-between"><span className="text-[#8A8A70]">الدور:</span><span className="font-bold">{detailUser.role === 'admin' ? 'إدارة' : detailUser.role === 'owner' ? 'صاحب بيت' : detailUser.role === 'servant' ? 'خادم' : 'فرد'}</span></div>
+                {detailUser.organizationName && <div className="flex justify-between"><span className="text-[#8A8A70]">الكنيسة/المنظمة:</span><span className="font-bold">{detailUser.organizationName}</span></div>}
+                {detailUser.governorate && <div className="flex justify-between"><span className="text-[#8A8A70]">المحافظة:</span><span className="font-bold">{detailUser.governorate}</span></div>}
+                <div className="flex justify-between"><span className="text-[#8A8A70]">تاريخ التسجيل:</span><span className="font-bold">{new Date(detailUser.createdAt).toLocaleDateString('ar-EG')}</span></div>
+                <div className="flex justify-between"><span className="text-[#8A8A70]">النقاط:</span><span className="font-bold">{detailUser.points ?? 0}</span></div>
+              </div>
+
+              {/* User bookings */}
+              <div className="space-y-1.5">
+                <h5 className="text-[11px] font-black text-[#4A4A3A]">الحجوزات ({detailUserBookings.length})</h5>
+                {detailUserBookings.length === 0 ? (
+                  <div className="text-[10px] text-[#8A8A70] bg-white rounded-xl border border-[#D6D6C2] p-3 text-center">لا توجد حجوزات</div>
+                ) : detailUserBookings.map((b) => (
+                  <div key={b.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[10px] space-y-0.5">
+                    <div className="flex justify-between font-bold"><span>{b.houseName}</span><span className={b.status === 'approved' || b.status === 'completed' ? 'text-emerald-700' : b.status === 'pending' ? 'text-amber-700' : 'text-rose-700'}>{b.status === 'approved' ? 'مقبول' : b.status === 'completed' ? 'مكتمل' : b.status === 'pending' ? 'معلّق' : b.status === 'cancelled' ? 'ملغى' : 'مرفوض'}</span></div>
+                    <div className="text-[#8A8A70]">{b.checkIn} → {b.checkOut} · {b.guestsCount} فرد · {b.totalPrice.toLocaleString()} ج.م</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* User payments */}
+              <div className="space-y-1.5">
+                <h5 className="text-[11px] font-black text-[#4A4A3A]">المدفوعات ({detailUserPayments.length})</h5>
+                {detailUserPayments.length === 0 ? (
+                  <div className="text-[10px] text-[#8A8A70] bg-white rounded-xl border border-[#D6D6C2] p-3 text-center">لا توجد مدفوعات</div>
+                ) : detailUserPayments.map((p) => (
+                  <div key={p.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[10px] flex justify-between items-center">
+                    <div><span className="font-bold">{p.amount.toLocaleString()} ج.م</span> <span className="text-[#8A8A70]">({p.paymentMethod})</span></div>
+                    <span className={`font-bold ${p.paymentStatus === 'approved' ? 'text-emerald-700' : p.paymentStatus === 'pending' ? 'text-amber-700' : 'text-rose-700'}`}>
+                      {p.paymentStatus === 'approved' ? 'معتمد' : p.paymentStatus === 'pending' ? 'معلّق' : 'مرفوض'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* User reviews */}
+              <div className="space-y-1.5">
+                <h5 className="text-[11px] font-black text-[#4A4A3A]">التقييمات ({detailUserReviews.length})</h5>
+                {detailUserReviews.length === 0 ? (
+                  <div className="text-[10px] text-[#8A8A70] bg-white rounded-xl border border-[#D6D6C2] p-3 text-center">لا توجد تقييمات</div>
+                ) : detailUserReviews.map((r) => (
+                  <div key={r.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[10px] space-y-0.5">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold">{houses.find((h) => h.id === r.houseId)?.name || r.houseId}</span>
+                      <span className="flex items-center gap-0.5 text-amber-600 font-bold"><Star className="w-3 h-3 fill-amber-500 text-amber-500" />{(r.overall_rating ?? r.rating).toFixed(1)}</span>
+                    </div>
+                    {r.comment && <div className="text-[#8A8A70] truncate">{r.comment}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
