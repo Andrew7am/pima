@@ -539,15 +539,16 @@ export default function OwnerDashboardShell({
     }
   };
 
-  // Mobile bottom nav (mockup order, RTL right→left): الحجوزات، الغرف،
-  // الرئيسية (مرتفعة في النص)، المحادثات، التقارير. "المزيد" moved to the
-  // hero's menu button (toggles the same overflow panel).
+  // Mobile bottom nav (RTL right→left): الحجوزات، الغرف، الرئيسية (مرتفعة
+  // في النص)، المحادثات، المركز المالي. قائمة الطعام moved to a quick-entry
+  // card on the home screen; "المزيد" lives on the hero's menu button
+  // (toggles the same overflow panel).
   const MOBILE_TABS: { key: ActiveTab; label: string; icon: React.ElementType; center?: boolean }[] = [
     { key: 'bookings', label: 'الحجوزات', icon: ClipboardList },
     { key: 'rooms', label: 'الغرف', icon: BedDouble },
     { key: 'stats', label: 'الرئيسية', icon: Home, center: true },
     { key: 'messages', label: 'المحادثات', icon: MessageCircle },
-    { key: 'meals', label: 'قائمة الطعام', icon: Utensils },
+    { key: 'financials', label: 'المركز المالي', icon: Coins },
   ];
 
   // Desktop sidebar: نظام تنقل متداخل — الحجوزات والغرف مجموعتان قابلتان
@@ -892,6 +893,17 @@ export default function OwnerDashboardShell({
                 </button>
               ))}
             </div>
+
+            {/* ── قائمة الطعام: quick entry moved here from the bottom nav ── */}
+            <button type="button" onClick={() => { setActiveTab('meals'); setShowOverflow(false); }}
+              className="w-full flex items-center gap-3 bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-3.5 text-right shadow-sm hover:shadow transition-all cursor-pointer">
+              <span className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-amber-50 text-amber-600"><Utensils className="w-5 h-5" /></span>
+              <div className="flex-1 min-w-0">
+                <div className="text-[12px] font-black text-[var(--color-owner-text)]">قائمة الطعام</div>
+                <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">إدارة وجبات وأسعار مطعم البيت</div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-[var(--color-owner-secondary)] rotate-180 shrink-0" />
+            </button>
 
             {/* ── تحتاج انتباه (mockup): derived, each row jumps to its fix ── */}
             {(() => {
