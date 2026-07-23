@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry } from '../types';
+import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Payout } from '../types';
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import HouseDetail from './HouseDetail';
@@ -38,6 +38,8 @@ interface AdminDashboardProps {
   // generic handlers OwnerDashboard already writes through.
   onUpdateHouse?: (house: RetreatHouse) => void;
   onDeleteHouse?: (houseId: string) => void;
+  payouts?: Payout[];
+  onUpdatePayoutStatus?: (id: string, status: Payout['status']) => void;
 }
 
 export default function AdminDashboard({
@@ -69,10 +71,12 @@ export default function AdminDashboard({
   onLoadProofImage,
   onUpdateHouse,
   onDeleteHouse,
+  payouts = [],
+  onUpdatePayoutStatus,
 }: AdminDashboardProps) {
   // Tabs within Admin — "growth" is default: the admin's morning check
   // (what's happening + what needs attention). Older tabs still exist.
-  const [activeTab, setActiveTab] = useState<'growth' | 'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'bookings' | 'settings' | 'audit' | 'messages'>('growth');
+  const [activeTab, setActiveTab] = useState<'growth' | 'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'payouts' | 'bookings' | 'settings' | 'audit' | 'messages'>('growth');
   // Draft copy of settings for the settings form
   const [settingsDraft, setSettingsDraft] = useState(settings);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -386,6 +390,7 @@ export default function AdminDashboard({
     ]},
     { key: 'finance', label: 'المالية والنظام', tabs: [
       { key: 'payments', label: 'الدفعيات', badge: payments.filter((p) => p.paymentStatus === 'pending').length },
+      { key: 'payouts', label: 'طلبات التحويل', badge: payouts.filter((p) => p.status === 'pending').length },
       { key: 'reports', label: 'التقارير المالية' },
       { key: 'settings', label: 'الإعدادات' },
       { key: 'audit', label: 'سجل التدقيق' },
@@ -1702,6 +1707,63 @@ export default function AdminDashboard({
           )}
         </div>
       )}
+
+      {/* Owner payout requests */}
+      {activeTab === 'payouts' && (() => {
+        const PAYOUT_META: Record<Payout['status'], { label: string; cls: string }> = {
+          pending: { label: 'قيد المراجعة', cls: 'bg-amber-50 text-amber-800 border-amber-200' },
+          processing: { label: 'جارٍ التحويل', cls: 'bg-sky-50 text-sky-800 border-sky-200' },
+          completed: { label: 'تم التحويل', cls: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+          rejected: { label: 'مرفوض', cls: 'bg-rose-50 text-rose-800 border-rose-200' },
+        };
+        const pendingTotal = payouts.filter((p) => p.status === 'pending' || p.status === 'processing').reduce((s, p) => s + p.amount, 0);
+        return (
+          <div className="space-y-4 text-right">
+            <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
+              <h3 className="text-xs font-bold text-[#4A4A3A]">طلبات تحويل أموال أصحاب البيوت:</h3>
+              <div className="text-[10px] text-[#8A8A70]">قيد التنفيذ: <strong className="text-amber-800">{pendingTotal.toLocaleString()} ج.م</strong></div>
+            </div>
+            {payouts.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-[#D6D6C2] p-8 text-center text-xs text-[#8A8A70]">لا توجد طلبات تحويل بعد.</div>
+            ) : (
+              <div className="space-y-2">
+                {payouts.map((p) => {
+                  const meta = PAYOUT_META[p.status];
+                  const ownerName = users.find((u) => u.id === p.ownerId)?.name || '—';
+                  const houseName = houses.find((h) => h.id === p.houseId)?.name || '—';
+                  const open = p.status === 'pending' || p.status === 'processing';
+                  return (
+                    <div key={p.id} className="bg-white rounded-2xl border border-[#D6D6C2] p-3.5 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-xs font-black text-[#4A4A3A]">{ownerName} · <span className="font-bold text-[#8A8A70]">{houseName}</span></div>
+                          <div className="text-[9.5px] text-[#8A8A70] font-bold">{(p.completedAt ?? p.requestedAt).split('T')[0]}{p.note ? ` · ${p.note}` : ''}</div>
+                        </div>
+                        <span className={`shrink-0 text-[9px] font-black px-2 py-1 rounded-full border ${meta.cls}`}>{meta.label}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-base font-black text-[#5A5A40]">{p.amount.toLocaleString()} ج.م</div>
+                        {open && onUpdatePayoutStatus && (
+                          <div className="flex gap-1.5">
+                            {p.status === 'pending' && (
+                              <button type="button" onClick={() => onUpdatePayoutStatus(p.id, 'processing')}
+                                className="text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-2.5 py-1.5 rounded-lg cursor-pointer">بدء التحويل</button>
+                            )}
+                            <button type="button" onClick={() => { if (confirm(`تأكيد تحويل ${p.amount.toLocaleString()} ج.م لـ${ownerName}؟`)) onUpdatePayoutStatus(p.id, 'completed'); }}
+                              className="text-[10px] font-bold bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg cursor-pointer">تم التحويل ✓</button>
+                            <button type="button" onClick={() => { if (confirm('رفض طلب التحويل؟')) onUpdatePayoutStatus(p.id, 'rejected'); }}
+                              className="text-[10px] font-bold bg-white text-rose-700 border border-rose-200 px-2.5 py-1.5 rounded-lg cursor-pointer">رفض</button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Bookings Management Tab */}
       {activeTab === 'bookings' && (

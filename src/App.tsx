@@ -16,7 +16,7 @@ import {
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
   createWaitlistEntry,
   loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
-  loadPayoutsForHouses, createPayout as createPayoutDb,
+  loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb,
   loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
   createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
   loadPlatformSettings, updatePlatformSettings,
@@ -495,7 +495,13 @@ export default function App() {
     if (activeScreen !== 'admin_panel' || currentUser?.role !== 'admin') return;
     loadAuditLog().then(setAuditLog);
     loadReviews().then(setReviews);
+    loadAllPayouts().then(setPayouts);
   }, [activeScreen, currentUser?.role]);
+
+  const handleUpdatePayoutStatus = (id: string, status: Payout['status']) => {
+    setPayouts((prev) => prev.map((p) => (p.id === id ? { ...p, status, completedAt: status === 'completed' ? new Date().toISOString() : undefined } : p)));
+    updatePayoutStatusDb(id, status);
+  };
 
   // --- Smart Notification Generator (3 Days Before Check-in) ---
   useEffect(() => {
@@ -1635,6 +1641,8 @@ export default function App() {
               houses={houses}
               users={users}
               bookings={bookings}
+              payouts={payouts}
+              onUpdatePayoutStatus={handleUpdatePayoutStatus}
               reviews={reviews}
               onApproveHouse={handleApproveHouse}
               onRejectHouse={handleRejectHouse}

@@ -598,6 +598,22 @@ export async function createPayout(p: Payout): Promise<boolean> {
   return !error;
 }
 
+// Admin: every payout request across all houses (RLS 059 lets admin read all).
+export async function loadAllPayouts(): Promise<Payout[]> {
+  const { data, error } = await supabase.from('owner_payouts').select('*').order('requested_at', { ascending: false });
+  if (error) { console.error('loadAllPayouts:', error); return []; }
+  return (data ?? []).map(mapPayout);
+}
+
+// Admin advances a request (processing / completed / rejected).
+export async function updatePayoutStatus(id: string, status: Payout['status']): Promise<boolean> {
+  const { error } = await supabase.from('owner_payouts')
+    .update({ status, completed_at: status === 'completed' ? new Date().toISOString() : null })
+    .eq('id', id);
+  if (error) console.error('updatePayoutStatus:', error);
+  return !error;
+}
+
 export async function loadAnnouncementsForHouses(houseIds: string[]): Promise<Announcement[]> {
   if (houseIds.length === 0) return [];
   const { data, error } = await supabase.from('announcements').select('*').in('house_id', houseIds).order('created_at', { ascending: false });
