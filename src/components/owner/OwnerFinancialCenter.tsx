@@ -146,6 +146,7 @@ export default function OwnerFinancialCenter({
   const [expAmount, setExpAmount] = useState('');
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [swipedExpenseId, setSwipedExpenseId] = useState<string | null>(null);
+  const [showExpensesPage, setShowExpensesPage] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -168,26 +169,33 @@ export default function OwnerFinancialCenter({
     const commission = revenue * commissionRate;
     const net = revenue - commission;
     const remaining = revenue - deposit;
-    return { ...m, revenue, deposit, commission, net, remaining };
+    return { ...m, count: list.length, revenue, deposit, commission, net, remaining };
   }), [months, confirmedBookings, commissionRate]);
 
+  // Month-over-month %, but only when the previous month has enough bookings
+  // to be a meaningful base — otherwise a single booking swings it to a
+  // misleading ±100%+, so we suppress the badge entirely.
+  const MIN_TREND_BASE = 3;
   const pct = (key: 'revenue' | 'deposit' | 'commission' | 'net' | 'remaining') => {
     const cur = monthlyAgg[5][key];
     const prev = monthlyAgg[4][key];
-    if (prev <= 0) return null;
+    if (prev <= 0 || monthlyAgg[4].count < MIN_TREND_BASE) return null;
     return Math.round(((cur - prev) / prev) * 100);
   };
 
   // Only one bottom sheet should be visible at a time.
   const closeAllSheets = () => { setOpenBookingId(null); setShowHistorySheet(false); setShowAddExpense(false); };
 
-  const monthlyExpenses = useMemo(() => months.map((m) =>
-    ownerExpenses.filter((e) => {
+  const monthlyExpenses = useMemo(() => months.map((m) => {
+    const list = ownerExpenses.filter((e) => {
       const d = new Date(e.expenseDate);
       return d.getFullYear() === m.year && d.getMonth() === m.month;
-    }).reduce((s, e) => s + e.amount, 0)
-  ), [months, ownerExpenses]);
-  const expensesPct = monthlyExpenses[4] > 0 ? Math.round(((monthlyExpenses[5] - monthlyExpenses[4]) / monthlyExpenses[4]) * 100) : null;
+    });
+    return { count: list.length, total: list.reduce((s, e) => s + e.amount, 0) };
+  }), [months, ownerExpenses]);
+  const expensesPct = (monthlyExpenses[4].total > 0 && monthlyExpenses[4].count >= 2)
+    ? Math.round(((monthlyExpenses[5].total - monthlyExpenses[4].total) / monthlyExpenses[4].total) * 100)
+    : null;
 
   // ── Guests arriving today, cash expected in-hand ──
   const arrivalsToday = confirmedBookings.filter((b) => b.checkIn === todayStr);
@@ -230,6 +238,12 @@ export default function OwnerFinancialCenter({
   const netShare = confirmedRevenue > 0 ? netOwnerPayout / confirmedRevenue : 0;
   const r = 40, circumference = 2 * Math.PI * r;
 
+  // What Pima can ACTUALLY transfer to the owner: only the deposits it holds,
+  // minus the full platform commission. The rest of the net payout is cash the
+  // owner collects directly on arrival — Pima never touches it, so it must not
+  // be presented as a transferable balance. See the money-flow timeline below.
+  const availableForTransfer = Math.max(0, depositReceived - platformCommissionAmount);
+
   const submitExpense = () => {
     const amount = parseFloat(expAmount);
     if (!expDesc.trim() || !amount || amount <= 0 || !houseId) return;
@@ -237,6 +251,112 @@ export default function OwnerFinancialCenter({
     onAddExpense?.({ id: `exp_${Date.now()}`, houseId, description: expDesc.trim(), amount, expenseDate: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString() });
     setExpDesc(''); setExpAmount(''); setEditingExpenseId(null); setShowAddExpense(false);
   };
+
+  const openAddExpense = () => { closeAllSheets(); setEditingExpenseId(null); setExpDesc(''); setExpAmount(''); setShowAddExpense(true); };
+  const openEditExpense = (e: Expense) => { closeAllSheets(); setEditingExpenseId(e.id); setExpDesc(e.description); setExpAmount(String(e.amount)); setShowAddExpense(true); };
+
+  // Shared swipeable expense list (edit → swipe right, delete → swipe left).
+  const expenseListJsx = ownerExpenses.length === 0 ? (
+    <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-6 text-center text-[11px] text-[var(--color-owner-secondary)] font-bold">
+      لا توجد مصروفات مسجلة بعد.
+    </div>
+  ) : (
+    <div className="space-y-1.5">
+      {ownerExpenses.map((e) => {
+        const Icon = expenseIcon(e.description);
+        const swiped = swipedExpenseId === e.id;
+        return (
+          <div key={e.id} className="relative rounded-2xl overflow-hidden">
+            <div className="absolute inset-0 flex items-center justify-between px-4">
+              <span className="text-[10px] font-black text-white bg-[var(--color-owner-primary)] px-2.5 py-1 rounded-lg flex items-center gap-1"><Pencil className="w-3 h-3" /> تعديل</span>
+              <span className="text-[10px] font-black text-white bg-rose-500 px-2.5 py-1 rounded-lg flex items-center gap-1">حذف <Trash2 className="w-3 h-3" /></span>
+            </div>
+            <motion.div
+              drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.25} dragSnapToOrigin
+              onDragEnd={(_e, info) => {
+                if (info.offset.x < -60) onDeleteExpense?.(e.id);
+                else if (info.offset.x > 60) openEditExpense(e);
+              }}
+              onClick={() => setSwipedExpenseId(swiped ? null : e.id)}
+              className="relative bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-[var(--color-owner-hover)] flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4 text-[var(--color-owner-primary)]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10.5px] font-black text-[var(--color-owner-text)] truncate">{e.description}</div>
+                  <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{e.expenseDate}</div>
+                </div>
+              </div>
+              <span className="text-[11px] font-black text-rose-600 shrink-0">− {e.amount.toLocaleString()} ج.م</span>
+            </motion.div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // Add / edit expense bottom sheet — reused by both the overview and the
+  // dedicated expenses page.
+  const addExpenseSheet = (
+    <BottomSheet open={showAddExpense} onClose={() => { setShowAddExpense(false); setEditingExpenseId(null); }} title={editingExpenseId ? 'تعديل المصروف' : 'إضافة مصروف'}>
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-1.5">
+          {EXPENSE_CATEGORIES.map((c) => (
+            <button key={c.key} type="button" onClick={() => setExpDesc(c.label)}
+              className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-full border border-[var(--color-owner-border)] text-[var(--color-owner-text)] bg-[var(--color-owner-bg)]">
+              <c.icon className="w-3 h-3" /> {c.label}
+            </button>
+          ))}
+        </div>
+        <input type="text" placeholder="وصف المصروف" value={expDesc} onChange={(e) => setExpDesc(e.target.value)}
+          className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[11px] px-3 py-2.5 rounded-xl text-[var(--color-owner-text)] outline-none" />
+        <input type="number" min={0} placeholder="المبلغ (ج.م)" value={expAmount} onChange={(e) => setExpAmount(e.target.value)}
+          className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[11px] px-3 py-2.5 rounded-xl text-[var(--color-owner-text)] outline-none" />
+        <button type="button" onClick={submitExpense}
+          className="w-full bg-[var(--color-owner-primary)] text-white text-[11px] font-black py-3 rounded-2xl">
+          {editingExpenseId ? 'حفظ التعديل' : 'إضافة المصروف'}
+        </button>
+      </div>
+    </BottomSheet>
+  );
+
+  // ── Dedicated, isolated Expenses page within the Financial Center ──
+  if (showExpensesPage) {
+    return (
+      <div className="space-y-4" dir="rtl">
+        <div className="flex items-center justify-between">
+          <button type="button" onClick={() => setShowExpensesPage(false)}
+            className="flex items-center gap-1 text-[11px] font-bold text-[var(--color-owner-secondary)] hover:text-[var(--color-owner-text)]">
+            <ChevronDown className="w-4 h-4 rotate-90" /> رجوع للمركز المالي
+          </button>
+          <button type="button" onClick={openAddExpense}
+            className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10.5px] font-black px-3 py-2 rounded-xl active:scale-[0.98] transition-transform">
+            <Plus className="w-3.5 h-3.5" /> إضافة مصروف
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-black text-[var(--color-owner-text)] flex items-center gap-1.5">
+            <Receipt className="w-4 h-4 text-[var(--color-owner-primary)]" /> المصروفات
+          </h2>
+          <span className="text-[10px] font-bold text-[var(--color-owner-secondary)]">الإجمالي: {totalExpenses.toLocaleString()} ج.م</span>
+        </div>
+
+        {expenseListJsx}
+
+        <div className="flex items-center justify-between bg-[var(--color-owner-primary)]/10 border-2 border-[var(--color-owner-primary)]/25 rounded-2xl p-3.5">
+          <span className="text-[11px] font-black text-[var(--color-owner-primary)]">صافي الربح (بعد المصروفات)</span>
+          <Money value={netProfit} className="text-sm font-black text-[var(--color-owner-primary)]" />
+        </div>
+
+        <p className="text-[9.5px] text-[var(--color-owner-secondary)] font-bold text-center">اسحب المصروف لليمين للتعديل، ولليسار للحذف.</p>
+
+        {addExpenseSheet}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4" dir="rtl">
@@ -269,8 +389,9 @@ export default function OwnerFinancialCenter({
 
         <div className="relative grid grid-cols-2 gap-2 mt-4">
           <div className="bg-white/5 border border-white/10 rounded-2xl p-2.5">
-            <div className="text-[9px] text-white/60 font-bold">الرصيد المتاح للتحويل</div>
-            <div className="text-sm font-black mt-0.5">{netOwnerPayout.toLocaleString()} ج.م</div>
+            <div className="text-[9px] text-white/60 font-bold">الرصيد المتاح للتحويل عبر Pima</div>
+            <div className="text-sm font-black mt-0.5">{availableForTransfer.toLocaleString()} ج.م</div>
+            <div className="text-[8px] text-white/45 font-bold mt-0.5">الباقي يُحصَّل نقدًا عند الوصول</div>
           </div>
           <div className="bg-white/5 border border-white/10 rounded-2xl p-2.5">
             <div className="text-[9px] text-white/60 font-bold">إجمالي الحجوزات</div>
@@ -509,53 +630,25 @@ export default function OwnerFinancialCenter({
         })}
       </div>
 
-      {/* ── Section 8: Expenses ─────────────────────────────────── */}
+      {/* ── Section 8: Expenses — compact entry into the dedicated page ── */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-black text-[var(--color-owner-text)]">المصروفات</h3>
-          <span className="text-[10px] font-bold text-[var(--color-owner-secondary)]">إجمالي: {totalExpenses.toLocaleString()} ج.م</span>
+          <button type="button" onClick={openAddExpense}
+            className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-black px-2.5 py-1.5 rounded-lg active:scale-[0.98] transition-transform">
+            <Plus className="w-3 h-3" /> إضافة
+          </button>
         </div>
 
-        {ownerExpenses.length === 0 ? (
-          <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-6 text-center text-[11px] text-[var(--color-owner-secondary)] font-bold">
-            لا توجد مصروفات مسجلة بعد.
+        <button type="button" onClick={() => setShowExpensesPage(true)}
+          className="w-full flex items-center gap-3 bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3.5 text-right active:scale-[0.99] transition-transform">
+          <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-rose-50 text-rose-600"><Receipt className="w-4.5 h-4.5" /></span>
+          <div className="flex-1 min-w-0">
+            <div className="text-[11.5px] font-black text-[var(--color-owner-text)]">إدارة المصروفات</div>
+            <div className="text-[9.5px] font-bold text-[var(--color-owner-secondary)]">{ownerExpenses.length} مصروف · إجمالي {totalExpenses.toLocaleString()} ج.م</div>
           </div>
-        ) : (
-          <div className="space-y-1.5">
-            {ownerExpenses.map((e) => {
-              const Icon = expenseIcon(e.description);
-              const swiped = swipedExpenseId === e.id;
-              return (
-                <div key={e.id} className="relative rounded-2xl overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-between px-4">
-                    <span className="text-[10px] font-black text-white bg-[var(--color-owner-primary)] px-2.5 py-1 rounded-lg flex items-center gap-1"><Pencil className="w-3 h-3" /> تعديل</span>
-                    <span className="text-[10px] font-black text-white bg-rose-500 px-2.5 py-1 rounded-lg flex items-center gap-1">حذف <Trash2 className="w-3 h-3" /></span>
-                  </div>
-                  <motion.div
-                    drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.25} dragSnapToOrigin
-                    onDragEnd={(_e, info) => {
-                      if (info.offset.x < -60) onDeleteExpense?.(e.id);
-                      else if (info.offset.x > 60) { closeAllSheets(); setEditingExpenseId(e.id); setExpDesc(e.description); setExpAmount(String(e.amount)); setShowAddExpense(true); }
-                    }}
-                    onClick={() => setSwipedExpenseId(swiped ? null : e.id)}
-                    className="relative bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl px-3.5 py-2.5 flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-xl bg-[var(--color-owner-hover)] flex items-center justify-center shrink-0">
-                        <Icon className="w-4 h-4 text-[var(--color-owner-primary)]" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-[10.5px] font-black text-[var(--color-owner-text)] truncate">{e.description}</div>
-                        <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{e.expenseDate}</div>
-                      </div>
-                    </div>
-                    <span className="text-[11px] font-black text-rose-600 shrink-0">− {e.amount.toLocaleString()} ج.م</span>
-                  </motion.div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+          <ChevronDown className="w-4 h-4 text-[var(--color-owner-secondary)] -rotate-90 shrink-0" />
+        </button>
 
         <div className="flex items-center justify-between bg-[var(--color-owner-primary)]/10 border-2 border-[var(--color-owner-primary)]/25 rounded-2xl p-3.5">
           <span className="text-[11px] font-black text-[var(--color-owner-primary)]">صافي الربح (بعد المصروفات)</span>
@@ -605,12 +698,6 @@ export default function OwnerFinancialCenter({
           )}
         </div>
       </div>
-
-      {/* Floating add-expense button */}
-      <button type="button" onClick={() => { closeAllSheets(); setEditingExpenseId(null); setExpDesc(''); setExpAmount(''); setShowAddExpense(true); }}
-        className="fixed bottom-24 left-4 z-30 flex items-center gap-1.5 bg-[var(--color-owner-primary)] text-white text-[11px] font-black px-4 py-3 rounded-full shadow-lg shadow-black/20">
-        <Plus className="w-4 h-4" /> إضافة مصروف
-      </button>
 
       {/* ── Booking bottom sheet ─────────────────────────────────── */}
       <BottomSheet open={!!openBooking} onClose={() => setOpenBookingId(null)} title="ملخص الحجز">
@@ -675,27 +762,8 @@ export default function OwnerFinancialCenter({
         </div>
       </BottomSheet>
 
-      {/* ── Add / edit expense sheet ─────────────────────────────── */}
-      <BottomSheet open={showAddExpense} onClose={() => { setShowAddExpense(false); setEditingExpenseId(null); }} title={editingExpenseId ? 'تعديل المصروف' : 'إضافة مصروف'}>
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-1.5">
-            {EXPENSE_CATEGORIES.map((c) => (
-              <button key={c.key} type="button" onClick={() => setExpDesc(c.label)}
-                className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1.5 rounded-full border border-[var(--color-owner-border)] text-[var(--color-owner-text)] bg-[var(--color-owner-bg)]">
-                <c.icon className="w-3 h-3" /> {c.label}
-              </button>
-            ))}
-          </div>
-          <input type="text" placeholder="وصف المصروف" value={expDesc} onChange={(e) => setExpDesc(e.target.value)}
-            className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[11px] px-3 py-2.5 rounded-xl text-[var(--color-owner-text)] outline-none" />
-          <input type="number" min={0} placeholder="المبلغ (ج.م)" value={expAmount} onChange={(e) => setExpAmount(e.target.value)}
-            className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[11px] px-3 py-2.5 rounded-xl text-[var(--color-owner-text)] outline-none" />
-          <button type="button" onClick={submitExpense}
-            className="w-full bg-[var(--color-owner-primary)] text-white text-[11px] font-black py-3 rounded-2xl">
-            {editingExpenseId ? 'حفظ التعديل' : 'إضافة المصروف'}
-          </button>
-        </div>
-      </BottomSheet>
+      {/* ── Add / edit expense sheet (shared) ────────────────────── */}
+      {addExpenseSheet}
     </div>
   );
 }
