@@ -83,12 +83,18 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
   const totalUnread = Object.values(unread).reduce((s, n) => s + n, 0);
 
   if (selectedBooking) {
+    // Unify every booking this guest has into one thread (most-recent first).
+    const guestBookings = activeBookings
+      .filter((b) => b.userId === selectedBooking.userId)
+      .sort((a, b) => lastActivity(b) - lastActivity(a));
+    const guestBookingIds = guestBookings.map((b) => b.id);
     return (
       <BookingChatPanel
         bookingId={selectedBooking.id}
+        bookingIds={guestBookingIds}
         currentUserId={owner.id}
         title={selectedBooking.userName}
-        subtitle={selectedBooking.houseName}
+        subtitle={guestBookings.length > 1 ? `${guestBookings.length} حجوزات` : selectedBooking.houseName}
         onBack={() => setSelectedBooking(null)}
         variant="owner"
         heightClass="h-[calc(100dvh-180px)]"

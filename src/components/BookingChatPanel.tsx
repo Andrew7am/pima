@@ -6,6 +6,9 @@ import { fileToAttachment } from '../lib/attachments';
 
 interface BookingChatPanelProps {
   bookingId: string;
+  // When set, the thread unifies messages across all of these bookings (one
+  // chat per guest, not per booking). New messages are sent on the first id.
+  bookingIds?: string[];
   currentUserId: string;
   title: string;
   subtitle?: string;
@@ -38,8 +41,13 @@ function formatTime(iso: string): string {
 
 const TYPING_IDLE_MS = 2000;
 
-export default function BookingChatPanel({ bookingId, currentUserId, title, subtitle, onBack, variant = 'guest', heightClass = 'h-[60vh]' }: BookingChatPanelProps) {
+export default function BookingChatPanel({ bookingId, bookingIds, currentUserId, title, subtitle, onBack, variant = 'guest', heightClass = 'h-[60vh]' }: BookingChatPanelProps) {
   const t = THEME[variant];
+  // One or many threads (unified per-guest view uses many). Sending / typing
+  // always target the first (most-recent) booking.
+  const ids = bookingIds && bookingIds.length > 0 ? bookingIds : [bookingId];
+  const idsKey = ids.join(',');
+  const primaryId = ids[0];
   const [messages, setMessages] = useState<BookingMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState('');
@@ -64,35 +72,38 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const history = await loadBookingMessages(bookingId);
+      // Merge history from every thread, oldest-first across all bookings.
+      const histories = await Promise.all(ids.map((id) => loadBookingMessages(id)));
       if (cancelled) return;
-      setMessages(history);
+      const merged = histories.flat().sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      setMessages(merged);
       setLoading(false);
-      markBookingMessagesRead(bookingId);
+      ids.forEach((id) => markBookingMessagesRead(id));
     })();
 
-    const unsubscribe = subscribeToBookingMessages(bookingId, (msg) => {
+    const unsubscribers = ids.map((id) => subscribeToBookingMessages(id, (msg) => {
       // INSERT echoes the sender's own row back (handleSend already appended
       // optimistically) and UPDATE carries soft-deletes — upsert by id so a
       // sent message never doubles and a delete flips in place.
       setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev.map((m) => (m.id === msg.id ? msg : m)) : [...prev, msg]));
-      if (msg.senderId !== currentUserId && !msg.deletedAt) markBookingMessagesRead(bookingId);
-    });
+      if (msg.senderId !== currentUserId && !msg.deletedAt) markBookingMessagesRead(msg.bookingId);
+    }));
 
-    const typing = subscribeToTypingPresence(bookingId, currentUserId, (typingUserIds) => {
+    const typing = subscribeToTypingPresence(primaryId, currentUserId, (typingUserIds) => {
       setOtherTyping(typingUserIds.length > 0);
     });
     typingRef.current = typing;
 
     return () => {
       cancelled = true;
-      unsubscribe();
+      unsubscribers.forEach((u) => u());
       typing.unsubscribe();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (recTimerRef.current) clearInterval(recTimerRef.current);
       if (recorderRef.current && recorderRef.current.state !== 'inactive') { recCancelRef.current = true; recorderRef.current.stop(); }
     };
-  }, [bookingId, currentUserId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey, currentUserId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -134,7 +145,7 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
     if (pending.length === 0) {
-      const sent = await sendBookingMessage(bookingId, content, undefined, replyId);
+      const sent = await sendBookingMessage(primaryId, content, undefined, replyId);
       setSending(false);
       if (sent) appendMessage(sent); else setInput(content);
       return;
@@ -143,7 +154,7 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
     // Each attachment is its own message; the typed text + reply ride on the first.
     const failed: OutgoingAttachment[] = [];
     for (let i = 0; i < pending.length; i++) {
-      const sent = await sendBookingMessage(bookingId, i === 0 ? content : '', pending[i], i === 0 ? replyId : undefined);
+      const sent = await sendBookingMessage(primaryId, i === 0 ? content : '', pending[i], i === 0 ? replyId : undefined);
       if (sent) appendMessage(sent); else failed.push(pending[i]);
     }
     setSending(false);
