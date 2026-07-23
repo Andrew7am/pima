@@ -16,6 +16,7 @@ import OwnerRoomDistributionScreen from './OwnerRoomDistribution';
 import OwnerTour from './OwnerTour';
 import OwnerCustomers from './OwnerCustomers';
 import { supabase } from '../../lib/supabase';
+import { updateBookingFields } from '../../lib/db';
 import { getRoomBedState, getHouseRoomAvailabilityForRange } from '../../lib/roomOccupancy';
 import LocationPicker from '../LocationPicker';
 
@@ -1083,6 +1084,23 @@ export default function OwnerDashboardShell({
                       <p className="italic text-slate-700">{booking.conferenceDetails.extraRequests}</p>
                     </div>
                   )}
+                  {/* Owner private notes — only visible to the owner */}
+                  <div className="bg-[var(--color-owner-bg)] p-2.5 rounded-xl border border-[var(--color-owner-border)]">
+                    <label className="block text-[10px] font-bold text-[var(--color-owner-muted)] mb-1">ملاحظاتك الخاصة (لا يراها العميل):</label>
+                    <textarea
+                      rows={2}
+                      defaultValue={booking.ownerNotes || ''}
+                      placeholder="سجّل أي ملاحظة عن هذا الحجز أو العميل..."
+                      onBlur={async (e) => {
+                        const val = e.target.value.trim();
+                        if (val !== (booking.ownerNotes || '')) {
+                          await updateBookingFields(booking.id, { ownerNotes: val || undefined });
+                          booking.ownerNotes = val || undefined;
+                        }
+                      }}
+                      className="w-full bg-white border border-[var(--color-owner-border)] text-[11px] px-2.5 py-1.5 rounded-xl text-[var(--color-owner-text)] outline-none focus:ring-1 focus:ring-[var(--color-owner-primary)] resize-none"
+                    />
+                  </div>
                   {isPending && (
                     <div className="flex gap-2 justify-end pt-2 flex-wrap">
                       <button onClick={() => { if (confirm('هل أنت متأكد من رفض هذا الحجز؟')) onRejectBooking(booking.id); }}

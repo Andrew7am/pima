@@ -101,6 +101,7 @@ export function mapBooking(r: Record<string, unknown>): Booking {
     conferenceDetails: r.conference_details as Booking['conferenceDetails'] ?? undefined,
     checkedInAt: r.checked_in_at as string ?? undefined,
     checkedOutAt: r.checked_out_at as string ?? undefined,
+    ownerNotes: r.owner_notes as string ?? undefined,
     createdAt: r.created_at as string,
   };
 }
@@ -629,6 +630,7 @@ function bookingToRow(b: Booking): Record<string, unknown> {
     conference_details: b.conferenceDetails ?? null,
     checked_in_at: b.checkedInAt ?? null,
     checked_out_at: b.checkedOutAt ?? null,
+    owner_notes: b.ownerNotes ?? null,
     created_at: b.createdAt,
   };
 }
@@ -737,6 +739,7 @@ export async function updateBookingFields(id: string, fields: Partial<Booking>):
   if (fields.checkIn !== undefined) row.check_in = fields.checkIn;
   if (fields.checkOut !== undefined) row.check_out = fields.checkOut;
   if (fields.guestsCount !== undefined) row.guests_count = fields.guestsCount;
+  if (fields.ownerNotes !== undefined) row.owner_notes = fields.ownerNotes;
   const { error } = await supabase.from('bookings').update(row).eq('id', id);
   if (error) {
     const msg = error.message || '';

@@ -607,11 +607,20 @@ export default function HouseDetail({
 
   const [isQuoteMode, setIsQuoteMode] = useState(false); // Toggle between regular booking & large conference quote
 
+  // Auto-fill from repeat bookings — if the guest has booked this house
+  // before, pre-fill guestsCount from their most recent booking here.
+  const lastBookingHere = currentUser
+    ? bookings
+        .filter(b => b.houseId === house.id && b.userId === currentUser.id)
+        .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0]
+    : undefined;
+
   // Form states for booking
   const [checkIn, setCheckIn] = useState((house.propertyType === 'student' || house.propertyType === 'staff') ? '2026-09-01' : '2026-07-15');
   const [checkOut, setCheckOut] = useState((house.propertyType === 'student' || house.propertyType === 'staff') ? '2027-06-30' : '2026-07-18');
   const [guestsCount, setGuestsCount] = useState<number>(
-    (house.propertyType === 'student' || house.propertyType === 'staff') ? 1 : 30
+    lastBookingHere?.guestsCount
+      ?? ((house.propertyType === 'student' || house.propertyType === 'staff') ? 1 : 30)
   );
   const [usePoints, setUsePoints] = useState(false);
   
@@ -2047,6 +2056,9 @@ export default function HouseDetail({
                     onChange={(e) => setGuestsCount(parseInt(e.target.value) || 1)}
                     className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A]"
                   />
+                  {lastBookingHere && (
+                    <p className="text-[9px] text-emerald-700 font-bold mt-0.5">تم ملء العدد تلقائياً من حجزك السابق ({lastBookingHere.guestsCount} فرد)</p>
+                  )}
                 </div>
 
                 {/* Points redemption toggle — logged-in users with a balance only */}

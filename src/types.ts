@@ -169,6 +169,7 @@ export interface Booking {
   };
   checkedInAt?: string;
   checkedOutAt?: string;
+  ownerNotes?: string;
   createdAt: string;
 }
 

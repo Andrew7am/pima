@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Booking, User, Attendee, RoomAllocation, RetreatHouse, Room } from '../types';
 import {
   Users, Check, Plus, Trash2, Shield, Settings, Shuffle, ArrowLeftRight,
-  UserMinus, UserPlus, AlertTriangle, Sparkles, RefreshCw, X, ChevronDown, CheckCircle, Save, Minus
+  UserMinus, UserPlus, AlertTriangle, Sparkles, RefreshCw, X, ChevronDown, CheckCircle, Save, Minus, Upload
 } from 'lucide-react';
 import { autoAllocate, quickAssignRoom } from '../lib/roomAllocation';
 import { getRoomFreeBedsForRange } from '../lib/roomOccupancy';
@@ -303,6 +303,39 @@ export default function RoomDistribution({
     onUpdateAttendees(booking.id, generated);
     onUpdateAllocations(booking.id, []);
     showToast(`تم توليد قائمة حضور تحتوي على ${generated.length} اسم افتراضي بنجاح! 🎉`, 'success');
+  };
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      if (!text) return;
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      const imported: Attendee[] = [];
+      for (let i = 0; i < lines.length; i++) {
+        const cols = lines[i].split(/[,\t;]/);
+        const name = cols[0]?.trim();
+        if (!name || name === 'الاسم' || name === 'name') continue;
+        const genderRaw = (cols[1]?.trim() || '').toLowerCase();
+        const gender: 'male' | 'female' = (genderRaw === 'female' || genderRaw === 'أنثى' || genderRaw === 'بنت') ? 'female' : 'male';
+        const groupRaw = (cols[2]?.trim() || '').toLowerCase();
+        const groupType: Attendee['groupType'] =
+          (groupRaw === 'family' || groupRaw === 'أسرة' || groupRaw === 'عائلة') ? 'family'
+          : (groupRaw === 'child' || groupRaw === 'طفل' || groupRaw === 'أطفال') ? 'child'
+          : (groupRaw === 'other' || groupRaw === 'أخرى') ? 'other'
+          : 'youth';
+        imported.push({ id: `att_${booking.id}_csv_${i}_${Date.now()}`, bookingId: booking.id, name, gender, groupType });
+      }
+      if (imported.length === 0) { showToast('لم يتم العثور على أسماء صالحة في الملف.', 'warning'); return; }
+      const merged = [...attendees, ...imported];
+      setAttendees(merged);
+      onUpdateAttendees(booking.id, merged);
+      showToast(`تم استيراد ${imported.length} شخص من الملف بنجاح!`, 'success');
+    };
+    reader.readAsText(file, 'UTF-8');
+    e.target.value = '';
   };
 
   // Add a single attendee manually
@@ -722,6 +755,11 @@ export default function RoomDistribution({
                   <span>توليد كشف حضور تلقائي</span>
                 </button>
               )}
+              <label className="bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200/80 font-black px-2.5 py-1 rounded-xl text-[9px] transition-all cursor-pointer flex items-center gap-1">
+                <Upload className="w-3 h-3 text-emerald-700" />
+                <span>استيراد من ملف CSV</span>
+                <input type="file" accept=".csv,.txt" className="hidden" onChange={handleImportCSV} />
+              </label>
             </div>
 
             {/* Form to Add / Edit attendee */}
