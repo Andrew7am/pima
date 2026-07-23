@@ -243,6 +243,23 @@ export interface Room {
   images: string[];
   status: 'available' | 'booked' | 'maintenance' | 'cleaning';
   floor?: number;
+  typeId?: string; // optional link to a RoomType (badge + facilities)
+  createdAt: string;
+}
+
+export type RoomFacility = 'ac' | 'bathroom' | 'tv' | 'wifi' | 'fridge' | 'balcony';
+
+// A per-house room template. Rooms reference it via Room.typeId for the
+// type badge and facilities — see migration 060_room_types.
+export interface RoomType {
+  id: string;
+  houseId: string;
+  name: string;
+  price: number;
+  bedsCount: number;
+  facilities: RoomFacility[];
+  description?: string;
+  icon?: string; // badge style key: ac / standard / vip / family
   createdAt: string;
 }
 

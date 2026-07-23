@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification, Expense, Payout } from '../../types';
+import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, RoomType, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification, Expense, Payout } from '../../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
 import {
   Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2,
@@ -12,6 +12,7 @@ import OwnerMessages from './OwnerMessages';
 import OwnerNotifications from './OwnerNotifications';
 import OwnerReports from './OwnerReports';
 import OwnerFinancialCenter from './OwnerFinancialCenter';
+import OwnerRoomsManager from './OwnerRoomsManager';
 import OwnerFoodMenu from './OwnerFoodMenu';
 import OwnerRoomDistributionScreen from './OwnerRoomDistribution';
 import OwnerTour from './OwnerTour';
@@ -61,6 +62,10 @@ interface OwnerDashboardShellProps {
   onAddRoom?: (room: Room) => void;
   onUpdateRoom?: (room: Room) => void;
   onDeleteRoom?: (roomId: string) => void;
+  roomTypes?: RoomType[];
+  onAddRoomType?: (t: RoomType) => void;
+  onUpdateRoomType?: (t: RoomType) => void;
+  onDeleteRoomType?: (id: string) => void;
   waitlist?: WaitlistEntry[];
   notifications?: AppNotification[];
   onMarkNotificationAsRead?: (id: string) => void;
@@ -95,7 +100,8 @@ export default function OwnerDashboardShell({
   onAddHouse, onDeleteHouse, onApproveBooking, onRejectBooking, onConfirmDeposit, onCheckInBooking, onCheckOutBooking,
   attendees, allocations, onUpdateAttendees, onUpdateAllocations, onOpenRoomDistribution,
   onUpdateHouse, onRequestHouseEdit, reviews = [], onUpdateReview,
-  rooms = [], onAddRoom, onUpdateRoom, onDeleteRoom, waitlist = [],
+  rooms = [], onAddRoom, onUpdateRoom, onDeleteRoom,
+  roomTypes = [], onAddRoomType, onUpdateRoomType, onDeleteRoomType, waitlist = [],
   notifications = [], onMarkNotificationAsRead,
   expenses = [], onAddExpense, onDeleteExpense, payouts = [], onRequestPayout, users = [], onNavigateSupport, onCreateBooking,
   onUpdateBookingDetails, onRecalculateAllocation, onLogout,
@@ -296,15 +302,10 @@ export default function OwnerDashboardShell({
   const ownerHouseIds = ownerHouses.map((h) => h.id);
   const ownerBookings = bookings.filter((b) => ownerHouseIds.includes(b.houseId));
   const ownerRooms = rooms.filter((r) => ownerHouseIds.includes(r.houseId));
+  const ownerRoomTypes = roomTypes.filter((t) => ownerHouseIds.includes(t.houseId));
   const ownerWaitlist = waitlist.filter((w) => ownerHouseIds.includes(w.houseId));
   const unreadNotificationsCount = notifications.filter((n) => n.userId === owner.id && !n.isRead).length;
 
-  const [roomName, setRoomName] = useState('');
-  const [roomFloor, setRoomFloor] = useState(1);
-  const [roomBeds, setRoomBeds] = useState(2);
-  const [roomPrice, setRoomPrice] = useState('');
-  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
 
   const pendingBookings = ownerBookings.filter((b) => b.status === 'pending');
   const todayStr = new Date().toISOString().split('T')[0];
@@ -1533,189 +1534,33 @@ export default function OwnerDashboardShell({
         </div>
       )}
 
-      {/* Overflow: Rooms */}
+      {/* Overflow: Rooms — redesigned manager (OwnerRoomsManager) */}
       {activeTab === 'rooms' && (
-        <div className="space-y-3">
-          {ownerHouses.length === 0 ? (
-            <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-6 text-center text-xs text-[var(--color-owner-secondary)]">
-              أضف بيتك أولاً من "بيانات البيت" قبل إدارة الغرف.
-            </div>
-          ) : (
-            <>
-              <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-4 space-y-3">
-                <div className="text-xs font-bold text-[var(--color-owner-text)] flex items-center gap-1.5">
-                  <BedDouble className="w-4 h-4 text-[var(--color-owner-primary)]" />
-                  {editingRoomId ? 'تعديل بيانات الغرفة' : 'إضافة غرفة جديدة'}
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <div>
-                    <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">اسم/رقم الغرفة:</label>
-                    <input id="room-name-input" type="text" value={roomName} onChange={(e) => setRoomName(e.target.value)} onFocus={(e) => e.target.select()}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">عدد الأسرة:</label>
-                    <input id="room-beds-input" type="number" min={1} value={roomBeds} onChange={(e) => setRoomBeds(parseInt(e.target.value) || 1)} onFocus={(e) => e.target.select()}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">الدور:</label>
-                    <input id="room-floor-input" type="number" min={0} value={roomFloor} onChange={(e) => setRoomFloor(parseInt(e.target.value) || 1)} onFocus={(e) => e.target.select()}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">السعر لليلة (اختياري):</label>
-                    <input id="room-price-input" type="number" min={0} value={roomPrice} onChange={(e) => setRoomPrice(e.target.value)} onFocus={(e) => e.target.select()}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button id="room-submit-btn" type="button" onClick={() => {
-                      if (!roomName.trim()) { alert('يرجى إدخال اسم الغرفة.'); return; }
-                      const house = ownerHouses[0];
-                      if (editingRoomId) {
-                        const existing = ownerRooms.find((r) => r.id === editingRoomId);
-                        if (existing && onUpdateRoom) onUpdateRoom({ ...existing, name: roomName.trim(), bedsCount: roomBeds, floor: roomFloor, pricePerNight: roomPrice ? parseFloat(roomPrice) : undefined });
-                      } else if (onAddRoom) {
-                        onAddRoom({ id: `room_${Date.now()}`, houseId: house.id, name: roomName.trim(), bedsCount: roomBeds, floor: roomFloor, pricePerNight: roomPrice ? parseFloat(roomPrice) : undefined, images: [], status: 'available', createdAt: new Date().toISOString() });
-                      }
-                      setRoomName(''); setRoomBeds(2); setRoomFloor(1); setRoomPrice(''); setEditingRoomId(null);
-                    }}
-                    className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-[10px] font-bold px-4 py-2 rounded-xl cursor-pointer">
-                    {editingRoomId ? 'حفظ التعديل' : 'إضافة الغرفة'}
-                  </button>
-                  {editingRoomId && (
-                    <button type="button" onClick={() => { setEditingRoomId(null); setRoomName(''); setRoomBeds(2); setRoomFloor(1); setRoomPrice(''); }}
-                      className="bg-[var(--color-owner-bg)] text-[var(--color-owner-text)] text-[10px] font-bold px-4 py-2 rounded-xl cursor-pointer">إلغاء</button>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between px-1">
-                  <div className="text-xs font-bold text-[var(--color-owner-secondary)]">خريطة الإشغال ({ownerRooms.length} غرفة):</div>
-                  <div className="flex gap-2.5 text-[8.5px] font-bold text-[var(--color-owner-secondary)]">
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />متاحة</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500" />مشغولة</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" />تنظيف</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-400" />صيانة</span>
-                  </div>
-                </div>
-                {ownerRooms.length === 0 ? (
-                  <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-4 text-center text-[10px] text-[var(--color-owner-secondary)]">لا توجد غرف مضافة بعد.</div>
-                ) : (
-                  // Rooms grouped per floor — the occupancy map from the mockup.
-                  [...new Set(ownerRooms.map((r) => r.floor ?? 1))].sort((a, b) => a - b).map((floor) => (
-                    <div key={floor} className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-2">
-                      <div className="text-[10px] font-black text-[var(--color-owner-text)]">
-                        {floor === 0 ? 'الدور الأرضي' : `الدور ${floor}`}
-                      </div>
-                      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
-                        {ownerRooms.filter((r) => (r.floor ?? 1) === floor).map((room) => {
-                          const bedState = getRoomBedState(room, allocations, ownerBookings, todayStr);
-                          const cls =
-                            bedState === 'available' ? 'bg-emerald-50 border-emerald-300 text-emerald-900' :
-                            bedState === 'partial' ? 'bg-amber-50 border-amber-300 text-amber-900' :
-                            bedState === 'full' ? 'bg-rose-50 border-rose-300 text-rose-900' :
-                            bedState === 'cleaning' ? 'bg-sky-50 border-sky-300 text-sky-900' :
-                            'bg-slate-100 border-slate-300 text-slate-700';
-                          const label =
-                            bedState === 'available' ? 'متاحة' : bedState === 'partial' ? 'مشغولة جزئياً' :
-                            bedState === 'full' ? 'ممتلئة' : bedState === 'cleaning' ? 'تنظيف' : 'صيانة';
-                          return (
-                            <button key={room.id} type="button" onClick={() => setSelectedRoomId(selectedRoomId === room.id ? null : room.id)}
-                              className={`flex flex-col items-center justify-center gap-1 aspect-square rounded-2xl border-2 p-2 text-center transition-all cursor-pointer ${cls} ${selectedRoomId === room.id ? 'ring-2 ring-[var(--color-owner-primary)]' : ''}`}
-                            >
-                              <BedDouble className="w-4 h-4" />
-                              <span className="text-[10px] font-black truncate w-full">{room.name}</span>
-                              <span className="text-[8px] font-bold">{label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))
-                )}
-
-                {selectedRoomId && (() => {
-                  const room = ownerRooms.find((r) => r.id === selectedRoomId);
-                  if (!room) return null;
-                  return (
-                    <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3.5 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black text-[var(--color-owner-text)]">{room.name}</span>
-                        <button type="button" onClick={() => setSelectedRoomId(null)} className="text-[var(--color-owner-secondary)] cursor-pointer"><X className="w-4 h-4" /></button>
-                      </div>
-                      <div className="text-[10px] text-[var(--color-owner-secondary)]">{room.bedsCount} سرير · {room.pricePerNight ? `${room.pricePerNight} ج.م/ليلة` : 'سعر البيت الافتراضي'}</div>
-                      <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">
-                        حالة الإشغال (متاحة/مشغولة جزئياً/ممتلئة) تُحسب تلقائياً من الحجوزات. اضبط هنا فقط حالات التنظيف والصيانة اليدوية:
-                      </div>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {([
-                          { key: 'available', label: 'إلغاء الحظر (متاحة)' },
-                          { key: 'cleaning', label: 'تنظيف' }, { key: 'maintenance', label: 'صيانة' },
-                        ] as const).map((s) => (
-                          <button key={s.key} type="button" onClick={() => onUpdateRoom && onUpdateRoom({ ...room, status: s.key })}
-                            className={`text-[9px] font-bold py-1.5 rounded-lg border cursor-pointer ${
-                              room.status === s.key ? 'bg-[var(--color-owner-primary)] border-[var(--color-owner-primary)] text-white' : 'bg-[var(--color-owner-bg)] border-[var(--color-owner-border)] text-[var(--color-owner-text)]'
-                            }`}
-                          >{s.label}</button>
-                        ))}
-                      </div>
-                      {(() => {
-                        // Per-room occupancy calendar for the current month, from the
-                        // bookings actually allocated to this room (توزيع الغرف). If no
-                        // allocation links this room yet, say so rather than guessing
-                        // from house-level bookings.
-                        const roomBookingIds = new Set(allocations.filter((al) => al.roomId === room.id).map((al) => al.bookingId));
-                        const roomBookings = ownerBookings.filter((b) => roomBookingIds.has(b.id) && (b.status === 'approved' || b.status === 'completed'));
-                        const daysCount = new Date(curYear, curMonth, 0).getDate();
-                        const firstWeekday = new Date(curYear, curMonth - 1, 1).getDay();
-                        const monthLabel = new Date(curYear, curMonth - 1, 1).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-                        return (
-                          <div className="space-y-1.5 pt-1 border-t border-[var(--color-owner-border)]">
-                            <div className="text-[9.5px] font-black text-[var(--color-owner-text)]">تواريخ إشغال الغرفة — {monthLabel}</div>
-                            {roomBookings.length === 0 ? (
-                              <p className="text-[9px] text-[var(--color-owner-secondary)]">لا توجد حجوزات موزّعة على هذه الغرفة بعد — التوزيع بيتم من "توزيع الغرف" داخل الحجز.</p>
-                            ) : (
-                              <>
-                                <div className="grid grid-cols-7 gap-1 text-[8px] font-bold text-[var(--color-owner-secondary)] text-center">
-                                  <div>ح</div><div>ن</div><div>ث</div><div>ر</div><div>خ</div><div>ج</div><div>س</div>
-                                </div>
-                                <div className="grid grid-cols-7 gap-1">
-                                  {Array.from({ length: firstWeekday }).map((_, i) => <div key={`pad-room-${i}`} />)}
-                                  {Array.from({ length: daysCount }, (_, i) => i + 1).map((day) => {
-                                    const dateStr = `${curYear}-${curMonth < 10 ? '0' + curMonth : curMonth}-${day < 10 ? '0' + day : day}`;
-                                    const occupiedBy = roomBookings.find((b) => dateStr >= b.checkIn && dateStr <= b.checkOut);
-                                    return (
-                                      <div key={`room-day-${day}`}
-                                        title={occupiedBy ? `${occupiedBy.organizationName || occupiedBy.userName}` : 'شاغرة'}
-                                        className={`py-0.5 rounded text-center text-[9px] font-bold ${
-                                          occupiedBy ? 'bg-rose-100 text-rose-900 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-100'
-                                        }`}
-                                      >{day}</div>
-                                    );
-                                  })}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        );
-                      })()}
-
-                      <div className="flex gap-2 pt-1">
-                        <button type="button" onClick={() => { setEditingRoomId(room.id); setRoomName(room.name); setRoomBeds(room.bedsCount); setRoomFloor(room.floor ?? 1); setRoomPrice(room.pricePerNight?.toString() || ''); setSelectedRoomId(null); }}
-                          className="flex-1 text-[10px] font-bold text-[var(--color-owner-primary)] border border-[var(--color-owner-primary)]/30 rounded-lg py-1.5 hover:bg-[var(--color-owner-hover)] cursor-pointer">تعديل البيانات</button>
-                        <button type="button" onClick={() => { if (confirm('هل تريد حذف هذه الغرفة؟') && onDeleteRoom) { onDeleteRoom(room.id); setSelectedRoomId(null); } }}
-                          className="flex-1 text-[10px] font-bold text-rose-600 border border-rose-200 rounded-lg py-1.5 hover:bg-rose-50 cursor-pointer">حذف الغرفة</button>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </>
-          )}
-        </div>
+        ownerHouses.length === 0 ? (
+          <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-6 text-center text-xs text-[var(--color-owner-secondary)]">
+            أضف بيتك أولاً من "بيانات البيت" قبل إدارة الغرف.
+          </div>
+        ) : (
+          <OwnerRoomsManager
+            houseId={ownerHouses[0]?.id}
+            houseName={ownerHouses[0]?.name}
+            rooms={ownerRooms}
+            bookings={ownerBookings}
+            allocations={allocations}
+            roomTypes={ownerRoomTypes}
+            todayStr={todayStr}
+            onAddRoom={onAddRoom}
+            onUpdateRoom={onUpdateRoom}
+            onDeleteRoom={onDeleteRoom}
+            onAddRoomType={onAddRoomType}
+            onUpdateRoomType={onUpdateRoomType}
+            onDeleteRoomType={onDeleteRoomType}
+            onCheckOutBooking={onCheckOutBooking}
+            onViewBooking={(id) => { setSelectedBookingId(id); setActiveTab('bookings'); }}
+            onExtendBooking={(id, checkOut) => { onUpdateBookingDetails?.(id, { checkOut }); }}
+            onBookRoom={() => setShowAddBooking(true)}
+          />
+        )
       )}
 
       {/* Overflow: Room Distribution — house-wide view */}

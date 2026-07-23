@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, AuditLogEntry, Expense, Payout } from '../types';
+import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, AuditLogEntry, Expense, Payout } from '../types';
 import { DEFAULT_PLATFORM_SETTINGS } from '../types';
 
 // ─── Row → Type mappers ────────────────────────────────────────────────────
@@ -217,6 +217,21 @@ export function mapRoom(r: Record<string, unknown>): Room {
     images: (r.images as string[]) ?? [],
     status: r.status as Room['status'],
     floor: r.floor as number ?? 1,
+    typeId: (r.type_id as string) ?? undefined,
+    createdAt: r.created_at as string,
+  };
+}
+
+export function mapRoomType(r: Record<string, unknown>): RoomType {
+  return {
+    id: r.id as string,
+    houseId: r.house_id as string,
+    name: r.name as string,
+    price: Number(r.price),
+    bedsCount: r.beds_count as number,
+    facilities: (r.facilities as RoomType['facilities']) ?? [],
+    description: (r.description as string) ?? undefined,
+    icon: (r.icon as string) ?? undefined,
     createdAt: r.created_at as string,
   };
 }
@@ -711,7 +726,7 @@ function paymentToRow(p: Payment): Record<string, unknown> {
 }
 
 function roomToRow(r: Room): Record<string, unknown> {
-  return {
+  const row: Record<string, unknown> = {
     id: r.id,
     house_id: r.houseId,
     name: r.name,
@@ -722,6 +737,10 @@ function roomToRow(r: Room): Record<string, unknown> {
     floor: r.floor ?? 1,
     created_at: r.createdAt,
   };
+  // Only sent once a type is assigned, so pre-migration room writes (no
+  // type_id column yet) behave exactly as before — see migration 060.
+  if (r.typeId !== undefined) row.type_id = r.typeId;
+  return row;
 }
 
 // ─── Mutations ─────────────────────────────────────────────────────────────
@@ -871,6 +890,39 @@ export async function updateRoom(r: Room): Promise<boolean> {
 export async function deleteRoom(id: string): Promise<boolean> {
   const { error } = await supabase.from('rooms').delete().eq('id', id);
   if (error) console.error('deleteRoom:', error);
+  return !error;
+}
+
+function roomTypeToRow(t: RoomType): Record<string, unknown> {
+  return {
+    id: t.id, house_id: t.houseId, name: t.name, price: t.price, beds_count: t.bedsCount,
+    facilities: t.facilities, description: t.description ?? null, icon: t.icon ?? null, created_at: t.createdAt,
+  };
+}
+
+export async function loadRoomTypesForHouses(houseIds: string[]): Promise<RoomType[]> {
+  if (houseIds.length === 0) return [];
+  const { data, error } = await supabase.from('room_types').select('*').in('house_id', houseIds).order('created_at', { ascending: true });
+  // Degrade gracefully if the room_types table hasn't been migrated yet.
+  if (error) { console.error('loadRoomTypesForHouses:', error); return []; }
+  return (data ?? []).map(mapRoomType);
+}
+
+export async function createRoomType(t: RoomType): Promise<boolean> {
+  const { error } = await supabase.from('room_types').insert(roomTypeToRow(t));
+  if (error) console.error('createRoomType:', error);
+  return !error;
+}
+
+export async function updateRoomType(t: RoomType): Promise<boolean> {
+  const { error } = await supabase.from('room_types').update(roomTypeToRow(t)).eq('id', t.id);
+  if (error) console.error('updateRoomType:', error);
+  return !error;
+}
+
+export async function deleteRoomType(id: string): Promise<boolean> {
+  const { error } = await supabase.from('room_types').delete().eq('id', id);
+  if (error) console.error('deleteRoomType:', error);
   return !error;
 }
 

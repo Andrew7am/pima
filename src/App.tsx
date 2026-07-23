@@ -17,6 +17,7 @@ import {
   createWaitlistEntry,
   loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
   loadPayoutsForHouses, createPayout as createPayoutDb,
+  loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
   createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
   loadPlatformSettings, updatePlatformSettings,
   deleteOwnAccount,
@@ -24,7 +25,7 @@ import {
   loadPaymentProofImage,
 } from './lib/db';
 import { autoAllocate } from './lib/roomAllocation';
-import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout } from './types';
+import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout } from './types';
 
 // Component Imports
 // Route-level code splitting: heavy, role- or navigation-gated screens load on
@@ -120,6 +121,7 @@ export default function App() {
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [platformAnnouncements, setPlatformAnnouncements] = useState<PlatformAnnouncement[]>([]);
   const [settings, setSettings] = useState<PlatformSettings>(DEFAULT_PLATFORM_SETTINGS);
 
@@ -470,14 +472,15 @@ export default function App() {
     Promise.all([
       loadRoomsForHouses(ownerHouseIds), loadAnnouncementsForHouses(ownerHouseIds),
       loadReviewsForHouses(ownerHouseIds), loadWaitlistForHouses(ownerHouseIds), loadExpensesForHouses(ownerHouseIds),
-      loadPayoutsForHouses(ownerHouseIds),
-    ]).then(([oRooms, oAnnouncements, oReviews, oWaitlist, oExpenses, oPayouts]) => {
+      loadPayoutsForHouses(ownerHouseIds), loadRoomTypesForHouses(ownerHouseIds),
+    ]).then(([oRooms, oAnnouncements, oReviews, oWaitlist, oExpenses, oPayouts, oRoomTypes]) => {
       setRooms((prev) => [...prev.filter((r) => !ownerHouseIds.includes(r.houseId)), ...oRooms]);
       setAnnouncements((prev) => [...prev.filter((a) => !ownerHouseIds.includes(a.houseId)), ...oAnnouncements]);
       setReviews((prev) => [...prev.filter((rv) => !ownerHouseIds.includes(rv.houseId)), ...oReviews]);
       setWaitlist((prev) => [...prev.filter((w) => !ownerHouseIds.includes(w.houseId)), ...oWaitlist]);
       setExpenses((prev) => [...prev.filter((e) => !ownerHouseIds.includes(e.houseId)), ...oExpenses]);
       setPayouts((prev) => [...prev.filter((p) => !ownerHouseIds.includes(p.houseId)), ...oPayouts]);
+      setRoomTypes((prev) => [...prev.filter((t) => !ownerHouseIds.includes(t.houseId)), ...oRoomTypes]);
       setOwnerRoomsChecked(true);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1187,6 +1190,21 @@ export default function App() {
     deleteRoomDb(roomId);
   };
 
+  const handleAddRoomType = (t: RoomType) => {
+    setRoomTypes((prev) => [...prev, t]);
+    createRoomTypeDb(t);
+  };
+  const handleUpdateRoomType = (t: RoomType) => {
+    setRoomTypes((prev) => prev.map((x) => (x.id === t.id ? t : x)));
+    updateRoomTypeDb(t);
+  };
+  const handleDeleteRoomType = (id: string) => {
+    setRoomTypes((prev) => prev.filter((x) => x.id !== id));
+    // Detach the type from any rooms that referenced it (mirrors ON DELETE SET NULL).
+    setRooms((prev) => prev.map((r) => (r.typeId === id ? { ...r, typeId: undefined } : r)));
+    deleteRoomTypeDb(id);
+  };
+
   // --- Platform-wide announcement carousel (admin-only) ---
   const handleAddPlatformAnnouncement = (a: PlatformAnnouncement) => {
     setPlatformAnnouncements((prev) => [a, ...prev]);
@@ -1574,6 +1592,10 @@ export default function App() {
               onAddRoom={handleAddRoom}
               onUpdateRoom={handleUpdateRoom}
               onDeleteRoom={handleDeleteRoom}
+              roomTypes={roomTypes}
+              onAddRoomType={handleAddRoomType}
+              onUpdateRoomType={handleUpdateRoomType}
+              onDeleteRoomType={handleDeleteRoomType}
               waitlist={waitlist}
               notifications={notifications}
               onMarkNotificationAsRead={handleMarkNotificationAsRead}

@@ -1,11 +1,12 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { Booking, Expense, Payout, User } from '../../types';
 import {
   Wallet, Info, ArrowUpRight, ArrowDownRight, CreditCard, Receipt, Banknote,
-  CheckCircle2, TrendingUp, Search, X, Plus, ChevronDown, Sparkles, Wrench,
+  CheckCircle2, TrendingUp, Search, Plus, ChevronDown, Sparkles, Wrench,
   Zap, Droplet, Utensils, History, Landmark, Coins, Trash2, Pencil, Bell, Clock,
 } from 'lucide-react';
+import BottomSheet from './BottomSheet';
 
 interface OwnerFinancialCenterProps {
   ownerBookings: Booking[];
@@ -72,39 +73,6 @@ function TrendBadge({ pct }: { pct: number | null }) {
       {up ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
       {Math.abs(pct)}%
     </span>
-  );
-}
-
-function BottomSheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div key="sheet" className="fixed inset-0 z-50 flex items-end justify-center" dir="rtl"
-          initial={false} animate={{}} exit={{}}
-        >
-          <motion.div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ type: 'tween', duration: 0.25 }}
-            onClick={onClose}
-          />
-          <motion.div
-            className="relative bg-[var(--color-owner-surface)] w-full max-w-md rounded-t-[28px] p-5 pb-8 max-h-[85vh] overflow-y-auto z-10 text-right"
-            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-            transition={{ type: 'tween', duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-          >
-            <div className="w-10 h-1.5 rounded-full bg-[var(--color-owner-border)] mx-auto mb-4" />
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-black text-[var(--color-owner-text)]">{title}</h3>
-              <button type="button" onClick={onClose} className="p-1.5 rounded-full bg-[var(--color-owner-hover)] text-[var(--color-owner-secondary)]">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            {children}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
   );
 }
 
