@@ -778,6 +778,14 @@ export async function updateBookingStatus(id: string, status: Booking['status'])
   return !error;
 }
 
+// Hard-delete a booking (owner: only manual/temporary or terminal rows — see
+// migration 061; admin: any). Related attendees/allocations cascade in the DB.
+export async function deleteBooking(id: string): Promise<boolean> {
+  const { error } = await supabase.from('bookings').delete().eq('id', id);
+  if (error) console.error('deleteBooking:', error);
+  return !error;
+}
+
 export async function updateBookingFields(id: string, fields: Partial<Booking>): Promise<{ ok: boolean; error?: string; availableBeds?: number }> {
   const row: Record<string, unknown> = {};
   if (fields.status !== undefined) row.status = fields.status;

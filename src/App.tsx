@@ -10,7 +10,7 @@ import {
   subscribeToBookingsForUser, subscribeToBookingsForHouse, subscribeToRoomsForHouse,
   loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlistForHouses, loadPlatformAnnouncements,
   loadAttendeesForBooking, loadAllocationsForBooking, saveAttendeesForBooking, saveAllocationsForBooking, loadAllocationsCount,
-  createBooking, updateBookingStatus, updateBookingFields,
+  createBooking, updateBookingStatus, updateBookingFields, deleteBooking as deleteBookingDb,
   createReview, updateReview as updateReviewDb, deleteReview as deleteReviewDb, createPayment, updatePaymentStatus,
   markNotificationRead,
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
@@ -792,6 +792,18 @@ export default function App() {
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'rejected' } : b)));
     updateBookingStatus(bookingId, 'rejected');
     freeBookingAllocations(bookingId);
+  };
+
+  // Hard-delete a booking record entirely. The DB (migration 061) only lets an
+  // owner delete their own manual/temporary or already-terminal rows; the UI
+  // gates the button the same way. Related attendees/allocations cascade in DB;
+  // mirror that in local state so the row and its beds vanish immediately.
+  const handleDeleteBooking = async (bookingId: string) => {
+    const ok = await deleteBookingDb(bookingId);
+    if (!ok) { alert('تعذّر حذف الحجز. الحجوزات النشطة للضيوف لا يمكن حذفها — استخدم الرفض/الإلغاء بدلاً من ذلك.'); return; }
+    setBookings((prev) => prev.filter((b) => b.id !== bookingId));
+    setAllocations((prev) => prev.filter((al) => al.bookingId !== bookingId));
+    setAttendees((prev) => prev.filter((at) => at.bookingId !== bookingId));
   };
 
   // Owner edits a booking's dates/guest-count (manual/temporary bookings,
@@ -1578,6 +1590,7 @@ export default function App() {
               onDeleteHouse={handleDeleteHouse}
               onApproveBooking={handleApproveBooking}
               onRejectBooking={handleRejectBooking}
+              onDeleteBooking={handleDeleteBooking}
               onConfirmDeposit={handleConfirmDepositReceived}
               onCheckInBooking={handleCheckInBooking}
               onCheckOutBooking={handleCheckOutBooking}

@@ -46,6 +46,7 @@ interface OwnerDashboardShellProps {
   onDeleteHouse?: (houseId: string) => void;
   onApproveBooking: (bookingId: string) => void;
   onRejectBooking: (bookingId: string) => void;
+  onDeleteBooking?: (bookingId: string) => void;
   onConfirmDeposit?: (bookingId: string) => void;
   onCheckInBooking?: (bookingId: string) => void;
   onCheckOutBooking?: (bookingId: string) => void;
@@ -97,7 +98,7 @@ const OVERFLOW_ITEMS: { key: OverflowTab; label: string; icon: React.ElementType
 
 export default function OwnerDashboardShell({
   owner, houses, bookings, settings = DEFAULT_PLATFORM_SETTINGS,
-  onAddHouse, onDeleteHouse, onApproveBooking, onRejectBooking, onConfirmDeposit, onCheckInBooking, onCheckOutBooking,
+  onAddHouse, onDeleteHouse, onApproveBooking, onRejectBooking, onDeleteBooking, onConfirmDeposit, onCheckInBooking, onCheckOutBooking,
   attendees, allocations, onUpdateAttendees, onUpdateAllocations, onOpenRoomDistribution,
   onUpdateHouse, onRequestHouseEdit, reviews = [], onUpdateReview,
   rooms = [], onAddRoom, onUpdateRoom, onDeleteRoom,
@@ -1002,6 +1003,10 @@ export default function OwnerDashboardShell({
               const isPending = booking.status === 'pending';
               const isApproved = booking.status === 'approved';
               const isCompleted = booking.status === 'completed';
+              // Owners may hard-delete only their own manual/temporary rows or
+              // already-terminal ones — active guest bookings stay soft-cancel.
+              const canDelete = booking.source === 'manual' || booking.source === 'temporary'
+                || booking.status === 'cancelled' || booking.status === 'rejected';
               const depositAmt = booking.depositAmount || Math.round(booking.totalPrice * settings.depositRate);
               const bookingRemaining = booking.totalPrice - (booking.depositPaid ? depositAmt : 0);
               return (
@@ -1172,6 +1177,18 @@ export default function OwnerDashboardShell({
                       <button onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
                         className="flex items-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
                         <Building className="w-4 h-4" /><span>عرض توزيع الغرف</span>
+                      </button>
+                    </div>
+                  )}
+                  {onDeleteBooking && canDelete && (
+                    <div className="flex justify-end pt-2 mt-1 border-t border-[var(--color-owner-border)]">
+                      <button onClick={() => {
+                          if (confirm('حذف هذا الحجز نهائيًا؟ لا يمكن التراجع، وسيتم حذف بيانات الحضور وتوزيع الغرف المرتبطة به.')) {
+                            onDeleteBooking(booking.id); setSelectedBookingId(null);
+                          }
+                        }}
+                        className="flex items-center gap-1 text-rose-600 hover:bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                        <Trash2 className="w-4 h-4" /><span>حذف الحجز نهائيًا</span>
                       </button>
                     </div>
                   )}
