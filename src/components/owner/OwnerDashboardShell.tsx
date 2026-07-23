@@ -11,6 +11,7 @@ import PhotoPickerButtons from '../PhotoPickerButtons';
 import OwnerMessages from './OwnerMessages';
 import OwnerNotifications from './OwnerNotifications';
 import OwnerReports from './OwnerReports';
+import OwnerFinancialCenter from './OwnerFinancialCenter';
 import OwnerFoodMenu from './OwnerFoodMenu';
 import OwnerRoomDistributionScreen from './OwnerRoomDistribution';
 import OwnerTour from './OwnerTour';
@@ -190,8 +191,6 @@ export default function OwnerDashboardShell({
   const [paymentDraftType, setPaymentDraftType] = useState<'instapay' | 'vodafone_cash' | 'etisalat_cash' | 'orange_cash' | 'we_cash' | 'bank_transfer'>('instapay');
   const [paymentDraftValue, setPaymentDraftValue] = useState('');
 
-  const [expenseDesc, setExpenseDesc] = useState('');
-  const [expenseAmount, setExpenseAmount] = useState('');
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -1721,117 +1720,23 @@ export default function OwnerDashboardShell({
 
       {/* Overflow: Finance */}
       {activeTab === 'financials' && (
-        <div className="space-y-4">
-          <div className="bg-[var(--color-owner-surface)] p-4 rounded-3xl border border-[var(--color-owner-border)] space-y-3 text-right">
-            <h3 className="text-xs font-black text-[var(--color-owner-text)] border-b border-[var(--color-owner-border)] pb-2">📊 نظرة عامة على الإيرادات</h3>
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
-              <div className="bg-[var(--color-owner-hover)] p-2.5 rounded-xl border border-[var(--color-owner-border)]">
-                <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold mb-0.5">إجمالي قيمة الحجوزات المؤكدة</div>
-                <div className="text-sm font-extrabold text-[var(--color-owner-text)]">{confirmedRevenue.toLocaleString()} ج.م</div>
-              </div>
-              <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
-                <div className="text-[9px] text-emerald-800 font-bold mb-0.5">العربون المستلم</div>
-                <div className="text-sm font-extrabold text-emerald-900">{depositReceived.toLocaleString()} ج.م</div>
-              </div>
-              <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-200">
-                <div className="text-[9px] text-amber-800 font-bold mb-0.5">المبلغ المتبقي (لم يُحصّل بعد)</div>
-                <div className="text-sm font-extrabold text-amber-900">{remainingBalance.toLocaleString()} ج.م</div>
-              </div>
-              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                <div className="text-[9px] text-slate-700 font-bold mb-0.5">عدد الحجوزات المؤكدة</div>
-                <div className="text-sm font-extrabold text-slate-800">{confirmedBookings.length} حجز</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[var(--color-owner-surface)] p-4 rounded-3xl border border-[var(--color-owner-border)] space-y-3 text-right">
-            <h3 className="text-xs font-black text-[var(--color-owner-text)] border-b border-[var(--color-owner-border)] pb-2">🧾 عمولة التطبيق ({(PLATFORM_COMMISSION * 100).toFixed(0)}%)</h3>
-            <div className="space-y-2 text-[11px]">
-              <div className="flex justify-between items-center bg-[var(--color-owner-hover)] p-2.5 rounded-xl border border-[var(--color-owner-border)]">
-                <span className="text-[var(--color-owner-secondary)] font-bold">إجمالي قيمة الحجوزات</span>
-                <span className="font-extrabold text-[var(--color-owner-text)]">{confirmedRevenue.toLocaleString()} ج.م</span>
-              </div>
-              <div className="flex justify-between items-center bg-rose-50 p-2.5 rounded-xl border border-rose-200">
-                <span className="text-rose-800 font-bold">عمولة المنصة ({(PLATFORM_COMMISSION * 100).toFixed(0)}%)</span>
-                <span className="font-extrabold text-rose-900">− {platformCommissionAmount.toLocaleString()} ج.م</span>
-              </div>
-              <div className="flex justify-between items-center bg-emerald-100 p-3 rounded-xl border-2 border-emerald-400">
-                <span className="text-emerald-900 font-black">✓ صافي مستحقاتك</span>
-                <span className="text-base font-black text-emerald-900">{netOwnerPayout.toLocaleString()} ج.م</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[var(--color-owner-surface)] p-4 rounded-3xl border border-[var(--color-owner-border)] space-y-3 text-right">
-            <h3 className="text-xs font-black text-[var(--color-owner-text)] border-b border-[var(--color-owner-border)] pb-2">💸 المصروفات</h3>
-            <div className="flex gap-2">
-              <input type="text" placeholder="وصف المصروف" value={expenseDesc} onChange={(e) => setExpenseDesc(e.target.value)}
-                className="flex-1 bg-white border border-[var(--color-owner-border)] text-[10px] px-2.5 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
-              <input type="number" min={0} placeholder="المبلغ" value={expenseAmount} onChange={(e) => setExpenseAmount(e.target.value)} onFocus={(e) => e.target.select()}
-                className="w-24 bg-white border border-[var(--color-owner-border)] text-[10px] px-2.5 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
-              <button type="button" onClick={() => {
-                  const amount = parseFloat(expenseAmount);
-                  if (!expenseDesc.trim() || !amount || amount <= 0 || !ownerHouses[0]) return;
-                  onAddExpense?.({ id: `exp_${Date.now()}`, houseId: ownerHouses[0].id, description: expenseDesc.trim(), amount, expenseDate: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString() });
-                  setExpenseDesc(''); setExpenseAmount('');
-                }}
-                className="bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shrink-0 cursor-pointer">إضافة</button>
-            </div>
-            {ownerExpenses.length === 0 ? (
-              <p className="text-[10px] text-[var(--color-owner-secondary)]">لا توجد مصروفات مسجلة بعد.</p>
-            ) : (
-              <div className="space-y-1.5">
-                {ownerExpenses.map((e) => (
-                  <div key={e.id} className="flex items-center justify-between bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-3 py-2 text-[10.5px]">
-                    <div><span className="font-bold text-[var(--color-owner-text)]">{e.description}</span><span className="text-[var(--color-owner-secondary)] mr-2">{e.expenseDate}</span></div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-rose-700">− {e.amount.toLocaleString()} ج.م</span>
-                      <button type="button" onClick={() => onDeleteExpense?.(e.id)} className="text-rose-600 hover:text-rose-800 cursor-pointer"><Trash2 className="w-3 h-3" /></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex justify-between items-center bg-[var(--color-owner-primary)]/10 p-3 rounded-xl border-2 border-[var(--color-owner-primary)]/30">
-              <span className="text-[var(--color-owner-primary)] font-black">💰 صافي الربح (بعد المصروفات)</span>
-              <span className="text-base font-black text-[var(--color-owner-primary)]">{netProfit.toLocaleString()} ج.م</span>
-            </div>
-          </div>
-
-          <div className="bg-[var(--color-owner-surface)] p-4 rounded-3xl border border-[var(--color-owner-border)] space-y-3 text-right">
-            <h3 className="text-xs font-black text-[var(--color-owner-text)] border-b border-[var(--color-owner-border)] pb-2">📝 سجل العمليات المالية</h3>
-            {confirmedBookings.length === 0 ? (
-              <p className="text-[11px] text-[var(--color-owner-secondary)] text-center py-3">لا توجد حجوزات مؤكدة بعد.</p>
-            ) : (
-              <div className="overflow-x-auto -mx-2">
-                <table className="min-w-full text-[10px] text-right">
-                  <thead className="bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] font-extrabold">
-                    <tr><th className="px-2 py-1.5">رقم الحجز</th><th className="px-2 py-1.5">القيمة</th><th className="px-2 py-1.5">العمولة</th><th className="px-2 py-1.5">الصافي</th><th className="px-2 py-1.5">الحالة</th></tr>
-                  </thead>
-                  <tbody>
-                    {confirmedBookings.map((b) => {
-                      const comm = b.totalPrice * PLATFORM_COMMISSION;
-                      const net = b.totalPrice - comm;
-                      return (
-                        <tr key={b.id} className="border-t border-[var(--color-owner-border)]">
-                          <td className="px-2 py-1.5 font-mono text-[9px] text-[var(--color-owner-secondary)]">#{b.id.replace('booking_', '').slice(0, 8)}</td>
-                          <td className="px-2 py-1.5 font-bold text-[var(--color-owner-text)]">{b.totalPrice.toLocaleString()}</td>
-                          <td className="px-2 py-1.5 text-rose-700 font-bold">− {comm.toLocaleString()}</td>
-                          <td className="px-2 py-1.5 text-emerald-800 font-extrabold">{net.toLocaleString()}</td>
-                          <td className="px-2 py-1.5">
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${b.depositPaid ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
-                              {b.depositPaid ? 'تم التحويل' : 'قيد المراجعة'}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
+        <OwnerFinancialCenter
+          ownerBookings={ownerBookings}
+          confirmedBookings={confirmedBookings}
+          confirmedRevenue={confirmedRevenue}
+          platformCommissionAmount={platformCommissionAmount}
+          netOwnerPayout={netOwnerPayout}
+          depositReceived={depositReceived}
+          remainingBalance={remainingBalance}
+          commissionRate={PLATFORM_COMMISSION}
+          ownerExpenses={ownerExpenses}
+          totalExpenses={totalExpenses}
+          netProfit={netProfit}
+          houseId={ownerHouses[0]?.id}
+          onAddExpense={onAddExpense}
+          onDeleteExpense={onDeleteExpense}
+          onNavigateSupport={onNavigateSupport}
+        />
       )}
 
       {/* Overflow: Reviews */}
