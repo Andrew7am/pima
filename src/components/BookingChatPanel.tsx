@@ -186,7 +186,14 @@ export default function BookingChatPanel({ bookingId, bookingIds, currentUserId,
         if (recCancelRef.current || chunksRef.current.length === 0) return;
         const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' });
         const reader = new FileReader();
-        reader.onloadend = () => setAttachments((prev) => [...prev, { url: reader.result as string, type: 'audio', name: 'رسالة صوتية' }]);
+        // Stopping = send the voice note immediately (WhatsApp-style), not stage it.
+        reader.onloadend = async () => {
+          setSending(true);
+          const sent = await sendBookingMessage(primaryId, '', { url: reader.result as string, type: 'audio', name: 'رسالة صوتية' });
+          setSending(false);
+          if (sent) appendMessage(sent);
+          else alert('تعذّر إرسال الرسالة الصوتية. لو المشكلة مستمرة تأكد من تطبيق آخر تحديثات قاعدة البيانات (migration 065).');
+        };
         reader.readAsDataURL(blob);
       };
       recorderRef.current = rec;
