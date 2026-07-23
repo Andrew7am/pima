@@ -63,15 +63,22 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBooking === null, ownerBookings.length, owner.id]);
 
-  // Sort conversations by last-message time (newest first). Bookings with
-  // no messages yet fall to the bottom, ordered by booking createdAt.
-  const conversations = activeBookings
-    .filter((b) => b.userName.toLowerCase().includes(search.trim().toLowerCase()))
-    .sort((a, b) => {
-      const ta = previews[a.id]?.createdAt ?? a.createdAt;
-      const tb = previews[b.id]?.createdAt ?? b.createdAt;
-      return new Date(tb).getTime() - new Date(ta).getTime();
-    });
+  const matching = activeBookings.filter((b) => b.userName.toLowerCase().includes(search.trim().toLowerCase()));
+  const lastActivity = (b: Booking) => new Date(previews[b.id]?.createdAt ?? b.createdAt).getTime();
+
+  // One conversation row per guest ACCOUNT, not per booking — a guest with
+  // several bookings used to show up as duplicate chats. The representative
+  // booking is the one with the most recent activity; its thread is what
+  // opens, and unread is summed across all of that guest's bookings.
+  const repByUser = new Map<string, Booking>();
+  for (const b of matching) {
+    const cur = repByUser.get(b.userId);
+    if (!cur || lastActivity(b) > lastActivity(cur)) repByUser.set(b.userId, b);
+  }
+  const conversations = [...repByUser.values()].sort((a, b) => lastActivity(b) - lastActivity(a));
+
+  const unreadForUser = (userId: string) =>
+    activeBookings.filter((b) => b.userId === userId).reduce((s, b) => s + (unread[b.id] || 0), 0);
 
   const totalUnread = Object.values(unread).reduce((s, n) => s + n, 0);
 
@@ -128,7 +135,7 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
         <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] overflow-hidden">
           {conversations.map((b, idx) => {
             const preview = previews[b.id];
-            const unreadCount = unread[b.id] || 0;
+            const unreadCount = unreadForUser(b.userId);
             const isMine = preview && preview.senderId === owner.id;
             const previewText = preview
               ? (preview.content || (preview.attachmentType === 'image' ? '📷 صورة' : preview.attachmentType === 'file' ? '📎 ملف' : ''))
