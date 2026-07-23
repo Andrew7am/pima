@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronRight, Send, Loader2, MessageCircle, Paperclip, X, FileText, Download, Reply, Trash2 } from 'lucide-react';
+import { ChevronRight, Send, Loader2, MessageCircle, Paperclip, X, FileText, Download, Reply, Trash2, Mic, Square } from 'lucide-react';
 import { BookingMessage } from '../types';
 import { loadBookingMessages, sendBookingMessage, deleteBookingMessage, markBookingMessagesRead, subscribeToBookingMessages, subscribeToTypingPresence, OutgoingAttachment } from '../lib/bookingMessages';
 import { fileToAttachment } from '../lib/attachments';
@@ -50,8 +50,14 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<BookingMessage | null>(null);
   const [menuFor, setMenuFor] = useState<number | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [recordSecs, setRecordSecs] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const recTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recCancelRef = useRef(false);
   const typingRef = useRef<{ setTyping: (v: boolean) => void; unsubscribe: () => void } | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -83,6 +89,8 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
       unsubscribe();
       typing.unsubscribe();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (recTimerRef.current) clearInterval(recTimerRef.current);
+      if (recorderRef.current && recorderRef.current.state !== 'inactive') { recCancelRef.current = true; recorderRef.current.stop(); }
     };
   }, [bookingId, currentUserId]);
 
@@ -150,6 +158,40 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
       : m)));
   };
 
+  const stopTracks = (stream: MediaStream) => stream.getTracks().forEach((tr) => tr.stop());
+
+  const startRecording = async () => {
+    if (recording) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const rec = new MediaRecorder(stream);
+      chunksRef.current = [];
+      recCancelRef.current = false;
+      rec.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      rec.onstop = () => {
+        stopTracks(stream);
+        if (recTimerRef.current) { clearInterval(recTimerRef.current); recTimerRef.current = null; }
+        setRecording(false); setRecordSecs(0);
+        if (recCancelRef.current || chunksRef.current.length === 0) return;
+        const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => setAttachments((prev) => [...prev, { url: reader.result as string, type: 'audio', name: 'رسالة صوتية' }]);
+        reader.readAsDataURL(blob);
+      };
+      recorderRef.current = rec;
+      rec.start();
+      setRecording(true); setRecordSecs(0);
+      recTimerRef.current = setInterval(() => setRecordSecs((s) => s + 1), 1000);
+    } catch {
+      alert('تعذّر الوصول للميكروفون. تأكد من السماح باستخدامه.');
+    }
+  };
+
+  const stopRecording = (cancel: boolean) => {
+    recCancelRef.current = cancel;
+    recorderRef.current?.stop();
+  };
+
   return (
     <div className={`${t.surface} rounded-3xl border ${t.border} flex flex-col ${heightClass} overflow-hidden`}>
       <div className={`flex items-center justify-between shrink-0 px-4 py-3 border-b ${t.border} ${t.headerBg} text-white`}>
@@ -214,6 +256,11 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
                     <Download className="w-4 h-4 shrink-0 opacity-70" />
                   </a>
                 )}
+                {m.attachmentUrl && m.attachmentType === 'audio' && (
+                  <div className={`rounded-2xl px-2 py-1.5 shadow-sm ${isMine ? `${t.primary}` : `bg-white border ${t.border}`}`}>
+                    <audio controls src={m.attachmentUrl} className="h-9 w-[210px] max-w-full" />
+                  </div>
+                )}
                 {m.content && (
                   <button type="button" onClick={() => setMenuFor(menuFor === m.id ? null : m.id)}
                     dir="rtl" className={`block text-right rounded-2xl px-3.5 py-2.5 text-xs font-medium leading-relaxed shadow-sm w-full ${
@@ -272,8 +319,8 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
             <div key={i} className={`flex items-center gap-2 ${t.bg} border ${t.border} rounded-2xl p-1.5 pr-2 shrink-0`}>
               {att.type === 'image'
                 ? <img src={att.url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                : <div className={`w-10 h-10 rounded-lg ${t.primary} flex items-center justify-center shrink-0`}><FileText className="w-5 h-5 text-white" /></div>}
-              <span className={`text-[10.5px] font-bold ${t.text} truncate max-w-[100px]`}>{att.name || (att.type === 'image' ? 'صورة' : 'ملف')}</span>
+                : <div className={`w-10 h-10 rounded-lg ${t.primary} flex items-center justify-center shrink-0`}>{att.type === 'audio' ? <Mic className="w-5 h-5 text-white" /> : <FileText className="w-5 h-5 text-white" />}</div>}
+              <span className={`text-[10.5px] font-bold ${t.text} truncate max-w-[100px]`}>{att.name || (att.type === 'image' ? 'صورة' : att.type === 'audio' ? 'رسالة صوتية' : 'ملف')}</span>
               <button type="button" onClick={() => setAttachments((prev) => prev.filter((_, idx) => idx !== i))} className={`${t.secondary} p-1 shrink-0`}><X className="w-3.5 h-3.5" /></button>
             </div>
           ))}
@@ -285,38 +332,62 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
         </div>
       )}
 
-      <div className={`shrink-0 flex items-center gap-2 p-3 border-t ${t.border} ${t.surface}`}>
-        <input ref={fileInputRef} type="file" accept="image/*,application/pdf" multiple className="hidden"
-          onChange={(e) => { handleFilePick(e.target.files); e.target.value = ''; }} />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={attaching || sending}
-          title="إرفاق صورة أو ملف"
-          className={`flex items-center justify-center ${t.bg} border ${t.border} ${t.secondary} disabled:opacity-50 p-2.5 rounded-2xl transition-colors shrink-0 cursor-pointer`}
-        >
-          <Paperclip className="w-4 h-4" />
-        </button>
-        <input
-          id="booking-chat-input"
-          type="text"
-          value={input}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
-          placeholder="اكتب رسالة..."
-          maxLength={2000}
-          className={`flex-1 ${t.bg} border ${t.border} rounded-2xl px-4 py-2.5 text-xs ${t.text} outline-none ${t.focusBorder} transition-colors min-w-0`}
-        />
-        <button
-          id="booking-chat-send-btn"
-          type="button"
-          onClick={handleSend}
-          disabled={sending || (!input.trim() && attachments.length === 0)}
-          className={`flex items-center justify-center ${t.primary} ${t.primaryHover} disabled:opacity-50 text-white p-2.5 rounded-2xl shadow-sm transition-colors shrink-0 cursor-pointer`}
-        >
-          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        </button>
-      </div>
+      {recording ? (
+        <div className={`shrink-0 flex items-center gap-3 p-3 border-t ${t.border} ${t.surface}`}>
+          <button type="button" onClick={() => stopRecording(true)} title="إلغاء"
+            className="flex items-center justify-center text-rose-600 p-2.5 rounded-2xl shrink-0 cursor-pointer"><Trash2 className="w-5 h-5" /></button>
+          <div className={`flex-1 flex items-center gap-2 ${t.text} text-xs font-bold`}>
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
+            جارٍ التسجيل... {Math.floor(recordSecs / 60)}:{String(recordSecs % 60).padStart(2, '0')}
+          </div>
+          <button type="button" onClick={() => stopRecording(false)} title="إيقاف وإرفاق"
+            className={`flex items-center justify-center ${t.primary} ${t.primaryHover} text-white p-2.5 rounded-2xl shadow-sm shrink-0 cursor-pointer`}><Square className="w-4 h-4" /></button>
+        </div>
+      ) : (
+        <div className={`shrink-0 flex items-center gap-2 p-3 border-t ${t.border} ${t.surface}`}>
+          <input ref={fileInputRef} type="file" accept="image/*,application/pdf" multiple className="hidden"
+            onChange={(e) => { handleFilePick(e.target.files); e.target.value = ''; }} />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={attaching || sending}
+            title="إرفاق صورة أو ملف"
+            className={`flex items-center justify-center ${t.bg} border ${t.border} ${t.secondary} disabled:opacity-50 p-2.5 rounded-2xl transition-colors shrink-0 cursor-pointer`}
+          >
+            <Paperclip className="w-4 h-4" />
+          </button>
+          <input
+            id="booking-chat-input"
+            type="text"
+            value={input}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
+            placeholder="اكتب رسالة..."
+            maxLength={2000}
+            className={`flex-1 ${t.bg} border ${t.border} rounded-2xl px-4 py-2.5 text-xs ${t.text} outline-none ${t.focusBorder} transition-colors min-w-0`}
+          />
+          {input.trim() || attachments.length > 0 ? (
+            <button
+              id="booking-chat-send-btn"
+              type="button"
+              onClick={handleSend}
+              disabled={sending}
+              className={`flex items-center justify-center ${t.primary} ${t.primaryHover} disabled:opacity-50 text-white p-2.5 rounded-2xl shadow-sm transition-colors shrink-0 cursor-pointer`}
+            >
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={startRecording}
+              title="تسجيل رسالة صوتية"
+              className={`flex items-center justify-center ${t.primary} ${t.primaryHover} text-white p-2.5 rounded-2xl shadow-sm transition-colors shrink-0 cursor-pointer`}
+            >
+              <Mic className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Fullscreen image lightbox */}
       {lightbox && (

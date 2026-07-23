@@ -20,7 +20,7 @@ function mapBookingMessage(r: Record<string, unknown>): BookingMessage {
 
 export interface OutgoingAttachment {
   url: string; // data URL
-  type: 'image' | 'file';
+  type: 'image' | 'file' | 'audio';
   name?: string;
 }
 

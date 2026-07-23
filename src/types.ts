@@ -340,7 +340,7 @@ export interface BookingMessage {
   readAt?: string;
   // Optional attachment (stored as a data URL, like the app's other images).
   attachmentUrl?: string;
-  attachmentType?: 'image' | 'file';
+  attachmentType?: 'image' | 'file' | 'audio';
   attachmentName?: string;
   replyToId?: number;   // quoted message id (resolve preview client-side)
   deletedAt?: string;   // set = "message deleted" placeholder
