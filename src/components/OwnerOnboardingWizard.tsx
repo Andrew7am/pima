@@ -4,8 +4,9 @@ import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import Logo from './Logo';
 import {
-  ChevronRight, ChevronLeft, Check, Plus, Trash2, MapPin, Home,
+  ChevronRight, ChevronLeft, Check, Plus, Minus, Trash2, MapPin, Home,
   BedDouble, Sparkles, Landmark, Wallet, ClipboardCheck, LogOut, PartyPopper,
+  Hash, Building2, Tag, CircleDot, Zap, ListChecks, LayoutGrid,
 } from 'lucide-react';
 
 interface OwnerOnboardingWizardProps {
@@ -39,7 +40,24 @@ interface DraftRoom {
   name: string;
   bedsCount: number;
   pricePerNight: string;
+  floor?: number;
+  status?: Room['status'];
 }
+
+const FLOOR_OPTIONS: { value: number; label: string }[] = [
+  { value: 0, label: 'الدور الأرضي' },
+  { value: 1, label: 'الدور الأول' },
+  { value: 2, label: 'الدور الثاني' },
+  { value: 3, label: 'الدور الثالث' },
+  { value: 4, label: 'الدور الرابع' },
+  { value: 5, label: 'الدور الخامس' },
+];
+
+const ROOM_STATUS_OPTIONS: { value: Room['status']; label: string; dot: string }[] = [
+  { value: 'available', label: 'متاحة', dot: 'bg-emerald-500' },
+  { value: 'maintenance', label: 'تحت الصيانة', dot: 'bg-amber-500' },
+  { value: 'cleaning', label: 'قيد التنظيف', dot: 'bg-blue-500' },
+];
 
 interface DraftHall {
   name: string;
@@ -107,6 +125,13 @@ export default function OwnerOnboardingWizard({
   // ── Rooms ───────────────────────────────────────────────────
   const [draftRooms, setDraftRooms] = useState<DraftRoom[]>([]);
   const [roomDraft, setRoomDraft] = useState<DraftRoom>({ name: '', bedsCount: 2, pricePerNight: '' });
+  const [rangeFrom, setRangeFrom] = useState(101);
+  const [rangeTo, setRangeTo] = useState(120);
+  const [rangeBeds, setRangeBeds] = useState(2);
+  const [rangeFloorIdx, setRangeFloorIdx] = useState(1);
+  const [rangePrice, setRangePrice] = useState('500');
+  const [rangeStatus, setRangeStatus] = useState<Room['status']>('available');
+  const [showManualRoomForm, setShowManualRoomForm] = useState(false);
 
   // ── Halls (optional) ────────────────────────────────────────
   const [draftHalls, setDraftHalls] = useState<DraftHall[]>([]);
@@ -141,7 +166,27 @@ export default function OwnerOnboardingWizard({
   const addDraftRoom = () => {
     if (!roomDraft.name.trim() || !roomDraft.pricePerNight) return;
     setDraftRooms((prev) => [...prev, roomDraft]);
-    setRoomDraft({ name: `غرفة ${draftRooms.length + 2}`, bedsCount: 2, pricePerNight: '' });
+    setRoomDraft({ name: `غرفة ${draftRooms.length + 2}`, bedsCount: rangeBeds, pricePerNight: '', floor: FLOOR_OPTIONS[rangeFloorIdx].value, status: rangeStatus });
+  };
+
+  const rangeRoomCount = Math.max(0, rangeTo - rangeFrom + 1);
+
+  const suggestRoomNumbering = () => {
+    const existingNums = [...existingRooms.map((r) => r.name), ...draftRooms.map((r) => r.name)]
+      .map((n) => parseInt(n, 10)).filter((n) => !isNaN(n));
+    const base = existingNums.length ? Math.max(...existingNums) + 1 : 101;
+    setRangeFrom(base);
+    setRangeTo(base + 9);
+  };
+
+  const generateRangeRooms = () => {
+    if (rangeRoomCount <= 0) return;
+    const floor = FLOOR_OPTIONS[rangeFloorIdx].value;
+    const rooms: DraftRoom[] = [];
+    for (let n = rangeFrom; n <= rangeTo; n++) {
+      rooms.push({ name: String(n), bedsCount: rangeBeds, pricePerNight: rangePrice, floor, status: rangeStatus });
+    }
+    setDraftRooms(rooms);
   };
 
   const addDraftHall = () => {
@@ -227,7 +272,8 @@ export default function OwnerOnboardingWizard({
             bedsCount: r.bedsCount,
             pricePerNight: r.pricePerNight ? Number(r.pricePerNight) : undefined,
             images: [],
-            status: 'available',
+            status: r.status ?? 'available',
+            floor: r.floor,
             createdAt: new Date().toISOString(),
           });
         });
@@ -413,36 +459,182 @@ export default function OwnerOnboardingWizard({
 
           {step === 'rooms' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#5A5A40] font-black text-sm"><BedDouble className="w-4 h-4" /> الغرف وأسعارها</div>
-              <p className="text-[11px] text-[#8A8A70]">أضف غرفة واحدة على الأقل برقمها/اسمها وسعرها.</p>
+              <div>
+                <div className="flex items-center gap-2 text-[#5A5A40] font-black text-sm"><BedDouble className="w-4 h-4" /> الغرف وأسعارها</div>
+                <p className="text-[11px] text-[#8A8A70] mt-1">أكمل إعداد غرف بيت المؤتمرات.</p>
+              </div>
 
-              {draftRooms.length > 0 && (
-                <div className="space-y-1.5">
-                  {draftRooms.map((r, i) => (
-                    <div key={i} className="flex items-center justify-between bg-[#F7F4EB] border border-[#D6D6C2] rounded-xl px-3 py-2 text-[11px]">
-                      <span className="font-bold">{r.name} — {r.bedsCount} سرير — {r.pricePerNight} ج/الليلة</span>
-                      <button type="button" onClick={() => setDraftRooms((prev) => prev.filter((_, idx) => idx !== i))} className="text-red-500">
-                        <Trash2 className="w-3.5 h-3.5" />
+              {/* Card 1 — نطاق الغرف */}
+              <div className="bg-white border border-[#D6D6C2] rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-[#2D2D24] font-black text-xs">
+                    <Hash className="w-3.5 h-3.5 text-[#5A5A40]" /> نطاق الغرف
+                  </div>
+                  <button type="button" onClick={suggestRoomNumbering}
+                    className="flex items-center gap-1 text-[10px] font-bold text-[#5A5A40] bg-[#F7F4EB] border border-[#D6D6C2] rounded-lg px-2 py-1">
+                    <Zap className="w-3 h-3" /> اقتراح الترقيم
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 items-stretch">
+                  <div className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-xl p-2.5 text-center">
+                    <label className="block text-[9.5px] font-bold text-[#8A8A70] mb-1">من رقم الغرفة</label>
+                    <input type="number" value={rangeFrom} onChange={(e) => setRangeFrom(Number(e.target.value))}
+                      className="w-full bg-transparent text-center text-base font-black text-[#2D2D24] outline-none" />
+                  </div>
+
+                  <div className="bg-[#5A5A40] rounded-2xl flex flex-col items-center justify-center py-2 px-1 text-white">
+                    <span className="text-[9px] font-bold opacity-80">سيتم إنشاء</span>
+                    <span className="text-3xl font-black leading-tight">{rangeRoomCount}</span>
+                    <span className="text-[9px] font-bold opacity-80">غرفة</span>
+                  </div>
+
+                  <div className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-xl p-2.5 text-center">
+                    <label className="block text-[9.5px] font-bold text-[#8A8A70] mb-1">إلى رقم الغرفة</label>
+                    <input type="number" value={rangeTo} onChange={(e) => setRangeTo(Number(e.target.value))}
+                      className="w-full bg-transparent text-center text-base font-black text-[#2D2D24] outline-none" />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <p className="text-[10.5px] text-emerald-800 font-bold leading-relaxed">
+                    {rangeRoomCount > 0
+                      ? `سيتم إنشاء ${rangeRoomCount} غرفة من ${rangeFrom} إلى ${rangeTo} في ${FLOOR_OPTIONS[rangeFloorIdx].label}.`
+                      : 'حدد نطاقًا صحيحًا لإنشاء الغرف.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 2 — إعدادات الغرف */}
+              <div className="bg-white border border-[#D6D6C2] rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-1.5 text-[#2D2D24] font-black text-xs">
+                  <LayoutGrid className="w-3.5 h-3.5 text-[#5A5A40]" /> إعدادات الغرف
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-xl p-2.5">
+                    <div className="flex items-center gap-1 text-[9.5px] font-bold text-[#8A8A70] mb-1.5">
+                      <BedDouble className="w-3 h-3" /> عدد الأسرة لكل غرفة
+                    </div>
+                    <div className="flex items-center justify-center gap-3">
+                      <button type="button" onClick={() => setRangeBeds((b) => Math.max(1, b - 1))}
+                        className="w-6 h-6 rounded-lg bg-white border border-[#D6D6C2] flex items-center justify-center text-[#5A5A40]">
+                        <Minus className="w-3 h-3" />
                       </button>
+                      <span className="text-sm font-black text-[#2D2D24] w-4 text-center">{rangeBeds}</span>
+                      <button type="button" onClick={() => setRangeBeds((b) => b + 1)}
+                        className="w-6 h-6 rounded-lg bg-white border border-[#D6D6C2] flex items-center justify-center text-[#5A5A40]">
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-xl p-2.5">
+                    <div className="flex items-center gap-1 text-[9.5px] font-bold text-[#8A8A70] mb-1.5">
+                      <Building2 className="w-3 h-3" /> الدور
+                    </div>
+                    <select value={rangeFloorIdx} onChange={(e) => setRangeFloorIdx(Number(e.target.value))}
+                      className="w-full bg-white border border-[#D6D6C2] text-[11px] font-black text-[#2D2D24] rounded-lg px-2 py-1.5 outline-none">
+                      {FLOOR_OPTIONS.map((f, i) => <option key={f.value} value={i}>{f.label}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-xl p-2.5">
+                    <div className="flex items-center gap-1 text-[9.5px] font-bold text-[#8A8A70] mb-1.5">
+                      <Tag className="w-3 h-3" /> السعر الافتراضي (اختياري)
+                    </div>
+                    <div className="flex items-center gap-1 bg-white border border-[#D6D6C2] rounded-lg px-2 py-1.5">
+                      <span className="text-[10px] font-bold text-[#8A8A70]">ج.م</span>
+                      <input type="number" min={0} value={rangePrice} onChange={(e) => setRangePrice(e.target.value)}
+                        className="w-full bg-transparent text-[11px] font-black text-[#2D2D24] outline-none text-left" />
+                    </div>
+                  </div>
+
+                  <div className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-xl p-2.5">
+                    <div className="flex items-center gap-1 text-[9.5px] font-bold text-[#8A8A70] mb-1.5">
+                      <CircleDot className="w-3 h-3" /> الحالة الافتراضية
+                    </div>
+                    <select value={rangeStatus} onChange={(e) => setRangeStatus(e.target.value as Room['status'])}
+                      className="w-full bg-white border border-[#D6D6C2] text-[11px] font-black text-[#2D2D24] rounded-lg px-2 py-1.5 outline-none">
+                      {ROOM_STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3 — ملخص الإنشاء */}
+              <div className="bg-white border border-[#D6D6C2] rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-1.5 text-[#2D2D24] font-black text-xs">
+                  <ListChecks className="w-3.5 h-3.5 text-[#5A5A40]" /> ملخص الإنشاء
+                </div>
+                <div className="grid grid-cols-5 gap-1 text-center">
+                  {[
+                    { label: 'عدد الغرف', value: String(rangeRoomCount) },
+                    { label: 'النطاق', value: rangeRoomCount > 0 ? `${rangeFrom} ← ${rangeTo}` : '—' },
+                    { label: 'الدور', value: FLOOR_OPTIONS[rangeFloorIdx].label.replace('الدور ', '') },
+                    { label: 'عدد الأسرة', value: String(rangeBeds) },
+                    { label: 'السعر', value: rangePrice ? `${rangePrice} ج.م` : '—' },
+                  ].map((item) => (
+                    <div key={item.label} className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-xl py-2 px-1">
+                      <p className="text-[9px] font-bold text-[#8A8A70] mb-1">{item.label}</p>
+                      <p className="text-[11px] font-black text-[#2D2D24] truncate">{item.value}</p>
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <button type="button" onClick={generateRangeRooms} disabled={rangeRoomCount <= 0}
+                className="w-full flex items-center justify-center gap-2 bg-[#5A5A40] hover:bg-[#4A4A34] disabled:opacity-40 text-white text-sm font-black py-3 rounded-2xl">
+                <Sparkles className="w-4 h-4" /> إنشاء {rangeRoomCount} غرفة
+              </button>
+
+              <button type="button" onClick={() => setShowManualRoomForm((v) => !v)}
+                className="w-full text-center text-[11px] font-bold text-[#5A5A40]">
+                + إضافة غرفة واحدة لاحقًا
+              </button>
+
+              {showManualRoomForm && (
+                <div className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-2xl p-3.5 space-y-2.5">
+                  <div className="grid grid-cols-3 gap-2">
+                    <input type="text" placeholder="رقم/اسم الغرفة" value={roomDraft.name}
+                      onChange={(e) => setRoomDraft((d) => ({ ...d, name: e.target.value }))}
+                      className="col-span-1 bg-white border border-[#D6D6C2] text-[11px] px-2 py-2 rounded-xl" />
+                    <input type="number" min={1} placeholder="الأسرّة" value={roomDraft.bedsCount}
+                      onChange={(e) => setRoomDraft((d) => ({ ...d, bedsCount: Number(e.target.value) }))}
+                      className="bg-white border border-[#D6D6C2] text-[11px] px-2 py-2 rounded-xl" />
+                    <input type="number" min={0} placeholder="السعر/الليلة" value={roomDraft.pricePerNight}
+                      onChange={(e) => setRoomDraft((d) => ({ ...d, pricePerNight: e.target.value }))}
+                      className="bg-white border border-[#D6D6C2] text-[11px] px-2 py-2 rounded-xl" />
+                  </div>
+                  <button type="button" onClick={addDraftRoom} className="flex items-center gap-1.5 text-xs font-bold text-[#5A5A40]">
+                    <Plus className="w-4 h-4" /> إضافة الغرفة
+                  </button>
+                </div>
               )}
 
-              <div className="grid grid-cols-3 gap-2">
-                <input type="text" placeholder="رقم/اسم الغرفة" value={roomDraft.name}
-                  onChange={(e) => setRoomDraft((d) => ({ ...d, name: e.target.value }))}
-                  className="col-span-1 bg-white border border-[#D6D6C2] text-[11px] px-2 py-2 rounded-xl" />
-                <input type="number" min={1} placeholder="الأسرّة" value={roomDraft.bedsCount}
-                  onChange={(e) => setRoomDraft((d) => ({ ...d, bedsCount: Number(e.target.value) }))}
-                  className="bg-white border border-[#D6D6C2] text-[11px] px-2 py-2 rounded-xl" />
-                <input type="number" min={0} placeholder="السعر/الليلة" value={roomDraft.pricePerNight}
-                  onChange={(e) => setRoomDraft((d) => ({ ...d, pricePerNight: e.target.value }))}
-                  className="bg-white border border-[#D6D6C2] text-[11px] px-2 py-2 rounded-xl" />
-              </div>
-              <button type="button" onClick={addDraftRoom} className="flex items-center gap-1.5 text-xs font-bold text-[#5A5A40]">
-                <Plus className="w-4 h-4" /> إضافة الغرفة
-              </button>
+              {draftRooms.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-[#2D2D24] font-black text-xs">
+                    <BedDouble className="w-3.5 h-3.5 text-[#5A5A40]" /> معاينة الغرف
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {draftRooms.slice(0, 30).map((r, i) => (
+                      <span key={i} className="group relative bg-white border border-[#D6D6C2] rounded-lg px-2.5 py-1.5 text-[11px] font-black text-[#2D2D24] flex items-center gap-1">
+                        {r.name}
+                        <button type="button" onClick={() => setDraftRooms((prev) => prev.filter((_, idx) => idx !== i))}
+                          className="text-[#BCBC9D] hover:text-red-500">
+                          <Trash2 className="w-2.5 h-2.5" />
+                        </button>
+                      </span>
+                    ))}
+                    {draftRooms.length > 30 && (
+                      <span className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-[#8A8A70]">
+                        +{draftRooms.length - 30} غرفة أخرى
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
