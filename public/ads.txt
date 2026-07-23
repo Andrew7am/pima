@@ -1,0 +1,5 @@
+# Google AdSense — replace pub-0000000000000000 with your real publisher ID
+# after your AdSense account is approved (Account > Settings > Account information).
+# Without the correct line here, AdSense will not serve ads and will warn about
+# "unauthorized" inventory. Format: <domain>, <publisher id>, <relationship>, <cert authority id>
+google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0

@@ -1,0 +1,15 @@
+{
+  "name": "بيما — بيوت المؤتمرات والخلوات والمصايف",
+  "short_name": "بيما",
+  "description": "منصة حجز بيوت المؤتمرات والخلوات والمصايف المسيحية في مصر.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#EBEBE0",
+  "theme_color": "#3A6B4C",
+  "icons": [
+    { "src": "/pima-hero.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -117,11 +117,20 @@ export default function App() {
   // Guest mode: logged-out visitors browse houses freely; the auth screen
   // only appears when they ask for it (or hit a gated action like booking).
   const [showAuthScreen, setShowAuthScreen] = useState(false);
+  // Marketing landing — shown to a web visitor's FIRST arrival only. Skipped on
+  // the native app, on a shared ?house= deep link, and on every return visit
+  // (localStorage flag) so returning users and search-engine re-crawls land
+  // straight on the browsable house list instead of behind the splash.
   const [showLanding, setShowLanding] = useState(() => {
     if (Capacitor.isNativePlatform()) return false;
     if (new URLSearchParams(window.location.search).get('house')) return false;
+    try { if (localStorage.getItem('pima_seen_landing')) return false; } catch { /* ignore */ }
     return true;
   });
+  const dismissLanding = () => {
+    try { localStorage.setItem('pima_seen_landing', '1'); } catch { /* ignore */ }
+    setShowLanding(false);
+  };
   // Mirrors currentUser?.id for the onAuthStateChange closure below, which
   // only runs its effect once (deps: [loadUserProfile]) so it would
   // otherwise always see the `currentUser` from its first render.
@@ -1212,7 +1221,7 @@ export default function App() {
 
   if (!currentUser) {
     if (showLanding) {
-      return <LandingPage housesCount={houses.length} onBrowse={() => setShowLanding(false)} onLogin={() => { setShowLanding(false); setShowAuthScreen(true); }} />;
+      return <LandingPage housesCount={houses.length} onBrowse={dismissLanding} onLogin={() => { dismissLanding(); setShowAuthScreen(true); }} />;
     }
     if (showAuthScreen) {
       return <AuthScreen onBackToBrowse={() => setShowAuthScreen(false)} />;
