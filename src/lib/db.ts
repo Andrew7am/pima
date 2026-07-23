@@ -464,6 +464,13 @@ export function subscribeToNotifications(userId: string, onNotification: (n: App
       { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
       (payload) => { onNotification(mapNotification(payload.new as Record<string, unknown>)); },
     )
+    // Coalesced notifications (e.g. the per-thread "new messages" ping) are
+    // refreshed via UPDATE, not re-inserted — deliver those live too.
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+      (payload) => { onNotification(mapNotification(payload.new as Record<string, unknown>)); },
+    )
     .subscribe();
   return () => { supabase.removeChannel(channel); };
 }

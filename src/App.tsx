@@ -302,7 +302,9 @@ export default function App() {
   useEffect(() => {
     if (!currentUser?.id) return;
     const unsubscribe = subscribeToNotifications(currentUser.id, (n) => {
-      setNotifications((prev) => (prev.some((existing) => existing.id === n.id) ? prev : [n, ...prev]));
+      // Upsert: a coalesced notification (same id) arriving again via UPDATE
+      // should refresh its content and jump back to the top, not be ignored.
+      setNotifications((prev) => [n, ...prev.filter((existing) => existing.id !== n.id)]);
     });
     return unsubscribe;
   }, [currentUser?.id]);

@@ -45,7 +45,7 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [otherTyping, setOtherTyping] = useState(false);
-  const [attachment, setAttachment] = useState<OutgoingAttachment | null>(null);
+  const [attachments, setAttachments] = useState<OutgoingAttachment[]>([]);
   const [attaching, setAttaching] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -95,12 +95,12 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
     typingTimeoutRef.current = setTimeout(() => typingRef.current?.setTyping(false), TYPING_IDLE_MS);
   };
 
-  const handleFilePick = async (file: File | undefined) => {
-    if (!file) return;
+  const handleFilePick = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
     setAttaching(true);
     try {
-      const att = await fileToAttachment(file);
-      setAttachment(att);
+      const prepared = await Promise.all(Array.from(files).map((f) => fileToAttachment(f)));
+      setAttachments((prev) => [...prev, ...prepared]);
     } catch (e) {
       alert(e instanceof Error ? e.message : 'تعذّر إرفاق الملف.');
     } finally {
@@ -108,19 +108,34 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
     }
   };
 
+  const appendMessage = (m: typeof messages[number]) =>
+    setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+
   const handleSend = async () => {
     const content = input.trim();
-    if ((!content && !attachment) || sending) return;
+    if ((!content && attachments.length === 0) || sending) return;
     setSending(true);
     setInput('');
-    const pending = attachment;
-    setAttachment(null);
+    const pending = attachments;
+    setAttachments([]);
     typingRef.current?.setTyping(false);
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    const sent = await sendBookingMessage(bookingId, content, pending ?? undefined);
+
+    if (pending.length === 0) {
+      const sent = await sendBookingMessage(bookingId, content);
+      setSending(false);
+      if (sent) appendMessage(sent); else setInput(content);
+      return;
+    }
+
+    // Each attachment is its own message; the typed text rides on the first.
+    const failed: OutgoingAttachment[] = [];
+    for (let i = 0; i < pending.length; i++) {
+      const sent = await sendBookingMessage(bookingId, i === 0 ? content : '', pending[i]);
+      if (sent) appendMessage(sent); else failed.push(pending[i]);
+    }
     setSending(false);
-    if (sent) setMessages((prev) => (prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]));
-    else { setInput(content); setAttachment(pending); } // restore on failure
+    if (failed.length > 0) setAttachments(failed);
   };
 
   return (
@@ -182,28 +197,29 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
         <div ref={bottomRef} />
       </div>
 
-      {/* Pending attachment preview */}
-      {(attachment || attaching) && (
-        <div className={`shrink-0 flex items-center gap-2 px-3 pt-2 ${t.surface}`}>
-          {attaching ? (
-            <div className={`flex items-center gap-2 ${t.secondary} text-[11px] font-bold`}>
-              <Loader2 className="w-4 h-4 animate-spin" /> جارٍ تجهيز المرفق...
-            </div>
-          ) : attachment && (
-            <div className={`flex items-center gap-2 ${t.bg} border ${t.border} rounded-2xl p-1.5 pr-2 max-w-full`}>
-              {attachment.type === 'image'
-                ? <img src={attachment.url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+      {/* Pending attachments preview */}
+      {(attachments.length > 0 || attaching) && (
+        <div className={`shrink-0 flex items-center gap-2 px-3 pt-2 overflow-x-auto ${t.surface}`}>
+          {attachments.map((att, i) => (
+            <div key={i} className={`flex items-center gap-2 ${t.bg} border ${t.border} rounded-2xl p-1.5 pr-2 shrink-0`}>
+              {att.type === 'image'
+                ? <img src={att.url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
                 : <div className={`w-10 h-10 rounded-lg ${t.primary} flex items-center justify-center shrink-0`}><FileText className="w-5 h-5 text-white" /></div>}
-              <span className={`text-[10.5px] font-bold ${t.text} truncate flex-1`}>{attachment.name || (attachment.type === 'image' ? 'صورة' : 'ملف')}</span>
-              <button type="button" onClick={() => setAttachment(null)} className={`${t.secondary} p-1 shrink-0`}><X className="w-3.5 h-3.5" /></button>
+              <span className={`text-[10.5px] font-bold ${t.text} truncate max-w-[100px]`}>{att.name || (att.type === 'image' ? 'صورة' : 'ملف')}</span>
+              <button type="button" onClick={() => setAttachments((prev) => prev.filter((_, idx) => idx !== i))} className={`${t.secondary} p-1 shrink-0`}><X className="w-3.5 h-3.5" /></button>
+            </div>
+          ))}
+          {attaching && (
+            <div className={`flex items-center gap-2 ${t.secondary} text-[11px] font-bold shrink-0`}>
+              <Loader2 className="w-4 h-4 animate-spin" /> جارٍ التجهيز...
             </div>
           )}
         </div>
       )}
 
       <div className={`shrink-0 flex items-center gap-2 p-3 border-t ${t.border} ${t.surface}`}>
-        <input ref={fileInputRef} type="file" accept="image/*,application/pdf" className="hidden"
-          onChange={(e) => { handleFilePick(e.target.files?.[0]); e.target.value = ''; }} />
+        <input ref={fileInputRef} type="file" accept="image/*,application/pdf" multiple className="hidden"
+          onChange={(e) => { handleFilePick(e.target.files); e.target.value = ''; }} />
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -227,7 +243,7 @@ export default function BookingChatPanel({ bookingId, currentUserId, title, subt
           id="booking-chat-send-btn"
           type="button"
           onClick={handleSend}
-          disabled={sending || (!input.trim() && !attachment)}
+          disabled={sending || (!input.trim() && attachments.length === 0)}
           className={`flex items-center justify-center ${t.primary} ${t.primaryHover} disabled:opacity-50 text-white p-2.5 rounded-2xl shadow-sm transition-colors shrink-0 cursor-pointer`}
         >
           {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
