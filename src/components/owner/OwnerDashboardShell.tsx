@@ -13,6 +13,7 @@ import OwnerNotifications from './OwnerNotifications';
 import OwnerReports from './OwnerReports';
 import OwnerFinancialCenter from './OwnerFinancialCenter';
 import OwnerRoomsManager from './OwnerRoomsManager';
+import OwnerReviewsCenter from './OwnerReviewsCenter';
 import OwnerFoodMenu from './OwnerFoodMenu';
 import OwnerRoomDistributionScreen from './OwnerRoomDistribution';
 import OwnerTour from './OwnerTour';
@@ -193,10 +194,6 @@ export default function OwnerDashboardShell({
   const [blockReason, setBlockReason] = useState('أعمال صيانة وتجهيز');
   const [blockSuccessMsg, setBlockSuccessMsg] = useState('');
 
-  const [reviewReplyText, setReviewReplyText] = useState('');
-  const [replyingToReviewId, setReplyingToReviewId] = useState<string | null>(null);
-  const [reviewsSuccessMsg, setReviewsSuccessMsg] = useState('');
-
   const [paymentDraftType, setPaymentDraftType] = useState<'instapay' | 'vodafone_cash' | 'etisalat_cash' | 'orange_cash' | 'we_cash' | 'bank_transfer'>('instapay');
   const [paymentDraftValue, setPaymentDraftValue] = useState('');
 
@@ -276,27 +273,6 @@ export default function OwnerDashboardShell({
     onUpdateHouse?.({ ...house, blockedDates: (house.blockedDates || []).filter((d) => d !== dateStr) });
     setBlockSuccessMsg(`تم إلغاء حظر التاريخ ${dateStr} بنجاح! أصبح متاحاً للحجوزات.`);
     setTimeout(() => setBlockSuccessMsg(''), 4000);
-  };
-
-  const handleAddReplySubmit = (e: React.FormEvent, reviewId: string) => {
-    e.preventDefault();
-    if (!reviewReplyText.trim()) { alert('الرجاء كتابة نص الرد أولاً.'); return; }
-    const targetReview = reviews.find((r) => r.id === reviewId);
-    if (!targetReview) return;
-    onUpdateReview?.({ ...targetReview, ownerReply: reviewReplyText.trim(), ownerReplyCreatedAt: new Date().toISOString() });
-    setReviewReplyText('');
-    setReplyingToReviewId(null);
-    setReviewsSuccessMsg('تم إرسال الرد الرسمي بنجاح وسيظهر للجميع على صفحة البيت!');
-    setTimeout(() => setReviewsSuccessMsg(''), 4000);
-  };
-
-  const handleDeleteReply = (reviewId: string) => {
-    if (!confirm('هل أنت متأكد من رغبتك في حذف هذا الرد؟')) return;
-    const targetReview = reviews.find((r) => r.id === reviewId);
-    if (!targetReview) return;
-    onUpdateReview?.({ ...targetReview, ownerReply: undefined, ownerReplyCreatedAt: undefined });
-    setReviewsSuccessMsg('تم حذف الرد بنجاح.');
-    setTimeout(() => setReviewsSuccessMsg(''), 4000);
   };
 
   const ownerHouses = houses.filter((h) => h.ownerId === owner.id);
@@ -1620,64 +1596,7 @@ export default function OwnerDashboardShell({
 
       {/* Overflow: Reviews */}
       {activeTab === 'reviews' && (
-        <div className="bg-[var(--color-owner-surface)] p-6 rounded-3xl border border-[var(--color-owner-border)] text-right space-y-6">
-          <div className="flex items-center gap-3 border-b border-[var(--color-owner-border)] pb-4">
-            <div className="p-2.5 rounded-2xl bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border border-[var(--color-owner-border)]"><MessageSquare className="w-5 h-5" /></div>
-            <div>
-              <h3 className="text-sm font-black text-[var(--color-owner-text)]">صلاحية الرد الفوري على تقييمات الخدام باسم البيت 💬</h3>
-              <p className="text-[10px] text-[var(--color-owner-secondary)]">اكتب ردوداً ترحيبية رسمية باسم بيت المؤتمرات.</p>
-            </div>
-          </div>
-          {reviewsSuccessMsg && (
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-950 p-4 rounded-2xl flex items-center gap-3 text-xs font-bold">
-              <span className="text-lg">✅</span><span>{reviewsSuccessMsg}</span>
-            </div>
-          )}
-          {ownerReviews.length === 0 ? (
-            <div className="text-center py-12 bg-[var(--color-owner-bg)] rounded-3xl border border-[var(--color-owner-border)] space-y-2">
-              <p className="text-xs font-bold text-[var(--color-owner-text)]">لا توجد أي تقييمات مكتوبة لبيتكم بعد.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {ownerReviews.map((rev) => (
-                <div key={rev.id} className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-3xl p-4 space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className="text-xs font-extrabold text-[var(--color-owner-text)]">{rev.userName}</span>
-                      <span className="text-[9.5px] text-[var(--color-owner-secondary)] font-medium block mt-0.5">{rev.houseName}</span>
-                    </div>
-                    <div className="bg-amber-50 border border-amber-200 text-amber-900 px-2 py-0.5 rounded-lg text-[10px] font-mono font-black">{rev.rating} / 5 ★</div>
-                  </div>
-                  <p className="text-[11px] text-[var(--color-owner-text)] leading-relaxed font-medium bg-white p-3 rounded-2xl border border-[var(--color-owner-border)]">"{rev.comment}"</p>
-                  {rev.ownerReply ? (
-                    <div className="bg-[var(--color-owner-primary)]/5 border-r-2 border-[var(--color-owner-primary)] p-3 rounded-l-2xl space-y-2">
-                      <div className="flex items-center justify-between text-[10px] font-extrabold text-[var(--color-owner-primary)]"><span>رد الإدارة الحالي 🏨:</span></div>
-                      <p className="text-[10.5px] text-[var(--color-owner-text)] leading-relaxed">{rev.ownerReply}</p>
-                      <div className="flex gap-2 justify-end pt-1">
-                        <button type="button" onClick={() => { setReplyingToReviewId(rev.id); setReviewReplyText(rev.ownerReply || ''); }} className="text-[9.5px] font-bold text-[var(--color-owner-primary)] hover:underline cursor-pointer">تعديل الرد ✏️</button>
-                        <button type="button" onClick={() => handleDeleteReply(rev.id)} className="text-[9.5px] font-bold text-red-600 hover:underline cursor-pointer">حذف الرد ✕</button>
-                      </div>
-                    </div>
-                  ) : replyingToReviewId === rev.id ? (
-                    <form onSubmit={(e) => handleAddReplySubmit(e, rev.id)} className="space-y-2 pt-2">
-                      <textarea required value={reviewReplyText} onChange={(e) => setReviewReplyText(e.target.value)}
-                        className="w-full bg-white border border-[var(--color-owner-border)] rounded-xl p-2.5 text-[10.5px] text-[var(--color-owner-text)] focus:outline-none focus:ring-1 focus:ring-[var(--color-owner-primary)]" rows={3} />
-                      <div className="flex gap-2">
-                        <button type="submit" className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer">إرسال الرد الرسمي</button>
-                        <button type="button" onClick={() => { setReplyingToReviewId(null); setReviewReplyText(''); }} className="bg-[var(--color-owner-bg)] text-[var(--color-owner-text)] text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer">إلغاء</button>
-                      </div>
-                    </form>
-                  ) : (
-                    <div className="flex justify-end">
-                      <button type="button" onClick={() => { setReplyingToReviewId(rev.id); setReviewReplyText(''); }}
-                        className="bg-[var(--color-owner-primary)]/10 hover:bg-[var(--color-owner-primary)]/20 text-[var(--color-owner-primary)] text-[10.5px] font-extrabold px-3 py-1.5 rounded-xl cursor-pointer">💬 كتابة رد رسمي باسم المكان</button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <OwnerReviewsCenter reviews={ownerReviews} onUpdateReview={onUpdateReview} />
       )}
 
       {/* Overflow: House Info */}
