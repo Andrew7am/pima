@@ -137,6 +137,10 @@ export default function App() {
   // otherwise always see the `currentUser` from its first render.
   const currentUserIdRef = useRef<string | null>(null);
   useEffect(() => { currentUserIdRef.current = currentUser?.id ?? null; }, [currentUser]);
+  // Tracks the last house id reflected in the address bar so the URL-sync effect
+  // only rewrites to "/" when a house was actually open (an in-app close), never
+  // on the initial mount where the deep-link effect is about to open one.
+  const prevHouseRef = useRef<string | null>(null);
 
   // --- UI Navigation States ---
   const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread'>('explore');
@@ -378,8 +382,49 @@ export default function App() {
     if (house) {
       setSelectedHouse(house);
       setActiveScreen('explore');
+      // Normalise ?house= / localStorage entry points to the clean, shareable
+      // /house/<id>/ path; a real prerendered path stays as-is.
+      if (!Capacitor.isNativePlatform())
+        window.history.replaceState({ house: house.id }, '', `/house/${house.id}/`);
+    } else if (!Capacitor.isNativePlatform()) {
+      window.history.replaceState({}, '', '/');
     }
-    window.history.replaceState({}, '', '/');
+  }, [houses]);
+
+  // Reflect the open house in the address bar (web only) so the URL is
+  // shareable/copyable and the browser back button closes the detail view.
+  // Pairs with the popstate listener below; the "current !== target" guards
+  // keep the two from looping when one triggers the other.
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) return;
+    const current = window.location.pathname;
+    if (selectedHouse) {
+      const target = `/house/${selectedHouse.id}/`;
+      if (current !== target) window.history.pushState({ house: selectedHouse.id }, '', target);
+      prevHouseRef.current = selectedHouse.id;
+    } else {
+      if (prevHouseRef.current && /^\/house\/[^/]+\/?$/.test(current)) {
+        window.history.pushState({}, '', '/');
+      }
+      prevHouseRef.current = null;
+    }
+  }, [selectedHouse]);
+
+  // Browser back/forward: resolve the house from the URL and open/close the
+  // detail view to match, so history navigation feels native.
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) return;
+    const onPop = () => {
+      const m = window.location.pathname.match(/^\/house\/([^/]+)\/?$/);
+      if (m) {
+        const h = houses.find((x) => x.id === decodeURIComponent(m[1]));
+        if (h) { setSelectedHouse(h); setActiveScreen('explore'); }
+      } else {
+        setSelectedHouse(null);
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
   }, [houses]);
 
   // rooms/announcements/reviews/waitlist (public/RLS-scoped tables, scoped
