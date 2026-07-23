@@ -338,6 +338,10 @@ export interface BookingMessage {
   content: string;
   createdAt: string;
   readAt?: string;
+  // Optional attachment (stored as a data URL, like the app's other images).
+  attachmentUrl?: string;
+  attachmentType?: 'image' | 'file';
+  attachmentName?: string;
 }
 
 export interface Expense {

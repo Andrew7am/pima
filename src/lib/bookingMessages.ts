@@ -10,11 +10,26 @@ function mapBookingMessage(r: Record<string, unknown>): BookingMessage {
     content: r.content as string,
     createdAt: r.created_at as string,
     readAt: r.read_at as string ?? undefined,
+    attachmentUrl: (r.attachment_url as string) ?? undefined,
+    attachmentType: (r.attachment_type as BookingMessage['attachmentType']) ?? undefined,
+    attachmentName: (r.attachment_name as string) ?? undefined,
   };
 }
 
-export async function sendBookingMessage(bookingId: string, content: string): Promise<BookingMessage | null> {
-  const { data, error } = await supabase.rpc('send_booking_message', { p_booking_id: bookingId, p_content: content });
+export interface OutgoingAttachment {
+  url: string; // data URL
+  type: 'image' | 'file';
+  name?: string;
+}
+
+export async function sendBookingMessage(bookingId: string, content: string, attachment?: OutgoingAttachment): Promise<BookingMessage | null> {
+  const { data, error } = await supabase.rpc('send_booking_message', {
+    p_booking_id: bookingId,
+    p_content: content,
+    p_attachment_url: attachment?.url ?? null,
+    p_attachment_type: attachment?.type ?? null,
+    p_attachment_name: attachment?.name ?? null,
+  });
   if (error) { console.error('sendBookingMessage:', error); return null; }
   return data ? mapBookingMessage(data as Record<string, unknown>) : null;
 }

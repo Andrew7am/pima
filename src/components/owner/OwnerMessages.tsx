@@ -130,7 +130,9 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
             const preview = previews[b.id];
             const unreadCount = unread[b.id] || 0;
             const isMine = preview && preview.senderId === owner.id;
-            const previewText = preview ? preview.content : 'اضغط لبدء المحادثة مع الحاجز';
+            const previewText = preview
+              ? (preview.content || (preview.attachmentType === 'image' ? '📷 صورة' : preview.attachmentType === 'file' ? '📎 ملف' : ''))
+              : 'اضغط لبدء المحادثة مع الحاجز';
             const timeText = preview ? formatChatTime(preview.createdAt) : formatChatTime(b.createdAt);
             const isLast = idx === conversations.length - 1;
             return (
