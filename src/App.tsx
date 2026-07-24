@@ -56,6 +56,7 @@ const AchievementsScreen = lazy(() => import('./entertainment/AchievementsScreen
 const TopLeaders = lazy(() => import('./entertainment/TopLeaders').then((m) => ({ default: m.TopLeaders })));
 const InteractiveRoom = lazy(() => import('./entertainment/InteractiveRoom'));
 const ConferenceHub = lazy(() => import('./entertainment/ConferenceHub'));
+const RandomMatchGame = lazy(() => import('./entertainment/RandomMatchGame'));
 import AchievementToast from './entertainment/AchievementToast';
 const FriendsScreen = lazy(() => import('./entertainment/FriendsScreen'));
 const ChatThreadScreen = lazy(() => import('./entertainment/ChatThreadScreen'));
@@ -167,7 +168,7 @@ export default function App() {
   const prevHouseRef = useRef<string | null>(null);
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub'>('explore');
+  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub' | 'random_match'>('explore');
   // Conference Hub state — seeded from the sample conference; the opener acts as its host.
   const [conference, setConference] = useState<ConferenceRoom | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
@@ -1782,6 +1783,7 @@ export default function App() {
                 if (!conference) setConference({ ...INITIAL_CONFERENCE_ROOMS[0], hostUserId: currentUser.id });
                 setActiveScreen('conference_hub');
               }}
+              onOpenRandomMatch={() => setActiveScreen('random_match')}
             />
           )}
 
@@ -1819,6 +1821,16 @@ export default function App() {
                     prev ? { ...prev, xp: u.xp ?? prev.xp, points: u.points ?? prev.points } : prev
                   )
                 }
+              />
+            </div>
+          )}
+
+          {activeScreen === 'random_match' && (
+            <div className="-mx-4 -my-6 sm:mx-0 sm:my-0">
+              <RandomMatchGame
+                currentUser={currentUser}
+                onUpdateUser={(u) => setCurrentUser(u)}
+                onClose={() => setActiveScreen('entertainment')}
               />
             </div>
           )}

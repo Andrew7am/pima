@@ -36,6 +36,8 @@ export interface User {
   priestName?: string;
   isBanned?: boolean;
   avatarUrl?: string;
+  avatar?: string;            // entertainment: display avatar used by the ported games
+  equippedAssists?: string[]; // entertainment: equipped in-match power-ups (SmartAssistBar)
 }
 
 export interface ConferenceHall {

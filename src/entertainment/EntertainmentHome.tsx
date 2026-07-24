@@ -18,6 +18,7 @@ interface EntertainmentHomeProps {
   onOpenLeaderboard: () => void;
   onOpenRooms: () => void;
   onOpenConference: () => void;
+  onOpenRandomMatch: () => void;
 }
 
 interface GameCardProps {
@@ -61,7 +62,7 @@ function GameCard({ title, description, icon, onClick, badge = 'فردي', gradi
 // Fill Verse, Word Search, and online rooms) get added below this
 // one in later phases.
 export default function EntertainmentHome({
-  currentUser, onBack, onOpenTrivia, onOpenWhoAmI, onOpenHymns, onOpenFillVerse, onOpenMultiplayer, onOpenAchievements, onOpenFriends, onOpenLeaderboard, onOpenRooms, onOpenConference,
+  currentUser, onBack, onOpenTrivia, onOpenWhoAmI, onOpenHymns, onOpenFillVerse, onOpenMultiplayer, onOpenAchievements, onOpenFriends, onOpenLeaderboard, onOpenRooms, onOpenConference, onOpenRandomMatch,
 }: EntertainmentHomeProps) {
   const league = getLeague(currentUser.rating ?? 100);
   const level = currentUser.level ?? 1;
@@ -239,6 +240,24 @@ export default function EntertainmentHome({
             <p className="text-[10.5px] text-slate-400 leading-relaxed">جدول المؤتمر، الإعلانات، البث المباشر، بطاقة المشارك والمذكرة الروحية في مكان واحد.</p>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition-colors rotate-180 shrink-0" />
+        </button>
+
+        <button
+          type="button"
+          onClick={onOpenRandomMatch}
+          className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-rose-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
+            <Zap className="w-7 h-7 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h4 className="text-sm font-black text-white">المباراة العشوائية</h4>
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">⚔️ 1 ضد 1</span>
+            </div>
+            <p className="text-[10.5px] text-slate-400 leading-relaxed">اتحدى لاعب عشوائي أو صاحبك في مباراة أسئلة سريعة لايف، واصعد في الترتيب.</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-rose-400 transition-colors rotate-180 shrink-0" />
         </button>
 
         <div className="space-y-3">
