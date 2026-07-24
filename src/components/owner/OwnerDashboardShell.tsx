@@ -14,6 +14,7 @@ import OwnerReports from './OwnerReports';
 import OwnerFinancialCenter from './OwnerFinancialCenter';
 import OwnerRoomsManager from './OwnerRoomsManager';
 import OwnerReviewsCenter from './OwnerReviewsCenter';
+import OwnerCalendar from './OwnerCalendar';
 import OwnerFoodMenu from './OwnerFoodMenu';
 import OwnerRoomDistributionScreen from './OwnerRoomDistribution';
 import OwnerTour from './OwnerTour';
@@ -189,11 +190,6 @@ export default function OwnerDashboardShell({
   const [extraPhotoCategory, setExtraPhotoCategory] = useState<'room' | 'service' | 'other'>('room');
   const [photosSuccessMsg, setPhotosSuccessMsg] = useState('');
 
-  const [selectedBlockDate, setSelectedBlockDate] = useState('');
-  const [selectedBlockDateEnd, setSelectedBlockDateEnd] = useState('');
-  const [blockReason, setBlockReason] = useState('أعمال صيانة وتجهيز');
-  const [blockSuccessMsg, setBlockSuccessMsg] = useState('');
-
   const [paymentDraftType, setPaymentDraftType] = useState<'instapay' | 'vodafone_cash' | 'etisalat_cash' | 'orange_cash' | 'we_cash' | 'bank_transfer'>('instapay');
   const [paymentDraftValue, setPaymentDraftValue] = useState('');
 
@@ -221,58 +217,6 @@ export default function OwnerDashboardShell({
   const PAYMENT_TYPE_LABELS: Record<string, string> = {
     instapay: 'إنستاباي', vodafone_cash: 'فودافون كاش', etisalat_cash: 'اتصالات كاش',
     orange_cash: 'أورنج كاش', we_cash: 'وي كاش', bank_transfer: 'تحويل بنكي',
-  };
-
-  const isDateBooked = (houseId: string, year: number, month: number, day: number) => {
-    const monthStr = month < 10 ? `0${month}` : `${month}`;
-    const dayStr = day < 10 ? `0${day}` : `${day}`;
-    const dateStr = `${year}-${monthStr}-${dayStr}`;
-    const targetHouse = houses.find(h => h.id === houseId);
-    if (targetHouse && targetHouse.blockedDates && targetHouse.blockedDates.includes(dateStr)) {
-      return {
-        id: `blocked_${dateStr}`, houseId, houseName: targetHouse.name, userId: 'admin',
-        userName: 'مغلق ومحجوز يدويًا', organizationName: 'مغلق للصيانة / أعمال الخدمة ⚠️',
-        guestsCount: 0, status: 'approved', checkIn: dateStr, checkOut: dateStr,
-        totalPrice: 0, depositPaid: false, depositAmount: 0, createdAt: ''
-      } as Booking;
-    }
-    const houseBookings = bookings.filter((b) => b.houseId === houseId && (b.status === 'approved' || b.status === 'completed'));
-    return houseBookings.find((b) => dateStr >= b.checkIn && dateStr <= b.checkOut) || null;
-  };
-
-  const handleBlockDateSubmit = (e: React.FormEvent, house: RetreatHouse) => {
-    e.preventDefault();
-    if (!selectedBlockDate) { alert('الرجاء اختيار تاريخ أولاً.'); return; }
-    const endDate = selectedBlockDateEnd || selectedBlockDate;
-    if (endDate < selectedBlockDate) { alert('تاريخ النهاية لازم يكون بعد تاريخ البداية.'); return; }
-
-    // Build every date in the range [selectedBlockDate, endDate] inclusive.
-    const rangeDates: string[] = [];
-    const cursor = new Date(selectedBlockDate);
-    const last = new Date(endDate);
-    while (cursor <= last) {
-      rangeDates.push(cursor.toISOString().split('T')[0]);
-      cursor.setDate(cursor.getDate() + 1);
-    }
-
-    const currentBlocked = house.blockedDates || [];
-    const newDates = rangeDates.filter((d) => !currentBlocked.includes(d));
-    if (newDates.length === 0) { alert('كل التواريخ دي محظورة بالفعل.'); return; }
-    onUpdateHouse?.({ ...house, blockedDates: [...currentBlocked, ...newDates] });
-    setBlockSuccessMsg(
-      newDates.length === 1
-        ? `تم حظر التاريخ ${newDates[0]} بنجاح! أصبح مغلقاً للصيانة/الخدمة.`
-        : `تم حظر ${newDates.length} يوم بنجاح (من ${selectedBlockDate} إلى ${endDate})! أصبحوا مغلقين للصيانة/الخدمة.`
-    );
-    setSelectedBlockDate('');
-    setSelectedBlockDateEnd('');
-    setTimeout(() => setBlockSuccessMsg(''), 4000);
-  };
-
-  const handleUnblockDate = (dateStr: string, house: RetreatHouse) => {
-    onUpdateHouse?.({ ...house, blockedDates: (house.blockedDates || []).filter((d) => d !== dateStr) });
-    setBlockSuccessMsg(`تم إلغاء حظر التاريخ ${dateStr} بنجاح! أصبح متاحاً للحجوزات.`);
-    setTimeout(() => setBlockSuccessMsg(''), 4000);
   };
 
   const ownerHouses = houses.filter((h) => h.ownerId === owner.id);
@@ -1418,135 +1362,13 @@ export default function OwnerDashboardShell({
       {/* Messages */}
       {activeTab === 'messages' && <OwnerMessages owner={owner} ownerBookings={ownerBookings} users={users} />}
 
-      {/* Calendar / occupancy — dynamic current + next month */}
+      {/* Calendar / occupancy — redesigned OwnerCalendar */}
       {activeTab === 'occupancy' && (
-        <div className="bg-[var(--color-owner-surface)] p-6 rounded-3xl border border-[var(--color-owner-border)] text-right space-y-6">
-          <div className="flex items-center gap-3 border-b border-[var(--color-owner-border)] pb-4">
-            <div className="p-2.5 rounded-2xl bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border border-[var(--color-owner-border)]">
-              <Calendar className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-black text-[var(--color-owner-text)]">لوحة التحكم الكاملة في أيام الإشغال والتواريخ المتاحة 🗓️</h3>
-              <p className="text-[10px] text-[var(--color-owner-secondary)]">حدد تواريخ أعمال الصيانة، التجهيز، أو الحجوزات اليدوية الداخلية لحظرها أو إتاحتها للجميع.</p>
-            </div>
-          </div>
-
-          {blockSuccessMsg && (
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-950 p-4 rounded-2xl flex items-center gap-3 text-xs font-bold">
-              <span className="text-lg">✅</span><span>{blockSuccessMsg}</span>
-            </div>
-          )}
-
-          {ownerHouses.length === 0 ? (
-            <div className="text-center py-8 text-xs text-[var(--color-owner-secondary)]">لم تقم بتسجيل أي بيت خلوة باسمك حتى الآن. يرجى تسجيل بيت أولاً لتفعيل لوحة الإشغال.</div>
-          ) : (() => {
-            const activeHouse = ownerHouses[0];
-            const blockedList = activeHouse.blockedDates || [];
-            const monthsToShow = [0, 1].map((offset) => {
-              const d = new Date(curYear, now.getMonth() + offset, 1);
-              return { year: d.getFullYear(), month: d.getMonth() + 1, label: d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' }) };
-            });
-            return (
-              <div className="space-y-6">
-                <div className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] p-4 rounded-2xl text-xs space-y-2">
-                  <span className="font-extrabold text-[var(--color-owner-text)] block">🏨 البيت الخاضع للإدارة والتحكم: "{activeHouse.name}"</span>
-                  <p className="text-[10.5px] text-[var(--color-owner-primary)] leading-relaxed">
-                    التواريخ التي يتم حظرها هنا ستظهر فوراً كغير متاحة للحجز للخدام ولن يستطيع أحد تقديم طلب حجز فيها.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <form onSubmit={(e) => handleBlockDateSubmit(e, activeHouse)} className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] p-4 rounded-2xl space-y-4">
-                    <span className="text-xs font-black text-[var(--color-owner-text)] block pb-2 border-b border-[var(--color-owner-border)]">🔒 حظر أو إغلاق فترة معينة:</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1.5">
-                        <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)]">من تاريخ 📆:</label>
-                        <input id="block-date-picker" type="date" required value={selectedBlockDate} onChange={(e) => setSelectedBlockDate(e.target.value)}
-                          className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none text-left" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)]">إلى تاريخ (اختياري لتحديد أكتر من يوم):</label>
-                        <input id="block-date-picker-end" type="date" min={selectedBlockDate || undefined} value={selectedBlockDateEnd} onChange={(e) => setSelectedBlockDateEnd(e.target.value)}
-                          className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none text-left" />
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)]">سبب الحظر أو الإشغال 📝:</label>
-                      <input id="block-date-reason" type="text" required value={blockReason} onChange={(e) => setBlockReason(e.target.value)} onFocus={(e) => e.target.select()}
-                        className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
-                    </div>
-                    <button id="submit-block-btn" type="submit" className="w-full bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm cursor-pointer">
-                      🔒 حظر وإغلاق هذا التاريخ الآن
-                    </button>
-                  </form>
-
-                  <div className="bg-white border border-[var(--color-owner-border)] p-4 rounded-2xl flex flex-col space-y-3">
-                    <span className="text-xs font-black text-[var(--color-owner-text)] block pb-2 border-b border-[var(--color-owner-border)]">🚫 قائمة التواريخ المغلقة والمحجوزة يدوياً ({blockedList.length}):</span>
-                    {blockedList.length === 0 ? (
-                      <div className="flex-1 flex flex-col items-center justify-center py-8 text-center text-[11px] text-[var(--color-owner-secondary)] space-y-1">
-                        <span>🌟 لا توجد أي تواريخ محظورة يدوياً.</span>
-                      </div>
-                    ) : (
-                      <div className="flex-1 overflow-y-auto max-h-[220px] space-y-2">
-                        {blockedList.map((dateStr) => (
-                          <div key={dateStr} className="bg-rose-50/50 border border-rose-100 p-2.5 rounded-xl flex items-center justify-between text-xs">
-                            <div>
-                              <div className="font-extrabold text-[var(--color-owner-text)]">{dateStr}</div>
-                              <div className="text-[9px] text-rose-800 font-bold">مغلق للصيانة والخدمة ⚠️</div>
-                            </div>
-                            <button id={`unblock-btn-${dateStr}`} type="button" onClick={() => handleUnblockDate(dateStr, activeHouse)}
-                              className="bg-white hover:bg-emerald-50 border border-rose-200 hover:border-emerald-200 text-rose-700 hover:text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-lg transition-all shadow-sm cursor-pointer">
-                              إلغاء الحظر 🔓
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-3 pt-4 border-t border-[var(--color-owner-border)]">
-                  <span className="text-xs font-black text-[var(--color-owner-text)] block">📅 المعاينة الحية لجدول الإشغال الكلي:</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {monthsToShow.map(({ year, month, label }) => {
-                      const daysCount = new Date(year, month, 0).getDate();
-                      const firstWeekday = new Date(year, month - 1, 1).getDay();
-                      return (
-                        <div key={`${year}-${month}`} className="border border-[var(--color-owner-border)] bg-white p-3 rounded-2xl space-y-2">
-                          <div className="text-center text-xs font-extrabold text-[var(--color-owner-text)] pb-1.5 border-b border-[var(--color-owner-border)]">{label}</div>
-                          <div className="grid grid-cols-7 gap-1 text-[9px] font-bold text-[var(--color-owner-secondary)] text-center mb-1">
-                            <div>ح</div><div>ن</div><div>ث</div><div>ر</div><div>خ</div><div>ج</div><div>س</div>
-                          </div>
-                          <div className="grid grid-cols-7 gap-1">
-                            {Array.from({ length: firstWeekday }).map((_, i) => <div key={`pad-${year}-${month}-${i}`} />)}
-                            {Array.from({ length: daysCount }, (_, i) => i + 1).map((day) => {
-                              const dateStr = `${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day}`;
-                              const isBlocked = blockedList.includes(dateStr);
-                              const isBooked = isDateBooked(activeHouse.id, year, month, day);
-                              return (
-                                <div key={`${year}-${month}-day-${day}`}
-                                  className={`py-1 rounded text-center text-[10px] font-bold ${
-                                    isBlocked ? 'bg-rose-600 text-white shadow-sm' : isBooked ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-100'
-                                  }`}
-                                  title={isBlocked ? 'مغلق ومحجوز يدوياً' : isBooked ? 'محجوز رسمياً' : 'شاغر ومتاح'}
-                                >{day}</div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex justify-center gap-4 text-[9.5px] font-bold text-[var(--color-owner-secondary)] pt-1 flex-wrap">
-                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-rose-600 border border-rose-700" /><span>مغلق يدويًا</span></span>
-                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-100 border border-amber-200" /><span>محجوز رسميًا</span></span>
-                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-emerald-50 border border-emerald-100" /><span>شاغر ومتاح</span></span>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
+        ownerHouses.length === 0 ? (
+          <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-6 text-center text-xs text-[var(--color-owner-secondary)]">أضف بيتك أولاً لتفعيل التقويم.</div>
+        ) : (
+          <OwnerCalendar house={ownerHouses[0]} bookings={ownerBookings} onUpdateHouse={onUpdateHouse} />
+        )
       )}
 
       {/* Overflow: Rooms — redesigned manager (OwnerRoomsManager) */}
