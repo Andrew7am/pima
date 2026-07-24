@@ -1683,8 +1683,7 @@ export default function App() {
           )}
 
           {activeScreen === 'meals' && (
-            // Owner food-menu editor, wired to RetreatHouse.menu (replaces the old
-            // disconnected localStorage-only WeeklyMenuManager at this route).
+            // Owner food-menu editor, wired to RetreatHouse.menu.
             <OwnerFoodMenu
               house={houses.find((h) => h.ownerId === currentUser.id)}
               onUpdateHouse={handleUpdateHouse}
