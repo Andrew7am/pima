@@ -1399,15 +1399,18 @@ export default function App() {
     }
   };
 
-  const handleClearNotifications = async () => {
-    if (!currentUser) return;
-    const cleared = notifications.filter((n) => n.userId === currentUser.id);
-    setNotifications((prev) => prev.filter((n) => n.userId !== currentUser.id));
-    cleared.filter((n) => n.id.startsWith('reminder_')).forEach((n) => dismissReminder(n.id));
-    const { error } = await supabase.from('notifications').delete().eq('user_id', currentUser.id);
-    if (error) {
-      console.error('clearNotifications:', error);
-      setNotifications((prev) => [...cleared, ...prev]);
+  // "Mark all as read" (the notifications panel action). Marks every shown
+  // notification read locally — robust even if currentUser.id doesn't match a
+  // row's user_id — and persists the real (non-reminder) ones by id. RLS still
+  // scopes the UPDATE to the caller's own rows.
+  const handleMarkAllRead = async () => {
+    const shown = notifications;
+    if (shown.length === 0) return;
+    setNotifications((prev) => prev.map((n) => (n.isRead ? n : { ...n, isRead: true })));
+    const dbIds = shown.filter((n) => !n.isRead && !n.id.startsWith('reminder_')).map((n) => n.id);
+    if (dbIds.length > 0) {
+      const { error } = await supabase.from('notifications').update({ is_read: true }).in('id', dbIds);
+      if (error) console.error('markAllRead:', error);
     }
   };
 
@@ -1459,7 +1462,7 @@ export default function App() {
         onLogout={() => {}}
         notifications={[]}
         onMarkNotificationAsRead={() => {}}
-        onClearNotifications={() => {}}
+        onMarkAllRead={() => {}}
         onRequireLogin={() => requireLogin(selectedHouse?.id)}
       >
         <Suspense fallback={<ScreenFallback />}>
@@ -1633,7 +1636,7 @@ export default function App() {
       onLogout={handleLogout}
       notifications={notifications}
       onMarkNotificationAsRead={handleMarkNotificationAsRead}
-      onClearNotifications={handleClearNotifications}
+      onMarkAllRead={handleMarkAllRead}
       messagesUnreadCount={guestUnreadMessages}
     >
       {/* Screen Routing & Render Logic */}

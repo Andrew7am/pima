@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Compass, BookOpen, ShieldAlert, Coffee, Bell,
-  Trash2, Check, X, LogOut, UserCircle, Home, Map as MapIcon, Sparkles, MessageCircle
+  Check, X, LogOut, UserCircle, Home, Map as MapIcon, Sparkles, MessageCircle
 } from 'lucide-react';
 import { User, AppNotification } from '../types';
 import Logo from './Logo';
@@ -16,7 +16,7 @@ interface WebLayoutProps {
   onLogout: () => void;
   notifications: AppNotification[];
   onMarkNotificationAsRead: (id: string) => void;
-  onClearNotifications: () => void;
+  onMarkAllRead: () => void;
   // Guest mode only — shows the login button and routes gated taps to auth
   onRequireLogin?: () => void;
   // Unread incoming booking-messages — drives the red badge on the محادثات tab
@@ -56,7 +56,7 @@ export default function WebLayout({
   onLogout,
   notifications,
   onMarkNotificationAsRead,
-  onClearNotifications,
+  onMarkAllRead,
   onRequireLogin,
   messagesUnreadCount = 0,
 }: WebLayoutProps) {
@@ -119,10 +119,10 @@ export default function WebLayout({
                     <span className="font-bold text-sm text-[var(--color-natural-text)]">الإشعارات</span>
                     <div className="flex gap-1">
                       <button
-                        onClick={onClearNotifications}
-                        className="text-[10px] text-red-400 hover:text-red-600 flex items-center gap-0.5 px-2 py-1 rounded-md hover:bg-red-50 transition-colors"
+                        onClick={onMarkAllRead}
+                        className="text-[10px] text-[var(--color-natural-secondary)] hover:text-[var(--color-primary)] flex items-center gap-0.5 px-2 py-1 rounded-md hover:bg-[var(--color-natural-hover)] transition-colors"
                       >
-                        <Trash2 className="w-3 h-3" /> مسح الكل
+                        <Check className="w-3 h-3" /> تمييز الكل كمقروء
                       </button>
                       <button onClick={() => setShowNotif(false)} className="p-1 rounded-md hover:bg-[var(--color-natural-hover)]">
                         <X className="w-4 h-4 text-[var(--color-natural-secondary)]" />
