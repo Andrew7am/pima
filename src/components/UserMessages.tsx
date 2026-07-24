@@ -47,9 +47,11 @@ export default function UserMessages({ currentUser, bookings, houses, users }: U
 
   const houseById = (id: string) => houses.find((h) => h.id === id);
   const ownerName = (b: Booking) => houseById(b.houseId)?.ownerName || 'صاحب البيت';
+  // From the guest's side the conversation represents the house, and RLS hides
+  // the owner's personal avatar anyway — so use one of the house's own photos.
   const ownerAvatar = (b: Booking) => {
-    const ownerId = houseById(b.houseId)?.ownerId;
-    return ownerId ? users.find((u) => u.id === ownerId)?.avatarUrl : undefined;
+    const h = houseById(b.houseId);
+    return h?.images?.[0] ?? (h?.ownerId ? users.find((u) => u.id === h.ownerId)?.avatarUrl : undefined);
   };
 
   // Load latest message + unread counts when the list opens (and again on
