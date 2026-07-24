@@ -253,6 +253,10 @@ export default defineConfig(({ mode }) => {
             if (id.includes('@supabase')) return 'vendor-supabase';
             if (id.includes('motion') || id.includes('framer-motion')) return 'vendor-motion';
             if (id.includes('lucide-react')) return 'vendor-icons';
+            // jsQR is only pulled in when the camera QR scanner actually opens
+            // (dynamic import). Leaving it to Vite's default chunking keeps it in
+            // its own async chunk instead of bloating the eager `vendor` bundle.
+            if (id.includes('jsqr')) return undefined;
             // NOTE: react/react-dom/scheduler are intentionally NOT split into
             // their own chunk. Splitting them created a cross-chunk cycle
             // (vendor <-> vendor-react) via shared react-ecosystem utils

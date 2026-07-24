@@ -5,6 +5,8 @@ import {
   Plus, Minus, Lock, Unlock, Settings, Image, Award, Crown, ArrowLeft, ArrowRight, Star
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { QRCodeSVG } from 'qrcode.react';
+import QRScanner from './QRScanner';
 import { BASE_TRIVIA_QUESTIONS } from './data/triviaData';
 const GENERAL_TRIVIA_QUESTIONS = BASE_TRIVIA_QUESTIONS;
 import { RAW_CHARACTERS } from './data/whoAmIData';
@@ -124,6 +126,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
   
   // Join Room Form state
   const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [showScanner, setShowScanner] = useState(false);
   const [joinNameInput, setJoinNameInput] = useState(currentUser.name || '');
   const [selectedAvatar, setSelectedAvatar] = useState(PRESET_AVATARS[0]);
 
@@ -1344,6 +1347,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
 
       {/* -------------------- 3. JOIN ROOM FORM -------------------- */}
       {mode === 'join' && (
+        <>
         <form onSubmit={handleJoinRoom} className="bg-white shadow-sm shadow-slate-200/50 border border-slate-100 rounded-3xl p-6 space-y-4">
           <div className="flex justify-between items-center border-b pb-3 border-[#D6D6C2]">
             <h3 className="text-xs font-black text-[#0A2342] flex items-center gap-1.5">
@@ -1365,6 +1369,14 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-center text-lg font-black tracking-widest focus:outline-none focus:border-blue-500 text-slate-800"
                 placeholder="458921"
               />
+              <button
+                type="button"
+                onClick={() => setShowScanner(true)}
+                className="mt-2 w-full flex items-center justify-center gap-2 bg-[#0A2342] hover:bg-[#0D315C] text-white text-[11px] font-black py-2.5 rounded-xl transition-colors"
+              >
+                <QrCode className="w-4 h-4" />
+                امسح كود QR بالكاميرا
+              </button>
             </div>
 
             <div>
@@ -1408,6 +1420,21 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
             طلب الانضمام إلى الغرفة الروحية ✓
           </button>
         </form>
+        {showScanner && (
+          <QRScanner
+            title="امسح كود غرفة الألعاب"
+            hint="وجّه الكاميرا نحو رمز QR المعروض على شاشة الخادم"
+            onClose={() => setShowScanner(false)}
+            onScan={(text) => {
+              // The room QR encodes the 6-digit join code (also tolerate a code
+              // embedded in a shared URL).
+              const m = text.match(/\d{6}/);
+              if (m) setJoinCodeInput(m[0]);
+              setShowScanner(false);
+            }}
+          />
+        )}
+        </>
       )}
 
       {/* -------------------- 4. ACTIVE GAME ROOM INTERFACE -------------------- */}
@@ -1424,14 +1451,15 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                 <h3 className="text-xs sm:text-sm font-black text-[#0A2342] mt-1.5">{room.name}</h3>
               </div>
 
-              {/* ROOM CODE WITH QR CODE PREVIEW */}
+              {/* ROOM CODE WITH SCANNABLE QR — encodes the join code so members
+                  can scan it with the in-app camera to join instantly. */}
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-150 p-2 rounded-2xl self-stretch sm:self-auto justify-between">
                 <div className="text-right">
                   <p className="text-[8.5px] text-slate-400 font-bold">كود انضمام المشتركين</p>
                   <p className="text-base font-black tracking-wider text-slate-800 leading-none mt-0.5">{room.code}</p>
                 </div>
-                <div className="w-8 h-8 bg-white border rounded-lg flex items-center justify-center text-slate-700" title="QR Code للغرفة">
-                  <QrCode className="w-5 h-5 shrink-0" />
+                <div className="w-11 h-11 bg-white border rounded-lg flex items-center justify-center p-1" title="امسح للانضمام الفوري">
+                  <QRCodeSVG value={room.code} size={36} level="M" />
                 </div>
               </div>
             </div>

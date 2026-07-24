@@ -65,3 +65,9 @@ body {
   color: var(--color-owner-text);
 }
 
+/* Moving scan line for the QR scanner / conference code display. */
+@keyframes scan {
+  0%, 100% { transform: translateY(0); opacity: 0.85; }
+  50% { transform: translateY(240px); opacity: 1; }
+}
+
