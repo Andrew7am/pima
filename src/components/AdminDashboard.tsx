@@ -1741,6 +1741,22 @@ export default function AdminDashboard({
                         </div>
                         <span className={`shrink-0 text-[9px] font-black px-2 py-1 rounded-full border ${meta.cls}`}>{meta.label}</span>
                       </div>
+                      {open && (() => {
+                        const methods = houses.find((h) => h.id === p.houseId)?.paymentMethods ?? [];
+                        return methods.length > 0 ? (
+                          <div className="bg-[#FBFBFA] border border-[#EBEBE0] rounded-xl p-2 space-y-1">
+                            <div className="text-[9px] font-black text-[#8A8A70]">حوّل إلى:</div>
+                            {methods.map((m) => (
+                              <div key={m.id} className="flex items-center justify-between gap-2 text-[10px]">
+                                <span className="font-bold text-[#4A4A3A] shrink-0">{m.label}</span>
+                                <span dir="ltr" className="font-mono font-black text-[#5A5A40] select-all break-all">{m.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-[9px] text-rose-600 font-bold">⚠️ لا توجد وسيلة تحويل مسجّلة لهذا البيت — راسِل صاحبه.</div>
+                        );
+                      })()}
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-base font-black text-[#5A5A40]">{p.amount.toLocaleString()} ج.م</div>
                         {open && onUpdatePayoutStatus && (
