@@ -100,7 +100,10 @@ export default function OwnerReviewsCenter({ reviews, onUpdateReview }: OwnerRev
   const repliedPct = total > 0 ? Math.round((answered / total) * 100) : 0;
 
   const likedTop = useMemo(() => aggTags(reviews, 'likedTags').slice(0, 3), [reviews]);
-  const complaintTop = useMemo(() => aggTags(reviews, 'problemTags')[0], [reviews]);
+  // Full ranked list of recurring complaints (structured tags + free-text "other").
+  const complaintList = useMemo(() => aggTagsWithCounts(reviews, 'problemTags', 'problemOther'), [reviews]);
+  const complaintTop = complaintList[0]?.tag;
+  const complaintMax = complaintList[0]?.count ?? 1;
   const targetRating = Math.min(5, avgNum + 0.1);
 
   const badge = avgNum >= 4.5
@@ -348,12 +351,24 @@ export default function OwnerReviewsCenter({ reviews, onUpdateReview }: OwnerRev
               </div>
             </div>
           )}
-          {complaintTop && (
+          {complaintList.length > 0 && (
             <div className="flex items-start gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center shrink-0"><AlertTriangle className="w-4 h-4 text-rose-600" /></div>
-              <div>
-                <div className="text-[10px] font-black text-[var(--color-owner-text)]">أكثر شكوى</div>
-                <div className="text-[10.5px] font-bold text-[var(--color-owner-secondary)]">{complaintTop}</div>
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-black text-[var(--color-owner-text)]">أكثر الشكاوى تكرارًا</div>
+                  <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{complaintList.length} نوع</div>
+                </div>
+                {complaintList.slice(0, 6).map((c, i) => (
+                  <div key={c.tag} className="flex items-center gap-2">
+                    <span className="text-[9px] font-black text-[var(--color-owner-secondary)] w-4 shrink-0">{i + 1}</span>
+                    <span className="text-[10px] font-bold text-[var(--color-owner-text)] w-24 shrink-0 truncate">{c.tag}</span>
+                    <span className="flex-1 h-1.5 rounded-full bg-[var(--color-owner-bg)] overflow-hidden">
+                      <span className="block h-full bg-rose-400 rounded-full" style={{ width: `${(c.count / complaintMax) * 100}%` }} />
+                    </span>
+                    <span className="text-[9px] font-black text-rose-600 w-8 shrink-0 text-left">{c.count} {c.count === 1 ? 'مرة' : 'مرات'}</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -449,6 +464,19 @@ function aggTags(reviews: Review[], key: 'likedTags' | 'problemTags'): string[] 
   const m = new Map<string, number>();
   reviews.forEach((r) => (r[key] || []).forEach((tag) => m.set(tag, (m.get(tag) || 0) + 1)));
   return [...m.entries()].sort((a, b) => b[1] - a[1]).map((e) => e[0]);
+}
+
+// Ranked tags with counts; optionally folds in a free-text field ("other").
+function aggTagsWithCounts(reviews: Review[], key: 'likedTags' | 'problemTags', otherKey?: 'problemOther'): { tag: string; count: number }[] {
+  const m = new Map<string, number>();
+  reviews.forEach((r) => {
+    (r[key] || []).forEach((tag) => m.set(tag, (m.get(tag) || 0) + 1));
+    if (otherKey) {
+      const other = (r[otherKey] || '').trim();
+      if (other) m.set(other, (m.get(other) || 0) + 1);
+    }
+  });
+  return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([tag, count]) => ({ tag, count }));
 }
 
 function ReviewsHeader() {
