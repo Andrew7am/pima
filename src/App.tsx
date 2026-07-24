@@ -16,7 +16,7 @@ import {
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
   createWaitlistEntry,
   loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
-  loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb,
+  loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb, settleBookingsPayout,
   loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
   createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
   loadPlatformSettings, updatePlatformSettings,
@@ -501,6 +501,21 @@ export default function App() {
   const handleUpdatePayoutStatus = (id: string, status: Payout['status']) => {
     setPayouts((prev) => prev.map((p) => (p.id === id ? { ...p, status, completedAt: status === 'completed' ? new Date().toISOString() : undefined } : p)));
     updatePayoutStatusDb(id, status);
+  };
+
+  // Admin transfers a house's owner share for one booking or several at once:
+  // records a completed payout (owner gets a realtime "تم تحويل مستحقاتك"
+  // notification via trigger 068) and marks those bookings settled so they
+  // drop out of the "ready to transfer" list.
+  const handleSettleBookings = async (args: { houseId: string; ownerId: string; amount: number; bookingIds: string[]; note?: string }) => {
+    const now = new Date().toISOString();
+    const ok = await settleBookingsPayout(args);
+    if (!ok) { alert('تعذّر تسجيل التحويل. حاول مرة أخرى.'); return; }
+    setBookings((prev) => prev.map((b) => (args.bookingIds.includes(b.id) ? { ...b, ownerSettledAt: now } : b)));
+    setPayouts((prev) => [{
+      id: `payout_local_${Date.now()}`, houseId: args.houseId, ownerId: args.ownerId, amount: args.amount,
+      status: 'completed', note: args.note, requestedAt: now, completedAt: now,
+    } as Payout, ...prev]);
   };
 
   // --- Smart Notification Generator (3 Days Before Check-in) ---
@@ -1643,6 +1658,7 @@ export default function App() {
               bookings={bookings}
               payouts={payouts}
               onUpdatePayoutStatus={handleUpdatePayoutStatus}
+              onSettleBookings={handleSettleBookings}
               reviews={reviews}
               onApproveHouse={handleApproveHouse}
               onRejectHouse={handleRejectHouse}

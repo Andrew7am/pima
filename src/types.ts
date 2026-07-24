@@ -170,6 +170,9 @@ export interface Booking {
   checkedInAt?: string;
   checkedOutAt?: string;
   ownerNotes?: string;
+  // Set when the admin has transferred this booking's owner share (25%) to
+  // the house owner. NULL/undefined = still owed. See migration 068.
+  ownerSettledAt?: string;
   createdAt: string;
 }
 
@@ -310,7 +313,7 @@ export interface PlatformSettings {
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   commissionRate: 0.05,
-  depositRate: 0.15,
+  depositRate: 0.30,
   pointsPerEgp: 100,
   maxRedemptionPct: 0.10,
   referralBonusPoints: 2000,

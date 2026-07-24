@@ -102,6 +102,7 @@ export function mapBooking(r: Record<string, unknown>): Booking {
     checkedInAt: r.checked_in_at as string ?? undefined,
     checkedOutAt: r.checked_out_at as string ?? undefined,
     ownerNotes: r.owner_notes as string ?? undefined,
+    ownerSettledAt: r.owner_settled_at as string ?? undefined,
     createdAt: r.created_at as string,
   };
 }
@@ -612,6 +613,27 @@ export async function updatePayoutStatus(id: string, status: Payout['status']): 
     .eq('id', id);
   if (error) console.error('updatePayoutStatus:', error);
   return !error;
+}
+
+// Admin settles one or more bookings' owner share in a single transfer: records
+// one completed payout (the ledger the owner's Financial Center reads, and the
+// row whose INSERT trigger — migration 068 — pings the owner in realtime), then
+// stamps each booking settled so it drops out of the admin's "to transfer" list.
+// bookingIds with one element => a per-booking transfer; many => a batch.
+export async function settleBookingsPayout(args: {
+  houseId: string; ownerId: string; amount: number; bookingIds: string[]; method?: string; note?: string;
+}): Promise<boolean> {
+  const now = new Date().toISOString();
+  const payoutId = `payout_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  const { error: pErr } = await supabase.from('owner_payouts').insert({
+    id: payoutId, house_id: args.houseId, owner_id: args.ownerId, amount: args.amount,
+    status: 'completed', method: args.method ?? null, note: args.note ?? null,
+    requested_at: now, completed_at: now,
+  });
+  if (pErr) { console.error('settleBookingsPayout(payout):', pErr); return false; }
+  const { error: bErr } = await supabase.from('bookings').update({ owner_settled_at: now }).in('id', args.bookingIds);
+  if (bErr) { console.error('settleBookingsPayout(bookings):', bErr); return false; }
+  return true;
 }
 
 export async function loadAnnouncementsForHouses(houseIds: string[]): Promise<Announcement[]> {

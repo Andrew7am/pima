@@ -40,6 +40,8 @@ interface AdminDashboardProps {
   onDeleteHouse?: (houseId: string) => void;
   payouts?: Payout[];
   onUpdatePayoutStatus?: (id: string, status: Payout['status']) => void;
+  // Settle one booking's owner share (bookingIds length 1) or several at once.
+  onSettleBookings?: (args: { houseId: string; ownerId: string; amount: number; bookingIds: string[]; note?: string }) => void;
 }
 
 export default function AdminDashboard({
@@ -73,6 +75,7 @@ export default function AdminDashboard({
   onDeleteHouse,
   payouts = [],
   onUpdatePayoutStatus,
+  onSettleBookings,
 }: AdminDashboardProps) {
   // Tabs within Admin — "growth" is default: the admin's morning check
   // (what's happening + what needs attention). Older tabs still exist.
@@ -1717,10 +1720,83 @@ export default function AdminDashboard({
           rejected: { label: 'مرفوض', cls: 'bg-rose-50 text-rose-800 border-rose-200' },
         };
         const pendingTotal = payouts.filter((p) => p.status === 'pending' || p.status === 'processing').reduce((s, p) => s + p.amount, 0);
+        // Per-booking owner shares that Pima holds and hasn't transferred yet
+        // (deposit received, not cancelled/rejected, not already settled).
+        // Grouped by house so the admin can transfer each booking separately
+        // or all of a house's bookings in one payment.
+        const ownerShare = (b: Booking) => Math.max(0, Math.round((b.depositAmount || 0) - (b.totalPrice || 0) * settings.commissionRate));
+        const owedBookings = bookings.filter((b) =>
+          (b.paymentStatus === 'paid_deposit' || b.paymentStatus === 'paid_full' || b.depositPaid) &&
+          b.status !== 'cancelled' && b.status !== 'rejected' && !b.ownerSettledAt && ownerShare(b) > 0
+        );
+        const owedByHouse = owedBookings.reduce<Record<string, Booking[]>>((acc, b) => {
+          (acc[b.houseId] ??= []).push(b); return acc;
+        }, {});
+        const owedHouseIds = Object.keys(owedByHouse);
         return (
           <div className="space-y-4 text-right">
+            {onSettleBookings && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
+                  <h3 className="text-xs font-bold text-[#4A4A3A]">مستحقات جاهزة للتحويل (لكل حجز):</h3>
+                  <div className="text-[10px] text-[#8A8A70]">{owedBookings.length} حجز</div>
+                </div>
+                {owedHouseIds.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70]">لا توجد مستحقات غير محوّلة حالياً.</div>
+                ) : owedHouseIds.map((hid) => {
+                  const house = houses.find((h) => h.id === hid);
+                  const list = owedByHouse[hid];
+                  const ownerId = house?.ownerId || '';
+                  const ownerName = users.find((u) => u.id === ownerId)?.name || '—';
+                  const total = list.reduce((s, b) => s + ownerShare(b), 0);
+                  const methods = house?.paymentMethods ?? [];
+                  return (
+                    <div key={hid} className="bg-white rounded-2xl border border-[#D6D6C2] p-3.5 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="text-xs font-black text-[#4A4A3A] min-w-0">{ownerName} · <span className="font-bold text-[#8A8A70]">{house?.name || '—'}</span></div>
+                        <div className="text-xs font-black text-[#5A5A40] shrink-0">{total.toLocaleString()} ج.م</div>
+                      </div>
+                      {methods.length > 0 ? (
+                        <div className="bg-[#FBFBFA] border border-[#EBEBE0] rounded-xl p-2 space-y-1">
+                          <div className="text-[9px] font-black text-[#8A8A70]">حوّل إلى:</div>
+                          {methods.map((m) => (
+                            <div key={m.id} className="flex items-center justify-between gap-2 text-[10px]">
+                              <span className="font-bold text-[#4A4A3A] shrink-0">{m.label}</span>
+                              <span dir="ltr" className="font-mono font-black text-[#5A5A40] select-all break-all">{m.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-[9px] text-rose-600 font-bold">⚠️ لا توجد وسيلة تحويل مسجّلة لهذا البيت.</div>
+                      )}
+                      <div className="space-y-1.5">
+                        {list.map((b) => (
+                          <div key={b.id} className="flex items-center justify-between gap-2 bg-[#FBFBFA] rounded-xl px-2.5 py-1.5">
+                            <div className="min-w-0">
+                              <div className="text-[11px] font-bold text-[#4A4A3A] truncate">{b.userName}</div>
+                              <div className="text-[9px] text-[#8A8A70] font-bold">{b.checkIn} → {b.checkOut}</div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[11px] font-black text-[#5A5A40]">{ownerShare(b).toLocaleString()} ج.م</span>
+                              <button type="button"
+                                onClick={() => { if (confirm(`تأكيد تحويل ${ownerShare(b).toLocaleString()} ج.م لـ${ownerName} عن حجز ${b.userName}؟`)) onSettleBookings({ houseId: hid, ownerId, amount: ownerShare(b), bookingIds: [b.id], note: `حجز ${b.userName}` }); }}
+                                className="text-[10px] font-bold bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg cursor-pointer">حوّل ✓</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {list.length > 1 && (
+                        <button type="button"
+                          onClick={() => { if (confirm(`تأكيد تحويل الإجمالي ${total.toLocaleString()} ج.م لـ${ownerName} (${list.length} حجوزات) دفعة واحدة؟`)) onSettleBookings({ houseId: hid, ownerId, amount: total, bookingIds: list.map((b) => b.id), note: `${list.length} حجوزات دفعة واحدة` }); }}
+                          className="w-full text-[11px] font-black bg-[#3A6B4C] hover:bg-[#2D5A3F] text-white py-2 rounded-xl cursor-pointer transition-colors">حوّل الكل دفعة واحدة ({total.toLocaleString()} ج.م) ✓</button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
-              <h3 className="text-xs font-bold text-[#4A4A3A]">طلبات تحويل أموال أصحاب البيوت:</h3>
+              <h3 className="text-xs font-bold text-[#4A4A3A]">طلبات تحويل أصحاب البيوت + السجل:</h3>
               <div className="text-[10px] text-[#8A8A70]">قيد التنفيذ: <strong className="text-amber-800">{pendingTotal.toLocaleString()} ج.م</strong></div>
             </div>
             {payouts.length === 0 ? (
