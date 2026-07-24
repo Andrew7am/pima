@@ -53,6 +53,7 @@ const MultiplayerLobby = lazy(() => import('./entertainment/multiplayer/Multipla
 const LiveMatchGame = lazy(() => import('./entertainment/multiplayer/LiveMatchGame'));
 const AchievementsScreen = lazy(() => import('./entertainment/AchievementsScreen'));
 const TopLeaders = lazy(() => import('./entertainment/TopLeaders').then((m) => ({ default: m.TopLeaders })));
+const InteractiveRoom = lazy(() => import('./entertainment/InteractiveRoom'));
 import AchievementToast from './entertainment/AchievementToast';
 const FriendsScreen = lazy(() => import('./entertainment/FriendsScreen'));
 const ChatThreadScreen = lazy(() => import('./entertainment/ChatThreadScreen'));
@@ -164,7 +165,7 @@ export default function App() {
   const prevHouseRef = useRef<string | null>(null);
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard'>('explore');
+  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room'>('explore');
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   // Newly-unlocked achievement ids awaiting their celebration toast — lives
   // here (not inside a game screen) so an unlock survives navigating away
@@ -1772,6 +1773,7 @@ export default function App() {
               onOpenAchievements={() => setActiveScreen('achievements')}
               onOpenFriends={() => setActiveScreen('friends')}
               onOpenLeaderboard={() => setActiveScreen('leaderboard')}
+              onOpenRooms={() => setActiveScreen('interactive_room')}
             />
           )}
 
@@ -1789,6 +1791,27 @@ export default function App() {
               </div>
               {/* Rank/display by entertainment XP — pass points := xp so the ported UI stays consistent. */}
               <TopLeaders currentUser={{ ...currentUser, points: currentUser.xp ?? 0 }} />
+            </div>
+          )}
+
+          {activeScreen === 'interactive_room' && (
+            <div className="-mx-4 -my-6 sm:mx-0 sm:my-0">
+              <InteractiveRoom
+                currentUser={{
+                  id: currentUser.id,
+                  name: currentUser.name,
+                  avatar: currentUser.avatarUrl,
+                  xp: currentUser.xp,
+                  points: currentUser.points,
+                  churchName: currentUser.churchName,
+                }}
+                onBack={() => setActiveScreen('entertainment')}
+                onUpdateUser={(u: { xp?: number; points?: number }) =>
+                  setCurrentUser((prev) =>
+                    prev ? { ...prev, xp: u.xp ?? prev.xp, points: u.points ?? prev.points } : prev
+                  )
+                }
+              />
             </div>
           )}
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { User } from '../types';
-import { ChevronRight, BookOpen, Zap, Coins, Trophy, Sparkles, Music, FileText, HelpCircle, Users, Award } from 'lucide-react';
+import { ChevronRight, BookOpen, Zap, Coins, Trophy, Sparkles, Music, FileText, HelpCircle, Users, Award, Gamepad2 } from 'lucide-react';
 import { xpToNext, xpProgressPct } from './progress';
 import { getLeague } from './leagues';
 import { getConversations } from './social';
@@ -16,6 +16,7 @@ interface EntertainmentHomeProps {
   onOpenAchievements: () => void;
   onOpenFriends: () => void;
   onOpenLeaderboard: () => void;
+  onOpenRooms: () => void;
 }
 
 interface GameCardProps {
@@ -59,7 +60,7 @@ function GameCard({ title, description, icon, onClick, badge = 'فردي', gradi
 // Fill Verse, Word Search, and online rooms) get added below this
 // one in later phases.
 export default function EntertainmentHome({
-  currentUser, onBack, onOpenTrivia, onOpenWhoAmI, onOpenHymns, onOpenFillVerse, onOpenMultiplayer, onOpenAchievements, onOpenFriends, onOpenLeaderboard,
+  currentUser, onBack, onOpenTrivia, onOpenWhoAmI, onOpenHymns, onOpenFillVerse, onOpenMultiplayer, onOpenAchievements, onOpenFriends, onOpenLeaderboard, onOpenRooms,
 }: EntertainmentHomeProps) {
   const league = getLeague(currentUser.rating ?? 100);
   const level = currentUser.level ?? 1;
@@ -201,6 +202,24 @@ export default function EntertainmentHome({
             <p className="text-[10.5px] text-slate-400 leading-relaxed">شوف أساطير الصدارة الروحية وترتيبك بين اللاعبين.</p>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-colors rotate-180 shrink-0" />
+        </button>
+
+        <button
+          type="button"
+          onClick={onOpenRooms}
+          className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-emerald-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
+            <Gamepad2 className="w-7 h-7 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h4 className="text-sm font-black text-white">الغرف التفاعلية</h4>
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">🎮 ألعاب جماعية</span>
+            </div>
+            <p className="text-[10.5px] text-slate-400 leading-relaxed">اعمل غرفة للخلوة أو الاجتماع، وسّع الفرق والعب مسابقات جماعية على شاشة واحدة.</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors rotate-180 shrink-0" />
         </button>
 
         <div className="space-y-3">
