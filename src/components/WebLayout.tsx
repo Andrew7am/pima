@@ -116,11 +116,21 @@ export default function WebLayout({
               {showNotif && (
                 <div className="absolute top-11 left-0 w-80 bg-white rounded-2xl shadow-xl border border-[var(--color-natural-border)] z-50 overflow-hidden">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-natural-border)]">
-                    <span className="font-bold text-sm text-[var(--color-natural-text)]">الإشعارات</span>
+                    <span className="font-bold text-sm text-[var(--color-natural-text)] flex items-center gap-1.5">
+                      الإشعارات
+                      {unreadCount > 0 && (
+                        <span className="text-[9px] font-black text-white bg-blue-500 rounded-full px-1.5 py-0.5">{unreadCount} جديد</span>
+                      )}
+                    </span>
                     <div className="flex gap-1">
                       <button
                         onClick={onMarkAllRead}
-                        className="text-[10px] text-[var(--color-natural-secondary)] hover:text-[var(--color-primary)] flex items-center gap-0.5 px-2 py-1 rounded-md hover:bg-[var(--color-natural-hover)] transition-colors"
+                        disabled={unreadCount === 0}
+                        className={`text-[10px] flex items-center gap-0.5 px-2 py-1 rounded-md transition-colors ${
+                          unreadCount === 0
+                            ? 'text-[var(--color-natural-secondary)]/40 cursor-default'
+                            : 'text-[var(--color-natural-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-natural-hover)]'
+                        }`}
                       >
                         <Check className="w-3 h-3" /> تمييز الكل كمقروء
                       </button>
@@ -136,20 +146,26 @@ export default function WebLayout({
                       userNotifications.map(n => (
                         <div
                           key={n.id}
-                          className={`px-4 py-3 border-b border-[var(--color-natural-border)] last:border-0 flex gap-3 items-start
-                            ${!n.isRead ? 'bg-blue-50' : ''}`}
+                          className={`relative px-4 py-3 border-b border-[var(--color-natural-border)] last:border-0 flex gap-3 items-start transition-all
+                            ${!n.isRead ? 'bg-blue-50' : 'bg-white'}`}
                         >
+                          {/* Unread accent bar (start edge in RTL) */}
+                          {!n.isRead && <span className="absolute right-0 top-0 bottom-0 w-1 bg-blue-500" />}
                           <div className={`w-2 h-2 mt-1.5 rounded-full shrink-0 ${
                             n.type === 'success' ? 'bg-green-500' :
                             n.type === 'danger' ? 'bg-red-500' : 'bg-blue-400'
-                          }`} />
+                          } ${n.isRead ? 'opacity-30' : ''}`} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-[var(--color-natural-text)] mb-0.5">{n.title}</p>
-                            <p className="text-[11px] text-[var(--color-natural-secondary)] leading-relaxed line-clamp-3">{n.message}</p>
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <p className={`text-xs ${!n.isRead ? 'font-black text-[var(--color-natural-text)]' : 'font-semibold text-[var(--color-natural-secondary)]'}`}>{n.title}</p>
+                              {!n.isRead && <span className="shrink-0 text-[8px] font-black text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full">جديد</span>}
+                            </div>
+                            <p className={`text-[11px] leading-relaxed line-clamp-3 ${n.isRead ? 'text-[var(--color-natural-secondary)]/60' : 'text-[var(--color-natural-secondary)]'}`}>{n.message}</p>
                           </div>
                           {!n.isRead && (
                             <button
                               onClick={() => onMarkNotificationAsRead(n.id)}
+                              title="تمييز كمقروء"
                               className="shrink-0 p-1 rounded-full hover:bg-green-100 text-green-500"
                             >
                               <Check className="w-3.5 h-3.5" />
