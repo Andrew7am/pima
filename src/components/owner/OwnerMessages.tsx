@@ -3,6 +3,7 @@ import { Booking, User, BookingMessage } from '../../types';
 import { ChevronRight, Search, MessageCircle, Check, CheckCheck } from 'lucide-react';
 import BookingChatPanel from '../BookingChatPanel';
 import { loadLatestMessagePerBooking, loadUnreadCountsPerBooking } from '../../lib/bookingMessages';
+import { SkeletonList } from './Skeleton';
 
 interface OwnerMessagesProps {
   owner: User;
@@ -128,9 +129,7 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
       </div>
 
       {loading ? (
-        <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-8 text-center text-xs text-[var(--color-owner-secondary)]">
-          جارٍ تحميل المحادثات...
-        </div>
+        <SkeletonList rows={5} />
       ) : conversations.length === 0 ? (
         <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-8 text-center space-y-2">
           <MessageCircle className="w-8 h-8 text-[var(--color-owner-secondary)]/50 mx-auto" />

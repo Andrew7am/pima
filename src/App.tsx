@@ -1487,8 +1487,13 @@ export default function App() {
     // screen instead of guessing "incomplete" while we don't actually know yet.
     if (!housesLoaded || !ownerRoomsChecked) {
       return (
-        <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center">
-          <div className="text-[#8A8A70] text-sm">جارٍ تحميل بيانات بيتك...</div>
+        <div className="owner-theme min-h-screen bg-[var(--color-owner-bg)] p-4 space-y-3" dir="rtl" aria-busy="true">
+          <div className="h-24 rounded-[24px] bg-[var(--color-owner-hover)] animate-pulse" />
+          <div className="grid grid-cols-2 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-20 rounded-2xl bg-[var(--color-owner-hover)] animate-pulse" />)}
+          </div>
+          <div className="h-32 rounded-[24px] bg-[var(--color-owner-hover)] animate-pulse" />
+          <div className="h-40 rounded-[24px] bg-[var(--color-owner-hover)] animate-pulse" />
         </div>
       );
     }
