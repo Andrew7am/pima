@@ -15,6 +15,7 @@ interface EntertainmentHomeProps {
   onOpenMultiplayer: () => void;
   onOpenAchievements: () => void;
   onOpenFriends: () => void;
+  onOpenLeaderboard: () => void;
 }
 
 interface GameCardProps {
@@ -58,7 +59,7 @@ function GameCard({ title, description, icon, onClick, badge = 'فردي', gradi
 // Fill Verse, Word Search, and online rooms) get added below this
 // one in later phases.
 export default function EntertainmentHome({
-  currentUser, onBack, onOpenTrivia, onOpenWhoAmI, onOpenHymns, onOpenFillVerse, onOpenMultiplayer, onOpenAchievements, onOpenFriends,
+  currentUser, onBack, onOpenTrivia, onOpenWhoAmI, onOpenHymns, onOpenFillVerse, onOpenMultiplayer, onOpenAchievements, onOpenFriends, onOpenLeaderboard,
 }: EntertainmentHomeProps) {
   const league = getLeague(currentUser.rating ?? 100);
   const level = currentUser.level ?? 1;
@@ -182,6 +183,24 @@ export default function EntertainmentHome({
             <p className="text-[10.5px] text-slate-400 leading-relaxed">أضف أصدقاء من المستخدمين وابدأ محادثة مباشرة.</p>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition-colors rotate-180 shrink-0" />
+        </button>
+
+        <button
+          type="button"
+          onClick={onOpenLeaderboard}
+          className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-amber-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
+        >
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
+            <Trophy className="w-7 h-7 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h4 className="text-sm font-black text-white">لوحة الصدارة</h4>
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">🏆 المتصدرون</span>
+            </div>
+            <p className="text-[10.5px] text-slate-400 leading-relaxed">شوف أساطير الصدارة الروحية وترتيبك بين اللاعبين.</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-colors rotate-180 shrink-0" />
         </button>
 
         <div className="space-y-3">

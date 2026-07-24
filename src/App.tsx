@@ -52,6 +52,7 @@ const FillVerseGame = lazy(() => import('./entertainment/games/FillVerseGame'));
 const MultiplayerLobby = lazy(() => import('./entertainment/multiplayer/MultiplayerLobby'));
 const LiveMatchGame = lazy(() => import('./entertainment/multiplayer/LiveMatchGame'));
 const AchievementsScreen = lazy(() => import('./entertainment/AchievementsScreen'));
+const TopLeaders = lazy(() => import('./entertainment/TopLeaders').then((m) => ({ default: m.TopLeaders })));
 import AchievementToast from './entertainment/AchievementToast';
 const FriendsScreen = lazy(() => import('./entertainment/FriendsScreen'));
 const ChatThreadScreen = lazy(() => import('./entertainment/ChatThreadScreen'));
@@ -163,7 +164,7 @@ export default function App() {
   const prevHouseRef = useRef<string | null>(null);
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread'>('explore');
+  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard'>('explore');
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   // Newly-unlocked achievement ids awaiting their celebration toast — lives
   // here (not inside a game screen) so an unlock survives navigating away
@@ -1770,7 +1771,25 @@ export default function App() {
               onOpenMultiplayer={() => setActiveScreen('multiplayer_lobby')}
               onOpenAchievements={() => setActiveScreen('achievements')}
               onOpenFriends={() => setActiveScreen('friends')}
+              onOpenLeaderboard={() => setActiveScreen('leaderboard')}
             />
+          )}
+
+          {activeScreen === 'leaderboard' && (
+            <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
+              <div className="max-w-4xl mx-auto px-4 pt-5">
+                <button
+                  type="button"
+                  onClick={() => setActiveScreen('entertainment')}
+                  className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+                  <span>رجوع</span>
+                </button>
+              </div>
+              {/* Rank/display by entertainment XP — pass points := xp so the ported UI stays consistent. */}
+              <TopLeaders currentUser={{ ...currentUser, points: currentUser.xp ?? 0 }} />
+            </div>
           )}
 
           {activeScreen === 'trivia' && (
