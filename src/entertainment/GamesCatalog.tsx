@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { ChevronRight, ScrollText, Eye, Map, Shield, Search, Flame, BookOpen, Gamepad2, Brain, Grid3x3 } from 'lucide-react';
+import { ChevronRight, ScrollText, Eye, Map, Shield, Search, Flame, BookOpen, Gamepad2, Brain, Grid3x3, Clock, ListOrdered, Puzzle } from 'lucide-react';
 import { User } from '../types';
 import MCQGame, { MCQQuestion } from './games/MCQGame';
 import MemoryMatchGame from './games/MemoryMatchGame';
 import WordSearchGame from './games/WordSearchGame';
+import OrderingGame from './games/OrderingGame';
+import CrosswordGame from './games/CrosswordGame';
+import { BIBLICAL_EVENTS_SETS } from './entertainmentData';
+import { BIBLE_ORDER_SETS } from './data/orderingCrosswordData';
 
 type GameComp = React.ComponentType<{
   currentUser: User;
@@ -11,6 +15,14 @@ type GameComp = React.ComponentType<{
   onUserUpdated: (patch: Partial<User>) => void;
   onAchievementsUnlocked?: (ids: string[]) => void;
 }>;
+
+// Ordering games share one engine; thin wrappers plug in their data.
+const EventsGame: GameComp = (p) => (
+  <OrderingGame {...p} title="ترتيب الأحداث زمنياً" subtitle="رتّب الأحداث الكتابية من الأقدم للأحدث." sets={BIBLICAL_EVENTS_SETS} />
+);
+const BibleOrderGame: GameComp = (p) => (
+  <OrderingGame {...p} title="ترتيب أحداث الكتاب المقدس" subtitle="رتّب أحداث الكتاب المقدس بالتسلسل الصحيح." sets={BIBLE_ORDER_SETS} />
+);
 import {
   PROVERBS_QUESTIONS,
   REVELATION_QUESTIONS,
@@ -154,6 +166,42 @@ const GAMES: CatalogGame[] = [
     badgeCls: 'bg-lime-500/15 text-lime-300 border-lime-500/30',
     chevronHover: 'group-hover:text-lime-400',
     Comp: WordSearchGame,
+  },
+  {
+    id: 'events',
+    title: 'ترتيب الأحداث زمنياً',
+    badge: '⏳ ترتيب',
+    desc: 'رتّب الأحداث الكتابية الكبرى من الأقدم للأحدث.',
+    icon: <Clock className="w-7 h-7 text-white" />,
+    gradient: 'from-cyan-500 to-blue-600',
+    borderHover: 'hover:border-cyan-500/40',
+    badgeCls: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+    chevronHover: 'group-hover:text-cyan-400',
+    Comp: EventsGame,
+  },
+  {
+    id: 'bible_order',
+    title: 'ترتيب أحداث الكتاب المقدس',
+    badge: '📖 تسلسل',
+    desc: 'رتّب أحداث الكتاب المقدس بالتسلسل الصحيح.',
+    icon: <ListOrdered className="w-7 h-7 text-white" />,
+    gradient: 'from-orange-500 to-amber-600',
+    borderHover: 'hover:border-orange-500/40',
+    badgeCls: 'bg-orange-500/15 text-orange-300 border-orange-500/30',
+    chevronHover: 'group-hover:text-orange-400',
+    Comp: BibleOrderGame,
+  },
+  {
+    id: 'crossword',
+    title: 'الكلمات المتقاطعة الكنسية',
+    badge: '🧩 ألغاز',
+    desc: 'حل التلميحات الكتابية واكتب الإجابات الصحيحة.',
+    icon: <Puzzle className="w-7 h-7 text-white" />,
+    gradient: 'from-purple-500 to-fuchsia-700',
+    borderHover: 'hover:border-purple-500/40',
+    badgeCls: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
+    chevronHover: 'group-hover:text-purple-400',
+    Comp: CrosswordGame,
   },
 ];
 

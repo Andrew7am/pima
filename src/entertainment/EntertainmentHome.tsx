@@ -272,9 +272,9 @@ export default function EntertainmentHome({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h4 className="text-sm font-black text-white">مركز الألعاب الكتابية</h4>
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-300 border border-teal-500/30">✨ 9 ألعاب</span>
+              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-300 border border-teal-500/30">✨ 12 لعبة</span>
             </div>
-            <p className="text-[10.5px] text-slate-400 leading-relaxed">أمثال سليمان، الرؤيا، بولس، الأنبياء، تخمين الشخصيات، الآيات، التفسير، الذاكرة والبحث عن الكلمات.</p>
+            <p className="text-[10.5px] text-slate-400 leading-relaxed">أمثال، رؤيا، بولس، أنبياء، تخمين شخصيات، آيات، تفسير، ذاكرة، بحث كلمات، ترتيب أحداث ومتقاطعة.</p>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-teal-400 transition-colors rotate-180 shrink-0" />
         </button>
