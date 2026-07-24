@@ -16,6 +16,7 @@ import OwnerRoomsManager from './OwnerRoomsManager';
 import OwnerReviewsCenter from './OwnerReviewsCenter';
 import OwnerCalendar from './OwnerCalendar';
 import OwnerToday from './OwnerToday';
+import OwnerSpotlight from './OwnerSpotlight';
 import OwnerFoodMenu from './OwnerFoodMenu';
 import OwnerRoomDistributionScreen from './OwnerRoomDistribution';
 import OwnerTour from './OwnerTour';
@@ -128,6 +129,8 @@ export default function OwnerDashboardShell({
     return () => { window.removeEventListener('beforeinstallprompt', onPrompt); window.removeEventListener('appinstalled', onInstalled); };
   }, []);
   const doInstall = () => { installPromptRef.current?.prompt(); };
+
+  const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [showOverflow, setShowOverflow] = useState(false);
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
@@ -775,6 +778,10 @@ export default function OwnerDashboardShell({
                         <Download className="w-3.5 h-3.5" /> تثبيت
                       </button>
                     )}
+                    <button type="button" onClick={() => setSpotlightOpen(true)}
+                      className="p-2 rounded-xl bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] cursor-pointer" title="بحث شامل">
+                      <Search className="w-4 h-4" />
+                    </button>
                     <button type="button" onClick={toggleDark}
                       className="p-2 rounded-xl bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] cursor-pointer"
                       title={darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}>
@@ -2032,6 +2039,13 @@ export default function OwnerDashboardShell({
           onNavigateSupport={onNavigateSupport}
         />
       )}
+
+      <OwnerSpotlight
+        open={spotlightOpen} onClose={() => setSpotlightOpen(false)}
+        bookings={ownerBookings} rooms={ownerRooms}
+        onOpenBooking={(id) => { setSelectedBookingId(id); setActiveTab('bookings'); setShowOverflow(false); }}
+        onGoRooms={() => { setActiveTab('rooms'); setShowOverflow(false); }}
+      />
     </div>
   );
 }
