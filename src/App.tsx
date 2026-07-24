@@ -25,7 +25,8 @@ import {
   loadPaymentProofImage,
 } from './lib/db';
 import { autoAllocate } from './lib/roomAllocation';
-import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout } from './types';
+import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout, ConferenceRoom } from './types';
+import { INITIAL_CONFERENCE_ROOMS } from './entertainment/data/conferenceMocks';
 
 // Component Imports
 // Route-level code splitting: heavy, role- or navigation-gated screens load on
@@ -54,6 +55,7 @@ const LiveMatchGame = lazy(() => import('./entertainment/multiplayer/LiveMatchGa
 const AchievementsScreen = lazy(() => import('./entertainment/AchievementsScreen'));
 const TopLeaders = lazy(() => import('./entertainment/TopLeaders').then((m) => ({ default: m.TopLeaders })));
 const InteractiveRoom = lazy(() => import('./entertainment/InteractiveRoom'));
+const ConferenceHub = lazy(() => import('./entertainment/ConferenceHub'));
 import AchievementToast from './entertainment/AchievementToast';
 const FriendsScreen = lazy(() => import('./entertainment/FriendsScreen'));
 const ChatThreadScreen = lazy(() => import('./entertainment/ChatThreadScreen'));
@@ -165,7 +167,9 @@ export default function App() {
   const prevHouseRef = useRef<string | null>(null);
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room'>('explore');
+  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub'>('explore');
+  // Conference Hub state — seeded from the sample conference; the opener acts as its host.
+  const [conference, setConference] = useState<ConferenceRoom | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   // Newly-unlocked achievement ids awaiting their celebration toast — lives
   // here (not inside a game screen) so an unlock survives navigating away
@@ -1774,6 +1778,10 @@ export default function App() {
               onOpenFriends={() => setActiveScreen('friends')}
               onOpenLeaderboard={() => setActiveScreen('leaderboard')}
               onOpenRooms={() => setActiveScreen('interactive_room')}
+              onOpenConference={() => {
+                if (!conference) setConference({ ...INITIAL_CONFERENCE_ROOMS[0], hostUserId: currentUser.id });
+                setActiveScreen('conference_hub');
+              }}
             />
           )}
 
@@ -1805,6 +1813,27 @@ export default function App() {
                   points: currentUser.points,
                   churchName: currentUser.churchName,
                 }}
+                onBack={() => setActiveScreen('entertainment')}
+                onUpdateUser={(u: { xp?: number; points?: number }) =>
+                  setCurrentUser((prev) =>
+                    prev ? { ...prev, xp: u.xp ?? prev.xp, points: u.points ?? prev.points } : prev
+                  )
+                }
+              />
+            </div>
+          )}
+
+          {activeScreen === 'conference_hub' && conference && (
+            <div className="-mx-4 -my-6 sm:mx-0 sm:my-0">
+              <ConferenceHub
+                currentUser={{
+                  id: currentUser.id,
+                  name: currentUser.name,
+                  points: currentUser.points,
+                  organizationName: currentUser.organizationName,
+                }}
+                conference={conference}
+                onUpdateConference={(updated) => setConference(updated)}
                 onBack={() => setActiveScreen('entertainment')}
                 onUpdateUser={(u: { xp?: number; points?: number }) =>
                   setCurrentUser((prev) =>

@@ -392,3 +392,149 @@ export interface AuditLogEntry {
   createdAt: string;
 }
 
+// ---------------------------------------------------------------------------
+// Entertainment — Conference Hub (interactive conference/retreat companion)
+// ---------------------------------------------------------------------------
+export interface ConferenceScheduleItem {
+  id: string;
+  time: string;
+  title: string;
+  location: string;
+  duration: string;
+  speaker: string;
+  info: string;
+  completed: boolean;
+  isCurrent: boolean;
+}
+
+export interface ConferenceEvent {
+  id: string;
+  title: string;
+  day: string;
+  time: string;
+  icon: string;
+  points: number;
+}
+
+export interface ConferenceAnnouncementComment {
+  id: string;
+  author: string;
+  text: string;
+  date: string;
+}
+
+export interface ConferenceAnnouncement {
+  id: string;
+  text: string;
+  isPinned: boolean;
+  timestamp: string;
+  isUrgent: boolean;
+  comments: ConferenceAnnouncementComment[];
+}
+
+export interface ConferenceChecklistItem {
+  id: string;
+  label: string;
+  checked: boolean;
+}
+
+export interface ConferenceLiveChatMessage {
+  id: string;
+  author: string;
+  text: string;
+}
+
+export interface PresentationSlide {
+  id: string;
+  title: string;
+  content: string;
+  imageUrl: string;
+}
+
+export interface ConferenceRoom {
+  id: string;
+  bookingId?: string;
+  houseId?: string;
+  houseName: string;
+  title: string;
+  organizationName: string;
+  conferenceCode: string; // e.g. YTH2026, MARG4587, RET-9031
+  qrCodeUrl: string; // Generated SVG/visual path/base64 representation
+  joiningRequirements: 'open' | 'approval_needed';
+  isDisabled?: boolean;
+  hostUserId: string; // The servant/church host who can manage it
+
+  schedule: ConferenceScheduleItem[];
+  events: ConferenceEvent[];
+  announcements: ConferenceAnnouncement[];
+  checklist: ConferenceChecklistItem[];
+
+  liveMode: {
+    eventName: string;
+    speaker: string;
+    location: string;
+    minutesLeft: number;
+    viewersCount: number;
+    isLive: boolean;
+    chatMessages: ConferenceLiveChatMessage[];
+  };
+
+  notificationsLog: {
+    id: string;
+    title: string;
+    body: string;
+    time: string;
+  }[];
+
+  pendingUserRequests?: {
+    userId: string;
+    userName: string;
+    userEmail: string;
+  }[];
+  joinedUserIds: string[];
+  presentationSlides?: PresentationSlide[];
+  activeSlideId?: string | null;
+  instantAlert?: {
+    id: string;
+    message: string;
+    sentAt: number;
+    senderName: string;
+  } | null;
+}
+
+export interface CardAuditLog {
+  id: string;
+  action: string;
+  details: string;
+  updatedBy: string;
+  timestamp: string;
+}
+
+export interface ParticipantCard {
+  userId: string;
+  userName: string;
+  avatarUrl: string;
+  teamName: string;
+  roomNo: string;
+  building: string;
+  floor: string;
+  points: number;
+  level: number;
+  attendanceStatus: 'تم التسجيل' | 'لم يسجل';
+  cardStatus: 'فعالة' | 'موقوفة' | 'ملغاة';
+  qrCodeData: string;
+  auditLog: CardAuditLog[];
+  updatedAt: string;
+}
+
+export interface SpiritualJournalEntry {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  favoriteVerses: string[];
+  decisions: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
