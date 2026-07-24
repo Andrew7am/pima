@@ -23,6 +23,7 @@ import OwnerCustomers from './OwnerCustomers';
 import { supabase } from '../../lib/supabase';
 import { updateBookingFields } from '../../lib/db';
 import { getRoomBedState, getHouseRoomAvailabilityForRange } from '../../lib/roomOccupancy';
+import { printBookingInvoice } from '../../lib/invoice';
 import LocationPicker from '../LocationPicker';
 
 type PrimaryTab = 'stats' | 'bookings' | 'messages' | 'meals';
@@ -1124,18 +1125,22 @@ export default function OwnerDashboardShell({
                       </button>
                     </div>
                   )}
-                  {onDeleteBooking && canDelete && (
-                    <div className="flex justify-end pt-2 mt-1 border-t border-[var(--color-owner-border)]">
+                  <div className="flex items-center justify-between pt-2 mt-1 border-t border-[var(--color-owner-border)]">
+                    <button onClick={() => printBookingInvoice(booking, booking.houseName)}
+                      className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                      <ClipboardList className="w-4 h-4" /><span>فاتورة</span>
+                    </button>
+                    {onDeleteBooking && canDelete && (
                       <button onClick={() => {
                           if (confirm('حذف هذا الحجز نهائيًا؟ لا يمكن التراجع، وسيتم حذف بيانات الحضور وتوزيع الغرف المرتبطة به.')) {
                             onDeleteBooking(booking.id); setSelectedBookingId(null);
                           }
                         }}
                         className="flex items-center gap-1 text-rose-600 hover:bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                        <Trash2 className="w-4 h-4" /><span>حذف الحجز نهائيًا</span>
+                        <Trash2 className="w-4 h-4" /><span>حذف نهائيًا</span>
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })()}
