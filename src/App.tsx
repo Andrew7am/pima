@@ -182,7 +182,9 @@ export default function App() {
   // on every login the way they used to be.
   const loadAppData = useCallback(async (userId?: string) => {
     const [u, h, b, p, pa, st, ac] = await Promise.all([
-      loadUsers(), loadHouses(), loadBookings(), loadPayments(),
+      // includePaymentMethods: owner/admin get their own houses' payout numbers
+      // merged back via RPC (regular users get none) — migration 070.
+      loadUsers(), loadHouses(true), loadBookings(), loadPayments(),
       loadPlatformAnnouncements(),
       loadPlatformSettings(), loadAllocationsCount(),
     ]);

@@ -309,10 +309,39 @@ export async function loadUsers(): Promise<User[]> {
   return (data ?? []).map(mapUser);
 }
 
-export async function loadHouses(): Promise<RetreatHouse[]> {
-  const { data, error } = await supabase.from('houses').select('*').order('created_at');
+// Every house column EXCEPT payment_methods — that column is REVOKEd from
+// anon/authenticated (migration 070) so owner numbers never ship to guests, and
+// select('*') would now error on it. Must stay in sync with mapHouse's reads.
+const HOUSE_PUBLIC_COLUMNS =
+  'id,name,description,owner_id,owner_name,governorate,address,lat,lng,rooms_count,beds_count,' +
+  'rooms_description,price_per_night_per_person,services,suitability,activities,images,' +
+  'conference_halls,restaurants,seasonal_rates,status,rating,reviews_count,created_at,property_type,' +
+  'blocked_dates,sea_proximity,student_housing_gender,distance_from_university,monthly_rent,' +
+  'room_capacity,housing_rules,contract_terms,menu,image_descriptions,pending_edit';
+
+export async function loadHouses(includePaymentMethods = false): Promise<RetreatHouse[]> {
+  const { data, error } = await supabase.from('houses').select(HOUSE_PUBLIC_COLUMNS).order('created_at');
   if (error) { console.error('loadHouses:', error); return []; }
-  return (data ?? []).map(mapHouse);
+  const houses = ((data ?? []) as unknown as Record<string, unknown>[]).map(mapHouse); // paymentMethods defaults to []
+  if (includePaymentMethods) {
+    // Owner/admin get their own houses' payout numbers merged back in.
+    const merge = (rows: { house_id?: string; id?: string; payment_methods: RetreatHouse['paymentMethods'] }[]) => {
+      const byId = new Map<string, RetreatHouse['paymentMethods']>();
+      for (const row of rows) byId.set((row.house_id ?? row.id) as string, row.payment_methods ?? []);
+      for (const h of houses) { const m = byId.get(h.id); if (m) h.paymentMethods = m; }
+    };
+    // Preferred path: SECURITY DEFINER RPC (bypasses the column revoke, returns
+    // only the caller's own houses / all for admin — regular users get none).
+    const { data: pm, error: pmErr } = await supabase.rpc('get_owner_payment_methods');
+    if (!pmErr && pm) merge(pm as { house_id: string; payment_methods: RetreatHouse['paymentMethods'] }[]);
+    else {
+      // Migration 070 not applied yet — the column is still directly selectable,
+      // so owner/admin editors keep working through the deploy→migrate window.
+      const { data: fb } = await supabase.from('houses').select('id,payment_methods');
+      if (fb) merge(fb as { id: string; payment_methods: RetreatHouse['paymentMethods'] }[]);
+    }
+  }
+  return houses;
 }
 
 // Aggregate free-bed count per approved house for a date range (migration
