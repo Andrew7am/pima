@@ -874,16 +874,38 @@ export default function OwnerDashboardShell({
               ))}
             </div>
 
-            {/* ── قائمة الطعام: quick entry moved here from the bottom nav ── */}
-            <button type="button" onClick={() => { setActiveTab('meals'); setShowOverflow(false); }}
-              className="w-full flex items-center gap-3 bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-3.5 text-right shadow-sm hover:shadow transition-all cursor-pointer">
-              <span className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-amber-50 text-amber-600"><Utensils className="w-5 h-5" /></span>
-              <div className="flex-1 min-w-0">
-                <div className="text-[12px] font-black text-[var(--color-owner-text)]">قائمة الطعام</div>
-                <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">إدارة وجبات وأسعار مطعم البيت</div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-[var(--color-owner-secondary)] rotate-180 shrink-0" />
-            </button>
+            {/* ── مداخل سريعة: قائمة الطعام + التقييمات ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button type="button" onClick={() => { setActiveTab('meals'); setShowOverflow(false); }}
+                className="w-full flex items-center gap-3 bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-3.5 text-right shadow-sm hover:shadow transition-all cursor-pointer">
+                <span className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-amber-50 text-amber-600"><Utensils className="w-5 h-5" /></span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] font-black text-[var(--color-owner-text)]">قائمة الطعام</div>
+                  <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">إدارة وجبات وأسعار مطعم البيت</div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[var(--color-owner-secondary)] rotate-180 shrink-0" />
+              </button>
+
+              {(() => {
+                const unanswered = ownerReviews.filter((r) => !r.ownerReply).length;
+                return (
+                  <button type="button" onClick={() => { setActiveTab('reviews'); setShowOverflow(false); }}
+                    className="w-full flex items-center gap-3 bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-3.5 text-right shadow-sm hover:shadow transition-all cursor-pointer">
+                    <span className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-[var(--color-owner-accent)]/15 text-[var(--color-owner-accent)]"><Star className="w-5 h-5 fill-current" /></span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[12px] font-black text-[var(--color-owner-text)]">التقييمات</span>
+                        {unanswered > 0 && <span className="text-[8.5px] font-black text-rose-600 bg-rose-50 border border-rose-200 rounded-full px-1.5">{unanswered} بدون رد</span>}
+                      </div>
+                      <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">
+                        {ownerReviews.length > 0 ? `${avgRating.toFixed(1)} ★ · ${ownerReviews.length} تقييم` : 'لا توجد تقييمات بعد'}
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-[var(--color-owner-secondary)] rotate-180 shrink-0" />
+                  </button>
+                );
+              })()}
+            </div>
 
             {/* ── تحتاج انتباه (mockup): derived, each row jumps to its fix ── */}
             {(() => {
