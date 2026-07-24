@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { supabase } from './lib/supabase';
+import { loadUnreadCountsPerBooking } from './lib/bookingMessages';
 import {
   mapUser, loadUsers,
   loadHouses, deleteHouse, createHouse as createHouseDb, updateHouse as updateHouseDb, houseUpdatePayload as houseUpdatePayloadDb,
@@ -34,6 +35,7 @@ import { INITIAL_CONFERENCE_ROOMS } from './entertainment/data/conferenceMocks';
 // demand so the first paint (landing / guest browsing) ships a much smaller
 // bundle. Each lazy() render site sits under a <Suspense> boundary below.
 const UserBookings = lazy(() => import('./components/UserBookings'));
+const UserMessages = lazy(() => import('./components/UserMessages'));
 const OwnerDashboardShell = lazy(() => import('./components/owner/OwnerDashboardShell'));
 const OwnerFoodMenu = lazy(() => import('./components/owner/OwnerFoodMenu'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
@@ -166,13 +168,42 @@ export default function App() {
   // Register this device for native push once logged in (no-op on web / until a
   // Firebase project + the push runbook are set up).
   useEffect(() => { if (currentUser?.id) registerPushNotifications(currentUser.id); }, [currentUser?.id]);
+
+  // Live unread booking-messages count driving the red badge on the guest's
+  // "المحادثات" tab. We total the inbound unread across the guest's own
+  // bookings and keep it fresh with a single realtime channel (RLS scopes its
+  // INSERT/UPDATE events to this guest's threads): a new message bumps it, and
+  // reading a chat (read_at set on open) drops it back down.
+  const [guestUnreadMessages, setGuestUnreadMessages] = useState(0);
+  const guestBookingIdsKey = bookings.filter((b) => b.userId === currentUser?.id).map((b) => b.id).join(',');
+  useEffect(() => {
+    const uid = currentUser?.id;
+    const role = currentUser?.role;
+    if (!uid || (role !== 'individual' && role !== 'servant')) { setGuestUnreadMessages(0); return; }
+    const ids = guestBookingIdsKey ? guestBookingIdsKey.split(',') : [];
+    let cancelled = false;
+    const refresh = () => {
+      if (ids.length === 0) { setGuestUnreadMessages(0); return; }
+      loadUnreadCountsPerBooking(ids, uid).then((counts) => {
+        if (cancelled) return;
+        setGuestUnreadMessages(Object.values(counts).reduce((s, n) => s + n, 0));
+      });
+    };
+    refresh();
+    const channel = supabase
+      .channel(`guest_unread:${uid}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'booking_messages' }, refresh)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'booking_messages' }, refresh)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, [currentUser?.id, currentUser?.role, guestBookingIdsKey]);
   // Tracks the last house id reflected in the address bar so the URL-sync effect
   // only rewrites to "/" when a house was actually open (an in-app close), never
   // on the initial mount where the deep-link effect is about to open one.
   const prevHouseRef = useRef<string | null>(null);
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub' | 'random_match' | 'games_catalog' | 'rewards'>('explore');
+  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'messages' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub' | 'random_match' | 'games_catalog' | 'rewards'>('explore');
   // Conference Hub state — seeded from the sample conference; the opener acts as its host.
   const [conference, setConference] = useState<ConferenceRoom | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
@@ -1603,6 +1634,7 @@ export default function App() {
       notifications={notifications}
       onMarkNotificationAsRead={handleMarkNotificationAsRead}
       onClearNotifications={handleClearNotifications}
+      messagesUnreadCount={guestUnreadMessages}
     >
       {/* Screen Routing & Render Logic */}
       <Suspense fallback={<ScreenFallback />}>
@@ -1665,6 +1697,16 @@ export default function App() {
               payments={payments}
               onSubmitPayment={handleSubmitPayment}
               settings={settings}
+            />
+          )}
+
+          {activeScreen === 'messages' && (
+            // Guest conversations list — one thread per house/owner
+            <UserMessages
+              currentUser={currentUser}
+              bookings={bookings}
+              houses={houses}
+              users={users}
             />
           )}
 

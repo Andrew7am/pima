@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
   Compass, BookOpen, ShieldAlert, Coffee, Bell,
-  Trash2, Check, X, LogOut, UserCircle, Home, Map as MapIcon, Sparkles
+  Trash2, Check, X, LogOut, UserCircle, Home, Map as MapIcon, Sparkles, MessageCircle
 } from 'lucide-react';
 import { User, AppNotification } from '../types';
 import Logo from './Logo';
 
-type Screen = 'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub' | 'random_match' | 'games_catalog' | 'rewards';
+type Screen = 'explore' | 'bookings' | 'messages' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub' | 'random_match' | 'games_catalog' | 'rewards';
 
 interface WebLayoutProps {
   children: React.ReactNode;
@@ -19,6 +19,8 @@ interface WebLayoutProps {
   onClearNotifications: () => void;
   // Guest mode only — shows the login button and routes gated taps to auth
   onRequireLogin?: () => void;
+  // Unread incoming booking-messages — drives the red badge on the محادثات tab
+  messagesUnreadCount?: number;
 }
 
 interface NavItem {
@@ -31,6 +33,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'explore',       label: 'استكشاف البيوت', icon: <Compass className="w-5 h-5" />,   roles: ['individual', 'servant'] },
   { id: 'bookings',      label: 'حجوزاتي',         icon: <BookOpen className="w-5 h-5" />,  roles: ['individual', 'servant'] },
+  { id: 'messages',      label: 'المحادثات',       icon: <MessageCircle className="w-5 h-5" />, roles: ['individual', 'servant'] },
   { id: 'entertainment', label: 'الترفيه',         icon: <Sparkles className="w-5 h-5" />,  roles: ['individual', 'servant'] },
   { id: 'map',           label: 'الخريطة',         icon: <MapIcon className="w-5 h-5" />,   roles: ['individual', 'servant'] },
   { id: 'profile',       label: 'حسابي',           icon: <UserCircle className="w-5 h-5" />, roles: ['individual', 'servant'] },
@@ -55,6 +58,7 @@ export default function WebLayout({
   onMarkNotificationAsRead,
   onClearNotifications,
   onRequireLogin,
+  messagesUnreadCount = 0,
 }: WebLayoutProps) {
   const [showNotif, setShowNotif] = useState(false);
 
@@ -197,18 +201,26 @@ export default function WebLayout({
       }`}>
         {visibleNav.map(item => {
           const isActive = activeScreen === item.id;
+          const badge = item.id === 'messages' ? messagesUnreadCount : 0;
           return (
             <button
               key={item.id}
               onClick={() => setActiveScreen(item.id)}
               title={item.label}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-center transition-colors duration-150
+              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-center transition-colors duration-150
                 ${isActive
                   ? 'text-[var(--color-natural-primary)]'
                   : 'text-[var(--color-natural-secondary)] hover:text-[var(--color-natural-text)]'
                 }`}
             >
-              {item.icon}
+              <span className="relative">
+                {item.icon}
+                {badge > 0 && (
+                  <span className="absolute -top-1.5 -left-2 min-w-[15px] h-[15px] px-0.5 bg-red-500 text-white text-[8.5px] font-black rounded-full flex items-center justify-center">
+                    {badge > 9 ? '9+' : badge}
+                  </span>
+                )}
+              </span>
               <span className={`text-[9.5px] font-bold leading-tight ${isActive ? 'font-black' : ''}`}>{item.label}</span>
             </button>
           );
