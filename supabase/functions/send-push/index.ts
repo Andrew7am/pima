@@ -34,7 +34,15 @@ async function fcmAccessToken(): Promise<string> {
 
 Deno.serve(async (req) => {
   try {
-    const { userId, title, body, data } = await req.json();
+    const payload = await req.json();
+    // Accept both a direct call ({ userId, title, body, data }) and a Supabase
+    // Database Webhook on notifications INSERT ({ type, record: {...row} }), so
+    // it can be wired straight from the dashboard with no SQL/secrets.
+    const rec = payload.record;
+    const userId = payload.userId ?? rec?.user_id;
+    const title = payload.title ?? rec?.title;
+    const body = payload.body ?? rec?.message;
+    const data = payload.data ?? (rec?.booking_id ? { bookingId: rec.booking_id } : undefined);
     if (!userId || !title) return new Response('missing userId/title', { status: 400 });
 
     const { data: tokens, error } = await admin
