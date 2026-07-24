@@ -4,7 +4,7 @@ import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
 import {
   Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2,
   Building, Settings, MessageSquare, Camera, BedDouble, Phone, Mail, Lock, Menu, ChevronRight,
-  MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun, Moon, Download,
+  MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun, Moon, Download, QrCode,
 } from 'lucide-react';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
@@ -25,6 +25,7 @@ import { supabase } from '../../lib/supabase';
 import { updateBookingFields } from '../../lib/db';
 import { getRoomBedState, getHouseRoomAvailabilityForRange } from '../../lib/roomOccupancy';
 import { printBookingInvoice } from '../../lib/invoice';
+import { openBookingQrWindow } from '../../lib/qr';
 import LocationPicker from '../LocationPicker';
 
 type PrimaryTab = 'stats' | 'bookings' | 'messages' | 'meals';
@@ -1161,10 +1162,16 @@ export default function OwnerDashboardShell({
                     </div>
                   )}
                   <div className="flex items-center justify-between pt-2 mt-1 border-t border-[var(--color-owner-border)]">
-                    <button onClick={() => printBookingInvoice(booking, booking.houseName)}
-                      className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                      <ClipboardList className="w-4 h-4" /><span>فاتورة</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => printBookingInvoice(booking, booking.houseName)}
+                        className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                        <ClipboardList className="w-4 h-4" /><span>فاتورة</span>
+                      </button>
+                      <button onClick={() => openBookingQrWindow(booking.id, booking.organizationName || booking.userName, booking.houseName, booking.id.replace(/^booking_/, '').slice(-6))}
+                        className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                        <QrCode className="w-4 h-4" /><span>رمز QR</span>
+                      </button>
+                    </div>
                     {onDeleteBooking && canDelete && (
                       <button onClick={() => {
                           if (confirm('حذف هذا الحجز نهائيًا؟ لا يمكن التراجع، وسيتم حذف بيانات الحضور وتوزيع الغرف المرتبطة به.')) {

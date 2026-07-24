@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { RetreatHouse, Booking, Room } from '../../types';
-import { Sun, LogIn, LogOut, Sparkles, Banknote, Users, TrendingUp, TrendingDown, CheckCircle2, Wrench } from 'lucide-react';
+import { Sun, LogIn, LogOut, Sparkles, Banknote, Users, TrendingUp, TrendingDown, CheckCircle2, Wrench, ScanLine } from 'lucide-react';
+import OwnerScanner from './OwnerScanner';
 
 interface OwnerTodayProps {
   house?: RetreatHouse;
@@ -17,6 +18,7 @@ interface OwnerTodayProps {
 const guestName = (b: Booking) => b.organizationName || b.userName;
 
 export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckInBooking, onCheckOutBooking, onUpdateRoom, onViewBooking }: OwnerTodayProps) {
+  const [scannerOpen, setScannerOpen] = useState(false);
   const confirmed = useMemo(() => bookings.filter((b) => b.status === 'approved' || b.status === 'completed'), [bookings]);
   const arrivals = confirmed.filter((b) => b.checkIn === todayStr);
   const departures = confirmed.filter((b) => b.checkOut === todayStr);
@@ -62,12 +64,24 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
 
   return (
     <div className="space-y-3" dir="rtl">
-      <div>
-        <h2 className="text-base font-black text-[var(--color-owner-text)] flex items-center gap-1.5">
-          <Sun className="w-4.5 h-4.5 text-[#D4AF37]" /> لوحة اليوم
-        </h2>
-        <p className="text-[11px] text-[var(--color-owner-secondary)] mt-0.5">{dateLabel} — {house?.name || 'بيتك'}</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-base font-black text-[var(--color-owner-text)] flex items-center gap-1.5">
+            <Sun className="w-4.5 h-4.5 text-[#D4AF37]" /> لوحة اليوم
+          </h2>
+          <p className="text-[11px] text-[var(--color-owner-secondary)] mt-0.5">{dateLabel} — {house?.name || 'بيتك'}</p>
+        </div>
+        {onCheckInBooking && (
+          <button type="button" onClick={() => setScannerOpen(true)}
+            className="flex items-center gap-1 text-[10px] font-black text-white bg-[var(--color-owner-primary)] rounded-xl px-2.5 py-2 active:scale-95 transition-transform">
+            <ScanLine className="w-3.5 h-3.5" /> مسح وصول
+          </button>
+        )}
       </div>
+
+      <OwnerScanner open={scannerOpen} onClose={() => setScannerOpen(false)} bookings={confirmed}
+        onCheckIn={(b) => onCheckInBooking?.(b.id)} />
+
 
       {/* Hero */}
       <div className="grid grid-cols-3 gap-2.5">
