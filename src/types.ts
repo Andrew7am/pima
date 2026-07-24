@@ -38,6 +38,8 @@ export interface User {
   avatarUrl?: string;
   avatar?: string;            // entertainment: display avatar used by the ported games
   equippedAssists?: string[]; // entertainment: equipped in-match power-ups (SmartAssistBar)
+  streak?: number;            // entertainment: consecutive-days streak shown on the player card
+  profileTitle?: string;      // entertainment: equipped rank/title shown on the player card
 }
 
 export interface ConferenceHall {

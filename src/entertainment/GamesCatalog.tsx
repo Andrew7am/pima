@@ -6,6 +6,7 @@ import MemoryMatchGame from './games/MemoryMatchGame';
 import WordSearchGame from './games/WordSearchGame';
 import OrderingGame from './games/OrderingGame';
 import CrosswordGame from './games/CrosswordGame';
+import AdGateModal from './AdGateModal';
 import { BIBLICAL_EVENTS_SETS } from './entertainmentData';
 import { BIBLE_ORDER_SETS } from './data/orderingCrosswordData';
 
@@ -207,6 +208,7 @@ const GAMES: CatalogGame[] = [
 
 export default function GamesCatalog({ currentUser, onBack, onUserUpdated, onAchievementsUnlocked }: GamesCatalogProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null); // game awaiting the ad gate
   const active = GAMES.find((g) => g.id === activeId) || null;
 
   if (active) {
@@ -237,6 +239,13 @@ export default function GamesCatalog({ currentUser, onBack, onUserUpdated, onAch
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
+      <AdGateModal
+        open={pendingId !== null}
+        title="شاهد الإعلان لبدء اللعبة"
+        rewardLabel="ابدأ اللعبة"
+        onReward={() => { setActiveId(pendingId); setPendingId(null); }}
+        onClose={() => setPendingId(null)}
+      />
       <div className="max-w-4xl mx-auto px-4 pt-5 pb-10">
         <button
           type="button"
@@ -262,7 +271,7 @@ export default function GamesCatalog({ currentUser, onBack, onUserUpdated, onAch
             <button
               key={g.id}
               type="button"
-              onClick={() => setActiveId(g.id)}
+              onClick={() => setPendingId(g.id)}
               className={`w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 ${g.borderHover} rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer`}
             >
               <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${g.gradient} flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform`}>

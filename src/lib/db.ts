@@ -1150,21 +1150,6 @@ export async function awardGameReward(
   return { xp: row.new_xp, level: row.new_level, gameCoins: row.new_coins };
 }
 
-// Wheel of fortune (migration 076) — server-side and rate-limited to one spin
-// per 24h. Awards redeemable discount `points` (a locked column), so the reward
-// is chosen and applied on the server; the client only animates the result.
-export type SpinWheelResult =
-  | { ok: true; pointsAwarded: number; newPoints: number }
-  | { ok: false; error: string; nextAt?: string };
-
-export async function spinWheel(): Promise<SpinWheelResult> {
-  const { data, error } = await supabase.rpc('spin_wheel');
-  if (error) { console.error('spinWheel:', error); return { ok: false, error: error.message }; }
-  const d = data as { ok: boolean; points_awarded?: number; new_points?: number; error?: string; next_at?: string };
-  if (!d?.ok) return { ok: false, error: d?.error || 'UNKNOWN', nextAt: d?.next_at };
-  return { ok: true, pointsAwarded: d.points_awarded ?? 0, newPoints: d.new_points ?? 0 };
-}
-
 // Achievements (migration 037) — server checks all thresholds and
 // awards any newly-qualified ones atomically, returning just the ids
 // that were newly unlocked THIS call (so the UI can show a "new

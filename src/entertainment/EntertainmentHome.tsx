@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
+import {
+  ChevronRight, BookOpen, Zap, Coins, Trophy, Sparkles, Music, FileText, HelpCircle, Users, Award,
+  Gamepad2, CalendarDays, Gift, Heart, Sun, Moon, Volume2, VolumeX, Flame, ArrowLeft,
+} from 'lucide-react';
 import { User } from '../types';
-import { ChevronRight, BookOpen, Zap, Coins, Trophy, Sparkles, Music, FileText, HelpCircle, Users, Award, Gamepad2, CalendarDays, Gift } from 'lucide-react';
-import { xpToNext, xpProgressPct } from './progress';
-import { getLeague } from './leagues';
-import { getConversations } from './social';
 
 interface EntertainmentHomeProps {
   currentUser: User;
@@ -23,344 +24,235 @@ interface EntertainmentHomeProps {
   onOpenRewards: () => void;
 }
 
-interface GameCardProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-  badge?: string;
-  gradient?: string;
-}
+type Section = 'menu' | 'games' | 'seasons' | 'community' | 'settings';
 
-function GameCard({ title, description, icon, onClick, badge = 'فردي', gradient = 'from-amber-500 to-amber-700' }: GameCardProps) {
+// A single dark navy entry card used inside the category sub-sections.
+function HubCard({ icon, title, badge, badgeCls, desc, onClick, borderHover, chevronHover }: {
+  icon: React.ReactNode; title: string; badge?: string; badgeCls?: string; desc: string;
+  onClick: () => void; borderHover: string; chevronHover: string;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-amber-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
+      className={`w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 ${borderHover} rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer`}
     >
-      <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform`}>
+      <div className="w-14 h-14 rounded-2xl bg-[#0A1428]/60 border border-white/10 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           <h4 className="text-sm font-black text-white">{title}</h4>
-          <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-            {badge}
-          </span>
+          {badge && <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${badgeCls}`}>{badge}</span>}
         </div>
-        <p className="text-[10.5px] text-slate-400 leading-relaxed">{description}</p>
+        <p className="text-[10.5px] text-slate-400 leading-relaxed">{desc}</p>
       </div>
-      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-colors rotate-180 shrink-0" />
+      <ChevronRight className={`w-4 h-4 text-slate-500 ${chevronHover} transition-colors rotate-180 shrink-0`} />
     </button>
   );
 }
 
-// Phase 1 entertainment hub — deliberately dark-themed so gameplay
-// feels like a distinct immersive space, separate from the cream/gold
-// booking-app shell. Shows the player their XP progress toward the
-// next level, their loyalty-point balance, and a single card that
-// launches the solo Trivia game. More game cards (Who Am I, Hymns,
-// Fill Verse, Word Search, and online rooms) get added below this
-// one in later phases.
 export default function EntertainmentHome({
-  currentUser, onBack, onOpenTrivia, onOpenWhoAmI, onOpenHymns, onOpenFillVerse, onOpenMultiplayer, onOpenAchievements, onOpenFriends, onOpenLeaderboard, onOpenRooms, onOpenConference, onOpenRandomMatch, onOpenGamesCatalog, onOpenRewards,
+  currentUser, onBack, onOpenTrivia, onOpenWhoAmI, onOpenHymns, onOpenFillVerse, onOpenMultiplayer,
+  onOpenAchievements, onOpenFriends, onOpenLeaderboard, onOpenRooms, onOpenConference, onOpenRandomMatch,
+  onOpenGamesCatalog, onOpenRewards,
 }: EntertainmentHomeProps) {
-  const league = getLeague(currentUser.rating ?? 100);
-  const level = currentUser.level ?? 1;
-  const xp = currentUser.xp ?? 0;
-  const coins = currentUser.gameCoins ?? 0;
-  const needed = xpToNext(level);
-  const pct = xpProgressPct(xp, level);
-  const unlockedCount = currentUser.unlockedAchievements?.length ?? 0;
+  const [section, setSection] = useState<Section>('menu');
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
 
-  const [unreadMessages, setUnreadMessages] = useState(0);
-  useEffect(() => {
-    getConversations().then((convos) => {
-      setUnreadMessages(convos.reduce((sum, c) => sum + c.unreadCount, 0));
-    });
-  }, []);
+  const userXP = currentUser.xp ?? 0;
+  const xpNeeded = 150;
+  const currentLevel = Math.floor(userXP / xpNeeded) + 1;
+  const xpInLevel = userXP % xpNeeded;
+  const xpPercent = Math.min(100, Math.floor((xpInLevel / xpNeeded) * 100));
+  const title = currentUser.profileTitle || 'خادم مبتدئ 🕯️';
+  const glory = currentUser.points ?? 0;
+  const streak = currentUser.streak ?? 1;
+  const avatar = currentUser.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name || 'P')}&background=122244&color=F5C542`;
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-5 space-y-5" dir="rtl">
+  const CATEGORIES = [
+    { id: 'games' as Section, label: 'مركز الألعاب التفاعلي 🎮', sub: 'تحديات كنسية فردية، مباريات مباشرة وألعاب جماعية حماسية', icon: <Gamepad2 className="w-7 h-7 text-[#F5C542]" strokeWidth={1.5} />, box: 'from-[#122244] to-[#1C142E] border-blue-500/25', iconBg: 'bg-[#F5C542]/10 border-[#F5C542]/30' },
+    { id: 'seasons' as Section, label: 'المؤتمرات والمواسم الروحية 📖', sub: 'الفعاليات المباركة، التحديات الموسمية والتسجيلات المباشرة', icon: <BookOpen className="w-7 h-7 text-[#00E5FF]" strokeWidth={1.5} />, box: 'from-[#0b1b36] to-[#0d315c] border-cyan-500/20', iconBg: 'bg-[#00E5FF]/10 border-[#00E5FF]/30' },
+    { id: 'community' as Section, label: 'شركة الصلوات المباركة ❤️', sub: 'الأصدقاء، تأملات الآباء وسجلات الخدمة اليومية', icon: <Heart className="w-7 h-7 text-[#FF3D71]" strokeWidth={1.5} />, box: 'from-[#1a0826] to-[#2c0c3a] border-fuchsia-500/20', iconBg: 'bg-[#FF3D71]/10 border-[#FF3D71]/30' },
+    { id: 'settings' as Section, label: 'إعدادات التجربة ⚙️', sub: 'التحكم في الصوت والمظهر وتخصيص الواجهة الترفيهية', icon: <Sparkles className="w-7 h-7 text-slate-400" strokeWidth={1.5} />, box: 'from-[#1a1a1a] to-[#262626] border-slate-500/20', iconBg: 'bg-white/5 border-white/10' },
+  ];
 
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-            <span>رجوع</span>
+  // ---- Category sub-section (dark card list) ----
+  if (section !== 'menu') {
+    const headers: Record<Exclude<Section, 'menu'>, string> = {
+      games: 'مركز الألعاب التفاعلي', seasons: 'المؤتمرات والمواسم', community: 'شركة الصلوات المباركة', settings: 'إعدادات التجربة',
+    };
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
+        <div className="max-w-2xl mx-auto px-4 pt-5 pb-12">
+          <button type="button" onClick={() => setSection('menu')} className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors mb-4">
+            <ChevronRight className="w-4 h-4" /><span>رجوع للقائمة</span>
           </button>
-          <div className="flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-black tracking-wider text-slate-200">مركز الترفيه</span>
-          </div>
-          <div className="w-14" aria-hidden />
-        </div>
+          <h2 className="text-lg font-black text-white mb-4">{headers[section]}</h2>
 
-        <div className="bg-gradient-to-br from-[#132247] to-[#0A1732] border border-white/10 rounded-3xl p-5 shadow-xl">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <div className="min-w-0">
-              <p className="text-[10px] text-slate-400 font-bold">مستواك الحالي</p>
-              <h2 className="text-xl font-black text-white leading-tight truncate">{currentUser.name}</h2>
-            </div>
-            <div className="flex flex-col items-center bg-gradient-to-br from-amber-500 to-amber-700 text-white rounded-2xl px-4 py-2 shadow-lg shrink-0">
-              <span className="text-[8px] font-black uppercase tracking-widest opacity-80">Level</span>
-              <span className="text-2xl font-black leading-none">{level}</span>
-            </div>
-          </div>
+          <div className="space-y-3">
+            {section === 'games' && (<>
+              <HubCard icon={<Sparkles className="w-6 h-6 text-teal-300" />} title="مركز الألعاب الكتابية" badge="✨ 12 لعبة" badgeCls="bg-teal-500/15 text-teal-300 border-teal-500/30" desc="أمثال، رؤيا، بولس، أنبياء، ذاكرة، بحث كلمات، ترتيب، متقاطعة والمزيد." onClick={onOpenGamesCatalog} borderHover="hover:border-teal-500/40" chevronHover="group-hover:text-teal-400" />
+              <HubCard icon={<Gamepad2 className="w-6 h-6 text-emerald-300" />} title="الغرف التفاعلية" badge="🎮 جماعي" badgeCls="bg-emerald-500/15 text-emerald-300 border-emerald-500/30" desc="اعمل غرفة للخلوة أو الاجتماع والعب مسابقات جماعية على شاشة واحدة." onClick={onOpenRooms} borderHover="hover:border-emerald-500/40" chevronHover="group-hover:text-emerald-400" />
+              <HubCard icon={<Zap className="w-6 h-6 text-rose-300" />} title="المباراة العشوائية" badge="⚔️ 1 ضد 1" badgeCls="bg-rose-500/15 text-rose-300 border-rose-500/30" desc="اتحدى لاعب عشوائي أو صاحبك في مباراة أسئلة سريعة لايف." onClick={onOpenRandomMatch} borderHover="hover:border-rose-500/40" chevronHover="group-hover:text-rose-400" />
+              <HubCard icon={<Users className="w-6 h-6 text-sky-300" />} title="مباريات وبطولات" badge="🏆 لايف" badgeCls="bg-sky-500/15 text-sky-300 border-sky-500/30" desc="ادخل بطولة 1 ضد 1 حسب مستواك واصعد في الرتب." onClick={onOpenMultiplayer} borderHover="hover:border-sky-500/40" chevronHover="group-hover:text-sky-400" />
+              <HubCard icon={<BookOpen className="w-6 h-6 text-amber-300" />} title="أسئلة كتابية" desc="مسابقة معلومات عامة من الكتاب المقدس." onClick={onOpenTrivia} borderHover="hover:border-amber-500/40" chevronHover="group-hover:text-amber-400" />
+              <HubCard icon={<HelpCircle className="w-6 h-6 text-violet-300" />} title="مين أنا؟" desc="خمّن الشخصية المقدسة من القرائن." onClick={onOpenWhoAmI} borderHover="hover:border-violet-500/40" chevronHover="group-hover:text-violet-400" />
+              <HubCard icon={<Music className="w-6 h-6 text-cyan-300" />} title="الألحان" desc="تعرّف على الألحان والمناسبات الكنسية." onClick={onOpenHymns} borderHover="hover:border-cyan-500/40" chevronHover="group-hover:text-cyan-400" />
+              <HubCard icon={<FileText className="w-6 h-6 text-lime-300" />} title="أكمل الآية" desc="أكمل الآيات الإنجيلية المقدسة." onClick={onOpenFillVerse} borderHover="hover:border-lime-500/40" chevronHover="group-hover:text-lime-400" />
+              <HubCard icon={<Trophy className="w-6 h-6 text-amber-300" />} title="لوحة الصدارة" badge="🏆" badgeCls="bg-amber-500/15 text-amber-300 border-amber-500/30" desc="شوف المتصدرين وترتيبك بينهم." onClick={onOpenLeaderboard} borderHover="hover:border-amber-500/40" chevronHover="group-hover:text-amber-400" />
+              <HubCard icon={<Award className="w-6 h-6 text-fuchsia-300" />} title="الإنجازات" desc="افتح أوسمة الإنجازات كلما تقدّمت." onClick={onOpenAchievements} borderHover="hover:border-fuchsia-500/40" chevronHover="group-hover:text-fuchsia-400" />
+              <HubCard icon={<Gift className="w-6 h-6 text-yellow-300" />} title="المكافآت وعجلة الحظ" badge="🎁 يومي" badgeCls="bg-yellow-500/15 text-yellow-300 border-yellow-500/30" desc="أدر عجلة الحظ واربح خبرة، وأنجز تحدي اليوم الروحي." onClick={onOpenRewards} borderHover="hover:border-yellow-500/40" chevronHover="group-hover:text-yellow-400" />
+            </>)}
 
-          <div>
-            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 mb-1.5">
-              <span>{xp} / {needed} XP</span>
-              <span>للوصول للمستوى {level + 1}</span>
-            </div>
-            <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-              <div
-                className="h-full bg-gradient-to-l from-amber-400 to-amber-600 rounded-full transition-all duration-500"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-          </div>
+            {section === 'seasons' && (<>
+              <HubCard icon={<CalendarDays className="w-6 h-6 text-sky-300" />} title="مركز المؤتمر" badge="⛪ رفيق المؤتمر" badgeCls="bg-sky-500/15 text-sky-300 border-sky-500/30" desc="جدول المؤتمر، الإعلانات، البث المباشر، بطاقة المشارك والمذكرة الروحية." onClick={onOpenConference} borderHover="hover:border-sky-500/40" chevronHover="group-hover:text-sky-400" />
+              <div className="bg-white/5 border border-dashed border-white/15 rounded-3xl p-5 text-center text-slate-400 text-[12px] font-bold">التحديات الموسمية والتسجيلات المباركة — قريباً بإذن الله 🕯️</div>
+            </>)}
 
-          <div className="grid grid-cols-2 gap-2.5 mt-4">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center shrink-0">
-                <Zap className="w-4 h-4 text-emerald-400" />
+            {section === 'community' && (<>
+              <HubCard icon={<Users className="w-6 h-6 text-sky-300" />} title="الأصدقاء والدردشة" badge="❤️" badgeCls="bg-sky-500/15 text-sky-300 border-sky-500/30" desc="ابحث عن أصدقائك، أرسل طلبات، وابدأ محادثة." onClick={onOpenFriends} borderHover="hover:border-sky-500/40" chevronHover="group-hover:text-sky-400" />
+              <div className="bg-white/5 border border-dashed border-white/15 rounded-3xl p-5 text-center text-slate-400 text-[12px] font-bold">طلبات الصلاة المتبادلة وتأملات الآباء — قريباً بإذن الله 🙏</div>
+            </>)}
+
+            {section === 'settings' && (
+              <div className="space-y-3">
+                <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-3xl p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-[#F5C542]/10 border border-[#F5C542]/20 flex items-center justify-center">{isSoundEnabled ? <Volume2 className="w-5 h-5 text-[#F5C542]" /> : <VolumeX className="w-5 h-5 text-slate-400" />}</div>
+                    <div><h4 className="text-sm font-black text-white">الأصوات</h4><p className="text-[10.5px] text-slate-400">مؤثّرات صوتية داخل الألعاب.</p></div>
+                  </div>
+                  <button type="button" onClick={() => setIsSoundEnabled((v) => !v)} className={`px-4 py-2 rounded-xl text-[11px] font-black ${isSoundEnabled ? 'bg-[#F5C542] text-slate-950' : 'bg-white/10 text-slate-300'}`}>{isSoundEnabled ? 'مفعّل' : 'مكتوم'}</button>
+                </div>
+                <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-3xl p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-[#F5C542]/10 border border-[#F5C542]/20 flex items-center justify-center">{isDarkMode ? <Moon className="w-5 h-5 fill-current text-[#F5C542]" /> : <Sun className="w-5 h-5 fill-current text-amber-400" />}</div>
+                    <div><h4 className="text-sm font-black text-white">الوضع الليلي</h4><p className="text-[10.5px] text-slate-400">حماية العين والاستمتاع بالتجربة.</p></div>
+                  </div>
+                  <button type="button" onClick={() => setIsDarkMode((v) => !v)} className={`px-4 py-2 rounded-xl text-[11px] font-black ${isDarkMode ? 'bg-[#F5C542] text-slate-950' : 'bg-slate-900 text-white'}`}>{isDarkMode ? '💡 نهاري' : '🌙 ليلي'}</button>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-[9px] font-bold text-slate-400">إجمالي الخبرة</p>
-                <p className="text-sm font-black text-white truncate">{xp} XP</p>
-              </div>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full bg-amber-500/15 border border-amber-400/30 flex items-center justify-center shrink-0">
-                <Coins className="w-4 h-4 text-amber-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[9px] font-bold text-slate-400">عملات اللعب</p>
-                <p className="text-sm font-black text-white truncate">{coins.toLocaleString('ar-EG')}</p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={onOpenAchievements}
-          className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-emerald-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
-        >
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
-            <Award className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h4 className="text-sm font-black text-white">الإنجازات والشارات</h4>
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                {unlockedCount} / 9
-              </span>
-            </div>
-            <p className="text-[10.5px] text-slate-400 leading-relaxed">تابع تقدمك واجمع مكافآت إضافية من الخبرة والعملات.</p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors rotate-180 shrink-0" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onOpenFriends}
-          className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-sky-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
-        >
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-sky-700 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
-            <Users className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h4 className="text-sm font-black text-white">الأصدقاء والمحادثات</h4>
-              {unreadMessages > 0 && (
-                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
-                  {unreadMessages > 9 ? '9+' : unreadMessages} رسائل جديدة
-                </span>
-              )}
-            </div>
-            <p className="text-[10.5px] text-slate-400 leading-relaxed">أضف أصدقاء من المستخدمين وابدأ محادثة مباشرة.</p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition-colors rotate-180 shrink-0" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onOpenLeaderboard}
-          className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-amber-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
-        >
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
-            <Trophy className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h4 className="text-sm font-black text-white">لوحة الصدارة</h4>
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">🏆 المتصدرون</span>
-            </div>
-            <p className="text-[10.5px] text-slate-400 leading-relaxed">شوف أساطير الصدارة الروحية وترتيبك بين اللاعبين.</p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition-colors rotate-180 shrink-0" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onOpenRooms}
-          className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-emerald-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
-        >
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
-            <Gamepad2 className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h4 className="text-sm font-black text-white">الغرف التفاعلية</h4>
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">🎮 ألعاب جماعية</span>
-            </div>
-            <p className="text-[10.5px] text-slate-400 leading-relaxed">اعمل غرفة للخلوة أو الاجتماع، وسّع الفرق والعب مسابقات جماعية على شاشة واحدة.</p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors rotate-180 shrink-0" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onOpenConference}
-          className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-sky-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
-        >
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
-            <CalendarDays className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h4 className="text-sm font-black text-white">مركز المؤتمر</h4>
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">⛪ رفيق المؤتمر</span>
-            </div>
-            <p className="text-[10.5px] text-slate-400 leading-relaxed">جدول المؤتمر، الإعلانات، البث المباشر، بطاقة المشارك والمذكرة الروحية في مكان واحد.</p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-sky-400 transition-colors rotate-180 shrink-0" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onOpenRandomMatch}
-          className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-rose-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
-        >
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
-            <Zap className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h4 className="text-sm font-black text-white">المباراة العشوائية</h4>
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">⚔️ 1 ضد 1</span>
-            </div>
-            <p className="text-[10.5px] text-slate-400 leading-relaxed">اتحدى لاعب عشوائي أو صاحبك في مباراة أسئلة سريعة لايف، واصعد في الترتيب.</p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-rose-400 transition-colors rotate-180 shrink-0" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onOpenGamesCatalog}
-          className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-teal-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
-        >
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
-            <Sparkles className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h4 className="text-sm font-black text-white">مركز الألعاب الكتابية</h4>
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-300 border border-teal-500/30">✨ 12 لعبة</span>
-            </div>
-            <p className="text-[10.5px] text-slate-400 leading-relaxed">أمثال، رؤيا، بولس، أنبياء، تخمين شخصيات، آيات، تفسير، ذاكرة، بحث كلمات، ترتيب أحداث ومتقاطعة.</p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-teal-400 transition-colors rotate-180 shrink-0" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onOpenRewards}
-          className="w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-yellow-500/40 rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer"
-        >
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
-            <Gift className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h4 className="text-sm font-black text-white">المكافآت وعجلة الحظ</h4>
-              <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-300 border border-yellow-500/30">🎁 يومي</span>
-            </div>
-            <p className="text-[10.5px] text-slate-400 leading-relaxed">أدر عجلة الحظ مرة كل يوم واربح نقاط خصم، وأنجز تحدي اليوم الروحي.</p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-yellow-400 transition-colors rotate-180 shrink-0" />
-        </button>
-
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 px-1">
-            <Trophy className="w-4 h-4 text-amber-400" />
-            <h3 className="text-sm font-black text-slate-200">الألعاب المتاحة</h3>
-          </div>
-
-          {/* Featured multiplayer CTA — league badge doubles as visual hook */}
-          <button
-            type="button"
-            onClick={onOpenMultiplayer}
-            className={`w-full text-right bg-gradient-to-br ${league.gradient} rounded-3xl p-4 flex items-center gap-4 shadow-2xl transition-all group cursor-pointer border border-white/10`}
-          >
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shrink-0 text-3xl">
-              {league.badge}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h4 className="text-sm font-black text-white">مباريات مباشرة 1v1</h4>
-                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/30">
-                  {league.name}
-                </span>
-              </div>
-              <p className="text-[10.5px] text-white/85 leading-relaxed">
-                تحدى لاعبين حقيقيين، اربح تقييم واصعد الدوريات. غرف خاصة أو بحث عشوائي.
-              </p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-white/70 group-hover:text-white transition-colors rotate-180 shrink-0" />
-          </button>
-
-          <GameCard
-            title="أسئلة كتابية"
-            description="٥ أسئلة سريعة من الكتاب المقدس والتراث الكنسي. اربح خبرة وعملات عن كل إجابة صحيحة."
-            icon={<BookOpen className="w-7 h-7 text-white" />}
-            onClick={onOpenTrivia}
-          />
-
-          <GameCard
-            title="من أنا؟"
-            description="خمّن شخصية كتابية من التلميحات. كل ما استخدمت تلميحات أقل، كل ما ربحت أكتر."
-            icon={<HelpCircle className="w-7 h-7 text-white" />}
-            onClick={onOpenWhoAmI}
-            gradient="from-purple-500 to-purple-700"
-          />
-
-          <GameCard
-            title="ألحان قبطية"
-            description="اختبر معلوماتك في ألحان وطقوس الكنيسة القبطية والمصطلحات الليتورجية."
-            icon={<Music className="w-7 h-7 text-white" />}
-            onClick={onOpenHymns}
-            gradient="from-rose-500 to-rose-700"
-          />
-
-          <GameCard
-            title="أكمل الآية"
-            description="آيات كتابية شهيرة بكلمة ناقصة. اختر الكلمة الصحيحة من بين ٤ خيارات."
-            icon={<FileText className="w-7 h-7 text-white" />}
-            onClick={onOpenFillVerse}
-            gradient="from-cyan-500 to-cyan-700"
-          />
-
-        </div>
-
       </div>
-    </div>
+    );
+  }
+
+  // ---- Landing menu (ported EntertainmentMenu design) ----
+  const dark = isDarkMode;
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+      className={`w-full max-w-2xl mx-auto pb-24 text-right min-h-screen px-4 pt-6 -mx-4 -my-6 sm:mx-auto sm:my-0 transition-colors duration-500 ${dark ? 'bg-[#081326] text-white' : 'bg-[#FAFAFA] text-slate-900'}`}
+      dir="rtl"
+    >
+      {/* Title + toggles */}
+      <div className="mb-8 pr-2 flex justify-between items-end">
+        <div>
+          <div className="flex items-center gap-2 mb-1.5 justify-end">
+            <span className="text-[10px] font-black bg-amber-500/25 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> الواجهة الترفيهية
+            </span>
+          </div>
+          <h1 className={`text-4xl font-black mb-2 tracking-tighter flex items-center gap-2 ${dark ? 'text-white' : 'text-slate-950'}`}>
+            <span>الألعاب والترفيه</span><span className="text-xl">✨</span>
+          </h1>
+          <p className={`text-sm font-bold ${dark ? 'text-slate-400' : 'text-slate-500'}`}>اختر القسم الذي ترغب في المغامرة والتحدي فيه.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setIsSoundEnabled((v) => !v)} className={`w-12 h-12 rounded-2xl shadow-lg border flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${dark ? 'bg-[#122244] border-blue-500/20 text-[#F5C542]' : 'bg-white border-slate-200 text-slate-600'}`} title={isSoundEnabled ? 'كتم الصوت' : 'تفعيل الصوت'}>
+            {isSoundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+          </button>
+          <button onClick={() => setIsDarkMode((v) => !v)} className={`w-12 h-12 rounded-2xl shadow-lg border flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${dark ? 'bg-[#122244] border-blue-500/20 text-[#F5C542]' : 'bg-white border-slate-200 text-slate-600'}`} title={dark ? 'الوضع النهاري' : 'الوضع الليلي'}>
+            {dark ? <Sun className="w-5 h-5 fill-current" /> : <Moon className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Night-mode bar */}
+      <div className={`p-4 rounded-[24px] border mb-6 flex items-center justify-between ${dark ? 'bg-gradient-to-r from-[#0f2142] to-[#162a54] border-blue-500/30 text-[#F5C542]' : 'bg-white border-slate-200 text-slate-800'}`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${dark ? 'bg-[#F5C542]/10 border border-[#F5C542]/20 text-[#F5C542]' : 'bg-slate-100 text-slate-600'}`}>
+            {dark ? <Moon className="w-5 h-5 fill-current" /> : <Sun className="w-5 h-5 fill-current" />}
+          </div>
+          <div className="text-right">
+            <h4 className="text-xs sm:text-sm font-black">الوضع الليلي وتعتيم الشاشة الذكي 🌙</h4>
+            <p className={`text-[10px] sm:text-xs font-bold leading-none mt-1 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{dark ? 'الوضع المظلم الفاخر نشط لحماية عينيك ✨' : 'شغّل الوضع المظلم لتقليل إجهاد العين 🕯️'}</p>
+          </div>
+        </div>
+        <button type="button" onClick={() => setIsDarkMode((v) => !v)} className={`px-4 py-2 rounded-xl text-[11px] font-black active:scale-95 ${dark ? 'bg-[#F5C542] text-slate-950' : 'bg-slate-900 text-white'}`}>{dark ? '💡 نهاري' : '🌙 ليلي'}</button>
+      </div>
+
+      {/* Player profile card */}
+      <div className={`relative p-6 rounded-[32px] shadow-2xl mb-8 flex flex-col sm:flex-row items-center sm:items-start gap-6 border overflow-hidden ${dark ? 'bg-[#0b1b36]/90 border-blue-500/20' : 'bg-white border-slate-200'}`}>
+        {dark && <div className="absolute top-0 left-0 w-48 h-48 bg-blue-500/5 blur-3xl pointer-events-none" />}
+        <div className="relative shrink-0 group">
+          <div className={`absolute -inset-1.5 rounded-full bg-gradient-to-tr ${dark ? 'from-amber-600 to-[#F5C542]' : 'from-slate-300 to-slate-400'} blur-sm opacity-70`} />
+          <div className={`w-28 h-28 rounded-full overflow-hidden border-[4px] relative z-10 flex items-center justify-center ${dark ? 'border-[#081326] bg-[#122244]' : 'border-white bg-slate-100'}`}>
+            <img src={avatar} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          </div>
+          <div className={`absolute -bottom-2 -left-2 text-xs font-black w-9 h-9 rounded-full flex items-center justify-center border-4 relative z-20 shadow-xl ${dark ? 'bg-[#F5C542] text-slate-950 border-[#081326]' : 'bg-slate-800 text-white border-white'}`}>{currentLevel}</div>
+        </div>
+
+        <div className="flex-1 w-full space-y-4 text-center sm:text-right relative z-10">
+          <div>
+            <div className="flex items-center justify-center sm:justify-start gap-2 mb-1.5">
+              <span className={`text-[9.5px] px-3 py-1 rounded-full font-black border ${dark ? 'bg-amber-500/15 text-amber-300 border-amber-500/20' : 'bg-slate-100 text-slate-700 border-slate-200'}`}>🏆 {title}</span>
+            </div>
+            <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${dark ? 'text-white' : 'text-slate-900'}`}>{currentUser.name}</h2>
+          </div>
+
+          <div className="space-y-3.5">
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center text-[10px] font-black px-1">
+                <span className={dark ? 'text-slate-400' : 'text-slate-500'}>التقدم والخبرة الروحية (XP)</span>
+                <span className={`font-mono ${dark ? 'text-amber-400' : 'text-slate-800'}`}>{xpInLevel} / {xpNeeded} XP</span>
+              </div>
+              <div className={`w-full h-3 rounded-full overflow-hidden p-0.5 border ${dark ? 'bg-[#081326]/80 border-blue-500/15' : 'bg-slate-100 border-slate-200'}`}>
+                <motion.div initial={{ width: 0 }} animate={{ width: `${xpPercent}%` }} transition={{ duration: 1, ease: 'easeOut' }} className={`h-full rounded-full ${dark ? 'bg-gradient-to-r from-amber-500 to-[#F5C542]' : 'bg-slate-700'}`} />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center sm:justify-start gap-4 pt-1">
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${dark ? 'bg-amber-500/5 border-amber-500/15 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                <Flame className="w-4 h-4 text-amber-400 fill-current" />
+                <span className="text-xs font-black">{glory} <span className="text-[10px] font-bold opacity-80">نقطة مجد</span></span>
+              </div>
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${dark ? 'bg-rose-500/5 border-rose-500/15 text-rose-300' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
+                <Trophy className="w-4 h-4 text-rose-400 fill-current" />
+                <span className="text-xs font-black">{streak} <span className="text-[10px] font-bold opacity-80">أيام التوالي</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4 category cards */}
+      <div className="space-y-4">
+        {CATEGORIES.map((c, idx) => (
+          <motion.div
+            key={c.id}
+            initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 22, delay: idx * 0.08 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setSection(c.id)}
+            className={`group cursor-pointer relative overflow-hidden rounded-[28px] p-5 md:p-6 flex items-center justify-between border transition-all duration-300 ${dark ? `bg-gradient-to-br ${c.box} hover:border-[#F5C542]/40` : 'bg-white border-slate-200/80 hover:border-slate-300'}`}
+          >
+            <div className="flex items-center gap-4 relative z-10 text-right">
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all group-hover:scale-110 ${dark ? c.iconBg : 'bg-slate-100 border-slate-200'}`}>{c.icon}</div>
+              <div className="space-y-1">
+                <h3 className={`text-base font-black transition-colors ${dark ? 'text-white group-hover:text-[#F5C542]' : 'text-slate-800'}`}>{c.label}</h3>
+                <p className={`text-[11.5px] font-bold leading-relaxed max-w-[280px] sm:max-w-md ${dark ? 'text-slate-300 opacity-90' : 'text-slate-500'}`}>{c.sub}</p>
+              </div>
+            </div>
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border transition-all relative z-10 shrink-0 ${dark ? 'bg-[#081326]/60 border-blue-500/10 text-slate-300 group-hover:bg-[#F5C542] group-hover:text-slate-950' : 'bg-slate-50 border-slate-100 text-slate-400 group-hover:bg-slate-900 group-hover:text-white'}`}>
+              <ArrowLeft className="w-4 h-4 fill-current rotate-180 group-hover:rotate-0 transition-transform duration-300" />
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
   );
 }

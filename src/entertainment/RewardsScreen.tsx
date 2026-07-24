@@ -1,8 +1,9 @@
 import React, { useMemo, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { Gift, Sparkles, Check, Coins } from 'lucide-react';
+import { Gift, Sparkles, Check, Zap } from 'lucide-react';
 import { User } from '../types';
-import { spinWheel, awardGameReward, checkAchievements } from '../lib/db';
+import { awardGameReward, checkAchievements } from '../lib/db';
+import AdGateModal from './AdGateModal';
 
 interface Props {
   currentUser: User;
@@ -11,18 +12,17 @@ interface Props {
   onAchievementsUnlocked?: (ids: string[]) => void;
 }
 
-// Wheel segments — must mirror the server reward set in migration 076.
+// Wheel segments — XP rewards (not redeemable points).
 const WHEEL = [
-  { pts: 10, color: '#f59e0b' },
-  { pts: 20, color: '#10b981' },
-  { pts: 30, color: '#3b82f6' },
-  { pts: 50, color: '#ef4444' },
-  { pts: 75, color: '#a855f7' },
-  { pts: 100, color: '#eab308' },
+  { xp: 10, color: '#f59e0b' },
+  { xp: 20, color: '#10b981' },
+  { xp: 30, color: '#3b82f6' },
+  { xp: 50, color: '#ef4444' },
+  { xp: 75, color: '#a855f7' },
+  { xp: 100, color: '#eab308' },
 ];
 const SEG = 360 / WHEEL.length;
 
-// The daily spiritual challenges (ported). One per day, XP on completion.
 const DAILY_CHALLENGES = [
   { id: 'dc_1', label: '📖 قراءة أصحاح كامل بتأمل وفهم عميق', xp: 50 },
   { id: 'dc_2', label: '🙏 صلاة حارة في مخدعك لمدة ١٠ دقائق من أجل الآخرين والخدمة', xp: 50 },
@@ -39,8 +39,7 @@ function todayKey(): string {
 function dayIndex(): number {
   const d = new Date();
   const start = new Date(d.getFullYear(), 0, 0);
-  const day = Math.floor((d.getTime() - start.getTime()) / 86400000);
-  return day % DAILY_CHALLENGES.length;
+  return Math.floor((d.getTime() - start.getTime()) / 86400000) % DAILY_CHALLENGES.length;
 }
 
 export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAchievementsUnlocked }: Props) {
@@ -48,7 +47,7 @@ export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAc
   const rotationRef = useRef(0);
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [wheelErr, setWheelErr] = useState<string | null>(null);
+  const [adOpen, setAdOpen] = useState(false);
 
   const challenge = useMemo(() => DAILY_CHALLENGES[dayIndex()], []);
   const challengeKey = `pima_daily_challenge_${todayKey()}`;
@@ -57,19 +56,14 @@ export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAc
   });
   const [awardingChallenge, setAwardingChallenge] = useState(false);
 
-  const doSpin = async () => {
+  // Called only after the rewarded ad completes.
+  const runSpin = async () => {
+    setAdOpen(false);
     if (spinning) return;
     setResult(null);
-    setWheelErr(null);
     setSpinning(true);
-    const res = await spinWheel();
-    if (!res.ok) {
-      setSpinning(false);
-      const alreadySpun = 'error' in res && res.error === 'ALREADY_SPUN';
-      setWheelErr(alreadySpun ? 'لقد أدرت العجلة اليوم — عُد غداً لمحاولة جديدة! 🕯️' : 'تعذّر تدوير العجلة الآن، حاول لاحقاً.');
-      return;
-    }
-    const idx = Math.max(0, WHEEL.findIndex((w) => w.pts === res.pointsAwarded));
+    const idx = Math.floor(Math.random() * WHEEL.length);
+    const won = WHEEL[idx];
     // Accumulate rotation so it always spins forward and lands on the won segment.
     const targetMod = ((360 - (idx * SEG + SEG / 2)) % 360 + 360) % 360;
     const currentMod = ((rotationRef.current % 360) + 360) % 360;
@@ -78,11 +72,12 @@ export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAc
     const final = rotationRef.current + 360 * 4 + delta;
     rotationRef.current = final;
     setRotation(final);
-    setTimeout(() => {
+    setTimeout(async () => {
       setSpinning(false);
-      setResult(`ربحت +${res.pointsAwarded} نقطة خصم! 🎉`);
       confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
-      onUserUpdated({ points: res.newPoints });
+      const r = await awardGameReward(won.xp, 0, 0, `عجلة الحظ: +${won.xp} خبرة`);
+      if (r) onUserUpdated({ xp: r.xp, level: r.level, gameCoins: r.gameCoins });
+      setResult(`ربحت +${won.xp} نقطة خبرة! 🎉`);
     }, 4100);
   };
 
@@ -102,6 +97,8 @@ export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAc
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
+      <AdGateModal open={adOpen} title="شاهد الإعلان لتدوير العجلة" rewardLabel="أدر العجلة" onReward={runSpin} onClose={() => setAdOpen(false)} />
+
       <div className="max-w-lg mx-auto px-4 pt-5 pb-10">
         <div className="flex items-center justify-between mb-4">
           <button type="button" onClick={onBack} className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors">
@@ -109,19 +106,17 @@ export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAc
             <span>رجوع</span>
           </button>
           <span className="flex items-center gap-1 text-[11px] font-black text-amber-300 bg-amber-500/10 border border-amber-500/25 px-2.5 py-1 rounded-full">
-            <Coins className="w-3.5 h-3.5" /> {currentUser.points ?? 0} نقطة
+            <Zap className="w-3.5 h-3.5" /> {currentUser.xp ?? 0} خبرة
           </span>
         </div>
 
         <div className="text-center mb-2">
           <h2 className="text-lg font-black text-white">المكافآت وعجلة الحظ</h2>
-          <p className="text-[11px] text-slate-400">أدر العجلة مرة كل يوم واربح نقاط خصم على حجوزاتك.</p>
+          <p className="text-[11px] text-slate-400">شاهد إعلاناً وأدر العجلة لتربح نقاط خبرة.</p>
         </div>
 
-        {/* Wheel */}
         <div className="flex flex-col items-center py-4">
           <div className="relative">
-            {/* pointer */}
             <div className="absolute left-1/2 -translate-x-1/2 -top-1 z-10 w-0 h-0 border-l-8 border-r-8 border-t-[16px] border-l-transparent border-r-transparent border-t-amber-400" />
             <div
               className="w-60 h-60 rounded-full border-4 border-white/15 shadow-2xl relative"
@@ -130,13 +125,7 @@ export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAc
               {WHEEL.map((w, i) => {
                 const ang = i * SEG + SEG / 2;
                 return (
-                  <span
-                    key={i}
-                    className="absolute left-1/2 top-1/2 text-white font-black text-sm"
-                    style={{ transform: `rotate(${ang}deg) translateY(-88px) rotate(-${ang}deg)`, transformOrigin: 'center' }}
-                  >
-                    +{w.pts}
-                  </span>
+                  <span key={i} className="absolute left-1/2 top-1/2 text-white font-black text-sm" style={{ transform: `rotate(${ang}deg) translateY(-88px) rotate(-${ang}deg)`, transformOrigin: 'center' }}>+{w.xp}</span>
                 );
               })}
             </div>
@@ -147,15 +136,14 @@ export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAc
 
           <button
             type="button"
-            onClick={doSpin}
+            onClick={() => { if (!spinning) setAdOpen(true); }}
             disabled={spinning}
             className={`mt-6 px-8 py-3 rounded-2xl text-[13px] font-black transition-all ${spinning ? 'bg-slate-600 text-slate-300' : 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white hover:scale-105 active:scale-95'}`}
           >
-            {spinning ? 'جارٍ الدوران… ⚙️' : 'أدر عجلة الحظ ⚡'}
+            {spinning ? 'جارٍ الدوران… ⚙️' : 'شاهد إعلاناً وأدر العجلة 📺⚡'}
           </button>
 
           {result && <div className="mt-4 text-center text-[14px] font-black text-emerald-300">{result}</div>}
-          {wheelErr && <div className="mt-4 text-center text-[12px] font-bold text-amber-300">{wheelErr}</div>}
         </div>
 
         {/* Daily challenge */}
@@ -169,12 +157,7 @@ export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAc
           {challengeDone ? (
             <div className="flex items-center justify-center gap-1 text-emerald-300 font-black text-[12px] py-2"><Check className="w-4 h-4" /> أنجزت تحدي اليوم — بارك الله فيك 🙏</div>
           ) : (
-            <button
-              type="button"
-              onClick={completeChallenge}
-              disabled={awardingChallenge}
-              className="w-full py-2.5 bg-fuchsia-500 hover:bg-fuchsia-600 disabled:opacity-60 text-white text-[12px] font-black rounded-xl"
-            >
+            <button type="button" onClick={completeChallenge} disabled={awardingChallenge} className="w-full py-2.5 bg-fuchsia-500 hover:bg-fuchsia-600 disabled:opacity-60 text-white text-[12px] font-black rounded-xl">
               {awardingChallenge ? 'جارٍ التسجيل…' : 'أنجزت التحدي ✔️'}
             </button>
           )}
