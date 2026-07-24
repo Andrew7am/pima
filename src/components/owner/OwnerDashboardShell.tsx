@@ -26,6 +26,7 @@ import { updateBookingFields } from '../../lib/db';
 import { getRoomBedState, getHouseRoomAvailabilityForRange } from '../../lib/roomOccupancy';
 import { printBookingInvoice } from '../../lib/invoice';
 import { openBookingQrWindow } from '../../lib/qr';
+import { printRoomingList, printBadges } from '../../lib/roomingList';
 import LocationPicker from '../LocationPicker';
 
 type PrimaryTab = 'stats' | 'bookings' | 'messages' | 'meals';
@@ -1159,6 +1160,21 @@ export default function OwnerDashboardShell({
                         className="flex items-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
                         <Building className="w-4 h-4" /><span>عرض توزيع الغرف</span>
                       </button>
+                    </div>
+                  )}
+                  {(booking.status === 'approved' || booking.status === 'completed') && (
+                    <div className="pt-2 mt-1 border-t border-[var(--color-owner-border)]">
+                      <div className="text-[9px] font-black text-[var(--color-owner-secondary)] mb-1.5">أدوات منظّم المؤتمر</div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button onClick={() => printRoomingList(booking, attendees, allocations, ownerRooms)}
+                          className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                          <ClipboardList className="w-4 h-4" /><span>كشف الغرف</span>
+                        </button>
+                        <button onClick={() => printBadges(booking, attendees, allocations, ownerRooms)}
+                          className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                          <QrCode className="w-4 h-4" /><span>بادجات الأسماء</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                   <div className="flex items-center justify-between pt-2 mt-1 border-t border-[var(--color-owner-border)]">
