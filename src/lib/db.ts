@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, AuditLogEntry, Expense, Payout } from '../types';
+import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, AuditLogEntry, Expense, Payout, PromoBanner } from '../types';
 import { DEFAULT_PLATFORM_SETTINGS } from '../types';
 
 // ─── Row → Type mappers ────────────────────────────────────────────────────
@@ -296,6 +296,22 @@ export function mapPlatformAnnouncement(r: Record<string, unknown>): PlatformAnn
     imageUrl: r.image_url as string ?? undefined,
     linkedHouseId: r.linked_house_id as string ?? undefined,
     isActive: r.is_active as boolean,
+    createdAt: r.created_at as string,
+  };
+}
+
+export function mapPromoBanner(r: Record<string, unknown>): PromoBanner {
+  return {
+    id: r.id as string,
+    placement: r.placement as PromoBanner['placement'],
+    isActive: r.is_active as boolean,
+    sort: (r.sort as number) ?? 0,
+    badge: (r.badge as string) ?? undefined,
+    title: (r.title as string) ?? undefined,
+    subtitle: (r.subtitle as string) ?? undefined,
+    ctaText: (r.cta_text as string) ?? undefined,
+    imageUrl: (r.image_url as string) ?? undefined,
+    endsAt: (r.ends_at as string) ?? null,
     createdAt: r.created_at as string,
   };
 }
@@ -692,6 +708,14 @@ export async function loadPlatformAnnouncements(): Promise<PlatformAnnouncement[
   return (data ?? []).map(mapPlatformAnnouncement);
 }
 
+// Admin-managed promo banners (migration 076). Public read; degrades to [] if
+// the table isn't migrated yet, so the ported default banners still show.
+export async function loadPromoBanners(): Promise<PromoBanner[]> {
+  const { data, error } = await supabase.from('promo_banners').select('*').order('placement', { ascending: true }).order('sort', { ascending: true }).order('created_at', { ascending: true });
+  if (error) { console.warn('loadPromoBanners:', error.message); return []; }
+  return (data ?? []).map(mapPromoBanner);
+}
+
 export async function loadPlatformSettings(): Promise<PlatformSettings> {
   const { data, error } = await supabase.from('platform_settings').select('*').eq('id', 1).single();
   if (error || !data) { if (error) console.error('loadPlatformSettings:', error); return DEFAULT_PLATFORM_SETTINGS; }
@@ -1076,6 +1100,47 @@ export async function setPlatformAnnouncementActive(id: string, isActive: boolea
 export async function deletePlatformAnnouncement(id: string): Promise<boolean> {
   const { error } = await supabase.from('platform_announcements').delete().eq('id', id);
   if (error) console.error('deletePlatformAnnouncement:', error);
+  return !error;
+}
+
+// Promo banners — admin CRUD (RLS restricts writes to admins).
+function promoBannerToRow(b: PromoBanner): Record<string, unknown> {
+  return {
+    id: b.id,
+    placement: b.placement,
+    is_active: b.isActive,
+    sort: b.sort ?? 0,
+    badge: b.badge ?? null,
+    title: b.title ?? null,
+    subtitle: b.subtitle ?? null,
+    cta_text: b.ctaText ?? null,
+    image_url: b.imageUrl ?? null,
+    ends_at: b.endsAt ?? null,
+    created_at: b.createdAt,
+  };
+}
+
+export async function createPromoBanner(b: PromoBanner): Promise<boolean> {
+  const { error } = await supabase.from('promo_banners').insert(promoBannerToRow(b));
+  if (error) console.error('createPromoBanner:', error);
+  return !error;
+}
+
+export async function updatePromoBanner(b: PromoBanner): Promise<boolean> {
+  const { error } = await supabase.from('promo_banners').update(promoBannerToRow(b)).eq('id', b.id);
+  if (error) console.error('updatePromoBanner:', error);
+  return !error;
+}
+
+export async function setPromoBannerActive(id: string, isActive: boolean): Promise<boolean> {
+  const { error } = await supabase.from('promo_banners').update({ is_active: isActive }).eq('id', id);
+  if (error) console.error('setPromoBannerActive:', error);
+  return !error;
+}
+
+export async function deletePromoBanner(id: string): Promise<boolean> {
+  const { error } = await supabase.from('promo_banners').delete().eq('id', id);
+  if (error) console.error('deletePromoBanner:', error);
   return !error;
 }
 

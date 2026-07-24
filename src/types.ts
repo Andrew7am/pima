@@ -304,6 +304,21 @@ export interface PlatformAnnouncement {
   createdAt: string;
 }
 
+// Admin-managed promo banners on the public browse page (migration 076).
+export interface PromoBanner {
+  id: string;
+  placement: 'carousel' | 'countdown';
+  isActive: boolean;
+  sort: number;
+  badge?: string;
+  title?: string;
+  subtitle?: string;
+  ctaText?: string;
+  imageUrl?: string;
+  endsAt?: string | null;
+  createdAt: string;
+}
+
 export interface PlatformSettings {
   commissionRate: number;    // 0.05 = 5% platform cut
   depositRate: number;       // 0.15 = 15% upfront deposit

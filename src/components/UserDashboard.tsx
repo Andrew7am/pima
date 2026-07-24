@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PlatformAnnouncement, RetreatHouse, User } from '../types';
+import { PlatformAnnouncement, RetreatHouse, User, PromoBanner } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen } from 'lucide-react';
 import AnnouncementCarousel from './AnnouncementCarousel';
@@ -13,6 +13,7 @@ interface UserDashboardProps {
   onSelectRewards: () => void;
   onToggleFavorite: (houseId: string) => void;
   platformAnnouncements?: PlatformAnnouncement[];
+  promoBanners?: PromoBanner[];
 }
 
 export default function UserDashboard({
@@ -21,8 +22,11 @@ export default function UserDashboard({
   onSelectHouse,
   onSelectRewards,
   onToggleFavorite,
-  platformAnnouncements = []
+  platformAnnouncements = [],
+  promoBanners = [],
 }: UserDashboardProps) {
+  const carouselSlides = promoBanners.filter((b) => b.placement === 'carousel' && b.isActive);
+  const countdownBanner = promoBanners.find((b) => b.placement === 'countdown' && b.isActive);
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGov, setSelectedGov] = useState('');
@@ -172,8 +176,8 @@ export default function UserDashboard({
   return (
     <div className="space-y-4 text-right">
 
-      {/* Top promo hero (Summer offers carousel) — ported from the source design */}
-      <SummerOfferCarousel onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+      {/* Top promo hero (carousel) — admin-managed, falls back to ported defaults */}
+      <SummerOfferCarousel slides={carouselSlides} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
 
       {/* Guide / tips entry — crawlable content section (helps SEO + AdSense) */}
       <a
@@ -706,8 +710,8 @@ export default function UserDashboard({
         )}
       </div>
 
-      {/* Bottom promo (limited-time countdown offer) — ported from the source design */}
-      <CountdownOfferBanner onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+      {/* Bottom promo (limited-time countdown offer) — admin-managed, falls back to ported default */}
+      <CountdownOfferBanner banner={countdownBanner} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
 
       {/* Compare Floating Bar */}
       {comparedHouseIds.length > 0 && (

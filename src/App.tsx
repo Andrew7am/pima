@@ -8,7 +8,7 @@ import {
   loadHouses, deleteHouse, createHouse as createHouseDb, updateHouse as updateHouseDb, houseUpdatePayload as houseUpdatePayloadDb,
   loadBookings, loadReviews, loadReviewsForHouses, loadPayments, loadNotifications, subscribeToNotifications, loadPointsHistory,
   subscribeToBookingsForUser, subscribeToBookingsForHouse, subscribeToRoomsForHouse,
-  loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlistForHouses, loadPlatformAnnouncements,
+  loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlistForHouses, loadPlatformAnnouncements, loadPromoBanners,
   loadAttendeesForBooking, loadAllocationsForBooking, saveAttendeesForBooking, saveAllocationsForBooking, loadAllocationsCount,
   createBooking, updateBookingStatus, updateBookingFields, deleteBooking as deleteBookingDb,
   createReview, updateReview as updateReviewDb, deleteReview as deleteReviewDb, createPayment, updatePaymentStatus,
@@ -19,13 +19,14 @@ import {
   loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb, settleBookingsPayout,
   loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
   createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
+  createPromoBanner, setPromoBannerActive, deletePromoBanner,
   loadPlatformSettings, updatePlatformSettings,
   deleteOwnAccount,
   loadAuditLog,
   loadPaymentProofImage,
 } from './lib/db';
 import { autoAllocate } from './lib/roomAllocation';
-import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout, ConferenceRoom } from './types';
+import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout, ConferenceRoom, PromoBanner } from './types';
 import { INITIAL_CONFERENCE_ROOMS } from './entertainment/data/conferenceMocks';
 
 // Component Imports
@@ -131,6 +132,7 @@ export default function App() {
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [platformAnnouncements, setPlatformAnnouncements] = useState<PlatformAnnouncement[]>([]);
+  const [promoBanners, setPromoBanners] = useState<PromoBanner[]>([]);
   const [settings, setSettings] = useState<PlatformSettings>(DEFAULT_PLATFORM_SETTINGS);
 
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -194,12 +196,12 @@ export default function App() {
   // actually being viewed (see the lazy-load effects below), not wholesale
   // on every login the way they used to be.
   const loadAppData = useCallback(async (userId?: string) => {
-    const [u, h, b, p, pa, st, ac] = await Promise.all([
+    const [u, h, b, p, pa, st, ac, pb] = await Promise.all([
       // includePaymentMethods: owner/admin get their own houses' payout numbers
       // merged back via RPC (regular users get none) — migration 070.
       loadUsers(), loadHouses(true), loadBookings(), loadPayments(),
       loadPlatformAnnouncements(),
-      loadPlatformSettings(), loadAllocationsCount(),
+      loadPlatformSettings(), loadAllocationsCount(), loadPromoBanners(),
     ]);
     setUsers(u);
     setHouses(h);
@@ -209,6 +211,7 @@ export default function App() {
     setPlatformAnnouncements(pa);
     setSettings(st);
     setAllocationsCount(ac);
+    setPromoBanners(pb);
     if (userId) {
       const n = await loadNotifications(userId);
       setNotifications(n);
@@ -220,13 +223,14 @@ export default function App() {
   // rooms/announcements for one house load lazily when its page opens (the
   // selectedHouse effect below — those tables have public SELECT policies).
   const loadPublicData = useCallback(async () => {
-    const [h, pa, st] = await Promise.all([
-      loadHouses(), loadPlatformAnnouncements(), loadPlatformSettings(),
+    const [h, pa, st, pb] = await Promise.all([
+      loadHouses(), loadPlatformAnnouncements(), loadPlatformSettings(), loadPromoBanners(),
     ]);
     setHouses(h);
     setHousesLoaded(true);
     setPlatformAnnouncements(pa);
     setSettings(st);
+    setPromoBanners(pb);
   }, []);
 
   const loadUserProfile = useCallback(async (userId: string) => {
@@ -1296,6 +1300,21 @@ export default function App() {
     deletePlatformAnnouncement(id);
   };
 
+  const handleAddPromoBanner = (b: PromoBanner) => {
+    setPromoBanners((prev) => [...prev, b]);
+    createPromoBanner(b);
+  };
+
+  const handleTogglePromoBanner = (id: string, isActive: boolean) => {
+    setPromoBanners((prev) => prev.map((b) => (b.id === id ? { ...b, isActive } : b)));
+    setPromoBannerActive(id, isActive);
+  };
+
+  const handleDeletePromoBanner = (id: string) => {
+    setPromoBanners((prev) => prev.filter((b) => b.id !== id));
+    deletePromoBanner(id);
+  };
+
   const handleUpdateReview = (updatedReview: Review) => {
     setReviews((prev) =>
       prev.map((r) => (r.id === updatedReview.id ? updatedReview : r))
@@ -1444,6 +1463,7 @@ export default function App() {
             onSelectRewards={() => requireLogin()}
             onToggleFavorite={() => requireLogin(selectedHouse?.id)}
             platformAnnouncements={platformAnnouncements.filter((a) => a.isActive)}
+            promoBanners={promoBanners}
           />
         )}
         </Suspense>
@@ -1616,6 +1636,7 @@ export default function App() {
               onSelectRewards={() => setActiveScreen('profile')}
               onToggleFavorite={handleToggleFavorite}
               platformAnnouncements={platformAnnouncements.filter((a) => a.isActive)}
+            promoBanners={promoBanners}
             />
           )}
 
@@ -1726,6 +1747,10 @@ export default function App() {
               onAddPlatformAnnouncement={handleAddPlatformAnnouncement}
               onTogglePlatformAnnouncement={handleTogglePlatformAnnouncement}
               onDeletePlatformAnnouncement={handleDeletePlatformAnnouncement}
+              promoBanners={promoBanners}
+              onAddPromoBanner={handleAddPromoBanner}
+              onTogglePromoBanner={handleTogglePromoBanner}
+              onDeletePromoBanner={handleDeletePromoBanner}
               settings={settings}
               onUpdateSettings={handleUpdateSettings}
               auditLog={auditLog}

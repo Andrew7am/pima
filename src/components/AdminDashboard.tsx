@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Payout, OwnerPaymentMethod } from '../types';
+import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Payout, OwnerPaymentMethod, PromoBanner } from '../types';
 
 // Payment-method type options for the platform collection accounts editor.
 const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] = [
@@ -40,6 +40,10 @@ interface AdminDashboardProps {
   onAddPlatformAnnouncement?: (a: PlatformAnnouncement) => void;
   onTogglePlatformAnnouncement?: (id: string, isActive: boolean) => void;
   onDeletePlatformAnnouncement?: (id: string) => void;
+  promoBanners?: PromoBanner[];
+  onAddPromoBanner?: (b: PromoBanner) => void;
+  onTogglePromoBanner?: (id: string, isActive: boolean) => void;
+  onDeletePromoBanner?: (id: string) => void;
   settings?: PlatformSettings;
   onUpdateSettings?: (s: PlatformSettings) => void;
   auditLog?: AuditLogEntry[];
@@ -77,6 +81,10 @@ export default function AdminDashboard({
   onAddPlatformAnnouncement,
   onTogglePlatformAnnouncement,
   onDeletePlatformAnnouncement,
+  promoBanners = [],
+  onAddPromoBanner,
+  onTogglePromoBanner,
+  onDeletePromoBanner,
   settings = DEFAULT_PLATFORM_SETTINGS,
   onUpdateSettings,
   auditLog = [],
@@ -146,6 +154,15 @@ export default function AdminDashboard({
   const [annMessage, setAnnMessage] = useState('');
   const [annImageUrl, setAnnImageUrl] = useState('');
   const [annHouseId, setAnnHouseId] = useState('');
+
+  // Promo banner form state (migration 076)
+  const [pbPlacement, setPbPlacement] = useState<'carousel' | 'countdown'>('carousel');
+  const [pbBadge, setPbBadge] = useState('');
+  const [pbTitle, setPbTitle] = useState('');
+  const [pbSubtitle, setPbSubtitle] = useState('');
+  const [pbCta, setPbCta] = useState('');
+  const [pbImage, setPbImage] = useState('');
+  const [pbEndsAt, setPbEndsAt] = useState('');
 
   const pendingAccounts = users.filter(u => (u.role === 'servant' || u.role === 'owner') && u.approvalStatus === 'pending');
 
@@ -1245,6 +1262,80 @@ export default function AdminDashboard({
                   </div>
                 );
               })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Promo banners management (top carousel + bottom countdown) — migration 076 */}
+      {activeTab === 'announcements' && (
+        <div className="space-y-3 mt-4">
+          <div className="bg-white p-4 rounded-2xl border border-[#D6D6C2] space-y-2.5">
+            <div className="flex items-center gap-2 text-[#4A4A3A]">
+              <Megaphone className="w-4 h-4 text-[#C5A059]" />
+              <h3 className="text-xs font-black">بانرات العروض (تظهر في صفحة التصفّح فوق وتحت)</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <select value={pbPlacement} onChange={(e) => setPbPlacement(e.target.value as 'carousel' | 'countdown')} className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-[#2D2D24] focus:outline-none text-right">
+                <option value="carousel">شريحة في الكاروسيل العلوي 🖼️</option>
+                <option value="countdown">بانر العدّاد السفلي ⏳</option>
+              </select>
+              <input value={pbBadge} onChange={(e) => setPbBadge(e.target.value)} placeholder="الشارة (مثال: عرض خاص)" className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
+              <input value={pbCta} onChange={(e) => setPbCta(e.target.value)} placeholder="نص الزر (مثال: احجز الآن)" className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
+              <input value={pbTitle} onChange={(e) => setPbTitle(e.target.value)} placeholder={pbPlacement === 'countdown' ? 'نص الخصم (مثال: خصم ٢٠٪)' : 'العنوان (مثال: عرض الصيف)'} className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
+              {pbPlacement === 'carousel' && (
+                <input value={pbSubtitle} onChange={(e) => setPbSubtitle(e.target.value)} placeholder="الوصف (مثال: خصومات تصل ٣٠٪ على الساحل)" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
+              )}
+              <input value={pbImage} onChange={(e) => setPbImage(e.target.value)} placeholder="رابط الصورة (https://...)" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" dir="ltr" />
+              {pbPlacement === 'countdown' && (
+                <label className="col-span-2 text-[10px] font-bold text-[#8A8A70]">ينتهي العرض في:
+                  <input type="datetime-local" value={pbEndsAt} onChange={(e) => setPbEndsAt(e.target.value)} className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
+                </label>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!onAddPromoBanner || (!pbTitle && !pbBadge)) return;
+                onAddPromoBanner({
+                  id: `pb_${Date.now()}`,
+                  placement: pbPlacement,
+                  isActive: true,
+                  sort: promoBanners.filter((b) => b.placement === pbPlacement).length,
+                  badge: pbBadge || undefined,
+                  title: pbTitle || undefined,
+                  subtitle: pbSubtitle || undefined,
+                  ctaText: pbCta || undefined,
+                  imageUrl: pbImage || undefined,
+                  endsAt: pbPlacement === 'countdown' && pbEndsAt ? new Date(pbEndsAt).toISOString() : null,
+                  createdAt: new Date().toISOString(),
+                });
+                setPbBadge(''); setPbTitle(''); setPbSubtitle(''); setPbCta(''); setPbImage(''); setPbEndsAt('');
+              }}
+              className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-black py-2 rounded-xl transition-all cursor-pointer"
+            >
+              إضافة البانر
+            </button>
+          </div>
+
+          {/* Existing banners */}
+          <div className="space-y-2">
+            {promoBanners.length === 0 ? (
+              <p className="text-center text-[11px] text-[#8A8A70] font-bold py-3">لا توجد بانرات — سيظهر التصميم الافتراضي.</p>
+            ) : (
+              promoBanners.map((b) => (
+                <div key={b.id} className="bg-white p-3 rounded-2xl border border-[#D6D6C2] flex items-center gap-3">
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${b.placement === 'carousel' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700'}`}>{b.placement === 'carousel' ? 'كاروسيل' : 'عدّاد'}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-black text-[#4A4A3A] truncate">{b.title || b.badge || '—'}</p>
+                    {b.subtitle && <p className="text-[9.5px] text-[#8A8A70] truncate">{b.subtitle}</p>}
+                  </div>
+                  <button type="button" onClick={() => onTogglePromoBanner?.(b.id, !b.isActive)} className={`text-[9.5px] font-bold px-2 py-1 rounded-lg shrink-0 cursor-pointer ${b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>{b.isActive ? 'مفعّل' : 'متوقف'}</button>
+                  <button type="button" onClick={() => { if (confirm('حذف هذا البانر نهائياً؟')) onDeletePromoBanner?.(b.id); }} className="text-[9.5px] font-bold text-rose-600 hover:underline cursor-pointer shrink-0">حذف</button>
+                </div>
+              ))
             )}
           </div>
         </div>
