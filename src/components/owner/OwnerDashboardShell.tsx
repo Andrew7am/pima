@@ -4,7 +4,7 @@ import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
 import {
   Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2,
   Building, Settings, MessageSquare, Camera, BedDouble, Phone, Mail, Lock, Menu, ChevronRight,
-  MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun, Moon,
+  MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun, Moon, Download,
 } from 'lucide-react';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
@@ -115,6 +115,19 @@ export default function OwnerDashboardShell({
   const [activeTab, setActiveTab] = useState<ActiveTab>('stats');
   const [darkMode, setDarkMode] = useState(() => typeof window !== 'undefined' && localStorage.getItem('owner_dark') === '1');
   const toggleDark = () => setDarkMode((v) => { const next = !v; try { localStorage.setItem('owner_dark', next ? '1' : '0'); } catch { /* ignore */ } return next; });
+
+  // PWA install: capture the browser's install prompt so we can surface a
+  // custom "ثبّت التطبيق" button (only shows when the browser allows it).
+  const installPromptRef = React.useRef<{ prompt: () => void } | null>(null);
+  const [canInstall, setCanInstall] = useState(false);
+  React.useEffect(() => {
+    const onPrompt = (e: Event) => { e.preventDefault(); installPromptRef.current = e as unknown as { prompt: () => void }; setCanInstall(true); };
+    const onInstalled = () => { setCanInstall(false); installPromptRef.current = null; };
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => { window.removeEventListener('beforeinstallprompt', onPrompt); window.removeEventListener('appinstalled', onInstalled); };
+  }, []);
+  const doInstall = () => { installPromptRef.current?.prompt(); };
   const [showOverflow, setShowOverflow] = useState(false);
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
@@ -755,6 +768,13 @@ export default function OwnerDashboardShell({
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
+                    {canInstall && (
+                      <button type="button" onClick={doInstall}
+                        className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-[var(--color-owner-primary)] text-white text-[10px] font-black cursor-pointer"
+                        title="ثبّت بيما على شاشتك">
+                        <Download className="w-3.5 h-3.5" /> تثبيت
+                      </button>
+                    )}
                     <button type="button" onClick={toggleDark}
                       className="p-2 rounded-xl bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] cursor-pointer"
                       title={darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}>
