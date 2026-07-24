@@ -101,9 +101,11 @@ interface InteractiveRoomProps {
   onUpdateUser: (updatedUser: any) => void;
   initialMode?: 'selection' | 'create' | 'join' | 'active';
   initialRole?: 'host' | 'participant';
+  // Prefills the join-code input (e.g. a code scanned from the conference hub).
+  initialJoinCode?: string;
 }
 
-export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, initialMode, initialRole }: InteractiveRoomProps) {
+export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, initialMode, initialRole, initialJoinCode }: InteractiveRoomProps) {
   // Mode: 'role_selection' | 'create_form' | 'join_form' | 'lobby'
   const [mode, setMode] = useState<'selection' | 'create' | 'join' | 'active'>('selection');
   const [role, setRole] = useState<'host' | 'participant'>('participant');
@@ -115,7 +117,10 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
     if (initialRole) {
       setRole(initialRole);
     }
-  }, [initialMode, initialRole]);
+    if (initialJoinCode) {
+      setJoinCodeInput(initialJoinCode.replace(/\D/g, '').slice(0, 6));
+    }
+  }, [initialMode, initialRole, initialJoinCode]);
   
   // Create Room Form state
   const [roomName, setRoomName] = useState('خلوة الشباب الروحية - كنيستنا ⛪');

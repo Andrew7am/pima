@@ -7,6 +7,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import ParticipantCard from './ParticipantCard';
 import ParticipantCardEditor from './ParticipantCardEditor';
 import InteractiveRoom from './InteractiveRoom';
+import QRScanner from './QRScanner';
 import SpiritualJournal from './SpiritualJournal';
 
 import { motion, AnimatePresence } from 'motion/react';
@@ -268,6 +269,8 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
   const [activeView, setActiveView] = useState<'dashboard' | 'game_room'>('dashboard');
   const [gameRoomMode, setGameRoomMode] = useState<'selection' | 'create' | 'join' | 'active'>('selection');
   const [gameRoomRole, setGameRoomRole] = useState<'host' | 'participant' | undefined>(undefined);
+  const [showJoinScanner, setShowJoinScanner] = useState(false);
+  const [scannedJoinCode, setScannedJoinCode] = useState<string | undefined>(undefined);
 
   const handleApproveRequest = (reqUserId: string) => {
     const updated = {
@@ -914,12 +917,13 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
             </button>
           </div>
 
-          <InteractiveRoom 
-            currentUser={currentUser as any} 
-            onBack={() => setActiveView('dashboard')} 
-            onUpdateUser={onUpdateUser || (() => {})} 
+          <InteractiveRoom
+            currentUser={currentUser as any}
+            onBack={() => setActiveView('dashboard')}
+            onUpdateUser={onUpdateUser || (() => {})}
             initialMode={gameRoomMode}
             initialRole={gameRoomRole}
+            initialJoinCode={scannedJoinCode}
           />
         </div>
       ) : (
@@ -1264,15 +1268,24 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
             </button>
             
             <button
-              onClick={() => { 
+              onClick={() => {
                 playSound('click');
-                setGameRoomMode('join'); 
-                setGameRoomRole('participant'); 
-                setActiveView('game_room'); 
+                setScannedJoinCode(undefined);
+                setGameRoomMode('join');
+                setGameRoomRole('participant');
+                setActiveView('game_room');
               }}
               className="relative overflow-hidden bg-white/5 hover:bg-white/10 text-white border border-purple-500/30 text-xs font-black px-8 py-3.5 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-purple-500/10 hover:border-purple-500/50 flex items-center justify-center gap-2 cursor-pointer active:scale-95 flex-1"
             >
               <span className="relative z-10">🔗 الانضمام برمز اللعبة</span>
+            </button>
+
+            <button
+              onClick={() => { playSound('click'); setShowJoinScanner(true); }}
+              className="relative overflow-hidden bg-white/5 hover:bg-white/10 text-white border border-emerald-500/30 text-xs font-black px-8 py-3.5 rounded-2xl shadow-lg transition-all duration-300 hover:border-emerald-500/50 flex items-center justify-center gap-2 cursor-pointer active:scale-95 flex-1"
+            >
+              <QrCode className="w-5 h-5 relative z-10" />
+              <span className="relative z-10">📷 امسح كود QR للانضمام</span>
             </button>
           </div>
         </div>
@@ -2728,6 +2741,25 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
           </div>
         )}
       </AnimatePresence>
+
+      {/* Camera QR scanner — scan a host's game-room QR to join instantly */}
+      {showJoinScanner && (
+        <QRScanner
+          title="امسح كود غرفة الألعاب"
+          hint="وجّه الكاميرا نحو رمز QR المعروض على شاشة الخادم للانضمام"
+          onClose={() => setShowJoinScanner(false)}
+          onScan={(text) => {
+            const m = text.match(/\d{6}/);
+            setShowJoinScanner(false);
+            if (m) {
+              setScannedJoinCode(m[0]);
+              setGameRoomMode('join');
+              setGameRoomRole('participant');
+              setActiveView('game_room');
+            }
+          }}
+        />
+      )}
 
       {/* Lecture Details and Reading Mode Modal */}
       <AnimatePresence>
