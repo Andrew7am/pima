@@ -58,6 +58,7 @@ const InteractiveRoom = lazy(() => import('./entertainment/InteractiveRoom'));
 const ConferenceHub = lazy(() => import('./entertainment/ConferenceHub'));
 const RandomMatchGame = lazy(() => import('./entertainment/RandomMatchGame'));
 const GamesCatalog = lazy(() => import('./entertainment/GamesCatalog'));
+const RewardsScreen = lazy(() => import('./entertainment/RewardsScreen'));
 import AchievementToast from './entertainment/AchievementToast';
 const FriendsScreen = lazy(() => import('./entertainment/FriendsScreen'));
 const ChatThreadScreen = lazy(() => import('./entertainment/ChatThreadScreen'));
@@ -169,7 +170,7 @@ export default function App() {
   const prevHouseRef = useRef<string | null>(null);
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub' | 'random_match' | 'games_catalog'>('explore');
+  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub' | 'random_match' | 'games_catalog' | 'rewards'>('explore');
   // Conference Hub state — seeded from the sample conference; the opener acts as its host.
   const [conference, setConference] = useState<ConferenceRoom | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
@@ -1786,6 +1787,7 @@ export default function App() {
               }}
               onOpenRandomMatch={() => setActiveScreen('random_match')}
               onOpenGamesCatalog={() => setActiveScreen('games_catalog')}
+              onOpenRewards={() => setActiveScreen('rewards')}
             />
           )}
 
@@ -1839,6 +1841,15 @@ export default function App() {
 
           {activeScreen === 'games_catalog' && (
             <GamesCatalog
+              currentUser={currentUser}
+              onBack={() => setActiveScreen('entertainment')}
+              onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
+              onAchievementsUnlocked={handleAchievementsUnlocked}
+            />
+          )}
+
+          {activeScreen === 'rewards' && (
+            <RewardsScreen
               currentUser={currentUser}
               onBack={() => setActiveScreen('entertainment')}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
