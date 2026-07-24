@@ -46,3 +46,22 @@ body {
   font-family: "Tajawal", var(--font-sans);
 }
 
+/* Owner dark mode — overrides the navy/gold tokens to a dark palette.
+   Applied via the .owner-dark class on the .owner-theme wrapper, so only
+   the owner dashboard switches; guest screens are never affected. Primary
+   is a lighter blue in dark mode so it stays readable both as a button
+   background (with white text) and as emphasis text on dark surfaces. */
+.owner-theme.owner-dark {
+  --color-owner-bg: #0C1424;
+  --color-owner-surface: #14203A;
+  --color-owner-text: #E8EDF7;
+  --color-owner-secondary: #93A3C2;
+  --color-owner-primary: #4F86E8;
+  --color-owner-primary-hover: #3B6FD1;
+  --color-owner-accent: #D4AF37;
+  --color-owner-border: #24324C;
+  --color-owner-hover: #1B2942;
+  background-color: var(--color-owner-bg);
+  color: var(--color-owner-text);
+}
+

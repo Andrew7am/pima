@@ -4,7 +4,7 @@ import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
 import {
   Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2,
   Building, Settings, MessageSquare, Camera, BedDouble, Phone, Mail, Lock, Menu, ChevronRight,
-  MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun,
+  MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun, Moon,
 } from 'lucide-react';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
@@ -113,6 +113,8 @@ export default function OwnerDashboardShell({
   onUpdateBookingDetails, onRecalculateAllocation, onLogout,
 }: OwnerDashboardShellProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>('stats');
+  const [darkMode, setDarkMode] = useState(() => typeof window !== 'undefined' && localStorage.getItem('owner_dark') === '1');
+  const toggleDark = () => setDarkMode((v) => { const next = !v; try { localStorage.setItem('owner_dark', next ? '1' : '0'); } catch { /* ignore */ } return next; });
   const [showOverflow, setShowOverflow] = useState(false);
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
@@ -517,7 +519,7 @@ export default function OwnerDashboardShell({
   };
 
   return (
-    <div className="owner-theme text-right text-[var(--color-owner-text)] w-full max-w-full overflow-x-hidden lg:flex lg:gap-5 lg:items-start pb-24 lg:pb-0">
+    <div className={`owner-theme ${darkMode ? 'owner-dark' : ''} text-right text-[var(--color-owner-text)] w-full max-w-full overflow-x-hidden lg:flex lg:gap-5 lg:items-start pb-24 lg:pb-0`}>
       {/* Desktop sidebar (right side in RTL — first in DOM) */}
       <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-0 bg-[var(--color-owner-primary)] text-white rounded-3xl p-4 gap-1 max-h-[calc(100vh-2rem)] overflow-y-auto">
         <div className="pb-3 mb-2 border-b border-white/10">
@@ -753,6 +755,11 @@ export default function OwnerDashboardShell({
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
+                    <button type="button" onClick={toggleDark}
+                      className="p-2 rounded-xl bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] cursor-pointer"
+                      title={darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}>
+                      {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    </button>
                     <button type="button" id="hero-help-btn" onClick={() => setShowTour(true)}
                       className="p-2 rounded-xl bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] cursor-pointer"
                       title="جولة تعريفية">
