@@ -68,6 +68,22 @@ function mapMessage(r: Record<string, unknown>): DirectMessage {
   };
 }
 
+// Resolve avatar images for a set of user ids (friends, chat partners, …).
+// RLS hides other users' rows, so this goes through a SECURITY DEFINER RPC
+// (migration 078). Degrades to {} if the migration isn't applied yet, so
+// screens fall back to initials rather than crashing.
+export async function loadPublicAvatars(ids: string[]): Promise<Record<string, string>> {
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return {};
+  const { data, error } = await supabase.rpc('get_public_avatars', { p_ids: unique });
+  if (error) { console.warn('loadPublicAvatars:', error.message); return {}; }
+  const map: Record<string, string> = {};
+  for (const r of (data as { id: string; avatar_url: string | null }[]) ?? []) {
+    if (r.avatar_url) map[r.id] = r.avatar_url;
+  }
+  return map;
+}
+
 export async function searchUsers(query: string): Promise<{ id: string; name: string }[]> {
   const { data, error } = await supabase.rpc('search_users', { p_query: query });
   if (error) { console.error('searchUsers:', error); return []; }

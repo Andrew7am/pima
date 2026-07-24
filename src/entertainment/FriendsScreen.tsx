@@ -7,13 +7,22 @@ import {
 import {
   FriendRequestRow, ConversationSummary, searchUsers, sendFriendRequest,
   respondFriendRequest, cancelFriendRequest, removeFriend, loadFriendRequests,
-  getConversations,
+  getConversations, loadPublicAvatars,
 } from './social';
 
 interface FriendsScreenProps {
   currentUser: User;
   onBack: () => void;
   onOpenChat: (friendId: string, friendName: string) => void;
+}
+
+// Round avatar — shows the user's photo when known, otherwise the name initial.
+function Avatar({ name, url, size = 'w-9 h-9' }: { name: string; url?: string; size?: string }) {
+  return (
+    <div className={`${size} rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shrink-0 text-sm font-black text-white overflow-hidden`}>
+      {url ? <img src={url} alt={name} className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : name.charAt(0)}
+    </div>
+  );
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -33,13 +42,25 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | number | null>(null);
+  const [avatars, setAvatars] = useState<Record<string, string>>({});
+
+  const mergeAvatars = useCallback(async (ids: string[]) => {
+    const map = await loadPublicAvatars(ids);
+    if (Object.keys(map).length > 0) setAvatars((prev) => ({ ...prev, ...map }));
+  }, []);
 
   const refresh = useCallback(async () => {
     const [reqs, convos] = await Promise.all([loadFriendRequests(), getConversations()]);
     setRequests(reqs);
     setConversations(convos);
     setLoading(false);
-  }, []);
+    // Resolve photos for everyone shown (requesters, addressees, chat partners).
+    const ids = [
+      ...reqs.map((r) => r.requesterId), ...reqs.map((r) => r.addresseeId),
+      ...convos.map((c) => c.otherUserId),
+    ];
+    mergeAvatars(ids);
+  }, [mergeAvatars]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -50,6 +71,7 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
     const results = await searchUsers(query.trim());
     setSearchResults(results);
     setSearching(false);
+    mergeAvatars(results.map((u) => u.id));
     if (results.length === 0) setSearchNote('لا يوجد نتائج.');
   };
 
@@ -147,9 +169,7 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
             <div className="space-y-2 pt-1">
               {searchResults.map((u) => (
                 <div key={u.id} className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center shrink-0 text-sm font-black text-white">
-                    {u.name.charAt(0)}
-                  </div>
+                  <Avatar name={u.name} url={avatars[u.id]} />
                   <span className="flex-1 min-w-0 text-sm font-bold text-white truncate">{u.name}</span>
                   <button
                     type="button"
@@ -179,9 +199,7 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
                 <h3 className="text-xs font-black text-slate-300 px-1">طلبات صداقة واردة ({incoming.length})</h3>
                 {incoming.map((r) => (
                   <div key={r.id} className="flex items-center gap-3 bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-amber-500/30 rounded-2xl p-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shrink-0 text-sm font-black text-white">
-                      {r.requesterName.charAt(0)}
-                    </div>
+                    <Avatar name={r.requesterName} url={avatars[r.requesterId]} />
                     <span className="flex-1 min-w-0 text-sm font-bold text-white truncate">{r.requesterName}</span>
                     <button
                       type="button"
@@ -210,9 +228,7 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
                 <h3 className="text-xs font-black text-slate-300 px-1">طلبات مرسلة ({outgoing.length})</h3>
                 {outgoing.map((r) => (
                   <div key={r.id} className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center shrink-0 text-sm font-black text-white">
-                      {r.addresseeName.charAt(0)}
-                    </div>
+                    <Avatar name={r.addresseeName} url={avatars[r.addresseeId]} />
                     <span className="flex-1 min-w-0 text-sm font-bold text-white truncate">{r.addresseeName}</span>
                     <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
                       <Clock className="w-3 h-3" />
@@ -249,9 +265,7 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
                       onClick={() => onOpenChat(f.id, f.name)}
                       className="w-full text-right flex items-center gap-3 bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-amber-500/30 rounded-2xl p-3 transition-all group"
                     >
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shrink-0 text-sm font-black text-white">
-                        {f.name.charAt(0)}
-                      </div>
+                      <Avatar name={f.name} url={avatars[f.id]} size="w-10 h-10" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-white truncate">{f.name}</p>
                         <p className="text-[10.5px] text-slate-400 truncate">

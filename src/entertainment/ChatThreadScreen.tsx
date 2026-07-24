@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { User } from '../types';
 import { ChevronRight, Send, Loader2, MessageCircle } from 'lucide-react';
-import { DirectMessage, loadMessages, sendMessage, markMessagesRead, subscribeToIncomingMessages } from './social';
+import { DirectMessage, loadMessages, sendMessage, markMessagesRead, subscribeToIncomingMessages, loadPublicAvatars } from './social';
 
 interface ChatThreadScreenProps {
   currentUser: User;
@@ -22,7 +22,15 @@ export default function ChatThreadScreen({ currentUser, friendId, friendName, on
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [friendAvatar, setFriendAvatar] = useState<string | undefined>(undefined);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let alive = true;
+    setFriendAvatar(undefined);
+    loadPublicAvatars([friendId]).then((m) => { if (alive) setFriendAvatar(m[friendId]); });
+    return () => { alive = false; };
+  }, [friendId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,8 +87,10 @@ export default function ChatThreadScreen({ currentUser, friendId, friendName, on
             <span>رجوع</span>
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-xs font-black text-white">
-              {friendName.charAt(0)}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-xs font-black text-white overflow-hidden shrink-0">
+              {friendAvatar
+                ? <img src={friendAvatar} alt={friendName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                : friendName.charAt(0)}
             </div>
             <span className="text-xs font-black text-slate-200">{friendName}</span>
           </div>
