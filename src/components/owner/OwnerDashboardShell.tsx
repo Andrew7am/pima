@@ -4,7 +4,7 @@ import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
 import {
   Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2,
   Building, Settings, MessageSquare, Camera, BedDouble, Phone, Mail, Lock, Menu, ChevronRight,
-  MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown,
+  MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun,
 } from 'lucide-react';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
@@ -15,6 +15,7 @@ import OwnerFinancialCenter from './OwnerFinancialCenter';
 import OwnerRoomsManager from './OwnerRoomsManager';
 import OwnerReviewsCenter from './OwnerReviewsCenter';
 import OwnerCalendar from './OwnerCalendar';
+import OwnerToday from './OwnerToday';
 import OwnerFoodMenu from './OwnerFoodMenu';
 import OwnerRoomDistributionScreen from './OwnerRoomDistribution';
 import OwnerTour from './OwnerTour';
@@ -25,7 +26,7 @@ import { getRoomBedState, getHouseRoomAvailabilityForRange } from '../../lib/roo
 import LocationPicker from '../LocationPicker';
 
 type PrimaryTab = 'stats' | 'bookings' | 'messages' | 'meals';
-type OverflowTab = 'rooms' | 'financials' | 'reviews' | 'house' | 'occupancy' | 'notifications' | 'profile' | 'room_distribution' | 'customers' | 'reports';
+type OverflowTab = 'today' | 'rooms' | 'financials' | 'reviews' | 'house' | 'occupancy' | 'notifications' | 'profile' | 'room_distribution' | 'customers' | 'reports';
 type ActiveTab = PrimaryTab | OverflowTab;
 
 // Relative time for the activity feed — "منذ 10 دقائق" style, like the mockup.
@@ -86,6 +87,7 @@ interface OwnerDashboardShellProps {
 }
 
 const OVERFLOW_ITEMS: { key: OverflowTab; label: string; icon: React.ElementType }[] = [
+  { key: 'today', label: 'لوحة اليوم', icon: Sun },
   { key: 'rooms', label: 'الغرف', icon: BedDouble },
   { key: 'room_distribution', label: 'توزيع الغرف', icon: Shuffle },
   { key: 'financials', label: 'الحسابات', icon: Coins },
@@ -1412,6 +1414,14 @@ export default function OwnerDashboardShell({
       )}
 
       {/* Overflow: Customers */}
+      {activeTab === 'today' && (
+        <OwnerToday
+          house={ownerHouses[0]} bookings={ownerBookings} rooms={ownerRooms} todayStr={todayStr}
+          onCheckInBooking={onCheckInBooking} onCheckOutBooking={onCheckOutBooking} onUpdateRoom={onUpdateRoom}
+          onViewBooking={(id) => { setSelectedBookingId(id); setActiveTab('bookings'); }}
+        />
+      )}
+
       {activeTab === 'customers' && <OwnerCustomers bookings={ownerBookings} reviews={ownerReviews} users={users} onOpenMessages={() => { setActiveTab('messages'); setShowOverflow(false); }} />}
 
       {/* Overflow: Finance */}
