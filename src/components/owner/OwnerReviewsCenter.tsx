@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Review } from '../../types';
+import { motion } from 'motion/react';
+import { Review, User } from '../../types';
 import {
   Star, MessageSquare, Pencil, Trash2, Check, CornerDownLeft, ThumbsUp, AlertTriangle,
   Sparkles, Award, Search, Smile, Lightbulb, ChevronLeft, Send, BarChart3,
@@ -8,6 +9,7 @@ import BottomSheet from './BottomSheet';
 
 interface OwnerReviewsCenterProps {
   reviews: Review[];
+  users?: User[];
   onUpdateReview?: (review: Review) => void;
 }
 
@@ -76,7 +78,8 @@ function replySuggestions(rev: Review): { key: string; label: string; text: stri
   ];
 }
 
-export default function OwnerReviewsCenter({ reviews, onUpdateReview }: OwnerReviewsCenterProps) {
+export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview }: OwnerReviewsCenterProps) {
+  const avatarFor = (userId: string) => users.find((u) => u.id === userId)?.avatarUrl;
   const [view, setView] = useState<'dashboard' | 'all'>('dashboard');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
@@ -152,6 +155,8 @@ export default function OwnerReviewsCenter({ reviews, onUpdateReview }: OwnerRev
 
   const flash = (m: string) => { setSuccessMsg(m); setTimeout(() => setSuccessMsg(''), 3500); };
   const openReply = (rev: Review) => { setReplyFor(rev); setReplyText(rev.ownerReply || ''); };
+  // "اقتراح رد" — open the sheet with the first contextual draft pre-filled.
+  const openReplyWithSuggestion = (rev: Review) => { setReplyFor(rev); setReplyText(replySuggestions(rev)[0].text); };
   const submitReply = () => {
     if (!replyFor || !replyText.trim()) return;
     onUpdateReview?.({ ...replyFor, ownerReply: replyText.trim(), ownerReplyCreatedAt: new Date().toISOString() });
@@ -165,12 +170,18 @@ export default function OwnerReviewsCenter({ reviews, onUpdateReview }: OwnerRev
   };
 
   // ── shared review card ──
-  const ReviewCard = (rev: Review) => {
+  const ReviewCard = (rev: Review, index = 0) => {
     const isNew = !rev.ownerReply && (Date.now() - +new Date(rev.createdAt)) < 3 * 86_400_000;
+    const avatar = avatarFor(rev.userId);
     return (
-      <div key={rev.id} className="bg-[var(--color-owner-surface)] rounded-[22px] border border-[var(--color-owner-border)] p-4 space-y-3 shadow-sm">
+      <motion.div key={rev.id}
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: Math.min(index, 8) * 0.05, ease: 'easeOut' }}
+        className="bg-[var(--color-owner-surface)] rounded-[22px] border border-[var(--color-owner-border)] p-4 space-y-3 shadow-sm">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-full bg-[var(--color-owner-primary)] text-white flex items-center justify-center text-sm font-black shrink-0">{rev.userName.charAt(0)}</div>
+          <div className="w-10 h-10 rounded-full bg-[var(--color-owner-primary)] text-white flex items-center justify-center text-sm font-black shrink-0 overflow-hidden">
+            {avatar ? <img src={avatar} alt={rev.userName} className="w-full h-full object-cover" /> : rev.userName.charAt(0)}
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[13px] font-black text-[var(--color-owner-text)] truncate">{rev.userName}</span>
@@ -214,13 +225,17 @@ export default function OwnerReviewsCenter({ reviews, onUpdateReview }: OwnerRev
           </div>
         ) : (
           <div className="flex items-center justify-end gap-2 pt-0.5">
+            <button type="button" onClick={() => openReplyWithSuggestion(rev)}
+              className="flex items-center gap-1 bg-[#D4AF37]/12 text-[#B8901F] border border-[#D4AF37]/30 text-[10.5px] font-black px-3 py-1.5 rounded-xl active:scale-[0.98] transition-transform">
+              <Sparkles className="w-3.5 h-3.5" /> اقتراح رد
+            </button>
             <button type="button" onClick={() => openReply(rev)}
               className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10.5px] font-black px-3.5 py-1.5 rounded-xl active:scale-[0.98] transition-transform">
               <CornerDownLeft className="w-3.5 h-3.5" /> الرد
             </button>
           </div>
         )}
-      </div>
+      </motion.div>
     );
   };
 
@@ -276,7 +291,7 @@ export default function OwnerReviewsCenter({ reviews, onUpdateReview }: OwnerRev
           <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-8 text-center text-[11px] text-[var(--color-owner-secondary)] font-bold">لا توجد تقييمات مطابقة.</div>
         ) : (
           <div className="space-y-2.5">
-            {shown.map((rev) => ReviewCard(rev))}
+            {shown.map((rev, i) => ReviewCard(rev, i))}
             {visibleCount < filtered.length && (
               <div ref={sentinelRef} className="py-3 text-center text-[10px] text-[var(--color-owner-secondary)] font-bold">جارٍ تحميل المزيد…</div>
             )}
@@ -408,7 +423,7 @@ export default function OwnerReviewsCenter({ reviews, onUpdateReview }: OwnerRev
         <button type="button" onClick={() => setView('all')} className="text-[10px] font-bold text-[var(--color-owner-primary)]">عرض الكل</button>
       </div>
       <div className="space-y-2.5">
-        {latest3.map((rev) => ReviewCard(rev))}
+        {latest3.map((rev, i) => ReviewCard(rev, i))}
       </div>
 
       {replySheet()}

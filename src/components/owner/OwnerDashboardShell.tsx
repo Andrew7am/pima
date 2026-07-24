@@ -1596,7 +1596,7 @@ export default function OwnerDashboardShell({
 
       {/* Overflow: Reviews */}
       {activeTab === 'reviews' && (
-        <OwnerReviewsCenter reviews={ownerReviews} onUpdateReview={onUpdateReview} />
+        <OwnerReviewsCenter reviews={ownerReviews} users={users} onUpdateReview={onUpdateReview} />
       )}
 
       {/* Overflow: House Info */}
