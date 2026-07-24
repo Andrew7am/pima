@@ -4,9 +4,10 @@ import { Booking, Expense, Payout, User } from '../../types';
 import {
   Wallet, Info, ArrowUpRight, ArrowDownRight, CreditCard, Receipt, Banknote,
   CheckCircle2, TrendingUp, Search, Plus, ChevronDown, Sparkles, Wrench,
-  Zap, Droplet, Utensils, History, Landmark, Coins, Trash2, Pencil, Bell, Clock,
+  Zap, Droplet, Utensils, History, Landmark, Coins, Trash2, Pencil, Bell, Clock, Download,
 } from 'lucide-react';
 import BottomSheet from './BottomSheet';
+import { downloadCsv } from '../../lib/exportCsv';
 
 interface OwnerFinancialCenterProps {
   ownerBookings: Booking[];
@@ -264,6 +265,22 @@ export default function OwnerFinancialCenter({
 
   const openAddExpense = () => { closeAllSheets(); setEditingExpenseId(null); setExpDesc(''); setExpAmount(''); setShowAddExpense(true); };
   const openEditExpense = (e: Expense) => { closeAllSheets(); setEditingExpenseId(e.id); setExpDesc(e.description); setExpAmount(String(e.amount)); setShowAddExpense(true); };
+
+  // Export the current (filtered) transactions to an Excel-friendly CSV.
+  const exportTransactions = () => {
+    const rows: (string | number)[][] = [[
+      'الضيف', 'رقم الحجز', 'الوصول', 'المغادرة', 'الأفراد', 'قيمة الحجز', 'العربون', 'المتبقي', 'عمولة Pima', 'صافيك', 'الحالة',
+    ]];
+    filteredBookings.forEach((b) => {
+      const comm = Math.round(b.totalPrice * commissionRate);
+      rows.push([
+        bookingGuestName(b), bookingRef(b), b.checkIn, b.checkOut, b.guestsCount,
+        b.totalPrice, b.depositAmount, Math.max(0, b.totalPrice - b.depositAmount), comm, b.totalPrice - comm,
+        bookingStatusBadge(b).label,
+      ]);
+    });
+    downloadCsv(`transactions-${new Date().toISOString().split('T')[0]}.csv`, rows);
+  };
 
   // Shared swipeable expense list (edit → swipe right, delete → swipe left).
   const expenseListJsx = ownerExpenses.length === 0 ? (
@@ -605,7 +622,15 @@ export default function OwnerFinancialCenter({
 
       {/* ── Section 7: Transactions ─────────────────────────────── */}
       <div className="space-y-2">
-        <h3 className="text-xs font-black text-[var(--color-owner-text)]">العمليات المالية</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-black text-[var(--color-owner-text)]">العمليات المالية</h3>
+          {filteredBookings.length > 0 && (
+            <button type="button" onClick={exportTransactions}
+              className="flex items-center gap-1 text-[10px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-lg px-2.5 py-1.5">
+              <Download className="w-3.5 h-3.5" /> تصدير Excel
+            </button>
+          )}
+        </div>
         {filteredBookings.length === 0 ? (
           <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-6 text-center text-[11px] text-[var(--color-owner-secondary)] font-bold">
             لا توجد عمليات مطابقة.
