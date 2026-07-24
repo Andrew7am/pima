@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
-import { ChevronRight, ScrollText, Eye, Map, Shield, Search, Flame, BookOpen, Gamepad2 } from 'lucide-react';
+import { ChevronRight, ScrollText, Eye, Map, Shield, Search, Flame, BookOpen, Gamepad2, Brain, Grid3x3 } from 'lucide-react';
 import { User } from '../types';
 import MCQGame, { MCQQuestion } from './games/MCQGame';
+import MemoryMatchGame from './games/MemoryMatchGame';
+import WordSearchGame from './games/WordSearchGame';
+
+type GameComp = React.ComponentType<{
+  currentUser: User;
+  onBack: () => void;
+  onUserUpdated: (patch: Partial<User>) => void;
+  onAchievementsUnlocked?: (ids: string[]) => void;
+}>;
 import {
   PROVERBS_QUESTIONS,
   REVELATION_QUESTIONS,
@@ -31,7 +40,8 @@ interface CatalogGame {
   borderHover: string;
   badgeCls: string;
   chevronHover: string;
-  pool: MCQQuestion[];
+  pool?: MCQQuestion[];  // set for MCQ games
+  Comp?: GameComp;       // set for special-mechanic games (memory, word search)
 }
 
 // The extra biblical MCQ games. Data comes from the ported question sets;
@@ -121,6 +131,30 @@ const GAMES: CatalogGame[] = [
     chevronHover: 'group-hover:text-indigo-400',
     pool: INTERPRET_CHALLENGE_QUESTIONS,
   },
+  {
+    id: 'memory_match',
+    title: 'تطابق الصور والرموز',
+    badge: '🧠 ذاكرة',
+    desc: 'اقلب البطاقات وطابق كل رمز كنسي مع قرينه.',
+    icon: <Brain className="w-7 h-7 text-white" />,
+    gradient: 'from-fuchsia-500 to-pink-600',
+    borderHover: 'hover:border-fuchsia-500/40',
+    badgeCls: 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30',
+    chevronHover: 'group-hover:text-fuchsia-400',
+    Comp: MemoryMatchGame,
+  },
+  {
+    id: 'wordsearch',
+    title: 'البحث عن الكلمة الكنسية',
+    badge: '🔍 لغز',
+    desc: 'ابحث عن الأسماء الكتابية المخفية داخل الشبكة.',
+    icon: <Grid3x3 className="w-7 h-7 text-white" />,
+    gradient: 'from-lime-500 to-green-600',
+    borderHover: 'hover:border-lime-500/40',
+    badgeCls: 'bg-lime-500/15 text-lime-300 border-lime-500/30',
+    chevronHover: 'group-hover:text-lime-400',
+    Comp: WordSearchGame,
+  },
 ];
 
 export default function GamesCatalog({ currentUser, onBack, onUserUpdated, onAchievementsUnlocked }: GamesCatalogProps) {
@@ -128,6 +162,17 @@ export default function GamesCatalog({ currentUser, onBack, onUserUpdated, onAch
   const active = GAMES.find((g) => g.id === activeId) || null;
 
   if (active) {
+    if (active.Comp) {
+      const Comp = active.Comp;
+      return (
+        <Comp
+          currentUser={currentUser}
+          onBack={() => setActiveId(null)}
+          onUserUpdated={onUserUpdated}
+          onAchievementsUnlocked={onAchievementsUnlocked}
+        />
+      );
+    }
     return (
       <MCQGame
         currentUser={currentUser}
@@ -136,7 +181,7 @@ export default function GamesCatalog({ currentUser, onBack, onUserUpdated, onAch
         onAchievementsUnlocked={onAchievementsUnlocked}
         title={active.title}
         icon={active.icon}
-        pool={active.pool}
+        pool={active.pool || []}
         rewardDescription={(s, t) => `${active.title} — ${s}/${t} إجابات صحيحة`}
       />
     );
