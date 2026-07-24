@@ -1814,6 +1814,8 @@ export default function App() {
               onNavigatePrivacy={() => setActiveScreen('privacy')}
               onDeleteAccount={handleDeleteAccount}
               onUpdateAvatar={handleUpdateAvatar}
+              bookings={bookings}
+              onNavigateBookings={() => setActiveScreen('bookings')}
             />
           )}
 
