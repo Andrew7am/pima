@@ -4,10 +4,11 @@ import { Booking, Expense, Payout, User } from '../../types';
 import {
   Wallet, Info, ArrowUpRight, ArrowDownRight, CreditCard, Receipt, Banknote,
   CheckCircle2, TrendingUp, Search, Plus, ChevronDown, Sparkles, Wrench,
-  Zap, Droplet, Utensils, History, Landmark, Coins, Trash2, Pencil, Bell, Clock, Download,
+  Zap, Droplet, Utensils, History, Landmark, Coins, Trash2, Pencil, Bell, Clock, Download, FileText,
 } from 'lucide-react';
 import BottomSheet from './BottomSheet';
 import { downloadCsv } from '../../lib/exportCsv';
+import { printMonthlyStatement } from '../../lib/invoice';
 
 interface OwnerFinancialCenterProps {
   ownerBookings: Booking[];
@@ -282,6 +283,23 @@ export default function OwnerFinancialCenter({
     downloadCsv(`transactions-${new Date().toISOString().split('T')[0]}.csv`, rows);
   };
 
+  // Print a PDF-ready statement for the current calendar month.
+  const printMonthlyStatement2 = () => {
+    const d = new Date();
+    const inMonth = confirmedBookings.filter((b) => { const c = new Date(b.checkIn); return c.getFullYear() === d.getFullYear() && c.getMonth() === d.getMonth(); });
+    const revenue = inMonth.reduce((s, b) => s + b.totalPrice, 0);
+    const commission = revenue * commissionRate;
+    const deposits = inMonth.filter((b) => b.depositPaid).reduce((s, b) => s + b.depositAmount, 0);
+    const remaining = inMonth.reduce((s, b) => s + Math.max(0, b.totalPrice - b.depositAmount), 0);
+    const expenses = ownerExpenses.filter((e) => { const c = new Date(e.expenseDate); return c.getFullYear() === d.getFullYear() && c.getMonth() === d.getMonth(); }).reduce((s, e) => s + e.amount, 0);
+    printMonthlyStatement({
+      houseName: confirmedBookings[0]?.houseName || ownerBookings[0]?.houseName || 'بيتك',
+      monthLabel: d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' }),
+      revenue, commission, deposits, remaining, expenses, net: revenue - commission - expenses,
+      bookings: inMonth.map((b) => ({ guest: bookingGuestName(b), date: b.checkIn, total: b.totalPrice })),
+    });
+  };
+
   // Shared swipeable expense list (edit → swipe right, delete → swipe left).
   const expenseListJsx = ownerExpenses.length === 0 ? (
     <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-6 text-center text-[11px] text-[var(--color-owner-secondary)] font-bold">
@@ -451,6 +469,12 @@ export default function OwnerFinancialCenter({
           <span>إجمالي الحجوزات</span><span>عمولة Pima</span><span>صافي مستحقاتك</span>
         </div>
       </div>
+
+      {/* Monthly statement */}
+      <button type="button" onClick={printMonthlyStatement2}
+        className="w-full flex items-center justify-center gap-1.5 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[var(--color-owner-primary)] text-[11px] font-black py-2.5 rounded-2xl">
+        <FileText className="w-4 h-4" /> كشف حساب هذا الشهر (PDF)
+      </button>
 
       {/* ── Section 2: Financial Journey ────────────────────────── */}
       <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4">
