@@ -152,6 +152,8 @@ function seoPagesPlugin(supabaseUrl: string, anonKey: string): Plugin {
         { loc: `${SITE_URL}/dalil/organizing-retreat.html`, lastmod: today, priority: '0.6' },
         { loc: `${SITE_URL}/dalil/conference-vs-retreat-vs-summer.html`, lastmod: today, priority: '0.6' },
         { loc: `${SITE_URL}/dalil/retreat-checklist.html`, lastmod: today, priority: '0.6' },
+        { loc: `${SITE_URL}/dalil/best-areas-egypt.html`, lastmod: today, priority: '0.6' },
+        { loc: `${SITE_URL}/dalil/budget-service-trip.html`, lastmod: today, priority: '0.6' },
         { loc: `${SITE_URL}/dalil/faq.html`, lastmod: today, priority: '0.6' },
       ];
       let template = '';

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { PlatformAnnouncement, RetreatHouse, User } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
-import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck } from 'lucide-react';
+import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen } from 'lucide-react';
 import AnnouncementCarousel from './AnnouncementCarousel';
+import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
 import { loadHousesAvailability } from '../lib/db';
 
 interface UserDashboardProps {
@@ -170,7 +171,22 @@ export default function UserDashboard({
 
   return (
     <div className="space-y-4 text-right">
-      
+
+      {/* Top promo hero (Summer offers carousel) — ported from the source design */}
+      <SummerOfferCarousel onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+
+      {/* Guide / tips entry — crawlable content section (helps SEO + AdSense) */}
+      <a
+        href="/dalil/"
+        className="flex items-center justify-between gap-2 bg-white border border-[#D6D6C2] rounded-2xl px-4 py-3 shadow-sm hover:border-[#3A6B4C]/40 transition-colors group"
+      >
+        <span className="flex items-center gap-2 text-[12px] font-black text-[#3A6B4C]">
+          <BookOpen className="w-4 h-4" />
+          دليل ونصائح: كيف تختار وتنظّم خلوتك ومؤتمرك
+        </span>
+        <span className="text-[11px] font-bold text-[#8A8A70] group-hover:text-[#3A6B4C]">افتح الدليل ←</span>
+      </a>
+
       {/* Top banner: rotates through admin-published announcements every ~6s,
           always falls back to the welcome message when none are active */}
       <AnnouncementCarousel
@@ -513,7 +529,7 @@ export default function UserDashboard({
       )}
 
       {/* Houses Feed List */}
-      <div className="space-y-3.5 text-[#4A4A3A]">
+      <div id="house-list-anchor" className="space-y-3.5 text-[#4A4A3A]">
         <div className="flex justify-between items-center px-1 gap-2">
           <span className="text-xs font-extrabold text-[#4A4A3A]">الأماكن المتاحة ({filteredHouses.length}):</span>
           <select
@@ -689,6 +705,9 @@ export default function UserDashboard({
           </div>
         )}
       </div>
+
+      {/* Bottom promo (limited-time countdown offer) — ported from the source design */}
+      <CountdownOfferBanner onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
 
       {/* Compare Floating Bar */}
       {comparedHouseIds.length > 0 && (
