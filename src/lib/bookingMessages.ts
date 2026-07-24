@@ -99,21 +99,47 @@ export async function loadUnreadCountsPerBooking(bookingIds: string[], currentUs
   return counts;
 }
 
+// Fetch the most recent messages for a booking (newest last). Used as the
+// realtime fallback below — an image message's row can be too big for the
+// realtime change payload, so we re-read it over REST (which has no such cap).
+async function fetchRecentMessages(bookingId: string, limit = 6): Promise<BookingMessage[]> {
+  const { data, error } = await supabase
+    .from('booking_messages')
+    .select('*')
+    .eq('booking_id', bookingId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) { console.error('fetchRecentMessages:', error); return []; }
+  return (data ?? []).map(mapBookingMessage).reverse();
+}
+
 // Returns an unsubscribe function — caller MUST call it on unmount.
 export function subscribeToBookingMessages(bookingId: string, onMessage: (msg: BookingMessage) => void): () => void {
+  // Supabase Realtime drops the row data (delivers an empty `new` with a
+  // "Payload Too Large" error) when a change exceeds its per-message size cap —
+  // which image messages hit, since the picture rides in the row as a data URL.
+  // When that happens the record has no id, so instead of emitting an empty
+  // bubble we re-read the latest rows over REST and emit the real ones.
+  const handle = (rec: Record<string, unknown> | undefined) => {
+    if (!rec || rec.id === undefined || rec.id === null) {
+      fetchRecentMessages(bookingId).then((msgs) => msgs.forEach(onMessage));
+      return;
+    }
+    onMessage(mapBookingMessage(rec));
+  };
   const channel = supabase
     .channel(`booking_messages:${bookingId}`)
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'booking_messages', filter: `booking_id=eq.${bookingId}` },
-      (payload) => { onMessage(mapBookingMessage(payload.new as Record<string, unknown>)); },
+      (payload) => { handle(payload.new as Record<string, unknown> | undefined); },
     )
     // Deletes are soft (deleted_at) — they arrive as UPDATE; the caller
     // upserts so the message flips to its "deleted" placeholder live.
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'booking_messages', filter: `booking_id=eq.${bookingId}` },
-      (payload) => { onMessage(mapBookingMessage(payload.new as Record<string, unknown>)); },
+      (payload) => { handle(payload.new as Record<string, unknown> | undefined); },
     )
     .subscribe();
   return () => { supabase.removeChannel(channel); };

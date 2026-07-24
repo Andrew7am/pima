@@ -4,8 +4,12 @@ import { OutgoingAttachment } from './bookingMessages';
 // app already uses for house/room images), so images are downscaled + JPEG-
 // compressed before encoding to keep the row — and the realtime payload —
 // small. Non-image files are capped so we never push a huge blob into Postgres.
-const MAX_IMAGE_DIMENSION = 1280;
-const IMAGE_QUALITY = 0.72;
+// Kept modest on purpose: the picture travels inside the message row as a data
+// URL, and an oversized row blows past Supabase Realtime's per-change payload
+// cap (the receiver would then get an empty row). These settings keep a typical
+// photo well under that cap so it broadcasts — and shows — live.
+const MAX_IMAGE_DIMENSION = 1024;
+const IMAGE_QUALITY = 0.62;
 const MAX_FILE_BYTES = 3 * 1024 * 1024; // 3 MB for non-image files
 
 function readAsDataUrl(file: File): Promise<string> {
