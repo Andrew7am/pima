@@ -676,6 +676,8 @@ export async function loadPlatformSettings(): Promise<PlatformSettings> {
     freeCancelDays: data.free_cancel_days != null ? Number(data.free_cancel_days) : DEFAULT_PLATFORM_SETTINGS.freeCancelDays,
     partialRefundDays: data.partial_refund_days != null ? Number(data.partial_refund_days) : DEFAULT_PLATFORM_SETTINGS.partialRefundDays,
     partialRefundPct: data.partial_refund_pct != null ? Number(data.partial_refund_pct) : DEFAULT_PLATFORM_SETTINGS.partialRefundPct,
+    // Pre-migration-069 rows have no column → undefined → fall back to [].
+    paymentMethods: data.payment_methods != null ? (data.payment_methods as PlatformSettings['paymentMethods']) : [],
   };
 }
 
@@ -689,6 +691,7 @@ export async function updatePlatformSettings(s: PlatformSettings): Promise<boole
     free_cancel_days: s.freeCancelDays,
     partial_refund_days: s.partialRefundDays,
     partial_refund_pct: s.partialRefundPct,
+    payment_methods: s.paymentMethods ?? [],
     updated_at: new Date().toISOString(),
   }).eq('id', 1);
   if (error) console.error('updatePlatformSettings:', error);

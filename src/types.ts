@@ -309,6 +309,9 @@ export interface PlatformSettings {
   freeCancelDays: number;
   partialRefundDays: number;
   partialRefundPct: number;
+  // Central platform payment accounts guests send the deposit to (manual
+  // collection model — migration 069). Empty = fall back to owner-direct.
+  paymentMethods: OwnerPaymentMethod[];
 }
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
@@ -320,6 +323,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   freeCancelDays: 7,
   partialRefundDays: 3,
   partialRefundPct: 0.5,
+  paymentMethods: [],
 };
 
 export interface AppNotification {

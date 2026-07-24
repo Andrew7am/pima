@@ -510,7 +510,7 @@ export default function UserBookings({
           <div className="flex-1 space-y-1">
             <h4 className="font-extrabold text-amber-950">تذكير هام بسداد العربون!</h4>
             <p className="text-[11px] text-amber-900/90 leading-relaxed">
-              لديك {unpaidApprovedCount === 1 ? 'حجز مقبول ومؤكد' : `${unpaidApprovedCount} حجوزات مقبولة ومؤكدة`} بانتظار سداد عربون الجدية (15%) لتثبيت المواعيد والغرف نهائياً وتجنب إلغاء الطلب تلقائياً من بيت المؤتمرات.
+              لديك {unpaidApprovedCount === 1 ? 'حجز مقبول ومؤكد' : `${unpaidApprovedCount} حجوزات مقبولة ومؤكدة`} بانتظار سداد عربون الجدية ({Math.round(settings.depositRate * 100)}%) لتثبيت المواعيد والغرف نهائياً وتجنب إلغاء الطلب تلقائياً من بيت المؤتمرات.
             </p>
           </div>
         </div>
@@ -533,7 +533,21 @@ export default function UserBookings({
             const StatusIcon = badge.icon;
             const canPayDeposit = booking.status === 'approved' && !booking.depositPaid;
             const bookingHouse = houses.find((h) => h.id === booking.houseId);
-            const ownerPaymentFor = (type: string) => bookingHouse?.paymentMethods.find((p) => p.type === type);
+            // Manual-collection model (migration 069): if the platform has its own
+            // payment numbers, the guest pays THOSE (Pima collects the deposit,
+            // then forwards the owner's share). Empty → fall back to owner-direct.
+            const platformMethods = settings.paymentMethods ?? [];
+            const payToPlatform = platformMethods.length > 0;
+            const payMethods = payToPlatform ? platformMethods : (bookingHouse?.paymentMethods ?? []);
+            const payeeLabel = payToPlatform ? 'منصة بيما' : 'صاحب البيت';
+            const ownerPaymentFor = (type: string) => payMethods.find((p) => p.type === type);
+            // No configured recipient for the picked method → block submit so a
+            // guest can't record a "paid" deposit to a nonexistent payee.
+            const walletPayee = ownerPaymentFor('vodafone_cash') ?? ownerPaymentFor('etisalat_cash') ?? ownerPaymentFor('orange_cash') ?? ownerPaymentFor('we_cash');
+            const selectedPayeeMissing =
+              (selectedMethod === 'instapay' && !ownerPaymentFor('instapay')) ||
+              (selectedMethod === 'bank' && !ownerPaymentFor('bank_transfer')) ||
+              (selectedMethod === 'vodafone' && !walletPayee);
 
             return (
               <div
@@ -651,15 +665,15 @@ export default function UserBookings({
                 {/* While pending, show the owner's payment methods as a preview so the guest
                     knows in advance how they'll pay once approved — the actual pay/upload
                     form only unlocks after approval (bookingHouse defined above, line ~537). */}
-                {booking.status === 'pending' && (bookingHouse?.paymentMethods?.length ?? 0) > 0 && (
+                {booking.status === 'pending' && payMethods.length > 0 && (
                   <div className="px-4 py-3 bg-[#FAF8F5] border-b border-[#D6D6C2]/60 space-y-1.5 text-[10px]">
                     <div className="flex items-center gap-1.5 font-extrabold text-[#4A4A3A]">
                       <Coins className="w-4 h-4 text-[#867E65]" />
-                      <span>وسائل الدفع المتاحة عند موافقة صاحب البيت</span>
+                      <span>وسائل دفع العربون عند الموافقة (السداد إلى {payeeLabel})</span>
                     </div>
                     <p className="text-[9px] text-[#8A8A70]">هتقدر تسدد العربون بمجرد الموافقة على حجزك عن طريق أي من الوسائل دي:</p>
                     <div className="bg-white p-2.5 rounded-xl border border-[#E7E5DB] space-y-1.5">
-                      {bookingHouse!.paymentMethods.map((pm) => (
+                      {payMethods.map((pm) => (
                         <div key={pm.id} className="flex justify-between items-center">
                           <span className="text-[#867E65] font-bold">{PAYMENT_TYPE_LABELS[pm.type] || pm.label}:</span>
                           <span className="font-mono font-extrabold text-[#2D2D24]">{pm.value}</span>
@@ -740,7 +754,7 @@ export default function UserBookings({
                         return (
                           <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-emerald-50 text-emerald-950 border border-emerald-200 px-2.5 py-1 rounded-full shadow-sm">
                             <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                            <span>تم تأكيد دفع العربون (15%) 🎉</span>
+                            <span>تم تأكيد دفع العربون ({Math.round(settings.depositRate * 100)}%) 🎉</span>
                           </span>
                         );
                       } else if (payStatus === 'paid_full') {
@@ -900,13 +914,18 @@ export default function UserBookings({
                     </div>
 
                     {/* Payment methods selector tabs */}
-                    <div className="grid grid-cols-5 gap-1.5">
+                    <div className={`grid gap-1.5 ${payToPlatform ? 'grid-cols-3' : 'grid-cols-5'}`}>
                       {[
                         { id: 'instapay', label: 'إنستا باي', desc: 'InstaPay', icon: Smartphone },
                         { id: 'vodafone', label: 'فودافون كاش', desc: 'Vodafone', icon: Smartphone },
                         { id: 'bank', label: 'تحويل بنكي', desc: 'Bank Transfer', icon: Building },
-                        { id: 'cash', label: 'دفع نقدي', desc: 'Cash Payment', icon: Coins },
-                        { id: 'online', label: 'كارت أونلاين', desc: 'Visa/Master', icon: CreditCard }
+                        // Cash-at-house routes money to the owner and the "online" card is a
+                        // mock gateway — both bypass platform collection, so hide them when
+                        // the platform holds the deposit (migration 069).
+                        ...(payToPlatform ? [] : [
+                          { id: 'cash', label: 'دفع نقدي', desc: 'Cash Payment', icon: Coins },
+                          { id: 'online', label: 'كارت أونلاين', desc: 'Visa/Master', icon: CreditCard },
+                        ]),
                       ].map((m) => {
                         const IconComponent = m.icon;
                         const isSelected = selectedMethod === m.id;
@@ -974,9 +993,9 @@ export default function UserBookings({
                           <div className="space-y-3">
                             <div className="bg-emerald-50 border border-emerald-100 p-2.5 rounded-xl text-[10px] text-emerald-950 leading-relaxed font-bold">
                               {ownerPaymentFor('instapay') ? (
-                                <>💡 تعليمات إنستا باي: يرجى التحويل مباشرة لصاحب البيت على عنوان الدفع (IPA): <span className="font-mono underline text-emerald-900">{ownerPaymentFor('instapay')!.value}</span> عبر تطبيق إنستاباي.</>
+                                <>💡 تعليمات إنستا باي: يرجى التحويل إلى {payeeLabel} على عنوان الدفع (IPA): <span className="font-mono underline text-emerald-900">{ownerPaymentFor('instapay')!.value}</span> عبر تطبيق إنستاباي.</>
                               ) : (
-                                <>⚠️ صاحب البيت لم يضف رقم إنستاباي بعد. تواصل معه أو اختر وسيلة دفع أخرى.</>
+                                <>⚠️ لا يوجد رقم إنستاباي متاح حالياً. اختر وسيلة دفع أخرى.</>
                               )}
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1014,9 +1033,9 @@ export default function UserBookings({
                               {(() => {
                                 const wallet = ownerPaymentFor('vodafone_cash') ?? ownerPaymentFor('etisalat_cash') ?? ownerPaymentFor('orange_cash') ?? ownerPaymentFor('we_cash');
                                 return wallet ? (
-                                  <>💡 تعليمات المحفظة ({wallet.label}): يرجى إرسال المبلغ الإجمالي أو العربون مباشرة لصاحب البيت على رقم: <span className="font-mono text-rose-900 underline">{wallet.value}</span>.</>
+                                  <>💡 تعليمات المحفظة ({wallet.label}): يرجى إرسال العربون إلى {payeeLabel} على رقم: <span className="font-mono text-rose-900 underline">{wallet.value}</span>.</>
                                 ) : (
-                                  <>⚠️ صاحب البيت لم يضف رقم محفظة بعد. تواصل معه أو اختر وسيلة دفع أخرى.</>
+                                  <>⚠️ لا يوجد رقم محفظة متاح حالياً. اختر وسيلة دفع أخرى.</>
                                 );
                               })()}
                             </div>
@@ -1054,9 +1073,9 @@ export default function UserBookings({
                           <div className="space-y-3">
                             <div className="bg-indigo-50 border border-indigo-100 p-2.5 rounded-xl text-[10px] text-indigo-950 leading-relaxed font-bold">
                               {ownerPaymentFor('bank_transfer') ? (
-                                <>💡 تعليمات التحويل البنكي: يرجى التحويل مباشرة لحساب صاحب البيت — <span className="font-mono text-indigo-900 underline">{ownerPaymentFor('bank_transfer')!.value}</span>.</>
+                                <>💡 تعليمات التحويل البنكي: يرجى التحويل إلى حساب {payeeLabel} — <span className="font-mono text-indigo-900 underline">{ownerPaymentFor('bank_transfer')!.value}</span>.</>
                               ) : (
-                                <>⚠️ صاحب البيت لم يضف بيانات حساب بنكي بعد. تواصل معه أو اختر وسيلة دفع أخرى.</>
+                                <>⚠️ لا يوجد حساب بنكي متاح حالياً. اختر وسيلة دفع أخرى.</>
                               )}
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1263,7 +1282,8 @@ export default function UserBookings({
                           <button
                             id="pay-submit-form-btn"
                             type="submit"
-                            className="bg-[#464E3D] hover:bg-[#343A2D] text-white text-[10px] font-extrabold px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-1"
+                            disabled={selectedPayeeMissing}
+                            className="bg-[#464E3D] hover:bg-[#343A2D] text-white text-[10px] font-extrabold px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             <ShieldCheck className="w-3.5 h-3.5" />
                             <span>إرسال وتأكيد السداد للإدارة</span>

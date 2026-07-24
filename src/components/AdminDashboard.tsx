@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Payout } from '../types';
+import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Payout, OwnerPaymentMethod } from '../types';
+
+// Payment-method type options for the platform collection accounts editor.
+const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] = [
+  { value: 'instapay', label: 'إنستاباي' },
+  { value: 'vodafone_cash', label: 'فودافون كاش' },
+  { value: 'etisalat_cash', label: 'اتصالات كاش' },
+  { value: 'orange_cash', label: 'أورنج كاش' },
+  { value: 'we_cash', label: 'وي كاش' },
+  { value: 'bank_transfer', label: 'تحويل بنكي' },
+];
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import HouseDetail from './HouseDetail';
@@ -892,6 +902,34 @@ export default function AdminDashboard({
               </div>
             ))}
 
+            {/* Platform collection accounts — where guests send the deposit (migration 069) */}
+            <div className="border-t border-[#EBEBE0] pt-3 space-y-2">
+              <div>
+                <div className="text-[11px] font-black text-[#4A4A3A]">أرقام تحصيل المنصة (يدفع عليها العميل العربون):</div>
+                <p className="text-[9px] text-[#8A8A70]">دي أرقامك إنت (بيما). لو سيبتها فاضية، العميل هيدفع لصاحب البيت مباشرة زي النظام القديم.</p>
+              </div>
+              {(settingsDraft.paymentMethods ?? []).map((m, i) => (
+                <div key={m.id} className="flex flex-wrap items-center gap-1.5 bg-[#FBFBFA] border border-[#EBEBE0] rounded-xl p-2">
+                  <select value={m.type}
+                    onChange={(e) => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.map((x, j) => (j === i ? { ...x, type: e.target.value as OwnerPaymentMethod['type'] } : x)) }))}
+                    className="bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg text-[#4A4A3A]">
+                    {PLATFORM_PM_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                  <input placeholder="الاسم (مثلاً: إنستاباي بيما)" value={m.label}
+                    onChange={(e) => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) }))}
+                    className="flex-1 min-w-[110px] bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg text-[#4A4A3A]" />
+                  <input placeholder="الرقم / الحساب" dir="ltr" value={m.value}
+                    onChange={(e) => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)) }))}
+                    className="flex-1 min-w-[110px] bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg text-[#4A4A3A] font-mono" />
+                  <button type="button" onClick={() => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.filter((_, j) => j !== i) }))}
+                    className="text-rose-600 text-[10px] font-bold px-2 py-1.5 cursor-pointer">حذف</button>
+                </div>
+              ))}
+              <button type="button"
+                onClick={() => setSettingsDraft((prev) => ({ ...prev, paymentMethods: [...(prev.paymentMethods ?? []), { id: `ppm_${Date.now()}`, type: 'instapay', label: '', value: '' }] }))}
+                className="text-[10px] font-bold bg-[#EBEBE0] hover:bg-[#DDD] text-[#4A4A3A] px-3 py-1.5 rounded-lg cursor-pointer transition-colors">+ إضافة رقم تحصيل</button>
+            </div>
+
             {settingsSaved && (
               <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10.5px] font-bold rounded-xl px-3 py-2 text-center">
                 ✅ تم حفظ الإعدادات وتطبيقها.
@@ -1725,10 +1763,18 @@ export default function AdminDashboard({
         // Grouped by house so the admin can transfer each booking separately
         // or all of a house's bookings in one payment.
         const ownerShare = (b: Booking) => Math.max(0, Math.round((b.depositAmount || 0) - (b.totalPrice || 0) * settings.commissionRate));
-        const owedBookings = bookings.filter((b) =>
-          (b.paymentStatus === 'paid_deposit' || b.paymentStatus === 'paid_full' || b.depositPaid) &&
-          b.status !== 'cancelled' && b.status !== 'rejected' && !b.ownerSettledAt && ownerShare(b) > 0
-        );
+        // Only transfer money the PLATFORM actually holds. In owner-direct mode
+        // (no platform payment numbers) the platform never received the deposit;
+        // and a cash-at-house deposit was handed to the owner. Prompting a payout
+        // for either would pay the owner money Pima never collected.
+        const platformCollects = (settings.paymentMethods ?? []).length > 0;
+        const owedBookings = bookings.filter((b) => {
+          if (!platformCollects) return false;
+          const approvedPay = payments.find((p) => p.bookingId === b.id && p.paymentStatus === 'approved');
+          if (approvedPay && approvedPay.paymentMethod === 'cash') return false;
+          return (b.paymentStatus === 'paid_deposit' || b.paymentStatus === 'paid_full' || b.depositPaid) &&
+            b.status !== 'cancelled' && b.status !== 'rejected' && !b.ownerSettledAt && ownerShare(b) > 0;
+        });
         const owedByHouse = owedBookings.reduce<Record<string, Booking[]>>((acc, b) => {
           (acc[b.houseId] ??= []).push(b); return acc;
         }, {});
