@@ -23,6 +23,7 @@ import OwnerRoomDistributionScreen from './OwnerRoomDistribution';
 import OwnerTour from './OwnerTour';
 import OwnerCustomers from './OwnerCustomers';
 import { supabase } from '../../lib/supabase';
+import { loadUnreadCountsPerBooking } from '../../lib/bookingMessages';
 import { updateBookingFields } from '../../lib/db';
 import { getRoomBedState, getHouseRoomAvailabilityForRange } from '../../lib/roomOccupancy';
 import { printBookingInvoice } from '../../lib/invoice';
@@ -225,6 +226,7 @@ export default function OwnerDashboardShell({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [unreadMessagesTotal, setUnreadMessagesTotal] = useState(0);
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) { setPasswordMsg({ text: 'كلمة السر يجب أن تكون 6 أحرف على الأقل.', ok: false }); return; }
@@ -254,6 +256,30 @@ export default function OwnerDashboardShell({
   const ownerWaitlist = waitlist.filter((w) => ownerHouseIds.includes(w.houseId));
   const unreadNotificationsCount = notifications.filter((n) => n.userId === owner.id && !n.isRead).length;
 
+  // Live unread-message badge for the "المحادثات" tab. We total the inbound
+  // unread across every one of the owner's bookings, then keep it fresh with a
+  // single realtime channel (RLS scopes its events to this owner's own
+  // threads): a new incoming message bumps the count, and a read — read_at is
+  // set when the owner opens a chat — drops it back down.
+  const ownerBookingIdsKey = ownerBookings.map((b) => b.id).join(',');
+  React.useEffect(() => {
+    const ids = ownerBookingIdsKey ? ownerBookingIdsKey.split(',') : [];
+    let cancelled = false;
+    const refresh = () => {
+      if (ids.length === 0) { setUnreadMessagesTotal(0); return; }
+      loadUnreadCountsPerBooking(ids, owner.id).then((counts) => {
+        if (cancelled) return;
+        setUnreadMessagesTotal(Object.values(counts).reduce((s, n) => s + n, 0));
+      });
+    };
+    refresh();
+    const channel = supabase
+      .channel(`owner_unread:${owner.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'booking_messages' }, refresh)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'booking_messages' }, refresh)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, [ownerBookingIdsKey, owner.id]);
 
   const pendingBookings = ownerBookings.filter((b) => b.status === 'pending');
   const todayStr = new Date().toISOString().split('T')[0];
@@ -522,7 +548,9 @@ export default function OwnerDashboardShell({
     const Icon = item.icon;
     const isSel = activeTab === item.key;
     const badgeCount =
-      item.key === 'notifications' ? unreadNotificationsCount : 0;
+      item.key === 'notifications' ? unreadNotificationsCount
+      : item.key === 'messages' ? unreadMessagesTotal
+      : 0;
     return (
       <button
         key={item.key}
@@ -669,7 +697,9 @@ export default function OwnerDashboardShell({
           // Notification count only shows once — the hero bell (top). The
           // bookings tab keeps its own count of pending requests since
           // that's action-required, not a notification.
-          const badgeCount = t.key === 'bookings' ? pendingBookings.length : 0;
+          const badgeCount = t.key === 'bookings' ? pendingBookings.length
+            : t.key === 'messages' ? unreadMessagesTotal
+            : 0;
           if (t.center) {
             return (
               <button
