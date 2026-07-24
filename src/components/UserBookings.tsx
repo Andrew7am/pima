@@ -21,6 +21,7 @@ interface UserBookingsProps {
   onUpdateAttendees: (bookingId: string, attendees: Attendee[]) => void;
   onUpdateAllocations: (bookingId: string, allocations: RoomAllocation[]) => void;
   onOpenRoomDistribution?: (bookingId: string) => void;
+  onNotifyOwnerDistribution?: (bookingId: string) => Promise<boolean>;
   payments: Payment[];
   onSubmitPayment: (payment: Payment) => void;
   settings?: PlatformSettings;
@@ -131,12 +132,14 @@ export default function UserBookings({
   onUpdateAttendees,
   onUpdateAllocations,
   onOpenRoomDistribution,
+  onNotifyOwnerDistribution,
   payments,
   onSubmitPayment,
   settings = DEFAULT_PLATFORM_SETTINGS,
 }: UserBookingsProps) {
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
+  const [notifiedOwner, setNotifiedOwner] = useState<Set<string>>(new Set());
   const [isPaying, setIsPaying] = useState<string | null>(null);
   const [chatOpenBookingId, setChatOpenBookingId] = useState<string | null>(null);
   
@@ -801,15 +804,54 @@ export default function UserBookings({
                       </button>
                     )}
 
+                    {/* Room-distribution status banner (servant guidance) */}
+                    {booking.status === 'approved' && (() => {
+                      const assignedCount = booking.assignedRoomIds?.length ?? 0;
+                      const started = attendees.some((a) => a.bookingId === booking.id);
+                      if (assignedCount === 0) {
+                        return (
+                          <div className="w-full bg-amber-50 border border-amber-200 rounded-2xl p-3 text-right">
+                            <div className="text-[11px] font-black text-amber-900 flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> بانتظار تخصيص الغرف من صاحب البيت</div>
+                            <div className="text-[9.5px] text-amber-800 font-bold mt-1 leading-relaxed">أول ما صاحب البيت يبعت غرف مجموعتك، هتقدر تكتب أسماء المشاركين وتوزّعهم من هنا.</div>
+                          </div>
+                        );
+                      }
+                      if (!started) {
+                        return (
+                          <div className="w-full bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-right space-y-1.5">
+                            <div className="text-[11px] font-black text-emerald-900 flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> صاحب البيت خصّص لك {assignedCount} غرفة — ابدأ التوزيع 🎉</div>
+                            <div className="text-[9.5px] text-emerald-800 font-bold leading-relaxed">١) اضغط «توزيع الغرف» ٢) اكتب أسماء المشاركين ٣) وزّعهم على الغرف (تلقائي أو يدوي) ٤) اطبع الكشف.</div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
                     {/* Room distribution feature (visible for approved or completed bookings) */}
                     {(booking.status === 'approved' || booking.status === 'completed') && (
                       <button
                         id={`booking-allocation-btn-${booking.id}`}
                         onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
-                        className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer border ${
+                          (booking.assignedRoomIds?.length ?? 0) > 0 && !attendees.some((a) => a.bookingId === booking.id)
+                            ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
+                            : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200'
+                        }`}
                       >
-                        <Building className="w-3.5 h-3.5 text-amber-700" />
+                        <Building className="w-3.5 h-3.5" />
                         <span>توزيع الغرف</span>
+                      </button>
+                    )}
+
+                    {/* Let the servant tell the owner they finished distributing */}
+                    {booking.status === 'approved' && (booking.assignedRoomIds?.length ?? 0) > 0 && attendees.some((a) => a.bookingId === booking.id) && onNotifyOwnerDistribution && (
+                      <button
+                        onClick={async () => { const ok = await onNotifyOwnerDistribution(booking.id); if (ok) { setNotifiedOwner((p) => new Set(p).add(booking.id)); } }}
+                        disabled={notifiedOwner.has(booking.id)}
+                        className="flex items-center gap-1 bg-[#464E3D] hover:bg-[#333A2C] disabled:opacity-60 text-white px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{notifiedOwner.has(booking.id) ? 'تم إبلاغ صاحب البيت ✓' : 'أبلغ صاحب البيت إني خلّصت'}</span>
                       </button>
                     )}
 

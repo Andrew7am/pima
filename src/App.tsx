@@ -14,7 +14,7 @@ import {
   createReview, updateReview as updateReviewDb, deleteReview as deleteReviewDb, createPayment, updatePaymentStatus,
   markNotificationRead,
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
-  createWaitlistEntry, notifyWaitlist as notifyWaitlistDb,
+  createWaitlistEntry, notifyWaitlist as notifyWaitlistDb, notifyOwnerDistributionDone as notifyOwnerDistributionDoneDb,
   loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
   loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb, settleBookingsPayout,
   loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
@@ -744,6 +744,12 @@ export default function App() {
     return true;
   };
 
+  const handleNotifyOwnerDistribution = async (bookingId: string) => {
+    const ok = await notifyOwnerDistributionDoneDb(bookingId);
+    if (!ok) alert('تعذّر إبلاغ صاحب البيت. تأكد من تطبيق آخر تحديثات قاعدة البيانات (migration 073).');
+    return ok;
+  };
+
   const handleNotifyWaitlist = async (entryId: string) => {
     const ok = await notifyWaitlistDb(entryId);
     if (ok) setWaitlist((prev) => prev.map((w) => (w.id === entryId ? { ...w, status: 'notified' } : w)));
@@ -833,6 +839,13 @@ export default function App() {
   const handleAssignRooms = (bookingId: string, roomIds: string[]) => {
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, assignedRoomIds: roomIds } : b)));
     updateBookingFields(bookingId, { assignedRoomIds: roomIds });
+    // Tell the servant their rooms are ready so they can start distributing.
+    const b = bookings.find((x) => x.id === bookingId);
+    if (b) pushNotification({
+      id: '', userId: b.userId, bookingId, isRead: false, createdAt: '',
+      type: 'success', title: 'غرفك جاهزة للتوزيع 🛏️',
+      message: `صاحب البيت خصّص لمجموعتك ${roomIds.length} غرفة في "${b.houseName}". ادخل حجزك واكتب أسماء المشاركين ووزّعهم على الغرف.`,
+    });
   };
 
   // Hard-delete a booking record entirely. The DB (migration 061) only lets an
@@ -1618,6 +1631,7 @@ export default function App() {
               onUpdateAttendees={handleUpdateAttendees}
               onUpdateAllocations={handleUpdateAllocations}
               onOpenRoomDistribution={handleOpenRoomDistribution}
+              onNotifyOwnerDistribution={handleNotifyOwnerDistribution}
               payments={payments}
               onSubmitPayment={handleSubmitPayment}
               settings={settings}

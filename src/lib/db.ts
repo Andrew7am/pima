@@ -1051,6 +1051,13 @@ export async function notifyWaitlist(waitlistId: string): Promise<boolean> {
   return !error;
 }
 
+// Servant tells the owner they've finished distributing (migration 073).
+export async function notifyOwnerDistributionDone(bookingId: string): Promise<boolean> {
+  const { error } = await supabase.rpc('notify_owner_distribution_done', { p_booking_id: bookingId });
+  if (error) console.error('notifyOwnerDistributionDone:', error);
+  return !error;
+}
+
 export async function createPlatformAnnouncement(a: PlatformAnnouncement): Promise<boolean> {
   const { error } = await supabase.from('platform_announcements').insert({
     id: a.id, message: a.message, image_url: a.imageUrl ?? null,
