@@ -741,7 +741,7 @@ export default function App() {
   const handleNotifyWaitlist = async (entryId: string) => {
     const ok = await notifyWaitlistDb(entryId);
     if (ok) setWaitlist((prev) => prev.map((w) => (w.id === entryId ? { ...w, status: 'notified' } : w)));
-    else alert('تعذّر إرسال الإشعار. تأكد من تطبيق آخر تحديثات قاعدة البيانات (migration 069).');
+    else alert('تعذّر إرسال الإشعار. تأكد من تطبيق آخر تحديثات قاعدة البيانات (migration 070).');
   };
 
   const handleAddExpense = (expense: Expense) => {
