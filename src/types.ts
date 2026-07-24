@@ -174,7 +174,7 @@ export interface Booking {
   // the house owner. NULL/undefined = still owed. See migration 068.
   ownerSettledAt?: string;
   // Rooms the owner assigned to this group. The servant (booking's guest)
-  // then only fills attendee names inside these rooms — see migration 071.
+  // then only fills attendee names inside these rooms — see migration 072.
   assignedRoomIds?: string[];
   createdAt: string;
 }
