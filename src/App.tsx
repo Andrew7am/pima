@@ -1858,6 +1858,7 @@ export default function App() {
               onOpenRandomMatch={() => setActiveScreen('random_match')}
               onOpenGamesCatalog={() => setActiveScreen('games_catalog')}
               onOpenRewards={() => setActiveScreen('rewards')}
+              onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
             />
           )}
 
