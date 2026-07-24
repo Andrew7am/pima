@@ -71,6 +71,15 @@ export default function BookingChatPanel({ bookingId, bookingIds, currentUserId,
 
   useEffect(() => {
     let cancelled = false;
+    // Switching to a different conversation MUST NOT show the previous one's
+    // messages: clear the thread (and any half-composed reply/attachment/menu
+    // state) before loading the new history, so chats never bleed into each
+    // other while the new history is in flight.
+    setLoading(true);
+    setMessages([]);
+    setReplyTo(null);
+    setMenuFor(null);
+    setAttachments([]);
     (async () => {
       // Merge history from every thread, oldest-first across all bookings.
       const histories = await Promise.all(ids.map((id) => loadBookingMessages(id)));

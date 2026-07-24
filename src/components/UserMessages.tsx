@@ -96,6 +96,7 @@ export default function UserMessages({ currentUser, bookings, houses, users }: U
     const rep = houseBookings[0];
     return (
       <BookingChatPanel
+        key={selectedHouseId}
         bookingId={rep.id}
         bookingIds={houseBookings.map((b) => b.id)}
         currentUserId={currentUser.id}

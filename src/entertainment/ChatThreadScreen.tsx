@@ -26,6 +26,10 @@ export default function ChatThreadScreen({ currentUser, friendId, friendName, on
 
   useEffect(() => {
     let cancelled = false;
+    // Clear the previous friend's thread before loading the new one so
+    // messages never carry over between conversations.
+    setLoading(true);
+    setMessages([]);
     (async () => {
       const history = await loadMessages(currentUser.id, friendId);
       if (cancelled) return;

@@ -91,6 +91,7 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
     const guestBookingIds = guestBookings.map((b) => b.id);
     return (
       <BookingChatPanel
+        key={selectedBooking.userId}
         bookingId={selectedBooking.id}
         bookingIds={guestBookingIds}
         currentUserId={owner.id}
