@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Booking, User, RetreatHouse, Attendee, RoomAllocation, Payment, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
+import { Booking, User, RetreatHouse, Attendee, RoomAllocation, Room, Payment, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { 
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
   Printer, Building, AlertTriangle, Bell, Smartphone, CreditCard, 
@@ -17,6 +17,7 @@ interface UserBookingsProps {
   onCancelBooking?: (bookingId: string) => void;
   attendees: Attendee[];
   allocations: RoomAllocation[];
+  rooms?: Room[];
   onUpdateAttendees: (bookingId: string, attendees: Attendee[]) => void;
   onUpdateAllocations: (bookingId: string, allocations: RoomAllocation[]) => void;
   onOpenRoomDistribution?: (bookingId: string) => void;
@@ -126,6 +127,7 @@ export default function UserBookings({
   onCancelBooking,
   attendees,
   allocations,
+  rooms = [],
   onUpdateAttendees,
   onUpdateAllocations,
   onOpenRoomDistribution,
@@ -1410,11 +1412,28 @@ export default function UserBookings({
       {activeAllocationBooking && (() => {
         const house = houses.find(h => h.id === activeAllocationBooking.houseId);
         if (!house) return null;
+        // The owner assigns which rooms this group gets; the servant only fills
+        // names inside those. If nothing's assigned yet, wait for the owner.
+        const assignedIds = activeAllocationBooking.assignedRoomIds || [];
+        const assignedRooms = assignedIds.map((id) => rooms.find((r) => r.id === id)).filter(Boolean) as Room[];
+        if (assignedIds.length === 0) {
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setActiveAllocationBooking(null)}>
+              <div className="bg-white rounded-3xl border border-[#D6D6C2] p-6 max-w-sm text-center space-y-2" dir="rtl" onClick={(e) => e.stopPropagation()}>
+                <div className="text-3xl">🛏️</div>
+                <h3 className="text-sm font-black text-[#2D2D24]">بانتظار تخصيص الغرف</h3>
+                <p className="text-[11px] text-[#8A8A70] leading-relaxed">لسه صاحب البيت ماخصّصش غرف لمجموعتك. بمجرد ما يبعت الغرف، هتقدر تكتب أسماء المشاركين وتوزّعهم عليها من هنا.</p>
+                <button type="button" onClick={() => setActiveAllocationBooking(null)} className="mt-2 bg-[#5A5A40] text-white text-xs font-black px-5 py-2.5 rounded-2xl">تمام</button>
+              </div>
+            </div>
+          );
+        }
         return (
           <RoomDistribution
             booking={activeAllocationBooking}
             house={house}
             currentUser={currentUser}
+            houseRooms={assignedRooms}
             onClose={() => setActiveAllocationBooking(null)}
             globalAttendees={attendees}
             globalAllocations={allocations}
@@ -1789,11 +1808,28 @@ export default function UserBookings({
       {activeAllocationBooking && (() => {
         const house = houses.find(h => h.id === activeAllocationBooking.houseId);
         if (!house) return null;
+        // The owner assigns which rooms this group gets; the servant only fills
+        // names inside those. If nothing's assigned yet, wait for the owner.
+        const assignedIds = activeAllocationBooking.assignedRoomIds || [];
+        const assignedRooms = assignedIds.map((id) => rooms.find((r) => r.id === id)).filter(Boolean) as Room[];
+        if (assignedIds.length === 0) {
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setActiveAllocationBooking(null)}>
+              <div className="bg-white rounded-3xl border border-[#D6D6C2] p-6 max-w-sm text-center space-y-2" dir="rtl" onClick={(e) => e.stopPropagation()}>
+                <div className="text-3xl">🛏️</div>
+                <h3 className="text-sm font-black text-[#2D2D24]">بانتظار تخصيص الغرف</h3>
+                <p className="text-[11px] text-[#8A8A70] leading-relaxed">لسه صاحب البيت ماخصّصش غرف لمجموعتك. بمجرد ما يبعت الغرف، هتقدر تكتب أسماء المشاركين وتوزّعهم عليها من هنا.</p>
+                <button type="button" onClick={() => setActiveAllocationBooking(null)} className="mt-2 bg-[#5A5A40] text-white text-xs font-black px-5 py-2.5 rounded-2xl">تمام</button>
+              </div>
+            </div>
+          );
+        }
         return (
           <RoomDistribution
             booking={activeAllocationBooking}
             house={house}
             currentUser={currentUser}
+            houseRooms={assignedRooms}
             onClose={() => setActiveAllocationBooking(null)}
             globalAttendees={attendees}
             globalAllocations={allocations}

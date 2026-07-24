@@ -103,6 +103,7 @@ export function mapBooking(r: Record<string, unknown>): Booking {
     checkedOutAt: r.checked_out_at as string ?? undefined,
     ownerNotes: r.owner_notes as string ?? undefined,
     ownerSettledAt: r.owner_settled_at as string ?? undefined,
+    assignedRoomIds: (r.assigned_room_ids as string[]) ?? undefined,
     createdAt: r.created_at as string,
   };
 }
@@ -875,6 +876,7 @@ export async function updateBookingFields(id: string, fields: Partial<Booking>):
   if (fields.checkOut !== undefined) row.check_out = fields.checkOut;
   if (fields.guestsCount !== undefined) row.guests_count = fields.guestsCount;
   if (fields.ownerNotes !== undefined) row.owner_notes = fields.ownerNotes;
+  if (fields.assignedRoomIds !== undefined) row.assigned_room_ids = fields.assignedRoomIds;
   const { error } = await supabase.from('bookings').update(row).eq('id', id);
   if (error) {
     const msg = error.message || '';

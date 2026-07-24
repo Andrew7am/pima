@@ -173,6 +173,9 @@ export interface Booking {
   // Set when the admin has transferred this booking's owner share (25%) to
   // the house owner. NULL/undefined = still owed. See migration 068.
   ownerSettledAt?: string;
+  // Rooms the owner assigned to this group. The servant (booking's guest)
+  // then only fills attendee names inside these rooms — see migration 071.
+  assignedRoomIds?: string[];
   createdAt: string;
 }
 

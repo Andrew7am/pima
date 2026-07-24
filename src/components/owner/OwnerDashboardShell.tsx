@@ -15,6 +15,7 @@ import OwnerFinancialCenter from './OwnerFinancialCenter';
 import OwnerRoomsManager from './OwnerRoomsManager';
 import OwnerReviewsCenter from './OwnerReviewsCenter';
 import OwnerCalendar from './OwnerCalendar';
+import OwnerAssignRooms from './OwnerAssignRooms';
 import OwnerToday from './OwnerToday';
 import OwnerSpotlight from './OwnerSpotlight';
 import OwnerFoodMenu from './OwnerFoodMenu';
@@ -54,6 +55,7 @@ interface OwnerDashboardShellProps {
   onApproveBooking: (bookingId: string) => void;
   onRejectBooking: (bookingId: string) => void;
   onDeleteBooking?: (bookingId: string) => void;
+  onAssignRooms?: (bookingId: string, roomIds: string[]) => void;
   onConfirmDeposit?: (bookingId: string) => void;
   onCheckInBooking?: (bookingId: string) => void;
   onCheckOutBooking?: (bookingId: string) => void;
@@ -107,7 +109,7 @@ const OVERFLOW_ITEMS: { key: OverflowTab; label: string; icon: React.ElementType
 
 export default function OwnerDashboardShell({
   owner, houses, bookings, settings = DEFAULT_PLATFORM_SETTINGS,
-  onAddHouse, onDeleteHouse, onApproveBooking, onRejectBooking, onDeleteBooking, onConfirmDeposit, onCheckInBooking, onCheckOutBooking,
+  onAddHouse, onDeleteHouse, onApproveBooking, onRejectBooking, onDeleteBooking, onAssignRooms, onConfirmDeposit, onCheckInBooking, onCheckOutBooking,
   attendees, allocations, onUpdateAttendees, onUpdateAllocations, onOpenRoomDistribution,
   onUpdateHouse, onRequestHouseEdit, reviews = [], onUpdateReview,
   rooms = [], onAddRoom, onUpdateRoom, onDeleteRoom,
@@ -136,6 +138,7 @@ export default function OwnerDashboardShell({
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [showOverflow, setShowOverflow] = useState(false);
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
+  const [assignRoomsBooking, setAssignRoomsBooking] = useState<Booking | null>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [bookingFilter, setBookingFilter] = useState<'all' | 'new' | 'pending_payment' | 'confirmed' | 'arrivals_today' | 'departures_today' | 'completed' | 'cancelled' | 'waitlist'>('all');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'manual' | 'temporary'>('all');
@@ -1140,9 +1143,15 @@ export default function OwnerDashboardShell({
                           <span>🚪 تسجيل مغادرة</span>
                         </button>
                       )}
+                      {onAssignRooms && (
+                        <button onClick={() => setAssignRoomsBooking(booking)}
+                          className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer">
+                          <BedDouble className="w-4 h-4" /><span>{booking.assignedRoomIds?.length ? `الغرف المخصّصة (${booking.assignedRoomIds.length})` : 'تخصيص الغرف للحاجز'}</span>
+                        </button>
+                      )}
                       <button onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
                         className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                        <Building className="w-4 h-4 text-amber-700" /><span>توزيع الغرف 🛏️</span>
+                        <Building className="w-4 h-4 text-amber-700" /><span>عرض التوزيع 🛏️</span>
                       </button>
                       {onRecalculateAllocation && (
                         <button
@@ -2069,6 +2078,13 @@ export default function OwnerDashboardShell({
           onNavigateSupport={onNavigateSupport}
         />
       )}
+
+      <OwnerAssignRooms
+        open={!!assignRoomsBooking} booking={assignRoomsBooking}
+        rooms={ownerRooms} allocations={allocations} bookings={ownerBookings}
+        onSave={(bid, ids) => onAssignRooms?.(bid, ids)}
+        onClose={() => setAssignRoomsBooking(null)}
+      />
 
       <OwnerSpotlight
         open={spotlightOpen} onClose={() => setSpotlightOpen(false)}

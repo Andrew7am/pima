@@ -829,6 +829,12 @@ export default function App() {
     freeBookingAllocations(bookingId);
   };
 
+  // Owner assigns a set of rooms to a group; the servant then fills names in them.
+  const handleAssignRooms = (bookingId: string, roomIds: string[]) => {
+    setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, assignedRoomIds: roomIds } : b)));
+    updateBookingFields(bookingId, { assignedRoomIds: roomIds });
+  };
+
   // Hard-delete a booking record entirely. The DB (migration 061) only lets an
   // owner delete their own manual/temporary or already-terminal rows; the UI
   // gates the button the same way. Related attendees/allocations cascade in DB;
@@ -1608,6 +1614,7 @@ export default function App() {
               onCancelBooking={handleCancelBooking}
               attendees={attendees}
               allocations={allocations}
+              rooms={rooms}
               onUpdateAttendees={handleUpdateAttendees}
               onUpdateAllocations={handleUpdateAllocations}
               onOpenRoomDistribution={handleOpenRoomDistribution}
@@ -1631,6 +1638,7 @@ export default function App() {
               onApproveBooking={handleApproveBooking}
               onRejectBooking={handleRejectBooking}
               onDeleteBooking={handleDeleteBooking}
+              onAssignRooms={handleAssignRooms}
               onConfirmDeposit={handleConfirmDepositReceived}
               onCheckInBooking={handleCheckInBooking}
               onCheckOutBooking={handleCheckOutBooking}
