@@ -343,7 +343,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
             {/* 2 — Title */}
             <div className="text-center space-y-1">
               <h1 className="text-xl font-black text-[#0A2342]">
-                أهلاً بك في <span className="text-[#C5A059] font-serif">بيما</span>
+                أهلاً بك في <span className="text-[#C5A059]">بيما</span>
               </h1>
               <p className="text-[11px] text-[#8A8A70] leading-relaxed max-w-[280px] mx-auto">
                 احجز مكانك بسهولة واستمتع بتجربة روحانية مميزة
