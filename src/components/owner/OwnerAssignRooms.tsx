@@ -17,28 +17,37 @@ interface OwnerAssignRoomsProps {
 export default function OwnerAssignRooms({ open, onClose, booking, rooms, allocations, bookings, onSave }: OwnerAssignRoomsProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  // Rooms of this house that have at least one free bed across the stay.
+  // Rooms of this house that have at least one free bed across the stay,
+  // listed in room-number order for a predictable layout.
   const available = useMemo(() => {
     if (!booking) return [];
     return rooms
       .filter((r) => r.houseId === booking.houseId && r.status !== 'maintenance')
       .map((r) => ({ room: r, free: getRoomFreeBedsForRange(r, allocations, bookings, booking.checkIn, booking.checkOut, booking.id) }))
       .filter((x) => x.free > 0)
-      .sort((a, b) => b.free - a.free || a.room.name.localeCompare(b.room.name, 'ar'));
+      .sort((a, b) => a.room.name.localeCompare(b.room.name, 'ar', { numeric: true }));
   }, [booking, rooms, allocations, bookings]);
+
+  // Auto-suggest: pick the SMALLEST rooms that still cover the head-count, so a
+  // 1-person booking doesn't grab a 4-bed room. Ties break on room number.
+  const suggestRooms = (): Set<string> => {
+    const pick = new Set<string>();
+    if (!booking) return pick;
+    let beds = 0;
+    const byFit = [...available].sort((a, b) => a.free - b.free || a.room.name.localeCompare(b.room.name, 'ar', { numeric: true }));
+    for (const { room, free } of byFit) {
+      if (beds >= booking.guestsCount) break;
+      pick.add(room.id); beds += free;
+    }
+    return pick;
+  };
 
   // Pre-select: the booking's existing assignment, or auto-suggest enough
   // rooms to cover the head-count.
   useEffect(() => {
     if (!open || !booking) return;
     if (booking.assignedRoomIds?.length) { setSelected(new Set(booking.assignedRoomIds)); return; }
-    const pick = new Set<string>();
-    let beds = 0;
-    for (const { room, free } of available) {
-      if (beds >= booking.guestsCount) break;
-      pick.add(room.id); beds += free;
-    }
-    setSelected(pick);
+    setSelected(suggestRooms());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, booking?.id]);
 
@@ -48,11 +57,7 @@ export default function OwnerAssignRooms({ open, onClose, booking, rooms, alloca
   const selectedBeds = [...selected].reduce((s, id) => s + bedsFor(id), 0);
   const enough = selectedBeds >= booking.guestsCount;
   const toggle = (id: string) => setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const autoSuggest = () => {
-    const pick = new Set<string>(); let beds = 0;
-    for (const { room, free } of available) { if (beds >= booking.guestsCount) break; pick.add(room.id); beds += free; }
-    setSelected(pick);
-  };
+  const autoSuggest = () => setSelected(suggestRooms());
 
   return (
     <BottomSheet open={open} onClose={onClose} title="تخصيص الغرف للحاجز">
