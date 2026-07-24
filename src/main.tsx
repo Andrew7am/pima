@@ -1,6 +1,5 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import {Capacitor} from '@capacitor/core';
 import * as Sentry from '@sentry/react';
 import App from './App.tsx';
 import './index.css';
@@ -22,11 +21,14 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-// PWA: register the service worker so بيما is installable ("add to home screen")
-// and works offline. Web + production only — never inside the Capacitor app
-// (it has its own WebView) and never in dev (avoids stale-cache surprises).
-if (import.meta.env.PROD && 'serviceWorker' in navigator && !Capacitor.isNativePlatform()) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => console.warn('SW registration failed:', err));
-  });
+// We no longer ship a PWA — the goal is to drive real app downloads, not web
+// installs. Actively remove any service worker a previous build registered on a
+// visitor's device (and its caches), so nobody stays on a stale installed copy.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations()
+    .then((regs) => regs.forEach((r) => r.unregister()))
+    .catch(() => undefined);
+  if (typeof caches !== 'undefined') {
+    caches.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => undefined);
+  }
 }
