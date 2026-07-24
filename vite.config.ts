@@ -228,10 +228,29 @@ export default defineConfig(({ mode }) => {
           manualChunks(id) {
             if (!id.includes('node_modules')) return undefined;
             if (id.includes('leaflet')) return 'vendor-leaflet';
+            // Keep recharts + its d3/victory-vendor family in one isolated chunk.
+            // Lumping them into the generic `vendor` chunk triggers a circular-init
+            // (TDZ) crash at boot in the production bundle ("Cannot access 'X'
+            // before initialization"). Isolating them fixes boot AND makes recharts
+            // load lazily with the Conference Hub that uses it.
+            if (
+              id.includes('recharts') ||
+              id.includes('victory-vendor') ||
+              id.includes('/d3-') ||
+              id.includes('internmap') ||
+              id.includes('decimal.js-light') ||
+              id.includes('react-smooth')
+            ) return 'vendor-recharts';
             if (id.includes('@supabase')) return 'vendor-supabase';
             if (id.includes('motion') || id.includes('framer-motion')) return 'vendor-motion';
             if (id.includes('lucide-react')) return 'vendor-icons';
-            if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('react-router') || id.includes('/scheduler/')) return 'vendor-react';
+            // NOTE: react/react-dom/scheduler are intentionally NOT split into
+            // their own chunk. Splitting them created a cross-chunk cycle
+            // (vendor <-> vendor-react) via shared react-ecosystem utils
+            // (react-is / use-sync-external-store), which produced a
+            // "Cannot access 'X' before initialization" TDZ crash at boot in the
+            // production bundle. Keeping React in the single `vendor` chunk avoids
+            // the cycle entirely.
             return 'vendor';
           },
         },
