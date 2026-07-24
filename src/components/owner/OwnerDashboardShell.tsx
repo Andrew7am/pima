@@ -1412,7 +1412,7 @@ export default function OwnerDashboardShell({
       )}
 
       {/* Overflow: Customers */}
-      {activeTab === 'customers' && <OwnerCustomers bookings={ownerBookings} />}
+      {activeTab === 'customers' && <OwnerCustomers bookings={ownerBookings} reviews={ownerReviews} users={users} onOpenMessages={() => { setActiveTab('messages'); setShowOverflow(false); }} />}
 
       {/* Overflow: Finance */}
       {activeTab === 'financials' && (
