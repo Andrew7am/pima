@@ -1,0 +1,74 @@
+/* Shared styling for the pimastay guide (الدليل) — brand-consistent, RTL. */
+:root {
+  --green: #3A6B4C;
+  --green-dark: #2c5a3d;
+  --cream: #F5F5ED;
+  --paper: #ffffff;
+  --ink: #23291f;
+  --muted: #5b6357;
+  --border: #D6D6C2;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, "Noto Kufi Arabic", system-ui, sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  line-height: 1.9;
+  direction: rtl;
+}
+a { color: var(--green-dark); }
+.container { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+
+/* Header */
+.site-header {
+  background: var(--green);
+  color: #fff;
+  padding: 14px 0;
+  position: sticky; top: 0; z-index: 10;
+}
+.site-header .container { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; color: #fff; text-decoration: none; }
+.brand .logo { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; font-weight: 900; }
+.site-header nav a { color: #eaf3ec; text-decoration: none; font-size: 14px; margin-inline-start: 16px; font-weight: 700; }
+.site-header nav a:hover { color: #fff; }
+
+/* Hero / article */
+main { padding: 28px 0 48px; }
+.crumbs { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+.crumbs a { text-decoration: none; }
+h1 { font-size: clamp(26px, 5vw, 38px); line-height: 1.3; margin: 6px 0 10px; color: var(--ink); font-weight: 900; }
+h2 { font-size: 22px; margin: 30px 0 10px; color: var(--green-dark); font-weight: 800; }
+h3 { font-size: 17px; margin: 20px 0 6px; font-weight: 800; }
+p, li { font-size: 16.5px; color: #333c30; }
+.lead { font-size: 18px; color: var(--muted); font-weight: 600; }
+ul, ol { padding-inline-start: 22px; }
+li { margin: 6px 0; }
+article { background: var(--paper); border: 1px solid var(--border); border-radius: 22px; padding: 26px 26px 30px; box-shadow: 0 8px 24px -18px rgba(0,0,0,.25); }
+.tip { background: #eef5f0; border: 1px solid #cfe3d6; border-inline-start: 4px solid var(--green); border-radius: 12px; padding: 12px 16px; margin: 18px 0; font-size: 15.5px; }
+.cta {
+  display: inline-block; background: var(--green); color: #fff; text-decoration: none;
+  font-weight: 800; padding: 12px 22px; border-radius: 999px; margin-top: 10px;
+}
+.cta:hover { background: var(--green-dark); }
+
+/* Ad placeholder — replaced with a real AdSense unit after approval */
+.ad-slot {
+  margin: 26px 0; border: 1px dashed var(--border); border-radius: 14px; background: #fbfbf6;
+  min-height: 110px; display: flex; align-items: center; justify-content: center;
+  color: #9aa08f; font-size: 13px; font-weight: 700; text-align: center;
+}
+
+/* Hub cards */
+.grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 8px; }
+@media (min-width: 640px) { .grid { grid-template-columns: 1fr 1fr; } }
+.card { display: block; background: var(--paper); border: 1px solid var(--border); border-radius: 18px; padding: 18px; text-decoration: none; color: var(--ink); transition: transform .15s, box-shadow .15s; }
+.card:hover { transform: translateY(-3px); box-shadow: 0 12px 26px -18px rgba(0,0,0,.3); }
+.card h3 { margin: 0 0 6px; color: var(--green-dark); }
+.card p { margin: 0; font-size: 14.5px; color: var(--muted); }
+
+/* Footer */
+.site-footer { border-top: 1px solid var(--border); background: var(--cream); padding: 26px 0; margin-top: 20px; color: var(--muted); font-size: 14px; }
+.site-footer .container { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; }
+.site-footer a { color: var(--green-dark); text-decoration: none; margin-inline-start: 14px; }

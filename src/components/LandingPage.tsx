@@ -1,5 +1,6 @@
 import React from 'react';
 import { MapPin, Shield, Star, Users, ChevronLeft, Home, Calendar, MessageCircle } from 'lucide-react';
+import AdSlot from './AdSlot';
 
 interface LandingPageProps {
   onBrowse: () => void;
@@ -103,6 +104,11 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
         </div>
       </section>
 
+      {/* Display ad (public content page — policy-compliant). No-ops until AdSense is configured. */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-8 py-2">
+        <AdSlot slot="landing_display" />
+      </div>
+
       {/* Footer */}
       <footer className="border-t border-[#D6D6C2]/50 bg-[#F5F5ED] py-8">
         <div className="max-w-5xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-[#8A8A70]">
@@ -112,6 +118,7 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
             <span>— بيوت الخلوات والمصايف</span>
           </div>
           <div className="flex items-center gap-4">
+            <a href="/dalil/" className="hover:text-[#3A6B4C] transition-colors">الدليل والنصائح</a>
             <a href="https://wa.me/201234567890" target="_blank" rel="noreferrer" className="hover:text-[#3A6B4C] transition-colors">تواصل معنا</a>
             <span>© {new Date().getFullYear()}</span>
           </div>

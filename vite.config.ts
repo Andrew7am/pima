@@ -146,6 +146,13 @@ function seoPagesPlugin(supabaseUrl: string, anonKey: string): Plugin {
       const today = new Date().toISOString().slice(0, 10);
       const urls: { loc: string; lastmod?: string; priority: string }[] = [
         { loc: `${SITE_URL}/`, lastmod: today, priority: '1.0' },
+        // Static guide/content pages (public/dalil/*) — content for SEO + AdSense.
+        { loc: `${SITE_URL}/dalil/`, lastmod: today, priority: '0.7' },
+        { loc: `${SITE_URL}/dalil/choosing-conference-house.html`, lastmod: today, priority: '0.6' },
+        { loc: `${SITE_URL}/dalil/organizing-retreat.html`, lastmod: today, priority: '0.6' },
+        { loc: `${SITE_URL}/dalil/conference-vs-retreat-vs-summer.html`, lastmod: today, priority: '0.6' },
+        { loc: `${SITE_URL}/dalil/retreat-checklist.html`, lastmod: today, priority: '0.6' },
+        { loc: `${SITE_URL}/dalil/faq.html`, lastmod: today, priority: '0.6' },
       ];
       let template = '';
       try {

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { X, Play } from 'lucide-react';
-import AdSlot from '../components/AdSlot';
 
 interface Props {
   open: boolean;
@@ -11,9 +10,15 @@ interface Props {
   onClose: () => void;
 }
 
-// Rewarded-ad gate: the user must watch a short ad before the reward unlocks.
-// Hosts a real Google AdSense unit (AdSlot) on the web once configured; the
-// countdown provides the "watch to earn" UX and works even before ads light up.
+// Rewarded-ad gate: the user watches a short ad before the reward unlocks.
+//
+// IMPORTANT: this intentionally does NOT render a Google AdSense unit. AdSense
+// strictly forbids incentivized/"watch-to-earn" ad views — doing so risks a
+// permanent account ban. Rewarded ads are only allowed via AdMob (the native
+// Android app) or AdSense-for-H5-Games. So on the website this shows a neutral
+// sponsor placeholder + countdown; the real rewarded ad is wired through AdMob
+// in the Capacitor build later. (Plain AdSense display ads live on the public
+// content pages instead, which is policy-compliant.)
 export default function AdGateModal({ open, title = 'شاهد الإعلان', rewardLabel = 'افتح المكافأة', seconds = 5, onReward, onClose }: Props) {
   const [left, setLeft] = useState(seconds);
 
@@ -39,9 +44,9 @@ export default function AdGateModal({ open, title = 'شاهد الإعلان', r
 
         <h3 className="text-sm font-black text-white text-center mb-3">{title}</h3>
 
-        {/* Real AdSense unit (web only, once configured) + a placeholder frame so the modal never looks empty. */}
+        {/* Neutral sponsor placeholder — NOT AdSense (see note above). The real
+            rewarded ad is served by AdMob inside the native app. */}
         <div className="rounded-2xl border border-white/10 bg-[#0A1428] overflow-hidden mb-4 min-h-[160px] flex items-center justify-center">
-          <AdSlot slot="rewarded_ent" className="w-full" />
           <div className="text-center py-8 px-4">
             <Play className="w-10 h-10 text-slate-500 mx-auto mb-2" />
             <p className="text-[11px] text-slate-400 font-bold">مساحة إعلانية</p>
