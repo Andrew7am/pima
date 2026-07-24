@@ -16,7 +16,12 @@ export function useVersionCheck(intervalMs: number = DEFAULT_CHECK_INTERVAL_MS):
 
     const check = async () => {
       try {
-        const res = await fetch('/version.json', { cache: 'no-store' });
+        // Unique URL per poll so no layer ever serves a stale copy — not the
+        // browser cache, not a leftover service worker, and (crucially) not
+        // Vercel's CDN edge cache, which otherwise HITs on /version.json and
+        // can hide a fresh deploy for minutes. A distinct query string is a
+        // distinct cache key → always revalidated against the origin.
+        const res = await fetch(`/version.json?t=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok || cancelled) return;
         const { version } = await res.json();
         if (cancelled) return;
