@@ -17,6 +17,20 @@ import PrivacyPolicy from './PrivacyPolicy';
 // Configuration → Redirect URLs for the native flow below to work.
 const NATIVE_AUTH_REDIRECT = 'com.pimastay.app://auth-callback';
 
+// Sign in with Apple stays hidden until the Apple provider is actually
+// configured in Supabase Auth — flip VITE_APPLE_SIGNIN_ENABLED=true then.
+// Apple App Store rules require it once Google sign-in is offered.
+const APPLE_ENABLED = import.meta.env.VITE_APPLE_SIGNIN_ENABLED === 'true';
+
+// Apple logo (monochrome) for the Sign in with Apple button.
+function AppleLogo({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
+      <path d="M16.365 1.43c0 1.14-.417 2.2-1.11 2.98-.84.94-2.21 1.66-3.34 1.57-.14-1.1.42-2.27 1.06-2.99.72-.82 1.98-1.44 3.09-1.5.01.02.02.05.02.07l-.02-.13zM20.9 17.03c-.55 1.27-.81 1.83-1.52 2.95-.99 1.56-2.39 3.5-4.12 3.51-1.54.02-1.94-1-4.03-.99-2.09.01-2.53 1.01-4.07.99-1.73-.02-3.05-1.78-4.04-3.34C.31 15.9-.02 11.3 1.7 8.85c1.22-1.74 3.16-2.76 4.98-2.76 1.85 0 3.01 1.02 4.54 1.02 1.48 0 2.38-1.02 4.53-1.02 1.62 0 3.34.88 4.56 2.4-4.01 2.2-3.36 7.93 1.09 9.54z"/>
+    </svg>
+  );
+}
+
 // Small ornamental Coptic-style cross for the divider between the form
 // and the "create account" row.
 function CrossOrnament({ className = '' }: { className?: string }) {
@@ -156,6 +170,37 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
       setLoading(false);
     }
     // On success the browser redirects to Google, so no further local state change here.
+  };
+
+  // Sign in with Apple — same OAuth flow as Google. Apple's App Store rules
+  // (Guideline 4.8) require this whenever the app offers Google/other social
+  // sign-in. Dormant until VITE_APPLE_SIGNIN_ENABLED=true (i.e. after the Apple
+  // provider is configured in Supabase Auth) so it never shows a broken button.
+  const handleAppleSignIn = async () => {
+    setLoading(true);
+    setError('');
+    if (Capacitor.isNativePlatform()) {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: { redirectTo: NATIVE_AUTH_REDIRECT, skipBrowserRedirect: true },
+      });
+      if (error || !data?.url) {
+        setError('تعذر تسجيل الدخول بحساب Apple. حاول مرة أخرى.');
+        setLoading(false);
+        return;
+      }
+      await Browser.open({ url: data.url });
+      setLoading(false);
+      return;
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) {
+      setError('تعذر تسجيل الدخول بحساب Apple. حاول مرة أخرى.');
+      setLoading(false);
+    }
   };
 
   const handleSignInSubmit = async (e: React.FormEvent) => {
@@ -349,6 +394,18 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
               <span>تسجيل الدخول بحساب Google</span>
             </button>
 
+            {APPLE_ENABLED && (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleAppleSignIn}
+                className="w-full flex items-center justify-center gap-2 bg-black hover:bg-[#1a1a1a] disabled:opacity-60 text-white text-xs font-bold py-3 rounded-xl shadow-md transition-colors"
+              >
+                <AppleLogo className="w-4 h-4" />
+                <span>تسجيل الدخول بحساب Apple</span>
+              </button>
+            )}
+
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-[#EFE8D8]" />
               <span className="text-[10px] text-[#8A8A70] font-bold">أو</span>
@@ -487,6 +544,18 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
           </svg>
           <span>تسجيل الدخول بحساب Google</span>
         </button>
+
+        {APPLE_ENABLED && (
+          <button
+            type="button"
+            disabled={loading}
+            onClick={handleAppleSignIn}
+            className="w-full flex items-center justify-center gap-2 bg-black hover:bg-[#1a1a1a] disabled:opacity-60 text-white text-xs font-bold py-2.5 rounded-xl shadow-sm transition-colors"
+          >
+            <AppleLogo className="w-4 h-4" />
+            <span>تسجيل الدخول بحساب Apple</span>
+          </button>
+        )}
 
         <div className="flex items-center gap-2">
           <div className="flex-1 h-px bg-[#D6D6C2]" />

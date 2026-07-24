@@ -40,6 +40,7 @@ import UserDashboard from './components/UserDashboard';
 import WebLayout from './components/WebLayout';
 import AuthScreen from './components/AuthScreen';
 import LandingPage from './components/LandingPage';
+import { registerPushNotifications } from './lib/push';
 const ContactSupport = lazy(() => import('./components/ContactSupport'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 import PrivacyPolicy from './components/PrivacyPolicy';
@@ -153,6 +154,9 @@ export default function App() {
   // otherwise always see the `currentUser` from its first render.
   const currentUserIdRef = useRef<string | null>(null);
   useEffect(() => { currentUserIdRef.current = currentUser?.id ?? null; }, [currentUser]);
+  // Register this device for native push once logged in (no-op on web / until a
+  // Firebase project + the push runbook are set up).
+  useEffect(() => { if (currentUser?.id) registerPushNotifications(currentUser.id); }, [currentUser?.id]);
   // Tracks the last house id reflected in the address bar so the URL-sync effect
   // only rewrites to "/" when a house was actually open (an in-app close), never
   // on the initial mount where the deep-link effect is about to open one.
