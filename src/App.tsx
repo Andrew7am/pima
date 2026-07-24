@@ -14,7 +14,7 @@ import {
   createReview, updateReview as updateReviewDb, deleteReview as deleteReviewDb, createPayment, updatePaymentStatus,
   markNotificationRead,
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
-  createWaitlistEntry,
+  createWaitlistEntry, notifyWaitlist as notifyWaitlistDb,
   loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
   loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb, settleBookingsPayout,
   loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
@@ -736,6 +736,12 @@ export default function App() {
     setWaitlist((prev) => [...prev, entry]);
     createWaitlistEntry(entry);
     return true;
+  };
+
+  const handleNotifyWaitlist = async (entryId: string) => {
+    const ok = await notifyWaitlistDb(entryId);
+    if (ok) setWaitlist((prev) => prev.map((w) => (w.id === entryId ? { ...w, status: 'notified' } : w)));
+    else alert('تعذّر إرسال الإشعار. تأكد من تطبيق آخر تحديثات قاعدة البيانات (migration 066).');
   };
 
   const handleAddExpense = (expense: Expense) => {
@@ -1638,6 +1644,7 @@ export default function App() {
               onUpdateRoomType={handleUpdateRoomType}
               onDeleteRoomType={handleDeleteRoomType}
               waitlist={waitlist}
+              onNotifyWaitlist={handleNotifyWaitlist}
               notifications={notifications}
               onMarkNotificationAsRead={handleMarkNotificationAsRead}
               expenses={expenses}

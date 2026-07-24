@@ -73,6 +73,7 @@ interface OwnerDashboardShellProps {
   onUpdateRoomType?: (t: RoomType) => void;
   onDeleteRoomType?: (id: string) => void;
   waitlist?: WaitlistEntry[];
+  onNotifyWaitlist?: (entryId: string) => void;
   notifications?: AppNotification[];
   onMarkNotificationAsRead?: (id: string) => void;
   expenses?: Expense[];
@@ -108,7 +109,7 @@ export default function OwnerDashboardShell({
   attendees, allocations, onUpdateAttendees, onUpdateAllocations, onOpenRoomDistribution,
   onUpdateHouse, onRequestHouseEdit, reviews = [], onUpdateReview,
   rooms = [], onAddRoom, onUpdateRoom, onDeleteRoom,
-  roomTypes = [], onAddRoomType, onUpdateRoomType, onDeleteRoomType, waitlist = [],
+  roomTypes = [], onAddRoomType, onUpdateRoomType, onDeleteRoomType, waitlist = [], onNotifyWaitlist,
   notifications = [], onMarkNotificationAsRead,
   expenses = [], onAddExpense, onDeleteExpense, payouts = [], onRequestPayout, users = [], onNavigateSupport, onCreateBooking,
   onUpdateBookingDetails, onRecalculateAllocation, onLogout,
@@ -1336,6 +1337,12 @@ export default function OwnerDashboardShell({
                         </span>
                       </div>
                       <div className="text-[10px] text-[var(--color-owner-secondary)]">{w.checkIn} → {w.checkOut} · {w.guestsCount} فرد · {w.userPhone}</div>
+                      {w.status === 'waiting' && onNotifyWaitlist && (
+                        <button type="button" onClick={() => { if (confirm(`إشعار ${w.userName} بتوفّر مكان؟`)) onNotifyWaitlist(w.id); }}
+                          className="w-full mt-1 flex items-center justify-center gap-1 bg-emerald-600 text-white text-[10px] font-black py-1.5 rounded-lg active:scale-[0.98] transition-transform">
+                          <Bell className="w-3.5 h-3.5" /> إشعار بتوفّر مكان
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

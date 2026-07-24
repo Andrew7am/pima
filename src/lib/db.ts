@@ -1012,6 +1012,14 @@ export async function updateWaitlistStatus(id: string, status: WaitlistEntry['st
   return !error;
 }
 
+// Notify a waiting guest that a spot opened, and mark the entry 'notified'
+// (server-side — see migration 066_notify_waitlist).
+export async function notifyWaitlist(waitlistId: string): Promise<boolean> {
+  const { error } = await supabase.rpc('notify_waitlist', { p_waitlist_id: waitlistId });
+  if (error) console.error('notifyWaitlist:', error);
+  return !error;
+}
+
 export async function createPlatformAnnouncement(a: PlatformAnnouncement): Promise<boolean> {
   const { error } = await supabase.from('platform_announcements').insert({
     id: a.id, message: a.message, image_url: a.imageUrl ?? null,
