@@ -668,6 +668,20 @@ export default function UserBookings({
               (selectedMethod === 'bank' && !ownerPaymentFor('bank_transfer')) ||
               (selectedMethod === 'vodafone' && !walletPayee);
 
+            // Action affordances for this booking — used to give the footer a
+            // clear hierarchy (one prominent primary CTA + secondary pills).
+            const roomsAssigned = (booking.assignedRoomIds?.length ?? 0) > 0;
+            const distributionStarted = attendees.some((a) => a.bookingId === booking.id);
+            const roomsReady = booking.status === 'approved' && roomsAssigned && !distributionStarted;
+            const canDistribute = booking.status === 'approved' || booking.status === 'completed';
+            const canPlan = booking.status === 'approved' || booking.status === 'completed';
+            const canChat = booking.status !== 'rejected' && booking.status !== 'cancelled';
+            const canCancel = booking.status === 'pending' || booking.status === 'approved';
+            const canNotifyDone = booking.status === 'approved' && roomsAssigned && distributionStarted && !!onNotifyOwnerDistribution;
+            // The single most important next step, promoted to a full-width button.
+            const primaryAction: 'pay' | 'distribute' | 'chat' | null =
+              canPayDeposit ? 'pay' : roomsReady ? 'distribute' : canChat ? 'chat' : null;
+
             return (
               <div
                 id={`booking-card-${booking.id}`}
@@ -856,8 +870,9 @@ export default function UserBookings({
                   );
                 })()}
 
-                {/* Extended Payment & Status Indicators bar */}
-                <div className="p-3.5 bg-[#FAF8F5] border-b border-[#E7E5DB] flex flex-wrap items-center justify-between gap-3">
+                {/* Footer — payment status, room guidance, then a clear action
+                    hierarchy: one prominent primary CTA + uniform secondary pills. */}
+                <div className="p-4 bg-[#FAF8F5] border-b border-[#E7E5DB] space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[10px] font-bold text-[#867E65]">حالة السداد والمالية:</span>
                     {(() => {
@@ -894,11 +909,113 @@ export default function UserBookings({
                     })()}
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    {/* Cancel booking (pending or approved) — the confirm
-                        shows the declared refund entitlement so the guest
-                        knows exactly what they're owed before deciding. */}
-                    {(booking.status === 'pending' || booking.status === 'approved') && (
+                  {/* Room-distribution guidance — its own row, not crammed among buttons */}
+                  {booking.status === 'approved' && !roomsAssigned && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-right">
+                      <div className="text-[11px] font-black text-amber-900 flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> بانتظار تخصيص الغرف من صاحب البيت</div>
+                      <div className="text-[9.5px] text-amber-800 font-bold mt-1 leading-relaxed">أول ما صاحب البيت يبعت غرف مجموعتك، هتقدر تكتب أسماء المشاركين وتوزّعهم من هنا.</div>
+                    </div>
+                  )}
+                  {booking.status === 'approved' && roomsReady && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-right space-y-1.5">
+                      <div className="text-[11px] font-black text-emerald-900 flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> صاحب البيت خصّص لك {booking.assignedRoomIds?.length ?? 0} غرفة — ابدأ التوزيع 🎉</div>
+                      <div className="text-[9.5px] text-emerald-800 font-bold leading-relaxed">١) اضغط «توزيع الغرف» ٢) اكتب أسماء المشاركين ٣) وزّعهم على الغرف (تلقائي أو يدوي) ٤) اطبع الكشف.</div>
+                    </div>
+                  )}
+
+                  {/* Primary CTA — the single most important next step, full width */}
+                  {primaryAction === 'pay' && (
+                    <button
+                      id={`pay-deposit-btn-${booking.id}`}
+                      onClick={() => { setIsPaying(booking.id); setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString()); }}
+                      className="w-full flex items-center justify-center gap-2 bg-[#464E3D] hover:bg-[#343A2D] text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
+                    >
+                      <Wallet className="w-4 h-4" />
+                      <span>سداد العربون الآن · {Math.round(booking.totalPrice * settings.depositRate).toLocaleString('ar-EG')} ج.م</span>
+                    </button>
+                  )}
+                  {primaryAction === 'distribute' && (
+                    <button
+                      id={`booking-allocation-btn-${booking.id}`}
+                      onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
+                      className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
+                    >
+                      <Building className="w-4 h-4" />
+                      <span>ابدأ توزيع الغرف</span>
+                    </button>
+                  )}
+                  {primaryAction === 'chat' && (
+                    <button
+                      id={`booking-chat-btn-${booking.id}`}
+                      onClick={() => setChatOpenBookingId(chatOpenBookingId === booking.id ? null : booking.id)}
+                      className="w-full flex items-center justify-center gap-2 bg-[#0A2342] hover:bg-[#123E75] text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>{chatOpenBookingId === booking.id ? 'إغلاق المحادثة' : 'راسل صاحب البيت'}</span>
+                    </button>
+                  )}
+
+                  {/* Secondary actions — uniform neutral pills */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canDistribute && primaryAction !== 'distribute' && (
+                      <button
+                        id={`booking-allocation-btn-${booking.id}`}
+                        onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
+                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                      >
+                        <Building className="w-3.5 h-3.5 text-[#867E65]" />
+                        <span>توزيع الغرف</span>
+                      </button>
+                    )}
+                    {canNotifyDone && (
+                      <button
+                        onClick={async () => { const ok = await onNotifyOwnerDistribution!(booking.id); if (ok) { setNotifiedOwner((p) => new Set(p).add(booking.id)); } }}
+                        disabled={notifiedOwner.has(booking.id)}
+                        className="flex items-center gap-1.5 bg-[#464E3D] hover:bg-[#333A2C] disabled:opacity-60 text-white px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{notifiedOwner.has(booking.id) ? 'تم إبلاغ صاحب البيت ✓' : 'أبلغ صاحب البيت إني خلّصت'}</span>
+                      </button>
+                    )}
+                    {canPlan && (
+                      <button
+                        id={`booking-planner-btn-${booking.id}`}
+                        onClick={() => {
+                          setActivePlannerBooking(booking);
+                          setPlannerTheme('growth');
+                          setPlannerTab('schedule');
+                          if (!plannerChecklist[booking.id]) {
+                            setPlannerChecklist(prev => ({ ...prev, [booking.id]: DEFAULT_CHECKLIST_ITEMS.map(item => ({ ...item })) }));
+                          }
+                          if (!customActivities[booking.id]) {
+                            setCustomActivities(prev => ({ ...prev, [booking.id]: getThemeActivities('growth') }));
+                          }
+                        }}
+                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                      >
+                        <Calendar className="w-3.5 h-3.5 text-emerald-700" />
+                        <span>برنامج الخلوة</span>
+                      </button>
+                    )}
+                    {canChat && primaryAction !== 'chat' && (
+                      <button
+                        id={`booking-chat-btn-${booking.id}`}
+                        onClick={() => setChatOpenBookingId(chatOpenBookingId === booking.id ? null : booking.id)}
+                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 text-sky-700" />
+                        <span>راسل صاحب البيت</span>
+                      </button>
+                    )}
+                    <button
+                      id={`booking-receipt-btn-${booking.id}`}
+                      onClick={() => setActiveReceipt(booking)}
+                      className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-[#867E65]" />
+                      <span>سند التأكيد</span>
+                    </button>
+                    {canCancel && (
                       <button
                         onClick={() => {
                           const { tier, pct, daysLeft, paid, refund } = refundAmountFor(booking, settings);
@@ -911,128 +1028,10 @@ export default function UserBookings({
                                 : `باقي ${daysLeft} يوم فقط على الوصول — وفقاً لسياسة الإلغاء لا يوجد استرداد للمبلغ المدفوع (${paid.toLocaleString('ar-EG')} ج.م).`;
                           if (confirm(`هل أنت متأكد من إلغاء هذا الحجز؟\n\n🛡️ سياسة الإلغاء: ${policyLine}`)) onCancelBooking?.(booking.id);
                         }}
-                        className="flex items-center gap-1 bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
                       >
                         <XCircle className="w-3.5 h-3.5 text-red-600" />
                         <span>إلغاء الحجز</span>
-                      </button>
-                    )}
-
-                    {/* Room-distribution status banner (servant guidance) */}
-                    {booking.status === 'approved' && (() => {
-                      const assignedCount = booking.assignedRoomIds?.length ?? 0;
-                      const started = attendees.some((a) => a.bookingId === booking.id);
-                      if (assignedCount === 0) {
-                        return (
-                          <div className="w-full bg-amber-50 border border-amber-200 rounded-2xl p-3 text-right">
-                            <div className="text-[11px] font-black text-amber-900 flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> بانتظار تخصيص الغرف من صاحب البيت</div>
-                            <div className="text-[9.5px] text-amber-800 font-bold mt-1 leading-relaxed">أول ما صاحب البيت يبعت غرف مجموعتك، هتقدر تكتب أسماء المشاركين وتوزّعهم من هنا.</div>
-                          </div>
-                        );
-                      }
-                      if (!started) {
-                        return (
-                          <div className="w-full bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-right space-y-1.5">
-                            <div className="text-[11px] font-black text-emerald-900 flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> صاحب البيت خصّص لك {assignedCount} غرفة — ابدأ التوزيع 🎉</div>
-                            <div className="text-[9.5px] text-emerald-800 font-bold leading-relaxed">١) اضغط «توزيع الغرف» ٢) اكتب أسماء المشاركين ٣) وزّعهم على الغرف (تلقائي أو يدوي) ٤) اطبع الكشف.</div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()}
-
-                    {/* Room distribution feature (visible for approved or completed bookings) */}
-                    {(booking.status === 'approved' || booking.status === 'completed') && (
-                      <button
-                        id={`booking-allocation-btn-${booking.id}`}
-                        onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer border ${
-                          (booking.assignedRoomIds?.length ?? 0) > 0 && !attendees.some((a) => a.bookingId === booking.id)
-                            ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
-                            : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200'
-                        }`}
-                      >
-                        <Building className="w-3.5 h-3.5" />
-                        <span>توزيع الغرف</span>
-                      </button>
-                    )}
-
-                    {/* Let the servant tell the owner they finished distributing */}
-                    {booking.status === 'approved' && (booking.assignedRoomIds?.length ?? 0) > 0 && attendees.some((a) => a.bookingId === booking.id) && onNotifyOwnerDistribution && (
-                      <button
-                        onClick={async () => { const ok = await onNotifyOwnerDistribution(booking.id); if (ok) { setNotifiedOwner((p) => new Set(p).add(booking.id)); } }}
-                        disabled={notifiedOwner.has(booking.id)}
-                        className="flex items-center gap-1 bg-[#464E3D] hover:bg-[#333A2C] disabled:opacity-60 text-white px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>{notifiedOwner.has(booking.id) ? 'تم إبلاغ صاحب البيت ✓' : 'أبلغ صاحب البيت إني خلّصت'}</span>
-                      </button>
-                    )}
-
-                    {/* Invoice/Receipt action */}
-                    <button
-                      id={`booking-receipt-btn-${booking.id}`}
-                      onClick={() => setActiveReceipt(booking)}
-                      className="flex items-center gap-1 bg-[#E7E2D5] hover:bg-[#FAF8F5] text-[#2D2D24] border border-[#C5BCA0] px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-[#867E65]" />
-                      <span>سند التأكيد</span>
-                    </button>
-
-                    {/* Retreat Program Planner button */}
-                    {(booking.status === 'approved' || booking.status === 'completed') && (
-                      <button
-                        id={`booking-planner-btn-${booking.id}`}
-                        onClick={() => {
-                          setActivePlannerBooking(booking);
-                          setPlannerTheme('growth');
-                          setPlannerTab('schedule');
-                          // Initialize packing checklist for this booking if empty
-                          if (!plannerChecklist[booking.id]) {
-                            setPlannerChecklist(prev => ({
-                              ...prev,
-                              [booking.id]: DEFAULT_CHECKLIST_ITEMS.map(item => ({ ...item }))
-                            }));
-                          }
-                          // Initialize activities for this booking if empty
-                          if (!customActivities[booking.id]) {
-                            setCustomActivities(prev => ({
-                              ...prev,
-                              [booking.id]: getThemeActivities('growth')
-                            }));
-                          }
-                        }}
-                        className="flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-200 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
-                      >
-                        <Calendar className="w-3.5 h-3.5 text-emerald-700" />
-                        <span>برنامج الخلوة 📅</span>
-                      </button>
-                    )}
-
-                    {/* Message the house owner — booking-scoped chat, works for any
-                        non-rejected/cancelled booking (mirrors the owner side's gate) */}
-                    {booking.status !== 'rejected' && booking.status !== 'cancelled' && (
-                      <button
-                        id={`booking-chat-btn-${booking.id}`}
-                        onClick={() => setChatOpenBookingId(chatOpenBookingId === booking.id ? null : booking.id)}
-                        className="flex items-center gap-1 bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 px-2.5 py-1 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5 text-sky-700" />
-                        <span>راسل صاحب البيت</span>
-                      </button>
-                    )}
-
-                    {/* Egyptian Payment Trigger button */}
-                    {canPayDeposit && (
-                      <button
-                        id={`pay-deposit-btn-${booking.id}`}
-                        onClick={() => {
-                          setIsPaying(booking.id);
-                          setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString());
-                        }}
-                        className="bg-[#464E3D] hover:bg-[#343A2D] text-white border border-[#464E3D] px-3.5 py-1 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer shadow-sm"
-                      >
-                        سداد الدفعة الآن
                       </button>
                     )}
                   </div>
