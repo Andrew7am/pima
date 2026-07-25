@@ -4,7 +4,7 @@ import {
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
   Printer, Building, AlertTriangle, Bell, Smartphone, CreditCard, 
   Coins, Upload, ShieldCheck, Image, Check, Sparkles, ListTodo, Plus, Trash2, BookOpen,
-  FileDown, MessageCircle, MapPin
+  FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
 import BookingChatPanel from './BookingChatPanel';
@@ -138,6 +138,7 @@ export default function UserBookings({
   settings = DEFAULT_PLATFORM_SETTINGS,
 }: UserBookingsProps) {
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
+  const [tab, setTab] = useState<'all' | 'action' | 'confirmed' | 'completed' | 'archived'>('all');
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
   const [notifiedOwner, setNotifiedOwner] = useState<Set<string>>(new Set());
   const [isPaying, setIsPaying] = useState<string | null>(null);
@@ -310,6 +311,54 @@ export default function UserBookings({
 
   // Count approved and unpaid bookings for alerts
   const unpaidApprovedCount = userBookings.filter(b => b.status === 'approved' && !b.depositPaid).length;
+
+  // ── Booking triage: which pile a booking belongs to, so the header tabs can
+  // filter the list instead of dumping every status into one long scroll. ──
+  const todayISO = new Date().toISOString().split('T')[0];
+  const categoryOf = (b: Booking): 'action' | 'confirmed' | 'completed' | 'archived' => {
+    if (b.status === 'cancelled' || b.status === 'rejected') return 'archived';
+    if (b.status === 'completed') return 'completed';
+    if (b.status === 'pending' || (b.status === 'approved' && !b.depositPaid)) return 'action';
+    return 'confirmed'; // approved + deposit paid
+  };
+  const counts = {
+    all: userBookings.length,
+    action: userBookings.filter((b) => categoryOf(b) === 'action').length,
+    confirmed: userBookings.filter((b) => categoryOf(b) === 'confirmed').length,
+    completed: userBookings.filter((b) => categoryOf(b) === 'completed').length,
+    archived: userBookings.filter((b) => categoryOf(b) === 'archived').length,
+  };
+  // Header stat pills — the three numbers a guest actually cares about.
+  const upcomingCount = userBookings.filter((b) => b.status === 'approved' && b.checkIn >= todayISO).length;
+  // Rank so the most time-sensitive cards float to the top of whatever tab is open.
+  const rankOf = (b: Booking): number => {
+    const c = categoryOf(b);
+    return c === 'action' ? 0 : c === 'confirmed' ? 1 : c === 'completed' ? 2 : 3;
+  };
+  const visibleBookings = userBookings
+    .filter((b) => tab === 'all' || categoryOf(b) === tab)
+    .sort((a, bk) => {
+      const r = rankOf(a) - rankOf(bk);
+      if (r !== 0) return r;
+      // Active piles: soonest check-in first. Past piles: most recent first.
+      const past = rankOf(a) >= 2;
+      return past ? bk.checkIn.localeCompare(a.checkIn) : a.checkIn.localeCompare(bk.checkIn);
+    });
+
+  const TABS = [
+    { key: 'all' as const, label: 'الكل', count: counts.all },
+    { key: 'action' as const, label: 'بانتظار إجراء', count: counts.action },
+    { key: 'confirmed' as const, label: 'مؤكدة', count: counts.confirmed },
+    { key: 'completed' as const, label: 'مكتملة', count: counts.completed },
+    { key: 'archived' as const, label: 'ملغية', count: counts.archived },
+  ];
+  const EMPTY_HINT: Record<typeof tab, string> = {
+    all: 'تصفح بيوت المؤتمرات الرائعة في مصر وابدأ بالحجز لخلوتك القادمة.',
+    action: 'لا يوجد حجوزات بانتظار إجراء منك حالياً — كله تمام 🎉',
+    confirmed: 'لا توجد حجوزات مؤكدة بعد. بعد سداد العربون هتظهر حجوزاتك المؤكدة هنا.',
+    completed: 'لسه مخلّصتش أي خلوة. بعد انتهاء زيارتك هتلاقيها هنا.',
+    archived: 'لا توجد حجوزات ملغية أو مرفوضة.',
+  };
 
   // Fetch the house owner's contact info (migration 031) the moment a
   // booking becomes eligible for reveal, instead of upfront for every
@@ -500,27 +549,6 @@ export default function UserBookings({
 
   return (
     <div className="space-y-4 text-right text-[#4A4A3A]">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-extrabold text-[#4A4A3A]">حجوزاتي وطلبات الأسعار</h2>
-        <span className="text-[11px] font-bold text-[#4A4A3A] bg-[#EBEBE0] px-2.5 py-1 rounded-full border border-[#D6D6C2]">
-          {userBookings.length} طلب
-        </span>
-      </div>
-
-      {unpaidApprovedCount > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-3xl p-4 flex items-start gap-3 text-amber-900 text-xs shadow-sm animate-in fade-in slide-in-from-top duration-300">
-          <div className="p-2 bg-amber-100 rounded-2xl text-amber-800 shrink-0 mt-0.5">
-            <Bell className="w-5 h-5 text-amber-700" />
-          </div>
-          <div className="flex-1 space-y-1">
-            <h4 className="font-extrabold text-amber-950">تذكير هام بسداد العربون!</h4>
-            <p className="text-[11px] text-amber-900/90 leading-relaxed">
-              لديك {unpaidApprovedCount === 1 ? 'حجز مقبول ومؤكد' : `${unpaidApprovedCount} حجوزات مقبولة ومؤكدة`} بانتظار سداد عربون الجدية ({Math.round(settings.depositRate * 100)}%) لتثبيت المواعيد والغرف نهائياً وتجنب إلغاء الطلب تلقائياً من بيت المؤتمرات.
-            </p>
-          </div>
-        </div>
-      )}
-
       {userBookings.length === 0 ? (
         <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-3">
           <div className="mx-auto w-12 h-12 bg-[#EBEBE0]/30 border border-[#D6D6C2] rounded-full flex items-center justify-center text-[#8A8A70]">
@@ -532,8 +560,94 @@ export default function UserBookings({
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
-          {userBookings.map((booking) => {
+        <>
+          {/* Hero — greeting + the three numbers a guest cares about */}
+          <div className="bg-gradient-to-br from-[#0A2342] to-[#123E75] text-white rounded-3xl p-5 relative overflow-hidden">
+            <div className="absolute -top-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-12 -right-8 w-36 h-36 bg-[#C5A059]/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="flex items-start justify-between gap-3 relative">
+              <div>
+                <h2 className="text-lg font-black">حجوزاتي</h2>
+                <p className="text-[10.5px] text-slate-300 mt-0.5">كل خلواتك ومؤتمراتك في مكان واحد</p>
+              </div>
+              <span className="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
+                <BookOpen className="w-5 h-5 text-[#C5A059]" />
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 mt-4 relative">
+              {[
+                { icon: CalendarCheck, value: upcomingCount, label: 'قادمة', go: 'confirmed' as const },
+                { icon: Wallet, value: unpaidApprovedCount, label: 'بانتظار سداد', go: 'action' as const, alert: unpaidApprovedCount > 0 },
+                { icon: BookOpen, value: counts.all, label: 'إجمالي', go: 'all' as const },
+              ].map((s) => {
+                const Icon = s.icon;
+                return (
+                  <button
+                    key={s.label}
+                    onClick={() => setTab(s.go)}
+                    className={`rounded-2xl p-2.5 flex flex-col items-center gap-0.5 border transition-all cursor-pointer active:scale-95 ${
+                      s.alert ? 'bg-[#C5A059]/20 border-[#C5A059]/40' : 'bg-white/8 border-white/10 hover:bg-white/12'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${s.alert ? 'text-[#E7C987]' : 'text-slate-300'}`} />
+                    <span className="text-base font-black leading-none">{s.value.toLocaleString('ar-EG')}</span>
+                    <span className="text-[9px] font-bold text-slate-300">{s.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Status filter tabs */}
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {TABS.map((t) => {
+              const active = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-[11px] font-black transition-all cursor-pointer border ${
+                    active
+                      ? 'bg-[#0A2342] text-white border-[#0A2342] shadow-sm'
+                      : 'bg-white text-[#5A5A40] border-[#D6D6C2] hover:bg-[#FAF8F5]'
+                  } ${t.count === 0 && !active ? 'opacity-45' : ''}`}
+                >
+                  <span>{t.label}</span>
+                  <span className={`min-w-[17px] h-[17px] px-1 rounded-full text-[9px] font-black flex items-center justify-center ${
+                    active ? 'bg-white/20 text-white' : t.key === 'action' && t.count > 0 ? 'bg-rose-500 text-white' : 'bg-[#EBEBE0] text-[#5A5A40]'
+                  }`}>
+                    {t.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Deposit reminder — only where it's actionable, not on every tab */}
+          {(tab === 'all' || tab === 'action') && unpaidApprovedCount > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-4 flex items-start gap-3 text-amber-900 text-xs shadow-sm animate-in fade-in slide-in-from-top duration-300">
+              <div className="p-2 bg-amber-100 rounded-2xl text-amber-800 shrink-0 mt-0.5">
+                <Bell className="w-5 h-5 text-amber-700" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <h4 className="font-extrabold text-amber-950">تذكير هام بسداد العربون!</h4>
+                <p className="text-[11px] text-amber-900/90 leading-relaxed">
+                  لديك {unpaidApprovedCount === 1 ? 'حجز مقبول ومؤكد' : `${unpaidApprovedCount} حجوزات مقبولة ومؤكدة`} بانتظار سداد عربون الجدية ({Math.round(settings.depositRate * 100)}%) لتثبيت المواعيد والغرف نهائياً وتجنب إلغاء الطلب تلقائياً من بيت المؤتمرات.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {visibleBookings.length === 0 ? (
+            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-3">
+              <div className="mx-auto w-12 h-12 bg-[#EBEBE0]/30 border border-[#D6D6C2] rounded-full flex items-center justify-center text-[#8A8A70]">
+                <Sparkles className="w-5 h-5 text-[#8A8A70]" />
+              </div>
+              <p className="text-[11px] text-[#8A8A70] leading-relaxed max-w-[260px] mx-auto">{EMPTY_HINT[tab]}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {visibleBookings.map((booking) => {
             const badge = getStatusBadge(booking.status);
             const StatusIcon = badge.icon;
             const canPayDeposit = booking.status === 'approved' && !booking.depositPaid;
@@ -1339,8 +1453,10 @@ export default function UserBookings({
                 )}
               </div>
             );
-          })}
-        </div>
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* High-Fidelity Printable Receipt Dialog */}
