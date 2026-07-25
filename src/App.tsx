@@ -1700,6 +1700,8 @@ export default function App() {
               payments={payments}
               onSubmitPayment={handleSubmitPayment}
               settings={settings}
+              reviews={reviews}
+              onSubmitReview={handleAddReview}
             />
           )}
 

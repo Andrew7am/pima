@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Booking, User, RetreatHouse, Attendee, RoomAllocation, Room, Payment, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
+import { Booking, User, RetreatHouse, Attendee, RoomAllocation, Room, Payment, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { 
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
   Printer, Building, AlertTriangle, Bell, Smartphone, CreditCard, 
   Coins, Upload, ShieldCheck, Image, Check, Sparkles, ListTodo, Plus, Trash2, BookOpen,
-  FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft, CalendarPlus
+  FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft, CalendarPlus, Star, X
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
 import BookingChatPanel from './BookingChatPanel';
+import ReviewWizard from './ReviewWizard';
 import { refundAmountFor } from '../lib/cancellationPolicy';
 import { downloadBookingIcs } from '../lib/ics';
 
@@ -26,6 +27,8 @@ interface UserBookingsProps {
   payments: Payment[];
   onSubmitPayment: (payment: Payment) => void;
   settings?: PlatformSettings;
+  reviews?: Review[];
+  onSubmitReview?: (review: Review) => void;
 }
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
@@ -179,8 +182,11 @@ export default function UserBookings({
   payments,
   onSubmitPayment,
   settings = DEFAULT_PLATFORM_SETTINGS,
+  reviews = [],
+  onSubmitReview,
 }: UserBookingsProps) {
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
+  const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
   const [tab, setTab] = useState<'all' | 'action' | 'confirmed' | 'completed' | 'archived'>('all');
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
   const [notifiedOwner, setNotifiedOwner] = useState<Set<string>>(new Set());
@@ -721,9 +727,11 @@ export default function UserBookings({
             const canChat = booking.status !== 'rejected' && booking.status !== 'cancelled';
             const canCancel = booking.status === 'pending' || booking.status === 'approved';
             const canNotifyDone = booking.status === 'approved' && roomsAssigned && distributionStarted && !!onNotifyOwnerDistribution;
+            const hasReviewed = reviews.some((r) => r.houseId === booking.houseId && r.userId === currentUser.id);
+            const canReview = booking.status === 'completed' && !hasReviewed && !!onSubmitReview;
             // The single most important next step, promoted to a full-width button.
-            const primaryAction: 'pay' | 'distribute' | 'chat' | null =
-              canPayDeposit ? 'pay' : roomsReady ? 'distribute' : canChat ? 'chat' : null;
+            const primaryAction: 'pay' | 'distribute' | 'review' | 'chat' | null =
+              canPayDeposit ? 'pay' : roomsReady ? 'distribute' : canReview ? 'review' : canChat ? 'chat' : null;
 
             return (
               <div
@@ -1004,6 +1012,15 @@ export default function UserBookings({
                     >
                       <Building className="w-4 h-4" />
                       <span>ابدأ توزيع الغرف</span>
+                    </button>
+                  )}
+                  {primaryAction === 'review' && (
+                    <button
+                      onClick={() => setReviewingBooking(booking)}
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-l from-[#C5A059] to-[#D8B877] hover:from-[#b8925090] text-[#3a2e12] px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
+                    >
+                      <Star className="w-4 h-4 fill-current" />
+                      <span>قيّم خلوتك وساعد غيرك ⭐</span>
                     </button>
                   )}
                   {primaryAction === 'chat' && (
@@ -1528,6 +1545,31 @@ export default function UserBookings({
           )}
         </>
       )}
+
+      {/* Post-trip review — opened from a completed booking's primary CTA */}
+      {reviewingBooking && (() => {
+        const house = houses.find((h) => h.id === reviewingBooking.houseId);
+        if (!house || !onSubmitReview) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setReviewingBooking(null)} />
+            <div className="relative z-10 w-full max-w-md max-h-[90dvh] overflow-y-auto animate-in zoom-in-95 duration-200">
+              <button
+                onClick={() => setReviewingBooking(null)}
+                className="absolute top-2 left-2 z-20 p-1.5 bg-white/90 hover:bg-white rounded-full border border-[#D6D6C2] cursor-pointer shadow-sm"
+              >
+                <X className="w-4 h-4 text-[#4A4A3A]" />
+              </button>
+              <ReviewWizard
+                house={house}
+                currentUser={currentUser}
+                onSubmitReview={onSubmitReview}
+                onDone={() => setReviewingBooking(null)}
+              />
+            </div>
+          </div>
+        );
+      })()}
 
       {/* High-Fidelity Printable Receipt Dialog */}
       {activeReceipt && (
