@@ -4,11 +4,12 @@ import {
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
   Printer, Building, AlertTriangle, Bell, Smartphone, CreditCard, 
   Coins, Upload, ShieldCheck, Image, Check, Sparkles, ListTodo, Plus, Trash2, BookOpen,
-  FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft
+  FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft, CalendarPlus
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
 import BookingChatPanel from './BookingChatPanel';
 import { refundAmountFor } from '../lib/cancellationPolicy';
+import { downloadBookingIcs } from '../lib/ics';
 
 interface UserBookingsProps {
   bookings: Booking[];
@@ -120,6 +121,48 @@ const getThemeActivities = (theme: 'growth' | 'fellowship' | 'saints'): { id: st
     ...act
   }));
 };
+
+// Whole days from today until an ISO date (negative if already past).
+function daysUntil(iso: string): number {
+  const target = new Date(iso + 'T00:00:00');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.ceil((target.getTime() - today.getTime()) / 86_400_000);
+}
+
+// Visual progress of a booking through its lifecycle. Rendered only for the
+// live statuses (pending / approved / completed) — cancelled & rejected keep
+// just their status badge.
+function BookingStepper({ status, depositPaid }: { status: Booking['status']; depositPaid?: boolean }) {
+  const steps = ['الطلب', 'الموافقة', 'العربون', 'تمّت'];
+  const done =
+    status === 'completed' ? 4
+      : status === 'approved' ? (depositPaid ? 3 : 2)
+        : 1; // pending
+  return (
+    <div className="flex items-center px-1">
+      {steps.map((label, i) => {
+        const reached = i < done;
+        const isCurrent = i === done - 1;
+        return (
+          <React.Fragment key={label}>
+            <div className="flex flex-col items-center gap-1 shrink-0">
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black transition-colors ${
+                reached ? 'bg-[#0A2342] text-white' : 'bg-[#EBEBE0] text-[#B8B8A0]'
+              } ${isCurrent ? 'ring-2 ring-[#C5A059]/50' : ''}`}>
+                {reached ? <Check className="w-3 h-3" /> : i + 1}
+              </div>
+              <span className={`text-[8.5px] font-bold ${reached ? 'text-[#0A2342]' : 'text-[#B8B8A0]'}`}>{label}</span>
+            </div>
+            {i < steps.length - 1 && (
+              <div className={`flex-1 h-0.5 -mt-4 rounded-full transition-colors ${i < done - 1 ? 'bg-[#0A2342]' : 'bg-[#EBEBE0]'}`} />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function UserBookings({
   bookings,
@@ -709,6 +752,25 @@ export default function UserBookings({
                   </div>
                 </div>
 
+                {/* Lifecycle progress stepper (live statuses only) */}
+                {(booking.status === 'pending' || booking.status === 'approved' || booking.status === 'completed') && (
+                  <div className="px-4 py-3 border-b border-[#D6D6C2]/60">
+                    <BookingStepper status={booking.status} depositPaid={booking.depositPaid} />
+                    {/* Countdown — a confirmed trip that hasn't happened yet */}
+                    {booking.status === 'approved' && (() => {
+                      const d = daysUntil(booking.checkIn);
+                      if (d < 0) return null;
+                      const text = d === 0 ? 'خلوتك اليوم! 🎉' : d === 1 ? 'باقي يوم واحد على خلوتك' : `باقي ${d.toLocaleString('ar-EG')} يوم على خلوتك`;
+                      return (
+                        <div className="mt-2.5 flex items-center justify-center gap-1.5 bg-[#0A2342]/5 text-[#0A2342] rounded-full py-1.5 text-[10.5px] font-black">
+                          <CalendarCheck className="w-3.5 h-3.5 text-[#C5A059]" />
+                          <span>{text}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
                 {/* Details Body */}
                 <div className="p-4 grid grid-cols-2 gap-3 text-xs border-b border-[#D6D6C2]/60 bg-[#EBEBE0]/20">
                   <div className="flex items-center gap-2">
@@ -995,6 +1057,15 @@ export default function UserBookings({
                       >
                         <Calendar className="w-3.5 h-3.5 text-emerald-700" />
                         <span>برنامج الخلوة</span>
+                      </button>
+                    )}
+                    {(booking.status === 'approved' || booking.status === 'completed') && (
+                      <button
+                        onClick={() => downloadBookingIcs(booking, bookingHouse?.address)}
+                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                      >
+                        <CalendarPlus className="w-3.5 h-3.5 text-[#867E65]" />
+                        <span>أضف لتقويمك</span>
                       </button>
                     )}
                     {canChat && primaryAction !== 'chat' && (
