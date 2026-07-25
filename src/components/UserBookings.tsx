@@ -133,6 +133,22 @@ function daysUntil(iso: string): number {
   return Math.ceil((target.getTime() - today.getTime()) / 86_400_000);
 }
 
+// One key/value fact with a soft icon chip — the building block of the tidy
+// facts grid that replaced the old flat detail band.
+function Fact({ icon: Icon, label, value, accent }: { icon: React.ElementType; label: string; value: string; accent?: string }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="w-8 h-8 rounded-xl bg-[#0A2342]/5 flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4 text-[#5A5A40]" />
+      </span>
+      <div className="min-w-0">
+        <div className="text-[9px] text-[#8A8A70] font-bold">{label}</div>
+        <div className={`text-[12px] font-black truncate ${accent ?? 'text-[#4A4A3A]'}`}>{value}</div>
+      </div>
+    </div>
+  );
+}
+
 // Visual progress of a booking through its lifecycle. Rendered only for the
 // live statuses (pending / approved / completed) — cancelled & rejected keep
 // just their status badge.
@@ -779,39 +795,12 @@ export default function UserBookings({
                   </div>
                 )}
 
-                {/* Details Body */}
-                <div className="p-4 grid grid-cols-2 gap-3 text-xs border-b border-[#D6D6C2]/60 bg-[#EBEBE0]/20">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#BCBC9D] shrink-0" />
-                    <div>
-                      <div className="text-[9px] text-[#8A8A70] font-medium">تاريخ الدخول والوصول:</div>
-                      <div className="font-bold text-[#4A4A3A]">{booking.checkIn}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#BCBC9D] shrink-0" />
-                    <div>
-                      <div className="text-[9px] text-[#8A8A70] font-medium">تاريخ المغادرة والخرود:</div>
-                      <div className="font-bold text-[#4A4A3A]">{booking.checkOut}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#BCBC9D] shrink-0" />
-                    <div>
-                      <div className="text-[9px] text-[#8A8A70] font-medium">عدد الأفراد والحاضرين:</div>
-                      <div className="font-bold text-[#4A4A3A]">{booking.guestsCount} فرد</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-[#BCBC9D] shrink-0" />
-                    <div>
-                      <div className="text-[9px] text-[#8A8A70] font-medium">إجمالي التكلفة المتوقعة:</div>
-                      <div className="font-bold text-[#4A4A3A]">{booking.totalPrice.toLocaleString()} ج.م</div>
-                    </div>
-                  </div>
+                {/* Facts — tidy, consistent key/value grid */}
+                <div className="px-4 py-3.5 grid grid-cols-2 gap-x-3 gap-y-3.5 border-b border-[#D6D6C2]/60">
+                  <Fact icon={Calendar} label="الوصول" value={booking.checkIn} />
+                  <Fact icon={CalendarCheck} label="المغادرة" value={booking.checkOut} />
+                  <Fact icon={Users} label="عدد الأفراد" value={`${booking.guestsCount.toLocaleString('ar-EG')} فرد`} />
+                  <Fact icon={Wallet} label="إجمالي التكلفة" value={`${booking.totalPrice.toLocaleString('ar-EG')} ج.م`} accent="text-[#0A2342]" />
                 </div>
 
                 {/* Large conference custom options if present */}
@@ -830,112 +819,66 @@ export default function UserBookings({
                     </div>
                   </div>
                 )}
-                {canPayDeposit && (
-                  <div className="px-4 py-2.5 bg-amber-50/70 border-b border-[#D6D6C2]/60 flex items-center gap-2 text-[10px] text-amber-950 font-bold">
-                    <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
-                    <span>تنبيه السداد: يرجى إرسال عربون جدية الحجز بقيمة {Math.round(booking.totalPrice * settings.depositRate).toLocaleString('ar-EG')} ج.م ({Math.round(settings.depositRate * 100)}%) لتثبيت الحجز والغرف بالبيت.</span>
-                  </div>
-                )}
-
-                {/* Communication with the owner happens ONLY through the
-                    in-app chat — no phone/email reveal. The address shows
-                    up here after deposit is paid, so the group knows where
-                    to go on the day. */}
-                {booking.status === 'approved' && booking.depositPaid && (() => {
-                  const house = houses.find(h => h.id === booking.houseId);
+                {/* One adaptive status note — replaces the old stack of separate
+                    amber/emerald/gray banners with a single, consistently-styled
+                    block that shows only what matters for the current state. */}
+                {(() => {
+                  const house = houses.find((h) => h.id === booking.houseId);
+                  const depositAmt = Math.round(booking.totalPrice * settings.depositRate);
+                  const dLeft = daysUntil(booking.checkIn);
+                  const nearDate = booking.status === 'approved' && dLeft >= 0 && dLeft <= 3;
+                  const paidSoFar = payments.filter((p) => p.bookingId === booking.id && p.paymentStatus === 'approved').reduce((s, p) => s + p.amount, 0);
+                  const remaining = booking.totalPrice - paidSoFar;
+                  const attCount = attendees.filter((a) => a.bookingId === booking.id).length;
+                  const showConfirmed = booking.status === 'approved' && booking.depositPaid;
+                  if (!(booking.status === 'pending' || canPayDeposit || showConfirmed)) return null;
                   return (
-                    <div className="px-4 py-3 bg-emerald-50 border-b border-emerald-200 space-y-2 text-[10px]">
-                      <div className="flex items-center gap-1.5 font-extrabold text-emerald-900">
-                        <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                        <span>✓ حجزك مؤكد وجاهز</span>
-                      </div>
-                      {house?.address && (
-                        <div className="bg-white p-2.5 rounded-xl border border-emerald-200 flex items-start gap-2 text-slate-700">
-                          <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0 mt-0.5" />
-                          <div>
-                            <div className="text-emerald-800 font-bold mb-0.5">عنوان البيت:</div>
-                            <div>{house.address}</div>
-                          </div>
+                    <div className="px-4 py-3.5 border-b border-[#D6D6C2]/60 space-y-2.5 text-[10.5px]">
+                      {/* Awaiting-deposit prompt (the CTA below performs the action) */}
+                      {canPayDeposit && (
+                        <div className="flex items-start gap-2 bg-amber-50/70 border border-amber-200/80 rounded-2xl p-2.5 text-amber-950">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <span className="font-bold leading-relaxed">ثبّت حجزك بسداد عربون الجدية <strong className="text-amber-900">{depositAmt.toLocaleString('ar-EG')} ج.م</strong> ({Math.round(settings.depositRate * 100)}%) — استخدم زر السداد بالأسفل.</span>
                         </div>
                       )}
-                      <p className="text-emerald-900 text-[10px] leading-relaxed">
-                        💬 لأي استفسار أو تنسيق قبل الوصول، تواصل مع صاحب البيت مباشرةً من محادثة الحجز بالأسفل — كل الرسائل محفوظة عندك.
-                      </p>
-                    </div>
-                  );
-                })()}
 
-                {/* While pending, show the owner's payment methods as a preview so the guest
-                    knows in advance how they'll pay once approved — the actual pay/upload
-                    form only unlocks after approval (bookingHouse defined above, line ~537). */}
-                {booking.status === 'pending' && payMethods.length > 0 && (
-                  <div className="px-4 py-3 bg-[#FAF8F5] border-b border-[#D6D6C2]/60 space-y-1.5 text-[10px]">
-                    <div className="flex items-center gap-1.5 font-extrabold text-[#4A4A3A]">
-                      <Coins className="w-4 h-4 text-[#867E65]" />
-                      <span>وسائل دفع العربون عند الموافقة (السداد إلى {payeeLabel})</span>
-                    </div>
-                    <p className="text-[9px] text-[#8A8A70]">هتقدر تسدد العربون بمجرد الموافقة على حجزك عن طريق أي من الوسائل دي:</p>
-                    <div className="bg-white p-2.5 rounded-xl border border-[#E7E5DB] space-y-1.5">
-                      {payMethods.map((pm) => (
-                        <div key={pm.id} className="flex justify-between items-center">
-                          <span className="text-[#867E65] font-bold">{PAYMENT_TYPE_LABELS[pm.type] || pm.label}:</span>
-                          <span className="font-mono font-extrabold text-[#2D2D24]">{pm.value}</span>
+                      {/* Confirmed: address + coordination hint (+ near-date checklist) */}
+                      {showConfirmed && (
+                        <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-2.5 space-y-2 text-emerald-950">
+                          <div className="flex items-center gap-1.5 font-black text-emerald-900"><ShieldCheck className="w-4 h-4 text-emerald-700" /> حجزك مؤكد وجاهز ✓</div>
+                          {house?.address && (
+                            <div className="flex items-start gap-2 text-emerald-900/90"><MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0 mt-0.5" /><span><strong className="text-emerald-800">العنوان:</strong> {house.address}</span></div>
+                          )}
+                          <div className="flex items-start gap-2 text-emerald-900/75"><MessageCircle className="w-3.5 h-3.5 text-emerald-700 shrink-0 mt-0.5" /><span>لأي تنسيق قبل الوصول، راسل صاحب البيت من الأسفل — كل الرسائل محفوظة.</span></div>
+                          {nearDate && (remaining > 0 || attCount < booking.guestsCount) && (
+                            <div className="pt-2 border-t border-emerald-200/70 space-y-1">
+                              <div className="flex items-center gap-1.5 font-black text-amber-800"><Bell className="w-3.5 h-3.5" /> خلوتك بعد {dLeft.toLocaleString('ar-EG')} أيام — جهّز:</div>
+                              {remaining > 0 && <div className="text-amber-900/90 font-bold pr-5">• المتبقي للسداد: {remaining.toLocaleString('ar-EG')} ج.م</div>}
+                              {attCount < booking.guestsCount && <div className="text-amber-900/90 font-bold pr-5">• أكمل المشاركين: {attCount.toLocaleString('ar-EG')} من {booking.guestsCount.toLocaleString('ar-EG')}</div>}
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      )}
 
-                {/* Smart 3-Days Check-In Reminder Banner */}
-                {(() => {
-                  if (booking.status !== 'approved') return null;
-
-                  const checkInDate = new Date(booking.checkIn);
-                  const today = new Date();
-                  checkInDate.setHours(0, 0, 0, 0);
-                  today.setHours(0, 0, 0, 0);
-                  const timeDiff = checkInDate.getTime() - today.getTime();
-                  const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
-                  if (daysDiff > 3 || daysDiff < 0) return null;
-
-                  // Calculate remaining balance
-                  const bPayments = payments.filter(
-                    (p) => p.bookingId === booking.id && p.paymentStatus === 'approved'
-                  );
-                  const totalPaid = bPayments.reduce((sum, p) => sum + p.amount, 0);
-                  const remaining = booking.totalPrice - totalPaid;
-                  const hasRemaining = remaining > 0;
-
-                  // Check if rooms and attendees are incomplete
-                  const bAttendees = attendees.filter((a) => a.bookingId === booking.id);
-                  const bAllocations = allocations.filter((al) => al.bookingId === booking.id);
-                  const isRoomsIncomplete =
-                    bAttendees.length < booking.guestsCount ||
-                    bAllocations.length < booking.guestsCount;
-
-                  if (!hasRemaining && !isRoomsIncomplete) return null;
-
-                  return (
-                    <div className="px-4 py-3 bg-amber-50 border-b border-amber-200 flex flex-col gap-2 text-xs text-amber-950">
-                      <div className="flex items-center gap-1.5 font-extrabold text-amber-900">
-                        <Bell className="w-4 h-4 text-amber-700 shrink-0 animate-bounce" />
-                        <span>تنبيه ذكي: موعد خلوتك يقترب بعد {daysDiff} أيام ({booking.checkIn})!</span>
-                      </div>
-                      <div className="space-y-1.5 pl-1.5 text-[10.5px] text-amber-900/90 pr-1">
-                        {hasRemaining && (
-                          <div className="flex items-start gap-1 font-bold">
-                            <span className="text-rose-700 shrink-0">⚠️</span>
-                            <span>يرجى سداد المبلغ المتبقي المستحق وقدره <strong className="text-rose-800 font-extrabold">{remaining.toLocaleString('ar-EG')} ج.م</strong> لتأكيد السداد الكامل للخلوة.</span>
-                          </div>
-                        )}
-                        {isRoomsIncomplete && (
-                          <div className="flex items-start gap-1 font-bold">
-                            <span className="text-amber-700 shrink-0">⚠️</span>
-                            <span>يرجى إكمال قائمة الحاضرين وتوزيع الغرف بالبيت. تم إدخال <strong className="text-amber-800">{bAttendees.length} من أصل {booking.guestsCount}</strong> مرافقين حالياً.</span>
-                          </div>
-                        )}
-                      </div>
+                      {/* Pending: awaiting approval + how you'll pay */}
+                      {booking.status === 'pending' && (
+                        <>
+                          <div className="flex items-center gap-2 text-[#8A8A70] font-bold"><Clock className="w-3.5 h-3.5 text-[#BCBC9D]" /> بانتظار موافقة صاحب البيت على طلبك.</div>
+                          {payMethods.length > 0 && (
+                            <div className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl p-2.5 space-y-1.5">
+                              <div className="flex items-center gap-1.5 font-black text-[#4A4A3A]"><Coins className="w-3.5 h-3.5 text-[#867E65]" /> وسائل السداد بعد الموافقة (إلى {payeeLabel})</div>
+                              <div className="space-y-1">
+                                {payMethods.map((pm) => (
+                                  <div key={pm.id} className="flex justify-between items-center">
+                                    <span className="text-[#867E65] font-bold">{PAYMENT_TYPE_LABELS[pm.type] || pm.label}:</span>
+                                    <span className="font-mono font-extrabold text-[#2D2D24]" dir="ltr">{pm.value}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   );
                 })()}
