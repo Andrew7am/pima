@@ -196,6 +196,7 @@ export function mapAttendee(r: Record<string, unknown>): Attendee {
     name: r.name as string,
     gender: r.gender as Attendee['gender'],
     groupType: r.group_type as Attendee['groupType'],
+    sharePaid: !!r.share_paid,
   };
 }
 
@@ -943,6 +944,16 @@ export async function updatePaymentStatus(id: string, status: Payment['paymentSt
   const { error } = await supabase.from('payments').update({ payment_status: status, admin_notes: adminNotes ?? null }).eq('id', id);
   if (error) console.error('updatePaymentStatus:', error);
   return !error;
+}
+
+// Marks one member's trip-share as paid/unpaid (migration 080). Deliberately a
+// targeted UPDATE of just this column — the flag never rides in the general
+// roster upsert below, so roster edits keep working (and don't clobber flags)
+// whether or not the column exists yet.
+export async function setAttendeeSharePaid(attendeeId: string, paid: boolean): Promise<boolean> {
+  const { error } = await supabase.from('attendees').update({ share_paid: paid }).eq('id', attendeeId);
+  if (error) { console.error('setAttendeeSharePaid:', error); return false; }
+  return true;
 }
 
 // Attendees/allocations arrive from RoomDistribution as the full replacement

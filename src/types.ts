@@ -234,6 +234,7 @@ export interface Attendee {
   name: string;
   gender: 'male' | 'female';
   groupType: 'youth' | 'family' | 'child' | 'other';
+  sharePaid?: boolean; // has this member paid their share to the group leader? (migration 080)
 }
 
 export interface RoomAllocation {

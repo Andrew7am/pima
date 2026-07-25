@@ -11,6 +11,7 @@ import BookingChatPanel from './BookingChatPanel';
 import ReviewWizard from './ReviewWizard';
 import { refundAmountFor } from '../lib/cancellationPolicy';
 import { downloadBookingIcs } from '../lib/ics';
+import { setAttendeeSharePaid } from '../lib/db';
 
 interface UserBookingsProps {
   bookings: Booking[];
@@ -212,6 +213,23 @@ export default function UserBookings({
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
   }, [detailBookingId]);
+
+  // Collection tracker: flip one member's "paid their share" flag. The flag is
+  // persisted with its own targeted update, then mirrored into App state via
+  // the normal roster channel (whose upsert doesn't carry the flag column).
+  const [togglingShareId, setTogglingShareId] = useState<string | null>(null);
+  const toggleSharePaid = async (booking: Booking, attendee: Attendee) => {
+    if (togglingShareId) return;
+    const next = !attendee.sharePaid;
+    setTogglingShareId(attendee.id);
+    const ok = await setAttendeeSharePaid(attendee.id, next);
+    setTogglingShareId(null);
+    if (!ok) { alert('تعذّر حفظ حالة التحصيل. تأكد من اتصالك ثم حاول مرة أخرى.'); return; }
+    const list = attendees
+      .filter((a) => a.bookingId === booking.id)
+      .map((a) => (a.id === attendee.id ? { ...a, sharePaid: next } : a));
+    onUpdateAttendees(booking.id, list);
+  };
   const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
   const [tab, setTab] = useState<'all' | 'action' | 'confirmed' | 'completed' | 'archived'>('all');
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
@@ -774,7 +792,12 @@ export default function UserBookings({
                 <button
                   id={`booking-compact-${booking.id}`}
                   type="button"
-                  onClick={() => setDetailBookingId(booking.id)}
+                  onClick={() => {
+                    setDetailBookingId(booking.id);
+                    // Roster is lazy-loaded; fetch it so the collection tracker
+                    // (and distribution state) are fresh when the sheet opens.
+                    if (booking.status === 'approved' || booking.status === 'completed') onOpenRoomDistribution?.(booking.id);
+                  }}
                   className="w-full bg-white rounded-3xl border border-[#D6D6C2] shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer text-right overflow-hidden"
                 >
                   <div className="p-3.5 space-y-2">
@@ -877,6 +900,27 @@ export default function UserBookings({
                   <Fact icon={Wallet} label="إجمالي التكلفة" value={`${booking.totalPrice.toLocaleString('ar-EG')} ج.م`} accent="text-[#0A2342]" />
                 </div>
 
+                {/* Payment progress toward the house — paid so far vs. total */}
+                {(booking.status === 'approved' || booking.status === 'completed') && booking.totalPrice > 0 && (() => {
+                  const paid = payments.filter((p) => p.bookingId === booking.id && p.paymentStatus === 'approved').reduce((s, p) => s + p.amount, 0);
+                  const pct = Math.min(100, Math.round((paid / booking.totalPrice) * 100));
+                  const remaining = Math.max(0, booking.totalPrice - paid);
+                  return (
+                    <div className="px-4 py-3 border-b border-[#D6D6C2]/60 space-y-1.5">
+                      <div className="flex items-center justify-between text-[10px] font-black">
+                        <span className="text-[#4A4A3A] flex items-center gap-1"><Wallet className="w-3.5 h-3.5 text-[#867E65]" /> تقدّم السداد</span>
+                        <span className={remaining === 0 ? 'text-emerald-700' : 'text-[#8A8A70]'}>
+                          {remaining === 0 ? 'مدفوع بالكامل ✓' : `المتبقي ${remaining.toLocaleString('ar-EG')} ج.م`}
+                        </span>
+                      </div>
+                      <div className="h-2 bg-[#EBEBE0] rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${remaining === 0 ? 'bg-emerald-500' : 'bg-[#C5A059]'}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="text-[9.5px] font-bold text-[#8A8A70]">مدفوع {paid.toLocaleString('ar-EG')} من {booking.totalPrice.toLocaleString('ar-EG')} ج.م ({pct.toLocaleString('ar-EG')}٪)</div>
+                    </div>
+                  );
+                })()}
+
                 {/* Large conference custom options if present */}
                 {booking.isLargeConferenceQuote && booking.conferenceDetails && (
                   <div className="p-4 bg-[#EBEBE0]/15 border-b border-[#D6D6C2]/60 text-xs text-[#4A4A3A] space-y-1">
@@ -953,6 +997,46 @@ export default function UserBookings({
                           )}
                         </>
                       )}
+                    </div>
+                  );
+                })()}
+
+                {/* Collection tracker — who has paid their share to the leader.
+                    Roster comes from self-registration / room distribution. */}
+                {(booking.status === 'approved' || booking.status === 'completed') && booking.guestsCount > 0 && (() => {
+                  const roster = attendees.filter((a) => a.bookingId === booking.id);
+                  if (roster.length === 0) return null;
+                  const share = Math.ceil(booking.totalPrice / booking.guestsCount);
+                  const paidCount = roster.filter((a) => a.sharePaid).length;
+                  const collected = paidCount * share;
+                  return (
+                    <div className="px-4 py-3.5 border-b border-[#D6D6C2]/60 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-black text-[#0A2342] flex items-center gap-1.5"><Coins className="w-4 h-4 text-[#C5A059]" /> تحصيل المشاركين</span>
+                        <span className="text-[9.5px] font-black text-[#8A8A70]">نصيب الفرد: {share.toLocaleString('ar-EG')} ج.م</span>
+                      </div>
+                      <div className="h-2 bg-[#EBEBE0] rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${Math.round((paidCount / roster.length) * 100)}%` }} />
+                      </div>
+                      <div className="text-[9.5px] font-bold text-[#8A8A70]">دفع {paidCount.toLocaleString('ar-EG')} من {roster.length.toLocaleString('ar-EG')} — محصَّل {collected.toLocaleString('ar-EG')} ج.م</div>
+                      <div className="max-h-44 overflow-y-auto space-y-1 pr-0.5">
+                        {roster.map((a) => (
+                          <button
+                            key={a.id}
+                            type="button"
+                            onClick={() => toggleSharePaid(booking, a)}
+                            disabled={togglingShareId === a.id}
+                            className={`w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 py-1.5 text-right transition-all cursor-pointer disabled:opacity-50 ${
+                              a.sharePaid ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-[#D6D6C2] hover:bg-[#FAF8F5]'
+                            }`}
+                          >
+                            <span className={`text-[10.5px] font-bold truncate ${a.sharePaid ? 'text-emerald-900' : 'text-[#4A4A3A]'}`}>{a.name || 'بدون اسم'}</span>
+                            <span className={`shrink-0 flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full ${a.sharePaid ? 'bg-emerald-500 text-white' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>
+                              {a.sharePaid ? <><Check className="w-3 h-3" /> دفع</> : 'لسه'}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   );
                 })()}
