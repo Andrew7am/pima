@@ -97,4 +97,29 @@ describe('WebLayout notifications', () => {
     await openPanel();
     expect(screen.getByText('لا توجد إشعارات')).toBeInTheDocument();
   });
+
+  // Reported symptom: "tapping anywhere closes the notifications". Interacting
+  // with the panel's own contents must never dismiss it.
+  it('stays open when the panel itself is tapped', async () => {
+    renderLayout([notif({ id: 'a', title: 'إشعار' })]);
+    await openPanel();
+
+    await userEvent.click(screen.getByText('إشعار'));
+    expect(screen.getByText('إشعار')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('الإشعارات', { selector: 'span' }));
+    expect(screen.getByText('إشعار')).toBeInTheDocument();
+  });
+
+  it('keeps the list scrollable rather than clipped when there are many', async () => {
+    const many = Array.from({ length: 25 }, (_, i) => notif({ id: `n${i}`, title: `إشعار ${i}` }));
+    renderLayout(many);
+    await openPanel();
+
+    // Every row is rendered — nothing is dropped — and the container that holds
+    // them is the one allowed to scroll.
+    expect(screen.getByText('إشعار 24')).toBeInTheDocument();
+    const list = screen.getByText('إشعار 24').closest('.overflow-y-auto');
+    expect(list).not.toBeNull();
+  });
 });

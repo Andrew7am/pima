@@ -115,8 +115,13 @@ export default function WebLayout({
 
               {/* Notifications Panel */}
               {showNotif && (
-                <div className="absolute top-11 left-0 w-80 bg-white rounded-2xl shadow-xl border border-[var(--color-natural-border)] z-50 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-natural-border)]">
+                // On a phone this was a 320px dropdown floating over a
+                // full-screen backdrop: most taps landed on the backdrop and
+                // dismissed it, and the short list was awkward to scroll. It is
+                // now a near-full-width sheet on mobile and keeps the compact
+                // dropdown from `sm:` up.
+                <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:top-11 sm:left-0 sm:w-80 bg-white rounded-2xl shadow-xl border border-[var(--color-natural-border)] z-50 overflow-hidden flex flex-col max-h-[75dvh] sm:max-h-none">
+                  <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-[var(--color-natural-border)]">
                     <span className="font-bold text-sm text-[var(--color-natural-text)] flex items-center gap-1.5">
                       الإشعارات
                       {unreadCount > 0 && (
@@ -140,7 +145,9 @@ export default function WebLayout({
                       </button>
                     </div>
                   </div>
-                  <div className="max-h-80 overflow-y-auto">
+                  {/* overscroll-contain stops a scroll that reaches the end of
+                      the list from chaining to the page behind the sheet. */}
+                  <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain sm:max-h-80">
                     {userNotifications.length === 0 ? (
                       <p className="text-center text-sm text-[var(--color-natural-secondary)] py-8">لا توجد إشعارات</p>
                     ) : (

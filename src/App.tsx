@@ -386,9 +386,17 @@ export default function App() {
   useEffect(() => {
     if (!currentUser?.id) return;
     const unsubscribe = subscribeToNotifications(currentUser.id, (n) => {
-      // Upsert: a coalesced notification (same id) arriving again via UPDATE
-      // should refresh its content and jump back to the top, not be ignored.
-      setNotifications((prev) => [n, ...prev.filter((existing) => existing.id !== n.id)]);
+      setNotifications((prev) => {
+        const idx = prev.findIndex((existing) => existing.id === n.id);
+        if (idx === -1) return [n, ...prev]; // genuinely new → top of the list
+        // An UPDATE on a row we already show is usually just its read flag
+        // flipping (marking all as read fires one per row). Refresh it in place
+        // rather than hoisting it — otherwise the whole list reshuffles under
+        // the reader's finger the moment they mark anything read.
+        const next = [...prev];
+        next[idx] = n;
+        return next;
+      });
     });
     return unsubscribe;
   }, [currentUser?.id]);
@@ -1448,13 +1456,26 @@ export default function App() {
   // row's user_id — and persists the real (non-reminder) ones by id. RLS still
   // scopes the UPDATE to the caller's own rows.
   const handleMarkAllRead = async () => {
-    const shown = notifications;
-    if (shown.length === 0) return;
+    const unread = notifications.filter((n) => !n.isRead);
+    if (unread.length === 0) return;
     setNotifications((prev) => prev.map((n) => (n.isRead ? n : { ...n, isRead: true })));
-    const dbIds = shown.filter((n) => !n.isRead && !n.id.startsWith('reminder_')).map((n) => n.id);
-    if (dbIds.length > 0) {
-      const { error } = await supabase.from('notifications').update({ is_read: true }).in('id', dbIds);
-      if (error) console.error('markAllRead:', error);
+
+    // Client-only reminders have no DB row, so "read" has to be persisted
+    // separately. Without this the reminder effect regenerates them as unread
+    // on the next load — which is exactly why marking all as read looked like
+    // it never stuck. The single-notification path already did this.
+    unread.filter((n) => n.id.startsWith('reminder_')).forEach((n) => dismissReminder(n.id));
+
+    const dbIds = unread.filter((n) => !n.id.startsWith('reminder_')).map((n) => n.id);
+    if (dbIds.length === 0) return;
+
+    const { error } = await supabase.from('notifications').update({ is_read: true }).in('id', dbIds);
+    if (error) {
+      console.error('markAllRead:', error);
+      // Never leave the UI claiming a success the database refused — put the
+      // rows back and say so, rather than silently reverting on next reload.
+      setNotifications((prev) => prev.map((n) => (dbIds.includes(n.id) ? { ...n, isRead: false } : n)));
+      alert('تعذّر تمييز الإشعارات كمقروءة. تحقق من الاتصال وحاول مرة أخرى.');
     }
   };
 
