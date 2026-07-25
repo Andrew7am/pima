@@ -120,6 +120,17 @@ async function log(entry: {
 
 Deno.serve(async (req) => {
   try {
+    // Only the database webhook may invoke this. Without the check, anyone
+    // holding the publishable anon key (it ships in the web bundle by design)
+    // could POST an arbitrary user_id/title/message and send branded mail from
+    // our domain to any account — a spam and phishing vector that would burn
+    // the sending domain's reputation. The webhook must therefore send the
+    // service-role key in the Authorization header.
+    const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+    if (!SERVICE_ROLE || bearer !== SERVICE_ROLE) {
+      return new Response('forbidden', { status: 403 });
+    }
+
     const payload = await req.json();
     // Accept both a Database Webhook ({ type, record }) and a direct call.
     const rec: NotificationRow | undefined = payload.record ?? payload.notification;
