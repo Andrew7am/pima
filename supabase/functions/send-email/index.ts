@@ -24,6 +24,8 @@ const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
 const EMAIL_FROM = Deno.env.get('EMAIL_FROM') ?? 'بيما <no-reply@pimastay.com>';
 const APP_URL = (Deno.env.get('APP_URL') ?? 'https://pimastay.com').replace(/\/$/, '');
+// Shared secret the database webhook must present in `x-webhook-secret`.
+const WEBHOOK_SECRET = Deno.env.get('WEBHOOK_SECRET') ?? '';
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
@@ -124,10 +126,20 @@ Deno.serve(async (req) => {
     // holding the publishable anon key (it ships in the web bundle by design)
     // could POST an arbitrary user_id/title/message and send branded mail from
     // our domain to any account — a spam and phishing vector that would burn
-    // the sending domain's reputation. The webhook must therefore send the
-    // service-role key in the Authorization header.
+    // the sending domain's reputation.
+    //
+    // The primary credential is a dedicated shared secret rather than the
+    // service-role key: Supabase now issues secret keys in the `sb_secret_…`
+    // format while SUPABASE_SERVICE_ROLE_KEY is still injected as the legacy
+    // JWT, so comparing the two never matches. A purpose-made secret sidesteps
+    // that entirely and is rotatable without touching project keys. The
+    // service-role comparison is kept as a fallback for a legacy-key webhook.
+    const provided = (req.headers.get('x-webhook-secret') ?? '').trim();
     const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
-    if (!SERVICE_ROLE || bearer !== SERVICE_ROLE) {
+    const authorised =
+      (WEBHOOK_SECRET !== '' && provided === WEBHOOK_SECRET) ||
+      (SERVICE_ROLE !== '' && bearer === SERVICE_ROLE);
+    if (!authorised) {
       return new Response('forbidden', { status: 403 });
     }
 
