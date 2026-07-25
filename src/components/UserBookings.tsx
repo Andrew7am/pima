@@ -202,6 +202,16 @@ export default function UserBookings({
   onSubmitReview,
 }: UserBookingsProps) {
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
+  // Which booking's detail sheet is open. Stored as an id (not the object) so
+  // the sheet always renders the freshest booking data from props.
+  const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
+  // Freeze the list behind the sheet so only the sheet scrolls.
+  useEffect(() => {
+    if (!detailBookingId) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [detailBookingId]);
   const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
   const [tab, setTab] = useState<'all' | 'action' | 'confirmed' | 'completed' | 'archived'>('all');
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
@@ -749,12 +759,76 @@ export default function UserBookings({
             const primaryAction: 'pay' | 'distribute' | 'review' | 'chat' | null =
               canPayDeposit ? 'pay' : roomsReady ? 'distribute' : canReview ? 'review' : canChat ? 'chat' : null;
 
+            // Compact-card teaser for the next step, mirroring primaryAction.
+            const nextStep =
+              primaryAction === 'pay' ? { label: 'مطلوب سداد العربون', cls: 'text-rose-700' }
+                : primaryAction === 'distribute' ? { label: 'ابدأ توزيع الغرف', cls: 'text-emerald-700' }
+                  : primaryAction === 'review' ? { label: 'قيّم خلوتك ⭐', cls: 'text-[#9a7b2f]' }
+                    : { label: 'التفاصيل', cls: 'text-[#8A8A70]' };
+            const dLeftCompact = booking.status === 'approved' ? daysUntil(booking.checkIn) : -1;
+            const isOpen = detailBookingId === booking.id;
+
             return (
-              <div
-                id={`booking-card-${booking.id}`}
-                key={booking.id}
-                className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden text-right"
-              >
+              <React.Fragment key={booking.id}>
+                {/* ── Compact row in the list — everything else lives in the sheet ── */}
+                <button
+                  id={`booking-compact-${booking.id}`}
+                  type="button"
+                  onClick={() => setDetailBookingId(booking.id)}
+                  className="w-full bg-white rounded-3xl border border-[#D6D6C2] shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer text-right overflow-hidden"
+                >
+                  <div className="p-3.5 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="text-[13px] font-black text-[#2E2E24] truncate">{booking.houseName}</h3>
+                        <span className="text-[9px] text-[#8A8A70] font-bold tracking-wider">#{booking.id.toUpperCase()}</span>
+                      </div>
+                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9.5px] font-black shrink-0 ${badge.color}`}>
+                        <StatusIcon className="w-3 h-3 shrink-0" />
+                        {badge.label}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-[10.5px] font-bold text-[#5A5A40]">
+                      <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5 text-[#BCBC9D]" />{booking.checkIn} → {booking.checkOut}</span>
+                      <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-[#BCBC9D]" />{booking.guestsCount.toLocaleString('ar-EG')}</span>
+                      {dLeftCompact >= 0 && dLeftCompact <= 7 && (
+                        <span className="text-[9.5px] font-black text-[#0A2342] bg-[#0A2342]/5 rounded-full px-2 py-0.5">
+                          {dLeftCompact === 0 ? 'اليوم 🎉' : `بعد ${dLeftCompact.toLocaleString('ar-EG')} يوم`}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#D6D6C2]/50">
+                      <span className="text-[12.5px] font-black text-[#0A2342]">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</span>
+                      <span className={`flex items-center gap-0.5 text-[10px] font-black ${nextStep.cls}`}>
+                        {nextStep.label}
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
+                  </div>
+                </button>
+
+                {/* ── Full details in a bottom sheet, only while open ── */}
+                {isOpen && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+                  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150" onClick={() => setDetailBookingId(null)} />
+                  <div
+                    id={`booking-card-${booking.id}`}
+                    className="relative z-10 w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-white rounded-t-3xl sm:rounded-3xl border border-[#D6D6C2] shadow-2xl text-right animate-in slide-in-from-bottom sm:zoom-in-95 duration-200"
+                  >
+                    {/* Sheet grabber + close */}
+                    <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-[#D6D6C2]/60 px-4 py-2 flex items-center justify-between">
+                      <span className="text-[11px] font-black text-[#0A2342]">تفاصيل الحجز</span>
+                      <button
+                        type="button"
+                        onClick={() => setDetailBookingId(null)}
+                        className="p-1.5 rounded-full hover:bg-[#F1EEE6] cursor-pointer"
+                        aria-label="إغلاق"
+                      >
+                        <X className="w-4 h-4 text-[#4A4A3A]" />
+                      </button>
+                    </div>
                 {/* Header info */}
                 <div className="p-4 border-b border-[#D6D6C2]/60 flex items-start justify-between gap-2">
                   <div className="space-y-1">
@@ -1495,7 +1569,10 @@ export default function UserBookings({
                     </form>
                   </div>
                 )}
-              </div>
+                  </div>
+                </div>
+                )}
+              </React.Fragment>
             );
               })}
             </div>
