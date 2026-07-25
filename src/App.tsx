@@ -44,6 +44,7 @@ import UserDashboard from './components/UserDashboard';
 import WebLayout from './components/WebLayout';
 import AuthScreen from './components/AuthScreen';
 import LandingPage from './components/LandingPage';
+import SelfRegisterScreen from './components/SelfRegisterScreen';
 import { registerPushNotifications } from './lib/push';
 const ContactSupport = lazy(() => import('./components/ContactSupport'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
@@ -1426,6 +1427,13 @@ export default function App() {
     }
     setShowAuthScreen(true);
   };
+
+  // Public attendee self-registration link (?join=<bookingId>) — rendered
+  // before any auth/landing gate so a group member registers without an account.
+  const joinBookingId = new URLSearchParams(window.location.search).get('join');
+  if (joinBookingId) {
+    return <SelfRegisterScreen bookingId={joinBookingId} />;
+  }
 
   if (isAuthLoading) {
     return (

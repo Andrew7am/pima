@@ -4,7 +4,7 @@ import {
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
   Printer, Building, AlertTriangle, Bell, Smartphone, CreditCard, 
   Coins, Upload, ShieldCheck, Image, Check, Sparkles, ListTodo, Plus, Trash2, BookOpen,
-  FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft, CalendarPlus, Star, X
+  FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft, CalendarPlus, Star, X, UserPlus
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
 import BookingChatPanel from './BookingChatPanel';
@@ -1083,6 +1083,20 @@ export default function UserBookings({
                       >
                         <CalendarPlus className="w-3.5 h-3.5 text-[#867E65]" />
                         <span>أضف لتقويمك</span>
+                      </button>
+                    )}
+                    {/* Invite members to self-register into the roster via a shared link */}
+                    {booking.status === 'approved' && (
+                      <button
+                        onClick={() => {
+                          const link = `${window.location.origin}/?join=${booking.id}`;
+                          const msg = `سلام ونعمة 🙏\nانضم لقائمة مشاركين خلوة «${booking.houseName}» (${booking.checkIn} → ${booking.checkOut}) واكتب اسمك من هنا:\n${link}`;
+                          window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+                        }}
+                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                      >
+                        <UserPlus className="w-3.5 h-3.5 text-emerald-700" />
+                        <span>ادعُ المشاركين</span>
                       </button>
                     )}
                     {canChat && primaryAction !== 'chat' && (
