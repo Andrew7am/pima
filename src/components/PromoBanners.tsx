@@ -3,6 +3,7 @@ import { Instagram, Facebook, Youtube, Twitter, Send, Globe, Music2, MessageCirc
 import { PromoBanner, PromoBannerLink, PromoLinkPlatform } from '../types';
 import { safeUrl } from '../lib/safeUrl';
 import BannerCanvas from './banner/BannerCanvas';
+import { useBannerTracking } from './banner/useBannerTracking';
 
 // Icon + brand tint per platform. lucide has no WhatsApp/TikTok glyph, so those
 // reuse the closest shape (chat bubble / music note) with their brand colour.
@@ -39,6 +40,7 @@ export function BannerLinkIcons({ links, size = 'w-7 h-7' }: { links?: PromoBann
         return (
           <a
             key={l.id}
+            data-el="icons"
             href={l.href!}
             target="_blank"
             rel="noopener noreferrer nofollow"
@@ -99,9 +101,14 @@ export function SummerOfferCarousel({ slides, onCta }: { slides?: PromoBanner[];
   // A slide designed in the banner editor renders from its saved layout; the
   // rest keep the original fixed design. The box (h-44) is identical either way.
   const designed = slides && slides.length > 0 ? slides[active] : undefined;
+  const track = useBannerTracking(designed?.id);
 
   return (
-    <div className="relative rounded-3xl overflow-hidden h-44 shadow-md bg-slate-900 group select-none">
+    <div
+      ref={track.ref}
+      onClickCapture={track.onClickCapture}
+      className="relative rounded-3xl overflow-hidden h-44 shadow-md bg-slate-900 group select-none"
+    >
       {designed?.layout ? (
         <BannerCanvas banner={designed} layout={designed.layout} />
       ) : items.map((s, i) => {
@@ -119,6 +126,7 @@ export function SummerOfferCarousel({ slides, onCta }: { slides?: PromoBanner[];
                     it keeps firing the caller's onCta (scroll to listings). */}
                 {s.href ? (
                   <a
+                    data-el="button"
                     href={s.href}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
@@ -127,7 +135,7 @@ export function SummerOfferCarousel({ slides, onCta }: { slides?: PromoBanner[];
                     {s.cta}
                   </a>
                 ) : (
-                  <button onClick={onCta} className={`text-[10px] font-black px-4 py-1.5 rounded-xl shadow transition-all active:scale-95 ${accent.cta}`}>{s.cta}</button>
+                  <button data-el="button" onClick={onCta} className={`text-[10px] font-black px-4 py-1.5 rounded-xl shadow transition-all active:scale-95 ${accent.cta}`}>{s.cta}</button>
                 )}
                 <BannerLinkIcons links={s.links} />
               </div>
@@ -162,6 +170,7 @@ export function CountdownOfferBanner({ banner, onCta }: { banner?: PromoBanner; 
   const cta = banner?.ctaText || DEFAULT_COUNTDOWN.cta;
   const endsAt = banner?.endsAt ? new Date(banner.endsAt).getTime() : null;
 
+  const track = useBannerTracking(banner?.id);
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 45, seconds: 30 });
   useEffect(() => {
     const tick = () => {
@@ -184,14 +193,16 @@ export function CountdownOfferBanner({ banner, onCta }: { banner?: PromoBanner; 
 
   if (banner?.layout) {
     return (
-      <div className="relative rounded-3xl overflow-hidden h-32 bg-slate-950 text-white select-none shadow-md">
+      <div ref={track.ref} onClickCapture={track.onClickCapture}
+        className="relative rounded-3xl overflow-hidden h-32 bg-slate-950 text-white select-none shadow-md">
         <BannerCanvas banner={banner} layout={banner.layout} />
       </div>
     );
   }
 
   return (
-    <div className="relative rounded-3xl overflow-hidden h-32 bg-slate-950 text-white select-none shadow-md">
+    <div ref={track.ref} onClickCapture={track.onClickCapture}
+      className="relative rounded-3xl overflow-hidden h-32 bg-slate-950 text-white select-none shadow-md">
       <img src={img} alt="Limited offer background" className="w-full h-full absolute inset-0 object-cover opacity-30" referrerPolicy="no-referrer" />
       <div className="absolute inset-0 p-4 flex flex-col justify-between text-right">
         <div className="flex justify-between items-center">
@@ -221,6 +232,7 @@ export function CountdownOfferBanner({ banner, onCta }: { banner?: PromoBanner; 
             <BannerLinkIcons links={banner?.links} size="w-6 h-6" />
             {safeUrl(banner?.linkUrl) ? (
               <a
+                data-el="button"
                 href={safeUrl(banner?.linkUrl)!}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
@@ -229,7 +241,7 @@ export function CountdownOfferBanner({ banner, onCta }: { banner?: PromoBanner; 
                 {cta}
               </a>
             ) : (
-              <button onClick={onCta} className="bg-[#C5A059] hover:bg-amber-600 text-[#0A2342] text-[10px] font-black px-4 py-2 rounded-xl shadow transition-all active:scale-95">{cta}</button>
+              <button data-el="button" onClick={onCta} className="bg-[#C5A059] hover:bg-amber-600 text-[#0A2342] text-[10px] font-black px-4 py-2 rounded-xl shadow transition-all active:scale-95">{cta}</button>
             )}
           </div>
         </div>

@@ -14,6 +14,7 @@ import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, 
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
 import BannerEditor from './banner/BannerEditor';
+import BannerAnalytics from './banner/BannerAnalytics';
 import { BANNER_BOX, DEFAULT_LAYOUT } from './banner/BannerCanvas';
 import HouseDetail from './HouseDetail';
 import { AMENITIES_LIST } from '../mockData';
@@ -1475,6 +1476,8 @@ export default function AdminDashboard({
               {pbEditingId ? 'حفظ التعديل' : 'إضافة البانر'}
             </button>
           </div>
+
+          <BannerAnalytics />
 
           {/* Visual designer for the selected banner */}
           {(() => {
