@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Payout, OwnerPaymentMethod, PromoBanner } from '../types';
+import { RetreatHouse, User, Booking, Payment, PlatformAnnouncement, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Payout, OwnerPaymentMethod, PromoBanner, PromoBannerLink, PromoLinkPlatform } from '../types';
 
 // Payment-method type options for the platform collection accounts editor.
 const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] = [
@@ -12,7 +12,7 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
 ];
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
-import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
+import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
 import HouseDetail from './HouseDetail';
 import { AMENITIES_LIST } from '../mockData';
 import { loadBookingMessages } from '../lib/bookingMessages';
@@ -166,6 +166,8 @@ export default function AdminDashboard({
   const [pbCta, setPbCta] = useState('');
   const [pbImage, setPbImage] = useState('');
   const [pbEndsAt, setPbEndsAt] = useState('');
+  const [pbLinkUrl, setPbLinkUrl] = useState('');
+  const [pbLinks, setPbLinks] = useState<PromoBannerLink[]>([]);
   // Non-null while editing an existing banner — the same form doubles as the
   // editor, so "add" and "save changes" share one set of fields.
   const [pbEditingId, setPbEditingId] = useState<string | null>(null);
@@ -173,6 +175,7 @@ export default function AdminDashboard({
   const pbResetForm = () => {
     setPbEditingId(null);
     setPbBadge(''); setPbTitle(''); setPbSubtitle(''); setPbCta(''); setPbImage(''); setPbEndsAt('');
+    setPbLinkUrl(''); setPbLinks([]);
   };
 
   const pbStartEdit = (b: PromoBanner) => {
@@ -185,6 +188,8 @@ export default function AdminDashboard({
     setPbImage(b.imageUrl ?? '');
     // <input type="datetime-local"> wants a local "YYYY-MM-DDTHH:mm" value.
     setPbEndsAt(b.endsAt ? new Date(b.endsAt).toISOString().slice(0, 16) : '');
+    setPbLinkUrl(b.linkUrl ?? '');
+    setPbLinks(b.links ? b.links.map((l) => ({ ...l })) : []);
   };
 
   // Swap a banner's sort with its neighbour inside the same placement group.
@@ -1344,10 +1349,57 @@ export default function AdminDashboard({
                   <input type="datetime-local" value={pbEndsAt} onChange={(e) => setPbEndsAt(e.target.value)} className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
                 </label>
               )}
+
+              {/* Where the CTA goes — empty keeps the default (scroll to listings) */}
+              <input value={pbLinkUrl} onChange={(e) => setPbLinkUrl(e.target.value)} placeholder="رابط الزر (اختياري — مثال: instagram.com/pima_app)" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" dir="ltr" />
+
+              {/* Icon links shown inside the banner (social accounts, site, phone…) */}
+              <div className="col-span-2 space-y-1.5 pt-1 border-t border-[#E7E5DB]">
+                <div className="flex items-center justify-between gap-2 pt-1.5">
+                  <span className="text-[10px] font-black text-[#4A4A3A]">أيقونات داخل البانر ({pbLinks.length})</span>
+                  <button
+                    type="button"
+                    onClick={() => setPbLinks((p) => [...p, { id: `pl_${Date.now()}`, platform: 'instagram', url: '' }])}
+                    className="text-[9.5px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer shrink-0"
+                  >
+                    + إضافة أيقونة
+                  </button>
+                </div>
+                {pbLinks.length === 0 ? (
+                  <p className="text-[9px] text-[#8A8A70] font-bold">مثال: أضف إنستجرام وفيسبوك وواتساب في نفس البانر — كل أيقونة بلينكها.</p>
+                ) : (
+                  pbLinks.map((l, i) => (
+                    <div key={l.id} className="flex items-center gap-1.5">
+                      <select
+                        value={l.platform}
+                        onChange={(e) => setPbLinks((p) => p.map((x, j) => (j === i ? { ...x, platform: e.target.value as PromoLinkPlatform } : x)))}
+                        className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[10.5px] px-2 py-2 text-[#2D2D24] focus:outline-none shrink-0"
+                      >
+                        {PROMO_PLATFORMS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                      </select>
+                      <input
+                        value={l.url}
+                        onChange={(e) => setPbLinks((p) => p.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))}
+                        placeholder="الرابط (أو الرقم لواتساب/الاتصال)"
+                        className="flex-1 min-w-0 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[10.5px] px-2 py-2 text-right"
+                        dir="ltr"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPbLinks((p) => p.filter((_, j) => j !== i))}
+                        title="حذف الأيقونة"
+                        className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 cursor-pointer shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
 
             {/* Live preview — the very same components the visitors see */}
-            {(pbTitle || pbBadge || pbImage) && (() => {
+            {(pbTitle || pbBadge || pbImage || pbLinks.length > 0) && (() => {
               const draft: PromoBanner = {
                 id: pbEditingId ?? 'preview',
                 placement: pbPlacement,
@@ -1360,6 +1412,8 @@ export default function AdminDashboard({
                 imageUrl: pbImage || undefined,
                 endsAt: pbPlacement === 'countdown' && pbEndsAt ? new Date(pbEndsAt).toISOString() : null,
                 createdAt: new Date().toISOString(),
+                linkUrl: pbLinkUrl || undefined,
+                links: pbLinks.filter((l) => l.url.trim()),
               };
               return (
                 <div className="space-y-1.5 pt-1">
@@ -1388,6 +1442,8 @@ export default function AdminDashboard({
                     ctaText: pbCta || undefined,
                     imageUrl: pbImage || undefined,
                     endsAt: existing.placement === 'countdown' && pbEndsAt ? new Date(pbEndsAt).toISOString() : null,
+                    linkUrl: pbLinkUrl || undefined,
+                    links: pbLinks.filter((l) => l.url.trim()),
                   });
                   pbResetForm();
                   return;
@@ -1405,6 +1461,8 @@ export default function AdminDashboard({
                   imageUrl: pbImage || undefined,
                   endsAt: pbPlacement === 'countdown' && pbEndsAt ? new Date(pbEndsAt).toISOString() : null,
                   createdAt: new Date().toISOString(),
+                  linkUrl: pbLinkUrl || undefined,
+                  links: pbLinks.filter((l) => l.url.trim()),
                 });
                 pbResetForm();
               }}

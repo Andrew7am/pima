@@ -1,5 +1,58 @@
 import React, { useEffect, useState } from 'react';
-import { PromoBanner } from '../types';
+import { Instagram, Facebook, Youtube, Twitter, Send, Globe, Music2, MessageCircle, Phone, Mail } from 'lucide-react';
+import { PromoBanner, PromoBannerLink, PromoLinkPlatform } from '../types';
+import { safeUrl } from '../lib/safeUrl';
+
+// Icon + brand tint per platform. lucide has no WhatsApp/TikTok glyph, so those
+// reuse the closest shape (chat bubble / music note) with their brand colour.
+const PLATFORM_META: Record<PromoLinkPlatform, { Icon: React.ElementType; tint: string; label: string }> = {
+  instagram: { Icon: Instagram, tint: '#E1306C', label: 'إنستجرام' },
+  facebook: { Icon: Facebook, tint: '#1877F2', label: 'فيسبوك' },
+  youtube: { Icon: Youtube, tint: '#FF0000', label: 'يوتيوب' },
+  whatsapp: { Icon: MessageCircle, tint: '#25D366', label: 'واتساب' },
+  telegram: { Icon: Send, tint: '#229ED9', label: 'تليجرام' },
+  tiktok: { Icon: Music2, tint: '#000000', label: 'تيك توك' },
+  x: { Icon: Twitter, tint: '#111111', label: 'إكس / تويتر' },
+  website: { Icon: Globe, tint: '#0A2342', label: 'الموقع' },
+  phone: { Icon: Phone, tint: '#5A5A40', label: 'اتصال' },
+  email: { Icon: Mail, tint: '#8A8A70', label: 'إيميل' },
+};
+
+export const PROMO_PLATFORMS = Object.entries(PLATFORM_META).map(([value, m]) => ({
+  value: value as PromoLinkPlatform,
+  label: m.label,
+}));
+
+// The row of round icon links drawn inside a banner. Each is a real anchor, so
+// a tap opens the account directly instead of firing the banner's own CTA.
+function BannerLinkIcons({ links, size = 'w-7 h-7' }: { links?: PromoBannerLink[]; size?: string }) {
+  const usable = (links ?? [])
+    .map((l) => ({ ...l, href: safeUrl(l.url) }))
+    .filter((l) => l.href);
+  if (usable.length === 0) return null;
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap" dir="ltr">
+      {usable.map((l) => {
+        const meta = PLATFORM_META[l.platform] ?? PLATFORM_META.website;
+        const { Icon } = meta;
+        return (
+          <a
+            key={l.id}
+            href={l.href!}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            onClick={(e) => e.stopPropagation()}
+            title={l.label || meta.label}
+            aria-label={l.label || meta.label}
+            className={`${size} rounded-full bg-white/95 hover:bg-white flex items-center justify-center shadow-sm transition-transform hover:scale-110 active:scale-95 shrink-0`}
+          >
+            <Icon className="w-3.5 h-3.5" style={{ color: meta.tint }} />
+          </a>
+        );
+      })}
+    </div>
+  );
+}
 
 // Promo banners ported from the source app (same dimensions, colors and layout):
 //  - SummerOfferCarousel: 3-slide auto-rotating hero shown at the TOP.
@@ -15,7 +68,7 @@ const ACCENTS = [
   { badge: 'text-[#C5A059] bg-[#5A5A40]/70', cta: 'bg-[#C5A059] hover:bg-amber-600 text-[#0A2342]' },
 ];
 
-interface DefaultSlide { img: string; badge: string; title: string; sub: string; cta: string; }
+interface DefaultSlide { img: string; badge: string; title: string; sub: string; cta: string; href?: string | null; links?: PromoBannerLink[]; }
 const DEFAULT_SLIDES: DefaultSlide[] = [
   { img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80', badge: 'عرض خاص', title: 'عرض الصيف', sub: 'خصومات تصل إلى ٣٠٪ على بيوت الساحل ومطروح', cta: 'احجز الآن' },
   { img: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=1200&q=80', badge: 'حصري ومميز', title: 'خلوات العائلات والخدام', sub: 'أجواء روحية متكاملة لخدمتكم وكنيستكم', cta: 'اكتشف البيوت' },
@@ -30,6 +83,8 @@ export function SummerOfferCarousel({ slides, onCta }: { slides?: PromoBanner[];
         title: s.title || '',
         sub: s.subtitle || '',
         cta: s.ctaText || 'احجز الآن',
+        href: safeUrl(s.linkUrl),
+        links: s.links,
       }))
     : DEFAULT_SLIDES;
 
@@ -53,7 +108,23 @@ export function SummerOfferCarousel({ slides, onCta }: { slides?: PromoBanner[];
               <span className={`text-[10px] font-extrabold tracking-wider self-start px-2 py-0.5 rounded-md mb-1.5 ${accent.badge}`}>{s.badge}</span>
               <h2 className="text-base font-black leading-tight">{s.title}</h2>
               <p className="text-[11px] text-gray-200 font-bold mt-1">{s.sub}</p>
-              <button onClick={onCta} className={`mt-3 text-[10px] font-black px-4 py-1.5 rounded-xl self-start shadow transition-all active:scale-95 ${accent.cta}`}>{s.cta}</button>
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                {/* A configured link turns the CTA into a real anchor; otherwise
+                    it keeps firing the caller's onCta (scroll to listings). */}
+                {s.href ? (
+                  <a
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    className={`text-[10px] font-black px-4 py-1.5 rounded-xl shadow transition-all active:scale-95 ${accent.cta}`}
+                  >
+                    {s.cta}
+                  </a>
+                ) : (
+                  <button onClick={onCta} className={`text-[10px] font-black px-4 py-1.5 rounded-xl shadow transition-all active:scale-95 ${accent.cta}`}>{s.cta}</button>
+                )}
+                <BannerLinkIcons links={s.links} />
+              </div>
             </div>
           </div>
         );
@@ -132,7 +203,21 @@ export function CountdownOfferBanner({ banner, onCta }: { banner?: PromoBanner; 
             </div>
           </div>
 
-          <button onClick={onCta} className="bg-[#C5A059] hover:bg-amber-600 text-[#0A2342] text-[10px] font-black px-4 py-2 rounded-xl shadow transition-all active:scale-95">{cta}</button>
+          <div className="flex items-center gap-2">
+            <BannerLinkIcons links={banner?.links} size="w-6 h-6" />
+            {safeUrl(banner?.linkUrl) ? (
+              <a
+                href={safeUrl(banner?.linkUrl)!}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="bg-[#C5A059] hover:bg-amber-600 text-[#0A2342] text-[10px] font-black px-4 py-2 rounded-xl shadow transition-all active:scale-95"
+              >
+                {cta}
+              </a>
+            ) : (
+              <button onClick={onCta} className="bg-[#C5A059] hover:bg-amber-600 text-[#0A2342] text-[10px] font-black px-4 py-2 rounded-xl shadow transition-all active:scale-95">{cta}</button>
+            )}
+          </div>
         </div>
       </div>
     </div>

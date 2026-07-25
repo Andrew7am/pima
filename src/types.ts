@@ -307,6 +307,19 @@ export interface PlatformAnnouncement {
 }
 
 // Admin-managed promo banners on the public browse page (migration 076).
+// A small icon link rendered inside a banner — e.g. the platform's social
+// accounts, so one banner can carry several destinations.
+export type PromoLinkPlatform =
+  | 'instagram' | 'facebook' | 'youtube' | 'whatsapp'
+  | 'telegram' | 'tiktok' | 'x' | 'website' | 'phone' | 'email';
+
+export interface PromoBannerLink {
+  id: string;
+  platform: PromoLinkPlatform;
+  url: string;
+  label?: string;
+}
+
 export interface PromoBanner {
   id: string;
   placement: 'carousel' | 'countdown';
@@ -319,6 +332,11 @@ export interface PromoBanner {
   imageUrl?: string;
   endsAt?: string | null;
   createdAt: string;
+  // Where the CTA button goes. Empty → keeps the default behaviour (scrolls
+  // to the listings) so existing banners are unaffected.
+  linkUrl?: string;
+  // Icon links shown inside the banner (social accounts, phone, site…).
+  links?: PromoBannerLink[];
 }
 
 export interface PlatformSettings {
