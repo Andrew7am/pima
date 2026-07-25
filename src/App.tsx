@@ -20,7 +20,7 @@ import {
   loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb, settleBookingsPayout,
   loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
   createPlatformAnnouncement, setPlatformAnnouncementActive, deletePlatformAnnouncement,
-  createPromoBanner, setPromoBannerActive, deletePromoBanner,
+  createPromoBanner, setPromoBannerActive, deletePromoBanner, updatePromoBanner,
   loadPlatformSettings, updatePlatformSettings,
   deleteOwnAccount,
   loadAuditLog,
@@ -1379,6 +1379,12 @@ export default function App() {
     deletePromoBanner(id);
   };
 
+  // Edit an existing banner, or reorder it (both are a plain row update).
+  const handleUpdatePromoBanner = (b: PromoBanner) => {
+    setPromoBanners((prev) => prev.map((x) => (x.id === b.id ? b : x)));
+    updatePromoBanner(b);
+  };
+
   const handleUpdateReview = (updatedReview: Review) => {
     setReviews((prev) =>
       prev.map((r) => (r.id === updatedReview.id ? updatedReview : r))
@@ -1839,6 +1845,7 @@ export default function App() {
               onDeletePlatformAnnouncement={handleDeletePlatformAnnouncement}
               promoBanners={promoBanners}
               onAddPromoBanner={handleAddPromoBanner}
+              onUpdatePromoBanner={handleUpdatePromoBanner}
               onTogglePromoBanner={handleTogglePromoBanner}
               onDeletePromoBanner={handleDeletePromoBanner}
               settings={settings}

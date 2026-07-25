@@ -10,8 +10,9 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
   { value: 'we_cash', label: 'وي كاش' },
   { value: 'bank_transfer', label: 'تحويل بنكي' },
 ];
-import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed } from 'lucide-react';
+import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
+import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
 import HouseDetail from './HouseDetail';
 import { AMENITIES_LIST } from '../mockData';
 import { loadBookingMessages } from '../lib/bookingMessages';
@@ -42,6 +43,7 @@ interface AdminDashboardProps {
   onDeletePlatformAnnouncement?: (id: string) => void;
   promoBanners?: PromoBanner[];
   onAddPromoBanner?: (b: PromoBanner) => void;
+  onUpdatePromoBanner?: (b: PromoBanner) => void;
   onTogglePromoBanner?: (id: string, isActive: boolean) => void;
   onDeletePromoBanner?: (id: string) => void;
   settings?: PlatformSettings;
@@ -83,6 +85,7 @@ export default function AdminDashboard({
   onDeletePlatformAnnouncement,
   promoBanners = [],
   onAddPromoBanner,
+  onUpdatePromoBanner,
   onTogglePromoBanner,
   onDeletePromoBanner,
   settings = DEFAULT_PLATFORM_SETTINGS,
@@ -163,6 +166,41 @@ export default function AdminDashboard({
   const [pbCta, setPbCta] = useState('');
   const [pbImage, setPbImage] = useState('');
   const [pbEndsAt, setPbEndsAt] = useState('');
+  // Non-null while editing an existing banner — the same form doubles as the
+  // editor, so "add" and "save changes" share one set of fields.
+  const [pbEditingId, setPbEditingId] = useState<string | null>(null);
+
+  const pbResetForm = () => {
+    setPbEditingId(null);
+    setPbBadge(''); setPbTitle(''); setPbSubtitle(''); setPbCta(''); setPbImage(''); setPbEndsAt('');
+  };
+
+  const pbStartEdit = (b: PromoBanner) => {
+    setPbEditingId(b.id);
+    setPbPlacement(b.placement);
+    setPbBadge(b.badge ?? '');
+    setPbTitle(b.title ?? '');
+    setPbSubtitle(b.subtitle ?? '');
+    setPbCta(b.ctaText ?? '');
+    setPbImage(b.imageUrl ?? '');
+    // <input type="datetime-local"> wants a local "YYYY-MM-DDTHH:mm" value.
+    setPbEndsAt(b.endsAt ? new Date(b.endsAt).toISOString().slice(0, 16) : '');
+  };
+
+  // Swap a banner's sort with its neighbour inside the same placement group.
+  const pbMove = (b: PromoBanner, dir: -1 | 1) => {
+    const group = promoBanners
+      .filter((x) => x.placement === b.placement)
+      .slice()
+      .sort((x, y) => x.sort - y.sort || x.createdAt.localeCompare(y.createdAt));
+    const i = group.findIndex((x) => x.id === b.id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= group.length) return;
+    // Rewrite both rows with normalised indexes so equal/duplicate sort
+    // values (possible in older rows) can't make the swap a no-op.
+    onUpdatePromoBanner?.({ ...group[i], sort: j });
+    onUpdatePromoBanner?.({ ...group[j], sort: i });
+  };
 
   const pendingAccounts = users.filter(u => (u.role === 'servant' || u.role === 'owner') && u.approvalStatus === 'pending');
 
@@ -1271,13 +1309,20 @@ export default function AdminDashboard({
       {activeTab === 'announcements' && (
         <div className="space-y-3 mt-4">
           <div className="bg-white p-4 rounded-2xl border border-[#D6D6C2] space-y-2.5">
-            <div className="flex items-center gap-2 text-[#4A4A3A]">
-              <Megaphone className="w-4 h-4 text-[#C5A059]" />
-              <h3 className="text-xs font-black">بانرات العروض (تظهر في صفحة التصفّح فوق وتحت)</h3>
+            <div className="flex items-center justify-between gap-2 text-[#4A4A3A]">
+              <div className="flex items-center gap-2">
+                <Megaphone className="w-4 h-4 text-[#C5A059]" />
+                <h3 className="text-xs font-black">{pbEditingId ? 'تعديل البانر' : 'بانرات العروض (تظهر في صفحة التصفّح فوق وتحت)'}</h3>
+              </div>
+              {pbEditingId && (
+                <button type="button" onClick={pbResetForm} className="text-[9.5px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] cursor-pointer shrink-0">
+                  إلغاء التعديل ✕
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <select value={pbPlacement} onChange={(e) => setPbPlacement(e.target.value as 'carousel' | 'countdown')} className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-[#2D2D24] focus:outline-none text-right">
+              <select value={pbPlacement} onChange={(e) => setPbPlacement(e.target.value as 'carousel' | 'countdown')} disabled={!!pbEditingId} className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-[#2D2D24] focus:outline-none text-right disabled:opacity-60">
                 <option value="carousel">شريحة في الكاروسيل العلوي 🖼️</option>
                 <option value="countdown">بانر العدّاد السفلي ⏳</option>
               </select>
@@ -1287,7 +1332,13 @@ export default function AdminDashboard({
               {pbPlacement === 'carousel' && (
                 <input value={pbSubtitle} onChange={(e) => setPbSubtitle(e.target.value)} placeholder="الوصف (مثال: خصومات تصل ٣٠٪ على الساحل)" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
               )}
-              <input value={pbImage} onChange={(e) => setPbImage(e.target.value)} placeholder="رابط الصورة (https://...)" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" dir="ltr" />
+              <div className="col-span-2 space-y-1.5">
+                <input value={pbImage} onChange={(e) => setPbImage(e.target.value)} placeholder="رابط الصورة (https://...)" className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" dir="ltr" />
+                <div className="flex items-center gap-2">
+                  <span className="text-[9.5px] font-bold text-[#8A8A70] shrink-0">أو ارفع صورة:</span>
+                  <PhotoPickerButtons idPrefix="promo-banner" folder="banners" onSelect={(url) => setPbImage(url)} className="flex-1" />
+                </div>
+              </div>
               {pbPlacement === 'countdown' && (
                 <label className="col-span-2 text-[10px] font-bold text-[#8A8A70]">ينتهي العرض في:
                   <input type="datetime-local" value={pbEndsAt} onChange={(e) => setPbEndsAt(e.target.value)} className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
@@ -1295,10 +1346,53 @@ export default function AdminDashboard({
               )}
             </div>
 
+            {/* Live preview — the very same components the visitors see */}
+            {(pbTitle || pbBadge || pbImage) && (() => {
+              const draft: PromoBanner = {
+                id: pbEditingId ?? 'preview',
+                placement: pbPlacement,
+                isActive: true,
+                sort: 0,
+                badge: pbBadge || undefined,
+                title: pbTitle || undefined,
+                subtitle: pbSubtitle || undefined,
+                ctaText: pbCta || undefined,
+                imageUrl: pbImage || undefined,
+                endsAt: pbPlacement === 'countdown' && pbEndsAt ? new Date(pbEndsAt).toISOString() : null,
+                createdAt: new Date().toISOString(),
+              };
+              return (
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-[9.5px] font-black text-[#8A8A70] flex items-center gap-1"><Eye className="w-3 h-3" /> معاينة (زي ما الزائر هيشوفها)</span>
+                  <div className="bg-[#FAF8F5] border border-dashed border-[#D6D6C2] rounded-2xl p-2" dir="rtl">
+                    {pbPlacement === 'carousel'
+                      ? <SummerOfferCarousel slides={[draft]} />
+                      : <CountdownOfferBanner banner={draft} />}
+                  </div>
+                </div>
+              );
+            })()}
+
             <button
               type="button"
               onClick={() => {
-                if (!onAddPromoBanner || (!pbTitle && !pbBadge)) return;
+                if (!pbTitle && !pbBadge) return;
+                if (pbEditingId) {
+                  const existing = promoBanners.find((b) => b.id === pbEditingId);
+                  if (!existing || !onUpdatePromoBanner) return;
+                  onUpdatePromoBanner({
+                    ...existing,
+                    badge: pbBadge || undefined,
+                    title: pbTitle || undefined,
+                    subtitle: pbSubtitle || undefined,
+                    ctaText: pbCta || undefined,
+                    imageUrl: pbImage || undefined,
+                    endsAt: existing.placement === 'countdown' && pbEndsAt ? new Date(pbEndsAt).toISOString() : null,
+                  });
+                  pbResetForm();
+                  return;
+                }
+                if (!onAddPromoBanner) return;
                 onAddPromoBanner({
                   id: `pb_${Date.now()}`,
                   placement: pbPlacement,
@@ -1312,11 +1406,11 @@ export default function AdminDashboard({
                   endsAt: pbPlacement === 'countdown' && pbEndsAt ? new Date(pbEndsAt).toISOString() : null,
                   createdAt: new Date().toISOString(),
                 });
-                setPbBadge(''); setPbTitle(''); setPbSubtitle(''); setPbCta(''); setPbImage(''); setPbEndsAt('');
+                pbResetForm();
               }}
               className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-black py-2 rounded-xl transition-all cursor-pointer"
             >
-              إضافة البانر
+              {pbEditingId ? 'حفظ التعديل' : 'إضافة البانر'}
             </button>
           </div>
 
@@ -1325,17 +1419,63 @@ export default function AdminDashboard({
             {promoBanners.length === 0 ? (
               <p className="text-center text-[11px] text-[#8A8A70] font-bold py-3">لا توجد بانرات — سيظهر التصميم الافتراضي.</p>
             ) : (
-              promoBanners.map((b) => (
-                <div key={b.id} className="bg-white p-3 rounded-2xl border border-[#D6D6C2] flex items-center gap-3">
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${b.placement === 'carousel' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700'}`}>{b.placement === 'carousel' ? 'كاروسيل' : 'عدّاد'}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-black text-[#4A4A3A] truncate">{b.title || b.badge || '—'}</p>
-                    {b.subtitle && <p className="text-[9.5px] text-[#8A8A70] truncate">{b.subtitle}</p>}
+              // Sorted by the same key the reorder arrows write, so a move is
+              // reflected immediately instead of only after a reload.
+              promoBanners
+                .slice()
+                .sort((x, y) => x.placement.localeCompare(y.placement) || x.sort - y.sort || x.createdAt.localeCompare(y.createdAt))
+                .map((b) => {
+                const group = promoBanners.filter((x) => x.placement === b.placement);
+                const isFirst = group.every((x) => x.id === b.id || x.sort >= b.sort);
+                const isLast = group.every((x) => x.id === b.id || x.sort <= b.sort);
+                const expired = !!b.endsAt && new Date(b.endsAt).getTime() < Date.now();
+                return (
+                <div key={b.id} className={`bg-white p-3 rounded-2xl border flex items-center gap-2.5 ${pbEditingId === b.id ? 'border-[#5A5A40] ring-1 ring-[#5A5A40]/30' : 'border-[#D6D6C2]'}`}>
+                  {/* Reorder (carousel order matters; harmless for countdown) */}
+                  <div className="flex flex-col gap-0.5 shrink-0">
+                    <button type="button" disabled={isFirst} onClick={() => pbMove(b, -1)} title="لأعلى"
+                      className="p-0.5 rounded border border-[#E7E5DB] text-[#5A5A40] hover:bg-[#FAF8F5] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+                      <ChevronUp className="w-3 h-3" />
+                    </button>
+                    <button type="button" disabled={isLast} onClick={() => pbMove(b, 1)} title="لأسفل"
+                      className="p-0.5 rounded border border-[#E7E5DB] text-[#5A5A40] hover:bg-[#FAF8F5] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
                   </div>
-                  <button type="button" onClick={() => onTogglePromoBanner?.(b.id, !b.isActive)} className={`text-[9.5px] font-bold px-2 py-1 rounded-lg shrink-0 cursor-pointer ${b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>{b.isActive ? 'مفعّل' : 'متوقف'}</button>
-                  <button type="button" onClick={() => { if (confirm('حذف هذا البانر نهائياً؟')) onDeletePromoBanner?.(b.id); }} className="text-[9.5px] font-bold text-rose-600 hover:underline cursor-pointer shrink-0">حذف</button>
+
+                  {/* Thumbnail */}
+                  {b.imageUrl ? (
+                    <img src={b.imageUrl} alt="" referrerPolicy="no-referrer" className="w-12 h-12 rounded-xl object-cover border border-[#E7E5DB] shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-[#EBEBE0]/60 border border-[#E7E5DB] flex items-center justify-center shrink-0">
+                      <Megaphone className="w-4 h-4 text-[#BCBC9D]" />
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${b.placement === 'carousel' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700'}`}>{b.placement === 'carousel' ? 'كاروسيل' : 'عدّاد'}</span>
+                      {expired && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 shrink-0">انتهى</span>}
+                    </div>
+                    <p className="text-[11px] font-black text-[#4A4A3A] truncate mt-0.5">{b.title || b.badge || '—'}</p>
+                    {b.subtitle && <p className="text-[9.5px] text-[#8A8A70] truncate">{b.subtitle}</p>}
+                    {b.endsAt && (
+                      <p className="text-[9px] font-bold text-[#8A8A70] mt-0.5">
+                        ينتهي: {new Date(b.endsAt).toLocaleString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col items-stretch gap-1 shrink-0">
+                    <button type="button" onClick={() => pbStartEdit(b)} className="flex items-center justify-center gap-1 text-[9.5px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer">
+                      <Pencil className="w-3 h-3" /> تعديل
+                    </button>
+                    <button type="button" onClick={() => onTogglePromoBanner?.(b.id, !b.isActive)} className={`text-[9.5px] font-bold px-2 py-1 rounded-lg cursor-pointer ${b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>{b.isActive ? 'مفعّل' : 'متوقف'}</button>
+                    <button type="button" onClick={() => { if (confirm('حذف هذا البانر نهائياً؟')) { if (pbEditingId === b.id) pbResetForm(); onDeletePromoBanner?.(b.id); } }} className="text-[9.5px] font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg cursor-pointer">حذف</button>
+                  </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>

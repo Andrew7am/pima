@@ -22,7 +22,12 @@ export default function UserDashboard({
   onToggleFavorite,
   promoBanners = [],
 }: UserDashboardProps) {
-  const carouselSlides = promoBanners.filter((b) => b.placement === 'carousel' && b.isActive);
+  // Respect the admin's slide order (the `sort` the reorder arrows write) rather
+  // than whatever order the array happens to be in after an in-session edit.
+  const carouselSlides = promoBanners
+    .filter((b) => b.placement === 'carousel' && b.isActive)
+    .slice()
+    .sort((a, b) => a.sort - b.sort || a.createdAt.localeCompare(b.createdAt));
   const countdownBanner = promoBanners.find((b) => b.placement === 'countdown' && b.isActive);
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
