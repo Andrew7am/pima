@@ -3,6 +3,7 @@ import { RetreatHouse, Booking, Review, User, Room, Announcement, WaitlistEntry,
 import { SUITABILITY_MAP } from '../mockData';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice } from '../lib/pricing';
+import { getCapacityStatus } from '../lib/roomOccupancy';
 import { getHouseOwnerProfile, OwnerProfile } from '../lib/db';
 import { 
   ArrowRight, MapPin, BedDouble, Calendar, Users, 
@@ -627,10 +628,16 @@ export default function HouseDetail({
   // Form states for booking
   const [checkIn, setCheckIn] = useState((house.propertyType === 'student' || house.propertyType === 'staff') ? '2026-09-01' : '2026-07-15');
   const [checkOut, setCheckOut] = useState((house.propertyType === 'student' || house.propertyType === 'staff') ? '2027-06-30' : '2026-07-18');
-  const [guestsCount, setGuestsCount] = useState<number>(
-    lastBookingHere?.guestsCount
-      ?? ((house.propertyType === 'student' || house.propertyType === 'staff') ? 1 : 30)
-  );
+  const [guestsCount, setGuestsCount] = useState<number>(() => {
+    const isMonthly = house.propertyType === 'student' || house.propertyType === 'staff';
+    const fallback = isMonthly ? 1 : 30;
+    const preferred = lastBookingHere?.guestsCount ?? fallback;
+    // Never open the form already over the house's capacity: a 30-person
+    // default on a 20-bed house made the page show "join the waitlist" before
+    // the visitor had touched anything.
+    const cap = house.bedsCount || 0;
+    return cap > 0 ? Math.min(preferred, cap) : preferred;
+  });
   const [usePoints, setUsePoints] = useState(false);
   
   // Custom price quote states
@@ -811,16 +818,20 @@ export default function HouseDetail({
 
   // Whether the currently selected dates/guest count would exceed remaining
   // capacity — used to offer joining the waitlist instead of a doomed booking attempt.
-  const wouldExceedCapacity = (() => {
-    if (!checkIn || !checkOut || isMonthlyHousing) return false;
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
-      const s = d.toISOString().split('T')[0];
-      if (usedBedsOnDate(s) + guestsCount > (house.bedsCount || 0)) return true;
-    }
-    return false;
-  })();
+  // Two distinct failure modes, deliberately kept apart: a group larger than
+  // the house can never be helped by a waitlist, while a house that is merely
+  // full on the chosen dates can. See lib/roomOccupancy.getCapacityStatus.
+  const capacityStatus = getCapacityStatus({
+    bedsCount: house.bedsCount || 0,
+    guestsCount,
+    checkIn,
+    checkOut,
+    usedBedsOnDate,
+    isMonthly: isMonthlyHousing,
+  });
+  const exceedsHouseCapacity = capacityStatus === 'exceeds_house';
+  const isFullOnDates = capacityStatus === 'full_on_dates';
+  const wouldExceedCapacity = capacityStatus !== 'ok';
 
   const alreadyOnWaitlist = waitlist.some(
     (w) => w.userId === currentUser?.id && w.houseId === house.id && w.checkIn === checkIn && w.checkOut === checkOut && w.status === 'waiting'
@@ -2074,10 +2085,14 @@ export default function HouseDetail({
                     type="number"
                     required
                     min={1}
+                    max={!isMonthlyHousing && house.bedsCount ? house.bedsCount : undefined}
                     value={guestsCount}
                     onChange={(e) => setGuestsCount(parseInt(e.target.value) || 1)}
                     className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A]"
                   />
+                  {!isMonthlyHousing && !!house.bedsCount && (
+                    <p className="text-[9px] text-[#8A8A70] font-bold mt-0.5">الحد الأقصى لهذا البيت: {house.bedsCount} فرد</p>
+                  )}
                   {lastBookingHere && (
                     <p className="text-[9px] text-emerald-700 font-bold mt-0.5">تم ملء العدد تلقائياً من حجزك السابق ({lastBookingHere.guestsCount} فرد)</p>
                   )}
@@ -2206,7 +2221,23 @@ export default function HouseDetail({
                   <p className="text-[9px] text-sky-800/80 pt-0.5">يقوم المالك بإعادة المبلغ بنفس طريقة الدفع خلال أيام قليلة من الإلغاء.</p>
                 </div>
 
-                {wouldExceedCapacity ? (
+                {exceedsHouseCapacity ? (
+                  <div className="space-y-2">
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[10.5px] text-amber-900 font-bold text-center leading-relaxed">
+                      هذا البيت يتسع لـ <strong>{house.bedsCount}</strong> فرد كحد أقصى،
+                      وأنت طلبت <strong>{guestsCount}</strong>.
+                      <br />
+                      <span className="font-medium">قلّل عدد الأفراد لتتمكن من الحجز.</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setGuestsCount(house.bedsCount || 1)}
+                      className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-colors cursor-pointer"
+                    >
+                      اضبط العدد على {house.bedsCount} فرد
+                    </button>
+                  </div>
+                ) : isFullOnDates ? (
                   <div className="space-y-2">
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[10px] text-amber-800 font-bold text-center">
                       عذراً، البيت مكتمل الإشغال في هذه التواريخ لعدد الأفراد المطلوب.

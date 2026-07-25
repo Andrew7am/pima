@@ -67,3 +67,42 @@ export function getHouseRoomAvailabilityForRange(
     .filter((r) => r.houseId === houseId && r.status !== 'maintenance')
     .map((room) => ({ room, freeBeds: getRoomFreeBedsForRange(room, allocations, bookings, checkIn, checkOut, excludeBookingId) }));
 }
+
+// ─── Booking-form capacity decision ────────────────────────────────────────
+
+export type CapacityStatus =
+  | 'ok'              // the request fits — show the booking button
+  | 'exceeds_house'   // group is bigger than the house itself — waitlist is a dead end
+  | 'full_on_dates';  // house could fit them, but not on these dates — waitlist helps
+
+// Kept as a pure function so the booking form's most consequential branch is
+// testable. It previously lived inline in HouseDetail and conflated the two
+// failure modes: a 30-person default on a 20-bed house rendered "fully booked
+// on these dates" on an empty house, pushing visitors to a waitlist that could
+// never help them.
+export function getCapacityStatus(opts: {
+  bedsCount: number;
+  guestsCount: number;
+  checkIn: string;
+  checkOut: string;
+  usedBedsOnDate: (dateStr: string) => number;
+  isMonthly?: boolean;
+}): CapacityStatus {
+  const { bedsCount, guestsCount, checkIn, checkOut, usedBedsOnDate, isMonthly } = opts;
+  // Monthly housing is contracted per person, not against a nightly bed count.
+  if (isMonthly) return 'ok';
+  // An owner who never declared a bed count means capacity is unknown, not
+  // zero. Treating it as zero would silently make the house unbookable and
+  // report it as "fully booked" — the server's capacity trigger is the real
+  // backstop, so let the request through rather than invent a wall.
+  if (bedsCount <= 0) return 'ok';
+  if (guestsCount > bedsCount) return 'exceeds_house';
+  if (!checkIn || !checkOut || checkIn >= checkOut) return 'ok';
+
+  const end = new Date(`${checkOut}T00:00:00`);
+  for (const d = new Date(`${checkIn}T00:00:00`); d < end; d.setDate(d.getDate() + 1)) {
+    const s = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (usedBedsOnDate(s) + guestsCount > bedsCount) return 'full_on_dates';
+  }
+  return 'ok';
+}
