@@ -1504,7 +1504,6 @@ export default function App() {
             onSelectHouse={(h) => setSelectedHouse(h)}
             onSelectRewards={() => requireLogin()}
             onToggleFavorite={() => requireLogin(selectedHouse?.id)}
-            platformAnnouncements={platformAnnouncements.filter((a) => a.isActive)}
             promoBanners={promoBanners}
           />
         )}
@@ -1678,8 +1677,7 @@ export default function App() {
               onSelectHouse={(h) => setSelectedHouse(h)}
               onSelectRewards={() => setActiveScreen('profile')}
               onToggleFavorite={handleToggleFavorite}
-              platformAnnouncements={platformAnnouncements.filter((a) => a.isActive)}
-            promoBanners={promoBanners}
+              promoBanners={promoBanners}
             />
           )}
 

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { PlatformAnnouncement, RetreatHouse, User, PromoBanner } from '../types';
+import { RetreatHouse, User, PromoBanner } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen } from 'lucide-react';
-import AnnouncementCarousel from './AnnouncementCarousel';
 import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
 import { loadHousesAvailability } from '../lib/db';
 
@@ -12,7 +11,6 @@ interface UserDashboardProps {
   onSelectHouse: (house: RetreatHouse) => void;
   onSelectRewards: () => void;
   onToggleFavorite: (houseId: string) => void;
-  platformAnnouncements?: PlatformAnnouncement[];
   promoBanners?: PromoBanner[];
 }
 
@@ -22,7 +20,6 @@ export default function UserDashboard({
   onSelectHouse,
   onSelectRewards,
   onToggleFavorite,
-  platformAnnouncements = [],
   promoBanners = [],
 }: UserDashboardProps) {
   const carouselSlides = promoBanners.filter((b) => b.placement === 'carousel' && b.isActive);
@@ -190,15 +187,6 @@ export default function UserDashboard({
         </span>
         <span className="text-[11px] font-bold text-[#8A8A70] group-hover:text-[#3A6B4C]">افتح الدليل ←</span>
       </a>
-
-      {/* Top banner: rotates through admin-published announcements every ~6s,
-          always falls back to the welcome message when none are active */}
-      <AnnouncementCarousel
-        currentUser={currentUser}
-        announcements={platformAnnouncements}
-        houses={houses}
-        onSelectHouse={onSelectHouse}
-      />
 
       {/* Loyalty/Rewards Status Bar card — logged-in guests only */}
       {currentUser && currentUser.role !== 'owner' && (
