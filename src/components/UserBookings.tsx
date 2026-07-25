@@ -251,6 +251,10 @@ export default function UserBookings({
     const fresh = bookings.find((b) => b.id === autoPayBookingId);
     if (!fresh) return;
     if (!fresh.depositPaid) {
+      // The transfer form lives inside the booking's detail sheet, so the sheet
+      // has to be opened too — setting isPaying alone leaves the list showing a
+      // collapsed card and nothing else.
+      setDetailBookingId(fresh.id);
       setIsPaying(fresh.id);
       setPaymentAmount(Math.round(fresh.totalPrice * settings.depositRate).toString());
     }
