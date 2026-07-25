@@ -1624,6 +1624,19 @@ export default function UserBookings({
                         )}
                       </div>
 
+                      {/* No payee is configured for this method — say so plainly
+                          instead of leaving a disabled button with no reason.
+                          Owner numbers are server-side hidden from guests, so an
+                          empty list here means the platform has not published
+                          its own collection numbers yet. */}
+                      {selectedPayeeMissing && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-2.5 text-[10px] text-amber-900 font-bold leading-relaxed">
+                          {payMethods.length === 0
+                            ? 'لم تُنشر وسيلة سداد بعد. تواصل مع إدارة بيما من خلال المحادثة أو الدعم الفني لاستكمال السداد.'
+                            : 'وسيلة السداد التي اخترتها غير متاحة لهذا الحجز — اختر وسيلة أخرى من القائمة أعلاه.'}
+                        </div>
+                      )}
+
                       {/* Action buttons */}
                       <div className="flex items-center justify-between border-t border-[#E7E5DB] pt-3">
                         <span className="text-[10px] text-[#867E65] font-bold">
