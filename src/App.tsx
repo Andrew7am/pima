@@ -244,6 +244,8 @@ export default function App() {
   // Which friend's chat thread is open — set right before navigating to 'chat_thread'
   const [activeChatFriend, setActiveChatFriend] = useState<{ id: string; name: string } | null>(null);
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
+  // Booking whose transfer card should open on arrival at "حجوزاتي".
+  const [pendingPayBookingId, setPendingPayBookingId] = useState<string | null>(null);
   // One place to record a house view, rather than at each of the several call
   // sites that can open one (list, map, deep link, post-login restore).
   useEffect(() => {
@@ -810,6 +812,9 @@ export default function App() {
       }
     }
 
+    // Deposit is collected up front, so hand the guest straight to the transfer
+    // card for the booking they just placed rather than making them find it.
+    setPendingPayBookingId(savedBooking.id);
     setActiveScreen('bookings');
     setSelectedHouse(null);
     return true;
@@ -1751,6 +1756,8 @@ export default function App() {
               settings={settings}
               reviews={reviews}
               onSubmitReview={handleAddReview}
+              autoPayBookingId={pendingPayBookingId}
+              onAutoPayConsumed={() => setPendingPayBookingId(null)}
             />
           )}
 

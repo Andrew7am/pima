@@ -30,6 +30,10 @@ interface UserBookingsProps {
   settings?: PlatformSettings;
   reviews?: Review[];
   onSubmitReview?: (review: Review) => void;
+  // Set right after a booking request is placed so the guest lands straight on
+  // the transfer card instead of having to hunt for it.
+  autoPayBookingId?: string | null;
+  onAutoPayConsumed?: () => void;
 }
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
@@ -201,6 +205,8 @@ export default function UserBookings({
   settings = DEFAULT_PLATFORM_SETTINGS,
   reviews = [],
   onSubmitReview,
+  autoPayBookingId = null,
+  onAutoPayConsumed,
 }: UserBookingsProps) {
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
   // Which booking's detail sheet is open. Stored as an id (not the object) so
@@ -236,6 +242,21 @@ export default function UserBookings({
   const [notifiedOwner, setNotifiedOwner] = useState<Set<string>>(new Set());
   const [isPaying, setIsPaying] = useState<string | null>(null);
   const [chatOpenBookingId, setChatOpenBookingId] = useState<string | null>(null);
+
+  // A request was just placed: open its transfer card immediately, prefilled
+  // with the deposit, and clear the handoff so a later re-render doesn't
+  // reopen it after the guest closed it.
+  useEffect(() => {
+    if (!autoPayBookingId) return;
+    const fresh = bookings.find((b) => b.id === autoPayBookingId);
+    if (!fresh) return;
+    if (!fresh.depositPaid) {
+      setIsPaying(fresh.id);
+      setPaymentAmount(Math.round(fresh.totalPrice * settings.depositRate).toString());
+    }
+    onAutoPayConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPayBookingId, bookings.length]);
   
   // Egyptian Payment System Form States
   const [selectedMethod, setSelectedMethod] = useState<'bank' | 'instapay' | 'vodafone' | 'cash' | 'online'>('instapay');
@@ -743,7 +764,12 @@ export default function UserBookings({
               {visibleBookings.map((booking) => {
             const badge = getStatusBadge(booking.status);
             const StatusIcon = badge.icon;
-            const canPayDeposit = booking.status === 'approved' && !booking.depositPaid;
+            // The deposit is collected UP FRONT: the guest transfers to the
+            // platform as soon as the request is placed, and the owner approves
+            // afterwards. Waiting for approval first left a request sitting with
+            // no commitment behind it.
+            const canPayDeposit =
+              (booking.status === 'pending' || booking.status === 'approved') && !booking.depositPaid;
             const bookingHouse = houses.find((h) => h.id === booking.houseId);
             // Manual-collection model (migration 069): if the platform has its own
             // payment numbers, the guest pays THOSE (Pima collects the deposit,
@@ -984,7 +1010,7 @@ export default function UserBookings({
                           <div className="flex items-center gap-2 text-[#8A8A70] font-bold"><Clock className="w-3.5 h-3.5 text-[#BCBC9D]" /> بانتظار موافقة صاحب البيت على طلبك.</div>
                           {payMethods.length > 0 && (
                             <div className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl p-2.5 space-y-1.5">
-                              <div className="flex items-center gap-1.5 font-black text-[#4A4A3A]"><Coins className="w-3.5 h-3.5 text-[#867E65]" /> وسائل السداد بعد الموافقة (إلى {payeeLabel})</div>
+                              <div className="flex items-center gap-1.5 font-black text-[#4A4A3A]"><Coins className="w-3.5 h-3.5 text-[#867E65]" /> حوّل العربون الآن إلى {payeeLabel} لتأكيد طلبك</div>
                               <div className="space-y-1">
                                 {payMethods.map((pm) => (
                                   <div key={pm.id} className="flex justify-between items-center">
