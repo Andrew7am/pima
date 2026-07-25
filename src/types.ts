@@ -40,6 +40,7 @@ export interface User {
   equippedAssists?: string[]; // entertainment: equipped in-match power-ups (SmartAssistBar)
   streak?: number;            // entertainment: consecutive-days streak shown on the player card
   profileTitle?: string;      // entertainment: equipped rank/title shown on the player card
+  emailOptOut?: boolean;      // true = transactional email suppressed (migration 079)
 }
 
 export interface ConferenceHall {

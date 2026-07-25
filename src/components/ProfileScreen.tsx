@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { User, Booking } from '../types';
 import {
   User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft,
-  Trash2, ShieldCheck, Camera, Coins, Award, CalendarCheck, ChevronRight, Copy, Check,
+  Trash2, ShieldCheck, Camera, Coins, Award, CalendarCheck, ChevronRight, Copy, Check, Mail,
 } from 'lucide-react';
 import RewardsDashboard from './RewardsDashboard';
 import PhotoPickerButtons from './PhotoPickerButtons';
+import { setEmailOptOut } from '../lib/db';
 
 interface ProfileScreenProps {
   currentUser: User;
@@ -77,6 +78,36 @@ function SettingsRow({ icon: Icon, label, sublabel, onClick, tint = '#5A5A40', b
   );
 }
 
+// Same visual language as SettingsRow, but the control is a switch rather than
+// a navigation chevron.
+function ToggleRow({ icon: Icon, label, sublabel, checked, onChange, tint = '#5A5A40', busy }: {
+  icon: React.ElementType; label: string; sublabel?: string;
+  checked: boolean; onChange: (next: boolean) => void; tint?: string; busy?: boolean;
+}) {
+  return (
+    <div className="w-full flex items-center gap-3 bg-white px-3.5 py-3 text-right">
+      <span className="w-9 h-9 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${tint}14` }}>
+        <Icon className="w-[18px] h-[18px]" style={{ color: tint }} />
+      </span>
+      <div className="flex-1 min-w-0">
+        <span className="text-[13px] font-bold text-[#2E2E24] block truncate">{label}</span>
+        {sublabel && <span className="text-[10px] text-[#8A8A70] font-medium block truncate">{sublabel}</span>}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        disabled={busy}
+        onClick={() => onChange(!checked)}
+        className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 cursor-pointer ${checked ? 'bg-[#2E7D5B]' : 'bg-[#D6D6C2]'}`}
+      >
+        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${checked ? 'right-0.5' : 'right-[22px]'}`} />
+      </button>
+    </div>
+  );
+}
+
 export default function ProfileScreen({
   currentUser, onLogout, onBack, onNavigateSupport, onNavigatePrivacy, onDeleteAccount, onUpdateAvatar,
   bookings = [], onNavigateBookings,
@@ -90,6 +121,18 @@ export default function ProfileScreen({
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [copied, setCopied] = useState(false);
+  // Stored as an opt-OUT server-side; shown as an opt-IN switch, which is what
+  // a user expects to see next to "email notifications".
+  const [emailsOn, setEmailsOn] = useState(!currentUser.emailOptOut);
+  const [emailBusy, setEmailBusy] = useState(false);
+
+  const handleToggleEmails = async (next: boolean) => {
+    setEmailBusy(true);
+    setEmailsOn(next); // optimistic
+    const settled = await setEmailOptOut(!next);
+    if (settled === null) setEmailsOn(!next); // revert on failure
+    setEmailBusy(false);
+  };
 
   const points = currentUser.points || 0;
   const tier = tierFor(points);
@@ -331,6 +374,15 @@ export default function ProfileScreen({
       <div className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden divide-y divide-[#D6D6C2]/50">
         <SettingsRow icon={UserIcon} tint="#123E75" label="البيانات الشخصية" sublabel="بياناتك وصورتك وحذف الحساب" onClick={() => setView('personal')} />
         <SettingsRow icon={Award} tint="#C5A059" label="المكافآت والنقاط" sublabel={`${tier.emoji} ${tier.name} · ${points.toLocaleString('ar-EG')} نقطة`} onClick={() => setView('rewards')} />
+        <ToggleRow
+          icon={Mail}
+          tint="#2E7D5B"
+          label="إشعارات البريد الإلكتروني"
+          sublabel={emailsOn ? `تصلك رسائل الحجز على ${currentUser.email}` : 'موقوفة — لن تصلك رسائل بريد'}
+          checked={emailsOn}
+          onChange={handleToggleEmails}
+          busy={emailBusy}
+        />
         <SettingsRow icon={HelpCircle} tint="#5A5A40" label="التواصل والدعم الفني" onClick={onNavigateSupport} />
         <SettingsRow icon={ShieldCheck} tint="#5A5A40" label="سياسة الخصوصية وشروط الاستخدام" onClick={onNavigatePrivacy} />
       </div>

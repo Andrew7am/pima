@@ -13,7 +13,7 @@ import {
   loadAttendeesForBooking, loadAllocationsForBooking, saveAttendeesForBooking, saveAllocationsForBooking, loadAllocationsCount,
   createBooking, updateBookingStatus, updateBookingFields, deleteBooking as deleteBookingDb,
   createReview, updateReview as updateReviewDb, deleteReview as deleteReviewDb, createPayment, updatePaymentStatus,
-  markNotificationRead,
+  markNotificationRead, unsubscribeEmail,
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
   createWaitlistEntry, notifyWaitlist as notifyWaitlistDb, notifyOwnerDistributionDone as notifyOwnerDistributionDoneDb,
   loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
@@ -46,6 +46,7 @@ import AuthScreen from './components/AuthScreen';
 import LandingPage from './components/LandingPage';
 import SelfRegisterScreen from './components/SelfRegisterScreen';
 import { registerPushNotifications } from './lib/push';
+import { analytics } from './lib/analytics';
 const ContactSupport = lazy(() => import('./components/ContactSupport'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 import PrivacyPolicy from './components/PrivacyPolicy';
@@ -170,6 +171,31 @@ export default function App() {
   // Firebase project + the push runbook are set up).
   useEffect(() => { if (currentUser?.id) registerPushNotifications(currentUser.id); }, [currentUser?.id]);
 
+  // One-click unsubscribe arriving from an email footer link. Runs with no
+  // session — the token is the credential — then strips itself from the URL so
+  // a refresh doesn't re-trigger it.
+  const [unsubState, setUnsubState] = useState<'idle' | 'done' | 'failed'>('idle');
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get('unsubscribe');
+    if (!token) return;
+    (async () => {
+      const ok = await unsubscribeEmail(token);
+      setUnsubState(ok ? 'done' : 'failed');
+      const url = new URL(window.location.href);
+      url.searchParams.delete('unsubscribe');
+      window.history.replaceState({}, '', url.toString());
+    })();
+  }, []);
+
+  const unsubBanner = unsubState === 'idle' ? null : (
+    <div className={`fixed top-0 inset-x-0 z-[80] px-4 py-3 text-center text-xs font-bold text-white ${unsubState === 'done' ? 'bg-emerald-600' : 'bg-rose-600'}`} dir="rtl">
+      {unsubState === 'done'
+        ? 'تم إلغاء اشتراكك في رسائل البريد. يمكنك تفعيلها مجدداً من "حسابي".'
+        : 'تعذّر إلغاء الاشتراك — الرابط غير صالح أو منتهي.'}
+      <button type="button" onClick={() => setUnsubState('idle')} className="mr-3 underline">إغلاق</button>
+    </div>
+  );
+
   // Live unread booking-messages count driving the red badge on the guest's
   // "المحادثات" tab. We total the inbound unread across the guest's own
   // bookings and keep it fresh with a single realtime channel (RLS scopes its
@@ -218,6 +244,11 @@ export default function App() {
   // Which friend's chat thread is open — set right before navigating to 'chat_thread'
   const [activeChatFriend, setActiveChatFriend] = useState<{ id: string; name: string } | null>(null);
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
+  // One place to record a house view, rather than at each of the several call
+  // sites that can open one (list, map, deep link, post-login restore).
+  useEffect(() => {
+    if (selectedHouse) analytics.viewHouse(selectedHouse.id, selectedHouse.governorate);
+  }, [selectedHouse?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   // Keeps the owner onboarding wizard mounted through its own success
   // screen — see the gate right before the owner shell renders.
   const [justFinishedOnboarding, setJustFinishedOnboarding] = useState(false);
@@ -644,6 +675,7 @@ export default function App() {
 
   // --- User Account Operations ---
   const handleLogin = (user: User) => {
+    analytics.loggedIn(user.role);
     setCurrentUser(user);
     // Add new user to the users list if not already present
     if (!users.some((u) => u.id === user.id || u.email.toLowerCase() === user.email.toLowerCase())) {
@@ -1421,6 +1453,9 @@ export default function App() {
   // then show the auth screen. After login, the deep-link effect above
   // reopens that same house.
   const requireLogin = (houseId?: string) => {
+    // The clearest drop-off signal in the funnel: a guest wanted to act and hit
+    // the wall. Records that it happened, never who.
+    analytics.hitLoginWall(houseId ? 'house' : 'general');
     if (houseId) {
       window.history.replaceState({}, '', `${window.location.pathname}?house=${houseId}`);
       try { localStorage.setItem('pima_pending_house', houseId); } catch { /* storage unavailable */ }
@@ -1463,6 +1498,7 @@ export default function App() {
     };
     return (
       <>
+      {unsubBanner}
       <WebLayout
         activeScreen={activeScreen}
         setActiveScreen={guestNavigate}
@@ -1636,6 +1672,7 @@ export default function App() {
 
   return (
     <>
+    {unsubBanner}
     <WebLayout
       activeScreen={activeScreen}
       setActiveScreen={navigate}

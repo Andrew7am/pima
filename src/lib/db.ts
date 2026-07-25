@@ -31,6 +31,8 @@ export function mapUser(r: Record<string, unknown>): User {
     priestName: r.priest_name as string ?? undefined,
     isBanned: (r.is_banned as boolean) ?? false,
     avatarUrl: r.avatar_url as string ?? undefined,
+    // Pre-migration-079 rows have no column → undefined → treated as opted in.
+    emailOptOut: (r.email_opt_out as boolean) ?? false,
     createdAt: r.created_at as string,
   };
 }
@@ -1153,6 +1155,24 @@ export async function deletePromoBanner(id: string): Promise<boolean> {
   const { error } = await supabase.from('promo_banners').delete().eq('id', id);
   if (error) console.error('deletePromoBanner:', error);
   return !error;
+}
+
+// ─── Email preferences (migration 079) ─────────────────────────────────────
+
+// Turns transactional email on/off for the signed-in user. Returns the value
+// the server settled on, so the UI reflects reality rather than the request.
+export async function setEmailOptOut(optOut: boolean): Promise<boolean | null> {
+  const { data, error } = await supabase.rpc('set_email_opt_out', { p_opt_out: optOut });
+  if (error) { console.error('setEmailOptOut:', error); return null; }
+  return data as boolean;
+}
+
+// One-click unsubscribe from an emailed link — runs without a session, so the
+// recipient never has to sign in to stop receiving mail.
+export async function unsubscribeEmail(token: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('unsubscribe_email', { p_token: token });
+  if (error) { console.error('unsubscribeEmail:', error); return false; }
+  return data === true;
 }
 
 // Self-service account deletion (migration 029). Restricted server-side to

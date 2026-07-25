@@ -1,0 +1,69 @@
+name: Database backup
+
+# Supabase's own point-in-time recovery is a paid add-on, and free-tier backups
+# are short-lived. This keeps an independent, versioned copy of the schema and
+# data as a GitHub artifact — real bookings and payments should never live in
+# exactly one place.
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # 02:00 UTC daily (≈04:00 Cairo)
+  workflow_dispatch: {} # and on demand, e.g. right before a risky migration
+
+jobs:
+  dump:
+    name: pg_dump to artifact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The client version must be >= the server's, or pg_dump refuses to run.
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Dump database
+        env:
+          # Settings → Database → Connection string → URI (session pooler).
+          # Store it as the repository secret SUPABASE_DB_URL.
+          PGURL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$PGURL" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set — backup cannot run."
+            exit 1
+          fi
+          mkdir -p backup
+          STAMP=$(date -u +%Y-%m-%d)
+          # Roles/tablespaces belong to Supabase, not to us — skip them so the
+          # dump restores cleanly into a fresh project.
+          pg_dump "$PGURL" \
+            --no-owner --no-privileges \
+            --schema=public \
+            --format=custom \
+            --file="backup/pima-${STAMP}.dump"
+          # A plain-text copy makes diffing schema drift possible without a restore.
+          pg_dump "$PGURL" \
+            --no-owner --no-privileges \
+            --schema=public --schema-only \
+            --file="backup/pima-schema-${STAMP}.sql"
+          ls -lh backup/
+
+      - name: Upload backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: pima-db-backup
+          path: backup/
+          retention-days: 30
+
+      # A backup nobody notices has stopped is not a backup.
+      - name: Fail loudly if the dump is suspiciously small
+        run: |
+          SIZE=$(stat -c%s backup/*.dump)
+          echo "dump size: ${SIZE} bytes"
+          if [ "$SIZE" -lt 10000 ]; then
+            echo "::error::Dump is under 10 KB — the database is empty or the credentials are wrong."
+            exit 1
+          fi
