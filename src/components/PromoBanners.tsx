@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Instagram, Facebook, Youtube, Twitter, Send, Globe, Music2, MessageCircle, Phone, Mail } from 'lucide-react';
 import { PromoBanner, PromoBannerLink, PromoLinkPlatform } from '../types';
 import { safeUrl } from '../lib/safeUrl';
+import BannerCanvas from './banner/BannerCanvas';
 
 // Icon + brand tint per platform. lucide has no WhatsApp/TikTok glyph, so those
 // reuse the closest shape (chat bubble / music note) with their brand colour.
@@ -25,7 +26,7 @@ export const PROMO_PLATFORMS = Object.entries(PLATFORM_META).map(([value, m]) =>
 
 // The row of round icon links drawn inside a banner. Each is a real anchor, so
 // a tap opens the account directly instead of firing the banner's own CTA.
-function BannerLinkIcons({ links, size = 'w-7 h-7' }: { links?: PromoBannerLink[]; size?: string }) {
+export function BannerLinkIcons({ links, size = 'w-7 h-7' }: { links?: PromoBannerLink[]; size?: string }) {
   const usable = (links ?? [])
     .map((l) => ({ ...l, href: safeUrl(l.url) }))
     .filter((l) => l.href);
@@ -95,10 +96,15 @@ export function SummerOfferCarousel({ slides, onCta }: { slides?: PromoBanner[];
     return () => clearInterval(interval);
   }, [items.length]);
   const active = Math.min(activeSlide, items.length - 1);
+  // A slide designed in the banner editor renders from its saved layout; the
+  // rest keep the original fixed design. The box (h-44) is identical either way.
+  const designed = slides && slides.length > 0 ? slides[active] : undefined;
 
   return (
     <div className="relative rounded-3xl overflow-hidden h-44 shadow-md bg-slate-900 group select-none">
-      {items.map((s, i) => {
+      {designed?.layout ? (
+        <BannerCanvas banner={designed} layout={designed.layout} />
+      ) : items.map((s, i) => {
         if (i !== active) return null;
         const accent = ACCENTS[i % ACCENTS.length];
         return (
@@ -175,6 +181,14 @@ export function CountdownOfferBanner({ banner, onCta }: { banner?: PromoBanner; 
     const timer = setInterval(tick, 1000);
     return () => clearInterval(timer);
   }, [endsAt]);
+
+  if (banner?.layout) {
+    return (
+      <div className="relative rounded-3xl overflow-hidden h-32 bg-slate-950 text-white select-none shadow-md">
+        <BannerCanvas banner={banner} layout={banner.layout} />
+      </div>
+    );
+  }
 
   return (
     <div className="relative rounded-3xl overflow-hidden h-32 bg-slate-950 text-white select-none shadow-md">

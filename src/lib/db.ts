@@ -319,6 +319,7 @@ export function mapPromoBanner(r: Record<string, unknown>): PromoBanner {
     // Pre-migration-081 rows have no columns → undefined → sensible defaults.
     linkUrl: (r.link_url as string) ?? undefined,
     links: Array.isArray(r.links) ? (r.links as PromoBanner['links']) : [],
+    layout: (r.layout as PromoBanner['layout']) ?? null,
   };
 }
 
@@ -1135,6 +1136,7 @@ function promoBannerToRow(b: PromoBanner): Record<string, unknown> {
     created_at: b.createdAt,
     link_url: b.linkUrl ?? null,
     links: b.links ?? [],
+    layout: b.layout ?? null,
   };
 }
 

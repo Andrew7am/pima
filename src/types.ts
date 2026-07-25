@@ -320,6 +320,51 @@ export interface PromoBannerLink {
   label?: string;
 }
 
+// ─── Visual banner layout ──────────────────────────────────────────────────
+// A banner is stored as STRUCTURED DATA, never a flattened image, so every
+// property stays editable later. Geometry is expressed in PERCENT of the
+// banner box (and font sizes relative to a 360px design width), so a layout
+// designed once keeps working at every screen width without breaking — the
+// mobile app's existing banner boxes are never resized.
+
+export type BannerFit =
+  | 'cover' | 'contain' | 'fill'
+  | 'center' | 'top' | 'bottom' | 'left' | 'right';
+
+export interface BannerImageLayer {
+  fit: BannerFit;
+  scale: number;     // 0.5 – 2 (zoom)
+  x: number;         // pan, % of box width  (-50 … 50)
+  y: number;         // pan, % of box height (-50 … 50)
+  opacity: number;   // 0 – 1
+}
+
+export type BannerElementType = 'badge' | 'title' | 'subtitle' | 'button' | 'icons' | 'logo';
+
+export interface BannerElement {
+  id: string;
+  type: BannerElementType;
+  visible: boolean;
+  locked: boolean;
+  x: number;          // % of box width  — element's start edge
+  y: number;          // % of box height — element's top edge
+  width?: number;     // % of box width
+  fontSize?: number;  // px at the 360px design width
+  color?: string;
+  bg?: string;
+  radius?: number;    // px
+  opacity?: number;   // 0 – 1
+  rotation?: number;  // deg
+  align?: 'start' | 'center' | 'end';
+}
+
+export interface BannerLayout {
+  version: 1;
+  image: BannerImageLayer;
+  overlay: { enabled: boolean; opacity: number };
+  elements: BannerElement[]; // back → front
+}
+
 export interface PromoBanner {
   id: string;
   placement: 'carousel' | 'countdown';
@@ -337,6 +382,9 @@ export interface PromoBanner {
   linkUrl?: string;
   // Icon links shown inside the banner (social accounts, phone, site…).
   links?: PromoBannerLink[];
+  // Visual layout from the banner designer. Absent → the banner renders with
+  // the original fixed design, so every existing banner is unaffected.
+  layout?: BannerLayout | null;
 }
 
 export interface PlatformSettings {

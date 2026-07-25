@@ -10,9 +10,11 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
   { value: 'we_cash', label: 'وي كاش' },
   { value: 'bank_transfer', label: 'تحويل بنكي' },
 ];
-import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown } from 'lucide-react';
+import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2 } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
+import BannerEditor from './banner/BannerEditor';
+import { BANNER_BOX, DEFAULT_LAYOUT } from './banner/BannerCanvas';
 import HouseDetail from './HouseDetail';
 import { AMENITIES_LIST } from '../mockData';
 import { loadBookingMessages } from '../lib/bookingMessages';
@@ -171,6 +173,8 @@ export default function AdminDashboard({
   // Non-null while editing an existing banner — the same form doubles as the
   // editor, so "add" and "save changes" share one set of fields.
   const [pbEditingId, setPbEditingId] = useState<string | null>(null);
+  // Banner whose visual layout is open in the designer.
+  const [pbDesigningId, setPbDesigningId] = useState<string | null>(null);
 
   const pbResetForm = () => {
     setPbEditingId(null);
@@ -1472,6 +1476,49 @@ export default function AdminDashboard({
             </button>
           </div>
 
+          {/* Visual designer for the selected banner */}
+          {(() => {
+            const target = promoBanners.find((b) => b.id === pbDesigningId);
+            if (!target) return null;
+            return (
+              <div className="bg-white rounded-2xl border border-[#0A2342]/25 p-4 space-y-3 shadow-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Wand2 className="w-4 h-4 text-[#0A2342] shrink-0" />
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-black text-[#0A2342] truncate">تصميم البانر — {target.title || target.badge || '—'}</h3>
+                      <p className="text-[9px] font-bold text-[#8A8A70]">
+                        {BANNER_BOX[target.placement].label} · المقاس ثابت زي التطبيق ({BANNER_BOX[target.placement].height}px ارتفاع)
+                      </p>
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => setPbDesigningId(null)}
+                    className="text-[9.5px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] cursor-pointer shrink-0">إغلاق ✕</button>
+                </div>
+
+                <BannerEditor
+                  banner={target}
+                  layout={target.layout}
+                  onChange={(layout) => onUpdatePromoBanner?.({ ...target, layout })}
+                />
+
+                {target.layout && (
+                  <button type="button"
+                    onClick={() => { if (confirm('إرجاع البانر للتصميم الافتراضي؟')) onUpdatePromoBanner?.({ ...target, layout: null }); }}
+                    className="w-full text-[9.5px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 py-1.5 rounded-xl cursor-pointer">
+                    إلغاء التصميم المخصّص والرجوع للشكل الافتراضي
+                  </button>
+                )}
+                {!target.layout && (
+                  <button type="button" onClick={() => onUpdatePromoBanner?.({ ...target, layout: DEFAULT_LAYOUT(target.placement) })}
+                    className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[10.5px] font-black py-2 rounded-xl cursor-pointer">
+                    ابدأ تصميم مخصّص لهذا البانر
+                  </button>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Existing banners */}
           <div className="space-y-2">
             {promoBanners.length === 0 ? (
@@ -1527,6 +1574,12 @@ export default function AdminDashboard({
                   <div className="flex flex-col items-stretch gap-1 shrink-0">
                     <button type="button" onClick={() => pbStartEdit(b)} className="flex items-center justify-center gap-1 text-[9.5px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer">
                       <Pencil className="w-3 h-3" /> تعديل
+                    </button>
+                    <button type="button" onClick={() => setPbDesigningId(pbDesigningId === b.id ? null : b.id)}
+                      className={`flex items-center justify-center gap-1 text-[9.5px] font-bold px-2 py-1 rounded-lg cursor-pointer border ${
+                        pbDesigningId === b.id ? 'bg-[#0A2342] text-white border-[#0A2342]' : 'text-[#0A2342] border-[#0A2342]/30 hover:bg-[#FAF8F5]'
+                      }`}>
+                      <Wand2 className="w-3 h-3" /> تصميم
                     </button>
                     <button type="button" onClick={() => onTogglePromoBanner?.(b.id, !b.isActive)} className={`text-[9.5px] font-bold px-2 py-1 rounded-lg cursor-pointer ${b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>{b.isActive ? 'مفعّل' : 'متوقف'}</button>
                     <button type="button" onClick={() => { if (confirm('حذف هذا البانر نهائياً؟')) { if (pbEditingId === b.id) pbResetForm(); onDeletePromoBanner?.(b.id); } }} className="text-[9.5px] font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg cursor-pointer">حذف</button>
