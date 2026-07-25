@@ -102,6 +102,7 @@ export default function WebLayout({
             <div className="relative">
               <button
                 onClick={() => setShowNotif(v => !v)}
+                aria-label="الإشعارات"
                 className="relative p-2 rounded-lg hover:bg-[var(--color-natural-hover)] text-[var(--color-natural-secondary)] transition-colors"
               >
                 <Bell className="w-5 h-5" />

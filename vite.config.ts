@@ -233,6 +233,20 @@ export default defineConfig(({ mode }) => {
       // so the initial app bundle is smaller and a code change doesn't bust
       // the vendor cache. Screens are already route-level lazy-loaded.
       rollupOptions: {
+        // A circular chunk is what took the site down: `vendor -> vendor-react ->
+        // vendor` produced a TDZ "Cannot access 'X' before initialization" that
+        // only appeared in the bundled output. Whether a given cycle actually
+        // crashes depends on module evaluation order, so a boot check alone can
+        // pass while the hazard is still shipped. Fail the build on the warning
+        // itself — locally, in CI, and on Vercel.
+        onwarn(warning, defaultHandler) {
+          if (typeof warning.message === 'string' && warning.message.includes('Circular chunk')) {
+            throw new Error(
+              `Refusing to build a circular chunk graph — this is the outage class that broke boot.\n${warning.message}`,
+            );
+          }
+          defaultHandler(warning);
+        },
         output: {
           manualChunks(id) {
             if (!id.includes('node_modules')) return undefined;
