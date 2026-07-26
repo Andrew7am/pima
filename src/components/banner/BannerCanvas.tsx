@@ -53,7 +53,7 @@ export function elementLabel(type: BannerElement['type']): string {
   return { badge: 'الشارة', title: 'العنوان', subtitle: 'الوصف', button: 'زر الإجراء', icons: 'الأيقونات', logo: 'الشعار' }[type];
 }
 
-function ElementBody({ el, banner }: { el: BannerElement; banner: PromoBanner }) {
+function ElementBody({ el, banner, onOpenHouse }: { el: BannerElement; banner: PromoBanner; onOpenHouse?: (houseId: string) => void }) {
   const common: React.CSSProperties = {
     color: el.color,
     opacity: el.opacity ?? 1,
@@ -74,9 +74,19 @@ function ElementBody({ el, banner }: { el: BannerElement; banner: PromoBanner })
     case 'subtitle':
       return <p style={{ ...common, fontSize: cq(el.fontSize ?? 11) }} className="font-bold leading-snug">{banner.subtitle}</p>;
     case 'button': {
-      const href = safeUrl(banner.linkUrl);
       const style: React.CSSProperties = { ...common, background: el.bg, borderRadius: el.radius, fontSize: cq(el.fontSize ?? 10), padding: `${cq(6)} ${cq(16)}` };
       const cls = 'inline-block font-black whitespace-nowrap shadow';
+      // An in-app house target wins over an external link: keeping the visitor
+      // inside the app is the whole point of promoting a house.
+      if (banner.linkedHouseId && onOpenHouse) {
+        return (
+          <button type="button" style={style} className={`${cls} cursor-pointer`}
+            onClick={(e) => { e.stopPropagation(); onOpenHouse(banner.linkedHouseId!); }}>
+            {banner.ctaText}
+          </button>
+        );
+      }
+      const href = safeUrl(banner.linkUrl);
       return href
         ? <a href={href} target="_blank" rel="noopener noreferrer nofollow" style={style} className={cls}>{banner.ctaText}</a>
         : <span style={style} className={cls}>{banner.ctaText}</span>;
@@ -95,11 +105,13 @@ interface BannerCanvasProps {
   selectedId?: string | null;
   onSelect?: (id: string) => void;
   interactive?: boolean;
+  /** Opens a house inside the app when the banner targets one. */
+  onOpenHouse?: (houseId: string) => void;
 }
 
 // Renders the layout inside a box whose height comes from BANNER_BOX — the
 // same fixed height the app already uses for that placement.
-export default function BannerCanvas({ banner, layout, selectedId, onSelect, interactive }: BannerCanvasProps) {
+export default function BannerCanvas({ banner, layout, selectedId, onSelect, interactive, onOpenHouse }: BannerCanvasProps) {
   const img = layout.image;
   const fit = FIT_STYLE[img.fit] ?? FIT_STYLE.cover;
   return (
@@ -146,7 +158,7 @@ export default function BannerCanvas({ banner, layout, selectedId, onSelect, int
               textAlign: el.align === 'center' ? 'center' : el.align === 'end' ? 'left' : 'right',
             }}
           >
-            <ElementBody el={el} banner={banner} />
+            <ElementBody el={el} banner={banner} onOpenHouse={onOpenHouse} />
           </div>
         );
       })}

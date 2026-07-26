@@ -2,10 +2,12 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import {
   ArrowRight, Undo2, Redo2, Play, Check, Image as ImageIcon, Type, Palette,
   AlignCenter, Layers, Copy, Trash2, ChevronUp, ChevronDown, Lock, Unlock, Eye, EyeOff,
-  Pencil, X, AlertTriangle, Smartphone, Tablet, RotateCcw, Move,
+  Pencil, X, AlertTriangle, Smartphone, Tablet, RotateCcw, Move, Sparkles,
 } from 'lucide-react';
 import { PromoBanner, BannerLayout, BannerElement, BannerFit } from '../../types';
 import BannerCanvas, { BANNER_BOX, DEFAULT_LAYOUT, elementLabel } from './BannerCanvas';
+import { BANNER_TEMPLATES } from './bannerTemplates';
+import PhotoPickerButtons from '../PhotoPickerButtons';
 
 // Pima Banner Studio — a mobile-first, direct-manipulation editor.
 //
@@ -36,7 +38,7 @@ const FITS: { value: BannerFit; label: string }[] = [
   { value: 'bottom', label: 'أسفل' }, { value: 'left', label: 'يسار' }, { value: 'right', label: 'يمين' },
 ];
 
-type Sheet = 'image' | 'text' | 'style' | 'align' | 'layers' | null;
+type Sheet = 'image' | 'text' | 'style' | 'align' | 'layers' | 'templates' | null;
 interface Snapshot { layout: BannerLayout; banner: PromoBanner }
 
 interface Props {
@@ -121,6 +123,34 @@ export default function BannerStudio({ banner: initial, onSave, onClose }: Props
   // ── Drag to move ─────────────────────────────────────────────────────────
   const startDrag = (e: React.PointerEvent) => {
     const target = (e.target as HTMLElement).closest('[data-el]') as HTMLElement | null;
+    // Dragging the artwork itself repositions the image inside the frame —
+    // the focus point — instead of doing nothing. The frame never moves.
+    if (!target && canvasRef.current) {
+      setSelectedId(null);
+      commit();
+      const host = canvasRef.current.getBoundingClientRect();
+      const sx = e.clientX, sy = e.clientY;
+      const ox = layout.image.x, oy = layout.image.y;
+      const move = (ev: PointerEvent) => {
+        const dx = ((ev.clientX - sx) / host.width) * 100;
+        const dy = ((ev.clientY - sy) / host.height) * 100;
+        setLayout((l) => ({
+          ...l,
+          image: {
+            ...l.image,
+            x: +Math.max(-50, Math.min(50, ox + dx)).toFixed(1),
+            y: +Math.max(-50, Math.min(50, oy + dy)).toFixed(1),
+          },
+        }));
+      };
+      const up = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+      return;
+    }
     if (!target || !canvasRef.current) { setSelectedId(null); return; }
     const id = target.dataset.el!;
     const item = layout.elements.find((x) => x.id === id);
@@ -390,7 +420,19 @@ export default function BannerStudio({ banner: initial, onSave, onClose }: Props
             {sheet === 'image' && (
               <>
                 <span className="text-[12px] font-black text-[#2E2E24]">الصورة</span>
-                <p className="text-[9.5px] font-bold text-[#A8A48F]">الصورة بتتقصّ جوّه الإطار — عمرها ما هتتمدّ أو تتشوّه.</p>
+                <p className="text-[9.5px] font-bold text-[#A8A48F]">
+                  الصورة بتتقصّ جوّه الإطار — عمرها ما هتتمدّ أو تتشوّه. اسحب الصورة في المعاينة لتحديد الجزء الظاهر.
+                </p>
+                <div className="flex items-center gap-2 bg-[#FAF8F5] border border-[#E2DFD4] rounded-2xl p-2">
+                  {banner.imageUrl && (
+                    <img src={banner.imageUrl} alt="" referrerPolicy="no-referrer" className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[9.5px] font-black text-[#5A5A40] block mb-1">تغيير الصورة</span>
+                    <PhotoPickerButtons idPrefix="studio-image" folder="banners"
+                      onSelect={(url) => { commit(); setBanner((b) => ({ ...b, imageUrl: url })); }} />
+                  </div>
+                </div>
                 <div className="flex gap-1.5 overflow-x-auto pb-1">
                   {FITS.map((f) => (
                     <Chip key={f.value} active={layout.image.fit === f.value}
@@ -439,11 +481,27 @@ export default function BannerStudio({ banner: initial, onSave, onClose }: Props
                     <Chip active={!!selected.shadow} onClick={() => { commit(); patchEl(selected.id, { shadow: !selected.shadow }); }}>ظل النص</Chip>
                   </div>
                   <span className="text-[9.5px] font-black text-[#5A5A40] block">اللون</span>
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex gap-2 flex-wrap items-center">
                     {SWATCHES.map((c) => (
                       <button key={c} onClick={() => { commit(); patchEl(selected.id, { color: c }); }}
                         className={`w-8 h-8 rounded-full border-2 active:scale-90 transition-transform cursor-pointer ${selected.color === c ? 'border-[#0A2342]' : 'border-[#E2DFD4]'}`}
                         style={{ background: c }} aria-label={c} />
+                    ))}
+                    <label className="w-8 h-8 rounded-full border-2 border-dashed border-[#C9C5B4] flex items-center justify-center cursor-pointer overflow-hidden"
+                      title="لون مخصّص">
+                      <input type="color" value={selected.color ?? '#FFFFFF'} aria-label="لون مخصّص"
+                        onChange={(e) => patchEl(selected.id, { color: e.target.value })}
+                        className="w-10 h-10 cursor-pointer opacity-0 absolute" />
+                      <span className="text-[13px]">🎨</span>
+                    </label>
+                  </div>
+                  <span className="text-[9.5px] font-black text-[#5A5A40] block pt-1">تباعد الحروف</span>
+                  <div className="flex gap-1.5">
+                    {[0, 0.5, 1, 2].map((ls) => (
+                      <Chip key={ls} active={(selected.letterSpacing ?? 0) === ls}
+                        onClick={() => { commit(); patchEl(selected.id, { letterSpacing: ls }); }}>
+                        {ls === 0 ? 'عادي' : `${ls}px`}
+                      </Chip>
                     ))}
                   </div>
                 </>
@@ -478,6 +536,14 @@ export default function BannerStudio({ banner: initial, onSave, onClose }: Props
                     <input type="range" min={20} max={100} value={Math.round((selected.opacity ?? 1) * 100)}
                       onChange={(e) => patchEl(selected.id, { opacity: +e.target.value / 100 })} className="w-full accent-[#5A5A40]" />
                   </label>
+                  <span className="text-[9.5px] font-black text-[#5A5A40] block">الدوران</span>
+                  <div className="flex gap-1.5 overflow-x-auto pb-1">
+                    {[-15, -8, 0, 8, 15].map((r) => (
+                      <Chip key={r} active={(selected.rotation ?? 0) === r} onClick={() => { commit(); patchEl(selected.id, { rotation: r }); }}>
+                        {r === 0 ? 'مستقيم' : `${r}°`}
+                      </Chip>
+                    ))}
+                  </div>
                 </>
               ) : <p className="text-[10.5px] font-bold text-[#A8A48F] py-4 text-center">اختر عنصراً من البانر الأول</p>
             )}
@@ -512,6 +578,28 @@ export default function BannerStudio({ banner: initial, onSave, onClose }: Props
                   </div>
                 </>
               ) : <p className="text-[10.5px] font-bold text-[#A8A48F] py-4 text-center">اختر عنصراً من البانر الأول</p>
+            )}
+
+            {/* Templates */}
+            {sheet === 'templates' && (
+              <>
+                <span className="text-[12px] font-black text-[#2E2E24]">قوالب جاهزة</span>
+                <p className="text-[9.5px] font-bold text-[#A8A48F]">اختر تصميماً كبداية — كل حاجة تفضل قابلة للتعديل بعدها.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {BANNER_TEMPLATES.map((tpl) => (
+                    <button key={tpl.id} type="button"
+                      onClick={() => { commit(); setLayout(tpl.build(banner.placement)); setSelectedId(null); setSheet(null); }}
+                      className="text-right rounded-2xl border border-[#E2DFD4] overflow-hidden active:scale-95 transition-transform cursor-pointer">
+                      <div className="h-14 flex items-center justify-center" style={{ background: tpl.swatch }}>
+                        <span className="text-white text-[10px] font-black drop-shadow">{tpl.name}</span>
+                      </div>
+                      <div className="p-2 bg-white">
+                        <span className="text-[9px] font-bold text-[#A8A48F] block">{tpl.hint}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
 
             {/* Layers */}
@@ -558,8 +646,8 @@ export default function BannerStudio({ banner: initial, onSave, onClose }: Props
       {/* ── Bottom tab bar ── */}
       <div className="shrink-0 bg-white/95 backdrop-blur border-t border-[#EFEBE0] flex items-stretch px-2 pb-[env(safe-area-inset-bottom)]">
         {([
-          ['image', 'الصورة', ImageIcon], ['text', 'النص', Type], ['style', 'التنسيق', Palette],
-          ['align', 'المحاذاة', AlignCenter], ['layers', 'الطبقات', Layers],
+          ['templates', 'قوالب', Sparkles], ['image', 'الصورة', ImageIcon], ['text', 'النص', Type],
+          ['style', 'التنسيق', Palette], ['align', 'المحاذاة', AlignCenter], ['layers', 'الطبقات', Layers],
         ] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setSheet(sheet === key ? null : key)}
             className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors cursor-pointer ${

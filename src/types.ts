@@ -389,6 +389,11 @@ export interface PromoBanner {
   // Visual layout from the banner designer. Absent → the banner renders with
   // the original fixed design, so every existing banner is unaffected.
   layout?: BannerLayout | null;
+  // The CTA opens this house inside the app (takes precedence over linkUrl).
+  linkedHouseId?: string | null;
+  // Publish state. 'scheduled' shows only between startsAt and endsAt.
+  status?: 'draft' | 'published' | 'scheduled';
+  startsAt?: string | null;
 }
 
 export interface PlatformSettings {

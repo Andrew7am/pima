@@ -15,6 +15,7 @@ import PhotoPickerButtons from './PhotoPickerButtons';
 import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
 import BannerStudio from './banner/BannerStudio';
 import BannerAnalytics from './banner/BannerAnalytics';
+import { bannerStateLabel } from '../lib/bannerVisibility';
 import HouseDetail from './HouseDetail';
 import { AMENITIES_LIST } from '../mockData';
 import { loadBookingMessages } from '../lib/bookingMessages';
@@ -159,6 +160,9 @@ export default function AdminDashboard({
   const [pbEndsAt, setPbEndsAt] = useState('');
   const [pbLinkUrl, setPbLinkUrl] = useState('');
   const [pbLinks, setPbLinks] = useState<PromoBannerLink[]>([]);
+  const [pbHouseId, setPbHouseId] = useState('');
+  const [pbStatus, setPbStatus] = useState<'draft' | 'published' | 'scheduled'>('published');
+  const [pbStartsAt, setPbStartsAt] = useState('');
   // Non-null while editing an existing banner — the same form doubles as the
   // editor, so "add" and "save changes" share one set of fields.
   const [pbEditingId, setPbEditingId] = useState<string | null>(null);
@@ -171,6 +175,7 @@ export default function AdminDashboard({
     setPbEditingId(null);
     setPbBadge(''); setPbTitle(''); setPbSubtitle(''); setPbCta(''); setPbImage(''); setPbEndsAt('');
     setPbLinkUrl(''); setPbLinks([]);
+    setPbHouseId(''); setPbStatus('published'); setPbStartsAt('');
   };
 
   const pbStartEdit = (b: PromoBanner) => {
@@ -185,6 +190,9 @@ export default function AdminDashboard({
     setPbEndsAt(b.endsAt ? new Date(b.endsAt).toISOString().slice(0, 16) : '');
     setPbLinkUrl(b.linkUrl ?? '');
     setPbLinks(b.links ? b.links.map((l) => ({ ...l })) : []);
+    setPbHouseId(b.linkedHouseId ?? '');
+    setPbStatus(b.status ?? 'published');
+    setPbStartsAt(b.startsAt ? new Date(b.startsAt).toISOString().slice(0, 16) : '');
   };
 
   // Swap a banner's sort with its neighbour inside the same placement group.
@@ -1279,8 +1287,47 @@ export default function AdminDashboard({
                 </label>
               )}
 
-              {/* Where the CTA goes — empty keeps the default (scroll to listings) */}
-              <input value={pbLinkUrl} onChange={(e) => setPbLinkUrl(e.target.value)} placeholder="رابط الزر (اختياري — مثال: instagram.com/pima_app)" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" dir="ltr" />
+              {/* Destination: a house inside the app beats any external link */}
+              <div className="col-span-2 space-y-1.5 border-t border-[#E7E5DB] pt-2.5">
+                <span className="text-[10px] font-black text-[#4A4A3A]">وجهة الزر</span>
+                <select value={pbHouseId} onChange={(e) => setPbHouseId(e.target.value)}
+                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right cursor-pointer">
+                  <option value="">بدون — استخدم رابط خارجي</option>
+                  {houses.filter((h) => h.status === 'approved').map((h) => (
+                    <option key={h.id} value={h.id}>🏠 {h.name}</option>
+                  ))}
+                </select>
+                {pbHouseId ? (
+                  <p className="text-[9px] font-bold text-emerald-700">الضغط على الزر هيفتح صفحة البيت جوّه التطبيق.</p>
+                ) : (
+                  <input value={pbLinkUrl} onChange={(e) => setPbLinkUrl(e.target.value)} placeholder="رابط خارجي (اختياري — مثال: instagram.com/pima_app)" className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" dir="ltr" />
+                )}
+              </div>
+
+              {/* Publish state */}
+              <div className="col-span-2 space-y-1.5 border-t border-[#E7E5DB] pt-2.5">
+                <span className="text-[10px] font-black text-[#4A4A3A]">النشر</span>
+                <div className="flex gap-1.5">
+                  {([['draft', 'مسودة'], ['published', 'نشر الآن'], ['scheduled', 'جدولة']] as const).map(([v, label]) => (
+                    <button key={v} type="button" onClick={() => setPbStatus(v)}
+                      className={`flex-1 py-2 rounded-xl text-[10.5px] font-black border transition-all cursor-pointer ${
+                        pbStatus === v ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white text-[#5A5A40] border-[#D6D6C2]'
+                      }`}>{label}</button>
+                  ))}
+                </div>
+                {pbStatus === 'scheduled' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="text-[9px] font-bold text-[#8A8A70]">يبدأ في:
+                      <input type="datetime-local" value={pbStartsAt} onChange={(e) => setPbStartsAt(e.target.value)}
+                        className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-2 py-2 text-right" />
+                    </label>
+                    <label className="text-[9px] font-bold text-[#8A8A70]">ينتهي في:
+                      <input type="datetime-local" value={pbEndsAt} onChange={(e) => setPbEndsAt(e.target.value)}
+                        className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-2 py-2 text-right" />
+                    </label>
+                  </div>
+                )}
+              </div>
 
               {/* Icon links shown inside the banner (social accounts, site, phone…) */}
               <div className="col-span-2 space-y-1.5 pt-1 border-t border-[#E7E5DB]">
@@ -1371,8 +1418,11 @@ export default function AdminDashboard({
                     ctaText: pbCta || undefined,
                     imageUrl: pbImage || undefined,
                     endsAt: existing.placement === 'countdown' && pbEndsAt ? new Date(pbEndsAt).toISOString() : null,
-                    linkUrl: pbLinkUrl || undefined,
+                    linkUrl: pbHouseId ? undefined : (pbLinkUrl || undefined),
                     links: pbLinks.filter((l) => l.url.trim()),
+                    linkedHouseId: pbHouseId || null,
+                    status: pbStatus,
+                    startsAt: pbStatus === 'scheduled' && pbStartsAt ? new Date(pbStartsAt).toISOString() : null,
                   });
                   pbResetForm();
                   setPbView('list');
@@ -1391,8 +1441,11 @@ export default function AdminDashboard({
                   imageUrl: pbImage || undefined,
                   endsAt: pbPlacement === 'countdown' && pbEndsAt ? new Date(pbEndsAt).toISOString() : null,
                   createdAt: new Date().toISOString(),
-                  linkUrl: pbLinkUrl || undefined,
+                  linkUrl: pbHouseId ? undefined : (pbLinkUrl || undefined),
                   links: pbLinks.filter((l) => l.url.trim()),
+                  linkedHouseId: pbHouseId || null,
+                  status: pbStatus,
+                  startsAt: pbStatus === 'scheduled' && pbStartsAt ? new Date(pbStartsAt).toISOString() : null,
                 });
                 pbResetForm();
                 setPbView('list');
@@ -1466,7 +1519,13 @@ export default function AdminDashboard({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${b.placement === 'carousel' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700'}`}>{b.placement === 'carousel' ? 'كاروسيل' : 'عدّاد'}</span>
-                      {expired && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 shrink-0">انتهى</span>}
+                      {(() => {
+                        const s = bannerStateLabel(b);
+                        const tone = s.tone === 'live' ? 'bg-emerald-100 text-emerald-700'
+                          : s.tone === 'warn' ? 'bg-amber-100 text-amber-800' : 'bg-[#EBEBE0] text-[#8A8A70]';
+                        return <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${tone}`}>{s.label}</span>;
+                      })()}
+                      {b.linkedHouseId && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-[#0A2342]/10 text-[#0A2342] shrink-0">🏠 مرتبط ببيت</span>}
                     </div>
                     <p className="text-[11px] font-black text-[#4A4A3A] truncate mt-0.5">{b.title || b.badge || '—'}</p>
                     {b.subtitle && <p className="text-[9.5px] text-[#8A8A70] truncate">{b.subtitle}</p>}

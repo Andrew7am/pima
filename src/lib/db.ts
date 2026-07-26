@@ -320,6 +320,10 @@ export function mapPromoBanner(r: Record<string, unknown>): PromoBanner {
     linkUrl: (r.link_url as string) ?? undefined,
     links: Array.isArray(r.links) ? (r.links as PromoBanner['links']) : [],
     layout: (r.layout as PromoBanner['layout']) ?? null,
+    // Pre-migration-084 rows have no columns → treat them as plain published.
+    linkedHouseId: (r.linked_house_id as string) ?? null,
+    status: (r.status as PromoBanner['status']) ?? 'published',
+    startsAt: (r.starts_at as string) ?? null,
   };
 }
 
@@ -1137,6 +1141,9 @@ function promoBannerToRow(b: PromoBanner): Record<string, unknown> {
     link_url: b.linkUrl ?? null,
     links: b.links ?? [],
     layout: b.layout ?? null,
+    linked_house_id: b.linkedHouseId ?? null,
+    status: b.status ?? 'published',
+    starts_at: b.startsAt ?? null,
   };
 }
 

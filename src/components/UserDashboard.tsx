@@ -4,6 +4,7 @@ import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen } from 'lucide-react';
 import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
 import { loadHousesAvailability } from '../lib/db';
+import { isBannerLive } from '../lib/bannerVisibility';
 
 interface UserDashboardProps {
   houses: RetreatHouse[];
@@ -24,11 +25,17 @@ export default function UserDashboard({
 }: UserDashboardProps) {
   // Respect the admin's slide order (the `sort` the reorder arrows write) rather
   // than whatever order the array happens to be in after an in-session edit.
+  // isBannerLive also honours draft/scheduled windows, so a banner appears and
+  // disappears on its own schedule without anyone toggling it.
   const carouselSlides = promoBanners
-    .filter((b) => b.placement === 'carousel' && b.isActive)
+    .filter((b) => b.placement === 'carousel' && isBannerLive(b))
     .slice()
     .sort((a, b) => a.sort - b.sort || a.createdAt.localeCompare(b.createdAt));
-  const countdownBanner = promoBanners.find((b) => b.placement === 'countdown' && b.isActive);
+  const countdownBanner = promoBanners.find((b) => b.placement === 'countdown' && isBannerLive(b));
+  const openHouseById = (houseId: string) => {
+    const h = houses.find((x) => x.id === houseId);
+    if (h) onSelectHouse(h);
+  };
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGov, setSelectedGov] = useState('');
@@ -179,7 +186,7 @@ export default function UserDashboard({
     <div className="space-y-4 text-right">
 
       {/* Top promo hero (carousel) — admin-managed, falls back to ported defaults */}
-      <SummerOfferCarousel slides={carouselSlides} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+      <SummerOfferCarousel slides={carouselSlides} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
 
       {/* Guide / tips entry — crawlable content section (helps SEO + AdSense) */}
       <a
@@ -704,7 +711,7 @@ export default function UserDashboard({
       </div>
 
       {/* Bottom promo (limited-time countdown offer) — admin-managed, falls back to ported default */}
-      <CountdownOfferBanner banner={countdownBanner} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+      <CountdownOfferBanner banner={countdownBanner} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
 
       {/* Compare Floating Bar */}
       {comparedHouseIds.length > 0 && (

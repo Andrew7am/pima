@@ -71,22 +71,29 @@ const ACCENTS = [
   { badge: 'text-[#C5A059] bg-[#5A5A40]/70', cta: 'bg-[#C5A059] hover:bg-amber-600 text-[#0A2342]' },
 ];
 
-interface DefaultSlide { img: string; badge: string; title: string; sub: string; cta: string; href?: string | null; links?: PromoBannerLink[]; }
+interface DefaultSlide { img?: string; gradient?: string; badge: string; title: string; sub: string; cta: string; href?: string | null; houseId?: string | null; links?: PromoBannerLink[]; }
+
+// Shown only until an admin publishes real banners. These are drawn locally
+// with Pima's own colours instead of pulling stock photos from a third-party
+// CDN: no external request, no foreign beach imagery, and nothing that can
+// break if that host changes.
 const DEFAULT_SLIDES: DefaultSlide[] = [
-  { img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80', badge: 'عرض خاص', title: 'عرض الصيف', sub: 'خصومات تصل إلى ٣٠٪ على بيوت الساحل ومطروح', cta: 'احجز الآن' },
-  { img: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?auto=format&fit=crop&w=1200&q=80', badge: 'حصري ومميز', title: 'خلوات العائلات والخدام', sub: 'أجواء روحية متكاملة لخدمتكم وكنيستكم', cta: 'اكتشف البيوت' },
-  { img: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80', badge: 'محدود للغاية', title: 'خصومات الحجز المبكر ⏳', sub: 'وفر ٢٠٪ إضافية عند تأكيد حجزك للأسبوع القادم', cta: 'احجز اليوم' },
+  { gradient: 'linear-gradient(135deg,#0A2342 0%,#123E75 55%,#1B5E9E 100%)', badge: 'أهلاً بك في بيما', title: 'بيوت المؤتمرات والخلوات', sub: 'تصفّح البيوت واحجز خلوتك في دقيقة', cta: 'اكتشف البيوت' },
+  { gradient: 'linear-gradient(135deg,#5A5A40 0%,#767659 60%,#A3A37E 100%)', badge: 'لخدمتك وكنيستك', title: 'خلوات العائلات والخدام', sub: 'أجواء روحية متكاملة في كل المحافظات', cta: 'ابدأ التصفّح' },
+  { gradient: 'linear-gradient(135deg,#7A5C1E 0%,#C5A059 60%,#E7C987 100%)', badge: 'أسعار واضحة', title: 'احجز بثقة', sub: 'تقييمات حقيقية وأسعار بدون مفاجآت', cta: 'شوف البيوت' },
 ];
 
-export function SummerOfferCarousel({ slides, onCta }: { slides?: PromoBanner[]; onCta?: () => void }) {
+export function SummerOfferCarousel({ slides, onCta, onOpenHouse }: { slides?: PromoBanner[]; onCta?: () => void; onOpenHouse?: (houseId: string) => void }) {
   const items: DefaultSlide[] = slides && slides.length > 0
     ? slides.map((s) => ({
-        img: s.imageUrl || DEFAULT_SLIDES[0].img,
+        img: s.imageUrl,
+        gradient: s.imageUrl ? undefined : DEFAULT_SLIDES[0].gradient,
         badge: s.badge || 'عرض خاص',
         title: s.title || '',
         sub: s.subtitle || '',
         cta: s.ctaText || 'احجز الآن',
         href: safeUrl(s.linkUrl),
+        houseId: s.linkedHouseId,
         links: s.links,
       }))
     : DEFAULT_SLIDES;
@@ -110,13 +117,15 @@ export function SummerOfferCarousel({ slides, onCta }: { slides?: PromoBanner[];
       className="relative rounded-3xl overflow-hidden h-44 shadow-md bg-slate-900 group select-none"
     >
       {designed?.layout ? (
-        <BannerCanvas banner={designed} layout={designed.layout} />
+        <BannerCanvas banner={designed} layout={designed.layout} onOpenHouse={onOpenHouse} />
       ) : items.map((s, i) => {
         if (i !== active) return null;
         const accent = ACCENTS[i % ACCENTS.length];
         return (
-          <div key={i} className="absolute inset-0 transition-all duration-700 ease-in-out">
-            <img src={s.img} alt={s.title} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
+          <div key={`${active}-${i}`} className="absolute inset-0 animate-in fade-in duration-500">
+            {s.img
+              ? <img src={s.img} alt={s.title} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
+              : <div className="w-full h-full" style={{ background: s.gradient }} />}
             <div className="absolute inset-0 bg-gradient-to-l from-black/60 via-black/30 to-transparent flex flex-col justify-center px-6 text-white text-right">
               <span className={`text-[10px] font-extrabold tracking-wider self-start px-2 py-0.5 rounded-md mb-1.5 ${accent.badge}`}>{s.badge}</span>
               <h2 className="text-base font-black leading-tight">{s.title}</h2>
@@ -124,7 +133,12 @@ export function SummerOfferCarousel({ slides, onCta }: { slides?: PromoBanner[];
               <div className="flex items-center gap-2 mt-3 flex-wrap">
                 {/* A configured link turns the CTA into a real anchor; otherwise
                     it keeps firing the caller's onCta (scroll to listings). */}
-                {s.href ? (
+                {s.houseId && onOpenHouse ? (
+                  <button data-el="button" onClick={() => onOpenHouse(s.houseId!)}
+                    className={`text-[10px] font-black px-4 py-1.5 rounded-xl shadow transition-all active:scale-95 ${accent.cta}`}>
+                    {s.cta}
+                  </button>
+                ) : s.href ? (
                   <a
                     data-el="button"
                     href={s.href}
@@ -157,14 +171,15 @@ export function SummerOfferCarousel({ slides, onCta }: { slides?: PromoBanner[];
 }
 
 const DEFAULT_COUNTDOWN = {
-  img: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80',
+  // Local gradient, not a stock photo from someone else's CDN — see DEFAULT_SLIDES.
+  gradient: 'linear-gradient(135deg,#1A1A14 0%,#3D3D2B 60%,#5A5A40 100%)',
   badge: 'عرض لفترة محدودة',
   discount: 'خصم ٢٠٪ على جميع الحجوزات',
   cta: 'احجز الآن',
 };
 
-export function CountdownOfferBanner({ banner, onCta }: { banner?: PromoBanner; onCta?: () => void }) {
-  const img = banner?.imageUrl || DEFAULT_COUNTDOWN.img;
+export function CountdownOfferBanner({ banner, onCta, onOpenHouse }: { banner?: PromoBanner; onCta?: () => void; onOpenHouse?: (houseId: string) => void }) {
+  const img = banner?.imageUrl;
   const badge = banner?.badge || DEFAULT_COUNTDOWN.badge;
   const discount = banner?.title || DEFAULT_COUNTDOWN.discount;
   const cta = banner?.ctaText || DEFAULT_COUNTDOWN.cta;
@@ -195,7 +210,7 @@ export function CountdownOfferBanner({ banner, onCta }: { banner?: PromoBanner; 
     return (
       <div ref={track.ref} onClickCapture={track.onClickCapture}
         className="relative rounded-3xl overflow-hidden h-32 bg-slate-950 text-white select-none shadow-md">
-        <BannerCanvas banner={banner} layout={banner.layout} />
+        <BannerCanvas banner={banner} layout={banner.layout} onOpenHouse={onOpenHouse} />
       </div>
     );
   }
@@ -203,7 +218,9 @@ export function CountdownOfferBanner({ banner, onCta }: { banner?: PromoBanner; 
   return (
     <div ref={track.ref} onClickCapture={track.onClickCapture}
       className="relative rounded-3xl overflow-hidden h-32 bg-slate-950 text-white select-none shadow-md">
-      <img src={img} alt="Limited offer background" className="w-full h-full absolute inset-0 object-cover opacity-30" referrerPolicy="no-referrer" />
+      {img
+        ? <img src={img} alt="" className="w-full h-full absolute inset-0 object-cover opacity-30" referrerPolicy="no-referrer" />
+        : <div className="absolute inset-0" style={{ background: DEFAULT_COUNTDOWN.gradient }} />}
       <div className="absolute inset-0 p-4 flex flex-col justify-between text-right">
         <div className="flex justify-between items-center">
           <span className="text-[8px] font-black bg-rose-600 text-white px-2 py-0.5 rounded-full animate-pulse">{badge}</span>
@@ -230,7 +247,12 @@ export function CountdownOfferBanner({ banner, onCta }: { banner?: PromoBanner; 
 
           <div className="flex items-center gap-2">
             <BannerLinkIcons links={banner?.links} size="w-6 h-6" />
-            {safeUrl(banner?.linkUrl) ? (
+            {banner?.linkedHouseId && onOpenHouse ? (
+              <button data-el="button" onClick={() => onOpenHouse(banner.linkedHouseId!)}
+                className="bg-[#C5A059] hover:bg-amber-600 text-[#0A2342] text-[10px] font-black px-4 py-2 rounded-xl shadow transition-all active:scale-95">
+                {cta}
+              </button>
+            ) : safeUrl(banner?.linkUrl) ? (
               <a
                 data-el="button"
                 href={safeUrl(banner?.linkUrl)!}
