@@ -10,7 +10,7 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
   { value: 'we_cash', label: 'وي كاش' },
   { value: 'bank_transfer', label: 'تحويل بنكي' },
 ];
-import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy } from 'lucide-react';
+import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
 import BannerStudio from './banner/BannerStudio';
@@ -242,7 +242,7 @@ export default function AdminDashboard({
   const [chatLoading, setChatLoading] = useState(false);
 
   // Nav section collapse (grouped navigation)
-  const [navSection, setNavSection] = useState<'overview' | 'manage' | 'finance'>('overview');
+  const [navSection, setNavSection] = useState<'home' | 'content' | 'people' | 'money' | 'system'>('home');
 
   const getWhatsAppLink = (phone: string, text: string) => {
     let cleanPhone = phone.replace(/\D/g, ''); // Remove all non-digits
@@ -462,75 +462,151 @@ export default function AdminDashboard({
   const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + (r.overall_rating ?? r.rating), 0) / reviews.length) : 0;
   const starDist = [5, 4, 3, 2, 1].map((star) => ({ star, count: reviews.filter((r) => Math.round(r.overall_rating ?? r.rating) === star).length }));
 
-  // Tab groups for grouped navigation
-  const NAV_GROUPS: { key: 'overview' | 'manage' | 'finance'; label: string; tabs: { key: typeof activeTab; label: string; badge?: number; pulse?: boolean }[] }[] = [
-    { key: 'overview', label: 'نظرة عامة', tabs: [
+  const pendingPaymentsCount = payments.filter((p) => p.paymentStatus === 'pending').length;
+  const pendingPayoutsCount = payouts.filter((p) => p.status === 'pending').length;
+  const pendingHousesCount = pendingHouses.length + pendingHouseEdits.length;
+
+  // Grouped by WHAT the admin is doing, not by which screen was built when.
+  // Review queues sit with the thing they review (houses with content, accounts
+  // with people) instead of being stranded in "overview".
+  const NAV_GROUPS: {
+    key: typeof navSection; label: string; icon: React.ElementType;
+    tabs: { key: typeof activeTab; label: string; badge?: number; pulse?: boolean }[];
+  }[] = [
+    { key: 'home', label: 'الرئيسية', icon: BarChart3, tabs: [
       { key: 'growth', label: 'النمو' },
-      { key: 'moderation', label: 'مراجعة البيوت', badge: pendingHouses.length + pendingHouseEdits.length, pulse: true },
-      { key: 'accounts', label: 'مراجعة الحسابات', badge: pendingAccounts.length, pulse: true },
+      { key: 'reports', label: 'التقارير' },
     ]},
-    { key: 'manage', label: 'إدارة', tabs: [
+    { key: 'content', label: 'المحتوى', icon: Building, tabs: [
       { key: 'houses', label: 'البيوت' },
-      { key: 'bookings', label: 'الحجوزات', badge: pendingOrUnpaidBookingsCount },
-      { key: 'users', label: 'المستخدمين' },
+      { key: 'moderation', label: 'مراجعة البيوت', badge: pendingHousesCount, pulse: true },
+      { key: 'announcements', label: 'البانرات' },
       { key: 'reviews', label: 'التقييمات' },
-      { key: 'messages', label: 'المحادثات' },
-      { key: 'announcements', label: 'الإعلانات' },
     ]},
-    { key: 'finance', label: 'المالية والنظام', tabs: [
-      { key: 'payments', label: 'الدفعيات', badge: payments.filter((p) => p.paymentStatus === 'pending').length },
-      { key: 'payouts', label: 'طلبات التحويل', badge: payouts.filter((p) => p.status === 'pending').length },
-      { key: 'reports', label: 'التقارير المالية' },
+    { key: 'people', label: 'الناس', icon: Users, tabs: [
+      { key: 'users', label: 'المستخدمين' },
+      { key: 'accounts', label: 'مراجعة الحسابات', badge: pendingAccounts.length, pulse: true },
+      { key: 'messages', label: 'المحادثات' },
+    ]},
+    { key: 'money', label: 'الحجوزات والمال', icon: Coins, tabs: [
+      { key: 'bookings', label: 'الحجوزات', badge: pendingOrUnpaidBookingsCount },
+      { key: 'payments', label: 'الدفعيات', badge: pendingPaymentsCount },
+      { key: 'payouts', label: 'طلبات التحويل', badge: pendingPayoutsCount },
+    ]},
+    { key: 'system', label: 'النظام', icon: Settings, tabs: [
       { key: 'settings', label: 'الإعدادات' },
       { key: 'audit', label: 'سجل التدقيق' },
     ]},
   ];
 
+  // Everything waiting on the admin, in one list. These used to be scattered
+  // across three different sections, so nothing told you what needed doing.
+  const actionQueue = [
+    { key: 'moderation' as const, section: 'content' as const, label: 'بيوت بانتظار المراجعة', count: pendingHousesCount, Icon: Building },
+    { key: 'accounts' as const, section: 'people' as const, label: 'حسابات بانتظار الموافقة', count: pendingAccounts.length, Icon: IdCard },
+    { key: 'payments' as const, section: 'money' as const, label: 'دفعات بانتظار التحقق', count: pendingPaymentsCount, Icon: CreditCard },
+    { key: 'payouts' as const, section: 'money' as const, label: 'طلبات تحويل معلّقة', count: pendingPayoutsCount, Icon: Wallet },
+    { key: 'bookings' as const, section: 'money' as const, label: 'حجوزات محتاجة متابعة', count: pendingOrUnpaidBookingsCount, Icon: Calendar },
+  ].filter((a) => a.count > 0);
+
+  const totalPending = actionQueue.reduce((s, a) => s + a.count, 0);
+
+  const goTo = (section: typeof navSection, tab: typeof activeTab) => {
+    setNavSection(section);
+    setActiveTab(tab);
+  };
+
   return (
     <div className="space-y-4 text-right text-[#4A4A3A]">
       
-      {/* Admin header */}
-      <div className="bg-gradient-to-r from-[#4A4A3A] to-[#5A5A40] text-white rounded-3xl p-4 flex items-center justify-between">
-        <div>
-          <span className="text-[10px] text-amber-300 font-bold">لوحة الإدارة والمراجعة الشاملة</span>
-          <h2 className="text-sm font-extrabold">{currentUser.name}</h2>
+      {/* Admin header — says at a glance whether anything needs the admin */}
+      <div className="bg-gradient-to-r from-[#0A2342] to-[#123E75] text-white rounded-3xl p-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="w-10 h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
+            <Shield className="w-5 h-5 text-[#C5A059]" />
+          </span>
+          <div className="min-w-0">
+            <span className="text-[9.5px] text-[#C5A059] font-black block">لوحة الإدارة</span>
+            <h2 className="text-sm font-extrabold truncate">{currentUser.name}</h2>
+          </div>
         </div>
-        <div className="p-1.5 bg-white/20 border border-white/30 text-white rounded-xl">
-          <Shield className="w-5 h-5 text-white" />
-        </div>
+        <button
+          type="button"
+          onClick={() => goTo('home', 'growth')}
+          className={`text-right shrink-0 rounded-2xl px-3 py-2 border transition-all cursor-pointer ${
+            totalPending > 0 ? 'bg-rose-500/20 border-rose-300/40 hover:bg-rose-500/30' : 'bg-white/10 border-white/20'
+          }`}
+        >
+          <span className="text-lg font-black leading-none block">{totalPending.toLocaleString('ar-EG')}</span>
+          <span className="text-[9px] font-bold text-white/80">{totalPending > 0 ? 'محتاج إجراء' : 'كله تمام ✓'}</span>
+        </button>
       </div>
 
-      {/* Grouped Navigation */}
+      {/* Grouped navigation. Picking a section also jumps to its first tab —
+          before, the sub-tabs changed while the content stayed behind. */}
       <div className="bg-white border border-[#D6D6C2] rounded-2xl overflow-hidden">
-        {/* Section selector */}
-        <div className="flex border-b border-[#D6D6C2]">
+        <div className="flex border-b border-[#D6D6C2] overflow-x-auto">
           {NAV_GROUPS.map((g) => {
-            const hasBadge = g.tabs.some((t) => (t.badge ?? 0) > 0);
+            const Icon = g.icon;
+            const groupPending = g.tabs.reduce((s, t) => s + (t.badge ?? 0), 0);
+            const isOn = navSection === g.key;
             return (
-              <button key={g.key} onClick={() => setNavSection(g.key)}
-                className={`flex-1 text-center py-2.5 text-[11px] font-bold transition-all cursor-pointer relative ${navSection === g.key ? 'bg-[#5A5A40] text-white' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'}`}>
+              <button key={g.key} onClick={() => goTo(g.key, g.tabs[0].key)}
+                className={`flex-1 min-w-[86px] flex flex-col items-center gap-1 py-2.5 text-[10px] font-black transition-all cursor-pointer relative ${
+                  isOn ? 'bg-[#0A2342] text-white' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
+                }`}>
+                <Icon className="w-4 h-4" />
                 {g.label}
-                {hasBadge && navSection !== g.key && <span className="absolute top-2 left-2 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />}
+                {groupPending > 0 && !isOn && (
+                  <span className="absolute top-1.5 left-2 min-w-[15px] h-[15px] px-1 bg-rose-500 text-white text-[8.5px] font-black rounded-full flex items-center justify-center">
+                    {groupPending > 9 ? '9+' : groupPending}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
-        {/* Active section tabs */}
-        <div className="flex gap-1 p-1 overflow-x-auto">
+        {/* Sub-tabs: natural width and scrollable, so labels aren't squeezed */}
+        <div className="flex gap-1.5 p-1.5 overflow-x-auto">
           {NAV_GROUPS.find((g) => g.key === navSection)!.tabs.map((t) => (
             <button key={t.key} id={`admin-tab-${t.key}`} onClick={() => setActiveTab(t.key)}
-              className={`flex-1 text-center py-2 px-2 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer whitespace-nowrap relative ${activeTab === t.key ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'}`}>
+              className={`shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-xl text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === t.key ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#5A5A40] bg-[#FAF8F5] hover:bg-[#EBEBE0]/60'
+              }`}>
               {t.label}
               {(t.badge ?? 0) > 0 && (
-                <>
-                  <span className="mr-1 text-[9px]">({t.badge})</span>
-                  {t.pulse && <span className="absolute top-1.5 left-1.5 w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />}
-                </>
+                <span className={`min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-black flex items-center justify-center ${
+                  activeTab === t.key ? 'bg-white/25 text-white' : 'bg-rose-500 text-white'
+                }`}>{t.badge}</span>
               )}
             </button>
           ))}
         </div>
       </div>
+
+      {/* Needs-action inbox — every pending item in the system, one tap away */}
+      {navSection === 'home' && actionQueue.length > 0 && (
+        <div className="bg-white border border-[#D6D6C2] rounded-2xl overflow-hidden">
+          <div className="px-3.5 py-2.5 border-b border-[#D6D6C2]/60 flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+            <span className="text-[11px] font-black text-[#0A2342]">محتاج إجراء منك</span>
+            <span className="text-[9px] font-bold text-[#8A8A70]">({totalPending.toLocaleString('ar-EG')})</span>
+          </div>
+          <div className="divide-y divide-[#D6D6C2]/50">
+            {actionQueue.map((a) => (
+              <button key={a.key} type="button" onClick={() => goTo(a.section, a.key)}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-[#FAF8F5] transition-colors cursor-pointer text-right">
+                <span className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+                  <a.Icon className="w-4 h-4 text-rose-600" />
+                </span>
+                <span className="flex-1 text-[11.5px] font-bold text-[#2E2E24] truncate">{a.label}</span>
+                <span className="text-[11px] font-black text-rose-600 shrink-0">{a.count.toLocaleString('ar-EG')}</span>
+                <ChevronLeft className="w-4 h-4 text-[#B8B8A0] shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Growth Dashboard — the admin's morning brief.
           Everything computed client-side from already-loaded data.
@@ -2447,7 +2523,7 @@ export default function AdminDashboard({
                           <MessageCircle className="w-4 h-4 text-white shrink-0" />
                           <span>واتساب</span>
                         </a>
-                        <button onClick={() => { setActiveTab('messages'); setChatBookingId(booking.id); setNavSection('manage'); }}
+                        <button onClick={() => { setChatBookingId(booking.id); goTo('people', 'messages'); }}
                           className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer">
                           <MessageSquareDashed className="w-3.5 h-3.5" /> الشات
                         </button>
