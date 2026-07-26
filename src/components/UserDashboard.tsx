@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RetreatHouse, User, PromoBanner, Booking } from '../types';
+import { RetreatHouse, User, PromoBanner, Booking, Review } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen } from 'lucide-react';
 import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
@@ -7,6 +7,7 @@ import { loadHousesAvailability } from '../lib/db';
 import { isBannerLive, matchesAudience, pickExperimentVariants } from '../lib/bannerVisibility';
 import { bannerSeed } from '../lib/bannerEvents';
 import { copticSeason } from '../lib/copticSeason';
+import type { BannerLiveData } from './banner/BannerCanvas';
 
 interface UserDashboardProps {
   houses: RetreatHouse[];
@@ -17,6 +18,8 @@ interface UserDashboardProps {
   promoBanners?: PromoBanner[];
   /** Only used to answer a banner audience rule of "has booked before". */
   bookings?: Booking[];
+  /** Source for testimonial banners — a real review or nothing. */
+  reviews?: Review[];
 }
 
 export default function UserDashboard({
@@ -27,6 +30,7 @@ export default function UserDashboard({
   onToggleFavorite,
   promoBanners = [],
   bookings = [],
+  reviews = [],
 }: UserDashboardProps) {
   // Respect the admin's slide order (the `sort` the reorder arrows write) rather
   // than whatever order the array happens to be in after an in-session edit.
@@ -44,6 +48,55 @@ export default function UserDashboard({
     const h = houses.find((x) => x.id === houseId);
     if (h) onSelectHouse(h);
   };
+
+  // ── Live numbers/quotes for banner elements ──────────────────────────────
+  // Both come from the database or not at all: a banner asking for remaining
+  // beds shows the real count for its own house and window, and a testimonial
+  // banner quotes a real review. When neither exists the element renders
+  // nothing rather than inventing scarcity or praise.
+  const [bannerLive, setBannerLive] = useState<Record<string, BannerLiveData>>({});
+  const needsLive = chosen.filter((b) =>
+    b.linkedHouseId && b.layout?.elements.some((e) => e.visible && (e.type === 'availability' || e.type === 'testimonial')));
+  const needsLiveKey = needsLive.map((b) => `${b.id}:${b.linkedHouseId}:${b.startsAt ?? ''}:${b.endsAt ?? ''}`).join('|');
+
+  useEffect(() => {
+    if (!needsLiveKey) { setBannerLive({}); return; }
+    let cancelled = false;
+    (async () => {
+      const next: Record<string, BannerLiveData> = {};
+      for (const b of needsLive) {
+        const wantsBeds = b.layout?.elements.some((e) => e.visible && e.type === 'availability');
+        const wantsQuote = b.layout?.elements.some((e) => e.visible && e.type === 'testimonial');
+        const entry: BannerLiveData = {};
+
+        if (wantsBeds) {
+          // The banner's own window, or the coming week when it isn't scheduled.
+          const from = (b.startsAt ?? new Date().toISOString()).slice(0, 10);
+          const to = (b.endsAt ?? new Date(Date.now() + 7 * 86400000).toISOString()).slice(0, 10);
+          const avail = await loadHousesAvailability(from, to);
+          const free = avail?.[b.linkedHouseId!];
+          if (typeof free === 'number') entry.freeBeds = free;
+        }
+
+        if (wantsQuote) {
+          const best = reviews
+            .filter((r) => r.houseId === b.linkedHouseId && r.rating >= 4 && r.comment.trim().length > 10)
+            .sort((x, y) => y.rating - x.rating || y.createdAt.localeCompare(x.createdAt))[0];
+          if (best) {
+            entry.testimonial = {
+              text: best.comment.trim(),
+              author: best.displayAnonymous ? 'ضيف بيما' : best.userName,
+              rating: best.rating,
+            };
+          }
+        }
+        next[b.id] = entry;
+      }
+      if (!cancelled) setBannerLive(next);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsLiveKey, reviews.length]);
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGov, setSelectedGov] = useState('');
@@ -208,7 +261,7 @@ export default function UserDashboard({
       })()}
 
       {/* Top promo hero (carousel) — admin-managed, falls back to ported defaults */}
-      <SummerOfferCarousel slides={carouselSlides} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+      <SummerOfferCarousel slides={carouselSlides} live={bannerLive} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
 
       {/* Guide / tips entry — crawlable content section (helps SEO + AdSense) */}
       <a
@@ -733,7 +786,7 @@ export default function UserDashboard({
       </div>
 
       {/* Bottom promo (limited-time countdown offer) — admin-managed, falls back to ported default */}
-      <CountdownOfferBanner banner={countdownBanner} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+      <CountdownOfferBanner banner={countdownBanner} live={countdownBanner ? bannerLive[countdownBanner.id] : undefined} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
 
       {/* Compare Floating Bar */}
       {comparedHouseIds.length > 0 && (

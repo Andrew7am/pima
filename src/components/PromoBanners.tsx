@@ -3,6 +3,7 @@ import { Instagram, Facebook, Youtube, Twitter, Send, Globe, Music2, MessageCirc
 import { PromoBanner, PromoBannerLink, PromoLinkPlatform } from '../types';
 import { safeUrl } from '../lib/safeUrl';
 import BannerCanvas from './banner/BannerCanvas';
+import type { BannerLiveData } from './banner/BannerCanvas';
 import { useBannerTracking } from './banner/useBannerTracking';
 
 // Icon + brand tint per platform. lucide has no WhatsApp/TikTok glyph, so those
@@ -83,7 +84,10 @@ const DEFAULT_SLIDES: DefaultSlide[] = [
   { gradient: 'linear-gradient(135deg,#7A5C1E 0%,#C5A059 60%,#E7C987 100%)', badge: 'أسعار واضحة', title: 'احجز بثقة', sub: 'تقييمات حقيقية وأسعار بدون مفاجآت', cta: 'شوف البيوت' },
 ];
 
-export function SummerOfferCarousel({ slides, onCta, onOpenHouse }: { slides?: PromoBanner[]; onCta?: () => void; onOpenHouse?: (houseId: string) => void }) {
+export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
+  slides?: PromoBanner[]; onCta?: () => void; onOpenHouse?: (houseId: string) => void;
+  live?: Record<string, BannerLiveData>;
+}) {
   const items: DefaultSlide[] = slides && slides.length > 0
     ? slides.map((s) => ({
         img: s.imageUrl,
@@ -98,13 +102,32 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse }: { slides?: P
       }))
     : DEFAULT_SLIDES;
 
+  // Story-style progression: each slide fills a segment at the top, and the
+  // visitor can tap either side to step through or hold to pause — the
+  // interaction people already know from Instagram/WhatsApp stories.
   const [activeSlide, setActiveSlide] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const SLIDE_MS = 5000;
+  const TICK = 50;
+
   useEffect(() => {
-    if (items.length <= 1) return;
-    const interval = setInterval(() => setActiveSlide((prev) => (prev + 1) % items.length), 4000);
-    return () => clearInterval(interval);
-  }, [items.length]);
+    if (items.length <= 1 || paused) return;
+    const timer = setInterval(() => {
+      setProgress((p) => {
+        const next = p + (TICK / SLIDE_MS) * 100;
+        if (next >= 100) { setActiveSlide((s) => (s + 1) % items.length); return 0; }
+        return next;
+      });
+    }, TICK);
+    return () => clearInterval(timer);
+  }, [items.length, paused]);
+
   const active = Math.min(activeSlide, items.length - 1);
+  const step = (dir: 1 | -1) => {
+    setProgress(0);
+    setActiveSlide((s) => (s + dir + items.length) % items.length);
+  };
   // A slide designed in the banner editor renders from its saved layout; the
   // rest keep the original fixed design. The box (h-44) is identical either way.
   const designed = slides && slides.length > 0 ? slides[active] : undefined;
@@ -117,12 +140,15 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse }: { slides?: P
       className="relative rounded-3xl overflow-hidden h-44 shadow-md bg-slate-900 group select-none"
     >
       {designed?.layout ? (
-        <BannerCanvas banner={designed} layout={designed.layout} onOpenHouse={onOpenHouse} />
+        // z-10 keeps the artwork and its CTA above the story tap zones.
+        <div className="relative z-10 w-full h-full">
+          <BannerCanvas banner={designed} layout={designed.layout} onOpenHouse={onOpenHouse} live={live?.[designed.id]} />
+        </div>
       ) : items.map((s, i) => {
         if (i !== active) return null;
         const accent = ACCENTS[i % ACCENTS.length];
         return (
-          <div key={`${active}-${i}`} className="absolute inset-0 animate-in fade-in duration-500">
+          <div key={`${active}-${i}`} className="absolute inset-0 z-10 animate-in fade-in duration-500">
             {s.img
               ? <img src={s.img} alt={s.title} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
               : <div className="w-full h-full" style={{ background: s.gradient }} />}
@@ -158,13 +184,44 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse }: { slides?: P
         );
       })}
 
-      {/* Carousel Indicators */}
+      {/* Story progress bars — one segment per slide, the active one filling */}
       {items.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
+        <div className="absolute top-2 inset-x-2 flex items-center gap-1 z-20 pointer-events-none">
           {items.map((_, i) => (
-            <button key={i} onClick={() => setActiveSlide(i)} className={`w-1.5 h-1.5 rounded-full transition-all ${active === i ? 'bg-white w-3' : 'bg-white/40'}`} />
+            <div key={i} className="flex-1 h-[3px] rounded-full bg-white/30 overflow-hidden">
+              <div
+                className="h-full bg-white rounded-full"
+                style={{
+                  width: i < active ? '100%' : i === active ? `${progress}%` : '0%',
+                  transition: i === active ? 'width 50ms linear' : 'none',
+                }}
+              />
+            </div>
           ))}
         </div>
+      )}
+
+      {/* Tap the upper corners to step, hold to pause — story gestures kept out
+          of the lower band so they can never swallow the CTA underneath. */}
+      {items.length > 1 && (
+        <>
+          <button
+            aria-label="الشريحة السابقة"
+            onClick={() => step(-1)}
+            onPointerDown={() => setPaused(true)}
+            onPointerUp={() => setPaused(false)}
+            onPointerLeave={() => setPaused(false)}
+            className="absolute top-0 right-0 w-1/4 h-3/5 z-20 cursor-pointer"
+          />
+          <button
+            aria-label="الشريحة التالية"
+            onClick={() => step(1)}
+            onPointerDown={() => setPaused(true)}
+            onPointerUp={() => setPaused(false)}
+            onPointerLeave={() => setPaused(false)}
+            className="absolute top-0 left-0 w-1/4 h-3/5 z-20 cursor-pointer"
+          />
+        </>
       )}
     </div>
   );
@@ -178,7 +235,7 @@ const DEFAULT_COUNTDOWN = {
   cta: 'احجز الآن',
 };
 
-export function CountdownOfferBanner({ banner, onCta, onOpenHouse }: { banner?: PromoBanner; onCta?: () => void; onOpenHouse?: (houseId: string) => void }) {
+export function CountdownOfferBanner({ banner, onCta, onOpenHouse, live }: { banner?: PromoBanner; onCta?: () => void; onOpenHouse?: (houseId: string) => void; live?: BannerLiveData }) {
   const img = banner?.imageUrl;
   const badge = banner?.badge || DEFAULT_COUNTDOWN.badge;
   const discount = banner?.title || DEFAULT_COUNTDOWN.discount;
@@ -210,7 +267,7 @@ export function CountdownOfferBanner({ banner, onCta, onOpenHouse }: { banner?: 
     return (
       <div ref={track.ref} onClickCapture={track.onClickCapture}
         className="relative rounded-3xl overflow-hidden h-32 bg-slate-950 text-white select-none shadow-md">
-        <BannerCanvas banner={banner} layout={banner.layout} onOpenHouse={onOpenHouse} />
+        <BannerCanvas banner={banner} layout={banner.layout} onOpenHouse={onOpenHouse} live={live} />
       </div>
     );
   }

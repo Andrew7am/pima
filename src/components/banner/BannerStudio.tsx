@@ -689,6 +689,30 @@ export default function BannerStudio({ banner: initial, onSave, onClose }: Props
                     <RotateCcw className="w-3 h-3" /> إعادة الضبط
                   </button>
                 </div>
+                {/* Add the data-driven elements, which aren't in the default layout */}
+                <div className="flex gap-1.5 flex-wrap">
+                  {(['availability', 'testimonial'] as const)
+                    .filter((t) => !layout.elements.some((e) => e.type === t))
+                    .map((t) => (
+                      <Chip key={t} onClick={() => {
+                        commit();
+                        setLayout((l) => ({
+                          ...l,
+                          elements: [...l.elements, {
+                            id: `${t}_${Date.now()}`, type: t, visible: true, locked: false,
+                            x: 6, y: t === 'availability' ? 12 : 46,
+                            width: t === 'testimonial' ? 62 : undefined,
+                            fontSize: t === 'availability' ? 10 : 9.5,
+                            color: t === 'availability' ? '#FFFFFF' : '#2E2E24',
+                            opacity: 1,
+                          }],
+                        }));
+                      }}>+ {elementLabel(t)}</Chip>
+                    ))}
+                </div>
+                <p className="text-[9px] font-bold text-[#A8A48F]">
+                  «الأماكن المتاحة» و«رأي ضيف» بيقروا من قاعدة البيانات — لازم البانر يكون مربوط ببيت، ولو مفيش بيانات مش هيظهروا للزائر.
+                </p>
                 <div className="space-y-1.5">
                   {layout.elements.slice().reverse().map((el) => (
                     <div key={el.id}

@@ -339,7 +339,11 @@ export interface BannerImageLayer {
   opacity: number;   // 0 – 1
 }
 
-export type BannerElementType = 'badge' | 'title' | 'subtitle' | 'button' | 'icons' | 'logo';
+export type BannerElementType =
+  | 'badge' | 'title' | 'subtitle' | 'button' | 'icons' | 'logo'
+  // Both render live data or nothing at all — never a placeholder number or a
+  // made-up quote. See BannerLiveData.
+  | 'availability' | 'testimonial';
 
 export interface BannerElement {
   id: string;

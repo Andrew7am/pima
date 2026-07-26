@@ -1727,6 +1727,7 @@ export default function App() {
               onToggleFavorite={handleToggleFavorite}
               promoBanners={promoBanners}
               bookings={bookings}
+              reviews={reviews}
             />
           )}
 

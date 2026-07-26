@@ -51,10 +51,21 @@ const FIT_STYLE: Record<BannerFit, { objectFit: React.CSSProperties['objectFit']
 const cq = (px: number) => `${((px / DESIGN_WIDTH) * 100).toFixed(3)}cqw`;
 
 export function elementLabel(type: BannerElement['type']): string {
-  return { badge: 'الشارة', title: 'العنوان', subtitle: 'الوصف', button: 'زر الإجراء', icons: 'الأيقونات', logo: 'الشعار' }[type];
+  return {
+    badge: 'الشارة', title: 'العنوان', subtitle: 'الوصف', button: 'زر الإجراء',
+    icons: 'الأيقونات', logo: 'الشعار', availability: 'الأماكن المتاحة', testimonial: 'رأي ضيف',
+  }[type];
 }
 
-function ElementBody({ el, banner, onOpenHouse }: { el: BannerElement; banner: PromoBanner; onOpenHouse?: (houseId: string) => void }) {
+// Numbers and quotes that must come from the database, never from the layout.
+// When a field is missing the element renders nothing at all — an empty banner
+// slot is honest, an invented "باقي ٣ أماكن" is not.
+export interface BannerLiveData {
+  freeBeds?: number | null;
+  testimonial?: { text: string; author: string; rating: number } | null;
+}
+
+function ElementBody({ el, banner, onOpenHouse, live }: { el: BannerElement; banner: PromoBanner; onOpenHouse?: (houseId: string) => void; live?: BannerLiveData }) {
   const common: React.CSSProperties = {
     color: el.color,
     opacity: el.opacity ?? 1,
@@ -92,6 +103,30 @@ function ElementBody({ el, banner, onOpenHouse }: { el: BannerElement; banner: P
         ? <a href={href} target="_blank" rel="noopener noreferrer nofollow" style={style} className={cls}>{banner.ctaText}</a>
         : <span style={style} className={cls}>{banner.ctaText}</span>;
     }
+    case 'availability': {
+      // Real free beds for this banner's house and window, or nothing.
+      const n = live?.freeBeds;
+      if (n == null || n <= 0) return null;
+      return (
+        <span style={{ ...common, background: el.bg ?? 'rgba(217,74,74,0.92)', borderRadius: el.radius ?? 999, fontSize: cq(el.fontSize ?? 10), padding: `${cq(4)} ${cq(10)}` }}
+          className="inline-flex items-center gap-[0.4em] font-black whitespace-nowrap shadow">
+          <span style={{ width: cq(5), height: cq(5) }} className="rounded-full bg-white/90 animate-pulse" />
+          باقي {n.toLocaleString('ar-EG')} سرير متاح
+        </span>
+      );
+    }
+    case 'testimonial': {
+      const t = live?.testimonial;
+      if (!t) return null;
+      return (
+        <div style={{ ...common, background: el.bg ?? 'rgba(255,255,255,0.94)', borderRadius: el.radius ?? 16, padding: `${cq(8)} ${cq(10)}` }}
+          className="shadow-lg text-right">
+          <div style={{ fontSize: cq(9) }} className="text-[#C5A059] leading-none mb-[0.35em]">{'★'.repeat(Math.round(t.rating))}</div>
+          <p style={{ fontSize: cq(el.fontSize ?? 9.5), color: el.color ?? '#2E2E24' }} className="font-bold leading-snug line-clamp-2">“{t.text}”</p>
+          <span style={{ fontSize: cq(8) }} className="font-black text-[#8A8A70]">— {t.author}</span>
+        </div>
+      );
+    }
     case 'icons':
       return <div style={{ opacity: el.opacity ?? 1 }}><BannerLinkIcons links={banner.links} /></div>;
     case 'logo':
@@ -108,11 +143,13 @@ interface BannerCanvasProps {
   interactive?: boolean;
   /** Opens a house inside the app when the banner targets one. */
   onOpenHouse?: (houseId: string) => void;
+  /** Real numbers/quotes for the live elements; absent → they render nothing. */
+  live?: BannerLiveData;
 }
 
 // Renders the layout inside a box whose height comes from BANNER_BOX — the
 // same fixed height the app already uses for that placement.
-export default function BannerCanvas({ banner, layout, selectedId, onSelect, interactive, onOpenHouse }: BannerCanvasProps) {
+export default function BannerCanvas({ banner, layout, selectedId, onSelect, interactive, onOpenHouse, live }: BannerCanvasProps) {
   const img = layout.image;
   const fit = FIT_STYLE[img.fit] ?? FIT_STYLE.cover;
   return (
@@ -163,7 +200,7 @@ export default function BannerCanvas({ banner, layout, selectedId, onSelect, int
               textAlign: el.align === 'center' ? 'center' : el.align === 'end' ? 'left' : 'right',
             }}
           >
-            <ElementBody el={el} banner={banner} onOpenHouse={onOpenHouse} />
+            <ElementBody el={el} banner={banner} onOpenHouse={onOpenHouse} live={live} />
           </div>
         );
       })}
