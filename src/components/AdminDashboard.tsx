@@ -164,6 +164,8 @@ export default function AdminDashboard({
   const [pbEditingId, setPbEditingId] = useState<string | null>(null);
   // Banner whose visual layout is open in the designer.
   const [pbDesigningId, setPbDesigningId] = useState<string | null>(null);
+  // Sub-view inside the الإعلانات tab — list / create-or-edit form / analytics.
+  const [pbView, setPbView] = useState<'list' | 'form' | 'stats'>('list');
 
   const pbResetForm = () => {
     setPbEditingId(null);
@@ -1198,20 +1200,59 @@ export default function AdminDashboard({
         </div>
       )}
 
-      {/* Promo banners management (top carousel + bottom countdown) — migration 076 */}
+      {/* Promo banners management (migration 076) — sub-views: list / form / stats */}
       {activeTab === 'announcements' && (
         <div className="space-y-3 mt-4">
+          {/* Section header + sub-navigation */}
+          <div className="bg-white p-4 rounded-2xl border border-[#D6D6C2] space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="w-9 h-9 rounded-2xl bg-[#C5A059]/15 flex items-center justify-center shrink-0">
+                  <Megaphone className="w-4.5 h-4.5 text-[#C5A059]" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-[13px] font-black text-[#0A2342]">إدارة البانرات</h3>
+                  <p className="text-[9px] font-bold text-[#8A8A70]">البنرات الرسمية الظاهرة داخل تطبيق بيما</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { pbResetForm(); setPbView('form'); }}
+                className="flex items-center gap-1.5 bg-[#0A2342] hover:bg-[#123E75] text-white text-[10px] font-black px-3.5 py-2 rounded-xl shadow-sm transition-all cursor-pointer shrink-0"
+              >
+                + إنشاء بانر جديد
+              </button>
+            </div>
+
+            <div className="flex gap-1.5 border-t border-[#EFEBE0] pt-3">
+              {([
+                ['list', `البانرات (${promoBanners.length})`],
+                ['form', pbEditingId ? 'تعديل البانر' : 'إنشاء بانر'],
+                ['stats', 'الإحصائيات'],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setPbView(key)}
+                  className={`px-3.5 py-2 rounded-xl text-[10.5px] font-black border transition-all cursor-pointer ${
+                    pbView === key
+                      ? 'bg-[#5A5A40] text-white border-[#5A5A40] shadow-sm'
+                      : 'bg-[#FAF8F5] text-[#5A5A40] border-[#E7E5DB] hover:bg-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {pbView === 'form' && (
           <div className="bg-white p-4 rounded-2xl border border-[#D6D6C2] space-y-2.5">
             <div className="flex items-center justify-between gap-2 text-[#4A4A3A]">
-              <div className="flex items-center gap-2">
-                <Megaphone className="w-4 h-4 text-[#C5A059]" />
-                <h3 className="text-xs font-black">{pbEditingId ? 'تعديل البانر' : 'بانرات العروض (تظهر في صفحة التصفّح فوق وتحت)'}</h3>
-              </div>
-              {pbEditingId && (
-                <button type="button" onClick={pbResetForm} className="text-[9.5px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] cursor-pointer shrink-0">
-                  إلغاء التعديل ✕
-                </button>
-              )}
+              <h3 className="text-xs font-black">{pbEditingId ? 'تعديل البانر' : 'بانر جديد'}</h3>
+              <button type="button" onClick={() => { pbResetForm(); setPbView('list'); }} className="text-[9.5px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] cursor-pointer shrink-0">
+                إلغاء ✕
+              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -1334,6 +1375,7 @@ export default function AdminDashboard({
                     links: pbLinks.filter((l) => l.url.trim()),
                   });
                   pbResetForm();
+                  setPbView('list');
                   return;
                 }
                 if (!onAddPromoBanner) return;
@@ -1353,14 +1395,16 @@ export default function AdminDashboard({
                   links: pbLinks.filter((l) => l.url.trim()),
                 });
                 pbResetForm();
+                setPbView('list');
               }}
               className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-black py-2 rounded-xl transition-all cursor-pointer"
             >
               {pbEditingId ? 'حفظ التعديل' : 'إضافة البانر'}
             </button>
           </div>
+          )}
 
-          <BannerAnalytics />
+          {pbView === 'stats' && <BannerAnalytics />}
 
           {/* Full-screen banner studio for the selected banner */}
           {(() => {
@@ -1376,9 +1420,15 @@ export default function AdminDashboard({
           })()}
 
           {/* Existing banners */}
+          {pbView === 'list' && (
           <div className="space-y-2">
             {promoBanners.length === 0 ? (
-              <p className="text-center text-[11px] text-[#8A8A70] font-bold py-3">لا توجد بانرات — سيظهر التصميم الافتراضي.</p>
+              <div className="bg-white rounded-2xl border border-dashed border-[#D6D6C2] p-8 text-center space-y-2">
+                <Megaphone className="w-7 h-7 text-[#C9C5B4] mx-auto" />
+                <p className="text-[11px] text-[#8A8A70] font-bold">لا توجد بانرات بعد — سيظهر التصميم الافتراضي للزوار.</p>
+                <button type="button" onClick={() => { pbResetForm(); setPbView('form'); }}
+                  className="text-[10px] font-black text-[#0A2342] underline cursor-pointer">أنشئ أول بانر</button>
+              </div>
             ) : (
               // Sorted by the same key the reorder arrows write, so a move is
               // reflected immediately instead of only after a reload.
@@ -1428,7 +1478,7 @@ export default function AdminDashboard({
                   </div>
 
                   <div className="flex flex-col items-stretch gap-1 shrink-0">
-                    <button type="button" onClick={() => pbStartEdit(b)} className="flex items-center justify-center gap-1 text-[9.5px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer">
+                    <button type="button" onClick={() => { pbStartEdit(b); setPbView('form'); }} className="flex items-center justify-center gap-1 text-[9.5px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer">
                       <Pencil className="w-3 h-3" /> تعديل
                     </button>
                     <button type="button" onClick={() => setPbDesigningId(pbDesigningId === b.id ? null : b.id)}
@@ -1445,6 +1495,7 @@ export default function AdminDashboard({
               })
             )}
           </div>
+          )}
         </div>
       )}
 
