@@ -397,6 +397,17 @@ export interface PromoBanner {
   // Publish state. 'scheduled' shows only between startsAt and endsAt.
   status?: 'draft' | 'published' | 'scheduled';
   startsAt?: string | null;
+  // Who this banner is for. Empty/absent → everyone.
+  audience?: BannerAudience;
+  // Banners sharing an experiment key are variants; one is picked per visitor.
+  experiment?: string | null;
+  variant?: string | null;
+}
+
+export interface BannerAudience {
+  roles?: UserRole[];
+  governorates?: string[];
+  booked?: 'any' | 'yes' | 'no';
 }
 
 export interface PlatformSettings {

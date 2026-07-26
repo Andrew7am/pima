@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Eye, MousePointerClick, TrendingUp, TrendingDown, Minus, BarChart3, Loader2, Smartphone, Monitor, Apple, Trophy } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { PromoBanner } from '../../types';
 
 // Banner analytics — every number here comes from the banner_events table
 // (migration 083). Nothing is estimated or filled in: before events exist the
@@ -67,7 +68,7 @@ function Kpi({ icon: Icon, label, value, tint, children }: {
   );
 }
 
-export default function BannerAnalytics() {
+export default function BannerAnalytics({ banners = [] }: { banners?: PromoBanner[] }) {
   const [days, setDays] = useState(30);
   const [data, setData] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -173,6 +174,57 @@ export default function BannerAnalytics() {
               </div>
             </div>
           )}
+
+          {/* Split tests — variants of one experiment, side by side */}
+          {(() => {
+            const byExp = new Map<string, { variant: string; row: BannerRow }[]>();
+            for (const row of data?.banners ?? []) {
+              const meta = banners.find((b) => b.id === row.banner_id);
+              if (!meta?.experiment) continue;
+              const list = byExp.get(meta.experiment) ?? [];
+              list.push({ variant: meta.variant || '—', row });
+              byExp.set(meta.experiment, list);
+            }
+            const tests = [...byExp.entries()].filter(([, v]) => v.length > 1);
+            if (tests.length === 0) return null;
+            return (
+              <div className="bg-white rounded-2xl border border-[#D6D6C2] p-3 space-y-2.5">
+                <span className="text-[10px] font-black text-[#4A4A3A]">🧪 تجارب A/B</span>
+                {tests.map(([name, variants]) => {
+                  const scored = variants.map((v) => ({ ...v, ctr: pct(v.row.clicks, v.row.impressions) }));
+                  const best = scored.slice().sort((a, b) => b.ctr - a.ctr)[0];
+                  const worst = scored.slice().sort((a, b) => a.ctr - b.ctr)[0];
+                  // Only call a winner once both variants have been seen enough
+                  // for the number to mean anything.
+                  const enough = scored.every((s) => s.row.impressions >= 30);
+                  const lift = worst.ctr > 0 ? ((best.ctr - worst.ctr) / worst.ctr) * 100 : 0;
+                  return (
+                    <div key={name} className="space-y-1.5 border-t border-[#EFEBE0] pt-2 first:border-0 first:pt-0">
+                      <span className="text-[9.5px] font-black text-[#8A8A70]">{name}</span>
+                      {scored.map((s) => (
+                        <div key={s.row.banner_id} className="flex items-center gap-2">
+                          <span className={`w-6 h-6 rounded-lg text-[10px] font-black flex items-center justify-center shrink-0 ${
+                            enough && s.row.banner_id === best.row.banner_id ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EBEBE0] text-[#5A5A40]'
+                          }`}>{s.variant}</span>
+                          <div className="flex-1 h-1.5 bg-[#EBEBE0] rounded-full overflow-hidden">
+                            <div className="h-full bg-[#0A2342] rounded-full" style={{ width: `${Math.min(100, s.ctr * 8)}%` }} />
+                          </div>
+                          <span className="text-[9.5px] font-black text-[#0A2342] w-20 text-left shrink-0">
+                            {s.ctr.toFixed(2)}% · {ar(s.row.impressions)}
+                          </span>
+                        </div>
+                      ))}
+                      <p className="text-[9px] font-bold text-[#8A8A70]">
+                        {enough
+                          ? `النسخة «${best.variant}» أعلى بـ ${lift.toFixed(0)}٪ في نسبة النقر.`
+                          : 'لسه البيانات قليلة للحكم — استنى ٣٠ مشاهدة على الأقل لكل نسخة.'}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* Ranking */}
           {(data?.banners.length ?? 0) > 0 && (

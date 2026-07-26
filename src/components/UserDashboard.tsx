@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { RetreatHouse, User, PromoBanner } from '../types';
+import { RetreatHouse, User, PromoBanner, Booking } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen } from 'lucide-react';
 import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
 import { loadHousesAvailability } from '../lib/db';
-import { isBannerLive } from '../lib/bannerVisibility';
+import { isBannerLive, matchesAudience, pickExperimentVariants } from '../lib/bannerVisibility';
+import { bannerSeed } from '../lib/bannerEvents';
+import { copticSeason } from '../lib/copticSeason';
 
 interface UserDashboardProps {
   houses: RetreatHouse[];
@@ -13,6 +15,8 @@ interface UserDashboardProps {
   onSelectRewards: () => void;
   onToggleFavorite: (houseId: string) => void;
   promoBanners?: PromoBanner[];
+  /** Only used to answer a banner audience rule of "has booked before". */
+  bookings?: Booking[];
 }
 
 export default function UserDashboard({
@@ -22,16 +26,20 @@ export default function UserDashboard({
   onSelectRewards,
   onToggleFavorite,
   promoBanners = [],
+  bookings = [],
 }: UserDashboardProps) {
   // Respect the admin's slide order (the `sort` the reorder arrows write) rather
   // than whatever order the array happens to be in after an in-session edit.
   // isBannerLive also honours draft/scheduled windows, so a banner appears and
   // disappears on its own schedule without anyone toggling it.
-  const carouselSlides = promoBanners
-    .filter((b) => b.placement === 'carousel' && isBannerLive(b))
+  // live (schedule) → audience (who it's for) → one variant per split test.
+  const eligible = promoBanners.filter((b) => isBannerLive(b) && matchesAudience(b, currentUser, bookings));
+  const chosen = pickExperimentVariants(eligible, bannerSeed());
+  const carouselSlides = chosen
+    .filter((b) => b.placement === 'carousel')
     .slice()
     .sort((a, b) => a.sort - b.sort || a.createdAt.localeCompare(b.createdAt));
-  const countdownBanner = promoBanners.find((b) => b.placement === 'countdown' && isBannerLive(b));
+  const countdownBanner = chosen.find((b) => b.placement === 'countdown');
   const openHouseById = (houseId: string) => {
     const h = houses.find((x) => x.id === houseId);
     if (h) onSelectHouse(h);
@@ -184,6 +192,20 @@ export default function UserDashboard({
 
   return (
     <div className="space-y-4 text-right">
+
+      {/* Follows the Coptic calendar on its own — no one has to remember to
+          switch it on, and it disappears outside the fasts and feasts. */}
+      {(() => {
+        const s = copticSeason();
+        if (s.season === 'ordinary') return null;
+        return (
+          <div className="flex items-center justify-center gap-2 bg-gradient-to-l from-[#0A2342] to-[#123E75] text-white rounded-2xl px-4 py-2.5 shadow-sm">
+            <span className="text-[10px] font-black text-[#C5A059]">{s.label}</span>
+            <span className="w-1 h-1 rounded-full bg-white/40" />
+            <span className="text-[11px] font-bold">{s.greeting}</span>
+          </div>
+        );
+      })()}
 
       {/* Top promo hero (carousel) — admin-managed, falls back to ported defaults */}
       <SummerOfferCarousel slides={carouselSlides} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />

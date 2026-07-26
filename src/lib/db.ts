@@ -324,6 +324,10 @@ export function mapPromoBanner(r: Record<string, unknown>): PromoBanner {
     linkedHouseId: (r.linked_house_id as string) ?? null,
     status: (r.status as PromoBanner['status']) ?? 'published',
     startsAt: (r.starts_at as string) ?? null,
+    // Pre-migration-085 rows: no audience → shown to everyone.
+    audience: (r.audience as PromoBanner['audience']) ?? {},
+    experiment: (r.experiment as string) ?? null,
+    variant: (r.variant as string) ?? null,
   };
 }
 
@@ -1144,6 +1148,9 @@ function promoBannerToRow(b: PromoBanner): Record<string, unknown> {
     linked_house_id: b.linkedHouseId ?? null,
     status: b.status ?? 'published',
     starts_at: b.startsAt ?? null,
+    audience: b.audience ?? {},
+    experiment: b.experiment || null,
+    variant: b.variant || null,
   };
 }
 

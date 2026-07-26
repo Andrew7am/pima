@@ -1726,6 +1726,7 @@ export default function App() {
               onSelectRewards={() => setActiveScreen('profile')}
               onToggleFavorite={handleToggleFavorite}
               promoBanners={promoBanners}
+              bookings={bookings}
             />
           )}
 

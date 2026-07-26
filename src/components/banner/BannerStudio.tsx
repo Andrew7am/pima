@@ -8,6 +8,8 @@ import { PromoBanner, BannerLayout, BannerElement, BannerFit } from '../../types
 import BannerCanvas, { BANNER_BOX, DEFAULT_LAYOUT, elementLabel } from './BannerCanvas';
 import { BANNER_TEMPLATES } from './bannerTemplates';
 import PhotoPickerButtons from '../PhotoPickerButtons';
+import { extractPalette, Palette as ImagePalette } from '../../lib/imagePalette';
+import { suggestHeadlines } from '../../lib/headlineSuggestions';
 
 // Pima Banner Studio — a mobile-first, direct-manipulation editor.
 //
@@ -67,6 +69,15 @@ export default function BannerStudio({ banner: initial, onSave, onClose }: Props
   const [guides, setGuides] = useState({ v: false, h: false });
   const [box, setBox] = useState<{ w: number; h: number; scale: number }>({ w: 343, h: 176, scale: 1 });
   const [rect, setRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+  const [palette, setPalette] = useState<ImagePalette | null>(null);
+
+  // Colours suggested from the artwork itself, refreshed whenever it changes.
+  useEffect(() => {
+    let cancelled = false;
+    if (!banner.imageUrl) { setPalette(null); return; }
+    extractPalette(banner.imageUrl).then((p) => { if (!cancelled) setPalette(p); });
+    return () => { cancelled = true; };
+  }, [banner.imageUrl]);
 
   const past = useRef<Snapshot[]>([]);
   const future = useRef<Snapshot[]>([]);
@@ -411,6 +422,26 @@ export default function BannerStudio({ banner: initial, onSave, onClose }: Props
               onChange={(e) => setBanner((b) => ({ ...b, [textField(selected)!]: e.target.value }))}
               className="w-full bg-[#FAF8F5] border border-[#E2DFD4] rounded-2xl px-3 py-2.5 text-[13px] font-bold text-[#2E2E24] outline-none focus:border-[#5A5A40]"
             />
+            {/* Rewrites of what's already written — never a new claim. */}
+            {(() => {
+              const field = textField(selected)!;
+              const value = (banner[field] as string) ?? '';
+              const ideas = suggestHeadlines(value);
+              if (ideas.length === 0) return null;
+              return (
+                <div className="space-y-1.5">
+                  <span className="text-[9.5px] font-black text-[#A8A48F]">صياغات مقترحة</span>
+                  <div className="flex flex-col gap-1.5">
+                    {ideas.map((s) => (
+                      <button key={s} type="button" onClick={() => setBanner((b) => ({ ...b, [field]: s }))}
+                        className="text-right text-[11px] font-bold text-[#2E2E24] bg-[#FAF8F5] border border-[#E2DFD4] rounded-xl px-3 py-2 active:scale-[0.98] transition-transform cursor-pointer">
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
             <button onClick={() => setEditingText(false)}
               className="w-full bg-[#5A5A40] text-white text-[12px] font-black py-2.5 rounded-2xl active:scale-95 transition-transform cursor-pointer">تم</button>
           </div>
@@ -442,6 +473,32 @@ export default function BannerStudio({ banner: initial, onSave, onClose }: Props
                       onSelect={(url) => { commit(); setBanner((b) => ({ ...b, imageUrl: url })); }} />
                   </div>
                 </div>
+                {palette && palette.colors.length > 0 && (
+                  <div className="bg-[#FAF8F5] border border-[#E2DFD4] rounded-2xl p-2.5 space-y-1.5">
+                    <span className="text-[9.5px] font-black text-[#5A5A40] block">ألوان مستخرجة من الصورة</span>
+                    <div className="flex gap-1.5 flex-wrap items-center">
+                      {palette.colors.map((c) => (
+                        <button key={c} type="button" title={c}
+                          onClick={() => { commit(); setLayout((l) => ({ ...l, background: c })); }}
+                          className="w-8 h-8 rounded-xl border-2 border-[#E2DFD4] active:scale-90 transition-transform cursor-pointer"
+                          style={{ background: c }} aria-label={`لون ${c}`} />
+                      ))}
+                    </div>
+                    <button type="button"
+                      onClick={() => {
+                        commit();
+                        setLayout((l) => ({
+                          ...l,
+                          elements: l.elements.map((e) =>
+                            e.type === 'button' ? { ...e, bg: palette.suggestedAccent, color: palette.suggestedText }
+                              : (e.fontSize != null ? { ...e, color: palette.suggestedText } : e)),
+                        }));
+                      }}
+                      className="w-full bg-[#0A2342] text-white text-[10px] font-black py-2 rounded-xl active:scale-95 transition-transform cursor-pointer">
+                      طبّق ألوان متناسقة مع الصورة
+                    </button>
+                  </div>
+                )}
                 <span className="text-[9.5px] font-black text-[#5A5A40] block">لون الخلفية (يظهر لو مفيش صورة أو كانت شفافة)</span>
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {BACKGROUNDS.map((bg) => (

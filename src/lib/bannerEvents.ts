@@ -12,6 +12,12 @@ export type BannerElementKind = 'button' | 'title' | 'subtitle' | 'badge' | 'ima
 
 const SESSION_KEY = 'pima_banner_session';
 
+/** The opaque per-tab id, reused as the split-test seed so a visitor always
+ *  lands in the same variant for as long as their session lasts. */
+export function bannerSeed(): string {
+  return sessionId();
+}
+
 function sessionId(): string {
   try {
     let id = sessionStorage.getItem(SESSION_KEY);

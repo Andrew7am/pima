@@ -17,6 +17,7 @@ import BannerStudio from './banner/BannerStudio';
 import BannerCanvas from './banner/BannerCanvas';
 import BannerAnalytics from './banner/BannerAnalytics';
 import { bannerStateLabel } from '../lib/bannerVisibility';
+import { GOVERNORATES } from '../mockData';
 import HouseDetail from './HouseDetail';
 import { AMENITIES_LIST } from '../mockData';
 import { loadBookingMessages } from '../lib/bookingMessages';
@@ -162,6 +163,11 @@ export default function AdminDashboard({
   const [pbLinkUrl, setPbLinkUrl] = useState('');
   const [pbLinks, setPbLinks] = useState<PromoBannerLink[]>([]);
   const [pbHouseId, setPbHouseId] = useState('');
+  const [pbRoles, setPbRoles] = useState<User['role'][]>([]);
+  const [pbBooked, setPbBooked] = useState<'any' | 'yes' | 'no'>('any');
+  const [pbGovs, setPbGovs] = useState<string[]>([]);
+  const [pbExperiment, setPbExperiment] = useState('');
+  const [pbVariant, setPbVariant] = useState('');
   const [pbStatus, setPbStatus] = useState<'draft' | 'published' | 'scheduled'>('published');
   const [pbStartsAt, setPbStartsAt] = useState('');
   // Non-null while editing an existing banner — the same form doubles as the
@@ -177,6 +183,7 @@ export default function AdminDashboard({
     setPbBadge(''); setPbTitle(''); setPbSubtitle(''); setPbCta(''); setPbImage(''); setPbEndsAt('');
     setPbLinkUrl(''); setPbLinks([]);
     setPbHouseId(''); setPbStatus('published'); setPbStartsAt('');
+    setPbRoles([]); setPbBooked('any'); setPbGovs([]); setPbExperiment(''); setPbVariant('');
   };
 
   const pbStartEdit = (b: PromoBanner) => {
@@ -194,6 +201,11 @@ export default function AdminDashboard({
     setPbHouseId(b.linkedHouseId ?? '');
     setPbStatus(b.status ?? 'published');
     setPbStartsAt(b.startsAt ? new Date(b.startsAt).toISOString().slice(0, 16) : '');
+    setPbRoles(b.audience?.roles ?? []);
+    setPbBooked(b.audience?.booked ?? 'any');
+    setPbGovs(b.audience?.governorates ?? []);
+    setPbExperiment(b.experiment ?? '');
+    setPbVariant(b.variant ?? '');
   };
 
   // Swap a banner's sort with its neighbour inside the same placement group.
@@ -1330,6 +1342,56 @@ export default function AdminDashboard({
                 )}
               </div>
 
+              {/* Audience — empty means everyone, which is what every old banner is */}
+              <div className="col-span-2 space-y-2 border-t border-[#E7E5DB] pt-2.5">
+                <span className="text-[10px] font-black text-[#4A4A3A]">
+                  الجمهور {pbRoles.length + pbGovs.length === 0 && pbBooked === 'any' ? '— الكل' : '— مُستهدف 🎯'}
+                </span>
+                <div className="flex gap-1.5 flex-wrap">
+                  {([['individual', 'أفراد'], ['servant', 'خدام'], ['owner', 'أصحاب بيوت']] as const).map(([r, label]) => (
+                    <button key={r} type="button"
+                      onClick={() => setPbRoles((p) => p.includes(r) ? p.filter((x) => x !== r) : [...p, r])}
+                      className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold border cursor-pointer transition-all ${
+                        pbRoles.includes(r) ? 'bg-[#0A2342] text-white border-[#0A2342]' : 'bg-white text-[#5A5A40] border-[#D6D6C2]'
+                      }`}>{label}</button>
+                  ))}
+                </div>
+                <div className="flex gap-1.5">
+                  {([['any', 'حجز أو لا'], ['yes', 'حجز قبل كده'], ['no', 'لسه ما حجزش']] as const).map(([v, label]) => (
+                    <button key={v} type="button" onClick={() => setPbBooked(v)}
+                      className={`flex-1 py-1.5 rounded-xl text-[9.5px] font-bold border cursor-pointer transition-all ${
+                        pbBooked === v ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white text-[#5A5A40] border-[#D6D6C2]'
+                      }`}>{label}</button>
+                  ))}
+                </div>
+                <select value="" onChange={(e) => { if (e.target.value) setPbGovs((p) => p.includes(e.target.value) ? p : [...p, e.target.value]); }}
+                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[10.5px] px-3 py-2 text-right cursor-pointer">
+                  <option value="">+ أضف محافظة (اختياري)</option>
+                  {GOVERNORATES.filter((g) => !pbGovs.includes(g)).map((g) => <option key={g} value={g}>{g}</option>)}
+                </select>
+                {pbGovs.length > 0 && (
+                  <div className="flex gap-1 flex-wrap">
+                    {pbGovs.map((g) => (
+                      <button key={g} type="button" onClick={() => setPbGovs((p) => p.filter((x) => x !== g))}
+                        className="text-[9px] font-bold bg-[#EBEBE0] text-[#4A4A3A] px-2 py-1 rounded-lg cursor-pointer">{g} ✕</button>
+                    ))}
+                  </div>
+                )}
+                {(pbRoles.length > 0 || pbGovs.length > 0 || pbBooked !== 'any') && (
+                  <p className="text-[9px] font-bold text-amber-700">الزائر غير المسجّل مش هيشوف البانر المُستهدف.</p>
+                )}
+              </div>
+
+              {/* Split test */}
+              <div className="col-span-2 space-y-1.5 border-t border-[#E7E5DB] pt-2.5">
+                <span className="text-[10px] font-black text-[#4A4A3A]">تجربة A/B (اختياري)</span>
+                <p className="text-[9px] font-bold text-[#8A8A70]">اكتب نفس اسم التجربة في بانرين، والنظام يوزّعهم على الزوار ويقارن نتايجهم.</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <input value={pbExperiment} onChange={(e) => setPbExperiment(e.target.value)} placeholder="اسم التجربة" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
+                  <input value={pbVariant} onChange={(e) => setPbVariant(e.target.value)} placeholder="أ / ب" className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-center" />
+                </div>
+              </div>
+
               {/* Icon links shown inside the banner (social accounts, site, phone…) */}
               <div className="col-span-2 space-y-1.5 pt-1 border-t border-[#E7E5DB]">
                 <div className="flex items-center justify-between gap-2 pt-1.5">
@@ -1424,6 +1486,9 @@ export default function AdminDashboard({
                     linkedHouseId: pbHouseId || null,
                     status: pbStatus,
                     startsAt: pbStatus === 'scheduled' && pbStartsAt ? new Date(pbStartsAt).toISOString() : null,
+                    audience: { roles: pbRoles, governorates: pbGovs, booked: pbBooked },
+                    experiment: pbExperiment.trim() || null,
+                    variant: pbVariant.trim() || null,
                   });
                   pbResetForm();
                   setPbView('list');
@@ -1447,6 +1512,9 @@ export default function AdminDashboard({
                   linkedHouseId: pbHouseId || null,
                   status: pbStatus,
                   startsAt: pbStatus === 'scheduled' && pbStartsAt ? new Date(pbStartsAt).toISOString() : null,
+                  audience: { roles: pbRoles, governorates: pbGovs, booked: pbBooked },
+                  experiment: pbExperiment.trim() || null,
+                  variant: pbVariant.trim() || null,
                 });
                 pbResetForm();
                 setPbView('list');
@@ -1458,7 +1526,7 @@ export default function AdminDashboard({
           </div>
           )}
 
-          {pbView === 'stats' && <BannerAnalytics />}
+          {pbView === 'stats' && <BannerAnalytics banners={promoBanners} />}
 
           {/* Full-screen banner studio for the selected banner */}
           {(() => {
