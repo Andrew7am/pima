@@ -22,6 +22,7 @@ export const BANNER_BOX: Record<PromoBanner['placement'], { height: number; labe
 
 export const DEFAULT_LAYOUT = (placement: PromoBanner['placement']): BannerLayout => ({
   version: 1,
+  background: 'linear-gradient(135deg,#0A2342 0%,#123E75 100%)',
   image: { fit: 'cover', scale: 1, x: 0, y: 0, opacity: placement === 'countdown' ? 0.3 : 0.8 },
   overlay: { enabled: true, opacity: 0.45 },
   elements: [
@@ -119,6 +120,10 @@ export default function BannerCanvas({ banner, layout, selectedId, onSelect, int
       className="relative w-full h-full overflow-hidden select-none"
       style={{ containerType: 'inline-size' }}
     >
+      {/* Painted first so a banner with no photo still has a real look. */}
+      {layout.background && (
+        <div className="absolute inset-0" style={{ background: layout.background }} />
+      )}
       {banner.imageUrl && (
         <img
           src={banner.imageUrl}

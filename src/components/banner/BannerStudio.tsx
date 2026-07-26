@@ -27,6 +27,15 @@ const DEVICES = [
 ] as const;
 
 const SWATCHES = ['#FFFFFF', '#0A2342', '#5A5A40', '#C5A059', '#E5E7EB', '#111111', '#D94A4A', '#2E7D5B'];
+// Backgrounds sit under the photo, so a banner works even with no image at all.
+const BACKGROUNDS = [
+  'linear-gradient(135deg,#0A2342,#123E75)',
+  'linear-gradient(135deg,#5A5A40,#8A8A70)',
+  'linear-gradient(135deg,#7A5C1E,#C5A059)',
+  'linear-gradient(135deg,#111111,#5A5A40)',
+  'linear-gradient(135deg,#1B5E9E,#2E7D5B)',
+  '#0A2342', '#5A5A40', '#111111',
+];
 const FONTS = [
   { label: 'القاهرة', value: 'Cairo, sans-serif' },
   { label: 'النظام', value: 'system-ui, sans-serif' },
@@ -432,6 +441,17 @@ export default function BannerStudio({ banner: initial, onSave, onClose }: Props
                     <PhotoPickerButtons idPrefix="studio-image" folder="banners"
                       onSelect={(url) => { commit(); setBanner((b) => ({ ...b, imageUrl: url })); }} />
                   </div>
+                </div>
+                <span className="text-[9.5px] font-black text-[#5A5A40] block">لون الخلفية (يظهر لو مفيش صورة أو كانت شفافة)</span>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {BACKGROUNDS.map((bg) => (
+                    <button key={bg} type="button" onClick={() => { commit(); setLayout((l) => ({ ...l, background: bg })); }}
+                      aria-label="خلفية"
+                      className={`w-11 h-9 rounded-xl border-2 shrink-0 active:scale-90 transition-transform cursor-pointer ${
+                        layout.background === bg ? 'border-[#0A2342]' : 'border-[#E2DFD4]'
+                      }`}
+                      style={{ background: bg }} />
+                  ))}
                 </div>
                 <div className="flex gap-1.5 overflow-x-auto pb-1">
                   {FITS.map((f) => (

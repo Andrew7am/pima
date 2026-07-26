@@ -10,10 +10,11 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
   { value: 'we_cash', label: 'وي كاش' },
   { value: 'bank_transfer', label: 'تحويل بنكي' },
 ];
-import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2 } from 'lucide-react';
+import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy } from 'lucide-react';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
 import BannerStudio from './banner/BannerStudio';
+import BannerCanvas from './banner/BannerCanvas';
 import BannerAnalytics from './banner/BannerAnalytics';
 import { bannerStateLabel } from '../lib/bannerVisibility';
 import HouseDetail from './HouseDetail';
@@ -1507,14 +1508,18 @@ export default function AdminDashboard({
                     </button>
                   </div>
 
-                  {/* Thumbnail */}
-                  {b.imageUrl ? (
-                    <img src={b.imageUrl} alt="" referrerPolicy="no-referrer" className="w-12 h-12 rounded-xl object-cover border border-[#E7E5DB] shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-[#EBEBE0]/60 border border-[#E7E5DB] flex items-center justify-center shrink-0">
-                      <Megaphone className="w-4 h-4 text-[#BCBC9D]" />
-                    </div>
-                  )}
+                  {/* Live mini-preview — the designed banner, not just its raw photo */}
+                  <div className="w-[104px] h-[52px] rounded-xl overflow-hidden border border-[#E7E5DB] shrink-0 bg-slate-900">
+                    {b.layout ? (
+                      <BannerCanvas banner={b} layout={b.layout} />
+                    ) : b.imageUrl ? (
+                      <img src={b.imageUrl} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-[#EBEBE0]/60 flex items-center justify-center">
+                        <Megaphone className="w-4 h-4 text-[#BCBC9D]" />
+                      </div>
+                    )}
+                  </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -1547,6 +1552,19 @@ export default function AdminDashboard({
                       <Wand2 className="w-3 h-3" /> تصميم
                     </button>
                     <button type="button" onClick={() => onTogglePromoBanner?.(b.id, !b.isActive)} className={`text-[9.5px] font-bold px-2 py-1 rounded-lg cursor-pointer ${b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>{b.isActive ? 'مفعّل' : 'متوقف'}</button>
+                    <button type="button"
+                      onClick={() => onAddPromoBanner?.({
+                        ...b,
+                        id: `pb_${Date.now()}`,
+                        title: b.title ? `${b.title} (نسخة)` : b.title,
+                        // A copy starts as a draft so it can never go live by accident.
+                        status: 'draft',
+                        sort: promoBanners.filter((x) => x.placement === b.placement).length,
+                        createdAt: new Date().toISOString(),
+                      })}
+                      className="flex items-center justify-center gap-1 text-[9.5px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer">
+                      <Copy className="w-3 h-3" /> نسخة
+                    </button>
                     <button type="button" onClick={() => { if (confirm('حذف هذا البانر نهائياً؟')) { if (pbEditingId === b.id) pbResetForm(); onDeletePromoBanner?.(b.id); } }} className="text-[9.5px] font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg cursor-pointer">حذف</button>
                   </div>
                 </div>

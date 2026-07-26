@@ -26,6 +26,7 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
     swatch: 'linear-gradient(135deg,#0A2342,#123E75)',
     build: () => ({
       version: 1,
+      background: 'linear-gradient(135deg,#0A2342,#123E75)',
       image: { fit: 'cover', scale: 1.1, x: 0, y: 0, opacity: 0.55 },
       overlay: { enabled: true, opacity: 0.5 },
       elements: [
@@ -43,6 +44,7 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
     swatch: 'linear-gradient(135deg,#5A5A40,#8A8A70)',
     build: () => ({
       version: 1,
+      background: 'linear-gradient(135deg,#5A5A40,#8A8A70)',
       image: { fit: 'cover', scale: 1, x: 0, y: 0, opacity: 0.9 },
       overlay: { enabled: true, opacity: 0.35 },
       elements: [
@@ -60,6 +62,7 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
     swatch: 'linear-gradient(135deg,#C5A059,#E1306C)',
     build: () => ({
       version: 1,
+      background: 'linear-gradient(135deg,#C5A059,#E1306C)',
       image: { fit: 'cover', scale: 1.2, x: 0, y: 0, opacity: 0.4 },
       overlay: { enabled: true, opacity: 0.55 },
       elements: [
@@ -76,6 +79,7 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
     swatch: 'linear-gradient(135deg,#FAF8F5,#D6D6C2)',
     build: () => ({
       version: 1,
+      background: 'linear-gradient(135deg,#3D3D2B,#5A5A40)',
       image: { fit: 'cover', scale: 1, x: 0, y: 0, opacity: 0.75 },
       overlay: { enabled: true, opacity: 0.4 },
       elements: [
@@ -91,6 +95,7 @@ export const BANNER_TEMPLATES: BannerTemplate[] = [
     swatch: 'linear-gradient(135deg,#111111,#5A5A40)',
     build: () => ({
       version: 1,
+      background: 'linear-gradient(135deg,#111111,#5A5A40)',
       image: { fit: 'cover', scale: 1, x: 0, y: 0, opacity: 0.3 },
       overlay: { enabled: true, opacity: 0.7 },
       elements: [

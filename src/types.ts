@@ -364,6 +364,9 @@ export interface BannerElement {
 
 export interface BannerLayout {
   version: 1;
+  /** CSS colour or gradient painted under the image — lets a banner work with
+   *  no photo at all instead of falling back to an empty dark box. */
+  background?: string;
   image: BannerImageLayer;
   overlay: { enabled: boolean; opacity: number };
   elements: BannerElement[]; // back → front
