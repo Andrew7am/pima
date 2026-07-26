@@ -54,7 +54,15 @@ export function elementLabel(type: BannerElement['type']): string {
 }
 
 function ElementBody({ el, banner }: { el: BannerElement; banner: PromoBanner }) {
-  const common: React.CSSProperties = { color: el.color, opacity: el.opacity ?? 1 };
+  const common: React.CSSProperties = {
+    color: el.color,
+    opacity: el.opacity ?? 1,
+    fontFamily: el.fontFamily,
+    fontWeight: el.fontWeight,
+    letterSpacing: el.letterSpacing != null ? cq(el.letterSpacing) : undefined,
+    // Photos vary wildly; a soft shadow is what keeps text readable on top.
+    textShadow: el.shadow ? '0 2px 6px rgba(0,0,0,0.55)' : undefined,
+  };
   switch (el.type) {
     case 'badge':
       return banner.badge ? (

@@ -356,6 +356,10 @@ export interface BannerElement {
   opacity?: number;   // 0 – 1
   rotation?: number;  // deg
   align?: 'start' | 'center' | 'end';
+  fontFamily?: string;
+  fontWeight?: number;     // 400 – 900
+  letterSpacing?: number;  // px at design width
+  shadow?: boolean;        // soft drop shadow for legibility over photos
 }
 
 export interface BannerLayout {
