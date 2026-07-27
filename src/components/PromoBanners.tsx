@@ -137,10 +137,11 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
     <div
       ref={track.ref}
       onClickCapture={track.onClickCapture}
-      // h-44 alone made this a 2:1 hero on a phone but a 7.6:1 letterbox strip
-      // on a desktop, cropping most of the artwork away. Growing the height with
-      // the viewport keeps it near a normal hero ratio at every width.
-      className="relative rounded-3xl overflow-hidden h-44 sm:h-56 lg:h-72 shadow-md bg-slate-900 group select-none"
+      // Height drives the whole composition now that BannerCanvas sizes type in
+      // cqh: positions and text scale together, so a taller box on a wider
+      // screen renders the same design, just bigger. h-44 is the mobile/app
+      // size and must stay — it is what the layouts were designed against.
+      className="relative rounded-3xl overflow-hidden h-44 sm:h-52 lg:h-64 shadow-md bg-slate-900 group select-none"
     >
       {designed?.layout ? (
         // z-10 keeps the artwork and its CTA above the story tap zones.
@@ -269,7 +270,7 @@ export function CountdownOfferBanner({ banner, onCta, onOpenHouse, live }: { ban
   if (banner?.layout) {
     return (
       <div ref={track.ref} onClickCapture={track.onClickCapture}
-        className="relative rounded-3xl overflow-hidden h-32 sm:h-40 lg:h-48 bg-slate-950 text-white select-none shadow-md">
+        className="relative rounded-3xl overflow-hidden h-32 sm:h-36 lg:h-44 bg-slate-950 text-white select-none shadow-md">
         <BannerCanvas banner={banner} layout={banner.layout} onOpenHouse={onOpenHouse} live={live} />
       </div>
     );
@@ -277,7 +278,7 @@ export function CountdownOfferBanner({ banner, onCta, onOpenHouse, live }: { ban
 
   return (
     <div ref={track.ref} onClickCapture={track.onClickCapture}
-      className="relative rounded-3xl overflow-hidden h-32 sm:h-40 lg:h-48 bg-slate-950 text-white select-none shadow-md">
+      className="relative rounded-3xl overflow-hidden h-32 sm:h-36 lg:h-44 bg-slate-950 text-white select-none shadow-md">
       {img
         ? <img src={img} alt="" className="w-full h-full absolute inset-0 object-cover opacity-30" referrerPolicy="no-referrer" />
         : <div className="absolute inset-0" style={{ background: DEFAULT_COUNTDOWN.gradient }} />}

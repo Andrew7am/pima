@@ -11,7 +11,10 @@ import { BannerLinkIcons } from '../PromoBanners';
 // width. The box's own height/rounding is owned by the caller and never
 // changed here.
 
-export const DESIGN_WIDTH = 360; // px the admin designs against
+// The canvas the admin designs against. Element x-positions are stored as % of
+// it, so it still describes the layout — but it no longer drives type size; see
+// cqAt below.
+export const DESIGN_WIDTH = 360;
 
 // Fixed heights of the app's banner slots. Changing these would resize the
 // containers the mobile app already ships — don't.
@@ -47,8 +50,20 @@ const FIT_STYLE: Record<BannerFit, { objectFit: React.CSSProperties['objectFit']
   right: { objectFit: 'cover', objectPosition: 'right' },
 };
 
-// px at design width → container-query units, so text scales with the box.
-const cq = (px: number) => `${((px / DESIGN_WIDTH) * 100).toFixed(3)}cqw`;
+// px at the design size → container-query units, so text scales with the box.
+//
+// Anchored to HEIGHT (cqh), not width. Element positions are already stored as
+// % of the box, so they scale with it either way — but sizing text off the box
+// WIDTH meant any box wider than the 360px design width blew every font up by
+// the same factor. At a desktop width of 1112px the 16px title rendered at
+// 62px inside a 176px-tall box: four overlapping pairs and two elements spilling
+// out of the frame. Anchoring to height keeps the composition intact at any
+// width, which is what lets the banner run full-bleed on a desktop.
+//
+// The design height differs per placement (carousel 176, countdown 128), so the
+// caller binds the right one — a shared constant would shrink countdown text to
+// 73% of its designed size.
+const cqAt = (px: number, designHeight: number) => `${((px / designHeight) * 100).toFixed(3)}cqh`;
 
 export function elementLabel(type: BannerElement['type']): string {
   return {
@@ -66,6 +81,10 @@ export interface BannerLiveData {
 }
 
 function ElementBody({ el, banner, onOpenHouse, live }: { el: BannerElement; banner: PromoBanner; onOpenHouse?: (houseId: string) => void; live?: BannerLiveData }) {
+  // Bound to this placement's design height — see cqAt.
+  const designHeight = BANNER_BOX[banner.placement]?.height ?? BANNER_BOX.carousel.height;
+  const cq = (px: number) => cqAt(px, designHeight);
+
   const common: React.CSSProperties = {
     color: el.color,
     opacity: el.opacity ?? 1,
@@ -155,7 +174,11 @@ export default function BannerCanvas({ banner, layout, selectedId, onSelect, int
   return (
     <div
       className="relative w-full h-full overflow-hidden select-none"
-      style={{ containerType: 'inline-size' }}
+      // 'size' (not 'inline-size') so cqh resolves. Safe because every caller
+      // gives this box a definite height — PromoBanners uses the fixed h-44/h-32
+      // slots and the studio uses BANNER_BOX. An auto-height parent would
+      // collapse it.
+      style={{ containerType: 'size' }}
     >
       {/* Painted first so a banner with no photo still has a real look. */}
       {layout.background && (
