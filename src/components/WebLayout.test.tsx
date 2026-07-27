@@ -111,6 +111,15 @@ describe('WebLayout notifications', () => {
     expect(screen.getByText('إشعار')).toBeInTheDocument();
   });
 
+  // The panel rendered title + body but never the time, so a week-old alert and
+  // one from a minute ago were indistinguishable.
+  it('shows how long ago each notification arrived', async () => {
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    renderLayout([notif({ id: 'a', title: 'إشعار', createdAt: twoHoursAgo })]);
+    await openPanel();
+    expect(screen.getByText('منذ ساعتين')).toBeInTheDocument();
+  });
+
   it('keeps the list scrollable rather than clipped when there are many', async () => {
     const many = Array.from({ length: 25 }, (_, i) => notif({ id: `n${i}`, title: `إشعار ${i}` }));
     renderLayout(many);
