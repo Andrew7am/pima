@@ -18,6 +18,8 @@
 --    approval; the migration-019 trigger already blocks direct owner
 --    writes to it (it reverts every column not explicitly re-allowed,
 --    so a new column is protected by default — nothing to add there).
+--    Reading it back, however, is NOT automatic — see the grants block
+--    below, and docs/OPERATIONS.md on migration 080.
 -- ============================================================
 
 ALTER TABLE public.houses
@@ -32,6 +34,31 @@ BEGIN
   ALTER TABLE public.houses ADD CONSTRAINT houses_nearby_landmark_len
     CHECK (nearby_landmark IS NULL OR char_length(nearby_landmark) <= 80) NOT VALID;
 EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- REQUIRED after any ADD COLUMN on houses, and easy to miss: migration 080
+-- dropped the table-level SELECT grant and handed back a fixed column list,
+-- so a new column is unreadable to anon/authenticated until the list is
+-- rebuilt. Without this the browse screen still renders (loadHouses retries
+-- without the column) but nearby_landmark silently never appears, and every
+-- page load logs a PostgREST error. Verified against the live project:
+-- the ALTER above succeeded and the field was still invisible until this ran.
+-- Same block as 080, re-derived so payment_methods stays excluded.
+DO $$
+DECLARE cols TEXT;
+BEGIN
+  SELECT string_agg(quote_ident(column_name), ', ' ORDER BY ordinal_position)
+    INTO cols
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'houses'
+    AND column_name <> 'payment_methods';
+
+  IF cols IS NULL THEN
+    RAISE EXCEPTION 'public.houses not found — refusing to change grants';
+  END IF;
+
+  EXECUTE 'REVOKE SELECT ON public.houses FROM anon, authenticated';
+  EXECUTE format('GRANT SELECT (%s) ON public.houses TO anon, authenticated', cols);
 END $$;
 
 CREATE OR REPLACE FUNCTION public.get_houses_booking_counts()
