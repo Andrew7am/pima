@@ -4,6 +4,7 @@ import {
   Check, X, LogOut, UserCircle, Home, Map as MapIcon, Sparkles, MessageCircle
 } from 'lucide-react';
 import { User, AppNotification } from '../types';
+import { timeAgo } from '../lib/timeAgo';
 import Logo from './Logo';
 
 type Screen = 'explore' | 'bookings' | 'messages' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub' | 'random_match' | 'games_catalog' | 'rewards';
@@ -120,7 +121,12 @@ export default function WebLayout({
                 // dismissed it, and the short list was awkward to scroll. It is
                 // now a near-full-width sheet on mobile and keeps the compact
                 // dropdown from `sm:` up.
-                <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:top-11 sm:left-0 sm:w-80 bg-white rounded-2xl shadow-xl border border-[var(--color-natural-border)] z-50 overflow-hidden flex flex-col max-h-[75dvh] sm:max-h-none">
+                // The container must keep a definite max-height in BOTH breakpoints:
+                // the scrolling list below uses flex-1, and a flex child with
+                // basis 0 inside a container whose height comes from its own
+                // content resolves to a broken layout — the header and the list
+                // detach and the panel sprawls down the page.
+                <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:top-11 sm:left-0 sm:w-96 bg-white rounded-2xl shadow-xl border border-[var(--color-natural-border)] z-50 overflow-hidden flex flex-col max-h-[75dvh] sm:max-h-[26rem]">
                   <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-[var(--color-natural-border)]">
                     <span className="font-bold text-sm text-[var(--color-natural-text)] flex items-center gap-1.5">
                       الإشعارات
@@ -147,34 +153,41 @@ export default function WebLayout({
                   </div>
                   {/* overscroll-contain stops a scroll that reaches the end of
                       the list from chaining to the page behind the sheet. */}
-                  <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain sm:max-h-80">
+                  <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
                     {userNotifications.length === 0 ? (
-                      <p className="text-center text-sm text-[var(--color-natural-secondary)] py-8">لا توجد إشعارات</p>
+                      <div className="flex flex-col items-center gap-2 py-12 text-[var(--color-natural-secondary)]">
+                        <Bell className="w-8 h-8 opacity-25" />
+                        <p className="text-sm">لا توجد إشعارات</p>
+                      </div>
                     ) : (
                       userNotifications.map(n => (
                         <div
                           key={n.id}
-                          className={`relative px-4 py-3 border-b border-[var(--color-natural-border)] last:border-0 flex gap-3 items-start transition-all
-                            ${!n.isRead ? 'bg-blue-50' : 'bg-white'}`}
+                          className={`px-4 py-3 border-b border-[var(--color-natural-border)] last:border-0 flex gap-3 items-start transition-colors
+                            ${!n.isRead ? 'bg-blue-50/70' : 'bg-white'}`}
                         >
-                          {/* Unread accent bar (start edge in RTL) */}
-                          {!n.isRead && <span className="absolute right-0 top-0 bottom-0 w-1 bg-blue-500" />}
+                          {/* The tinted row, the coloured dot and the "جديد" pill
+                              already say "unread" three times over — a fourth
+                              accent bar just fought the panel's rounded corner. */}
                           <div className={`w-2 h-2 mt-1.5 rounded-full shrink-0 ${
                             n.type === 'success' ? 'bg-green-500' :
                             n.type === 'danger' ? 'bg-red-500' : 'bg-blue-400'
                           } ${n.isRead ? 'opacity-30' : ''}`} />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <p className={`text-xs ${!n.isRead ? 'font-black text-[var(--color-natural-text)]' : 'font-semibold text-[var(--color-natural-secondary)]'}`}>{n.title}</p>
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <p className={`text-xs truncate ${!n.isRead ? 'font-black text-[var(--color-natural-text)]' : 'font-semibold text-[var(--color-natural-secondary)]'}`}>{n.title}</p>
                               {!n.isRead && <span className="shrink-0 text-[8px] font-black text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full">جديد</span>}
                             </div>
-                            <p className={`text-[11px] leading-relaxed line-clamp-3 ${n.isRead ? 'text-[var(--color-natural-secondary)]/60' : 'text-[var(--color-natural-secondary)]'}`}>{n.message}</p>
+                            {/* Arabic needs the looser leading to stay readable at this size. */}
+                            <p className={`text-[11px] leading-[1.75] line-clamp-3 ${n.isRead ? 'text-[var(--color-natural-secondary)]/60' : 'text-[var(--color-natural-secondary)]'}`}>{n.message}</p>
+                            <span className="block mt-1 text-[9px] font-bold text-[var(--color-natural-secondary)]/60">{timeAgo(n.createdAt)}</span>
                           </div>
                           {!n.isRead && (
                             <button
                               onClick={() => onMarkNotificationAsRead(n.id)}
                               title="تمييز كمقروء"
-                              className="shrink-0 p-1 rounded-full hover:bg-green-100 text-green-500"
+                              aria-label="تمييز كمقروء"
+                              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full border border-[var(--color-natural-border)] bg-white text-[var(--color-natural-secondary)] hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-colors"
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
