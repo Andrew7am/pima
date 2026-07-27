@@ -307,11 +307,10 @@ export default function UserDashboard({
     // leaderboard does (App.tsx) and the owner dashboard does via .owner-theme:
     // scoped to this screen so every other guest screen keeps the cream palette
     // on <body>. Negative margins bleed it past the shell's px-4 py-6.
-    // Built mobile-first with no width ceiling, so on a desktop every element
-    // just stretched. The cap goes on THIS panel, not on a wrapper inside it —
-    // capping an inner column while the panel stayed full-bleed left a wide
-    // empty gutter inside the card and read as broken.
-    <div className="min-h-screen bg-gradient-to-b from-[#1C1C16] via-[#232319] to-[#141410] text-[#EDEBE3] -mx-4 -my-6 sm:mx-auto sm:my-0 sm:max-w-6xl sm:rounded-3xl px-4 py-6 space-y-4 text-right">
+    // Full-bleed on purpose: a capped, centred column left big empty margins on
+    // a wide screen and read as a shrunken page. Desktop is handled by giving
+    // the CONTENT more columns (see the house grid), not by narrowing the page.
+    <div className="min-h-screen bg-gradient-to-b from-[#1C1C16] via-[#232319] to-[#141410] text-[#EDEBE3] -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl px-4 py-6 space-y-4 text-right">
 
       {/* Follows the Coptic calendar on its own — no one has to remember to
           switch it on, and it disappears outside the fasts and feasts. */}
@@ -698,8 +697,9 @@ export default function UserDashboard({
         ) : (
           // One card per row was fine on a phone but wasted a desktop: each
           // card stretched to the full width and its photo was cropped to a
-          // 6.7:1 strip. A grid keeps the photo near its natural ratio.
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          // 6.7:1 strip. Columns are what absorb the extra width — the page
+          // itself stays full-bleed.
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredHouses.map((house) => (
               <div
                 id={`house-card-${house.id}`}
