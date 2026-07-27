@@ -14,21 +14,27 @@ function notif(over: Partial<AppNotification>): AppNotification {
   };
 }
 
-function renderLayout(notifications: AppNotification[], onMarkAllRead = vi.fn()) {
+function renderLayout(
+  notifications: AppNotification[],
+  onMarkAllRead = vi.fn(),
+  over: { currentUser?: User } = {},
+) {
+  const setActiveScreen = vi.fn();
+  const onMarkNotificationAsRead = vi.fn();
   render(
     <WebLayout
       activeScreen="explore"
-      setActiveScreen={vi.fn()}
-      currentUser={me}
+      setActiveScreen={setActiveScreen}
+      currentUser={over.currentUser ?? me}
       onLogout={vi.fn()}
       notifications={notifications}
-      onMarkNotificationAsRead={vi.fn()}
+      onMarkNotificationAsRead={onMarkNotificationAsRead}
       onMarkAllRead={onMarkAllRead}
     >
       <div>محتوى</div>
     </WebLayout>,
   );
-  return { onMarkAllRead };
+  return { onMarkAllRead, setActiveScreen, onMarkNotificationAsRead };
 }
 
 const openPanel = async () => {
@@ -53,6 +59,69 @@ describe('WebLayout top bar layering', () => {
     // Must clear the banner's z-10 wrapper, and stay under the z-50 overlays.
     expect(Number(z![1])).toBeGreaterThan(10);
     expect(Number(z![1])).toBeLessThanOrEqual(50);
+  });
+
+  // Regression: the dismiss backdrop sat at the same z-index as the bar and came
+  // later in the DOM, so it covered the open panel. Every tap inside the panel
+  // hit the backdrop and merely closed it — the panel looked completely dead.
+  it('keeps the dismiss backdrop below the top bar', async () => {
+    renderLayout([notif({ id: 'a' })]);
+    await openPanel();
+
+    const headerZ = Number(document.querySelector('header')!.className.match(/(?:^|\s)z-(\d+)(?:\s|$)/)![1]);
+    const backdrop = document.querySelector('div.fixed.inset-0')!;
+    const backdropZ = Number(backdrop.className.match(/(?:^|\s)z-(\d+)(?:\s|$)/)![1]);
+
+    expect(backdropZ).toBeLessThan(headerZ);
+  });
+});
+
+describe('WebLayout notification actions', () => {
+  // Regression: the row carried no handler at all, so tapping a notification
+  // did nothing — the only thing anyone could act on was the small ✓.
+  it('marks the notification read and opens what it is about', async () => {
+    const { setActiveScreen, onMarkNotificationAsRead } =
+      renderLayout([notif({ id: 'a', title: 'حجز جديد', bookingId: 'b9' })]);
+    await openPanel();
+
+    await userEvent.click(screen.getByText('حجز جديد'));
+
+    expect(onMarkNotificationAsRead).toHaveBeenCalledWith('a');
+    expect(setActiveScreen).toHaveBeenCalledWith('bookings');
+  });
+
+  it('sends an owner to their own panel rather than the guest bookings screen', async () => {
+    const owner = { ...me, role: 'owner' } as User;
+    const { setActiveScreen } =
+      renderLayout([notif({ id: 'a', title: 'حجز جديد', bookingId: 'b9' })], vi.fn(), { currentUser: owner });
+    await openPanel();
+
+    await userEvent.click(screen.getByText('حجز جديد'));
+    expect(setActiveScreen).toHaveBeenCalledWith('owner_panel');
+  });
+
+  // The ✓ is a separate action: it dismisses the badge without yanking the
+  // reader off the screen they are on.
+  it('marks read without navigating when the check is pressed', async () => {
+    const { setActiveScreen, onMarkNotificationAsRead } =
+      renderLayout([notif({ id: 'a', bookingId: 'b9' })]);
+    await openPanel();
+
+    await userEvent.click(screen.getByRole('button', { name: 'تمييز كمقروء' }));
+
+    expect(onMarkNotificationAsRead).toHaveBeenCalledWith('a');
+    expect(setActiveScreen).not.toHaveBeenCalled();
+  });
+
+  it('is reachable by keyboard, not mouse only', async () => {
+    const { setActiveScreen } = renderLayout([notif({ id: 'a', title: 'حجز جديد', bookingId: 'b9' })]);
+    await openPanel();
+
+    const row = screen.getByText('حجز جديد').closest('[role="button"]') as HTMLElement;
+    row.focus();
+    await userEvent.keyboard('{Enter}');
+
+    expect(setActiveScreen).toHaveBeenCalledWith('bookings');
   });
 });
 
@@ -117,14 +186,12 @@ describe('WebLayout notifications', () => {
     expect(screen.getByText('لا توجد إشعارات')).toBeInTheDocument();
   });
 
-  // Reported symptom: "tapping anywhere closes the notifications". Interacting
-  // with the panel's own contents must never dismiss it.
-  it('stays open when the panel itself is tapped', async () => {
+  // Reported symptom: "tapping anywhere closes the notifications". Tapping the
+  // panel's own chrome must never dismiss it. (Tapping a row is a different
+  // matter — that navigates, and closing is the point; see the actions suite.)
+  it('stays open when the panel chrome is tapped', async () => {
     renderLayout([notif({ id: 'a', title: 'إشعار' })]);
     await openPanel();
-
-    await userEvent.click(screen.getByText('إشعار'));
-    expect(screen.getByText('إشعار')).toBeInTheDocument();
 
     await userEvent.click(screen.getByText('الإشعارات', { selector: 'span' }));
     expect(screen.getByText('إشعار')).toBeInTheDocument();

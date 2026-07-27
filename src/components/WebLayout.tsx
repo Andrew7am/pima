@@ -67,6 +67,19 @@ export default function WebLayout({
   const unreadCount = currentUser ? notifications.filter(n => n.userId === currentUser.id && !n.isRead).length : 0;
   const userNotifications = currentUser ? notifications.filter(n => n.userId === currentUser.id) : [];
 
+  // Tapping a notification did nothing at all — the row carried no handler, so
+  // the only thing anyone could act on was the small ✓. A notification exists to
+  // take you to what it is about, so send the reader there and mark it read on
+  // the way.
+  const openNotification = (n: AppNotification) => {
+    if (!n.isRead) onMarkNotificationAsRead(n.id);
+    setShowNotif(false);
+    if (!n.bookingId || !currentUser) return;
+    setActiveScreen(currentUser.role === 'owner' ? 'owner_panel'
+      : currentUser.role === 'admin' ? 'admin_panel'
+      : 'bookings');
+  };
+
   const roleLabel: Record<string, string> = {
     individual: 'مستخدم',
     servant: 'خادم',
@@ -170,7 +183,13 @@ export default function WebLayout({
                       userNotifications.map(n => (
                         <div
                           key={n.id}
-                          className={`px-4 py-3 border-b border-[var(--color-natural-border)] last:border-0 flex gap-3 items-start transition-colors
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => openNotification(n)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openNotification(n); }
+                          }}
+                          className={`px-4 py-3 border-b border-[var(--color-natural-border)] last:border-0 flex gap-3 items-start transition-colors cursor-pointer hover:bg-[var(--color-natural-hover)]
                             ${!n.isRead ? 'bg-blue-50/70' : 'bg-white'}`}
                         >
                           {/* The tinted row, the coloured dot and the "جديد" pill
@@ -191,7 +210,7 @@ export default function WebLayout({
                           </div>
                           {!n.isRead && (
                             <button
-                              onClick={() => onMarkNotificationAsRead(n.id)}
+                              onClick={(e) => { e.stopPropagation(); onMarkNotificationAsRead(n.id); }}
                               title="تمييز كمقروء"
                               aria-label="تمييز كمقروء"
                               className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full border border-[var(--color-natural-border)] bg-white text-[var(--color-natural-secondary)] hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-colors"
@@ -273,9 +292,13 @@ export default function WebLayout({
         })}
       </nav>
 
-      {/* Backdrop for notifications on mobile */}
+      {/* Catches an outside tap to dismiss the panel. It must stay BELOW the
+          top bar's z-40: at the same z-index it wins on DOM order, covers the
+          whole bar including the open panel, and every tap inside the panel
+          lands here and just closes it. Above the page content (z-10) is all
+          it needs to be. */}
       {showNotif && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowNotif(false)} />
+        <div className="fixed inset-0 z-30" onClick={() => setShowNotif(false)} />
       )}
     </div>
   );
