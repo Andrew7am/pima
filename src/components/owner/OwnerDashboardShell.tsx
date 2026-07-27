@@ -205,6 +205,7 @@ export default function OwnerDashboardShell({
   const [monthlyRent, setMonthlyRent] = useState<number>(1500);
   const [studentHousingGender, setStudentHousingGender] = useState<'boys' | 'girls'>('boys');
   const [distanceFromUniversity, setDistanceFromUniversity] = useState('');
+  const [nearbyLandmark, setNearbyLandmark] = useState('');
 
   const [halls, setHalls] = useState<ConferenceHall[]>([]);
   const [hallName, setHallName] = useState('');
@@ -382,7 +383,8 @@ export default function OwnerDashboardShell({
     lat: h.lat, lng: h.lng, roomsCount: h.roomsCount, bedsCount: h.bedsCount,
     roomsDescription: h.roomsDescription, pricePerNightPerPerson: h.pricePerNightPerPerson,
     propertyType: h.propertyType, monthlyRent: h.monthlyRent, studentHousingGender: h.studentHousingGender,
-    distanceFromUniversity: h.distanceFromUniversity, services: h.services, suitability: h.suitability,
+    distanceFromUniversity: h.distanceFromUniversity, nearbyLandmark: h.nearbyLandmark,
+    services: h.services, suitability: h.suitability,
     conferenceHalls: h.conferenceHalls, activities: h.activities, images: h.images,
     imageDescriptions: h.imageDescriptions,
   });
@@ -401,7 +403,8 @@ export default function OwnerDashboardShell({
     setImageUrl(house.images?.[0] || ''); setActivitiesInput((house.activities || []).join('، '));
     setPropertyType(house.propertyType || 'conference'); setMonthlyRent(house.monthlyRent || 1500);
     setStudentHousingGender(house.studentHousingGender === 'girls' ? 'girls' : 'boys');
-    setDistanceFromUniversity(house.distanceFromUniversity || ''); setHalls(house.conferenceHalls || []);
+    setDistanceFromUniversity(house.distanceFromUniversity || ''); setNearbyLandmark(house.nearbyLandmark || '');
+    setHalls(house.conferenceHalls || []);
   };
 
   const openHouseTab = () => {
@@ -426,6 +429,9 @@ export default function OwnerDashboardShell({
         propertyType, monthlyRent: isMonthly ? monthlyRent : undefined,
         studentHousingGender: propertyType === 'student' ? studentHousingGender : undefined,
         distanceFromUniversity: propertyType === 'student' ? distanceFromUniversity : undefined,
+        // Empty string, not undefined: undefined disappears when pending_edit is
+        // serialised to JSON, so the owner could never clear a wrong landmark.
+        nearbyLandmark: nearbyLandmark.trim(),
         services: selectedServices, suitability: selectedSuitability.length > 0 ? selectedSuitability : base.suitability,
         conferenceHalls: propertyType === 'conference' ? halls : [],
         activities: activitiesInput ? activitiesInput.split('،').map((a) => a.trim()) : base.activities,
@@ -444,6 +450,7 @@ export default function OwnerDashboardShell({
       pricePerNightPerPerson: isMonthly ? 0 : pricePerNight, propertyType, monthlyRent: isMonthly ? monthlyRent : undefined,
       studentHousingGender: propertyType === 'student' ? studentHousingGender : undefined,
       distanceFromUniversity: propertyType === 'student' ? distanceFromUniversity : undefined,
+      nearbyLandmark: nearbyLandmark.trim() || undefined,
       housingRules: isMonthly ? [
         'المحافظة على الوقار والمبادئ المسيحية في التعامل والسلوك العام بالسكن.',
         'مواعيد غلق الباب الخارجي بحد أقصى الساعة ١٠:٣٠ مساءً يومياً.',
@@ -468,7 +475,7 @@ export default function OwnerDashboardShell({
     setHouseName(''); setHouseDesc(''); setHouseGov(GOVERNORATES[0]); setHouseAddress(''); setPricePerNight(150);
     setRoomsCount(10); setBedsCount(30); setRoomsDesc(''); setSelectedServices([]); setSelectedSuitability([]);
     setImageUrl(''); setHalls([]); setActivitiesInput(''); setPropertyType('conference'); setMonthlyRent(1500);
-    setStudentHousingGender('boys'); setDistanceFromUniversity('');
+    setStudentHousingGender('boys'); setDistanceFromUniversity(''); setNearbyLandmark('');
     setActiveTab('stats');
   };
 
@@ -1837,6 +1844,12 @@ export default function OwnerDashboardShell({
                 <div>
                   <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">العنوان بالتفصيل:</label>
                   <input id="add-house-address" type="text" required value={houseAddress} onChange={(e) => setHouseAddress(e.target.value)} onFocus={(e) => e.target.select()}
+                    className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">أقرب معلم معروف (اختياري) — يظهر على كارت البيت:</label>
+                  <input id="add-house-landmark" type="text" value={nearbyLandmark} onChange={(e) => setNearbyLandmark(e.target.value)}
+                    maxLength={80} placeholder="مثال: 12 كم من المنتزه"
                     className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
                 </div>
                 <div className="col-span-2">

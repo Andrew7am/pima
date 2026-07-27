@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { RetreatHouse, User, PromoBanner, Booking, Review } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
-import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking } from 'lucide-react';
+import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking, Flame } from 'lucide-react';
 import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
-import { loadHousesAvailability } from '../lib/db';
+import { loadHousesAvailability, loadHouseBookingCounts } from '../lib/db';
 import { computeStayPrice } from '../lib/pricing';
 import { isBannerLive, matchesAudience, pickExperimentVariants } from '../lib/bannerVisibility';
 import { bannerSeed } from '../lib/bannerEvents';
@@ -136,6 +136,45 @@ export default function UserDashboard({
     });
     return () => { cancelled = true; };
   }, [filterCheckIn, filterCheckOut]);
+
+  // Real popularity (migration-086 RPC, aggregate counts only). The badge goes
+  // to the top three approved houses over the last year, and only when they
+  // have enough bookings for "الأكثر حجزًا" to mean something (≥3). null = RPC
+  // unavailable → no badges, never a guess.
+  const [bookingCounts, setBookingCounts] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    loadHouseBookingCounts().then((result) => {
+      if (!cancelled) setBookingCounts(result);
+    });
+    return () => { cancelled = true; };
+  }, []);
+  const mostBookedIds = React.useMemo(() => {
+    if (!bookingCounts) return new Set<string>();
+    return new Set(
+      Object.entries(bookingCounts)
+        .filter(([, n]) => n >= 3)
+        // Tie-break on id so the badge lands on the same houses every render;
+        // the RPC's row order is not guaranteed and would make it flicker.
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, 3)
+        .map(([id]) => id),
+    );
+  }, [bookingCounts]);
+
+  // «حجزتم هنا قبل كده» is personal memory, not popularity, so it needs no
+  // server aggregate. The userId filter is not redundant: RLS scopes a plain
+  // guest to their own rows, but an owner or admin browsing this screen also
+  // receives other people's bookings, and without it they would be told they
+  // had stayed somewhere they never booked.
+  const bookedBeforeIds = React.useMemo(() => {
+    if (!currentUser) return new Set<string>();
+    return new Set(
+      bookings
+        .filter((b) => b.userId === currentUser.id && (b.status === 'approved' || b.status === 'completed'))
+        .map((b) => b.houseId),
+    );
+  }, [bookings, currentUser]);
 
   // Nights in the chosen window, so a card can quote a whole stay rather than a
   // per-person-per-night rate nobody budgets in.
@@ -686,17 +725,36 @@ export default function UserDashboard({
                   <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/25" />
                 </div>
 
-                {/* Rating tag */}
-                <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm text-[#4A4A3A] text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
-                  <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                  <span>{house.rating.toFixed(1)}</span>
-                </span>
+                {/* Rating, and real popularity beside it (top-3 by confirmed
+                    bookings over the last year — see mostBookedIds) */}
+                <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                  <span className="bg-white/95 backdrop-blur-sm text-[#4A4A3A] text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                    <span>{house.rating.toFixed(1)}</span>
+                  </span>
+                  {mostBookedIds.has(house.id) && (
+                    <span className="bg-rose-700/90 backdrop-blur-sm text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                      <Flame className="w-3 h-3" />
+                      الأكثر حجزًا
+                    </span>
+                  )}
+                </div>
 
-                {/* Location badge */}
-                <span className="absolute bottom-3 left-3 bg-[#5A5A40]/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />
-                  {house.governorate}
-                </span>
+                {/* Location, and the owner's landmark line beside it. The row is
+                    capped to the strip left of the details panel and the landmark
+                    truncates — owners write this freely, and a long one would
+                    otherwise slide under the panel. */}
+                <div className="absolute bottom-3 left-3 flex items-center gap-1.5 max-w-[47%]">
+                  <span className="bg-[#5A5A40]/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
+                    <MapPin className="w-3 h-3" />
+                    {house.governorate}
+                  </span>
+                  {house.nearbyLandmark && (
+                    <span className="bg-black/45 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-1 rounded-full truncate min-w-0">
+                      {house.nearbyLandmark}
+                    </span>
+                  )}
+                </div>
 
                 {/* Favourite + compare — the only two actions on the photo */}
                 <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
@@ -738,6 +796,11 @@ export default function UserDashboard({
                   {availability !== null && (
                     <span className="bg-emerald-600/95 backdrop-blur-sm text-white text-[8.5px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
                       ✓ متاح في تواريخك
+                    </span>
+                  )}
+                  {bookedBeforeIds.has(house.id) && (
+                    <span className="bg-[#0A2342]/90 backdrop-blur-sm text-[#C5A059] text-[8.5px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+                      ⭐ حجزتم هنا قبل كده
                     </span>
                   )}
                   {house.propertyType === 'student' && (
@@ -788,12 +851,14 @@ export default function UserDashboard({
                         <span className="text-[8px] font-bold text-white/70 leading-none">غرف</span>
                       </div>
 
-                      {house.services.includes('جراج خاص') && (
+                      {(house.services.includes('موقف مجاني') || house.services.includes('جراج خاص')) && (
                         <div className="flex flex-col items-center gap-0.5">
                           <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
                             <SquareParking className="w-4 h-4" />
                           </span>
-                          <span className="text-[8px] font-bold text-white/70 leading-none text-center">جراج<br />خاص</span>
+                          <span className="text-[8px] font-bold text-white/70 leading-none text-center">
+                            {house.services.includes('موقف مجاني') ? <>موقف<br />مجاني</> : <>جراج<br />خاص</>}
+                          </span>
                         </div>
                       )}
 
