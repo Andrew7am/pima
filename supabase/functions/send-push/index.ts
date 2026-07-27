@@ -3,6 +3,23 @@
 // STATUS: template — wire up the secrets and TEST on a real device before relying
 // on it. It is not (and cannot be) verified from the web repo.
 //
+// ⚠️ SECURITY — MUST BE FIXED BEFORE THIS IS DEPLOYED TO PRODUCTION.
+//
+// This handler takes `userId` from the request body and pushes to that user's
+// devices without ever checking that the caller is entitled to. Anyone who can
+// reach the function can send a notification that appears to come from Pima to
+// any user of the platform — a ready-made phishing channel.
+//
+// It is not exploitable today only because the function has never been
+// deployed (blocked on the Firebase project + google-services.json). Deploying
+// it as-is opens the hole.
+//
+// The fix is the guard `send-email` already uses — see
+// supabase/functions/send-email/index.ts: generate a WEBHOOK_SECRET, require it
+// on an `x-webhook-secret` header (or a service-role bearer token), and return
+// 403 otherwise. Deliberately deferred during the 2026-07-28 security audit
+// because push is not live; do not deploy without closing it.
+//
 // Setup:
 //   supabase secrets set FCM_SERVICE_ACCOUNT="$(cat service-account.json)"
 //   supabase functions deploy send-push

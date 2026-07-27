@@ -1,13 +1,10 @@
 import { Booking, Attendee, RoomAllocation, Room } from '../types';
+import { escapeHtml, openPrintWindow } from './printWindow';
 
 const GROUP_LABEL: Record<string, string> = { youth: 'شباب', family: 'أسرة', child: 'طفل', other: 'أخرى' };
 const GENDER_LABEL: Record<string, string> = { male: 'ذكر', female: 'أنثى' };
 
-function openPrint(title: string, body: string) {
-  const w = window.open('', '_blank');
-  if (!w) { alert('من فضلك اسمح بالنوافذ المنبثقة للطباعة.'); return; }
-  const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${title}</title>
-<style>
+const ROOMING_CSS = `
   *{font-family:'Segoe UI',Tahoma,sans-serif;box-sizing:border-box}
   body{margin:0;padding:28px;color:#101B33}
   h1{font-size:18px;color:#1F2E4E;margin:0 0 4px}.sub{font-size:12px;color:#5B6B8C;margin-bottom:18px}
@@ -23,12 +20,17 @@ function openPrint(title: string, body: string) {
   .badge .r{font-size:12px;color:#1F2E4E;font-weight:800}
   .empty{color:#5B6B8C;font-size:12px;padding:10px}
   @media print{body{padding:0}.room,.badge{border-color:#ccc}}
-</style></head><body>${body}<script>setTimeout(function(){window.print()},400)</script></body></html>`;
-  w.document.open(); w.document.write(html); w.document.close();
+`;
+
+function openPrint(title: string, body: string) {
+  openPrintWindow({ title, css: ROOMING_CSS, body, printDelayMs: 400 });
 }
 
+// Attendee names are typed by the guest and printed by the owner, so every
+// name here is escaped before it reaches the markup.
 function header(booking: Booking, title: string) {
-  return `<h1>${title}</h1><div class="sub">${booking.organizationName || booking.userName} — ${booking.houseName} · ${booking.checkIn} إلى ${booking.checkOut} · ${booking.guestsCount} فرد</div>`;
+  const org = escapeHtml(booking.organizationName || booking.userName);
+  return `<h1>${escapeHtml(title)}</h1><div class="sub">${org} — ${escapeHtml(booking.houseName)} · ${escapeHtml(booking.checkIn)} إلى ${escapeHtml(booking.checkOut)} · ${booking.guestsCount} فرد</div>`;
 }
 
 // Rooming list: attendees grouped by their allocated room.
@@ -50,8 +52,8 @@ export function printRoomingList(booking: Booking, attendees: Attendee[], alloca
     body += `<div class="empty">لا يوجد توزيع غرف بعد — وزّع الغرف من "توزيع الغرف" داخل الحجز أولًا.</div>`;
   } else {
     [...byRoom.entries()].sort((a, b) => roomName(a[0]).localeCompare(roomName(b[0]), 'ar')).forEach(([roomId, people]) => {
-      const rows = people.sort((a, b) => a.bed - b.bed).map((p) => `<tr><td>${p.bed}</td><td>${p.name}</td><td>${p.gender}</td><td>${p.group}</td></tr>`).join('');
-      body += `<div class="room"><h2>غرفة ${roomName(roomId)} — ${people.length} فرد</h2>
+      const rows = people.sort((a, b) => a.bed - b.bed).map((p) => `<tr><td>${p.bed}</td><td>${escapeHtml(p.name)}</td><td>${p.gender}</td><td>${p.group}</td></tr>`).join('');
+      body += `<div class="room"><h2>غرفة ${escapeHtml(roomName(roomId))} — ${people.length} فرد</h2>
         <table><thead><tr><th>السرير</th><th>الاسم</th><th>النوع</th><th>الفئة</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     });
   }
@@ -69,7 +71,8 @@ export function printBadges(booking: Booking, attendees: Attendee[], allocations
   if (att.length === 0) {
     body += `<div class="empty">لا يوجد مشاركون مسجّلون بعد — أضف المشاركين من "توزيع الغرف" داخل الحجز.</div>`;
   } else {
-    body += '<div class="badges">' + att.map((a) => `<div class="badge"><div class="h">${booking.organizationName || booking.houseName}</div><div class="n">${a.name}</div><div class="r">غرفة ${roomFor(a.id)}</div></div>`).join('') + '</div>';
+    const cardOrg = escapeHtml(booking.organizationName || booking.houseName);
+    body += '<div class="badges">' + att.map((a) => `<div class="badge"><div class="h">${cardOrg}</div><div class="n">${escapeHtml(a.name)}</div><div class="r">غرفة ${escapeHtml(roomFor(a.id))}</div></div>`).join('') + '</div>';
   }
   openPrint('بادجات المشاركين', body);
 }

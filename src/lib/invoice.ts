@@ -1,24 +1,7 @@
 import { Booking } from '../types';
+import { escapeHtml, openPrintWindow } from './printWindow';
 
-// Opens a clean, print-ready invoice for a booking in a new window and
-// triggers the browser print dialog (the guest/owner saves it as PDF).
-// Rendering happens in the browser, so Arabic RTL just works — no PDF
-// library or font embedding needed.
-export function printBookingInvoice(booking: Booking, houseName: string) {
-  const nights = Math.max(1, Math.round((new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86_400_000));
-  const deposit = booking.depositPaid ? booking.depositAmount : 0;
-  const remaining = Math.max(0, booking.totalPrice - deposit);
-  const ref = `#${booking.id.replace(/^booking_/, '').slice(-6)}`;
-  const issued = new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
-  const money = (n: number) => `${n.toLocaleString('ar-EG')} ج.م`;
-  const guest = booking.organizationName || booking.userName;
-
-  const row = (label: string, value: string, strong = false) =>
-    `<tr><td class="lbl">${label}</td><td class="val${strong ? ' strong' : ''}">${value}</td></tr>`;
-
-  const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
-<title>فاتورة ${ref}</title>
-<style>
+const INVOICE_CSS = `
   * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
   body { margin: 0; padding: 32px; color: #101B33; background: #fff; }
   .card { max-width: 620px; margin: 0 auto; border: 1px solid #E8ECF4; border-radius: 20px; padding: 28px; }
@@ -38,53 +21,9 @@ export function printBookingInvoice(booking: Booking, houseName: string) {
   .note { margin-top: 16px; font-size: 11px; color: #5B6B8C; line-height: 1.7; }
   .foot { margin-top: 22px; text-align:center; font-size: 11px; color: #5B6B8C; }
   @media print { body { padding: 0; } .card { border: none; } }
-</style></head>
-<body onload="window.focus()">
-  <div class="card">
-    <div class="head">
-      <div class="brand">${houseName}<small>عبر منصة بيما · pimastay.com</small></div>
-      <div class="meta">فاتورة <b>${ref}</b><br>تاريخ الإصدار: <b>${issued}</b></div>
-    </div>
-    <h1>تفاصيل الحجز</h1>
-    <table>
-      ${row('الضيف / الجهة', guest)}
-      ${row('تاريخ الوصول', booking.checkIn)}
-      ${row('تاريخ المغادرة', booking.checkOut)}
-      ${row('عدد الليالي', String(nights))}
-      ${row('عدد الأفراد', String(booking.guestsCount))}
-      ${row('إجمالي قيمة الحجز', money(booking.totalPrice), true)}
-      ${row('العربون المدفوع عبر Pima', money(deposit))}
-    </table>
-    <div class="total"><span>المبلغ المتبقي عند الوصول</span><span class="amt">${money(remaining)}</span></div>
-    <p class="note">يُدفع العربون إلكترونيًا عبر بيما، ويُحصَّل المبلغ المتبقي نقدًا في بيت المؤتمرات عند وصول الضيوف. هذه الفاتورة صادرة إلكترونيًا ولا تحتاج ختمًا.</p>
-    <div class="foot">شكرًا لاختياركم ${houseName} — نتمنى لكم إقامة طيبة 🌿</div>
-  </div>
-  <script>setTimeout(function(){ window.print(); }, 350);</script>
-</body></html>`;
+`;
 
-  const w = window.open('', '_blank');
-  if (!w) { alert('من فضلك اسمح بالنوافذ المنبثقة لطباعة الفاتورة.'); return; }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-}
-
-// A printable monthly financial statement (revenue / commission / expenses
-// / net) with a per-booking breakdown — for the owner's accounting.
-export function printMonthlyStatement(p: {
-  houseName: string; monthLabel: string;
-  revenue: number; commission: number; deposits: number; remaining: number; expenses: number; net: number;
-  bookings: { guest: string; date: string; total: number }[];
-}) {
-  const money = (n: number) => `${Math.round(n).toLocaleString('ar-EG')} ج.م`;
-  const issued = new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
-  const line = (label: string, value: string, cls = '') => `<tr class="${cls}"><td class="lbl">${label}</td><td class="val">${value}</td></tr>`;
-  const bookingRows = p.bookings.length
-    ? p.bookings.map((b) => `<tr><td>${b.guest}</td><td>${b.date}</td><td class="num">${money(b.total)}</td></tr>`).join('')
-    : `<tr><td colspan="3" style="text-align:center;color:#5B6B8C">لا توجد حجوزات في هذا الشهر</td></tr>`;
-
-  const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>كشف حساب ${p.monthLabel}</title>
-<style>
+const STATEMENT_CSS = `
   * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
   body { margin: 0; padding: 32px; color: #101B33; }
   .card { max-width: 640px; margin: 0 auto; border: 1px solid #E8ECF4; border-radius: 20px; padding: 28px; }
@@ -102,12 +41,82 @@ export function printMonthlyStatement(p: {
   tr.neg .val { color: #EF4444; }
   .foot { margin-top:18px; text-align:center; font-size:11px; color:#5B6B8C; }
   @media print { body { padding:0; } .card { border:none; } }
-</style></head>
-<body>
+`;
+
+// Opens a clean, print-ready invoice for a booking in a new window and
+// triggers the browser print dialog (the guest/owner saves it as PDF).
+// Rendering happens in the browser, so Arabic RTL just works — no PDF
+// library or font embedding needed.
+export function printBookingInvoice(booking: Booking, houseName: string) {
+  const nights = Math.max(1, Math.round((new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86_400_000));
+  const deposit = booking.depositPaid ? booking.depositAmount : 0;
+  const remaining = Math.max(0, booking.totalPrice - deposit);
+  const ref = `#${booking.id.replace(/^booking_/, '').slice(-6)}`;
+  const issued = new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+  const money = (n: number) => `${n.toLocaleString('ar-EG')} ج.م`;
+
+  // Everything below carries guest- or owner-entered text into markup, so it is
+  // escaped once here rather than trusted at each interpolation point.
+  const safeHouse = escapeHtml(houseName);
+  const guest = escapeHtml(booking.organizationName || booking.userName);
+  const checkIn = escapeHtml(booking.checkIn);
+  const checkOut = escapeHtml(booking.checkOut);
+
+  const row = (label: string, value: string, strong = false) =>
+    `<tr><td class="lbl">${label}</td><td class="val${strong ? ' strong' : ''}">${value}</td></tr>`;
+
+  const body = `
   <div class="card">
     <div class="head">
-      <div class="brand">${p.houseName}<small>كشف حساب مالي · عبر بيما</small></div>
-      <div class="meta">الشهر: <b>${p.monthLabel}</b><br>تاريخ الإصدار: <b>${issued}</b></div>
+      <div class="brand">${safeHouse}<small>عبر منصة بيما · pimastay.com</small></div>
+      <div class="meta">فاتورة <b>${escapeHtml(ref)}</b><br>تاريخ الإصدار: <b>${escapeHtml(issued)}</b></div>
+    </div>
+    <h1>تفاصيل الحجز</h1>
+    <table>
+      ${row('الضيف / الجهة', guest)}
+      ${row('تاريخ الوصول', checkIn)}
+      ${row('تاريخ المغادرة', checkOut)}
+      ${row('عدد الليالي', String(nights))}
+      ${row('عدد الأفراد', String(booking.guestsCount))}
+      ${row('إجمالي قيمة الحجز', money(booking.totalPrice), true)}
+      ${row('العربون المدفوع عبر Pima', money(deposit))}
+    </table>
+    <div class="total"><span>المبلغ المتبقي عند الوصول</span><span class="amt">${money(remaining)}</span></div>
+    <p class="note">يُدفع العربون إلكترونيًا عبر بيما، ويُحصَّل المبلغ المتبقي نقدًا في بيت المؤتمرات عند وصول الضيوف. هذه الفاتورة صادرة إلكترونيًا ولا تحتاج ختمًا.</p>
+    <div class="foot">شكرًا لاختياركم ${safeHouse} — نتمنى لكم إقامة طيبة 🌿</div>
+  </div>`;
+
+  openPrintWindow({
+    title: `فاتورة ${ref}`,
+    css: INVOICE_CSS,
+    body,
+    focusOnLoad: true,
+    blockedMessage: 'من فضلك اسمح بالنوافذ المنبثقة لطباعة الفاتورة.',
+  });
+}
+
+// A printable monthly financial statement (revenue / commission / expenses
+// / net) with a per-booking breakdown — for the owner's accounting.
+export function printMonthlyStatement(p: {
+  houseName: string; monthLabel: string;
+  revenue: number; commission: number; deposits: number; remaining: number; expenses: number; net: number;
+  bookings: { guest: string; date: string; total: number }[];
+}) {
+  const money = (n: number) => `${Math.round(n).toLocaleString('ar-EG')} ج.م`;
+  const issued = new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+  const line = (label: string, value: string, cls = '') => `<tr class="${cls}"><td class="lbl">${label}</td><td class="val">${value}</td></tr>`;
+
+  const safeHouse = escapeHtml(p.houseName);
+  const monthLabel = escapeHtml(p.monthLabel);
+  const bookingRows = p.bookings.length
+    ? p.bookings.map((b) => `<tr><td>${escapeHtml(b.guest)}</td><td>${escapeHtml(b.date)}</td><td class="num">${money(b.total)}</td></tr>`).join('')
+    : `<tr><td colspan="3" style="text-align:center;color:#5B6B8C">لا توجد حجوزات في هذا الشهر</td></tr>`;
+
+  const body = `
+  <div class="card">
+    <div class="head">
+      <div class="brand">${safeHouse}<small>كشف حساب مالي · عبر بيما</small></div>
+      <div class="meta">الشهر: <b>${monthLabel}</b><br>تاريخ الإصدار: <b>${escapeHtml(issued)}</b></div>
     </div>
 
     <h1>الملخص المالي</h1>
@@ -127,11 +136,12 @@ export function printMonthlyStatement(p: {
     </table>
 
     <div class="foot">كشف صادر إلكترونيًا من منصة بيما — pimastay.com</div>
-  </div>
-  <script>setTimeout(function(){ window.print(); }, 350);</script>
-</body></html>`;
+  </div>`;
 
-  const w = window.open('', '_blank');
-  if (!w) { alert('من فضلك اسمح بالنوافذ المنبثقة لطباعة الكشف.'); return; }
-  w.document.open(); w.document.write(html); w.document.close();
+  openPrintWindow({
+    title: `كشف حساب ${p.monthLabel}`,
+    css: STATEMENT_CSS,
+    body,
+    blockedMessage: 'من فضلك اسمح بالنوافذ المنبثقة لطباعة الكشف.',
+  });
 }
