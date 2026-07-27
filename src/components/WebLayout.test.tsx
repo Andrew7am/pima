@@ -37,6 +37,25 @@ const openPanel = async () => {
   return screen.getByRole('button', { name: /تمييز الكل كمقروء/ }).closest('div')!.parentElement!.parentElement!;
 };
 
+// A z-index on a `position: static` element is inert — no layer is formed. The
+// top bar carried `z-10` while static, so it never sat above page content; the
+// promo banner's `z-10` positioned wrapper painted straight over the open
+// notifications panel and swallowed its clicks. jsdom does no compositing, so
+// this guards the invariant at the class level instead of the pixel level.
+describe('WebLayout top bar layering', () => {
+  it('makes the header a real stacking context, not an inert z-index', () => {
+    renderLayout([]);
+    const header = document.querySelector('header')!;
+    expect(header.className).toMatch(/(^|\s)(relative|absolute|fixed|sticky)(\s|$)/);
+
+    const z = header.className.match(/(?:^|\s)z-(\d+)(?:\s|$)/);
+    expect(z).not.toBeNull();
+    // Must clear the banner's z-10 wrapper, and stay under the z-50 overlays.
+    expect(Number(z![1])).toBeGreaterThan(10);
+    expect(Number(z![1])).toBeLessThanOrEqual(50);
+  });
+});
+
 describe('WebLayout notifications', () => {
   it('badges the unread count on the bell', async () => {
     renderLayout([notif({ id: 'a' }), notif({ id: 'b' }), notif({ id: 'c', isRead: true })]);

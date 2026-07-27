@@ -81,7 +81,14 @@ export default function WebLayout({
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Top Navbar */}
-        <header className="shrink-0 h-14 flex items-center justify-between px-4 bg-white border-b border-[var(--color-natural-border)] shadow-sm z-10">
+        {/* `relative` is load-bearing, not decoration: a z-index on a static
+            element is inert, so this bar never actually formed a layer. Nothing
+            below it carried a z-index either, so it went unnoticed — until the
+            promo banner arrived with `z-10` on a positioned wrapper and started
+            painting straight over the open notifications panel, swallowing its
+            clicks. z-40 keeps the bar above page content while leaving the
+            fixed z-50 overlays (modals, the floating WhatsApp button) on top. */}
+        <header className="shrink-0 h-14 flex items-center justify-between px-4 bg-white border-b border-[var(--color-natural-border)] shadow-sm relative z-40">
           <div className="flex items-center gap-2 shrink-0">
             <Logo size={28} variant="icon" />
             <span className="font-bold text-[var(--color-natural-primary)] text-base tracking-wide">بيما</span>
