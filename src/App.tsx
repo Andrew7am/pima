@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { supportWhatsAppUrl } from './lib/support';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
@@ -1557,7 +1558,7 @@ export default function App() {
         </Suspense>
       </WebLayout>
       <a
-        href="https://wa.me/201234567890?text=%D8%B3%D9%84%D8%A7%D9%85%20%D9%88%D9%86%D8%B9%D9%85%D8%A9%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1%20%D8%B9%D9%86%20%D8%A8%D9%8A%D9%88%D8%AA%20%D8%A7%D9%84%D9%85%D8%A4%D8%AA%D9%85%D8%B1%D8%A7%D8%AA"
+        href={supportWhatsAppUrl()}
         target="_blank"
         rel="noreferrer"
         className="fixed left-4 bottom-20 z-50 w-12 h-12 bg-[#25D366] hover:bg-[#1DA851] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-110"
@@ -2094,7 +2095,7 @@ export default function App() {
     </WebLayout>
     {activeScreen !== 'owner_panel' && activeScreen !== 'admin_panel' && (
       <a
-        href="https://wa.me/201234567890?text=%D8%B3%D9%84%D8%A7%D9%85%20%D9%88%D9%86%D8%B9%D9%85%D8%A9%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1%20%D8%B9%D9%86%20%D8%A8%D9%8A%D9%88%D8%AA%20%D8%A7%D9%84%D9%85%D8%A4%D8%AA%D9%85%D8%B1%D8%A7%D8%AA"
+        href={supportWhatsAppUrl()}
         target="_blank"
         rel="noreferrer"
         className="fixed left-4 bottom-20 z-50 w-12 h-12 bg-[#25D366] hover:bg-[#1DA851] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-110"

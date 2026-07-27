@@ -1,4 +1,5 @@
 import React from 'react';
+import { supportWhatsAppUrl } from '../lib/support';
 import { User } from '../types';
 import { Ban, LogOut, MessageCircle } from 'lucide-react';
 import Logo from './Logo';
@@ -31,7 +32,7 @@ export default function BannedScreen({ currentUser, onLogout }: BannedScreenProp
         </div>
 
         <a
-          href="https://wa.me/201234567890?text=سلام%20ونعمة%2C%20حسابي%20على%20بيما%20متوقف%20وأريد%20الاستفسار"
+          href={supportWhatsAppUrl('سلام ونعمة, حسابي على بيما متوقف وأريد الاستفسار')}
           target="_blank"
           rel="noreferrer"
           className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs font-bold py-2.5 hover:bg-emerald-100 transition-colors"

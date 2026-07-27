@@ -48,7 +48,11 @@ function Stars({ value, className = 'w-3.5 h-3.5' }: { value: number; className?
   );
 }
 
-function timeAgo(iso: string): string {
+// Deliberately NOT lib/timeAgo: a review's age is shown in coarse, day-level
+// wording ("اليوم" / "أمس" / "منذ 3 أسابيع") because the exact hour is noise on
+// a review. The shared helper is minute-accurate and would say "منذ 3 ساعات"
+// here. Named apart from timeAgo so the two are not mistaken for duplicates.
+function reviewAge(iso: string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
   if (days <= 0) return 'اليوم';
   if (days === 1) return 'أمس';
@@ -193,7 +197,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
             </div>
             <div className="flex items-center gap-2 mt-1">
               <Stars value={rev.rating} className="w-3 h-3" />
-              <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{timeAgo(rev.createdAt)}</span>
+              <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{reviewAge(rev.createdAt)}</span>
             </div>
           </div>
         </div>
@@ -215,7 +219,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
           <div className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl p-3 space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-[9.5px] font-black text-[var(--color-owner-primary)] flex items-center gap-1"><MessageSquare className="w-3 h-3" /> رد الإدارة</span>
-              {rev.ownerReplyCreatedAt && <span className="text-[8.5px] text-[var(--color-owner-secondary)] font-bold">{timeAgo(rev.ownerReplyCreatedAt)}</span>}
+              {rev.ownerReplyCreatedAt && <span className="text-[8.5px] text-[var(--color-owner-secondary)] font-bold">{reviewAge(rev.ownerReplyCreatedAt)}</span>}
             </div>
             <p className="text-[10.5px] text-[var(--color-owner-text)] leading-relaxed">{rev.ownerReply}</p>
             <div className="flex gap-2 justify-end pt-0.5">

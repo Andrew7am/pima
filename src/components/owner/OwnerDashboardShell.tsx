@@ -29,22 +29,12 @@ import { getRoomBedState, getHouseRoomAvailabilityForRange } from '../../lib/roo
 import { printBookingInvoice } from '../../lib/invoice';
 import { openBookingQrWindow } from '../../lib/qr';
 import { printRoomingList, printBadges } from '../../lib/roomingList';
+import { timeAgo } from '../../lib/timeAgo';
 import LocationPicker from '../LocationPicker';
 
 type PrimaryTab = 'stats' | 'bookings' | 'messages' | 'meals';
 type OverflowTab = 'today' | 'rooms' | 'financials' | 'reviews' | 'house' | 'occupancy' | 'notifications' | 'profile' | 'room_distribution' | 'customers' | 'reports';
 type ActiveTab = PrimaryTab | OverflowTab;
-
-// Relative time for the activity feed — "منذ 10 دقائق" style, like the mockup.
-function timeAgo(iso: string): string {
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
-  if (mins < 1) return 'الآن';
-  if (mins < 60) return `منذ ${mins} دقيقة`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return hours === 1 ? 'منذ ساعة' : `منذ ${hours} ساعة`;
-  const days = Math.round(hours / 24);
-  return days === 1 ? 'منذ يوم' : `منذ ${days} يوم`;
-}
 
 interface OwnerDashboardShellProps {
   owner: User;

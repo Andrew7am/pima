@@ -3,6 +3,7 @@ import { Booking, User, BookingMessage } from '../../types';
 import { ChevronRight, Search, MessageCircle, Check, CheckCheck } from 'lucide-react';
 import BookingChatPanel from '../BookingChatPanel';
 import { loadLatestMessagePerBooking, loadUnreadCountsPerBooking } from '../../lib/bookingMessages';
+import { formatChatTime } from '../../lib/chatTime';
 import { SkeletonList } from './Skeleton';
 
 interface OwnerMessagesProps {
@@ -17,18 +18,6 @@ function Avatar({ name, avatarUrl, size = 'w-12 h-12' }: { name: string; avatarU
       {avatarUrl ? <img src={avatarUrl} alt={name} className="w-full h-full object-cover" /> : name.charAt(0)}
     </div>
   );
-}
-
-// Compact "منذ" formatter — hh:mm for today, weekday for this week, dd/mm otherwise.
-function formatChatTime(iso: string): string {
-  const then = new Date(iso);
-  const now = new Date();
-  const sameDay = then.toDateString() === now.toDateString();
-  if (sameDay) return then.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-  const diffDays = Math.floor((now.getTime() - then.getTime()) / 86_400_000);
-  if (diffDays === 1) return 'أمس';
-  if (diffDays < 7) return then.toLocaleDateString('ar-EG', { weekday: 'long' });
-  return then.toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit' });
 }
 
 export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMessagesProps) {

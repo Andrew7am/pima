@@ -1,4 +1,5 @@
 import React from 'react';
+import { supportWhatsAppUrl } from '../lib/support';
 import { User } from '../types';
 import { Clock, XCircle, LogOut, MessageCircle } from 'lucide-react';
 import Logo from './Logo';
@@ -46,7 +47,7 @@ export default function PendingApprovalScreen({ currentUser, onLogout }: Pending
               </div>
             )}
             <a
-              href="https://wa.me/201234567890?text=سلام%20ونعمة%2C%20عايز%20أرسل%20صورة%20بطاقتي%20الشخصية%20لاستكمال%20مراجعة%20حسابي"
+              href={supportWhatsAppUrl('سلام ونعمة, عايز أرسل صورة بطاقتي الشخصية لاستكمال مراجعة حسابي')}
               target="_blank"
               rel="noreferrer"
               className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs font-bold py-2.5 hover:bg-emerald-100 transition-colors"

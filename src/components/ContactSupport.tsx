@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supportWhatsAppUrl } from '../lib/support';
 import {
   Phone, Mail, Facebook, Instagram, MessageCircle,
   Send, AlertCircle, Info, CheckCircle2, ShieldCheck, HeartHandshake, ChevronRight
@@ -173,7 +174,7 @@ export default function ContactSupport({ currentUser, onBack }: ContactSupportPr
             <div className="grid grid-cols-3 gap-2">
               {/* WhatsApp direct link */}
               <a 
-                href="https://wa.me/201234567890?text=سلام%20ونعمة%20أريد%20الاستفسار%20عن%20بيوت%20المؤتمرات" 
+                href={supportWhatsAppUrl()}
                 target="_blank" 
                 rel="noreferrer" 
                 className="flex items-center justify-center gap-1.5 p-2 rounded-xl border border-[#D6D6C2]/50 hover:border-emerald-500 bg-emerald-50/20 text-emerald-800 text-[10px] font-extrabold transition-all hover:bg-emerald-50"

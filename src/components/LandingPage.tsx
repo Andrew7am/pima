@@ -1,4 +1,5 @@
 import React from 'react';
+import { supportWhatsAppUrl } from '../lib/support';
 import { MapPin, Shield, Star, Users, ChevronLeft, Home, Calendar, MessageCircle } from 'lucide-react';
 import AdSlot from './AdSlot';
 
@@ -119,7 +120,7 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
           </div>
           <div className="flex items-center gap-4">
             <a href="/dalil/" className="hover:text-[#3A6B4C] transition-colors">الدليل والنصائح</a>
-            <a href="https://wa.me/201234567890" target="_blank" rel="noreferrer" className="hover:text-[#3A6B4C] transition-colors">تواصل معنا</a>
+            <a href={supportWhatsAppUrl('')} target="_blank" rel="noreferrer" className="hover:text-[#3A6B4C] transition-colors">تواصل معنا</a>
             <span>© {new Date().getFullYear()}</span>
           </div>
         </div>
