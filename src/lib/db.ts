@@ -69,6 +69,7 @@ export function mapHouse(r: Record<string, unknown>): RetreatHouse {
     seaProximity: r.sea_proximity as RetreatHouse['seaProximity'] ?? undefined,
     studentHousingGender: r.student_housing_gender as RetreatHouse['studentHousingGender'] ?? undefined,
     distanceFromUniversity: r.distance_from_university as string ?? undefined,
+    nearbyLandmark: r.nearby_landmark as string ?? undefined,
     monthlyRent: r.monthly_rent as number ?? undefined,
     roomCapacity: r.room_capacity as number ?? undefined,
     housingRules: (r.housing_rules as string[]) ?? undefined,
@@ -348,12 +349,21 @@ const HOUSE_PUBLIC_COLUMNS =
   'id,name,description,owner_id,owner_name,governorate,address,lat,lng,rooms_count,beds_count,' +
   'rooms_description,price_per_night_per_person,services,suitability,activities,images,' +
   'conference_halls,restaurants,seasonal_rates,status,rating,reviews_count,created_at,property_type,' +
-  'blocked_dates,sea_proximity,student_housing_gender,distance_from_university,monthly_rent,' +
+  'blocked_dates,sea_proximity,student_housing_gender,distance_from_university,nearby_landmark,monthly_rent,' +
   'room_capacity,housing_rules,contract_terms,menu,image_descriptions,pending_edit';
 
 export async function loadHouses(includePaymentMethods = false): Promise<RetreatHouse[]> {
-  const { data, error } = await supabase.from('houses').select(HOUSE_PUBLIC_COLUMNS).order('created_at');
-  if (error) { console.error('loadHouses:', error); return []; }
+  let { data, error } = await supabase.from('houses').select(HOUSE_PUBLIC_COLUMNS).order('created_at');
+  if (error) {
+    // PostgREST rejects the WHOLE select when one column is missing, so a
+    // deploy that lands before its migration would empty the entire site
+    // rather than just drop a field. Retry without the newest column — same
+    // deploy→migrate tolerance the payment_methods path below already has.
+    console.error('loadHouses:', error);
+    const fallbackColumns = HOUSE_PUBLIC_COLUMNS.replace('nearby_landmark,', '');
+    ({ data, error } = await supabase.from('houses').select(fallbackColumns).order('created_at'));
+    if (error) { console.error('loadHouses (fallback):', error); return []; }
+  }
   const houses = ((data ?? []) as unknown as Record<string, unknown>[]).map(mapHouse); // paymentMethods defaults to []
   if (includePaymentMethods) {
     // Owner/admin get their own houses' payout numbers merged back in.
@@ -391,6 +401,19 @@ export async function loadHousesAvailability(checkIn: string, checkOut: string):
   return result;
 }
 
+// Aggregate confirmed-booking counts (migration 086) — the only booking
+// signal a guest is allowed to see. null = RPC unavailable; callers treat
+// that as "no popularity data" and simply show no badge.
+export async function loadHouseBookingCounts(): Promise<Record<string, number> | null> {
+  const { data, error } = await supabase.rpc('get_houses_booking_counts');
+  if (error) { console.error('loadHouseBookingCounts:', error); return null; }
+  const result: Record<string, number> = {};
+  for (const row of (data ?? []) as { house_id: string; bookings_count: number }[]) {
+    result[row.house_id] = row.bookings_count;
+  }
+  return result;
+}
+
 export async function deleteHouse(houseId: string): Promise<boolean> {
   const { error } = await supabase.from('houses').delete().eq('id', houseId);
   if (error) { console.error('deleteHouse:', error); return false; }
@@ -416,6 +439,7 @@ export async function createHouse(h: RetreatHouse): Promise<boolean> {
     sea_proximity: h.seaProximity ?? null,
     student_housing_gender: h.studentHousingGender ?? null,
     distance_from_university: h.distanceFromUniversity ?? null,
+    nearby_landmark: h.nearbyLandmark ?? null,
     monthly_rent: h.monthlyRent ?? null,
     room_capacity: h.roomCapacity ?? null,
     housing_rules: h.housingRules ?? [],
@@ -447,6 +471,7 @@ export function houseUpdatePayload(h: RetreatHouse) {
     property_type: h.propertyType ?? null,
     student_housing_gender: h.studentHousingGender ?? null,
     distance_from_university: h.distanceFromUniversity ?? null,
+    nearby_landmark: h.nearbyLandmark ?? null,
     monthly_rent: h.monthlyRent ?? null,
     housing_rules: h.housingRules ?? [],
     contract_terms: h.contractTerms ?? null,

@@ -109,6 +109,8 @@ export interface RetreatHouse {
   seaProximity?: 'near' | 'view' | 'beach' | 'far';
   studentHousingGender?: 'boys' | 'girls' | 'both';
   distanceFromUniversity?: string;
+  /** Owner-written line like «12 كم من المنتزه» — shown beside the governorate. */
+  nearbyLandmark?: string;
   monthlyRent?: number;
   roomCapacity?: number;
   housingRules?: string[];

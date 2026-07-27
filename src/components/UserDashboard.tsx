@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { RetreatHouse, User, PromoBanner, Booking, Review } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
-import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen } from 'lucide-react';
+import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking, Flame } from 'lucide-react';
 import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
-import { loadHousesAvailability } from '../lib/db';
+import { loadHousesAvailability, loadHouseBookingCounts } from '../lib/db';
+import { computeStayPrice } from '../lib/pricing';
 import { isBannerLive, matchesAudience, pickExperimentVariants } from '../lib/bannerVisibility';
 import { bannerSeed } from '../lib/bannerEvents';
 import { copticSeason } from '../lib/copticSeason';
 import type { BannerLiveData } from './banner/BannerCanvas';
+
+// Arabic count agreement — 1 is singular, 2 is dual, 3–10 takes the plural,
+// and 11 upwards goes back to the singular. "1 سرير" reads as broken Arabic.
+function bedsLabel(n: number): string {
+  if (n === 1) return 'سرير واحد';
+  if (n === 2) return 'سريرين';
+  if (n >= 3 && n <= 10) return `${n} أسرّة`;
+  return `${n} سرير`;
+}
 
 interface UserDashboardProps {
   houses: RetreatHouse[];
@@ -127,6 +137,55 @@ export default function UserDashboard({
     return () => { cancelled = true; };
   }, [filterCheckIn, filterCheckOut]);
 
+  // Real popularity (migration-086 RPC, aggregate counts only). The badge goes
+  // to the top three approved houses over the last year, and only when they
+  // have enough bookings for "الأكثر حجزًا" to mean something (≥3). null = RPC
+  // unavailable → no badges, never a guess.
+  const [bookingCounts, setBookingCounts] = useState<Record<string, number> | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    loadHouseBookingCounts().then((result) => {
+      if (!cancelled) setBookingCounts(result);
+    });
+    return () => { cancelled = true; };
+  }, []);
+  const mostBookedIds = React.useMemo(() => {
+    if (!bookingCounts) return new Set<string>();
+    return new Set(
+      Object.entries(bookingCounts)
+        .filter(([, n]) => n >= 3)
+        // Tie-break on id so the badge lands on the same houses every render;
+        // the RPC's row order is not guaranteed and would make it flicker.
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, 3)
+        .map(([id]) => id),
+    );
+  }, [bookingCounts]);
+
+  // «حجزتم هنا قبل كده» is personal memory, not popularity, so it needs no
+  // server aggregate. The userId filter is not redundant: RLS scopes a plain
+  // guest to their own rows, but an owner or admin browsing this screen also
+  // receives other people's bookings, and without it they would be told they
+  // had stayed somewhere they never booked.
+  const bookedBeforeIds = React.useMemo(() => {
+    if (!currentUser) return new Set<string>();
+    return new Set(
+      bookings
+        .filter((b) => b.userId === currentUser.id && (b.status === 'approved' || b.status === 'completed'))
+        .map((b) => b.houseId),
+    );
+  }, [bookings, currentUser]);
+
+  // Nights in the chosen window, so a card can quote a whole stay rather than a
+  // per-person-per-night rate nobody budgets in.
+  const stayNights =
+    filterCheckIn && filterCheckOut && filterCheckIn < filterCheckOut
+      ? Math.round(
+          (new Date(`${filterCheckOut}T00:00:00`).getTime() - new Date(`${filterCheckIn}T00:00:00`).getTime()) / 86400000,
+        )
+      : 0;
+  const partySize = typeof guestCount === 'number' && guestCount > 0 ? guestCount : 0;
+
   // House comparison states
   const [comparedHouseIds, setComparedHouseIds] = useState<string[]>([]);
   const [showComparisonModal, setShowComparisonModal] = useState(false);
@@ -244,7 +303,11 @@ export default function UserDashboard({
   });
 
   return (
-    <div className="space-y-4 text-right">
+    // The browse screen runs on its own dark surface, the same way the
+    // leaderboard does (App.tsx) and the owner dashboard does via .owner-theme:
+    // scoped to this screen so every other guest screen keeps the cream palette
+    // on <body>. Negative margins bleed it past the shell's px-4 py-6.
+    <div className="min-h-screen bg-gradient-to-b from-[#1C1C16] via-[#232319] to-[#141410] text-[#EDEBE3] -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl px-4 py-6 space-y-4 text-right">
 
       {/* Follows the Coptic calendar on its own — no one has to remember to
           switch it on, and it disappears outside the fasts and feasts. */}
@@ -266,13 +329,13 @@ export default function UserDashboard({
       {/* Guide / tips entry — crawlable content section (helps SEO + AdSense) */}
       <a
         href="/dalil/"
-        className="flex items-center justify-between gap-2 bg-white border border-[#D6D6C2] rounded-2xl px-4 py-3 shadow-sm hover:border-[#3A6B4C]/40 transition-colors group"
+        className="flex items-center justify-between gap-2 bg-[#26261D] border border-[#3C3C2E] rounded-2xl px-4 py-3 shadow-sm hover:border-[#9CC4A4]/40 transition-colors group"
       >
-        <span className="flex items-center gap-2 text-[12px] font-black text-[#3A6B4C]">
+        <span className="flex items-center gap-2 text-[12px] font-black text-[#9CC4A4]">
           <BookOpen className="w-4 h-4" />
           دليل ونصائح: كيف تختار وتنظّم خلوتك ومؤتمرك
         </span>
-        <span className="text-[11px] font-bold text-[#8A8A70] group-hover:text-[#3A6B4C]">افتح الدليل ←</span>
+        <span className="text-[11px] font-bold text-[#A5A28C] group-hover:text-[#9CC4A4]">افتح الدليل ←</span>
       </a>
 
       {/* Loyalty/Rewards Status Bar card — logged-in guests only */}
@@ -280,23 +343,23 @@ export default function UserDashboard({
         <div 
           id="loyalty-card-trigger"
           onClick={onSelectRewards} 
-          className="bg-white hover:bg-[#FDFBF7] transition-all rounded-xl p-2 px-3 border border-[#D6D6C2] flex justify-between items-center cursor-pointer shadow-xs select-none"
+          className="bg-[#26261D] hover:bg-[#2E2E23] transition-all rounded-xl p-2 px-3 border border-[#3C3C2E] flex justify-between items-center cursor-pointer shadow-xs select-none"
         >
           <div className="flex items-center gap-1.5">
-            <div className="p-1 rounded-lg bg-amber-50 border border-amber-200">
+            <div className="p-1 rounded-lg bg-amber-900/25 border border-amber-700/40">
               <Award className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
             </div>
             <div className="text-right">
-              <span className="text-[8.5px] text-[#8A8A70] block font-bold">برنامج مكافآت ونقاط الولاء:</span>
+              <span className="text-[8.5px] text-[#A5A28C] block font-bold">برنامج مكافآت ونقاط الولاء:</span>
               <div className="flex items-center gap-1">
-                <span className="text-[9.5px] font-black text-[#4A4A3A]">رصيد نقاطك: {(currentUser.points || 0).toLocaleString('ar-EG')} نقطة</span>
+                <span className="text-[9.5px] font-black text-[#EDEBE3]">رصيد نقاطك: {(currentUser.points || 0).toLocaleString('ar-EG')} نقطة</span>
                 <span className="text-[7.5px] font-black text-[#C5A059] bg-[#0A2342] px-1.5 py-0.2 rounded-full">
                   {(currentUser.points || 0) >= 1000 ? 'المستوى الذهبي 🥇' : (currentUser.points || 0) >= 500 ? 'المستوى الفضي 🥈' : 'المستوى البرونزي 🥉'}
                 </span>
               </div>
             </div>
           </div>
-          <div className="text-[8.5px] text-[#5A5A40] font-bold flex items-center gap-0.5">
+          <div className="text-[8.5px] text-[#CFCDB4] font-bold flex items-center gap-0.5">
             <span>التفاصيل</span>
             <ChevronLeft className="w-2.5 h-2.5" />
           </div>
@@ -304,13 +367,13 @@ export default function UserDashboard({
       )}
 
       {/* Category Tabs Selection */}
-      <div className="grid grid-cols-5 gap-1 p-1 bg-[#F3F0E8] border border-[#E7E5DB] rounded-2xl">
+      <div className="grid grid-cols-5 gap-1 p-1 bg-[#26261D] border border-[#3C3C2E] rounded-2xl">
         <button
           onClick={() => setSelectedType('all')}
           className={`py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer ${
             selectedType === 'all'
-              ? 'bg-[#464E3D] text-white shadow-sm'
-              : 'text-[#2D2D24] hover:bg-[#E7E2D5]'
+              ? 'bg-[#5A5A40] text-white shadow-sm'
+              : 'text-[#D8D5C6] hover:bg-[#333326]'
           }`}
         >
           <Home className="w-3.5 h-3.5" />
@@ -320,8 +383,8 @@ export default function UserDashboard({
           onClick={() => setSelectedType('conference')}
           className={`py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer ${
             selectedType === 'conference'
-              ? 'bg-[#464E3D] text-white shadow-sm'
-              : 'text-[#2D2D24] hover:bg-[#E7E2D5]'
+              ? 'bg-[#5A5A40] text-white shadow-sm'
+              : 'text-[#D8D5C6] hover:bg-[#333326]'
           }`}
         >
           <Building className="w-3.5 h-3.5" />
@@ -331,8 +394,8 @@ export default function UserDashboard({
           onClick={() => setSelectedType('student')}
           className={`py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer ${
             selectedType === 'student'
-              ? 'bg-[#464E3D] text-white shadow-sm'
-              : 'text-[#2D2D24] hover:bg-[#E7E2D5]'
+              ? 'bg-[#5A5A40] text-white shadow-sm'
+              : 'text-[#D8D5C6] hover:bg-[#333326]'
           }`}
         >
           <GraduationCap className="w-3.5 h-3.5" />
@@ -342,8 +405,8 @@ export default function UserDashboard({
           onClick={() => setSelectedType('staff')}
           className={`py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer ${
             selectedType === 'staff'
-              ? 'bg-[#464E3D] text-white shadow-sm'
-              : 'text-[#2D2D24] hover:bg-[#E7E2D5]'
+              ? 'bg-[#5A5A40] text-white shadow-sm'
+              : 'text-[#D8D5C6] hover:bg-[#333326]'
           }`}
         >
           <Briefcase className="w-3.5 h-3.5" />
@@ -356,7 +419,7 @@ export default function UserDashboard({
             className={`py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer ${
               selectedType === 'favorites'
                 ? 'bg-rose-600 text-white shadow-sm'
-                : 'text-[#2D2D24] hover:bg-[#E7E2D5]'
+                : 'text-[#D8D5C6] hover:bg-[#333326]'
             }`}
           >
             <Heart className={`w-3.5 h-3.5 ${selectedType === 'favorites' ? 'fill-white text-white' : 'text-rose-500 fill-rose-500'}`} />
@@ -367,7 +430,7 @@ export default function UserDashboard({
           <button
             id="tab-favorites"
             onClick={() => onToggleFavorite('')}
-            className="py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer text-[#2D2D24] hover:bg-[#E7E2D5]"
+            className="py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer text-[#D8D5C6] hover:bg-[#333326]"
           >
             <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
             <span>المفضلة</span>
@@ -384,7 +447,7 @@ export default function UserDashboard({
             placeholder="ابحث باسم البيت، المحافظة، الكلمات المفتاحية..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white border border-[#D6D6C2] rounded-2xl py-2 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none shadow-sm"
+            className="w-full bg-[#26261D] border border-[#3C3C2E] rounded-2xl py-2 pl-3 pr-10 text-xs text-[#EDEBE3] placeholder:text-[#7C795F] focus:outline-none shadow-sm"
           />
           <Search className="absolute top-2.5 right-3 w-4 h-4 text-[#BCBC9D]" />
         </div>
@@ -394,7 +457,7 @@ export default function UserDashboard({
           id="toggle-filters-btn"
           onClick={() => setShowFilters(!showFilters)}
           className={`p-2 rounded-2xl border transition-all ${
-            showFilters ? 'bg-[#5A5A40] border-[#5A5A40] text-white' : 'bg-white border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#DEDECB]'
+            showFilters ? 'bg-[#5A5A40] border-[#5A5A40] text-white' : 'bg-[#26261D] border-[#3C3C2E] text-[#EDEBE3] hover:bg-[#333326]'
           }`}
           title="فلاتر متقدمة"
         >
@@ -404,18 +467,18 @@ export default function UserDashboard({
 
       {/* Advanced Filters Expandable Drawer */}
       {showFilters && (
-        <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] shadow-md space-y-4 text-xs text-[#4A4A3A] animate-in slide-in-from-top-3 duration-200">
-          <div className="text-xs font-bold text-[#4A4A3A] pb-2 border-b border-[#D6D6C2]">فلاتر البحث التفصيلية:</div>
+        <div className="bg-[#26261D] rounded-3xl p-4 border border-[#3C3C2E] shadow-md space-y-4 text-xs text-[#EDEBE3] animate-in slide-in-from-top-3 duration-200">
+          <div className="text-xs font-bold text-[#EDEBE3] pb-2 border-b border-[#3C3C2E]">فلاتر البحث التفصيلية:</div>
 
           <div className="grid grid-cols-2 gap-3">
             {/* Governorate filter */}
             <div>
-              <label className="block text-[10px] text-[#8A8A70] mb-1 font-bold">المحافظة:</label>
+              <label className="block text-[10px] text-[#A5A28C] mb-1 font-bold">المحافظة:</label>
               <select
                 id="filter-gov-select"
                 value={selectedGov}
                 onChange={(e) => setSelectedGov(e.target.value)}
-                className="w-full bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 text-[#4A4A3A] focus:outline-none"
+                className="w-full bg-[#1E1E17] border border-[#3C3C2E] rounded-xl px-2.5 py-1.5 text-[#EDEBE3] focus:outline-none [color-scheme:dark]"
               >
                 <option value="">كل محافظات مصر</option>
                 {GOVERNORATES.map((g) => (
@@ -426,54 +489,54 @@ export default function UserDashboard({
 
             {/* Guest/Individual Count */}
             <div>
-              <label className="block text-[10px] text-[#8A8A70] mb-1 font-bold">عدد الأفراد المطلوب استيعابهم:</label>
+              <label className="block text-[10px] text-[#A5A28C] mb-1 font-bold">عدد الأفراد المطلوب استيعابهم:</label>
               <input
                 id="filter-guest-input"
                 type="number"
                 placeholder="مثال: ٥٠ فرد"
                 value={guestCount}
                 onChange={(e) => setGuestCount(e.target.value === '' ? '' : parseInt(e.target.value))}
-                className="w-full bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 text-[#4A4A3A] focus:outline-none"
+                className="w-full bg-[#1E1E17] border border-[#3C3C2E] rounded-xl px-2.5 py-1.5 text-[#EDEBE3] focus:outline-none [color-scheme:dark]"
               />
             </div>
           </div>
 
           {/* Real availability by dates — checks live bookings server-side */}
-          <div className="bg-emerald-50/50 border border-emerald-200/60 rounded-2xl p-3 space-y-2">
-            <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-900">
+          <div className="bg-emerald-900/20 border border-emerald-700/40 rounded-2xl p-3 space-y-2">
+            <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-200">
               <CalendarCheck className="w-3.5 h-3.5" />
               <span>المتاح فعلياً في تواريخك (يفحص الحجوزات الحقيقية):</span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[10px] text-[#8A8A70] mb-1 font-bold">تاريخ الوصول:</label>
+                <label className="block text-[10px] text-[#A5A28C] mb-1 font-bold">تاريخ الوصول:</label>
                 <input
                   id="filter-checkin-input"
                   type="date"
                   value={filterCheckIn}
                   onChange={(e) => setFilterCheckIn(e.target.value)}
-                  className="w-full bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 text-[#4A4A3A] focus:outline-none"
+                  className="w-full bg-[#1E1E17] border border-[#3C3C2E] rounded-xl px-2.5 py-1.5 text-[#EDEBE3] focus:outline-none [color-scheme:dark]"
                 />
               </div>
               <div>
-                <label className="block text-[10px] text-[#8A8A70] mb-1 font-bold">تاريخ المغادرة:</label>
+                <label className="block text-[10px] text-[#A5A28C] mb-1 font-bold">تاريخ المغادرة:</label>
                 <input
                   id="filter-checkout-input"
                   type="date"
                   value={filterCheckOut}
                   min={filterCheckIn || undefined}
                   onChange={(e) => setFilterCheckOut(e.target.value)}
-                  className="w-full bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 text-[#4A4A3A] focus:outline-none"
+                  className="w-full bg-[#1E1E17] border border-[#3C3C2E] rounded-xl px-2.5 py-1.5 text-[#EDEBE3] focus:outline-none [color-scheme:dark]"
                 />
               </div>
             </div>
             {availability !== null && (
               <div className="flex items-center justify-between">
-                <span className="text-[9.5px] text-emerald-800 font-bold">✅ بتشوف دلوقتي البيوت المتاحة فعلاً من {filterCheckIn} إلى {filterCheckOut}{guestCount ? ` لعدد ${guestCount} فرد` : ''}</span>
+                <span className="text-[9.5px] text-emerald-300 font-bold">✅ بتشوف دلوقتي البيوت المتاحة فعلاً من {filterCheckIn} إلى {filterCheckOut}{guestCount ? ` لعدد ${guestCount} فرد` : ''}</span>
                 <button
                   type="button"
                   onClick={() => { setFilterCheckIn(''); setFilterCheckOut(''); }}
-                  className="text-[9.5px] font-extrabold text-rose-700 hover:underline cursor-pointer"
+                  className="text-[9.5px] font-extrabold text-rose-300 hover:underline cursor-pointer"
                 >
                   إلغاء فلتر التواريخ
                 </button>
@@ -483,9 +546,9 @@ export default function UserDashboard({
 
           {/* Price night range slider */}
           <div>
-            <div className="flex justify-between text-[10px] text-[#8A8A70] font-bold mb-1">
+            <div className="flex justify-between text-[10px] text-[#A5A28C] font-bold mb-1">
               <span>الحد الأقصى لسعر الفرد/ليلة:</span>
-              <span className="text-[#4A4A3A] font-extrabold">{maxPrice} ج.م</span>
+              <span className="text-[#EDEBE3] font-extrabold">{maxPrice} ج.م</span>
             </div>
             <input
               id="filter-price-slider"
@@ -501,7 +564,7 @@ export default function UserDashboard({
 
           {/* Sea Proximity Filter (الموقع وقرب البحر) */}
           <div>
-            <span className="block text-[10px] text-[#8A8A70] mb-1.5 font-bold">الموقع وقرب البحر:</span>
+            <span className="block text-[10px] text-[#A5A28C] mb-1.5 font-bold">الموقع وقرب البحر:</span>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
               {[
                 { key: 'all', label: 'الكل', icon: <Home className="w-3.5 h-3.5" /> },
@@ -520,7 +583,7 @@ export default function UserDashboard({
                     className={`px-2 py-2 rounded-xl border text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                       isSelected
                         ? 'bg-[#5A5A40] border-[#5A5A40] text-white shadow-sm'
-                        : 'bg-[#F9F9F4] border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#DEDECB]'
+                        : 'bg-[#1E1E17] border-[#3C3C2E] text-[#D8D5C6] hover:bg-[#333326]'
                     }`}
                   >
                     {item.icon}
@@ -533,7 +596,7 @@ export default function UserDashboard({
 
           {/* Suitability Filters Checklist */}
           <div>
-            <span className="block text-[10px] text-[#8A8A70] mb-1.5 font-bold">مناسب من حيث الفئات لـ:</span>
+            <span className="block text-[10px] text-[#A5A28C] mb-1.5 font-bold">مناسب من حيث الفئات لـ:</span>
             <div className="flex flex-wrap gap-1.5">
               {(Object.keys(SUITABILITY_MAP) as ('youth' | 'children' | 'families' | 'retreat')[]).map((key) => {
                 const isSelected = selectedSuitabilities.includes(key);
@@ -546,7 +609,7 @@ export default function UserDashboard({
                     className={`px-2.5 py-1.5 rounded-xl border text-[10px] font-bold transition-all ${
                       isSelected 
                         ? 'bg-[#5A5A40] border-[#5A5A40] text-white shadow-sm' 
-                        : 'bg-[#EBEBE0] border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#DEDECB]'
+                        : 'bg-[#1E1E17] border-[#3C3C2E] text-[#D8D5C6] hover:bg-[#333326]'
                     }`}
                   >
                     {SUITABILITY_MAP[key]}
@@ -558,7 +621,7 @@ export default function UserDashboard({
 
           {/* Services Checklist */}
           <div>
-            <span className="block text-[10px] text-[#8A8A70] mb-1.5 font-bold">الخدمات والمرافق الأساسية المتوفرة بالبيت:</span>
+            <span className="block text-[10px] text-[#A5A28C] mb-1.5 font-bold">الخدمات والمرافق الأساسية المتوفرة بالبيت:</span>
             <div className="grid grid-cols-2 gap-1.5">
               {AMENITIES_LIST.map((srv) => {
                 const isSelected = selectedAmenities.includes(srv);
@@ -570,12 +633,12 @@ export default function UserDashboard({
                     onClick={() => handleAmenityFilterToggle(srv)}
                     className={`flex items-center gap-1.5 px-2 py-1 rounded-xl border text-[10px] font-semibold text-right transition-all ${
                       isSelected 
-                        ? 'bg-[#EBEBE0] border-[#BCBC9D] text-[#5A5A40]' 
-                        : 'bg-white border-[#D6D6C2] text-[#8A8A70] hover:bg-[#DEDECB]'
+                        ? 'bg-[#3A3A2C] border-[#8A8A70] text-[#E4E1CB]'
+                        : 'bg-[#1E1E17] border-[#3C3C2E] text-[#A5A28C] hover:bg-[#333326]'
                     }`}
                   >
                     <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${
-                      isSelected ? 'bg-[#5A5A40] border-[#5A5A40] text-white' : 'bg-white border-[#D6D6C2]'
+                      isSelected ? 'bg-[#5A5A40] border-[#5A5A40] text-white' : 'bg-[#1E1E17] border-[#5A573F]'
                     }`}>
                       {isSelected && <Check className="w-2.5 h-2.5" />}
                     </span>
@@ -587,7 +650,7 @@ export default function UserDashboard({
           </div>
 
           {/* Clear Filters Button */}
-          <div className="flex justify-end pt-2 border-t border-[#D6D6C2]">
+          <div className="flex justify-end pt-2 border-t border-[#3C3C2E]">
             <button
               id="clear-filters-btn"
               type="button"
@@ -599,7 +662,7 @@ export default function UserDashboard({
                 setSelectedAmenities([]);
                 setSelectedSeaProximity('all');
               }}
-              className="text-[10px] text-[#8A8A70] hover:text-[#4A4A3A] font-bold"
+              className="text-[10px] text-[#A5A28C] hover:text-[#EDEBE3] font-bold"
             >
               إعادة تعيين كافة الفلاتر
             </button>
@@ -608,14 +671,14 @@ export default function UserDashboard({
       )}
 
       {/* Houses Feed List */}
-      <div id="house-list-anchor" className="space-y-3.5 text-[#4A4A3A]">
+      <div id="house-list-anchor" className="space-y-3.5 text-[#EDEBE3]">
         <div className="flex justify-between items-center px-1 gap-2">
-          <span className="text-xs font-extrabold text-[#4A4A3A]">الأماكن المتاحة ({filteredHouses.length}):</span>
+          <span className="text-xs font-extrabold text-[#EDEBE3]">الأماكن المتاحة ({filteredHouses.length}):</span>
           <select
             id="sort-houses-select"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-            className="bg-white border border-[#D6D6C2] rounded-xl px-2 py-1 text-[10px] font-bold text-[#4A4A3A] focus:outline-none cursor-pointer"
+            className="bg-[#26261D] border border-[#3C3C2E] rounded-xl px-2 py-1 text-[10px] font-bold text-[#EDEBE3] focus:outline-none cursor-pointer [color-scheme:dark]"
           >
             <option value="rating">الأفضل تقييماً</option>
             <option value="price_asc">الأقل سعراً</option>
@@ -624,9 +687,9 @@ export default function UserDashboard({
         </div>
 
         {filteredHouses.length === 0 ? (
-          <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-2">
-            <p className="text-xs font-bold text-[#4A4A3A]">عذراً، لم نجد بيوت مؤتمرات تطابق معايير بحثك الحالية.</p>
-            <p className="text-[10px] text-[#8A8A70]">جرب البحث بكلمات أبسط أو تخفيف فلاتر التصفية.</p>
+          <div className="bg-[#26261D] rounded-3xl p-8 border border-[#3C3C2E] text-center space-y-2">
+            <p className="text-xs font-bold text-[#EDEBE3]">عذراً، لم نجد بيوت مؤتمرات تطابق معايير بحثك الحالية.</p>
+            <p className="text-[10px] text-[#A5A28C]">جرب البحث بكلمات أبسط أو تخفيف فلاتر التصفية.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -634,30 +697,67 @@ export default function UserDashboard({
               <div
                 id={`house-card-${house.id}`}
                 key={house.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => onSelectHouse(house)}
-                className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col group"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectHouse(house);
+                  }
+                }}
+                className="relative bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-sm overflow-hidden hover:shadow-md active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A059] transition-all duration-300 cursor-pointer group"
               >
-                {/* Image & rating */}
-                <div className="relative h-44 bg-[#EBEBE0] overflow-hidden">
+                {/* The photo is the whole card; the details panel floats over it. */}
+                <div className="absolute inset-0 overflow-hidden">
+                  {/* Lazy — a filtered list can be dozens of cards on a phone, and
+                      only the first two are ever on screen. */}
                   <img
                     referrerPolicy="no-referrer"
+                    loading="lazy"
+                    decoding="async"
                     src={house.images[0]}
                     alt={house.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  
-                  {/* Location badge */}
-                  <span className="absolute top-3 right-3 bg-[#5A5A40]/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full animate-fade-in">
-                    {house.governorate}
-                  </span>
+                  {/* Owner photos are uncontrolled — this keeps the overlay pills
+                      readable whether the shot is a bright facade or a dusk pool. */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/25" />
+                </div>
 
-                  {/* Rating tag */}
-                  <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm text-[#4A4A3A] text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                {/* Rating, and real popularity beside it (top-3 by confirmed
+                    bookings over the last year — see mostBookedIds) */}
+                <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                  <span className="bg-white/95 backdrop-blur-sm text-[#4A4A3A] text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                     <span>{house.rating.toFixed(1)}</span>
                   </span>
+                  {mostBookedIds.has(house.id) && (
+                    <span className="bg-rose-700/90 backdrop-blur-sm text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                      <Flame className="w-3 h-3" />
+                      الأكثر حجزًا
+                    </span>
+                  )}
+                </div>
 
-                  {/* Heart button */}
+                {/* Location, and the owner's landmark line beside it. The row is
+                    capped to the strip left of the details panel and the landmark
+                    truncates — owners write this freely, and a long one would
+                    otherwise slide under the panel. */}
+                <div className="absolute bottom-3 left-3 flex items-center gap-1.5 max-w-[47%]">
+                  <span className="bg-[#5A5A40]/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
+                    <MapPin className="w-3 h-3" />
+                    {house.governorate}
+                  </span>
+                  {house.nearbyLandmark && (
+                    <span className="bg-black/45 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-1 rounded-full truncate min-w-0">
+                      {house.nearbyLandmark}
+                    </span>
+                  )}
+                </div>
+
+                {/* Favourite + compare — the only two actions on the photo */}
+                <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
                   <button
                     id={`toggle-fav-card-${house.id}`}
                     type="button"
@@ -665,117 +765,200 @@ export default function UserDashboard({
                       e.stopPropagation(); // prevent opening house details
                       onToggleFavorite(house.id);
                     }}
-                    className="absolute top-2.5 left-16 bg-white/95 hover:bg-white text-rose-500 hover:text-rose-600 p-1.5 rounded-full flex items-center justify-center shadow transition-all duration-200 cursor-pointer"
+                    className="bg-white/95 hover:bg-white text-rose-500 hover:text-rose-600 p-1.5 rounded-full flex items-center justify-center shadow transition-all duration-200 cursor-pointer"
                     title={currentUser?.favorites?.includes(house.id) ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
+                    aria-label={currentUser?.favorites?.includes(house.id) ? `إزالة ${house.name} من المفضلة` : `إضافة ${house.name} للمفضلة`}
                   >
                     <Heart className={`w-3.5 h-3.5 ${currentUser?.favorites?.includes(house.id) ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
                   </button>
 
-                  {/* Comparison button */}
                   <button
                     id={`toggle-compare-card-${house.id}`}
                     type="button"
                     onClick={(e) => handleToggleCompare(house.id, e)}
-                    className={`absolute top-2.5 left-27 p-1.5 rounded-full flex items-center justify-center shadow transition-all duration-200 cursor-pointer ${
-                      comparedHouseIds.includes(house.id) 
-                        ? 'bg-amber-600 text-white hover:bg-amber-700' 
+                    className={`p-1.5 rounded-full flex items-center justify-center shadow transition-all duration-200 cursor-pointer ${
+                      comparedHouseIds.includes(house.id)
+                        ? 'bg-amber-600 text-white hover:bg-amber-700'
                         : 'bg-white/95 text-slate-400 hover:text-[#5A5A40] hover:bg-white'
                     }`}
                     title={comparedHouseIds.includes(house.id) ? 'إزالة من المقارنة' : 'إضافة للمقارنة والمفاضلة'}
+                    aria-label={comparedHouseIds.includes(house.id) ? `إزالة ${house.name} من المقارنة` : `إضافة ${house.name} للمقارنة`}
+                    aria-pressed={comparedHouseIds.includes(house.id)}
                   >
                     <ArrowLeftRight className="w-3.5 h-3.5" />
                   </button>
+                </div>
 
-                  {/* WhatsApp share — sends the rich /house/<id>/ link to a contact */}
-                  <a
-                    id={`whatsapp-share-card-${house.id}`}
-                    href={`https://wa.me/?text=${encodeURIComponent(`${house.name} — ${house.propertyType === 'student' ? 'سكن طلاب' : house.propertyType === 'staff' ? 'سكن موظفين' : 'بيت مؤتمرات'} في ${house.governorate}\nشوف التفاصيل واحجز على بيما:\n${window.location.origin}/house/${house.id}/`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="absolute top-2.5 left-38 bg-[#25D366] hover:bg-[#1DA851] text-white p-1.5 rounded-full flex items-center justify-center shadow transition-all duration-200 cursor-pointer"
-                    title="مشاركة على واتساب"
-                  >
-                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                    </svg>
-                  </a>
-
-                  {/* Property type or student gender badges */}
-                  <div className="absolute top-12 right-3 flex flex-col gap-1 items-end">
-                    {availability !== null && (
-                      <span className="bg-emerald-600/95 backdrop-blur-sm text-white text-[8.5px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
-                        ✓ متاح في تواريخك ({availability[house.id] ?? 0} سرير فاضي)
-                      </span>
-                    )}
-                    {house.propertyType === 'student' && (
-                      <span className={`text-[8.5px] font-extrabold px-2 py-0.5 rounded-full shadow-sm text-white ${house.studentHousingGender === 'girls' ? 'bg-[#9C4B64]' : 'bg-[#4B6B9C]'}`}>
-                        {house.studentHousingGender === 'girls' ? 'سكن طالبات ♀' : 'سكن طلاب ♂'}
-                      </span>
-                    )}
-                    {house.propertyType === 'staff' && (
-                      <span className="bg-[#4B7C6B] text-white text-[8.5px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
-                        سكن موظفين ومغتربين 💼
-                      </span>
-                    )}
-                    {house.distanceFromUniversity && (
-                      <span className="bg-[#EBEBE0]/90 backdrop-blur-sm text-[#4A4A3A] text-[8px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                        {house.distanceFromUniversity}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Suitability tags overlay */}
-                  <div className="absolute bottom-3 right-3 flex flex-wrap gap-1">
-                    {house.suitability.slice(0, 2).map((suit) => (
-                      <span key={suit} className="bg-[#8A8A70]/90 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-sm">
-                        {SUITABILITY_MAP[suit]}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Sea proximity overlay badge */}
-                  {house.seaProximity && house.seaProximity !== 'far' && (
-                    <span className="absolute bottom-3 left-3 bg-blue-900/90 backdrop-blur-sm text-amber-200 text-[9px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1">
-                      {house.seaProximity === 'beach' && '🏖️ على الشاطئ مباشرة'}
-                      {house.seaProximity === 'view' && '🌅 إطلالة على البحر'}
-                      {house.seaProximity === 'near' && '🌊 قريب من البحر'}
+                {/* Status badges — only what the guest is filtering on right now
+                    (real availability) and what tells them the listing is a
+                    different kind of place. Amenities stay inside. */}
+                <div className="absolute top-11 left-3 flex flex-col gap-1 items-start">
+                  {availability !== null && (
+                    <span className="bg-emerald-600/95 backdrop-blur-sm text-white text-[8.5px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+                      ✓ متاح في تواريخك
+                    </span>
+                  )}
+                  {bookedBeforeIds.has(house.id) && (
+                    <span className="bg-[#0A2342]/90 backdrop-blur-sm text-[#C5A059] text-[8.5px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+                      ⭐ حجزتم هنا قبل كده
+                    </span>
+                  )}
+                  {house.propertyType === 'student' && (
+                    <span className={`text-[8.5px] font-extrabold px-2 py-0.5 rounded-full shadow-sm text-white ${house.studentHousingGender === 'girls' ? 'bg-[#9C4B64]' : 'bg-[#4B6B9C]'}`}>
+                      {house.studentHousingGender === 'girls' ? 'سكن طالبات ♀' : 'سكن طلاب ♂'}
+                    </span>
+                  )}
+                  {house.propertyType === 'staff' && (
+                    <span className="bg-[#4B7C6B] text-white text-[8.5px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+                      سكن موظفين ومغتربين
                     </span>
                   )}
                 </div>
 
-                {/* Details info */}
-                <div className="p-4 space-y-2">
-                  <h3 className="text-xs font-bold text-[#4A4A3A] line-clamp-1 group-hover:text-[#5A5A40] transition-colors">
-                    {house.name}
-                  </h3>
-                  
-                  <p className="text-[11px] text-[#8A8A70] line-clamp-2 leading-relaxed">
-                    {house.description}
-                  </p>
+                {/* Details panel — frosted glass floating over the photo. Its
+                    height is what drives the card's height. */}
+                <div className="relative flex p-2.5">
+                  <div className="w-[47%] bg-black/35 backdrop-blur-xl rounded-2xl border border-white/25 shadow-sm p-2.5 space-y-1.5">
+                    <h3 className="text-[11.5px] font-black text-white leading-snug line-clamp-2">
+                      {house.name}
+                    </h3>
 
-                  <div className="flex justify-between items-center pt-2.5 border-t border-[#D6D6C2] text-[10px] font-semibold text-[#8A8A70]">
-                    <div className="flex gap-2">
-                      <span>• {house.roomsCount} غرفة</span>
-                      {house.propertyType === 'student' || house.propertyType === 'staff' ? (
-                        <span>• سعة {house.roomCapacity} أفراد / غرفة</span>
-                      ) : (
-                        <span>• {house.bedsCount} سرير</span>
+                    <p className="text-[9.5px] text-white/70 font-bold line-clamp-2 leading-relaxed">
+                      {house.description}
+                    </p>
+
+                    {/* Capacity is always known; the two service icons only appear
+                        for houses that actually list them, so a house without a
+                        garage shows three icons rather than a blank slot. */}
+                    <div className="flex items-start gap-1.5 pt-0.5">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
+                          <Users className="w-4 h-4" />
+                        </span>
+                        <span className="text-[9.5px] font-black text-white leading-none">
+                          {house.propertyType === 'student' || house.propertyType === 'staff' ? house.roomCapacity : house.bedsCount}
+                        </span>
+                        <span className="text-[8px] font-bold text-white/70 leading-none">
+                          {house.propertyType === 'student' || house.propertyType === 'staff' ? 'بالغرفة' : 'فرد'}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
+                          <BedDouble className="w-4 h-4" />
+                        </span>
+                        <span className="text-[9.5px] font-black text-white leading-none">{house.roomsCount}</span>
+                        <span className="text-[8px] font-bold text-white/70 leading-none">غرف</span>
+                      </div>
+
+                      {(house.services.includes('موقف مجاني') || house.services.includes('جراج خاص')) && (
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
+                            <SquareParking className="w-4 h-4" />
+                          </span>
+                          <span className="text-[8px] font-bold text-white/70 leading-none text-center">
+                            {house.services.includes('موقف مجاني') ? <>موقف<br />مجاني</> : <>جراج<br />خاص</>}
+                          </span>
+                        </div>
+                      )}
+
+                      {house.services.includes('واي فاي') && (
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
+                            <Wifi className="w-4 h-4" />
+                          </span>
+                          <span className="text-[8px] font-bold text-white/70 leading-none text-center">واي<br />فاي</span>
+                        </div>
                       )}
                     </div>
 
-                    <div className="text-[#4A4A3A] font-extrabold text-xs">
+                    <div className="flex items-baseline gap-1 pt-1">
                       {house.propertyType === 'student' || house.propertyType === 'staff' ? (
                         <>
-                          <span>{house.monthlyRent} ج.م</span>
-                          <span className="text-[9px] text-[#8A8A70] font-medium"> / شهرياً</span>
+                          <span className="text-[15px] font-black text-[#E8C88A] leading-none">{house.monthlyRent ?? 0}</span>
+                          <span className="text-[8.5px] font-bold text-white/70">ج.م / شهريًا</span>
                         </>
                       ) : (
                         <>
-                          <span>{house.pricePerNightPerPerson} ج.م</span>
-                          <span className="text-[9px] text-[#8A8A70] font-medium"> / ليلة للفرد</span>
+                          <span className="text-[8.5px] font-bold text-white/70">من</span>
+                          <span className="text-[15px] font-black text-[#E8C88A] leading-none">{house.pricePerNightPerPerson}</span>
+                          <span className="text-[8.5px] font-bold text-white/70">ج.م / الليلة للفرد</span>
                         </>
                       )}
+                    </div>
+
+                    {/* Once the guest has told us dates and how many they are, the
+                        card stops quoting a per-night rate and answers the two
+                        questions they actually have: what will this cost us, and
+                        who else will be here. Both come from numbers we already
+                        hold — the stay-price math and the availability RPC. */}
+                    {(() => {
+                      if (house.propertyType === 'student' || house.propertyType === 'staff') return null;
+
+                      const total = stayNights && partySize
+                        ? computeStayPrice(house, filterCheckIn, filterCheckOut, partySize).total
+                        : 0;
+                      const freeBeds = availability?.[house.id];
+                      const hasBeds = typeof freeBeds === 'number' && house.bedsCount > 0;
+                      // Clamped: a bad row shouldn't render "110% booked".
+                      const freeShare = hasBeds ? Math.min(1, Math.max(0, freeBeds / house.bedsCount)) : null;
+                      const short = partySize && typeof freeBeds === 'number' ? partySize - freeBeds : 0;
+
+                      if (!total && freeShare === null) return null;
+
+                      return (
+                        <div className="pt-1.5 mt-1 border-t border-white/15 space-y-1">
+                          {total > 0 && (
+                            <div>
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-[8.5px] font-bold text-white/70">الإجمالي</span>
+                                <span className="text-[13px] font-black text-white leading-none">
+                                  {total.toLocaleString('en-US')}
+                                </span>
+                                <span className="text-[8.5px] font-bold text-white/70">ج.م</span>
+                              </div>
+                              <span className="text-[8px] font-bold text-white/60">
+                                {partySize} فرد × {stayNights} {stayNights === 1 ? 'ليلة' : stayNights === 2 ? 'ليلتين' : 'ليالي'}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Does it fit? Only answerable once they've said how many. */}
+                          {hasBeds && partySize > 0 && (
+                            short > 0 ? (
+                              <span className="block text-[8px] font-black text-amber-300">
+                                ينقص {bedsLabel(short)} عن عددكم
+                              </span>
+                            ) : (
+                              <span className="block text-[8px] font-black text-emerald-300">
+                                يكفي عددكم — متاح {bedsLabel(freeBeds)}
+                              </span>
+                            )
+                          )}
+
+                          {/* "Will we have the place to ourselves?" — a selling
+                              point for a family and for a group booking a whole
+                              retreat, and a warning for anyone wanting quiet.
+                              Suppressed when the house can't hold them anyway:
+                              "nearly empty" beside "you're 57 beds short" reads
+                              as a contradiction even though both are true. */}
+                          {short <= 0 && freeShare !== null && freeShare >= 0.85 && (
+                            <span className="block text-[8px] font-bold text-white/60">البيت شبه فاضي في تواريخكم</span>
+                          )}
+                          {short <= 0 && freeShare !== null && freeShare <= 0.4 && (
+                            <span className="block text-[8px] font-bold text-white/60">
+                              محجوز {Math.round((1 - freeShare) * 100)}٪ في تواريخكم
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    <div className="relative flex items-center justify-center bg-gradient-to-l from-[#B8944E] to-[#E0C48A] text-white rounded-full py-2 mt-1">
+                      <span className="text-[10px] font-extrabold">عرض التفاصيل</span>
+                      <span className="absolute right-1.5 w-5 h-5 rounded-full bg-black/25 flex items-center justify-center">
+                        <ArrowLeft className="w-3 h-3" />
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -788,30 +971,55 @@ export default function UserDashboard({
       {/* Bottom promo (limited-time countdown offer) — admin-managed, falls back to ported default */}
       <CountdownOfferBanner banner={countdownBanner} live={countdownBanner ? bannerLive[countdownBanner.id] : undefined} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
 
-      {/* Compare Floating Bar */}
+      {/* Compare Floating Bar — the thumbnails matter: after scrolling past a
+          dozen cards nobody remembers which three they ticked. */}
       {comparedHouseIds.length > 0 && (
-        <div className="sticky bottom-2 z-35 bg-white border border-[#D6D6C2] rounded-2xl p-3.5 shadow-lg flex items-center justify-between gap-3 animate-bounce-once">
-          <div className="flex items-center gap-2">
-            <div className="bg-amber-50 p-1.5 rounded-xl border border-amber-200">
-              <Scale className="w-4 h-4 text-amber-700 animate-pulse" />
+        <div className="sticky bottom-2 z-35 bg-[#26261D] border border-[#3C3C2E] rounded-2xl p-3 shadow-lg flex items-center justify-between gap-2 animate-bounce-once">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-1 shrink-0">
+              {comparedHouseIds.map((id) => {
+                const picked = houses.find((h) => h.id === id);
+                if (!picked) return null;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={(e) => handleToggleCompare(id, e)}
+                    title={`إزالة ${picked.name} من المقارنة`}
+                    aria-label={`إزالة ${picked.name} من المقارنة`}
+                    className="relative w-8 h-8 rounded-xl overflow-hidden border border-[#3C3C2E] group/thumb cursor-pointer"
+                  >
+                    <img referrerPolicy="no-referrer" src={picked.images[0]} alt="" className="w-full h-full object-cover" />
+                    <span className="absolute inset-0 bg-black/45 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity">
+                      <X className="w-3 h-3 text-white" />
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-            <div className="text-right">
-              <span className="text-[10px] text-[#8A8A70] font-black block">مقارنة الخلوات المحددة:</span>
-              <span className="text-[11px] font-extrabold text-[#4A4A3A]">لقد اخترت {comparedHouseIds.length} من أصل ٣ بيوت للمقارنة</span>
+            <div className="text-right min-w-0">
+              <span className="text-[11px] font-extrabold text-[#EDEBE3] block">
+                {comparedHouseIds.length} من ٣ للمقارنة
+              </span>
+              <span className="text-[9px] text-[#A5A28C] font-bold">
+                {comparedHouseIds.length < 2 ? 'اختر بيتًا آخر على الأقل' : 'اضغط على صورة لإزالتها'}
+              </span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => setComparedHouseIds([])}
-              className="text-[#8A8A70] hover:text-rose-600 text-[10px] font-bold px-2 py-1.5 rounded-xl hover:bg-rose-50 transition-all cursor-pointer"
+              className="text-[#A5A28C] hover:text-rose-300 text-[10px] font-bold px-2 py-1.5 rounded-xl hover:bg-rose-900/20 transition-all cursor-pointer"
             >
-              مسح الكل
+              مسح
             </button>
             <button
               onClick={() => setShowComparisonModal(true)}
-              className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-extrabold px-3.5 py-1.5 rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer"
+              disabled={comparedHouseIds.length < 2}
+              className="bg-[#5A5A40] hover:bg-[#4A4A3A] disabled:bg-[#3F3F33] disabled:text-[#8A8570] disabled:cursor-not-allowed text-white text-[11px] font-extrabold px-3.5 py-1.5 rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer"
             >
-              <span>مقارنة الآن 📊</span>
+              <Scale className="w-3.5 h-3.5" />
+              <span>قارن</span>
             </button>
           </div>
         </div>
@@ -820,7 +1028,7 @@ export default function UserDashboard({
       {/* Comparison Modal */}
       {showComparisonModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 text-right">
-          <div className="bg-[#FAF8F5] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-[#D6D6C2] animate-scale-up">
+          <div className="bg-[#20201A] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-[#3C3C2E] animate-scale-up">
             {/* Header */}
             <div className="bg-[#5A5A40] text-white px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -835,111 +1043,162 @@ export default function UserDashboard({
               </button>
             </div>
 
-            {/* Comparison Body */}
-            <div className="p-4 overflow-y-auto space-y-4 text-[10px] leading-relaxed">
-              <p className="text-[#8A8A70] text-center font-bold text-[9.5px]">قارن بين أفضل الميزات والأسعار لاختيار البيت الأنسب لخدمتك وكنيستك.</p>
-              
-              <div className="grid grid-cols-3 gap-2.5 items-stretch">
-                {comparedHouseIds.map((id) => {
-                  const compHouse = houses.find(h => h.id === id);
-                  if (!compHouse) return null;
+            {/* Comparison Body — laid out as bands rather than three separate
+                cards, so the same metric always sits on the same line across
+                every house. That alignment is what makes it a comparison. */}
+            {(() => {
+              const picked = comparedHouseIds
+                .map((id) => houses.find((h) => h.id === id))
+                .filter((h): h is RetreatHouse => Boolean(h));
+              if (!picked.length) return null;
 
-                  return (
-                    <div key={id} className="bg-white rounded-2xl border border-[#D6D6C2] overflow-hidden flex flex-col justify-between shadow-xs">
-                      {/* Photo & Name */}
-                      <div className="space-y-1">
-                        <div className="h-16 bg-[#EBEBE0] relative">
-                          <img
-                            referrerPolicy="no-referrer"
-                            src={compHouse.images[0]}
-                            alt={compHouse.name}
-                            className="w-full h-full object-cover"
-                          />
+              const isMonthly = (h: RetreatHouse) => h.propertyType === 'student' || h.propertyType === 'staff';
+              // Nightly-per-person and monthly rent are different units, as are
+              // beds and per-room capacity. Only crown a winner when every house
+              // in the set is quoted on the same basis.
+              const sameBasis = picked.every(isMonthly) || picked.every((h) => !isMonthly(h));
+              const priceOf = (h: RetreatHouse) => (isMonthly(h) ? h.monthlyRent ?? 0 : h.pricePerNightPerPerson);
+              const capacityOf = (h: RetreatHouse) => (isMonthly(h) ? h.roomCapacity ?? 0 : h.bedsCount);
+              // A "best" that every house ties on tells the guest nothing.
+              const bestOf = (pick: (h: RetreatHouse) => number, mode: 'min' | 'max') => {
+                const values = picked.map(pick);
+                const best = mode === 'min' ? Math.min(...values) : Math.max(...values);
+                return values.filter((v) => v === best).length === values.length ? null : best;
+              };
+              const cheapest = sameBasis ? bestOf(priceOf, 'min') : null;
+              const roomiest = sameBasis ? bestOf(capacityOf, 'max') : null;
+              const topRated = bestOf((h) => h.rating, 'max');
+
+              const cols = { gridTemplateColumns: `repeat(${picked.length}, minmax(0, 1fr))` };
+              const Win = () => (
+                <span className="bg-emerald-600 text-white text-[7px] font-black px-1 py-0.5 rounded-full">الأفضل</span>
+              );
+              const Band = ({ label, children }: { label: string; children: React.ReactNode }) => (
+                <div className="space-y-1">
+                  <span className="text-[8.5px] text-[#A5A28C] font-black block border-b border-[#3C3C2E] pb-0.5">{label}</span>
+                  <div className="grid gap-2" style={cols}>{children}</div>
+                </div>
+              );
+
+              return (
+                <div className="p-4 overflow-y-auto space-y-3 text-[10px] leading-relaxed">
+                  {/* Header: photo + name per column */}
+                  <div className="grid gap-2" style={cols}>
+                    {picked.map((h) => (
+                      <div key={h.id} className="text-center space-y-1">
+                        <div className="h-14 bg-[#2A2A20] rounded-xl overflow-hidden border border-[#3C3C2E]">
+                          <img referrerPolicy="no-referrer" loading="lazy" src={h.images[0]} alt={h.name} className="w-full h-full object-cover" />
                         </div>
-                        <div className="p-2 text-center">
-                          <h4 className="font-extrabold text-[#4A4A3A] line-clamp-2 h-7 leading-tight">{compHouse.name}</h4>
-                        </div>
+                        <h4 className="font-extrabold text-[#EDEBE3] line-clamp-2 leading-tight text-[9px]">{h.name}</h4>
                       </div>
+                    ))}
+                  </div>
 
-                      {/* Info points */}
-                      <div className="border-t border-[#EBEBE0] p-2 space-y-2 bg-[#FAF8F5]/50 flex-1">
-                        <div>
-                          <span className="text-[8px] text-[#8A8A70] block">الموقع والمدينة:</span>
-                          <span className="font-bold text-[#4A4A3A]">{compHouse.governorate}</span>
-                        </div>
+                  <Band label="الموقع">
+                    {picked.map((h) => (
+                      <span key={h.id} className="font-bold text-[#EDEBE3] text-center block">{h.governorate}</span>
+                    ))}
+                  </Band>
 
-                        <div className="border-t border-[#EBEBE0]/80 pt-1">
-                          <span className="text-[8px] text-[#8A8A70] block">السعر المقدر للفرد:</span>
-                          <span className="font-black text-[#5A5A40]">
-                            {compHouse.propertyType === 'student' || compHouse.propertyType === 'staff' 
-                              ? `${compHouse.monthlyRent} ج.م` 
-                              : `${compHouse.pricePerNightPerPerson} ج.م`}
-                          </span>
-                        </div>
-
-                        <div className="border-t border-[#EBEBE0]/80 pt-1">
-                          <span className="text-[8px] text-[#8A8A70] block">إجمالي السعة الاستيعابية:</span>
-                          <span className="font-bold text-[#4A4A3A]">
-                            {compHouse.propertyType === 'student' || compHouse.propertyType === 'staff'
-                              ? `${compHouse.roomCapacity} غ`
-                              : `${compHouse.bedsCount} س`}
-                          </span>
-                        </div>
-
-                        <div className="border-t border-[#EBEBE0]/80 pt-1">
-                          <span className="text-[8px] text-[#8A8A70] block">التقييم العام:</span>
-                          <span className="font-black text-amber-600 flex items-center gap-0.5 justify-center">
-                            <Star className="w-3 h-3 fill-amber-500 text-amber-500 shrink-0" />
-                            <span>{compHouse.rating.toFixed(1)}</span>
-                          </span>
-                        </div>
-
-                        <div className="border-t border-[#EBEBE0]/80 pt-1">
-                          <span className="text-[8px] text-[#8A8A70] block">الفئات المناسبة:</span>
-                          <div className="flex flex-wrap gap-0.5 justify-center mt-0.5">
-                            {compHouse.suitability.map(s => (
-                              <span key={s} className="bg-[#8A8A70]/15 text-[#5A5A40] text-[7.5px] px-1 py-0.5 rounded-sm font-semibold">
-                                {SUITABILITY_MAP[s]}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="border-t border-[#EBEBE0]/80 pt-1">
-                          <span className="text-[8px] text-[#8A8A70] block">أبرز الخدمات:</span>
-                          <div className="flex flex-wrap gap-0.5 justify-center mt-0.5">
-                            {compHouse.services.slice(0, 2).map(s => (
-                              <span key={s} className="bg-emerald-50 text-emerald-800 text-[7px] px-1 py-0.5 rounded-sm font-bold">
-                                {s}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
+                  {/* On a mixed set the band label can't name one unit without
+                      lying about the other column, so it goes neutral and each
+                      value carries its own unit instead. */}
+                  <Band label={!sameBasis ? 'السعر' : picked.every(isMonthly) ? 'الإيجار الشهري' : 'السعر لليلة للفرد'}>
+                    {picked.map((h) => (
+                      <div key={h.id} className="flex flex-col items-center gap-0.5">
+                        <span className={`font-black ${cheapest !== null && priceOf(h) === cheapest ? 'text-emerald-300' : 'text-[#E4E1CB]'}`}>
+                          {priceOf(h)} ج.م
+                        </span>
+                        {!sameBasis && (
+                          <span className="text-[7.5px] text-[#A5A28C] font-bold">{isMonthly(h) ? 'شهريًا' : 'لليلة للفرد'}</span>
+                        )}
+                        {cheapest !== null && priceOf(h) === cheapest && <Win />}
                       </div>
+                    ))}
+                  </Band>
 
-                      {/* Action */}
-                      <div className="p-2 bg-white border-t border-[#EBEBE0]">
-                        <button
-                          onClick={() => {
-                            onSelectHouse(compHouse);
-                            setShowComparisonModal(false);
-                          }}
-                          className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[9px] font-bold py-1.5 rounded-xl transition-all text-center cursor-pointer"
-                        >
-                          عرض وتفاصيل الحجز
-                        </button>
+                  <Band label={!sameBasis ? 'السعة' : picked.every(isMonthly) ? 'سعة الغرفة' : 'عدد الأسرّة'}>
+                    {picked.map((h) => (
+                      <div key={h.id} className="flex flex-col items-center gap-0.5">
+                        <span className={`font-black ${roomiest !== null && capacityOf(h) === roomiest ? 'text-emerald-300' : 'text-[#EDEBE3]'}`}>
+                          {capacityOf(h)}
+                        </span>
+                        {!sameBasis && (
+                          <span className="text-[7.5px] text-[#A5A28C] font-bold">{isMonthly(h) ? 'بالغرفة' : 'سرير'}</span>
+                        )}
+                        {roomiest !== null && capacityOf(h) === roomiest && <Win />}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                    ))}
+                  </Band>
+
+                  <Band label="التقييم">
+                    {picked.map((h) => (
+                      <div key={h.id} className="flex flex-col items-center gap-0.5">
+                        <span className="font-black text-amber-400 flex items-center gap-0.5">
+                          <Star className="w-3 h-3 fill-amber-500 text-amber-500 shrink-0" />
+                          {h.rating.toFixed(1)}
+                        </span>
+                        {topRated !== null && h.rating === topRated && <Win />}
+                      </div>
+                    ))}
+                  </Band>
+
+                  <Band label="الفئات المناسبة">
+                    {picked.map((h) => (
+                      <div key={h.id} className="flex flex-wrap gap-0.5 justify-center content-start">
+                        {h.suitability.map((s) => (
+                          <span key={s} className="bg-[#8A8A70]/25 text-[#D8D5C6] text-[7.5px] px-1 py-0.5 rounded-sm font-semibold">
+                            {SUITABILITY_MAP[s]}
+                          </span>
+                        ))}
+                      </div>
+                    ))}
+                  </Band>
+
+                  <Band label="الخدمات">
+                    {picked.map((h) => (
+                      <div key={h.id} className="flex flex-wrap gap-0.5 justify-center content-start">
+                        {h.services.slice(0, 2).map((s) => (
+                          <span key={s} className="bg-emerald-900/30 text-emerald-200 text-[7px] px-1 py-0.5 rounded-sm font-bold">
+                            {s}
+                          </span>
+                        ))}
+                        {h.services.length > 2 && (
+                          <span className="text-[7px] text-[#A5A28C] font-bold px-1 py-0.5">+{h.services.length - 2}</span>
+                        )}
+                      </div>
+                    ))}
+                  </Band>
+
+                  {!sameBasis && (
+                    <p className="text-[8.5px] text-[#A5A28C] font-bold text-center bg-[#2E2E23] rounded-xl p-2">
+                      البيوت المختارة أسعارها محسوبة بطرق مختلفة (ليلة للفرد مقابل إيجار شهري)، فمفيش مقارنة مباشرة للسعر أو السعة.
+                    </p>
+                  )}
+
+                  <div className="grid gap-2 pt-1" style={cols}>
+                    {picked.map((h) => (
+                      <button
+                        key={h.id}
+                        onClick={() => {
+                          onSelectHouse(h);
+                          setShowComparisonModal(false);
+                        }}
+                        className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[9px] font-bold py-1.5 rounded-xl transition-all text-center cursor-pointer"
+                      >
+                        عرض التفاصيل
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Footer */}
-            <div className="bg-[#EBEBE0] p-3 text-center border-t border-[#D6D6C2]">
+            <div className="bg-[#2A2A20] p-3 text-center border-t border-[#3C3C2E]">
               <button
                 onClick={() => setShowComparisonModal(false)}
-                className="bg-white border border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#FAF8F5] text-[10px] font-bold px-4 py-1.5 rounded-xl transition-all cursor-pointer"
+                className="bg-[#26261D] border border-[#3C3C2E] text-[#EDEBE3] hover:bg-[#2E2E23] text-[10px] font-bold px-4 py-1.5 rounded-xl transition-all cursor-pointer"
               >
                 إغلاق المقارنة
               </button>

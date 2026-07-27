@@ -302,6 +302,7 @@ export default function AdminDashboard({
     { key: 'bedsCount', label: 'عدد الأسرة' },
     { key: 'governorate', label: 'المحافظة' },
     { key: 'address', label: 'العنوان' },
+    { key: 'nearbyLandmark', label: 'أقرب معلم' },
     { key: 'description', label: 'الوصف' },
     { key: 'roomsDescription', label: 'وصف الغرف' },
   ];
