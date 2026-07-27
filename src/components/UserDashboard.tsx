@@ -307,7 +307,12 @@ export default function UserDashboard({
     // leaderboard does (App.tsx) and the owner dashboard does via .owner-theme:
     // scoped to this screen so every other guest screen keeps the cream palette
     // on <body>. Negative margins bleed it past the shell's px-4 py-6.
-    <div className="min-h-screen bg-gradient-to-b from-[#1C1C16] via-[#232319] to-[#141410] text-[#EDEBE3] -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl px-4 py-6 space-y-4 text-right">
+    // The screen was built mobile-first with no width ceiling, so on a desktop
+    // every element simply stretched: the promo banner went from 2:1 to 7.6:1,
+    // the filter row to 24:1. Capping the content at 6xl and centring it fixes
+    // the whole page at once; the mobile layout below `sm:` is untouched.
+    <div className="min-h-screen bg-gradient-to-b from-[#1C1C16] via-[#232319] to-[#141410] text-[#EDEBE3] -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl px-4 py-6 text-right">
+      <div className="max-w-6xl mx-auto space-y-4">
 
       {/* Follows the Coptic calendar on its own — no one has to remember to
           switch it on, and it disappears outside the fasts and feasts. */}
@@ -692,7 +697,10 @@ export default function UserDashboard({
             <p className="text-[10px] text-[#A5A28C]">جرب البحث بكلمات أبسط أو تخفيف فلاتر التصفية.</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          // One card per row was fine on a phone but wasted a desktop: each
+          // card stretched to the full width and its photo was cropped to a
+          // 6.7:1 strip. A grid keeps the photo near its natural ratio.
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredHouses.map((house) => (
               <div
                 id={`house-card-${house.id}`}
@@ -1025,7 +1033,10 @@ export default function UserDashboard({
         </div>
       )}
 
-      {/* Comparison Modal */}
+      </div>{/* end max-w-6xl content column */}
+
+      {/* Comparison Modal — full-screen overlay, so it stays outside the
+          capped column and keeps covering the whole viewport. */}
       {showComparisonModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 text-right">
           <div className="bg-[#20201A] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-[#3C3C2E] animate-scale-up">
