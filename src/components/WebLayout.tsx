@@ -31,12 +31,20 @@ interface NavItem {
   roles: string[];
 }
 
+// Labels stay to one short word: six items share a 375px bar, so each gets
+// ~54px of usable width. "استكشاف البيوت" measured 73px and wrapped to two
+// lines, making that one tab taller than the other five.
+// Five tabs, so الرئيسية sits third — dead centre of the bar. In RTL the first
+// entry is the RIGHTMOST tab, so the array reads right-to-left on screen:
+//   حجوزاتي · المحادثات · [الرئيسية] · الترفيه · حسابي
+// الخريطة is deliberately NOT here: it is the same search drawn on a map, so it
+// lives as a button beside the search box on the browse screen. Freeing that
+// slot is also what lets an odd number of tabs centre the home tab exactly.
 const NAV_ITEMS: NavItem[] = [
-  { id: 'explore',       label: 'استكشاف البيوت', icon: <Compass className="w-5 h-5" />,   roles: ['individual', 'servant'] },
   { id: 'bookings',      label: 'حجوزاتي',         icon: <BookOpen className="w-5 h-5" />,  roles: ['individual', 'servant'] },
   { id: 'messages',      label: 'المحادثات',       icon: <MessageCircle className="w-5 h-5" />, roles: ['individual', 'servant'] },
+  { id: 'explore',       label: 'الرئيسية',        icon: <Compass className="w-5 h-5" />,   roles: ['individual', 'servant'] },
   { id: 'entertainment', label: 'الترفيه',         icon: <Sparkles className="w-5 h-5" />,  roles: ['individual', 'servant'] },
-  { id: 'map',           label: 'الخريطة',         icon: <MapIcon className="w-5 h-5" />,   roles: ['individual', 'servant'] },
   { id: 'profile',       label: 'حسابي',           icon: <UserCircle className="w-5 h-5" />, roles: ['individual', 'servant'] },
   { id: 'owner_panel',   label: 'لوحة المالك',      icon: <Home className="w-5 h-5" />,      roles: ['owner'] },
   { id: 'meals',         label: 'قائمة الطعام',     icon: <Coffee className="w-5 h-5" />,    roles: ['owner'] },
@@ -45,6 +53,8 @@ const NAV_ITEMS: NavItem[] = [
 
 // Logged-out visitors browse freely; anything beyond these routes to login.
 const GUEST_NAV: NavItem[] = [
+  // Only two tabs here, so the full label fits — and a first-time visitor is
+  // better served by what the screen actually does than by "الرئيسية".
   { id: 'explore', label: 'استكشاف البيوت', icon: <Compass className="w-5 h-5" />, roles: [] },
   { id: 'map',     label: 'الخريطة',         icon: <MapIcon className="w-5 h-5" />, roles: [] },
 ];
@@ -261,9 +271,14 @@ export default function WebLayout({
           own dashboard: OwnerDashboardShell provides its own bottom nav
           on mobile and a sidebar on desktop, both covering more real
           destinations than the tiny 2-item bar we'd otherwise show. */}
-      <nav className={`shrink-0 bg-white border-t border-[var(--color-natural-border)] shadow-[0_-2px_8px_rgba(0,0,0,0.05)] flex items-stretch z-10 ${
-        currentUser?.role === 'owner' && activeScreen === 'owner_panel' ? 'hidden' : ''
-      }`}>
+      <nav
+        // The inset keeps the tap targets clear of the Android gesture bar —
+        // same treatment the owner dashboard's own bar already has.
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        className={`shrink-0 bg-white border-t border-[var(--color-natural-border)] shadow-[0_-2px_8px_rgba(0,0,0,0.05)] flex items-stretch z-10 ${
+          currentUser?.role === 'owner' && activeScreen === 'owner_panel' ? 'hidden' : ''
+        }`}
+      >
         {visibleNav.map(item => {
           const isActive = activeScreen === item.id;
           const badge = item.id === 'messages' ? messagesUnreadCount : 0;
@@ -272,12 +287,21 @@ export default function WebLayout({
               key={item.id}
               onClick={() => setActiveScreen(item.id)}
               title={item.label}
-              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2 px-1 text-center transition-colors duration-150
+              aria-current={isActive ? 'page' : undefined}
+              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 pt-2 pb-1.5 px-0.5 min-h-[52px] text-center transition-colors duration-150
                 ${isActive
                   ? 'text-[var(--color-natural-primary)]'
                   : 'text-[var(--color-natural-secondary)] hover:text-[var(--color-natural-text)]'
                 }`}
             >
+              {/* A colour change alone is a weak active cue at this size —
+                  the bar above the icon is what reads at a glance. */}
+              <span
+                aria-hidden="true"
+                className={`absolute top-0 inset-x-3 h-[2.5px] rounded-b-full transition-opacity ${
+                  isActive ? 'bg-[var(--color-natural-primary)] opacity-100' : 'opacity-0'
+                }`}
+              />
               <span className="relative">
                 {item.icon}
                 {badge > 0 && (
@@ -286,7 +310,11 @@ export default function WebLayout({
                   </span>
                 )}
               </span>
-              <span className={`text-[9.5px] font-bold leading-tight ${isActive ? 'font-black' : ''}`}>{item.label}</span>
+              {/* Never wrap: one tall tab among five short ones is what made
+                  the bar look uneven. */}
+              <span className={`text-[9.5px] leading-tight whitespace-nowrap ${isActive ? 'font-black' : 'font-bold'}`}>
+                {item.label}
+              </span>
             </button>
           );
         })}
