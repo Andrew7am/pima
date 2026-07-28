@@ -45,6 +45,9 @@ const seen = new Set<string>();
 
 async function send(bannerId: string, kind: 'impression' | 'click', element?: BannerElementKind) {
   try {
+    // If supabase client is not available (tests / build without env vars), skip tracking.
+    if (!supabase) return;
+
     const { data: auth } = await supabase.auth.getUser();
     await supabase.from('banner_events').insert({
       banner_id: bannerId,
