@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RetreatHouse, User, PromoBanner, Booking, Review } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
-import { Search, MapPin, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking, Flame } from 'lucide-react';
+import { Search, MapPin, Map as MapIcon, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking, Flame } from 'lucide-react';
 import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
 import { loadHousesAvailability, loadHouseBookingCounts } from '../lib/db';
 import { computeStayPrice } from '../lib/pricing';
@@ -25,6 +25,9 @@ interface UserDashboardProps {
   onSelectHouse: (house: RetreatHouse) => void;
   onSelectRewards: () => void;
   onToggleFavorite: (houseId: string) => void;
+  /** Switches to the map screen — the same search shown geographically, which
+   *  is why it lives beside the search box rather than in the bottom bar. */
+  onOpenMap?: () => void;
   promoBanners?: PromoBanner[];
   /** Only used to answer a banner audience rule of "has booked before". */
   bookings?: Booking[];
@@ -38,6 +41,7 @@ export default function UserDashboard({
   onSelectHouse,
   onSelectRewards,
   onToggleFavorite,
+  onOpenMap,
   promoBanners = [],
   bookings = [],
   reviews = [],
@@ -456,13 +460,30 @@ export default function UserDashboard({
         <button
           id="toggle-filters-btn"
           onClick={() => setShowFilters(!showFilters)}
-          className={`p-2 rounded-2xl border transition-all ${
+          className={`p-2 rounded-2xl border transition-all cursor-pointer ${
             showFilters ? 'bg-[#5A5A40] border-[#5A5A40] text-white' : 'bg-[#26261D] border-[#3C3C2E] text-[#EDEBE3] hover:bg-[#333326]'
           }`}
           title="فلاتر متقدمة"
+          aria-label="فلاتر متقدمة"
+          aria-expanded={showFilters}
         >
           <SlidersHorizontal className="w-4 h-4" />
         </button>
+
+        {/* Map view — the same list shown geographically, so it belongs with
+            the search controls rather than as its own destination. */}
+        {onOpenMap && (
+          <button
+            id="open-map-btn"
+            type="button"
+            onClick={onOpenMap}
+            className="p-2 rounded-2xl border border-[#3C3C2E] bg-[#26261D] text-[#EDEBE3] hover:bg-[#333326] transition-all cursor-pointer"
+            title="عرض البيوت على الخريطة"
+            aria-label="عرض البيوت على الخريطة"
+          >
+            <MapIcon className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Advanced Filters Expandable Drawer */}

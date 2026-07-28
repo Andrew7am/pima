@@ -1539,8 +1539,20 @@ export default function App() {
             onRequireLogin={() => requireLogin(selectedHouse.id)}
           />
         ) : activeScreen === 'map' ? (
-          <div className="h-[calc(100dvh-180px)]">
-            <InteractiveMap houses={houses} onSelectHouse={(h) => setSelectedHouse(h)} />
+          // The map is reached from the browse screen's search row, not from a
+          // bottom tab, so it has to carry its own way back.
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => setActiveScreen('explore')}
+              className="flex items-center gap-1 text-[11px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] transition-colors cursor-pointer"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+              <span>رجوع لقائمة البيوت</span>
+            </button>
+            <div className="h-[calc(100dvh-220px)]">
+              <InteractiveMap houses={houses} onSelectHouse={(h) => setSelectedHouse(h)} />
+            </div>
           </div>
         ) : activeScreen === 'privacy' ? (
           <PrivacyPolicy onBack={() => setActiveScreen('explore')} />
@@ -1551,6 +1563,7 @@ export default function App() {
             onSelectHouse={(h) => setSelectedHouse(h)}
             onSelectRewards={() => requireLogin()}
             onToggleFavorite={() => requireLogin(selectedHouse?.id)}
+            onOpenMap={() => setActiveScreen('map')}
             promoBanners={promoBanners}
           />
         )}
@@ -1725,6 +1738,7 @@ export default function App() {
               onSelectHouse={(h) => setSelectedHouse(h)}
               onSelectRewards={() => setActiveScreen('profile')}
               onToggleFavorite={handleToggleFavorite}
+              onOpenMap={() => setActiveScreen('map')}
               promoBanners={promoBanners}
               bookings={bookings}
               reviews={reviews}
@@ -1733,9 +1747,21 @@ export default function App() {
 
           {activeScreen === 'map' && (
             // Interactive map — every approved house with a location, always
-            // in sync with the live houses list (new houses appear automatically)
-            <div className="h-[calc(100dvh-180px)]">
-              <InteractiveMap houses={houses} onSelectHouse={(h) => setSelectedHouse(h)} />
+            // in sync with the live houses list (new houses appear automatically).
+            // Reached from the browse screen's search row rather than a bottom
+            // tab, so no tab is lit while it is open — hence the explicit back.
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setActiveScreen('explore')}
+                className="flex items-center gap-1 text-[11px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] transition-colors cursor-pointer"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+                <span>رجوع لقائمة البيوت</span>
+              </button>
+              <div className="h-[calc(100dvh-220px)]">
+                <InteractiveMap houses={houses} onSelectHouse={(h) => setSelectedHouse(h)} />
+              </div>
             </div>
           )}
 
