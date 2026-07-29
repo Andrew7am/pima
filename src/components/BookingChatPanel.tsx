@@ -87,6 +87,11 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
   const [menuFor, setMenuFor] = useState<number | null>(null);
   const [recording, setRecording] = useState(false);
   const [recordSecs, setRecordSecs] = useState(0);
+  // The booking card collapses once the reader moves into the conversation:
+  // expanded it takes ~230px, which on a 812px phone left the thread almost no
+  // room. Defaults open so the context is the first thing seen, and a tap
+  // toggles it — so it still works where scroll events never arrive.
+  const [cardOpen, setCardOpen] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -292,34 +297,75 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
           </div>
         </div>
 
-        {/* Booking card, inside the header so the context never scrolls away. */}
+        {/* Booking card, inside the header so the context never scrolls away.
+            Collapsed it stays one readable line rather than disappearing —
+            the dates are the thing people re-check mid-conversation. */}
         {booking && (
           <div className="relative px-3 pb-3">
-            <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-white/70 p-3 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-[11.5px] font-black text-[#2D2D24]">حجزك القادم</span>
-                <PimaStatusBadge status={booking.status} />
-              </div>
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                {[
-                  { icon: <CalendarDays className="w-3.5 h-3.5" />, top: shortDate(booking.checkIn), bottom: 'الوصول' },
-                  { icon: <Users className="w-3.5 h-3.5" />, top: `${booking.guestsCount} فرد`, bottom: 'عدد الأفراد' },
-                  { icon: <MapPin className="w-3.5 h-3.5" />, top: `${nights} ${nights === 1 ? 'ليلة' : nights === 2 ? 'ليلتين' : 'ليالٍ'}`, bottom: 'المدة' },
-                ].map((c) => (
-                  <div key={c.bottom} className="flex flex-col items-center gap-0.5 bg-[#FBF9F4] rounded-xl py-2">
-                    <span className="text-[#C5A059]">{c.icon}</span>
-                    <span className="text-[10.5px] font-black text-[#2D2D24] leading-none">{c.top}</span>
-                    <span className="text-[8.5px] font-bold text-[#8A8A70]">{c.bottom}</span>
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-white/70 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden">
+              <button
+                type="button"
+                onClick={() => { tapFeedback(); setCardOpen((v) => !v); }}
+                aria-expanded={cardOpen}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-right pima-press"
+              >
+                <span className="flex items-center gap-2 min-w-0">
+                  <span className="text-[11.5px] font-black text-[#2D2D24] shrink-0">حجزك القادم</span>
+                  {!cardOpen && (
+                    <span className="text-[10px] font-bold text-[#8A8A70] truncate">
+                      {shortDate(booking.checkIn)} · {booking.guestsCount} فرد · {nights} {nights === 1 ? 'ليلة' : nights === 2 ? 'ليلتين' : 'ليالٍ'}
+                    </span>
+                  )}
+                </span>
+                <span className="flex items-center gap-1.5 shrink-0">
+                  <PimaStatusBadge status={booking.status} />
+                  <ChevronRight aria-hidden="true" className={`w-4 h-4 text-[#B5AF98] transition-transform duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${cardOpen ? '-rotate-90' : 'rotate-90'}`} />
+                </span>
+              </button>
+
+              {/* Height, not display: the collapse interpolates instead of
+                  snapping, and an aria-hidden pane keeps it out of the reading
+                  order when shut. */}
+              <div
+                aria-hidden={!cardOpen}
+                className={`grid transition-[grid-template-rows,opacity] duration-[300ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
+                  cardOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="px-3 pb-3">
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                      {[
+                        { icon: <CalendarDays className="w-3.5 h-3.5" />, top: shortDate(booking.checkIn), bottom: 'الوصول' },
+                        { icon: <Users className="w-3.5 h-3.5" />, top: `${booking.guestsCount} فرد`, bottom: 'عدد الأفراد' },
+                        { icon: <MapPin className="w-3.5 h-3.5" />, top: `${nights} ${nights === 1 ? 'ليلة' : nights === 2 ? 'ليلتين' : 'ليالٍ'}`, bottom: 'المدة' },
+                      ].map((c) => (
+                        <div key={c.bottom} className="flex flex-col items-center gap-0.5 bg-[#FBF9F4] rounded-xl py-2">
+                          <span className="text-[#C5A059]">{c.icon}</span>
+                          <span className="text-[10.5px] font-black text-[#2D2D24] leading-none">{c.top}</span>
+                          <span className="text-[8.5px] font-bold text-[#8A8A70]">{c.bottom}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <PimaTimeline steps={timeline} />
                   </div>
-                ))}
+                </div>
               </div>
-              <PimaTimeline steps={timeline} />
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2.5 pima-chat-bg">
+      <div
+        // Moving into the conversation folds the card away; returning to the
+        // top brings it back. Passive listener, class flip only — no state
+        // churn per scroll frame beyond the one boolean.
+        onScroll={(e) => {
+          const top = (e.target as HTMLElement).scrollTop;
+          setCardOpen((open) => (open && top > 24 ? false : open));
+        }}
+        className="flex-1 overflow-y-auto p-4 space-y-2.5 pima-chat-bg"
+      >
         {loading ? (
           <div className={`flex items-center justify-center gap-2 ${t.secondary} py-8`}>
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -389,7 +435,9 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
                     // Asymmetric corner on the side the message comes from —
                     // the tail, without drawing one. Outgoing is a soft gold
                     // wash rather than a solid fill so the thread stays calm.
-                    className={`block text-right px-3.5 py-2.5 text-[12px] font-medium leading-relaxed w-full rounded-[22px] ${
+                    // Width follows the text. w-full made every bubble the same
+                    // 78% slab, so a two-word reply read as a paragraph.
+                    className={`inline-block text-right px-3.5 py-2.5 text-[12px] font-medium leading-relaxed max-w-full rounded-[22px] ${
                       isMine
                         ? 'rounded-bl-md bg-gradient-to-b from-[#F7EEDB] to-[#F2E4C9] text-[#3A3524] border border-[#E9D9B4] shadow-[0_2px_8px_rgba(184,148,78,0.12)]'
                         : 'rounded-br-md bg-white text-[#2D2D24] border border-[#EDE7DA] shadow-[0_2px_8px_rgba(45,45,36,0.05)]'
