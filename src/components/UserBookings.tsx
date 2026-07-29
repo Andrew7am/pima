@@ -7,6 +7,7 @@ import {
   FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft, CalendarPlus, Star, X, UserPlus
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
+import BookingJourney from './BookingJourney';
 import BookingChatPanel from './BookingChatPanel';
 import ReviewWizard from './ReviewWizard';
 import { refundAmountFor } from '../lib/cancellationPolicy';
@@ -154,39 +155,9 @@ function Fact({ icon: Icon, label, value, accent }: { icon: React.ElementType; l
   );
 }
 
-// Visual progress of a booking through its lifecycle. Rendered only for the
-// live statuses (pending / approved / completed) — cancelled & rejected keep
-// just their status badge.
-function BookingStepper({ status, depositPaid }: { status: Booking['status']; depositPaid?: boolean }) {
-  const steps = ['الطلب', 'الموافقة', 'العربون', 'تمّت'];
-  const done =
-    status === 'completed' ? 4
-      : status === 'approved' ? (depositPaid ? 3 : 2)
-        : 1; // pending
-  return (
-    <div className="flex items-center px-1">
-      {steps.map((label, i) => {
-        const reached = i < done;
-        const isCurrent = i === done - 1;
-        return (
-          <React.Fragment key={label}>
-            <div className="flex flex-col items-center gap-1 shrink-0">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black transition-colors ${
-                reached ? 'bg-[#0A2342] text-white' : 'bg-[#EBEBE0] text-[#B8B8A0]'
-              } ${isCurrent ? 'ring-2 ring-[#C5A059]/50' : ''}`}>
-                {reached ? <Check className="w-3 h-3" /> : i + 1}
-              </div>
-              <span className={`text-[8.5px] font-bold ${reached ? 'text-[#0A2342]' : 'text-[#B8B8A0]'}`}>{label}</span>
-            </div>
-            {i < steps.length - 1 && (
-              <div className={`flex-1 h-0.5 -mt-4 rounded-full transition-colors ${i < done - 1 ? 'bg-[#0A2342]' : 'bg-[#EBEBE0]'}`} />
-            )}
-          </React.Fragment>
-        );
-      })}
-    </div>
-  );
-}
+// The four-step stepper that used to live here was replaced by BookingJourney,
+// which shows the same lifecycle as the five named stages the guest recognises
+// and dates each one from a real column.
 
 export default function UserBookings({
   bookings,
@@ -903,10 +874,10 @@ export default function UserBookings({
                   </div>
                 </div>
 
-                {/* Lifecycle progress stepper (live statuses only) */}
+                {/* The booking's journey with Pima (live statuses only) */}
                 {(booking.status === 'pending' || booking.status === 'approved' || booking.status === 'completed') && (
                   <div className="px-4 py-3 border-b border-[#D6D6C2]/60">
-                    <BookingStepper status={booking.status} depositPaid={booking.depositPaid} />
+                    <BookingJourney booking={booking} payments={payments} />
                     {/* Countdown — a confirmed trip that hasn't happened yet */}
                     {booking.status === 'approved' && (() => {
                       const d = daysUntil(booking.checkIn);
