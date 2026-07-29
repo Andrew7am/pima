@@ -345,15 +345,16 @@ export default function UserDashboard({
         <SummerOfferCarousel slides={carouselSlides} live={bannerLive} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
 
         {/* Offsets are relative to this wrapper (banner + pb-10 = 233px), not to
-            the banner, so the number is derived rather than guessed: bottom-1
-            puts the 51px bar's top at 178px, i.e. 15px inside a 193px hero. Any
-            deeper and it covered the banner's own «احجز الآن»; any lower and it
-            landed on the quick cards below. */}
-        <div className="absolute inset-x-3 bottom-1 z-20 animate-in fade-in slide-in-from-bottom-3 duration-500">
-          {/* Frosted white, not a flat panel: a saturated blur over the photo is
-              what makes it read as glass, and a wide low-opacity shadow is what
-              lifts it off the banner. Both are what the approved bar has. */}
-          <div className="flex items-center gap-1 bg-white/75 backdrop-blur-2xl backdrop-saturate-150 border border-white/80 rounded-full shadow-[0_12px_32px_-6px_rgba(45,45,36,0.28),0_2px_6px_rgba(45,45,36,0.08)] ring-1 ring-black/[0.03] p-2">
+            the banner, so the number is derived rather than guessed. bottom-0
+            puts the 51px bar's top 8px inside a 193px hero: enough to read as
+            attached, little enough that the artwork stays the artwork. Deeper in
+            it covered the banner's own «احجز الآن»; fully below it landed on the
+            quick cards. */}
+        <div className="absolute inset-x-3 bottom-0 z-20 animate-in fade-in slide-in-from-bottom-3 duration-500">
+          {/* Frosted white: saturated blur is what makes it read as glass over a
+              photograph. The shadow is kept tight and low so it does not cast a
+              grey band up across the banner it is sitting on. */}
+          <div className="flex items-center gap-1 bg-white/85 backdrop-blur-2xl backdrop-saturate-150 border border-white/80 rounded-full shadow-[0_6px_18px_-6px_rgba(45,45,36,0.22),0_1px_4px_rgba(45,45,36,0.06)] p-2">
             {/* DOM order is right-to-left on screen: map sits at the right end,
                 filter at the left, matching the approved layout. */}
             {onOpenMap && (
