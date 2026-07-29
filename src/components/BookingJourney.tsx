@@ -2,6 +2,7 @@ import React from 'react';
 import { Check, ShieldCheck, Wallet, Car, BedDouble } from 'lucide-react';
 import type { Booking, Payment } from '../types';
 import { buildBookingJourney, type JourneyStepKey } from '../lib/bookingJourney';
+import { arabicDate } from '../lib/arabic';
 
 const ICONS: Record<JourneyStepKey, React.ElementType> = {
   submitted: Check,
@@ -10,14 +11,6 @@ const ICONS: Record<JourneyStepKey, React.ElementType> = {
   arrival: Car,
   departure: BedDouble,
 };
-
-/** "18 يوليو 2026" — the format the rest of the guest screens use. */
-function arabicDate(iso?: string): string | undefined {
-  if (!iso) return undefined;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return undefined;
-  return d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
-}
 
 /** "اليوم ١٠:٣٠ ص" for today, otherwise the date. */
 function lastUpdated(iso?: string): string | undefined {

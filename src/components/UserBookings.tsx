@@ -14,6 +14,7 @@ import ReviewWizard from './ReviewWizard';
 import { refundAmountFor } from '../lib/cancellationPolicy';
 import { downloadBookingIcs } from '../lib/ics';
 import { setAttendeeSharePaid } from '../lib/db';
+import { arabicPlural, arabicDate, arabicDateRange } from '../lib/arabic';
 
 interface UserBookingsProps {
   bookings: Booking[];
@@ -810,7 +811,7 @@ export default function UserBookings({
                       </div>
                     )}
                     <div className="flex items-center gap-3 text-[10px] font-bold text-white/85">
-                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{nextBooking.checkIn} → {nextBooking.checkOut}</span>
+                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{arabicDateRange(nextBooking.checkIn, nextBooking.checkOut)}</span>
                       <span className="flex items-center gap-1"><Users className="w-3 h-3" />{nextBooking.guestsCount.toLocaleString('ar-EG')} فرد</span>
                     </div>
                     <div className="flex items-center justify-between gap-2 pt-1.5">
@@ -958,7 +959,7 @@ export default function UserBookings({
 
                       <div className="flex items-center gap-2.5 text-[9.5px] font-bold text-[#5A5A40]">
                         <span className="flex items-center gap-1"><Users className="w-3 h-3 text-[#BCBC9D]" />{booking.guestsCount.toLocaleString('ar-EG')} فرد</span>
-                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-[#BCBC9D]" />{booking.checkIn} → {booking.checkOut}</span>
+                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-[#BCBC9D]" />{arabicDateRange(booking.checkIn, booking.checkOut)}</span>
                       </div>
 
                       <div className="flex items-center justify-between gap-2 pt-0.5">
@@ -980,7 +981,9 @@ export default function UserBookings({
 
                       {dLeftCompact >= 0 && dLeftCompact <= 7 && (
                         <span className="inline-block text-[9px] font-black text-[#0A2342] bg-[#0A2342]/5 rounded-full px-2 py-0.5">
-                          {dLeftCompact === 0 ? 'اليوم 🎉' : `بعد ${dLeftCompact.toLocaleString('ar-EG')} يوم`}
+                          {dLeftCompact === 0
+                            ? 'اليوم 🎉'
+                            : `بعد ${arabicPlural(dLeftCompact, { one: 'يوم', two: 'يومين', few: 'أيام', many: 'يوم' })}`}
                         </span>
                       )}
                     </div>
@@ -1036,7 +1039,9 @@ export default function UserBookings({
                     {booking.status === 'approved' && (() => {
                       const d = daysUntil(booking.checkIn);
                       if (d < 0) return null;
-                      const text = d === 0 ? 'خلوتك اليوم! 🎉' : d === 1 ? 'باقي يوم واحد على خلوتك' : `باقي ${d.toLocaleString('ar-EG')} يوم على خلوتك`;
+                      const text = d === 0
+                        ? 'خلوتك اليوم! 🎉'
+                        : `باقي ${arabicPlural(d, { one: 'يوم واحد', two: 'يومين', few: 'أيام', many: 'يوم' })} على خلوتك`;
                       return (
                         <div className="mt-2.5 flex items-center justify-center gap-1.5 bg-[#0A2342]/5 text-[#0A2342] rounded-full py-1.5 text-[10.5px] font-black">
                           <CalendarCheck className="w-3.5 h-3.5 text-[#C5A059]" />
@@ -1049,8 +1054,8 @@ export default function UserBookings({
 
                 {/* Facts — tidy, consistent key/value grid */}
                 <div className="px-4 py-3.5 grid grid-cols-2 gap-x-3 gap-y-3.5 border-b border-[#D6D6C2]/60">
-                  <Fact icon={Calendar} label="الوصول" value={booking.checkIn} />
-                  <Fact icon={CalendarCheck} label="المغادرة" value={booking.checkOut} />
+                  <Fact icon={Calendar} label="الوصول" value={arabicDate(booking.checkIn)} />
+                  <Fact icon={CalendarCheck} label="المغادرة" value={arabicDate(booking.checkOut)} />
                   <Fact icon={Users} label="عدد الأفراد" value={`${booking.guestsCount.toLocaleString('ar-EG')} فرد`} />
                   <Fact icon={Wallet} label="إجمالي التكلفة" value={`${booking.totalPrice.toLocaleString('ar-EG')} ج.م`} accent="text-[#0A2342]" />
                 </div>
@@ -1346,7 +1351,7 @@ export default function UserBookings({
                       <button
                         onClick={() => {
                           const link = `${window.location.origin}/?join=${booking.id}`;
-                          const msg = `سلام ونعمة 🙏\nانضم لقائمة مشاركين خلوة «${booking.houseName}» (${booking.checkIn} → ${booking.checkOut}) واكتب اسمك من هنا:\n${link}`;
+                          const msg = `سلام ونعمة 🙏\nانضم لقائمة مشاركين خلوة «${booking.houseName}» (${arabicDateRange(booking.checkIn, booking.checkOut)}) واكتب اسمك من هنا:\n${link}`;
                           window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
                         }}
                         className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"

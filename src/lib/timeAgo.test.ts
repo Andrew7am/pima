@@ -20,32 +20,41 @@ describe('timeAgo', () => {
     expect(timeAgo(ago(59 * SEC))).toBe('الآن');
   });
 
-  // Arabic pluralises on 1 / 2 / 3-10 / 11+, so each bucket needs its own form —
-  // a bare `منذ ${n} دقيقة` reads wrong for most values.
+  // Arabic agreement runs 1 / 2 / 3-10 / 11+, and the numeral itself is
+  // Arabic-Indic — the same digits the rest of the app prints.
   it('uses the singular, dual, and plural forms for minutes', () => {
     at(NOW);
     expect(timeAgo(ago(1 * MIN))).toBe('منذ دقيقة');
     expect(timeAgo(ago(2 * MIN))).toBe('منذ دقيقتين');
-    expect(timeAgo(ago(5 * MIN))).toBe('منذ 5 دقائق');
-    expect(timeAgo(ago(20 * MIN))).toBe('منذ 20 دقيقة');
+    expect(timeAgo(ago(5 * MIN))).toBe('منذ ٥ دقائق');
+    expect(timeAgo(ago(20 * MIN))).toBe('منذ ٢٠ دقيقة');
   });
 
   it('uses the singular, dual, and plural forms for hours', () => {
     at(NOW);
     expect(timeAgo(ago(1 * HOUR))).toBe('منذ ساعة');
     expect(timeAgo(ago(2 * HOUR))).toBe('منذ ساعتين');
-    expect(timeAgo(ago(9 * HOUR))).toBe('منذ 9 ساعات');
+    expect(timeAgo(ago(9 * HOUR))).toBe('منذ ٩ ساعات');
   });
 
   it('rolls over to days, months, and years', () => {
     at(NOW);
     expect(timeAgo(ago(1 * DAY))).toBe('منذ يوم');
-    expect(timeAgo(ago(3 * DAY))).toBe('منذ 3 أيام');
+    expect(timeAgo(ago(3 * DAY))).toBe('منذ ٣ أيام');
     expect(timeAgo(ago(60 * DAY))).toBe('منذ شهرين');
     expect(timeAgo(ago(400 * DAY))).toBe('منذ سنة');
   });
 
-  // Clock skew between the DB and the device must not produce "منذ -3 دقائق".
+  // Regression: the string used to be built with a template literal, which
+  // printed Latin digits beside Arabic-Indic ones on the same screen.
+  it('never emits a Latin digit', () => {
+    at(NOW);
+    for (const ms of [5 * MIN, 20 * MIN, 9 * HOUR, 3 * DAY, 200 * DAY]) {
+      expect(timeAgo(ago(ms))).not.toMatch(/[0-9]/);
+    }
+  });
+
+  // Clock skew between the DB and the device must not produce "منذ -٣ دقائق".
   it('never reports a negative age for a future timestamp', () => {
     at(NOW);
     expect(timeAgo(ago(-5 * MIN))).toBe('الآن');
