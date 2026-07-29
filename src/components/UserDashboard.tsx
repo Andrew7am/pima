@@ -344,8 +344,11 @@ export default function UserDashboard({
       <div className="relative pb-7">
         <SummerOfferCarousel slides={carouselSlides} live={bannerLive} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
 
-        <div className="absolute inset-x-2 -bottom-0 z-20 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <div className="flex items-center gap-1 bg-white/85 backdrop-blur-xl border border-white/70 rounded-full shadow-[0_8px_24px_rgba(45,45,36,0.14)] p-1.5">
+        <div className="absolute inset-x-3 -bottom-0 z-20 animate-in fade-in slide-in-from-bottom-3 duration-500">
+          {/* Frosted white, not a flat panel: a saturated blur over the photo is
+              what makes it read as glass, and a wide low-opacity shadow is what
+              lifts it off the banner. Both are what the approved bar has. */}
+          <div className="flex items-center gap-1 bg-white/75 backdrop-blur-2xl backdrop-saturate-150 border border-white/80 rounded-full shadow-[0_12px_32px_-6px_rgba(45,45,36,0.28),0_2px_6px_rgba(45,45,36,0.08)] ring-1 ring-black/[0.03] p-2">
             {/* DOM order is right-to-left on screen: map sits at the right end,
                 filter at the left, matching the approved layout. */}
             {onOpenMap && (

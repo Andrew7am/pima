@@ -141,7 +141,9 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
       // cqh: positions and text scale together, so a taller box on a wider
       // screen renders the same design, just bigger. h-44 is the mobile/app
       // size and must stay — it is what the layouts were designed against.
-      className="relative rounded-3xl overflow-hidden h-44 sm:h-52 lg:h-64 shadow-md bg-slate-900 group select-none"
+      // Only the frame is tuned to the approved hero — a deeper corner and a
+      // softer, wider shadow. Neither is a cqh unit, so no layout moves.
+      className="relative rounded-[28px] overflow-hidden h-44 sm:h-52 lg:h-64 shadow-[0_10px_30px_rgba(45,45,36,0.16)] bg-slate-900 group select-none"
     >
       {designed?.layout ? (
         // z-10 keeps the artwork and its CTA above the story tap zones.

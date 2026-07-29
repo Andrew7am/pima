@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   Compass, BookOpen, ShieldAlert, Coffee, Bell,
   Check, X, LogOut, UserCircle, Home, Map as MapIcon, Sparkles, MessageCircle
@@ -116,13 +116,21 @@ export default function WebLayout({
             painting straight over the open notifications panel, swallowing its
             clicks. z-40 keeps the bar above page content while leaving the
             fixed z-50 overlays (modals, the floating WhatsApp button) on top. */}
-        <header className="relative shrink-0 h-[68px] flex items-center justify-between px-4 bg-white border-b border-[var(--color-natural-border)] shadow-sm z-40">
+        <header className="relative shrink-0 h-[78px] flex items-center justify-between px-4 bg-white border-b border-[var(--color-natural-border)] shadow-sm z-40">
           <div className="absolute inset-x-0 flex flex-col items-center justify-center pointer-events-none">
-            <div className="flex items-center gap-1.5">
-              <Logo size={24} variant="icon" />
-              <span className="font-black text-[var(--color-natural-primary)] text-lg tracking-wide leading-none">بيما</span>
+            <div className="flex items-center gap-2">
+              <Logo size={32} variant="icon" />
+              <span className="font-black text-[#C5A059] text-[23px] tracking-wide leading-none">بيما</span>
             </div>
-            <span className="text-[9.5px] font-bold text-[#C5A059] tracking-wide mt-0.5">بيوت المؤتمرات والخلوات</span>
+            {/* Hairline and a diamond either side of the strapline, as in the
+                approved header — plain text alone read as an afterthought. */}
+            <span className="flex items-center gap-1.5 mt-1">
+              <span aria-hidden="true" className="w-5 h-px bg-gradient-to-l from-[#C5A059]/55 to-transparent" />
+              <span aria-hidden="true" className="w-[3px] h-[3px] rotate-45 bg-[#C5A059]/70" />
+              <span className="text-[9px] font-bold text-[#C5A059] tracking-[0.03em]">بيوت المؤتمرات والخلوات</span>
+              <span aria-hidden="true" className="w-[3px] h-[3px] rotate-45 bg-[#C5A059]/70" />
+              <span aria-hidden="true" className="w-5 h-px bg-gradient-to-r from-[#C5A059]/55 to-transparent" />
+            </span>
           </div>
 
           {!currentUser ? (
@@ -251,7 +259,7 @@ export default function WebLayout({
               onClick={() => setActiveScreen('profile')}
               title={currentUser.name}
               aria-label={`حسابي — ${currentUser.name}`}
-              className="w-9 h-9 rounded-full bg-[var(--color-natural-primary)] text-white flex items-center justify-center text-sm font-bold overflow-hidden shrink-0 ring-2 ring-white shadow-sm hover:opacity-90 transition-opacity cursor-pointer"
+              className="w-10 h-10 rounded-full bg-[var(--color-natural-primary)] text-white flex items-center justify-center text-sm font-bold overflow-hidden shrink-0 ring-2 ring-[#C5A059]/45 shadow-[0_2px_8px_rgba(45,45,36,0.14)] hover:opacity-90 transition-opacity cursor-pointer"
             >
               {currentUser.avatarUrl
                 ? <img src={currentUser.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
