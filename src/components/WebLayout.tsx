@@ -34,17 +34,18 @@ interface NavItem {
 // Labels stay to one short word: six items share a 375px bar, so each gets
 // ~54px of usable width. "استكشاف البيوت" measured 73px and wrapped to two
 // lines, making that one tab taller than the other five.
-// Five tabs, so الرئيسية sits third — dead centre of the bar. In RTL the first
-// entry is the RIGHTMOST tab, so the array reads right-to-left on screen:
-//   حجوزاتي · المحادثات · [الرئيسية] · الترفيه · حسابي
+// Five tabs, so الرئيسية sits third — dead centre of the bar, where it is drawn
+// as the raised gold disc. In RTL the FIRST entry is the RIGHTMOST tab, so this
+// array reads right-to-left and lands on screen as:
+//   الترفيه · المحادثات · [الرئيسية] · حجوزاتي · حسابي
 // الخريطة is deliberately NOT here: it is the same search drawn on a map, so it
 // lives as a button beside the search box on the browse screen. Freeing that
 // slot is also what lets an odd number of tabs centre the home tab exactly.
 const NAV_ITEMS: NavItem[] = [
-  { id: 'bookings',      label: 'حجوزاتي',         icon: <BookOpen className="w-5 h-5" />,  roles: ['individual', 'servant'] },
+  { id: 'entertainment', label: 'الترفيه',         icon: <Sparkles className="w-5 h-5" />,  roles: ['individual', 'servant'] },
   { id: 'messages',      label: 'المحادثات',       icon: <MessageCircle className="w-5 h-5" />, roles: ['individual', 'servant'] },
   { id: 'explore',       label: 'الرئيسية',        icon: <Compass className="w-5 h-5" />,   roles: ['individual', 'servant'] },
-  { id: 'entertainment', label: 'الترفيه',         icon: <Sparkles className="w-5 h-5" />,  roles: ['individual', 'servant'] },
+  { id: 'bookings',      label: 'حجوزاتي',         icon: <BookOpen className="w-5 h-5" />,  roles: ['individual', 'servant'] },
   { id: 'profile',       label: 'حسابي',           icon: <UserCircle className="w-5 h-5" />, roles: ['individual', 'servant'] },
   { id: 'owner_panel',   label: 'لوحة المالك',      icon: <Home className="w-5 h-5" />,      roles: ['owner'] },
   { id: 'meals',         label: 'قائمة الطعام',     icon: <Coffee className="w-5 h-5" />,    roles: ['owner'] },
@@ -103,18 +104,25 @@ export default function WebLayout({
       {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-        {/* Top Navbar */}
-        {/* `relative` is load-bearing, not decoration: a z-index on a static
+        {/* Top Navbar — the brand sits centred and absolutely positioned so it
+            stays optically centred no matter how wide the controls beside it
+            get. Controls live on one side only; the account actions that used
+            to crowd this bar are on the حسابي screen.
+
+            `relative` is load-bearing, not decoration: a z-index on a static
             element is inert, so this bar never actually formed a layer. Nothing
             below it carried a z-index either, so it went unnoticed — until the
             promo banner arrived with `z-10` on a positioned wrapper and started
             painting straight over the open notifications panel, swallowing its
             clicks. z-40 keeps the bar above page content while leaving the
             fixed z-50 overlays (modals, the floating WhatsApp button) on top. */}
-        <header className="shrink-0 h-14 flex items-center justify-between px-4 bg-white border-b border-[var(--color-natural-border)] shadow-sm relative z-40">
-          <div className="flex items-center gap-2 shrink-0">
-            <Logo size={28} variant="icon" />
-            <span className="font-bold text-[var(--color-natural-primary)] text-base tracking-wide">بيما</span>
+        <header className="relative shrink-0 h-[68px] flex items-center justify-between px-4 bg-white border-b border-[var(--color-natural-border)] shadow-sm z-40">
+          <div className="absolute inset-x-0 flex flex-col items-center justify-center pointer-events-none">
+            <div className="flex items-center gap-1.5">
+              <Logo size={24} variant="icon" />
+              <span className="font-black text-[var(--color-natural-primary)] text-lg tracking-wide leading-none">بيما</span>
+            </div>
+            <span className="text-[9.5px] font-bold text-[#C5A059] tracking-wide mt-0.5">بيوت المؤتمرات والخلوات</span>
           </div>
 
           {!currentUser ? (
@@ -128,7 +136,7 @@ export default function WebLayout({
               <span>تسجيل الدخول / إنشاء حساب</span>
             </button>
           ) : (
-          <div className="flex items-center gap-1">
+          <div className="relative z-10 flex items-center gap-1">
             {/* Notifications */}
             <div className="relative">
               <button
@@ -236,26 +244,18 @@ export default function WebLayout({
               )}
             </div>
 
-            {/* User avatar */}
-            <div className="flex items-center gap-2 pl-1">
-              <div className="text-left hidden sm:block">
-                <p className="text-xs font-semibold text-[var(--color-natural-text)] leading-tight">{currentUser.name}</p>
-                <p className="text-[10px] text-[var(--color-natural-secondary)]">{roleLabel[currentUser.role]}</p>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-[var(--color-natural-primary)] text-white flex items-center justify-center text-sm font-bold overflow-hidden shrink-0">
-                {currentUser.avatarUrl
-                  ? <img src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                  : currentUser.name.charAt(0)}
-              </div>
-            </div>
-
-            {/* Logout */}
+            {/* Avatar — opens حسابي, which is where signing out now lives. The
+                name/role block and the logout icon were removed from the bar to
+                leave the brand its own space. */}
             <button
-              onClick={onLogout}
-              title="تسجيل الخروج"
-              className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
+              onClick={() => setActiveScreen('profile')}
+              title={currentUser.name}
+              aria-label={`حسابي — ${currentUser.name}`}
+              className="w-9 h-9 rounded-full bg-[var(--color-natural-primary)] text-white flex items-center justify-center text-sm font-bold overflow-hidden shrink-0 ring-2 ring-white shadow-sm hover:opacity-90 transition-opacity cursor-pointer"
             >
-              <LogOut className="w-5 h-5" />
+              {currentUser.avatarUrl
+                ? <img src={currentUser.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                : currentUser.name.charAt(0)}
             </button>
           </div>
           )}
@@ -275,33 +275,56 @@ export default function WebLayout({
         // The inset keeps the tap targets clear of the Android gesture bar —
         // same treatment the owner dashboard's own bar already has.
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-        className={`shrink-0 bg-white border-t border-[var(--color-natural-border)] shadow-[0_-2px_8px_rgba(0,0,0,0.05)] flex items-stretch z-10 ${
+        className={`shrink-0 bg-white border-t border-[var(--color-natural-border)] rounded-t-3xl shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex items-stretch z-10 ${
           currentUser?.role === 'owner' && activeScreen === 'owner_panel' ? 'hidden' : ''
         }`}
       >
         {visibleNav.map(item => {
           const isActive = activeScreen === item.id;
           const badge = item.id === 'messages' ? messagesUnreadCount : 0;
+          // The home tab is the primary action, so on the full bar it is drawn
+          // as a raised gold disc rather than another flat icon. It stays inside
+          // the bar's box — the app shell clips overflow, so a button that broke
+          // the top edge would simply be cut off.
+          const isPrimary = item.id === 'explore' && visibleNav.length >= 5;
+
+          if (isPrimary) {
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveScreen(item.id)}
+                title={item.label}
+                aria-current={isActive ? 'page' : undefined}
+                className="relative flex-1 flex flex-col items-center justify-start gap-1 pt-1.5 pb-1.5 px-0.5 min-h-[62px] text-center cursor-pointer group"
+              >
+                <span
+                  className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ring-4 ring-white transition-transform duration-150 group-active:scale-95 ${
+                    isActive
+                      ? 'bg-gradient-to-b from-[#E0C48A] to-[#B8944E] text-[#2D2D24]'
+                      : 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#4A4A3A]'
+                  }`}
+                >
+                  <Home className="w-6 h-6" />
+                </span>
+                <span className={`text-[9.5px] leading-tight whitespace-nowrap ${isActive ? 'font-black text-[var(--color-natural-text)]' : 'font-bold text-[var(--color-natural-secondary)]'}`}>
+                  {item.label}
+                </span>
+              </button>
+            );
+          }
+
           return (
             <button
               key={item.id}
               onClick={() => setActiveScreen(item.id)}
               title={item.label}
               aria-current={isActive ? 'page' : undefined}
-              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 pt-2 pb-1.5 px-0.5 min-h-[52px] text-center transition-colors duration-150
+              className={`relative flex-1 flex flex-col items-center justify-center gap-1 pt-2 pb-1.5 px-0.5 min-h-[62px] text-center transition-colors duration-150 cursor-pointer
                 ${isActive
                   ? 'text-[var(--color-natural-primary)]'
                   : 'text-[var(--color-natural-secondary)] hover:text-[var(--color-natural-text)]'
                 }`}
             >
-              {/* A colour change alone is a weak active cue at this size —
-                  the bar above the icon is what reads at a glance. */}
-              <span
-                aria-hidden="true"
-                className={`absolute top-0 inset-x-3 h-[2.5px] rounded-b-full transition-opacity ${
-                  isActive ? 'bg-[var(--color-natural-primary)] opacity-100' : 'opacity-0'
-                }`}
-              />
               <span className="relative">
                 {item.icon}
                 {badge > 0 && (
@@ -310,7 +333,7 @@ export default function WebLayout({
                   </span>
                 )}
               </span>
-              {/* Never wrap: one tall tab among five short ones is what made
+              {/* Never wrap: one tall tab among four short ones is what made
                   the bar look uneven. */}
               <span className={`text-[9.5px] leading-tight whitespace-nowrap ${isActive ? 'font-black' : 'font-bold'}`}>
                 {item.label}
