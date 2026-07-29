@@ -774,14 +774,68 @@ export default function UserBookings({
             </div>
           )}
 
-          {/* The featured card's own journey line, so the next trip's stage is
-              readable without opening it. Same buildBookingJourney as the
-              detail sheet — one source, drawn compactly. */}
-          {nextBooking && !search && tab === 'all' && (
-            <div className="bg-white rounded-3xl border border-[#EDE7DA] p-3.5 shadow-sm">
-              <BookingJourney booking={nextBooking} payments={payments} variant="bar" />
-            </div>
-          )}
+          {/* The trip being waited on, given the whole width. Everything here
+              is read from the booking — no placeholder art, so a house with no
+              photo gets the brand gradient rather than a broken image. */}
+          {nextBooking && !search && tab === 'all' && (() => {
+            const h = houses.find((x) => x.id === nextBooking.houseId);
+            const cover = h?.images?.[0];
+            const badge = getStatusBadge(nextBooking.status);
+            const BadgeIcon = badge.icon;
+            const d = daysUntil(nextBooking.checkIn);
+            return (
+              <div className="space-y-0">
+                <div className="relative rounded-3xl overflow-hidden h-52 shadow-md bg-gradient-to-br from-[#0A2342] to-[#123E75] text-white">
+                  {cover && <img src={cover} alt="" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/25" />
+
+                  <span className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 text-[#2D2D24] text-[9.5px] font-black px-2.5 py-1 rounded-full shadow-sm">
+                    <Sparkles className="w-3 h-3 text-[#C5A059]" /> الحجز القادم
+                  </span>
+
+                  {d >= 0 && (
+                    <div className="absolute top-14 right-3 bg-black/55 backdrop-blur-sm rounded-2xl px-3 py-2 text-center">
+                      <div className="text-[8.5px] font-bold text-white/70 leading-none">تبقى</div>
+                      <div className="text-xl font-black leading-tight">{d.toLocaleString('ar-EG')}</div>
+                      <div className="text-[8.5px] font-bold text-white/70 leading-none">{d === 1 ? 'يوم' : d === 2 ? 'يومين' : 'أيام'}</div>
+                    </div>
+                  )}
+
+                  <div className="absolute inset-x-0 bottom-0 p-4 space-y-1.5">
+                    <h3 className="text-[15px] font-black leading-tight">{nextBooking.houseName}</h3>
+                    {(h?.governorate || h?.address) && (
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-white/80">
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{[h?.address, h?.governorate].filter(Boolean).join(' - ')}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 text-[10px] font-bold text-white/85">
+                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{nextBooking.checkIn} → {nextBooking.checkOut}</span>
+                      <span className="flex items-center gap-1"><Users className="w-3 h-3" />{nextBooking.guestsCount.toLocaleString('ar-EG')} فرد</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 pt-1.5">
+                      <span className="text-[17px] font-black">{nextBooking.totalPrice.toLocaleString('ar-EG')} <span className="text-[11px]">ج.م</span></span>
+                      <span className={`flex items-center gap-1 text-[9.5px] font-black px-2.5 py-1 rounded-full ${badge.color}`}>
+                        <BadgeIcon className="w-3 h-3" /> {badge.label}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setDetailBookingId(nextBooking.id)}
+                      className="mt-1 flex items-center gap-1 bg-white/95 hover:bg-white text-[#2D2D24] text-[10px] font-black px-3 py-1.5 rounded-full shadow-sm cursor-pointer transition-colors"
+                    >
+                      عرض التفاصيل <ChevronLeft className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Its journey, straight under the card. Same buildBookingJourney
+                    as the detail sheet — one source, drawn compactly. */}
+                <div className="bg-white rounded-b-3xl border border-t-0 border-[#EDE7DA] px-3.5 pt-3 pb-3.5 -mt-3 relative z-10 shadow-sm">
+                  <BookingJourney booking={nextBooking} payments={payments} variant="bar" />
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="flex items-center justify-between px-1">
             <span className="text-[12px] font-black text-[#2D2D24]">جميع الحجوزات</span>
@@ -876,34 +930,59 @@ export default function UserBookings({
                   }}
                   className="w-full bg-white rounded-3xl border border-[#D6D6C2] shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer text-right overflow-hidden"
                 >
-                  <div className="p-3.5 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="text-[13px] font-black text-[#2E2E24] truncate">{booking.houseName}</h3>
-                        <span className="text-[9px] text-[#8A8A70] font-bold tracking-wider">#{booking.id.toUpperCase()}</span>
-                      </div>
-                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9.5px] font-black shrink-0 ${badge.color}`}>
-                        <StatusIcon className="w-3 h-3 shrink-0" />
-                        {badge.label}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-3 text-[10.5px] font-bold text-[#5A5A40]">
-                      <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5 text-[#BCBC9D]" />{booking.checkIn} → {booking.checkOut}</span>
-                      <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-[#BCBC9D]" />{booking.guestsCount.toLocaleString('ar-EG')}</span>
-                      {dLeftCompact >= 0 && dLeftCompact <= 7 && (
-                        <span className="text-[9.5px] font-black text-[#0A2342] bg-[#0A2342]/5 rounded-full px-2 py-0.5">
-                          {dLeftCompact === 0 ? 'اليوم 🎉' : `بعد ${dLeftCompact.toLocaleString('ar-EG')} يوم`}
-                        </span>
+                  {/* Photo first: a place is recognised by how it looks long
+                      before its name is read. Houses with no photo keep the
+                      brand gradient rather than an empty grey box. */}
+                  <div className="p-3 flex items-center gap-3">
+                    <div className="w-[76px] h-[76px] rounded-2xl overflow-hidden shrink-0 bg-gradient-to-br from-[#0A2342] to-[#123E75] relative">
+                      {bookingHouse?.images?.[0] && (
+                        <img src={bookingHouse.images[0]} alt="" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#D6D6C2]/50">
-                      <span className="text-[12.5px] font-black text-[#0A2342]">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</span>
-                      <span className={`flex items-center gap-0.5 text-[10px] font-black ${nextStep.cls}`}>
-                        {nextStep.label}
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                      </span>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-[12.5px] font-black text-[#2E2E24] truncate">{booking.houseName}</h3>
+                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9px] font-black shrink-0 ${badge.color}`}>
+                          <StatusIcon className="w-3 h-3 shrink-0" />
+                          {badge.label}
+                        </span>
+                      </div>
+
+                      {(bookingHouse?.governorate || bookingHouse?.address) && (
+                        <div className="flex items-center gap-1 text-[9.5px] font-bold text-[#8A8A70]">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{[bookingHouse?.address, bookingHouse?.governorate].filter(Boolean).join(' - ')}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2.5 text-[9.5px] font-bold text-[#5A5A40]">
+                        <span className="flex items-center gap-1"><Users className="w-3 h-3 text-[#BCBC9D]" />{booking.guestsCount.toLocaleString('ar-EG')} فرد</span>
+                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-[#BCBC9D]" />{booking.checkIn} → {booking.checkOut}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-0.5">
+                        <div className="min-w-0">
+                          <span className="text-[12.5px] font-black text-[#0A2342]">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</span>
+                          {/* What is still owed, or that nothing is — the number
+                              a guest scans this row for. */}
+                          <span className={`block text-[9px] font-black ${booking.depositPaid ? 'text-emerald-700' : 'text-[#B8944E]'}`}>
+                            {booking.depositPaid
+                              ? 'العربون مدفوع'
+                              : `المتبقي ${Math.max(0, booking.totalPrice - (booking.depositPaid ? booking.depositAmount : 0)).toLocaleString('ar-EG')} ج.م`}
+                          </span>
+                        </div>
+                        <span className={`flex items-center gap-0.5 text-[9.5px] font-black shrink-0 ${nextStep.cls}`}>
+                          {nextStep.label}
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </span>
+                      </div>
+
+                      {dLeftCompact >= 0 && dLeftCompact <= 7 && (
+                        <span className="inline-block text-[9px] font-black text-[#0A2342] bg-[#0A2342]/5 rounded-full px-2 py-0.5">
+                          {dLeftCompact === 0 ? 'اليوم 🎉' : `بعد ${dLeftCompact.toLocaleString('ar-EG')} يوم`}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </button>
