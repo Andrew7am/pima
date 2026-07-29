@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import {
-  Compass, BookOpen, ShieldAlert, Coffee, Bell,
+  Compass, BookOpen, CalendarDays, ShieldAlert, Coffee, Bell,
   Check, X, LogOut, UserCircle, Home, Map as MapIcon, Sparkles, MessageCircle
 } from 'lucide-react';
 import { User, AppNotification } from '../types';
@@ -45,7 +45,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'entertainment', label: 'الترفيه',         icon: <Sparkles className="w-5 h-5" />,  roles: ['individual', 'servant'] },
   { id: 'messages',      label: 'المحادثات',       icon: <MessageCircle className="w-5 h-5" />, roles: ['individual', 'servant'] },
   { id: 'explore',       label: 'الرئيسية',        icon: <Compass className="w-5 h-5" />,   roles: ['individual', 'servant'] },
-  { id: 'bookings',      label: 'حجوزاتي',         icon: <BookOpen className="w-5 h-5" />,  roles: ['individual', 'servant'] },
+  { id: 'bookings',      label: 'حجوزاتي',         icon: <CalendarDays className="w-5 h-5" />, roles: ['individual', 'servant'] },
   { id: 'profile',       label: 'حسابي',           icon: <UserCircle className="w-5 h-5" />, roles: ['individual', 'servant'] },
   { id: 'owner_panel',   label: 'لوحة المالك',      icon: <Home className="w-5 h-5" />,      roles: ['owner'] },
   { id: 'meals',         label: 'قائمة الطعام',     icon: <Coffee className="w-5 h-5" />,    roles: ['owner'] },
@@ -116,7 +116,11 @@ export default function WebLayout({
             painting straight over the open notifications panel, swallowing its
             clicks. z-40 keeps the bar above page content while leaving the
             fixed z-50 overlays (modals, the floating WhatsApp button) on top. */}
-        <header className="relative shrink-0 h-[78px] flex items-center justify-between px-4 bg-white border-b border-[var(--color-natural-border)] shadow-sm z-40">
+        {/* justify-end, not between: the brand is absolutely positioned and so
+            takes part in no flex layout, which left the single control group
+            sitting at flex-start — the right edge in RTL, right up against the
+            centred logo. Pushed to the end it clears the brand entirely. */}
+        <header className="relative shrink-0 h-[78px] flex items-center justify-end px-4 bg-white border-b border-[var(--color-natural-border)] shadow-sm z-40">
           <div className="absolute inset-x-0 flex flex-col items-center justify-center pointer-events-none">
             <div className="flex items-center gap-2">
               <Logo size={32} variant="icon" />
@@ -264,7 +268,7 @@ export default function WebLayout({
               onClick={() => setActiveScreen('profile')}
               title={currentUser.name}
               aria-label={`حسابي — ${currentUser.name}`}
-              className="w-10 h-10 rounded-full bg-[var(--color-natural-primary)] text-white flex items-center justify-center text-sm font-bold overflow-hidden shrink-0 ring-2 ring-[#C5A059]/45 shadow-[0_2px_8px_rgba(45,45,36,0.14)] hover:opacity-90 transition-opacity cursor-pointer"
+              className="w-9 h-9 rounded-full bg-[var(--color-natural-primary)] text-white flex items-center justify-center text-sm font-bold overflow-hidden shrink-0 ring-2 ring-[#C5A059]/45 shadow-[0_2px_8px_rgba(45,45,36,0.14)] hover:opacity-90 transition-opacity cursor-pointer"
             >
               {currentUser.avatarUrl
                 ? <img src={currentUser.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />

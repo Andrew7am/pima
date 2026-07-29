@@ -407,41 +407,41 @@ export default function UserDashboard({
             id="loyalty-card-trigger"
             type="button"
             onClick={onSelectRewards}
-            className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-3 py-2.5 shadow-[0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_4px_12px_rgba(45,45,36,0.08)] transition-shadow text-right cursor-pointer"
+            className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-2.5 py-2.5 shadow-[0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_4px_12px_rgba(45,45,36,0.08)] transition-shadow text-right cursor-pointer"
           >
             <span className="shrink-0 w-9 h-9 rounded-xl bg-[#F6F0E2] flex items-center justify-center">
               <Award className="w-4 h-4 text-[#C5A059]" />
             </span>
             <span className="min-w-0">
-              <span className="block text-[11px] font-black text-[#2D2D24] leading-tight">برنامج الولاء والنقاط</span>
-              <span className="block text-[9px] font-bold text-[#8A8A70] truncate">
+              <span className="block text-[10.5px] font-black text-[#2D2D24] leading-tight whitespace-nowrap">برنامج الولاء والنقاط</span>
+              <span className="block text-[8.5px] font-bold text-[#8A8A70] whitespace-nowrap">
                 رصيدك: <span className="text-[#C5A059] font-black">{(currentUser.points || 0).toLocaleString('ar-EG')}</span> نقطة
               </span>
             </span>
             <ChevronLeft aria-hidden="true" className="w-3.5 h-3.5 text-[#B5AF98] shrink-0 mr-auto transition-colors" />
           </button>
         ) : (
-          <div className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-3 py-2.5 shadow-[0_2px_8px_rgba(45,45,36,0.04)]">
+          <div className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-2.5 py-2.5 shadow-[0_2px_8px_rgba(45,45,36,0.04)]">
             <span className="shrink-0 w-9 h-9 rounded-xl bg-[#F6F0E2] flex items-center justify-center">
               <Award className="w-4 h-4 text-[#C5A059]" />
             </span>
             <span className="min-w-0">
-              <span className="block text-[11px] font-black text-[#2D2D24] leading-tight">برنامج الولاء والنقاط</span>
-              <span className="block text-[9px] font-bold text-[#8A8A70] truncate">سجّل واكسب نقاط مع كل حجز</span>
+              <span className="block text-[10.5px] font-black text-[#2D2D24] leading-tight whitespace-nowrap">برنامج الولاء والنقاط</span>
+              <span className="block text-[8.5px] font-bold text-[#8A8A70] whitespace-nowrap">سجّل واكسب نقاط</span>
             </span>
           </div>
         )}
 
         <a
           href="/dalil/"
-          className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-3 py-2.5 shadow-[0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_4px_12px_rgba(45,45,36,0.08)] transition-shadow group"
+          className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-2.5 py-2.5 shadow-[0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_4px_12px_rgba(45,45,36,0.08)] transition-shadow group"
         >
           <span className="shrink-0 w-9 h-9 rounded-xl bg-[#F6F0E2] flex items-center justify-center">
             <BookOpen className="w-4 h-4 text-[#C5A059]" />
           </span>
-          <span className="min-w-0">
-            <span className="block text-[11px] font-black text-[#2D2D24] leading-tight">دليل المستخدم</span>
-            <span className="block text-[9px] font-bold text-[#8A8A70] truncate">تعرف على كل المزايا</span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[10.5px] font-black text-[#2D2D24] leading-tight whitespace-nowrap">دليل المستخدم</span>
+            <span className="block text-[8.5px] font-bold text-[#8A8A70] whitespace-nowrap">تعرف على كل المزايا</span>
           </span>
           <ChevronLeft aria-hidden="true" className="w-3.5 h-3.5 text-[#B5AF98] shrink-0 mr-auto group-hover:text-[#C5A059] transition-colors" />
         </a>
@@ -543,7 +543,7 @@ export default function UserDashboard({
                 <div className="absolute inset-y-0 right-0 w-36 bg-gradient-to-r from-white via-white/85 to-transparent" />
               </>
             )}
-            <div className="relative flex items-stretch justify-end divide-x divide-x-reverse divide-[#EDE7DA] py-2.5 pl-3 pr-20">
+            <div className="relative flex items-stretch justify-start divide-x divide-x-reverse divide-[#EDE7DA] py-2.5 pl-3 pr-24">
               {from !== null && (
                 <div className="flex flex-col items-center gap-0.5 px-2.5">
                   <span className="text-[8.5px] font-bold text-[#8A8A70] leading-none">ابتداءً من</span>

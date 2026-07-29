@@ -137,15 +137,15 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
     <div
       ref={track.ref}
       onClickCapture={track.onClickCapture}
-      // Fixed 5:2 box, matching the approved hero, capped so a desktop does not
-      // turn it into a billboard. It replaces the old h-44/52/64 steps, which
-      // changed the shape of the frame at every breakpoint.
+      // 4:3 box: in the approved hero the promo is the tallest thing on the
+      // screen and the search bar only clips its bottom edge. At 5:2 the box was
+      // so short that the floating bar covered most of the artwork.
       //
       // NOTE: height is not cosmetic here. BannerCanvas sizes every element in
-      // cqh, so the design inside scales with the box — at 375px this is ~137px
-      // against the old 176px, i.e. admin-designed banners now render about 22%
-      // smaller and may need re-checking in the banner studio.
-      className="relative rounded-[28px] overflow-hidden aspect-[5/2] max-h-64 shadow-[0_10px_30px_rgba(45,45,36,0.16)] bg-slate-900 group select-none"
+      // cqh, so the design inside scales with the box — at 375px this is ~257px
+      // against the 176px the layouts were drawn at, so admin-designed banners
+      // render larger and want a pass through the banner studio.
+      className="relative rounded-[28px] overflow-hidden aspect-[4/3] max-h-[300px] shadow-[0_10px_30px_rgba(45,45,36,0.16)] bg-slate-900 group select-none"
     >
       {designed?.layout ? (
         // z-10 keeps the artwork and its CTA above the story tap zones.
