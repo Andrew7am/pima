@@ -108,6 +108,50 @@ body {
   will-change: transform;
 }
 
+/* ── Chat module ──────────────────────────────────────────────────────────
+   Presence dot: one slow breath every 4s. A blink pulls the eye back every
+   time it fires; a 4s ease is on the edge of noticing, which is the point. */
+@keyframes pima-pulse-slow {
+  0%, 70%, 100% { transform: scale(1);    opacity: 1; }
+  85%           { transform: scale(1.18); opacity: 0.85; }
+}
+.pima-pulse-slow { animation: pima-pulse-slow 4s var(--motion-ease) infinite; }
+
+/* Typing dots — opacity and scale together, staggered by inline delay. */
+@keyframes pima-typing-dot {
+  0%, 60%, 100% { opacity: 0.35; transform: scale(0.85); }
+  30%           { opacity: 1;    transform: scale(1); }
+}
+.pima-typing-dot { animation: pima-typing-dot 1.2s var(--motion-ease) infinite; }
+
+/* Unread badge: one 1.0 → 1.12 → 1.0 beat when it appears, then still. */
+@keyframes pima-badge-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+.pima-badge-pop { animation: pima-badge-pop 250ms var(--motion-ease) 1; }
+
+/* Message entrance: rises into place, never slides in from a side. */
+@keyframes pima-bubble-in {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.pima-bubble-in { animation: pima-bubble-in var(--motion-normal) var(--motion-ease) both; }
+
+/* Chat wallpaper: the Pima cross at ~2%, large enough that it reads as paper
+   grain rather than a pattern, over the cream the rest of the app uses. */
+.pima-chat-bg {
+  background-color: #FBF9F4;
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(197,160,89,0.05), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cg fill='none' stroke='%232D2D24' stroke-opacity='0.02' stroke-width='2'%3E%3Cpath d='M36 22v28M22 36h28'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pima-pulse-slow, .pima-typing-dot, .pima-badge-pop, .pima-bubble-in { animation: none; }
+}
+
 /* Hero copy, the search bar and each revealed card share this one movement:
    12px up as it fades in. Distance stays small on purpose — past ~16px it
    stops reading as settling and starts reading as flying in. */

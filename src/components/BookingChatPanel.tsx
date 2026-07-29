@@ -1,14 +1,22 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ChevronRight, Send, Loader2, MessageCircle, Paperclip, X, FileText, Download, Reply, Trash2, Mic, Square } from 'lucide-react';
-import { BookingMessage } from '../types';
+﻿import React, { useEffect, useRef, useState } from 'react';
+import { ChevronRight, Send, Loader2, MessageCircle, Paperclip, X, FileText, Download, Reply, Trash2, Mic, Square, CalendarDays, Users, MapPin, Check, CheckCheck } from 'lucide-react';
+import { BookingMessage, Booking, RetreatHouse } from '../types';
 import { loadBookingMessages, sendBookingMessage, deleteBookingMessage, markBookingMessagesRead, subscribeToBookingMessages, subscribeToTypingPresence, OutgoingAttachment } from '../lib/bookingMessages';
 import { fileToAttachment } from '../lib/attachments';
+import { tapFeedback } from '../lib/haptics';
+import { PimaAvatar, PimaStatusBadge, PimaTimeline, PimaDateCapsule, PimaTypingDots, PimaQuickReplyChip } from './chat/primitives';
 
 interface BookingChatPanelProps {
   bookingId: string;
   // When set, the thread unifies messages across all of these bookings (one
   // chat per guest, not per booking). New messages are sent on the first id.
   bookingIds?: string[];
+  /** Drives the booking card and its timeline. Optional: the owner panel opens
+   *  threads without it and simply gets no card. */
+  booking?: Booking;
+  house?: RetreatHouse;
+  /** Header cover art — the house photo the list already resolved. */
+  coverUrl?: string;
   currentUserId: string;
   title: string;
   subtitle?: string;
@@ -41,7 +49,26 @@ function formatTime(iso: string): string {
 
 const TYPING_IDLE_MS = 2000;
 
-export default function BookingChatPanel({ bookingId, bookingIds, currentUserId, title, subtitle, onBack, variant = 'guest', heightClass = 'h-[60vh]' }: BookingChatPanelProps) {
+// Short Arabic date for the timeline and the booking card.
+const shortDate = (iso?: string) =>
+  iso ? new Date(iso).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' }) : '';
+
+// Day label above a group of messages. "اليوم" and "أمس" carry more than a
+// date does; anything older gets the weekday, which is how people actually
+// refer to recent conversations.
+const dayLabel = (iso: string): string => {
+  const d = new Date(iso); const now = new Date();
+  const midnight = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((midnight(now) - midnight(d)) / 86400000);
+  if (diff === 0) return 'اليوم';
+  if (diff === 1) return 'أمس';
+  if (diff < 7) return d.toLocaleDateString('ar-EG', { weekday: 'long' });
+  return d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' });
+};
+
+const QUICK_REPLIES = ['شكرًا', 'تمام', 'أرسل الموقع', 'ساعات الوصول'];
+
+export default function BookingChatPanel({ bookingId, bookingIds, booking, house, coverUrl, currentUserId, title, subtitle, onBack, variant = 'guest', heightClass = 'h-[60vh]' }: BookingChatPanelProps) {
   const t = THEME[variant];
   // One or many threads (unified per-guest view uses many). Sending / typing
   // always target the first (most-recent) booking.
@@ -219,22 +246,80 @@ export default function BookingChatPanel({ bookingId, bookingIds, currentUserId,
     recorderRef.current?.stop();
   };
 
+  const nights = booking && booking.checkIn && booking.checkOut
+    ? Math.max(0, Math.round((new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86400000))
+    : 0;
+
+  // The booking's life so far, read from fields that actually exist on the
+  // record. A step is done when the fact behind it is true, never on a guess:
+  // an unpaid booking shows no paid mark, and arrival is only ticked once the
+  // guest has really checked in — a date that has passed is not an arrival.
+  const confirmed = booking?.status === 'approved' || booking?.status === 'completed';
+  const paid = !!booking && (booking.depositPaid || booking.paymentStatus === 'paid_deposit' || booking.paymentStatus === 'paid_full');
+  const timeline = booking ? [
+    { label: 'الإنشاء', date: shortDate(booking.createdAt), done: true },
+    { label: 'مؤكد', date: confirmed ? '' : undefined, done: confirmed },
+    { label: 'تم الدفع', date: paid ? '' : undefined, done: paid },
+    { label: 'الوصول', date: shortDate(booking.checkIn), done: !!booking.checkedInAt },
+  ] : [];
+
   return (
-    <div className={`${t.surface} rounded-3xl border ${t.border} flex flex-col ${heightClass} overflow-hidden`}>
-      <div className={`flex items-center justify-between shrink-0 px-4 py-3 border-b ${t.border} ${t.headerBg} text-white`}>
-        {onBack ? (
-          <button type="button" onClick={onBack} className="flex items-center gap-1 text-[11px] font-bold text-white/80 hover:text-white transition-colors cursor-pointer">
-            <ChevronRight className="w-4 h-4" />
-            <span>رجوع</span>
-          </button>
-        ) : <span />}
-        <div className="text-right">
-          <div className="text-xs font-black">{title}</div>
-          <div className={`text-[9.5px] ${t.accent} font-bold`}>{otherTyping ? 'يكتب الآن...' : subtitle}</div>
+    <div className={`rounded-3xl border ${t.border} flex flex-col ${heightClass} overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]`}>
+      {/* Header — the house photo behind a dark wash, so the thread opens on
+          the place being discussed rather than a coloured bar. */}
+      <div className="relative shrink-0 text-white">
+        {coverUrl && (
+          <>
+            <img src={coverUrl} alt="" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/55 to-black/70 backdrop-blur-[1px]" />
+          </>
+        )}
+        {!coverUrl && <div className={`absolute inset-0 ${t.headerBg}`} />}
+
+        <div className="relative flex items-center gap-2.5 px-3.5 py-3">
+          {onBack && (
+            <button type="button" onClick={() => { tapFeedback(); onBack(); }} aria-label="رجوع"
+              className="w-10 h-10 -mr-1.5 rounded-full flex items-center justify-center hover:bg-white/15 transition-colors pima-press">
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          )}
+          <PimaAvatar name={title} src={coverUrl} size={40} online ring />
+          <div className="min-w-0 flex-1 text-right">
+            <div className="text-[13px] font-black truncate">{title}</div>
+            <div className="text-[9.5px] font-bold text-white/75 flex items-center gap-1.5 justify-start">
+              {otherTyping ? <><PimaTypingDots /><span>يكتب الآن</span></> : <span>{subtitle}</span>}
+            </div>
+          </div>
         </div>
+
+        {/* Booking card, inside the header so the context never scrolls away. */}
+        {booking && (
+          <div className="relative px-3 pb-3">
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-white/70 p-3 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-[11.5px] font-black text-[#2D2D24]">حجزك القادم</span>
+                <PimaStatusBadge status={booking.status} />
+              </div>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {[
+                  { icon: <CalendarDays className="w-3.5 h-3.5" />, top: shortDate(booking.checkIn), bottom: 'الوصول' },
+                  { icon: <Users className="w-3.5 h-3.5" />, top: `${booking.guestsCount} فرد`, bottom: 'عدد الأفراد' },
+                  { icon: <MapPin className="w-3.5 h-3.5" />, top: `${nights} ${nights === 1 ? 'ليلة' : nights === 2 ? 'ليلتين' : 'ليالٍ'}`, bottom: 'المدة' },
+                ].map((c) => (
+                  <div key={c.bottom} className="flex flex-col items-center gap-0.5 bg-[#FBF9F4] rounded-xl py-2">
+                    <span className="text-[#C5A059]">{c.icon}</span>
+                    <span className="text-[10.5px] font-black text-[#2D2D24] leading-none">{c.top}</span>
+                    <span className="text-[8.5px] font-bold text-[#8A8A70]">{c.bottom}</span>
+                  </div>
+                ))}
+              </div>
+              <PimaTimeline steps={timeline} />
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className={`flex-1 overflow-y-auto p-4 space-y-2.5 ${t.bg}`}>
+      <div className="flex-1 overflow-y-auto p-4 space-y-2.5 pima-chat-bg">
         {loading ? (
           <div className={`flex items-center justify-center gap-2 ${t.secondary} py-8`}>
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -246,23 +331,33 @@ export default function BookingChatPanel({ bookingId, bookingIds, currentUserId,
             <p className={`text-xs ${t.secondary} font-bold`}>ابدأ المحادثة مع {title}</p>
           </div>
         ) : (
-          messages.map((m) => {
+          messages.map((m, mi) => {
             const isMine = m.senderId === currentUserId;
             const repliedTo = m.replyToId ? messages.find((x) => x.id === m.replyToId) : undefined;
+            // A capsule appears whenever the calendar day changes, so the
+            // reader always knows when a stretch of conversation happened.
+            const prev = mi > 0 ? messages[mi - 1] : undefined;
+            const showDay = !prev || dayLabel(prev.createdAt) !== dayLabel(m.createdAt);
+            const capsule = showDay ? <PimaDateCapsule key={`d-${m.id}`} label={dayLabel(m.createdAt)} /> : null;
             if (m.deletedAt) {
               return (
-                <div key={m.id} className={`max-w-[75%] ${isMine ? 'ml-auto' : 'mr-auto'}`}>
-                  <div dir="rtl" className={`rounded-2xl px-3.5 py-2.5 text-[11px] italic ${t.secondary} bg-white/50 border ${t.border} flex items-center gap-1.5`}>
-                    <Trash2 className="w-3 h-3" /> تم حذف هذه الرسالة
+                <React.Fragment key={m.id}>
+                  {capsule}
+                  <div className={`max-w-[75%] ${isMine ? 'ml-auto' : 'mr-auto'}`}>
+                    <div dir="rtl" className="rounded-2xl px-3.5 py-2.5 text-[11px] italic text-[#8A8A70] bg-white/60 border border-[#EDE7DA] flex items-center gap-1.5">
+                      <Trash2 className="w-3 h-3" /> تم حذف هذه الرسالة
+                    </div>
                   </div>
-                </div>
+                </React.Fragment>
               );
             }
             const repliedPreview = repliedTo
               ? (repliedTo.deletedAt ? 'رسالة محذوفة' : (repliedTo.content || (repliedTo.attachmentType === 'image' ? '📷 صورة' : repliedTo.attachmentType === 'file' ? '📎 ملف' : '')))
               : '';
             return (
-              <div key={m.id} className={`max-w-[75%] ${isMine ? 'ml-auto' : 'mr-auto'} space-y-1 group`}>
+              <React.Fragment key={m.id}>
+              {capsule}
+              <div className={`max-w-[78%] ${isMine ? 'ml-auto' : 'mr-auto'} space-y-1 group pima-bubble-in`}>
                 {/* Quoted message */}
                 {repliedTo && (
                   <div dir="rtl" className={`rounded-xl px-2.5 py-1.5 border-r-2 ${t.bg} border ${t.border} text-[10px]`}>
@@ -290,9 +385,15 @@ export default function BookingChatPanel({ bookingId, bookingIds, currentUserId,
                 )}
                 {m.content && (
                   <button type="button" onClick={() => setMenuFor(menuFor === m.id ? null : m.id)}
-                    dir="rtl" className={`block text-right rounded-2xl px-3.5 py-2.5 text-xs font-medium leading-relaxed shadow-sm w-full ${
-                    isMine ? `${t.primary} text-white` : `bg-white border ${t.border} ${t.text}`
-                  }`}>
+                    dir="rtl"
+                    // Asymmetric corner on the side the message comes from —
+                    // the tail, without drawing one. Outgoing is a soft gold
+                    // wash rather than a solid fill so the thread stays calm.
+                    className={`block text-right px-3.5 py-2.5 text-[12px] font-medium leading-relaxed w-full rounded-[22px] ${
+                      isMine
+                        ? 'rounded-bl-md bg-gradient-to-b from-[#F7EEDB] to-[#F2E4C9] text-[#3A3524] border border-[#E9D9B4] shadow-[0_2px_8px_rgba(184,148,78,0.12)]'
+                        : 'rounded-br-md bg-white text-[#2D2D24] border border-[#EDE7DA] shadow-[0_2px_8px_rgba(45,45,36,0.05)]'
+                    }`}>
                     {m.content}
                   </button>
                 )}
@@ -313,18 +414,34 @@ export default function BookingChatPanel({ bookingId, bookingIds, currentUserId,
                 )}
                 <div className={`flex items-center gap-1.5 px-1 ${isMine ? 'justify-start' : 'justify-end'}`}>
                   {!m.content && (
-                    <button type="button" onClick={() => setMenuFor(menuFor === m.id ? null : m.id)} className={`${t.secondary} opacity-60`}>
+                    <button type="button" onClick={() => setMenuFor(menuFor === m.id ? null : m.id)} aria-label="رد" className="text-[#B5AF98]">
                       <Reply className="w-3 h-3" />
                     </button>
                   )}
-                  <p className={`text-[9px] ${t.secondary} font-bold`}>{formatTime(m.createdAt)}</p>
+                  <p className="text-[9px] text-[#B5AF98] font-bold">{formatTime(m.createdAt)}</p>
+                  {/* Receipts only make sense on messages you sent. */}
+                  {isMine && (m.readAt
+                    ? <CheckCheck className="w-3.5 h-3.5 text-sky-500" aria-label="تمت القراءة" />
+                    : <Check className="w-3.5 h-3.5 text-[#B5AF98]" aria-label="تم الإرسال" />)}
                 </div>
               </div>
+              </React.Fragment>
             );
           })
         )}
         <div ref={bottomRef} />
       </div>
+
+      {/* Quick replies — the four things people actually type, one tap each.
+          Hidden once there is something in the box, where they would compete
+          with what the guest is already writing. */}
+      {!loading && !input.trim() && (
+        <div className="shrink-0 flex items-center gap-1.5 px-3 py-2 overflow-x-auto bg-white border-t border-[#EDE7DA] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {QUICK_REPLIES.map((q) => (
+            <PimaQuickReplyChip key={q} label={q} onClick={() => { tapFeedback(); setInput(q); }} />
+          ))}
+        </div>
+      )}
 
       {/* Replying-to preview */}
       {replyTo && (
