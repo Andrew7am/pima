@@ -27,7 +27,10 @@ export const DEFAULT_LAYOUT = (placement: PromoBanner['placement']): BannerLayou
   version: 1,
   background: 'linear-gradient(135deg,#0A2342 0%,#123E75 100%)',
   image: { fit: 'cover', scale: 1, x: 0, y: 0, opacity: placement === 'countdown' ? 0.3 : 0.8 },
-  overlay: { enabled: true, opacity: 0.45 },
+  // Lighter than it was (0.45): the hero is meant to show the property, and the
+  // right-to-left gradient already keeps the text side dark enough to read.
+  // Only applies to banners with no saved overlay — existing ones keep theirs.
+  overlay: { enabled: true, opacity: 0.34 },
   elements: [
     { id: 'badge', type: 'badge', visible: true, locked: false, x: 6, y: 12, fontSize: 10, color: '#C5A059', bg: '#0A2342', radius: 6, opacity: 1, align: 'start' },
     { id: 'title', type: 'title', visible: true, locked: false, x: 6, y: 32, width: 72, fontSize: 16, color: '#FFFFFF', opacity: 1, align: 'start' },

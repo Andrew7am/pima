@@ -137,15 +137,13 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
     <div
       ref={track.ref}
       onClickCapture={track.onClickCapture}
-      // 16:9. In the approved design the hero takes ~24% of screen height, which
-      // at a 375x812 phone is ~193px against a 343px content width — 1.78:1.
-      // Both earlier attempts overshot: 5:2 left it so short the floating search
-      // covered the artwork, 4:3 made it tall enough to crowd the text.
+      // 3:2 — about 18% taller than the 16:9 it replaces, which is what turns
+      // the hero from a wide strip into the focal point of the screen. At 375px
+      // that is 343x229.
       //
       // Height is not cosmetic here: BannerCanvas sizes elements in cqh, so the
-      // artwork scales with the box. 193px is only ~10% above the 176px the
-      // saved layouts were drawn against, which keeps them close to intended.
-      className="relative rounded-[28px] overflow-hidden aspect-video max-h-[260px] shadow-[0_10px_30px_rgba(45,45,36,0.16)] bg-slate-900 group select-none"
+      // artwork scales with the box, and saved layouts were drawn against 176px.
+      className="relative rounded-[32px] overflow-hidden aspect-[3/2] max-h-[320px] shadow-[0_16px_40px_-8px_rgba(45,45,36,0.28),0_4px_12px_rgba(45,45,36,0.08)] bg-slate-900 group select-none"
     >
       {designed?.layout ? (
         // z-10 keeps the artwork and its CTA above the story tap zones.
@@ -158,13 +156,20 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
         return (
           <div key={`${active}-${i}`} className="absolute inset-0 z-10 animate-in fade-in duration-500">
             {s.img
-              ? <img src={s.img} alt={s.title} className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
+              ? <img src={s.img} alt={s.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               : <div className="w-full h-full" style={{ background: s.gradient }} />}
-            <div className="absolute inset-0 bg-gradient-to-l from-black/60 via-black/30 to-transparent flex flex-col justify-center px-6 text-white text-right">
-              <span className={`text-[10px] font-extrabold tracking-wider self-start px-2 py-0.5 rounded-md mb-1.5 ${accent.badge}`}>{s.badge}</span>
+            {/* Lighter scrim than before (60/30 → 45/22, and the image no longer
+                sits at 80% opacity) so the property reads through it, kept as a
+                right-to-left gradient so the text side stays legible. */}
+            <div className="absolute inset-0 bg-gradient-to-l from-black/45 via-black/22 to-transparent" />
+            {/* Badge pinned to the top corner with its own breathing room; the
+                title block stays vertically centred and the CTA sits above the
+                pagination rather than on the bottom edge. */}
+            <span className={`absolute top-5 right-5 z-10 text-[10px] font-extrabold tracking-wider px-2.5 py-1 rounded-lg ${accent.badge}`}>{s.badge}</span>
+            <div className="absolute inset-0 flex flex-col justify-center px-7 pb-9 text-white text-right">
               <h2 className="text-base font-black leading-tight">{s.title}</h2>
               <p className="text-[11px] text-gray-200 font-bold mt-1">{s.sub}</p>
-              <div className="flex items-center gap-2 mt-3 flex-wrap">
+              <div className="flex items-center gap-2 mt-4 flex-wrap">
                 {/* A configured link turns the CTA into a real anchor; otherwise
                     it keeps firing the caller's onCta (scroll to listings). */}
                 {s.houseId && onOpenHouse ? (
@@ -192,18 +197,25 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
         );
       })}
 
-      {/* Story progress bars — one segment per slide, the active one filling */}
+      {/* Pagination — dots centred near the bottom edge rather than segmented
+          bars pinned across the top. The active dot still fills to show the
+          timer, so the story pacing is unchanged; only the form is quieter,
+          which is what keeps the top of the artwork clear. */}
       {items.length > 1 && (
-        <div className="absolute top-2 inset-x-2 flex items-center gap-1 z-20 pointer-events-none">
+        <div className="absolute bottom-4 inset-x-0 flex items-center justify-center gap-1.5 z-20 pointer-events-none">
           {items.map((_, i) => (
-            <div key={i} className="flex-1 h-[3px] rounded-full bg-white/30 overflow-hidden">
-              <div
-                className="h-full bg-white rounded-full"
-                style={{
-                  width: i < active ? '100%' : i === active ? `${progress}%` : '0%',
-                  transition: i === active ? 'width 50ms linear' : 'none',
-                }}
-              />
+            <div
+              key={i}
+              className={`h-1.5 rounded-full overflow-hidden transition-all duration-300 ${
+                i === active ? 'w-6 bg-white/35' : 'w-1.5 bg-white/45'
+              }`}
+            >
+              {i === active && (
+                <div
+                  className="h-full bg-white rounded-full"
+                  style={{ width: `${progress}%`, transition: 'width 50ms linear' }}
+                />
+              )}
             </div>
           ))}
         </div>
