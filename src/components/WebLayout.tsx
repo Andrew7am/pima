@@ -6,6 +6,7 @@ import {
 import { User, AppNotification } from '../types';
 import { timeAgo } from '../lib/timeAgo';
 import Logo from './Logo';
+import { tapFeedback } from '../lib/haptics';
 
 type Screen = 'explore' | 'bookings' | 'messages' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub' | 'random_match' | 'games_catalog' | 'rewards';
 
@@ -292,7 +293,7 @@ export default function WebLayout({
         // The inset keeps the tap targets clear of the Android gesture bar —
         // same treatment the owner dashboard's own bar already has.
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-        className={`shrink-0 bg-white border-t border-[var(--color-natural-border)] rounded-t-3xl shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex items-stretch z-10 ${
+        className={`shrink-0 bg-white border-t border-[var(--color-natural-border)] rounded-t-3xl shadow-[0_-8px_24px_rgba(0,0,0,0.08),0_-2px_6px_rgba(0,0,0,0.03)] flex items-stretch z-10 ${
           currentUser?.role === 'owner' && activeScreen === 'owner_panel' ? 'hidden' : ''
         }`}
       >
@@ -309,13 +310,13 @@ export default function WebLayout({
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveScreen(item.id)}
+                onClick={() => { tapFeedback(); setActiveScreen(item.id); }}
                 title={item.label}
                 aria-current={isActive ? 'page' : undefined}
-                className="relative flex-1 flex flex-col items-center justify-start gap-1 pt-1.5 pb-1.5 px-0.5 min-h-[62px] text-center cursor-pointer group"
+                className="relative flex-1 flex flex-col items-center justify-start gap-1 pt-1.5 pb-1.5 px-0.5 min-h-[62px] text-center cursor-pointer group pima-press"
               >
                 <span
-                  className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ring-4 ring-white transition-transform duration-150 group-active:scale-95 ${
+                  className={`w-12 h-12 rounded-full flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] ring-4 ring-white transition-transform duration-120 ease-[cubic-bezier(0.33,1,0.68,1)] ${
                     isActive
                       ? 'bg-gradient-to-b from-[#E0C48A] to-[#B8944E] text-[#2D2D24]'
                       : 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#4A4A3A]'
@@ -333,10 +334,10 @@ export default function WebLayout({
           return (
             <button
               key={item.id}
-              onClick={() => setActiveScreen(item.id)}
+              onClick={() => { tapFeedback(); setActiveScreen(item.id); }}
               title={item.label}
               aria-current={isActive ? 'page' : undefined}
-              className={`relative flex-1 flex flex-col items-center justify-center gap-1 pt-2 pb-1.5 px-0.5 min-h-[62px] text-center transition-colors duration-150 cursor-pointer
+              className={`relative flex-1 flex flex-col items-center justify-center gap-1 pt-2 pb-1.5 px-0.5 min-h-[62px] text-center transition-colors duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] cursor-pointer pima-press
                 ${isActive
                   ? 'text-[var(--color-natural-primary)]'
                   : 'text-[var(--color-natural-secondary)] hover:text-[var(--color-natural-text)]'

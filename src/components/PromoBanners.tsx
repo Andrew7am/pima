@@ -156,10 +156,13 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
       ) : items.map((s, i) => {
         if (i !== active) return null;
         const accent = ACCENTS[i % ACCENTS.length];
+        // Slides cross-fade rather than slide: the frame is fixed, so lateral
+        // movement inside it reads as the artwork sliding out of its own
+        // window. The key restarts the fade on every change.
         return (
-          <div key={`${active}-${i}`} className="absolute inset-0 z-10 animate-in fade-in duration-500">
+          <div key={`${active}-${i}`} className="absolute inset-0 z-10 pima-cross-fade">
             {s.img
-              ? <img src={s.img} alt={s.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              ? <img src={s.img} alt={s.title} className="w-full h-full object-cover pima-ken-burns" referrerPolicy="no-referrer" />
               : <div className="w-full h-full" style={{ background: s.gradient }} />}
             {/* Lighter scrim than before (60/30 → 45/22, and the image no longer
                 sits at 80% opacity) so the property reads through it, kept as a
@@ -169,21 +172,21 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
                 and left. Nothing sits outside it, and each corner owns one
                 thing — badge top-right, title centre-right, CTA bottom-right,
                 pagination bottom-centre, social bottom-left. */}
-            <span className={`absolute top-8 right-8 z-10 text-[10px] font-extrabold tracking-wider px-2.5 py-1 rounded-lg ${accent.badge}`}>{s.badge}</span>
+            <span className={`absolute top-8 right-8 z-10 text-[10px] font-extrabold tracking-wider px-2.5 py-1 rounded-lg pima-rise ${accent.badge}`}>{s.badge}</span>
 
-            <div className="absolute inset-y-0 right-8 left-8 flex flex-col justify-center text-white text-right">
+            <div className="absolute inset-y-0 right-8 left-8 flex flex-col justify-center text-white text-right pima-rise pima-rise-1">
               <h2 className="text-xl font-black leading-snug">{s.title}</h2>
               <p className="text-[12px] text-gray-200 font-bold mt-2 leading-relaxed">{s.sub}</p>
             </div>
 
             {/* CTA holds the bottom-right corner, clear of the bottom edge so
                 the floating search bar can clip the hero without covering it. */}
-            <div className="absolute bottom-14 right-8 z-10">
+            <div className="absolute bottom-14 right-8 z-10 pima-rise pima-rise-2">
               {/* A configured link turns the CTA into a real anchor; otherwise
                   it keeps firing the caller's onCta (scroll to listings). */}
               {s.houseId && onOpenHouse ? (
                 <button data-el="button" onClick={() => onOpenHouse(s.houseId!)}
-                  className={`text-[11px] font-black px-5 py-2 rounded-xl shadow-lg transition-all active:scale-95 ${accent.cta}`}>
+                  className={`text-[11px] font-black px-5 py-2 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press ${accent.cta}`}>
                   {s.cta}
                 </button>
               ) : s.href ? (
@@ -192,16 +195,16 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
                   href={s.href}
                   target="_blank"
                   rel="noopener noreferrer nofollow"
-                  className={`inline-block text-[11px] font-black px-5 py-2 rounded-xl shadow-lg transition-all active:scale-95 ${accent.cta}`}
+                  className={`inline-block text-[11px] font-black px-5 py-2 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press ${accent.cta}`}
                 >
                   {s.cta}
                 </a>
               ) : (
-                <button data-el="button" onClick={onCta} className={`text-[11px] font-black px-5 py-2 rounded-xl shadow-lg transition-all active:scale-95 ${accent.cta}`}>{s.cta}</button>
+                <button data-el="button" onClick={onCta} className={`text-[11px] font-black px-5 py-2 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press ${accent.cta}`}>{s.cta}</button>
               )}
             </div>
 
-            <div className="absolute bottom-14 left-6 z-10">
+            <div className="absolute bottom-14 left-6 z-10 pima-rise pima-rise-3">
               <BannerLinkIcons links={s.links} />
             </div>
           </div>

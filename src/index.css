@@ -71,3 +71,110 @@ body {
   50% { transform: translateY(240px); opacity: 1; }
 }
 
+/* ── Motion ────────────────────────────────────────────────────────────────
+   One easing curve and three durations, so nothing on the home screen moves
+   to its own rhythm. Every animation below is transform/opacity only: those
+   are the two properties the compositor can handle without laying out or
+   painting again, which is what keeps scrolling at 60fps on a mid-range
+   Android. Anything that would animate width, height, blur or box-shadow
+   during a scroll is deliberately absent.
+
+   The whole layer is disabled under prefers-reduced-motion — a Ken Burns pan
+   that never stops is exactly what that setting exists to turn off. */
+:root {
+  --motion-ease: cubic-bezier(0.33, 1, 0.68, 1); /* easeOutCubic */
+  --motion-fast: 180ms;
+  --motion-normal: 250ms;
+  --motion-slow: 350ms;
+}
+
+/* Hero artwork: 1.03 → 1.00 and back, slow enough to read as depth rather
+   than movement. alternate avoids the jump a looping one-way pan would make. */
+@keyframes pima-ken-burns {
+  from { transform: scale(1.03); }
+  to   { transform: scale(1.00); }
+}
+.pima-ken-burns {
+  animation: pima-ken-burns 11s var(--motion-ease) infinite alternate;
+  will-change: transform;
+}
+
+/* Scroll parallax. The hook only writes the custom property; the translate
+   lives here so the compositor owns it, and so an element that never gets the
+   property simply sits at 0 instead of jumping. Capped at 20px by the hook. */
+.pima-parallax {
+  transform: translate3d(0, var(--pima-parallax, 0px), 0);
+  will-change: transform;
+}
+
+/* Hero copy, the search bar and each revealed card share this one movement:
+   12px up as it fades in. Distance stays small on purpose — past ~16px it
+   stops reading as settling and starts reading as flying in. */
+@keyframes pima-rise {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.pima-rise {
+  animation: pima-rise var(--motion-slow) var(--motion-ease) both;
+}
+/* Stagger steps of 80ms, as specified. */
+.pima-rise-1 { animation-delay: 80ms; }
+.pima-rise-2 { animation-delay: 160ms; }
+.pima-rise-3 { animation-delay: 240ms; }
+
+/* Cards rise as they scroll in.
+
+   FAIL-VISIBLE BY DESIGN: .pima-reveal on its own does nothing. The hidden
+   state comes from .is-armed, which only JavaScript ever adds, and only once it
+   has an observer watching the element. So if the script fails, is blocked, or
+   the browser has no IntersectionObserver, every card renders normally — the
+   worst case is no animation, never an empty listing. Putting opacity:0 in the
+   stylesheet would have made an animation able to hide the content it decorates. */
+.pima-reveal.is-armed { opacity: 0; transform: translate3d(0, 16px, 0); }
+.pima-reveal.is-armed.is-in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition: opacity var(--motion-normal) var(--motion-ease),
+              transform var(--motion-normal) var(--motion-ease);
+}
+
+/* Slide changes cross-fade rather than slide, so nothing appears to move
+   sideways behind the fixed hero frame. */
+@keyframes pima-cross-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.pima-cross-fade { animation: pima-cross-fade 800ms var(--motion-ease) both; }
+
+/* Press feedback for anything tappable. 0.97 is small enough to feel like
+   pressure rather than a shrink. */
+.pima-press { transition: transform 120ms var(--motion-ease); }
+.pima-press:active { transform: scale(0.97); }
+
+/* Loading shimmer — a slow sweep, not a pulse. */
+@keyframes pima-shimmer {
+  from { transform: translate3d(-100%, 0, 0); }
+  to   { transform: translate3d(100%, 0, 0); }
+}
+.pima-shimmer { position: relative; overflow: hidden; }
+.pima-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translate3d(-100%, 0, 0);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  animation: pima-shimmer 1.8s var(--motion-ease) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pima-ken-burns,
+  .pima-rise,
+  .pima-cross-fade,
+  .pima-shimmer::after {
+    animation: none !important;
+  }
+  .pima-reveal { opacity: 1; transform: none; }
+  .pima-reveal.is-in { transition: none; }
+  .pima-press:active { transform: none; }
+}
+

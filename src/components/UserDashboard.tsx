@@ -8,6 +8,9 @@ import { computeStayPrice } from '../lib/pricing';
 import { isBannerLive, matchesAudience, pickExperimentVariants } from '../lib/bannerVisibility';
 import { bannerSeed } from '../lib/bannerEvents';
 import { copticSeason } from '../lib/copticSeason';
+import { tapFeedback } from '../lib/haptics';
+import { useRevealOnScroll } from '../lib/useRevealOnScroll';
+import { useHeroParallax } from '../lib/useHeroParallax';
 import type { BannerLiveData } from './banner/BannerCanvas';
 
 // Arabic count agreement — 1 is singular, 2 is dual, 3–10 takes the plural,
@@ -315,6 +318,12 @@ export default function UserDashboard({
     return b.rating - a.rating;
   });
 
+  // Cards rise into place as they scroll in. One observer over the whole grid,
+  // keyed to the result count so a filter change re-observes what is now
+  // rendered. Declared here because it reads filteredHouses.
+  const cardGridRef = useRevealOnScroll<HTMLDivElement>(filteredHouses.length);
+  const heroParallaxRef = useHeroParallax<HTMLDivElement>(20);
+
   return (
     // Warm cream surface, bled past the shell's px-4 py-6 so the hero can run
     // edge to edge. The house cards keep their own dark glass panels — they are
@@ -350,11 +359,16 @@ export default function UserDashboard({
           at 11, 15 and 19px instead of the 35 asked for. mb-5 carries the
           overhang and the bar's shadow. */}
       <div className="relative mb-9">
-        <SummerOfferCarousel slides={carouselSlides} live={bannerLive} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+        {/* Parallax wraps the hero, not the search bar: the bar has to stay
+            welded to the hero's edge, and moving both would just move the
+            composition. */}
+        <div ref={heroParallaxRef} className="pima-parallax">
+          <SummerOfferCarousel slides={carouselSlides} live={bannerLive} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+        </div>
 
         {/* -bottom-4 puts the bar's bottom 16px past the hero, so a 51px bar
             overlaps by 51 − 16 = 35px. Stated directly, not derived. */}
-        <div className="absolute inset-x-3 -bottom-4 z-20 animate-in fade-in slide-in-from-bottom-3 duration-500">
+        <div className="absolute inset-x-3 -bottom-4 z-20 pima-rise pima-rise-2">
           {/* Frosted white: saturated blur is what makes it read as glass over a
               photograph. The shadow is kept tight and low so it does not cast a
               grey band up across the banner it is sitting on. */}
@@ -394,7 +408,7 @@ export default function UserDashboard({
 
             <button
               id="toggle-filters-btn"
-              onClick={() => setShowFilters(!showFilters)}
+              onClick={() => { tapFeedback(); setShowFilters(!showFilters); }}
               className={`shrink-0 flex items-center gap-1 rounded-full px-3 py-2 text-[10.5px] font-black transition-all cursor-pointer ${
                 showFilters ? 'bg-[#5A5A40] text-white' : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
               }`}
@@ -417,7 +431,7 @@ export default function UserDashboard({
             id="loyalty-card-trigger"
             type="button"
             onClick={onSelectRewards}
-            className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-2.5 py-2.5 shadow-[0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_4px_12px_rgba(45,45,36,0.08)] transition-shadow text-right cursor-pointer"
+            className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-2.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] transition-shadow duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press text-right cursor-pointer"
           >
             <span className="shrink-0 w-9 h-9 rounded-xl bg-[#F6F0E2] flex items-center justify-center">
               <Award className="w-4 h-4 text-[#C5A059]" />
@@ -431,7 +445,7 @@ export default function UserDashboard({
             <ChevronLeft aria-hidden="true" className="w-3.5 h-3.5 text-[#B5AF98] shrink-0 mr-auto transition-colors" />
           </button>
         ) : (
-          <div className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-2.5 py-2.5 shadow-[0_2px_8px_rgba(45,45,36,0.04)]">
+          <div className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-2.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
             <span className="shrink-0 w-9 h-9 rounded-xl bg-[#F6F0E2] flex items-center justify-center">
               <Award className="w-4 h-4 text-[#C5A059]" />
             </span>
@@ -444,7 +458,7 @@ export default function UserDashboard({
 
         <a
           href="/dalil/"
-          className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-2.5 py-2.5 shadow-[0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_4px_12px_rgba(45,45,36,0.08)] transition-shadow group"
+          className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-2.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] transition-shadow duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press group"
         >
           <span className="shrink-0 w-9 h-9 rounded-xl bg-[#F6F0E2] flex items-center justify-center">
             <BookOpen className="w-4 h-4 text-[#C5A059]" />
@@ -458,12 +472,12 @@ export default function UserDashboard({
       </div>
 
       {/* Category Tabs Selection */}
-      <div className="grid grid-cols-5 gap-1.5 p-1.5 bg-white border border-[#EDE7DA] rounded-2xl shadow-[0_2px_8px_rgba(45,45,36,0.04)] animate-in fade-in duration-500">
+      <div className="grid grid-cols-5 gap-1.5 p-1.5 bg-white border border-[#EDE7DA] rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] animate-in fade-in duration-500">
         <button
-          onClick={() => setSelectedType('all')}
-          className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-200 flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
+          onClick={() => { tapFeedback(); setSelectedType('all'); }}
+          className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] flex flex-col items-center justify-center gap-1.5 cursor-pointer pima-press ${
             selectedType === 'all'
-              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] shadow-sm'
+              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]'
               : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
           }`}
         >
@@ -471,10 +485,10 @@ export default function UserDashboard({
           <span>الكل</span>
         </button>
         <button
-          onClick={() => setSelectedType('conference')}
-          className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-200 flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
+          onClick={() => { tapFeedback(); setSelectedType('conference'); }}
+          className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] flex flex-col items-center justify-center gap-1.5 cursor-pointer pima-press ${
             selectedType === 'conference'
-              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] shadow-sm'
+              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]'
               : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
           }`}
         >
@@ -482,10 +496,10 @@ export default function UserDashboard({
           <span>مؤتمرات</span>
         </button>
         <button
-          onClick={() => setSelectedType('student')}
-          className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-200 flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
+          onClick={() => { tapFeedback(); setSelectedType('student'); }}
+          className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] flex flex-col items-center justify-center gap-1.5 cursor-pointer pima-press ${
             selectedType === 'student'
-              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] shadow-sm'
+              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]'
               : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
           }`}
         >
@@ -493,10 +507,10 @@ export default function UserDashboard({
           <span>سكن طلاب</span>
         </button>
         <button
-          onClick={() => setSelectedType('staff')}
-          className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-200 flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
+          onClick={() => { tapFeedback(); setSelectedType('staff'); }}
+          className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] flex flex-col items-center justify-center gap-1.5 cursor-pointer pima-press ${
             selectedType === 'staff'
-              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] shadow-sm'
+              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]'
               : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
           }`}
         >
@@ -506,8 +520,8 @@ export default function UserDashboard({
         {currentUser ? (
           <button
             id="tab-favorites"
-            onClick={() => setSelectedType('favorites')}
-            className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-200 flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
+            onClick={() => { tapFeedback(); setSelectedType('favorites'); }}
+            className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] flex flex-col items-center justify-center gap-1.5 cursor-pointer pima-press ${
               selectedType === 'favorites'
                 ? 'bg-rose-600 text-white shadow-sm'
                 : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
@@ -521,7 +535,7 @@ export default function UserDashboard({
           <button
             id="tab-favorites"
             onClick={() => onToggleFavorite('')}
-            className="py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-200 flex flex-col items-center justify-center gap-1.5 cursor-pointer text-[#4A4A3A] hover:bg-[#F1ECE0]"
+            className="py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] flex flex-col items-center justify-center gap-1.5 cursor-pointer pima-press text-[#4A4A3A] hover:bg-[#F1ECE0]"
           >
             <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
             <span>المفضلة</span>
@@ -543,7 +557,7 @@ export default function UserDashboard({
         const cover = filteredHouses.find((h) => h.images[0])?.images[0];
 
         return (
-          <div className="relative bg-white border border-[#EDE7DA] rounded-2xl shadow-[0_2px_8px_rgba(45,45,36,0.04)] overflow-hidden animate-in fade-in duration-500">
+          <div className="relative bg-white border border-[#EDE7DA] rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden animate-in fade-in duration-500">
             {/* Photo anchors the right edge, the cells run leftwards from it —
                 price, count, rating — matching the approved strip. */}
             {cover && (
@@ -723,7 +737,7 @@ export default function UserDashboard({
                     key={key}
                     type="button"
                     onClick={() => handleSuitabilityFilterToggle(key)}
-                    className={`px-2.5 py-1.5 rounded-xl border text-[10px] font-bold transition-all ${
+                    className={`px-2.5 py-1.5 rounded-xl border text-[10px] font-bold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
                       isSelected 
                         ? 'bg-[#5A5A40] border-[#5A5A40] text-white shadow-sm' 
                         : 'bg-[#FBF9F4] border-[#EDE7DA] text-[#4A4A3A] hover:bg-[#F1ECE0]'
@@ -793,7 +807,7 @@ export default function UserDashboard({
             lives in the floating search bar, and one entry point is enough. */}
         <div className="flex justify-between items-center px-1 gap-2">
           {/* Start of the row in RTL: the label for the control that follows. */}
-          <label htmlFor="sort-houses-select" className="shrink-0 flex items-center gap-1 bg-white border border-[#EDE7DA] rounded-full px-3 py-1.5 text-[10px] font-black text-[#4A4A3A] shadow-[0_2px_8px_rgba(45,45,36,0.04)] cursor-pointer">
+          <label htmlFor="sort-houses-select" className="shrink-0 flex items-center gap-1 bg-white border border-[#EDE7DA] rounded-full px-3 py-1.5 text-[10px] font-black text-[#4A4A3A] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] cursor-pointer">
             <SlidersHorizontal aria-hidden="true" className="w-3.5 h-3.5 text-[#8A8A70]" />
             <span>ترتيب</span>
           </label>
@@ -813,7 +827,7 @@ export default function UserDashboard({
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
               aria-label="ترتيب النتائج"
-              className="appearance-none bg-white border border-[#EDE7DA] rounded-full pr-3 pl-7 py-1.5 text-[10px] font-bold text-[#4A4A3A] shadow-[0_2px_8px_rgba(45,45,36,0.04)] focus:outline-none cursor-pointer"
+              className="appearance-none bg-white border border-[#EDE7DA] rounded-full pr-3 pl-7 py-1.5 text-[10px] font-bold text-[#4A4A3A] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] focus:outline-none cursor-pointer"
             >
               <option value="rating">الأفضل تقييماً</option>
               <option value="price_asc">الأقل سعراً</option>
@@ -833,7 +847,7 @@ export default function UserDashboard({
           // card stretched to the full width and its photo was cropped to a
           // 6.7:1 strip. Columns are what absorb the extra width — the page
           // itself stays full-bleed.
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div ref={cardGridRef} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredHouses.map((house) => (
               <div
                 id={`house-card-${house.id}`}
@@ -847,7 +861,10 @@ export default function UserDashboard({
                     onSelectHouse(house);
                   }
                 }}
-                className="relative bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-sm overflow-hidden hover:shadow-md active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A059] transition-all duration-300 cursor-pointer group"
+                // pima-reveal is an entrance only — the observer adds .is-in as
+                // the card scrolls in and then stops watching it. Nothing about
+                // the card's own layout, colour or type is touched.
+                className="pima-reveal relative bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A059] cursor-pointer group"
               >
                 {/* The photo is the whole card; the details panel floats over it. */}
                 <div className="absolute inset-0 overflow-hidden">
@@ -904,6 +921,7 @@ export default function UserDashboard({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation(); // prevent opening house details
+                      tapFeedback();
                       onToggleFavorite(house.id);
                     }}
                     className="bg-white/95 hover:bg-white text-rose-500 hover:text-rose-600 p-1.5 rounded-full flex items-center justify-center shadow transition-all duration-200 cursor-pointer"

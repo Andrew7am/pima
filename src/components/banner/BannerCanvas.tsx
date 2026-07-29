@@ -188,21 +188,27 @@ export default function BannerCanvas({ banner, layout, selectedId, onSelect, int
         <div className="absolute inset-0" style={{ background: layout.background }} />
       )}
       {banner.imageUrl && (
-        <img
-          src={banner.imageUrl}
-          alt=""
-          referrerPolicy="no-referrer"
-          draggable={false}
-          className="absolute inset-0 w-full h-full"
-          style={{
-            objectFit: fit.objectFit,
-            objectPosition: fit.objectPosition,
-            opacity: img.opacity,
-            // Pan + zoom are a transform so the image is repositioned inside
-            // the frame instead of the frame being resized.
-            transform: `translate(${img.x}%, ${img.y}%) scale(${img.scale})`,
-          }}
-        />
+        // The Ken Burns drift lives on a wrapper, not on the image: the image's
+        // own transform carries the admin's pan and zoom, and an animation on
+        // the same element would replace it. Never in the studio — the admin is
+        // positioning elements against this frame and it has to hold still.
+        <div className={`absolute inset-0 ${interactive ? '' : 'pima-ken-burns'}`}>
+          <img
+            src={banner.imageUrl}
+            alt=""
+            referrerPolicy="no-referrer"
+            draggable={false}
+            className="absolute inset-0 w-full h-full"
+            style={{
+              objectFit: fit.objectFit,
+              objectPosition: fit.objectPosition,
+              opacity: img.opacity,
+              // Pan + zoom are a transform so the image is repositioned inside
+              // the frame instead of the frame being resized.
+              transform: `translate(${img.x}%, ${img.y}%) scale(${img.scale})`,
+            }}
+          />
+        </div>
       )}
       {layout.overlay.enabled && (
         <div className="absolute inset-0 pointer-events-none"
