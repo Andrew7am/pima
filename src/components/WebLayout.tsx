@@ -134,14 +134,19 @@ export default function WebLayout({
           </div>
 
           {!currentUser ? (
-            /* Guest header — one clear call to action, nothing else */
+            /* Guest header. The old full-width "تسجيل الدخول / إنشاء حساب"
+               button measured 206px and started at x=153, painting straight
+               over the centred brand, which sits at 146–228. Compact and
+               pinned to the same side the avatar occupies once signed in. */
             <button
               id="guest-login-btn"
               onClick={onRequireLogin}
-              className="flex items-center gap-1.5 bg-[var(--color-natural-primary)] hover:opacity-90 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer"
+              title="تسجيل الدخول / إنشاء حساب"
+              aria-label="تسجيل الدخول أو إنشاء حساب"
+              className="relative z-10 flex items-center gap-1.5 bg-[var(--color-natural-primary)] hover:opacity-90 text-white text-[11px] font-bold px-3 py-2 rounded-full transition-all cursor-pointer shrink-0"
             >
-              <UserCircle className="w-4 h-4" />
-              <span>تسجيل الدخول / إنشاء حساب</span>
+              <UserCircle className="w-4 h-4 shrink-0" />
+              <span>دخول</span>
             </button>
           ) : (
           <div className="relative z-10 flex items-center gap-1">

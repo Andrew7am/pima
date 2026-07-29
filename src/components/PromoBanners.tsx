@@ -137,13 +137,15 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
     <div
       ref={track.ref}
       onClickCapture={track.onClickCapture}
-      // Height drives the whole composition now that BannerCanvas sizes type in
-      // cqh: positions and text scale together, so a taller box on a wider
-      // screen renders the same design, just bigger. h-44 is the mobile/app
-      // size and must stay — it is what the layouts were designed against.
-      // Only the frame is tuned to the approved hero — a deeper corner and a
-      // softer, wider shadow. Neither is a cqh unit, so no layout moves.
-      className="relative rounded-[28px] overflow-hidden h-44 sm:h-52 lg:h-64 shadow-[0_10px_30px_rgba(45,45,36,0.16)] bg-slate-900 group select-none"
+      // Fixed 5:2 box, matching the approved hero, capped so a desktop does not
+      // turn it into a billboard. It replaces the old h-44/52/64 steps, which
+      // changed the shape of the frame at every breakpoint.
+      //
+      // NOTE: height is not cosmetic here. BannerCanvas sizes every element in
+      // cqh, so the design inside scales with the box — at 375px this is ~137px
+      // against the old 176px, i.e. admin-designed banners now render about 22%
+      // smaller and may need re-checking in the banner studio.
+      className="relative rounded-[28px] overflow-hidden aspect-[5/2] max-h-64 shadow-[0_10px_30px_rgba(45,45,36,0.16)] bg-slate-900 group select-none"
     >
       {designed?.layout ? (
         // z-10 keeps the artwork and its CTA above the story tap zones.
