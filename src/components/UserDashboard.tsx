@@ -341,14 +341,20 @@ export default function UserDashboard({
       {/* Hero + floating search. The search bar is pulled up over the bottom of
           the banner so the two read as one unit; the banner itself stays purely
           promotional — no brand marks, no controls inside it. */}
-      <div className="relative pb-8">
+      {/* Hero + floating search read as one composition: the bar clips the hero
+          rather than sitting under it, and the wrapper's padding is only what
+          the overhang and its shadow need — no gap between the two. */}
+      {/* No padding here, so the wrapper is exactly the hero: that makes the
+          bar's offset mean what it says. Previous attempts padded the wrapper
+          and then solved for the offset, which is how the overlap kept landing
+          at 11, 15 and 19px instead of the 35 asked for. mb-5 carries the
+          overhang and the bar's shadow. */}
+      <div className="relative mb-9">
         <SummerOfferCarousel slides={carouselSlides} live={bannerLive} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
 
-        {/* Offsets are relative to this wrapper (hero 229 + pb-8 = 261px), not
-            to the hero, which is why the number is derived rather than guessed:
-            bottom-4 puts the 51px bar's top at 194px, i.e. 35px inside a 229px
-            hero. The 16px left under the bar is what its shadow falls onto. */}
-        <div className="absolute inset-x-3 bottom-4 z-20 animate-in fade-in slide-in-from-bottom-3 duration-500">
+        {/* -bottom-4 puts the bar's bottom 16px past the hero, so a 51px bar
+            overlaps by 51 − 16 = 35px. Stated directly, not derived. */}
+        <div className="absolute inset-x-3 -bottom-4 z-20 animate-in fade-in slide-in-from-bottom-3 duration-500">
           {/* Frosted white: saturated blur is what makes it read as glass over a
               photograph. The shadow is kept tight and low so it does not cast a
               grey band up across the banner it is sitting on. */}

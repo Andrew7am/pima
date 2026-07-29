@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Instagram, Facebook, Youtube, Twitter, Send, Globe, Music2, MessageCircle, Phone, Mail } from 'lucide-react';
 import { PromoBanner, PromoBannerLink, PromoLinkPlatform } from '../types';
 import { safeUrl } from '../lib/safeUrl';
@@ -137,13 +137,16 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
     <div
       ref={track.ref}
       onClickCapture={track.onClickCapture}
-      // 3:2 — about 18% taller than the 16:9 it replaces, which is what turns
-      // the hero from a wide strip into the focal point of the screen. At 375px
-      // that is 343x229.
+      // Sized against the SCREEN, not against its own width — 42dvh, inside the
+      // 40–45% the spec calls for. Every aspect-ratio attempt before this one
+      // kept landing near 28% of the viewport, which is why it read as an
+      // ordinary image card instead of the hero the page is built around.
+      // On a 375x812 phone this is ~341px.
       //
-      // Height is not cosmetic here: BannerCanvas sizes elements in cqh, so the
-      // artwork scales with the box, and saved layouts were drawn against 176px.
-      className="relative rounded-[32px] overflow-hidden aspect-[3/2] max-h-[320px] shadow-[0_16px_40px_-8px_rgba(45,45,36,0.28),0_4px_12px_rgba(45,45,36,0.08)] bg-slate-900 group select-none"
+      // Height is not cosmetic here: BannerCanvas sizes elements in cqh, so a
+      // designed banner scales with the box, and saved layouts were drawn at
+      // 176px — they need re-laying-out in the studio at this size.
+      className="relative rounded-[32px] overflow-hidden h-[42dvh] min-h-[300px] max-h-[430px] shadow-[0_16px_40px_-8px_rgba(45,45,36,0.28),0_4px_12px_rgba(45,45,36,0.08)] bg-slate-900 group select-none"
     >
       {designed?.layout ? (
         // z-10 keeps the artwork and its CTA above the story tap zones.
@@ -162,36 +165,44 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
                 sits at 80% opacity) so the property reads through it, kept as a
                 right-to-left gradient so the text side stays legible. */}
             <div className="absolute inset-0 bg-gradient-to-l from-black/45 via-black/22 to-transparent" />
-            {/* Badge pinned to the top corner with its own breathing room; the
-                title block stays vertically centred and the CTA sits above the
-                pagination rather than on the bottom edge. */}
-            <span className={`absolute top-5 right-5 z-10 text-[10px] font-extrabold tracking-wider px-2.5 py-1 rounded-lg ${accent.badge}`}>{s.badge}</span>
-            <div className="absolute inset-0 flex flex-col justify-center px-7 pb-9 text-white text-right">
-              <h2 className="text-base font-black leading-tight">{s.title}</h2>
-              <p className="text-[11px] text-gray-200 font-bold mt-1">{s.sub}</p>
-              <div className="flex items-center gap-2 mt-4 flex-wrap">
-                {/* A configured link turns the CTA into a real anchor; otherwise
-                    it keeps firing the caller's onCta (scroll to listings). */}
-                {s.houseId && onOpenHouse ? (
-                  <button data-el="button" onClick={() => onOpenHouse(s.houseId!)}
-                    className={`text-[10px] font-black px-4 py-1.5 rounded-xl shadow transition-all active:scale-95 ${accent.cta}`}>
-                    {s.cta}
-                  </button>
-                ) : s.href ? (
-                  <a
-                    data-el="button"
-                    href={s.href}
-                    target="_blank"
-                    rel="noopener noreferrer nofollow"
-                    className={`text-[10px] font-black px-4 py-1.5 rounded-xl shadow transition-all active:scale-95 ${accent.cta}`}
-                  >
-                    {s.cta}
-                  </a>
-                ) : (
-                  <button data-el="button" onClick={onCta} className={`text-[10px] font-black px-4 py-1.5 rounded-xl shadow transition-all active:scale-95 ${accent.cta}`}>{s.cta}</button>
-                )}
-                <BannerLinkIcons links={s.links} />
-              </div>
+            {/* Safe area from the spec sheet: 32px top and right, 24px bottom
+                and left. Nothing sits outside it, and each corner owns one
+                thing — badge top-right, title centre-right, CTA bottom-right,
+                pagination bottom-centre, social bottom-left. */}
+            <span className={`absolute top-8 right-8 z-10 text-[10px] font-extrabold tracking-wider px-2.5 py-1 rounded-lg ${accent.badge}`}>{s.badge}</span>
+
+            <div className="absolute inset-y-0 right-8 left-8 flex flex-col justify-center text-white text-right">
+              <h2 className="text-xl font-black leading-snug">{s.title}</h2>
+              <p className="text-[12px] text-gray-200 font-bold mt-2 leading-relaxed">{s.sub}</p>
+            </div>
+
+            {/* CTA holds the bottom-right corner, clear of the bottom edge so
+                the floating search bar can clip the hero without covering it. */}
+            <div className="absolute bottom-14 right-8 z-10">
+              {/* A configured link turns the CTA into a real anchor; otherwise
+                  it keeps firing the caller's onCta (scroll to listings). */}
+              {s.houseId && onOpenHouse ? (
+                <button data-el="button" onClick={() => onOpenHouse(s.houseId!)}
+                  className={`text-[11px] font-black px-5 py-2 rounded-xl shadow-lg transition-all active:scale-95 ${accent.cta}`}>
+                  {s.cta}
+                </button>
+              ) : s.href ? (
+                <a
+                  data-el="button"
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className={`inline-block text-[11px] font-black px-5 py-2 rounded-xl shadow-lg transition-all active:scale-95 ${accent.cta}`}
+                >
+                  {s.cta}
+                </a>
+              ) : (
+                <button data-el="button" onClick={onCta} className={`text-[11px] font-black px-5 py-2 rounded-xl shadow-lg transition-all active:scale-95 ${accent.cta}`}>{s.cta}</button>
+              )}
+            </div>
+
+            <div className="absolute bottom-14 left-6 z-10">
+              <BannerLinkIcons links={s.links} />
             </div>
           </div>
         );

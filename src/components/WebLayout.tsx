@@ -120,7 +120,7 @@ export default function WebLayout({
             takes part in no flex layout, which left the single control group
             sitting at flex-start — the right edge in RTL, right up against the
             centred logo. Pushed to the end it clears the brand entirely. */}
-        <header className="relative shrink-0 h-[78px] flex items-center justify-end px-4 bg-white border-b border-[var(--color-natural-border)] shadow-sm z-40">
+        <header className="relative shrink-0 h-[90px] flex items-center justify-end px-4 bg-white border-b border-[var(--color-natural-border)] shadow-sm z-40">
           <div className="absolute inset-x-0 flex flex-col items-center justify-center pointer-events-none">
             <div className="flex items-center gap-2">
               <Logo size={32} variant="icon" />
