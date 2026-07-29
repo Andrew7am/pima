@@ -341,10 +341,15 @@ export default function UserDashboard({
       {/* Hero + floating search. The search bar is pulled up over the bottom of
           the banner so the two read as one unit; the banner itself stays purely
           promotional — no brand marks, no controls inside it. */}
-      <div className="relative pb-7">
+      <div className="relative pb-10">
         <SummerOfferCarousel slides={carouselSlides} live={bannerLive} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
 
-        <div className="absolute inset-x-3 -bottom-0 z-20 animate-in fade-in slide-in-from-bottom-3 duration-500">
+        {/* Offsets are relative to this wrapper (banner + pb-10 = 233px), not to
+            the banner, so the number is derived rather than guessed: bottom-1
+            puts the 51px bar's top at 178px, i.e. 15px inside a 193px hero. Any
+            deeper and it covered the banner's own «احجز الآن»; any lower and it
+            landed on the quick cards below. */}
+        <div className="absolute inset-x-3 bottom-1 z-20 animate-in fade-in slide-in-from-bottom-3 duration-500">
           {/* Frosted white, not a flat panel: a saturated blur over the photo is
               what makes it read as glass, and a wide low-opacity shadow is what
               lifts it off the banner. Both are what the approved bar has. */}

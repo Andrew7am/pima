@@ -137,15 +137,15 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
     <div
       ref={track.ref}
       onClickCapture={track.onClickCapture}
-      // 4:3 box: in the approved hero the promo is the tallest thing on the
-      // screen and the search bar only clips its bottom edge. At 5:2 the box was
-      // so short that the floating bar covered most of the artwork.
+      // 16:9. In the approved design the hero takes ~24% of screen height, which
+      // at a 375x812 phone is ~193px against a 343px content width — 1.78:1.
+      // Both earlier attempts overshot: 5:2 left it so short the floating search
+      // covered the artwork, 4:3 made it tall enough to crowd the text.
       //
-      // NOTE: height is not cosmetic here. BannerCanvas sizes every element in
-      // cqh, so the design inside scales with the box — at 375px this is ~257px
-      // against the 176px the layouts were drawn at, so admin-designed banners
-      // render larger and want a pass through the banner studio.
-      className="relative rounded-[28px] overflow-hidden aspect-[4/3] max-h-[300px] shadow-[0_10px_30px_rgba(45,45,36,0.16)] bg-slate-900 group select-none"
+      // Height is not cosmetic here: BannerCanvas sizes elements in cqh, so the
+      // artwork scales with the box. 193px is only ~10% above the 176px the
+      // saved layouts were drawn against, which keeps them close to intended.
+      className="relative rounded-[28px] overflow-hidden aspect-video max-h-[260px] shadow-[0_10px_30px_rgba(45,45,36,0.16)] bg-slate-900 group select-none"
     >
       {designed?.layout ? (
         // z-10 keeps the artwork and its CTA above the story tap zones.
