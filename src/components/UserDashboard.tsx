@@ -11,6 +11,8 @@ import { copticSeason } from '../lib/copticSeason';
 import { tapFeedback } from '../lib/haptics';
 import { useRevealOnScroll } from '../lib/useRevealOnScroll';
 import { useHeroParallax } from '../lib/useHeroParallax';
+import FilterSheet from './FilterSheet';
+import type { FilterDraft } from './FilterSheet';
 import type { BannerLiveData } from './banner/BannerCanvas';
 
 // Arabic count agreement — 1 is singular, 2 is dual, 3–10 takes the plural,
@@ -25,6 +27,7 @@ function bedsLabel(n: number): string {
 // Same agreement for the result count, and the dual does NOT repeat the
 // numeral: "وجدنا بيتين", never "وجدنا 2 بيتين". The verb has to agree too.
 function resultsLabel(n: number): { count: string | null; noun: string } {
+  if (n === 0) return { count: null, noun: 'لا يوجد بيت يناسب بحثك' };
   if (n === 1) return { count: null, noun: 'بيتاً واحداً يناسب بحثك' };
   if (n === 2) return { count: null, noun: 'بيتين يناسبان بحثك' };
   if (n <= 10) return { count: String(n), noun: 'بيوت تناسب بحثك' };
@@ -131,6 +134,8 @@ export default function UserDashboard({
   const [selectedSuitabilities, setSelectedSuitabilities] = useState<('youth' | 'children' | 'families' | 'retreat')[]>([]);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  // Live draft while the sheet is open, so its CTA can count before applying.
+  const [filterPreview, setFilterPreview] = useState<FilterDraft | null>(null);
   const [selectedType, setSelectedType] = useState<'all' | 'conference' | 'student' | 'staff' | 'favorites'>('all');
   const [selectedSeaProximity, setSelectedSeaProximity] = useState<'all' | 'near' | 'view' | 'beach' | 'far'>('all');
   const [sortBy, setSortBy] = useState<'rating' | 'price_asc' | 'price_desc'>('rating');
@@ -245,8 +250,10 @@ export default function UserDashboard({
     }
   };
 
-  // Filter retreat houses based on selected options and search query
-  const filteredHouses = houses.filter((house) => {
+  // One predicate, parameterised by the six sheet-owned criteria. The list and
+  // the sheet's "عرض N بيتًا" both run it, so the number on the button is the
+  // number of cards you get — a count computed a second way would drift.
+  const matchesCriteria = (house: RetreatHouse, c: FilterDraft): boolean => {
     // Only display approved houses to clients
     if (house.status !== 'approved') return false;
 
@@ -268,13 +275,13 @@ export default function UserDashboard({
       house.address.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Governorate match
-    const matchesGov = selectedGov ? house.governorate === selectedGov : true;
+    const matchesGov = c.governorate ? house.governorate === c.governorate : true;
 
     // Guest capacity match
-    const matchesGuests = guestCount ? house.bedsCount >= guestCount : true;
+    const matchesGuests = c.guestCount ? house.bedsCount >= c.guestCount : true;
 
     // Price match
-    const matchesPrice = house.pricePerNightPerPerson <= maxPrice;
+    const matchesPrice = house.pricePerNightPerPerson <= c.maxPrice;
 
     // Suitabilities match (must match all selected suitabilities if any)
     const matchesSuitability = selectedSuitabilities.length > 0 
@@ -282,8 +289,8 @@ export default function UserDashboard({
       : true;
 
     // Amenities match (must contain all selected services)
-    const matchesAmenities = selectedAmenities.length > 0
-      ? selectedAmenities.every((amenity) => house.services.includes(amenity))
+    const matchesAmenities = c.amenities.length > 0
+      ? c.amenities.every((amenity) => house.services.includes(amenity))
       : true;
 
     // Quick Amenities Filters
@@ -302,21 +309,42 @@ export default function UserDashboard({
     if (quickStudent && house.propertyType !== 'student') return false;
 
     // Sea proximity filter
-    if (selectedSeaProximity !== 'all' && house.seaProximity !== selectedSeaProximity) return false;
+    if (c.seaProximity !== 'all' && house.seaProximity !== c.seaProximity) return false;
 
     // Real availability for the selected dates: enough free beds for the
-    // requested group (or at least one bed when no count was given).
-    if (availability !== null) {
+    // requested group (or at least one bed when no count was given). Only the
+    // committed dates have availability loaded, so a draft that changes dates
+    // counts on capacity alone until it is applied.
+    if (availability !== null && c.checkIn === filterCheckIn && c.checkOut === filterCheckOut) {
       const freeBeds = availability[house.id] ?? 0;
-      if (freeBeds < (guestCount || 1)) return false;
+      if (freeBeds < (c.guestCount || 1)) return false;
     }
 
     return matchesSearch && matchesGov && matchesGuests && matchesPrice && matchesSuitability && matchesAmenities;
-  }).sort((a, b) => {
+  };
+
+  // What the committed filters currently select.
+  const committed: FilterDraft = {
+    governorate: selectedGov,
+    guestCount,
+    checkIn: filterCheckIn,
+    checkOut: filterCheckOut,
+    maxPrice,
+    amenities: selectedAmenities,
+    seaProximity: selectedSeaProximity,
+  };
+
+  const filteredHouses = houses.filter((h) => matchesCriteria(h, committed)).sort((a, b) => {
     if (sortBy === 'price_asc') return a.pricePerNightPerPerson - b.pricePerNightPerPerson;
     if (sortBy === 'price_desc') return b.pricePerNightPerPerson - a.pricePerNightPerPerson;
     return b.rating - a.rating;
   });
+
+  // Live count for the sheet's CTA: the draft while the sheet is open and being
+  // edited, the committed set otherwise.
+  const previewCount = filterPreview
+    ? houses.filter((h) => matchesCriteria(h, filterPreview)).length
+    : filteredHouses.length;
 
   // Cards rise into place as they scroll in. One observer over the whole grid,
   // keyed to the result count so a filter change re-observes what is now
@@ -596,211 +624,27 @@ export default function UserDashboard({
         );
       })()}
 
-      {/* Advanced Filters Expandable Drawer — opened from the floating search bar */}
-      {showFilters && (
-        <div className="bg-white rounded-3xl p-4 border border-[#EDE7DA] shadow-[0_4px_16px_rgba(45,45,36,0.06)] space-y-4 text-xs text-[#2D2D24] animate-in slide-in-from-top-3 duration-200">
-          <div className="text-xs font-bold text-[#2D2D24] pb-2 border-b border-[#EDE7DA]">فلاتر البحث التفصيلية:</div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {/* Governorate filter */}
-            <div>
-              <label className="block text-[10px] text-[#8A8A70] mb-1 font-bold">المحافظة:</label>
-              <select
-                id="filter-gov-select"
-                value={selectedGov}
-                onChange={(e) => setSelectedGov(e.target.value)}
-                className="w-full bg-[#FBF9F4] border border-[#EDE7DA] rounded-xl px-2.5 py-1.5 text-[#2D2D24] focus:outline-none [color-scheme:dark]"
-              >
-                <option value="">كل محافظات مصر</option>
-                {GOVERNORATES.map((g) => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Guest/Individual Count */}
-            <div>
-              <label className="block text-[10px] text-[#8A8A70] mb-1 font-bold">عدد الأفراد المطلوب استيعابهم:</label>
-              <input
-                id="filter-guest-input"
-                type="number"
-                placeholder="مثال: ٥٠ فرد"
-                value={guestCount}
-                onChange={(e) => setGuestCount(e.target.value === '' ? '' : parseInt(e.target.value))}
-                className="w-full bg-[#FBF9F4] border border-[#EDE7DA] rounded-xl px-2.5 py-1.5 text-[#2D2D24] focus:outline-none [color-scheme:dark]"
-              />
-            </div>
-          </div>
-
-          {/* Real availability by dates — checks live bookings server-side */}
-          <div className="bg-emerald-900/20 border border-emerald-700/40 rounded-2xl p-3 space-y-2">
-            <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-200">
-              <CalendarCheck className="w-3.5 h-3.5" />
-              <span>المتاح فعلياً في تواريخك (يفحص الحجوزات الحقيقية):</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[10px] text-[#8A8A70] mb-1 font-bold">تاريخ الوصول:</label>
-                <input
-                  id="filter-checkin-input"
-                  type="date"
-                  value={filterCheckIn}
-                  onChange={(e) => setFilterCheckIn(e.target.value)}
-                  className="w-full bg-[#FBF9F4] border border-[#EDE7DA] rounded-xl px-2.5 py-1.5 text-[#2D2D24] focus:outline-none [color-scheme:dark]"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] text-[#8A8A70] mb-1 font-bold">تاريخ المغادرة:</label>
-                <input
-                  id="filter-checkout-input"
-                  type="date"
-                  value={filterCheckOut}
-                  min={filterCheckIn || undefined}
-                  onChange={(e) => setFilterCheckOut(e.target.value)}
-                  className="w-full bg-[#FBF9F4] border border-[#EDE7DA] rounded-xl px-2.5 py-1.5 text-[#2D2D24] focus:outline-none [color-scheme:dark]"
-                />
-              </div>
-            </div>
-            {availability !== null && (
-              <div className="flex items-center justify-between">
-                <span className="text-[9.5px] text-emerald-300 font-bold">✅ بتشوف دلوقتي البيوت المتاحة فعلاً من {filterCheckIn} إلى {filterCheckOut}{guestCount ? ` لعدد ${guestCount} فرد` : ''}</span>
-                <button
-                  type="button"
-                  onClick={() => { setFilterCheckIn(''); setFilterCheckOut(''); }}
-                  className="text-[9.5px] font-extrabold text-rose-300 hover:underline cursor-pointer"
-                >
-                  إلغاء فلتر التواريخ
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Price night range slider */}
-          <div>
-            <div className="flex justify-between text-[10px] text-[#8A8A70] font-bold mb-1">
-              <span>الحد الأقصى لسعر الفرد/ليلة:</span>
-              <span className="text-[#2D2D24] font-extrabold">{maxPrice} ج.م</span>
-            </div>
-            <input
-              id="filter-price-slider"
-              type="range"
-              min={100}
-              max={500}
-              step={10}
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(parseInt(e.target.value))}
-              className="w-full accent-[#5A5A40] cursor-pointer"
-            />
-          </div>
-
-          {/* Sea Proximity Filter (الموقع وقرب البحر) */}
-          <div>
-            <span className="block text-[10px] text-[#8A8A70] mb-1.5 font-bold">الموقع وقرب البحر:</span>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
-              {[
-                { key: 'all', label: 'الكل', icon: <Home className="w-4 h-4" /> },
-                { key: 'beach', label: 'على الشاطئ مباشرة', icon: <Waves className="w-3.5 h-3.5" /> },
-                { key: 'view', label: 'إطلالة على البحر 🌅', icon: <Sparkles className="w-3.5 h-3.5" /> },
-                { key: 'near', label: 'قريب من البحر 🌊', icon: <Waves className="w-3.5 h-3.5 text-blue-500" /> },
-                { key: 'far', label: 'بعيد عن البحر', icon: <Trees className="w-3.5 h-3.5" /> }
-              ].map((item) => {
-                const isSelected = selectedSeaProximity === item.key;
-                return (
-                  <button
-                    id={`filter-sea-${item.key}`}
-                    key={item.key}
-                    type="button"
-                    onClick={() => setSelectedSeaProximity(item.key as any)}
-                    className={`px-2 py-2 rounded-xl border text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#5A5A40] border-[#5A5A40] text-white shadow-sm'
-                        : 'bg-[#FBF9F4] border-[#EDE7DA] text-[#4A4A3A] hover:bg-[#F1ECE0]'
-                    }`}
-                  >
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Suitability Filters Checklist */}
-          <div>
-            <span className="block text-[10px] text-[#8A8A70] mb-1.5 font-bold">مناسب من حيث الفئات لـ:</span>
-            <div className="flex flex-wrap gap-1.5">
-              {(Object.keys(SUITABILITY_MAP) as ('youth' | 'children' | 'families' | 'retreat')[]).map((key) => {
-                const isSelected = selectedSuitabilities.includes(key);
-                return (
-                  <button
-                    id={`filter-suitability-${key}`}
-                    key={key}
-                    type="button"
-                    onClick={() => handleSuitabilityFilterToggle(key)}
-                    className={`px-2.5 py-1.5 rounded-xl border text-[10px] font-bold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
-                      isSelected 
-                        ? 'bg-[#5A5A40] border-[#5A5A40] text-white shadow-sm' 
-                        : 'bg-[#FBF9F4] border-[#EDE7DA] text-[#4A4A3A] hover:bg-[#F1ECE0]'
-                    }`}
-                  >
-                    {SUITABILITY_MAP[key]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Services Checklist */}
-          <div>
-            <span className="block text-[10px] text-[#8A8A70] mb-1.5 font-bold">الخدمات والمرافق الأساسية المتوفرة بالبيت:</span>
-            <div className="grid grid-cols-2 gap-1.5">
-              {AMENITIES_LIST.map((srv) => {
-                const isSelected = selectedAmenities.includes(srv);
-                return (
-                  <button
-                    id={`filter-amenity-${srv}`}
-                    key={srv}
-                    type="button"
-                    onClick={() => handleAmenityFilterToggle(srv)}
-                    className={`flex items-center gap-1.5 px-2 py-1 rounded-xl border text-[10px] font-semibold text-right transition-all ${
-                      isSelected 
-                        ? 'bg-[#3A3A2C] border-[#8A8A70] text-[#E4E1CB]'
-                        : 'bg-[#FBF9F4] border-[#EDE7DA] text-[#8A8A70] hover:bg-[#F1ECE0]'
-                    }`}
-                  >
-                    <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${
-                      isSelected ? 'bg-[#5A5A40] border-[#5A5A40] text-white' : 'bg-[#FBF9F4] border-[#5A573F]'
-                    }`}>
-                      {isSelected && <Check className="w-2.5 h-2.5" />}
-                    </span>
-                    <span>{srv}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Clear Filters Button */}
-          <div className="flex justify-end pt-2 border-t border-[#EDE7DA]">
-            <button
-              id="clear-filters-btn"
-              type="button"
-              onClick={() => {
-                setSelectedGov('');
-                setGuestCount('');
-                setMaxPrice(400);
-                setSelectedSuitabilities([]);
-                setSelectedAmenities([]);
-                setSelectedSeaProximity('all');
-              }}
-              className="text-[10px] text-[#8A8A70] hover:text-[#2D2D24] font-bold"
-            >
-              إعادة تعيين كافة الفلاتر
-            </button>
-          </div>
-        </div>
-      )}
-
+      {/* Filters live in their own sheet now. The old inline drawer put every
+          control on the page at once, which is what pushed the results below
+          the fold whenever it was open. */}
+      <FilterSheet
+        open={showFilters}
+        value={committed}
+        matchCount={previewCount}
+        onPreview={setFilterPreview}
+        onClose={() => { setShowFilters(false); setFilterPreview(null); }}
+        onApply={(d) => {
+          setSelectedGov(d.governorate);
+          setGuestCount(d.guestCount);
+          setFilterCheckIn(d.checkIn);
+          setFilterCheckOut(d.checkOut);
+          setMaxPrice(d.maxPrice);
+          setSelectedAmenities(d.amenities);
+          setSelectedSeaProximity(d.seaProximity);
+          setShowFilters(false);
+          setFilterPreview(null);
+        }}
+      />
       {/* Houses Feed List */}
       <div id="house-list-anchor" className="space-y-3.5 text-[#2D2D24]">
         {/* Result count and sort. The filter control is not repeated here — it
