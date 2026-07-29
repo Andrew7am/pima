@@ -88,14 +88,15 @@ body {
   --motion-slow: 350ms;
 }
 
-/* Hero artwork: 1.03 → 1.00 and back, slow enough to read as depth rather
-   than movement. alternate avoids the jump a looping one-way pan would make. */
+/* Hero artwork: 1.06 → 1.00 and back over 9s, slow enough to read as depth
+   rather than movement. alternate avoids the jump a one-way loop would make.
+   Used only by the hero — the default slides and BannerCanvas's photo. */
 @keyframes pima-ken-burns {
-  from { transform: scale(1.03); }
+  from { transform: scale(1.06); }
   to   { transform: scale(1.00); }
 }
 .pima-ken-burns {
-  animation: pima-ken-burns 11s var(--motion-ease) infinite alternate;
+  animation: pima-ken-burns 9s var(--motion-ease) infinite alternate;
   will-change: transform;
 }
 

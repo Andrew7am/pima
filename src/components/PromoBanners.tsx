@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { Instagram, Facebook, Youtube, Twitter, Send, Globe, Music2, MessageCircle, Phone, Mail } from 'lucide-react';
+import { Instagram, Facebook, Youtube, Twitter, Send, Globe, Music2, MessageCircle, Phone, Mail, Sparkles, ArrowLeft, Check } from 'lucide-react';
 import { PromoBanner, PromoBannerLink, PromoLinkPlatform } from '../types';
 import { safeUrl } from '../lib/safeUrl';
 import BannerCanvas from './banner/BannerCanvas';
@@ -164,69 +164,86 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
             {s.img
               ? <img src={s.img} alt={s.title} className="w-full h-full object-cover pima-ken-burns" referrerPolicy="no-referrer" />
               : <div className="w-full h-full" style={{ background: s.gradient }} />}
-            {/* Lighter scrim than before (60/30 → 45/22, and the image no longer
-                sits at 80% opacity) so the property reads through it, kept as a
-                right-to-left gradient so the text side stays legible. */}
-            <div className="absolute inset-0 bg-gradient-to-l from-black/45 via-black/22 to-transparent" />
-            {/* Safe area from the spec sheet: 32px top and right, 24px bottom
-                and left. Nothing sits outside it, and each corner owns one
-                thing — badge top-right, title centre-right, CTA bottom-right,
-                pagination bottom-centre, social bottom-left. */}
-            <span className={`absolute top-8 right-8 z-10 text-[10px] font-extrabold tracking-wider px-2.5 py-1 rounded-lg pima-rise ${accent.badge}`}>{s.badge}</span>
 
-            <div className="absolute inset-y-0 right-8 left-8 flex flex-col justify-center text-white text-right pima-rise pima-rise-1">
-              <h2 className="text-xl font-black leading-snug">{s.title}</h2>
-              <p className="text-[12px] text-gray-200 font-bold mt-2 leading-relaxed">{s.sub}</p>
-            </div>
+            {/* Horizontal wash, not an overlay: 40% at the text edge, 15% across
+                the middle, nothing at all on the far side. The scenery the photo
+                was chosen for stays fully visible; only the column the type sits
+                in is darkened. In RTL the copy is on the LEFT, so the dark end
+                is `to-r`. A second, very short bottom fade keeps the indicator
+                row legible over a bright horizon without touching the artwork. */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/[0.40] via-black/[0.15] to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent" />
 
-            {/* CTA holds the bottom-right corner, clear of the bottom edge so
-                the floating search bar can clip the hero without covering it. */}
-            <div className="absolute bottom-14 right-8 z-10 pima-rise pima-rise-2">
-              {/* A configured link turns the CTA into a real anchor; otherwise
-                  it keeps firing the caller's onCta (scroll to listings). */}
-              {s.houseId && onOpenHouse ? (
-                <button data-el="button" onClick={() => onOpenHouse(s.houseId!)}
-                  className={`text-[11px] font-black px-5 py-2 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press ${accent.cta}`}>
-                  {s.cta}
-                </button>
-              ) : s.href ? (
-                <a
-                  data-el="button"
-                  href={s.href}
-                  target="_blank"
-                  rel="noopener noreferrer nofollow"
-                  className={`inline-block text-[11px] font-black px-5 py-2 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press ${accent.cta}`}
-                >
-                  {s.cta}
-                </a>
-              ) : (
-                <button data-el="button" onClick={onCta} className={`text-[11px] font-black px-5 py-2 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press ${accent.cta}`}>{s.cta}</button>
+            {/* One left-aligned column: badge → headline → discount → line →
+                CTA. Vertically centred so the block never crowds either edge. */}
+            <div className="absolute inset-y-0 left-0 z-10 flex flex-col justify-center items-start gap-3 pl-6 pr-10 pb-8 text-white text-right">
+              <span className="pima-rise inline-flex items-center gap-1.5 rounded-full bg-[#0A2342]/85 px-3 py-1.5 text-[10px] font-extrabold tracking-wide text-[#C5A059]">
+                <Sparkles className="w-3 h-3" />
+                {s.badge}
+              </span>
+
+              <h2 className="pima-rise pima-rise-1 text-[26px] font-black leading-[1.15] line-clamp-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.35)]">
+                {s.title}
+              </h2>
+
+              {s.sub && (
+                <p className="pima-rise pima-rise-2 text-[12.5px] font-bold leading-relaxed text-white/90 max-w-[62%] drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
+                  {s.sub}
+                </p>
               )}
-            </div>
 
-            <div className="absolute bottom-14 left-6 z-10 pima-rise pima-rise-3">
-              <BannerLinkIcons links={s.links} />
+              {/* Gold gradient pill with the arrow in its own darker disc — the
+                  design explicitly rules out a flat button. */}
+              <div className="pima-rise pima-rise-3">
+                {(() => {
+                  const cls = 'group/cta inline-flex items-center gap-2.5 rounded-full bg-gradient-to-b from-[#E0C48A] to-[#B8944E] pl-2 pr-5 py-2 text-[12px] font-black text-[#2D2D24] shadow-[0_8px_24px_rgba(0,0,0,0.22),0_2px_6px_rgba(0,0,0,0.08)] pima-press';
+                  const inner = (
+                    <>
+                      <span className="w-7 h-7 rounded-full bg-[#8A6F2E]/85 flex items-center justify-center">
+                        <ArrowLeft className="w-3.5 h-3.5 text-[#F6E7C4]" />
+                      </span>
+                      <span>{s.cta}</span>
+                    </>
+                  );
+                  // A configured link turns the CTA into a real anchor; otherwise
+                  // it keeps firing the caller's onCta (scroll to listings).
+                  if (s.houseId && onOpenHouse) {
+                    return <button data-el="button" onClick={() => onOpenHouse(s.houseId!)} className={cls}>{inner}</button>;
+                  }
+                  if (s.href) {
+                    return <a data-el="button" href={s.href} target="_blank" rel="noopener noreferrer nofollow" className={cls}>{inner}</a>;
+                  }
+                  return <button data-el="button" onClick={onCta} className={cls}>{inner}</button>;
+                })()}
+              </div>
+
+              {s.links && s.links.length > 0 && (
+                <div className="pima-rise pima-rise-3">
+                  <BannerLinkIcons links={s.links} />
+                </div>
+              )}
             </div>
           </div>
         );
       })}
 
-      {/* Pagination — dots centred near the bottom edge rather than segmented
-          bars pinned across the top. The active dot still fills to show the
-          timer, so the story pacing is unchanged; only the form is quieter,
-          which is what keeps the top of the artwork clear. */}
+      {/* Pagination — a gold capsule for the active slide, small white circles
+          for the rest, on the scenery side so it never sits under the copy.
+          The capsule still fills with the slide timer, so the story pacing is
+          unchanged; only its shape is. Width animates rather than the dot
+          jumping size, which is the "smooth width transition" asked for. */}
       {items.length > 1 && (
-        <div className="absolute bottom-4 inset-x-0 flex items-center justify-center gap-1.5 z-20 pointer-events-none">
+        <div className="absolute bottom-5 right-6 flex items-center gap-1.5 z-20 pointer-events-none">
           {items.map((_, i) => (
             <div
               key={i}
-              className={`h-1.5 rounded-full overflow-hidden transition-all duration-300 ${
-                i === active ? 'w-6 bg-white/35' : 'w-1.5 bg-white/45'
+              className={`h-1.5 rounded-full overflow-hidden transition-[width,background-color] duration-[350ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
+                i === active ? 'w-7 bg-white/30' : 'w-1.5 bg-white/60'
               }`}
             >
               {i === active && (
                 <div
-                  className="h-full bg-white rounded-full"
+                  className="h-full rounded-full bg-gradient-to-l from-[#E0C48A] to-[#C5A059]"
                   style={{ width: `${progress}%`, transition: 'width 50ms linear' }}
                 />
               )}
