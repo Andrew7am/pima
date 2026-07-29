@@ -343,22 +343,24 @@ export default function UserDashboard({
 
         <div className="absolute inset-x-2 -bottom-0 z-20 animate-in fade-in slide-in-from-bottom-2 duration-500">
           <div className="flex items-center gap-1 bg-white/85 backdrop-blur-xl border border-white/70 rounded-full shadow-[0_8px_24px_rgba(45,45,36,0.14)] p-1.5">
-            {/* Filters — start of the row in RTL */}
-            <button
-              id="toggle-filters-btn"
-              onClick={() => setShowFilters(!showFilters)}
-              className={`shrink-0 flex items-center gap-1 rounded-full px-3 py-2 text-[10.5px] font-black transition-all cursor-pointer ${
-                showFilters ? 'bg-[#5A5A40] text-white' : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
-              }`}
-              title="فلاتر متقدمة"
-              aria-label="فلاتر متقدمة"
-              aria-expanded={showFilters}
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              <span>فلتر</span>
-            </button>
-
-            <span aria-hidden="true" className="w-px h-6 bg-[#E3DCCC] shrink-0" />
+            {/* DOM order is right-to-left on screen: map sits at the right end,
+                filter at the left, matching the approved layout. */}
+            {onOpenMap && (
+              <>
+                <button
+                  id="open-map-btn"
+                  type="button"
+                  onClick={onOpenMap}
+                  className="shrink-0 flex items-center gap-1 rounded-full px-3 py-2 text-[10.5px] font-black text-[#4A4A3A] hover:bg-[#F1ECE0] transition-all cursor-pointer"
+                  title="عرض البيوت على الخريطة"
+                  aria-label="عرض البيوت على الخريطة"
+                >
+                  <MapPin className="w-4 h-4" />
+                  <span>الخريطة</span>
+                </button>
+                <span aria-hidden="true" className="w-px h-6 bg-[#E3DCCC] shrink-0" />
+              </>
+            )}
 
             <div className="relative flex-1 min-w-0">
               <Search className="absolute top-1/2 -translate-y-1/2 right-2.5 w-4 h-4 text-[#B5AF98] pointer-events-none" />
@@ -372,41 +374,28 @@ export default function UserDashboard({
               />
             </div>
 
-            {onOpenMap && (
-              <>
-                <span aria-hidden="true" className="w-px h-6 bg-[#E3DCCC] shrink-0" />
-                <button
-                  id="open-map-btn"
-                  type="button"
-                  onClick={onOpenMap}
-                  className="shrink-0 flex items-center gap-1 rounded-full px-3 py-2 text-[10.5px] font-black text-[#4A4A3A] hover:bg-[#F1ECE0] transition-all cursor-pointer"
-                  title="عرض البيوت على الخريطة"
-                  aria-label="عرض البيوت على الخريطة"
-                >
-                  <MapPin className="w-4 h-4" />
-                  <span>الخريطة</span>
-                </button>
-              </>
-            )}
+            <span aria-hidden="true" className="w-px h-6 bg-[#E3DCCC] shrink-0" />
+
+            <button
+              id="toggle-filters-btn"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`shrink-0 flex items-center gap-1 rounded-full px-3 py-2 text-[10.5px] font-black transition-all cursor-pointer ${
+                showFilters ? 'bg-[#5A5A40] text-white' : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
+              }`}
+              title="فلاتر متقدمة"
+              aria-label="فلاتر متقدمة"
+              aria-expanded={showFilters}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              <span>فلتر</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Quick cards — the guide and the loyalty balance, one short row. */}
+      {/* Quick cards, one short row. Loyalty is first so it lands on the RIGHT
+          in RTL, with the guide beside it — the approved order. */}
       <div className="grid grid-cols-2 gap-2.5">
-        <a
-          href="/dalil/"
-          className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-3 py-2.5 shadow-[0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_4px_12px_rgba(45,45,36,0.08)] transition-shadow group"
-        >
-          <span className="shrink-0 w-9 h-9 rounded-xl bg-[#F6F0E2] flex items-center justify-center">
-            <BookOpen className="w-4 h-4 text-[#C5A059]" />
-          </span>
-          <span className="min-w-0">
-            <span className="block text-[11px] font-black text-[#2D2D24] leading-tight">دليل المستخدم</span>
-            <span className="block text-[9px] font-bold text-[#8A8A70] truncate">تعرف على كل المزايا</span>
-          </span>
-        </a>
-
         {currentUser && currentUser.role !== 'owner' ? (
           <button
             id="loyalty-card-trigger"
@@ -423,6 +412,7 @@ export default function UserDashboard({
                 رصيدك: <span className="text-[#C5A059] font-black">{(currentUser.points || 0).toLocaleString('ar-EG')}</span> نقطة
               </span>
             </span>
+            <ChevronLeft aria-hidden="true" className="w-3.5 h-3.5 text-[#B5AF98] shrink-0 mr-auto transition-colors" />
           </button>
         ) : (
           <div className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-3 py-2.5 shadow-[0_2px_8px_rgba(45,45,36,0.04)]">
@@ -435,59 +425,73 @@ export default function UserDashboard({
             </span>
           </div>
         )}
+
+        <a
+          href="/dalil/"
+          className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-3 py-2.5 shadow-[0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_4px_12px_rgba(45,45,36,0.08)] transition-shadow group"
+        >
+          <span className="shrink-0 w-9 h-9 rounded-xl bg-[#F6F0E2] flex items-center justify-center">
+            <BookOpen className="w-4 h-4 text-[#C5A059]" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[11px] font-black text-[#2D2D24] leading-tight">دليل المستخدم</span>
+            <span className="block text-[9px] font-bold text-[#8A8A70] truncate">تعرف على كل المزايا</span>
+          </span>
+          <ChevronLeft aria-hidden="true" className="w-3.5 h-3.5 text-[#B5AF98] shrink-0 mr-auto group-hover:text-[#C5A059] transition-colors" />
+        </a>
       </div>
 
       {/* Category Tabs Selection */}
-      <div className="grid grid-cols-5 gap-1.5 p-1.5 bg-white border border-[#EDE7DA] rounded-2xl shadow-[0_2px_8px_rgba(45,45,36,0.04)]">
+      <div className="grid grid-cols-5 gap-1.5 p-1.5 bg-white border border-[#EDE7DA] rounded-2xl shadow-[0_2px_8px_rgba(45,45,36,0.04)] animate-in fade-in duration-500">
         <button
           onClick={() => setSelectedType('all')}
-          className={`py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer ${
+          className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-200 flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
             selectedType === 'all'
-              ? 'bg-[#5A5A40] text-white shadow-sm'
+              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] shadow-sm'
               : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
           }`}
         >
-          <Home className="w-3.5 h-3.5" />
+          <Home className="w-4 h-4" />
           <span>الكل</span>
         </button>
         <button
           onClick={() => setSelectedType('conference')}
-          className={`py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer ${
+          className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-200 flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
             selectedType === 'conference'
-              ? 'bg-[#5A5A40] text-white shadow-sm'
+              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] shadow-sm'
               : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
           }`}
         >
-          <Building className="w-3.5 h-3.5" />
+          <Building className="w-4 h-4" />
           <span>مؤتمرات</span>
         </button>
         <button
           onClick={() => setSelectedType('student')}
-          className={`py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer ${
+          className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-200 flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
             selectedType === 'student'
-              ? 'bg-[#5A5A40] text-white shadow-sm'
+              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] shadow-sm'
               : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
           }`}
         >
-          <GraduationCap className="w-3.5 h-3.5" />
+          <GraduationCap className="w-4 h-4" />
           <span>سكن طلاب</span>
         </button>
         <button
           onClick={() => setSelectedType('staff')}
-          className={`py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer ${
+          className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-200 flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
             selectedType === 'staff'
-              ? 'bg-[#5A5A40] text-white shadow-sm'
+              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] shadow-sm'
               : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
           }`}
         >
-          <Briefcase className="w-3.5 h-3.5" />
+          <Briefcase className="w-4 h-4" />
           <span>موظفين</span>
         </button>
         {currentUser ? (
           <button
             id="tab-favorites"
             onClick={() => setSelectedType('favorites')}
-            className={`py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer ${
+            className={`py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-200 flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
               selectedType === 'favorites'
                 ? 'bg-rose-600 text-white shadow-sm'
                 : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
@@ -501,13 +505,66 @@ export default function UserDashboard({
           <button
             id="tab-favorites"
             onClick={() => onToggleFavorite('')}
-            className="py-2 px-1 rounded-xl text-[8.5px] font-extrabold transition-all duration-200 flex flex-col items-center gap-1 cursor-pointer text-[#4A4A3A] hover:bg-[#F1ECE0]"
+            className="py-2.5 px-1 rounded-xl text-[9px] font-extrabold transition-all duration-200 flex flex-col items-center justify-center gap-1.5 cursor-pointer text-[#4A4A3A] hover:bg-[#F1ECE0]"
           >
             <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
             <span>المفضلة</span>
           </button>
         )}
       </div>
+
+      {/* At-a-glance strip. Every number is derived from the list the guest is
+          actually looking at, so it moves with the filters instead of quoting
+          the whole catalogue. Hidden when a filter empties the list — three
+          zeroes say nothing. */}
+      {filteredHouses.length > 0 && (() => {
+        const rated = filteredHouses.filter((h) => h.reviewsCount > 0);
+        const avg = rated.length
+          ? (rated.reduce((s, h) => s + h.rating, 0) / rated.length).toFixed(1)
+          : null;
+        const nightly = filteredHouses.filter((h) => h.propertyType !== 'student' && h.propertyType !== 'staff');
+        const from = nightly.length ? Math.min(...nightly.map((h) => h.pricePerNightPerPerson)) : null;
+        const cover = filteredHouses.find((h) => h.images[0])?.images[0];
+
+        return (
+          <div className="relative bg-white border border-[#EDE7DA] rounded-2xl shadow-[0_2px_8px_rgba(45,45,36,0.04)] overflow-hidden animate-in fade-in duration-500">
+            {/* Photo anchors the right edge, the cells run leftwards from it —
+                price, count, rating — matching the approved strip. */}
+            {cover && (
+              <>
+                <img src={cover} alt="" referrerPolicy="no-referrer" loading="lazy" aria-hidden="true"
+                  className="absolute inset-y-0 right-0 w-24 h-full object-cover" />
+                <div className="absolute inset-y-0 right-0 w-36 bg-gradient-to-r from-white via-white/85 to-transparent" />
+              </>
+            )}
+            <div className="relative flex items-stretch justify-end divide-x divide-x-reverse divide-[#EDE7DA] py-2.5 pl-3 pr-20">
+              {from !== null && (
+                <div className="flex flex-col items-center gap-0.5 px-2.5">
+                  <span className="text-[8.5px] font-bold text-[#8A8A70] leading-none">ابتداءً من</span>
+                  <span className="text-[13px] font-black text-[#C5A059] leading-none">{from} <span className="text-[8.5px] text-[#8A8A70]">ج.م</span></span>
+                  <span className="text-[8.5px] font-bold text-[#8A8A70]">لليلة للفرد</span>
+                </div>
+              )}
+              <div className="flex flex-col items-center justify-center gap-0.5 px-2.5">
+                <span className="flex items-center gap-1 text-[13px] font-black text-[#2D2D24] leading-none">
+                  <Home className="w-3.5 h-3.5 text-[#5A5A40]" />
+                  {filteredHouses.length}
+                </span>
+                <span className="text-[8.5px] font-bold text-[#8A8A70]">بيت متاح</span>
+              </div>
+              {avg && (
+                <div className="flex flex-col items-center justify-center gap-0.5 px-2.5">
+                  <span className="flex items-center gap-1 text-[13px] font-black text-[#2D2D24] leading-none">
+                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                    {avg}
+                  </span>
+                  <span className="text-[8.5px] font-bold text-[#8A8A70]">متوسط التقييم</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Advanced Filters Expandable Drawer — opened from the floating search bar */}
       {showFilters && (
@@ -611,7 +668,7 @@ export default function UserDashboard({
             <span className="block text-[10px] text-[#8A8A70] mb-1.5 font-bold">الموقع وقرب البحر:</span>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
               {[
-                { key: 'all', label: 'الكل', icon: <Home className="w-3.5 h-3.5" /> },
+                { key: 'all', label: 'الكل', icon: <Home className="w-4 h-4" /> },
                 { key: 'beach', label: 'على الشاطئ مباشرة', icon: <Waves className="w-3.5 h-3.5" /> },
                 { key: 'view', label: 'إطلالة على البحر 🌅', icon: <Sparkles className="w-3.5 h-3.5" /> },
                 { key: 'near', label: 'قريب من البحر 🌊', icon: <Waves className="w-3.5 h-3.5 text-blue-500" /> },
@@ -719,27 +776,34 @@ export default function UserDashboard({
         {/* Result count and sort. The filter control is not repeated here — it
             lives in the floating search bar, and one entry point is enough. */}
         <div className="flex justify-between items-center px-1 gap-2">
+          {/* Start of the row in RTL: the label for the control that follows. */}
+          <label htmlFor="sort-houses-select" className="shrink-0 flex items-center gap-1 bg-white border border-[#EDE7DA] rounded-full px-3 py-1.5 text-[10px] font-black text-[#4A4A3A] shadow-[0_2px_8px_rgba(45,45,36,0.04)] cursor-pointer">
+            <SlidersHorizontal aria-hidden="true" className="w-3.5 h-3.5 text-[#8A8A70]" />
+            <span>ترتيب</span>
+          </label>
+
           {(() => {
             const { count, noun } = resultsLabel(filteredHouses.length);
             return (
-              <span className="text-[12px] font-black text-[#2D2D24]">
+              <span className="text-[12px] font-black text-[#2D2D24] text-center flex-1 min-w-0 truncate">
                 وجدنا {count && <span className="text-[#C5A059]">{count}</span>} {noun}
               </span>
             );
           })()}
+
           <div className="relative shrink-0">
             <select
               id="sort-houses-select"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
               aria-label="ترتيب النتائج"
-              className="appearance-none bg-white border border-[#EDE7DA] rounded-full pr-7 pl-3 py-1.5 text-[10px] font-bold text-[#4A4A3A] shadow-[0_2px_8px_rgba(45,45,36,0.04)] focus:outline-none cursor-pointer"
+              className="appearance-none bg-white border border-[#EDE7DA] rounded-full pr-3 pl-7 py-1.5 text-[10px] font-bold text-[#4A4A3A] shadow-[0_2px_8px_rgba(45,45,36,0.04)] focus:outline-none cursor-pointer"
             >
               <option value="rating">الأفضل تقييماً</option>
               <option value="price_asc">الأقل سعراً</option>
               <option value="price_desc">الأعلى سعراً</option>
             </select>
-            <SlidersHorizontal aria-hidden="true" className="absolute top-1/2 -translate-y-1/2 right-2 w-3 h-3 text-[#8A8A70] pointer-events-none" />
+            <ChevronLeft aria-hidden="true" className="absolute top-1/2 -translate-y-1/2 left-2 w-3 h-3 text-[#8A8A70] pointer-events-none -rotate-90" />
           </div>
         </div>
 
