@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Booking, User, RetreatHouse, Attendee, RoomAllocation, Room, Payment, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { 
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
@@ -213,6 +213,36 @@ export default function UserBookings({
   const [notifiedOwner, setNotifiedOwner] = useState<Set<string>>(new Set());
   const [isPaying, setIsPaying] = useState<string | null>(null);
   const [chatOpenBookingId, setChatOpenBookingId] = useState<string | null>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
+
+  // The chat panel is appended at the end of the detail sheet's scrollable
+  // content — well past the fold. Opening it therefore changed nothing the
+  // guest could see, so "راسل صاحب البيت" read as a dead button and the app
+  // looked frozen.
+  //
+  // scrollIntoView does NOT work here: the sheet sits inside a `fixed inset-0`
+  // overlay, and the browser leaves the container's scrollTop at 0. Scrolling
+  // the container by the measured delta does work, so do that instead.
+  useEffect(() => {
+    if (!chatOpenBookingId) return;
+    const id = window.setTimeout(() => {
+      const panel = chatRef.current;
+      if (!panel) return;
+      let sheet: HTMLElement | null = panel.parentElement;
+      while (sheet && !(sheet.scrollHeight > sheet.clientHeight
+        && /auto|scroll/.test(getComputedStyle(sheet).overflowY))) {
+        sheet = sheet.parentElement;
+      }
+      if (!sheet) return;
+      // Instant, not smooth: a smooth scroll is silently dropped wherever the
+      // browser is not animating (reduced-motion, background tabs, embedded
+      // webviews), and this scroll is the entire feedback for the tap. A jump
+      // that always happens beats a glide that sometimes does not.
+      const delta = panel.getBoundingClientRect().top - sheet.getBoundingClientRect().top;
+      sheet.scrollTo({ top: sheet.scrollTop + delta - 8 });
+    }, 60);
+    return () => window.clearTimeout(id);
+  }, [chatOpenBookingId]);
 
   // A request was just placed: open its transfer card immediately, prefilled
   // with the deposit, and clear the handoff so a later re-render doesn't
@@ -1242,7 +1272,7 @@ export default function UserBookings({
                 </div>
 
                 {chatOpenBookingId === booking.id && (
-                  <div className="px-4 pb-4">
+                  <div ref={chatRef} className="px-4 pb-4 scroll-mt-2">
                     <BookingChatPanel
                       bookingId={booking.id}
                       currentUserId={currentUser.id}
