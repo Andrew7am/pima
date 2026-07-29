@@ -184,6 +184,12 @@ export interface Booking {
   // then only fills attendee names inside these rooms — see migration 072.
   assignedRoomIds?: string[];
   createdAt: string;
+  // Lifecycle stamps behind the booking journey — see migration 087. Both are
+  // written by database triggers, never by the client. approvedAt is undefined
+  // for bookings confirmed before that migration, and the journey simply shows
+  // that step without a date rather than inventing one.
+  approvedAt?: string;
+  updatedAt?: string;
 }
 
 export interface Payment {

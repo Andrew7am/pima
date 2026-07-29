@@ -102,3 +102,25 @@ describe('BookingChatPanel thread isolation', () => {
     await waitFor(() => expect(api.markBookingMessagesRead).toHaveBeenCalledWith('b1'));
   });
 });
+
+// The booking-details sheet opens this panel with a narrower set of props than
+// the conversations list does: one bookingId and no bookingIds, no booking, no
+// house, no coverUrl and no onBack. That call site must render, not throw.
+describe('BookingChatPanel opened from the booking sheet', () => {
+  it('renders with only the props the booking sheet passes', async () => {
+    load.mockResolvedValue([msg({ id: 1, content: 'أهلاً بك' })]);
+
+    expect(() => render(
+      <BookingChatPanel
+        bookingId="b1"
+        currentUserId="me"
+        title="صاحب البيت"
+        subtitle="بيت السيدة العذراء"
+        variant="guest"
+        heightClass="h-[50vh]"
+      />,
+    )).not.toThrow();
+
+    expect(await screen.findByText('أهلاً بك')).toBeInTheDocument();
+  });
+});

@@ -108,6 +108,9 @@ export function mapBooking(r: Record<string, unknown>): Booking {
     ownerSettledAt: r.owner_settled_at as string ?? undefined,
     assignedRoomIds: (r.assigned_room_ids as string[]) ?? undefined,
     createdAt: r.created_at as string,
+    // Trigger-maintained (migration 087); read-only on the client.
+    approvedAt: r.approved_at as string ?? undefined,
+    updatedAt: r.updated_at as string ?? undefined,
   };
 }
 

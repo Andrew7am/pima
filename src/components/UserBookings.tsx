@@ -1,17 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Booking, User, RetreatHouse, Attendee, RoomAllocation, Room, Payment, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { 
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
   Printer, Building, AlertTriangle, Bell, Smartphone, CreditCard, 
   Coins, Upload, ShieldCheck, Image, Check, Sparkles, ListTodo, Plus, Trash2, BookOpen,
-  FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft, CalendarPlus, Star, X, UserPlus
+  FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft, CalendarPlus, Star, X, UserPlus,
+  Search, ArrowDownWideNarrow
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
+import BookingJourney from './BookingJourney';
 import BookingChatPanel from './BookingChatPanel';
 import ReviewWizard from './ReviewWizard';
 import { refundAmountFor } from '../lib/cancellationPolicy';
 import { downloadBookingIcs } from '../lib/ics';
 import { setAttendeeSharePaid } from '../lib/db';
+import { arabicPlural, arabicDate, arabicDateRange } from '../lib/arabic';
 
 interface UserBookingsProps {
   bookings: Booking[];
@@ -154,39 +157,9 @@ function Fact({ icon: Icon, label, value, accent }: { icon: React.ElementType; l
   );
 }
 
-// Visual progress of a booking through its lifecycle. Rendered only for the
-// live statuses (pending / approved / completed) — cancelled & rejected keep
-// just their status badge.
-function BookingStepper({ status, depositPaid }: { status: Booking['status']; depositPaid?: boolean }) {
-  const steps = ['الطلب', 'الموافقة', 'العربون', 'تمّت'];
-  const done =
-    status === 'completed' ? 4
-      : status === 'approved' ? (depositPaid ? 3 : 2)
-        : 1; // pending
-  return (
-    <div className="flex items-center px-1">
-      {steps.map((label, i) => {
-        const reached = i < done;
-        const isCurrent = i === done - 1;
-        return (
-          <React.Fragment key={label}>
-            <div className="flex flex-col items-center gap-1 shrink-0">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black transition-colors ${
-                reached ? 'bg-[#0A2342] text-white' : 'bg-[#EBEBE0] text-[#B8B8A0]'
-              } ${isCurrent ? 'ring-2 ring-[#C5A059]/50' : ''}`}>
-                {reached ? <Check className="w-3 h-3" /> : i + 1}
-              </div>
-              <span className={`text-[8.5px] font-bold ${reached ? 'text-[#0A2342]' : 'text-[#B8B8A0]'}`}>{label}</span>
-            </div>
-            {i < steps.length - 1 && (
-              <div className={`flex-1 h-0.5 -mt-4 rounded-full transition-colors ${i < done - 1 ? 'bg-[#0A2342]' : 'bg-[#EBEBE0]'}`} />
-            )}
-          </React.Fragment>
-        );
-      })}
-    </div>
-  );
-}
+// The four-step stepper that used to live here was replaced by BookingJourney,
+// which shows the same lifecycle as the five named stages the guest recognises
+// and dates each one from a real column.
 
 export default function UserBookings({
   bookings,
@@ -242,6 +215,40 @@ export default function UserBookings({
   const [notifiedOwner, setNotifiedOwner] = useState<Set<string>>(new Set());
   const [isPaying, setIsPaying] = useState<string | null>(null);
   const [chatOpenBookingId, setChatOpenBookingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  // 'smart' keeps the existing behaviour — whatever needs the guest's attention
+  // floats up. The other two are plain date order, for when they are hunting.
+  const [sortBy, setSortBy] = useState<'smart' | 'newest' | 'oldest'>('smart');
+  const chatRef = useRef<HTMLDivElement>(null);
+
+  // The chat panel is appended at the end of the detail sheet's scrollable
+  // content — well past the fold. Opening it therefore changed nothing the
+  // guest could see, so "راسل صاحب البيت" read as a dead button and the app
+  // looked frozen.
+  //
+  // scrollIntoView does NOT work here: the sheet sits inside a `fixed inset-0`
+  // overlay, and the browser leaves the container's scrollTop at 0. Scrolling
+  // the container by the measured delta does work, so do that instead.
+  useEffect(() => {
+    if (!chatOpenBookingId) return;
+    const id = window.setTimeout(() => {
+      const panel = chatRef.current;
+      if (!panel) return;
+      let sheet: HTMLElement | null = panel.parentElement;
+      while (sheet && !(sheet.scrollHeight > sheet.clientHeight
+        && /auto|scroll/.test(getComputedStyle(sheet).overflowY))) {
+        sheet = sheet.parentElement;
+      }
+      if (!sheet) return;
+      // Instant, not smooth: a smooth scroll is silently dropped wherever the
+      // browser is not animating (reduced-motion, background tabs, embedded
+      // webviews), and this scroll is the entire feedback for the tap. A jump
+      // that always happens beats a glide that sometimes does not.
+      const delta = panel.getBoundingClientRect().top - sheet.getBoundingClientRect().top;
+      sheet.scrollTo({ top: sheet.scrollTop + delta - 8 });
+    }, 60);
+    return () => window.clearTimeout(id);
+  }, [chatOpenBookingId]);
 
   // A request was just placed: open its transfer card immediately, prefilled
   // with the deposit, and clear the handoff so a later re-render doesn't
@@ -448,14 +455,28 @@ export default function UserBookings({
   };
   // Header stat pills — the three numbers a guest actually cares about.
   const upcomingCount = userBookings.filter((b) => b.status === 'approved' && b.checkIn >= todayISO).length;
+  // The trip the guest is actually waiting on — soonest arrival still ahead.
+  const nextBooking = userBookings
+    .filter((b) => b.checkIn >= todayISO && b.status !== 'cancelled' && b.status !== 'rejected')
+    .sort((a, bk) => a.checkIn.localeCompare(bk.checkIn))[0];
   // Rank so the most time-sensitive cards float to the top of whatever tab is open.
   const rankOf = (b: Booking): number => {
     const c = categoryOf(b);
     return c === 'action' ? 0 : c === 'confirmed' ? 1 : c === 'completed' ? 2 : 3;
   };
+  // Search matches the place or the reference, which are the only two things a
+  // guest has to hand when hunting for one booking among many.
+  const q = search.trim().toLowerCase();
   const visibleBookings = userBookings
     .filter((b) => tab === 'all' || categoryOf(b) === tab)
+    .filter((b) => !q || `${b.houseName} ${b.id}`.toLowerCase().includes(q))
     .sort((a, bk) => {
+      if (sortBy === 'newest') return bk.createdAt.localeCompare(a.createdAt);
+      if (sortBy === 'oldest') return a.createdAt.localeCompare(bk.createdAt);
+      return 0;
+    })
+    .sort((a, bk) => {
+      if (sortBy !== 'smart') return 0;
       const r = rankOf(a) - rankOf(bk);
       if (r !== 0) return r;
       // Active piles: soonest check-in first. Past piles: most recent first.
@@ -463,12 +484,15 @@ export default function UserBookings({
       return past ? bk.checkIn.localeCompare(a.checkIn) : a.checkIn.localeCompare(bk.checkIn);
     });
 
+  // Labelled by where the stay sits in time, which is how a guest thinks about
+  // their own bookings. The underlying keys are unchanged, so the filtering,
+  // ranking and empty-state copy below keep working as they did.
   const TABS = [
     { key: 'all' as const, label: 'الكل', count: counts.all },
-    { key: 'action' as const, label: 'بانتظار إجراء', count: counts.action },
-    { key: 'confirmed' as const, label: 'مؤكدة', count: counts.confirmed },
-    { key: 'completed' as const, label: 'مكتملة', count: counts.completed },
-    { key: 'archived' as const, label: 'ملغية', count: counts.archived },
+    { key: 'action' as const, label: 'القادمة', count: counts.action },
+    { key: 'confirmed' as const, label: 'الحالية', count: counts.confirmed },
+    { key: 'completed' as const, label: 'السابقة', count: counts.completed },
+    { key: 'archived' as const, label: 'الملغية', count: counts.archived },
   ];
   const EMPTY_HINT: Record<typeof tab, string> = {
     all: 'تصفح بيوت المؤتمرات الرائعة في مصر وابدأ بالحجز لخلوتك القادمة.',
@@ -679,41 +703,36 @@ export default function UserBookings({
         </div>
       ) : (
         <>
-          {/* Hero — greeting + the three numbers a guest cares about */}
-          <div className="bg-gradient-to-br from-[#0A2342] to-[#123E75] text-white rounded-3xl p-5 relative overflow-hidden">
-            <div className="absolute -top-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
-            <div className="absolute -bottom-12 -right-8 w-36 h-36 bg-[#C5A059]/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="flex items-start justify-between gap-3 relative">
-              <div>
-                <h2 className="text-lg font-black">حجوزاتي</h2>
-                <p className="text-[10.5px] text-slate-300 mt-0.5">كل خلواتك ومؤتمراتك في مكان واحد</p>
-              </div>
-              <span className="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
-                <BookOpen className="w-5 h-5 text-[#C5A059]" />
-              </span>
+          {/* Page title. Deliberately just a title — the app bar above already
+              draws the bell and the avatar, and repeating them here would give
+              the screen two headers. */}
+          <div className="text-center pt-1">
+            <h2 className="text-lg font-black text-[#2D2D24]">حجوزاتي</h2>
+            <p className="text-[10.5px] font-bold text-[#8A8A70] mt-0.5">كل رحلتك في مكان واحد</p>
+          </div>
+
+          {/* Search — a guest hunting for one booking has the place name or the
+              reference, so both match. */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B8B8A0] pointer-events-none" />
+              <input
+                id="bookings-search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="ابحث باسم المكان أو رقم الحجز"
+                className="w-full bg-white border border-[#EDE7DA] rounded-2xl py-2.5 pr-10 pl-3 text-[11px] font-bold text-[#2D2D24] placeholder:text-[#B8B8A0] focus:outline-none focus:border-[#C5A059] shadow-sm"
+              />
             </div>
-            <div className="grid grid-cols-3 gap-2 mt-4 relative">
-              {[
-                { icon: CalendarCheck, value: upcomingCount, label: 'قادمة', go: 'confirmed' as const },
-                { icon: Wallet, value: unpaidApprovedCount, label: 'بانتظار سداد', go: 'action' as const, alert: unpaidApprovedCount > 0 },
-                { icon: BookOpen, value: counts.all, label: 'إجمالي', go: 'all' as const },
-              ].map((s) => {
-                const Icon = s.icon;
-                return (
-                  <button
-                    key={s.label}
-                    onClick={() => setTab(s.go)}
-                    className={`rounded-2xl p-2.5 flex flex-col items-center gap-0.5 border transition-all cursor-pointer active:scale-95 ${
-                      s.alert ? 'bg-[#C5A059]/20 border-[#C5A059]/40' : 'bg-white/8 border-white/10 hover:bg-white/12'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 ${s.alert ? 'text-[#E7C987]' : 'text-slate-300'}`} />
-                    <span className="text-base font-black leading-none">{s.value.toLocaleString('ar-EG')}</span>
-                    <span className="text-[9px] font-bold text-slate-300">{s.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="shrink-0 flex items-center gap-1.5 bg-white border border-[#EDE7DA] rounded-2xl px-3 py-2.5 text-[11px] font-black text-[#5A5A40] shadow-sm cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>مسح</span>
+              </button>
+            )}
           </div>
 
           {/* Status filter tabs */}
@@ -756,12 +775,94 @@ export default function UserBookings({
             </div>
           )}
 
+          {/* The trip being waited on, given the whole width. Everything here
+              is read from the booking — no placeholder art, so a house with no
+              photo gets the brand gradient rather than a broken image. */}
+          {nextBooking && !search && tab === 'all' && (() => {
+            const h = houses.find((x) => x.id === nextBooking.houseId);
+            const cover = h?.images?.[0];
+            const badge = getStatusBadge(nextBooking.status);
+            const BadgeIcon = badge.icon;
+            const d = daysUntil(nextBooking.checkIn);
+            return (
+              <div className="space-y-0">
+                <div className="relative rounded-3xl overflow-hidden h-52 shadow-md bg-gradient-to-br from-[#0A2342] to-[#123E75] text-white">
+                  {cover && <img src={cover} alt="" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/25" />
+
+                  <span className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 text-[#2D2D24] text-[9.5px] font-black px-2.5 py-1 rounded-full shadow-sm">
+                    <Sparkles className="w-3 h-3 text-[#C5A059]" /> الحجز القادم
+                  </span>
+
+                  {d >= 0 && (
+                    <div className="absolute top-14 right-3 bg-black/55 backdrop-blur-sm rounded-2xl px-3 py-2 text-center">
+                      <div className="text-[8.5px] font-bold text-white/70 leading-none">تبقى</div>
+                      <div className="text-xl font-black leading-tight">{d.toLocaleString('ar-EG')}</div>
+                      <div className="text-[8.5px] font-bold text-white/70 leading-none">{d === 1 ? 'يوم' : d === 2 ? 'يومين' : 'أيام'}</div>
+                    </div>
+                  )}
+
+                  <div className="absolute inset-x-0 bottom-0 p-4 space-y-1.5">
+                    <h3 className="text-[15px] font-black leading-tight">{nextBooking.houseName}</h3>
+                    {(h?.governorate || h?.address) && (
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-white/80">
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{[h?.address, h?.governorate].filter(Boolean).join(' - ')}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 text-[10px] font-bold text-white/85">
+                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{arabicDateRange(nextBooking.checkIn, nextBooking.checkOut)}</span>
+                      <span className="flex items-center gap-1"><Users className="w-3 h-3" />{nextBooking.guestsCount.toLocaleString('ar-EG')} فرد</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 pt-1.5">
+                      <span className="text-[17px] font-black">{nextBooking.totalPrice.toLocaleString('ar-EG')} <span className="text-[11px]">ج.م</span></span>
+                      <span className={`flex items-center gap-1 text-[9.5px] font-black px-2.5 py-1 rounded-full ${badge.color}`}>
+                        <BadgeIcon className="w-3 h-3" /> {badge.label}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setDetailBookingId(nextBooking.id)}
+                      className="mt-1 flex items-center gap-1 bg-white/95 hover:bg-white text-[#2D2D24] text-[10px] font-black px-3 py-1.5 rounded-full shadow-sm cursor-pointer transition-colors"
+                    >
+                      عرض التفاصيل <ChevronLeft className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Its journey, straight under the card. Same buildBookingJourney
+                    as the detail sheet — one source, drawn compactly. */}
+                <div className="bg-white rounded-b-3xl border border-t-0 border-[#EDE7DA] px-3.5 pt-3 pb-3.5 -mt-3 relative z-10 shadow-sm">
+                  <BookingJourney booking={nextBooking} payments={payments} variant="bar" />
+                </div>
+              </div>
+            );
+          })()}
+
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[12px] font-black text-[#2D2D24]">جميع الحجوزات</span>
+            <label className="flex items-center gap-1 text-[10px] font-black text-[#5A5A40] cursor-pointer">
+              <ArrowDownWideNarrow className="w-3.5 h-3.5 text-[#B8B8A0]" />
+              <select
+                id="bookings-sort"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                className="bg-transparent focus:outline-none cursor-pointer"
+              >
+                <option value="smart">الأهم أولاً</option>
+                <option value="newest">الأحدث</option>
+                <option value="oldest">الأقدم</option>
+              </select>
+            </label>
+          </div>
+
           {visibleBookings.length === 0 ? (
             <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-3">
               <div className="mx-auto w-12 h-12 bg-[#EBEBE0]/30 border border-[#D6D6C2] rounded-full flex items-center justify-center text-[#8A8A70]">
                 <Sparkles className="w-5 h-5 text-[#8A8A70]" />
               </div>
-              <p className="text-[11px] text-[#8A8A70] leading-relaxed max-w-[260px] mx-auto">{EMPTY_HINT[tab]}</p>
+              <p className="text-[11px] text-[#8A8A70] leading-relaxed max-w-[260px] mx-auto">
+                {search ? `مفيش حجز مطابق لـ"${search}".` : EMPTY_HINT[tab]}
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -830,34 +931,61 @@ export default function UserBookings({
                   }}
                   className="w-full bg-white rounded-3xl border border-[#D6D6C2] shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer text-right overflow-hidden"
                 >
-                  <div className="p-3.5 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="text-[13px] font-black text-[#2E2E24] truncate">{booking.houseName}</h3>
-                        <span className="text-[9px] text-[#8A8A70] font-bold tracking-wider">#{booking.id.toUpperCase()}</span>
-                      </div>
-                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9.5px] font-black shrink-0 ${badge.color}`}>
-                        <StatusIcon className="w-3 h-3 shrink-0" />
-                        {badge.label}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-3 text-[10.5px] font-bold text-[#5A5A40]">
-                      <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5 text-[#BCBC9D]" />{booking.checkIn} → {booking.checkOut}</span>
-                      <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-[#BCBC9D]" />{booking.guestsCount.toLocaleString('ar-EG')}</span>
-                      {dLeftCompact >= 0 && dLeftCompact <= 7 && (
-                        <span className="text-[9.5px] font-black text-[#0A2342] bg-[#0A2342]/5 rounded-full px-2 py-0.5">
-                          {dLeftCompact === 0 ? 'اليوم 🎉' : `بعد ${dLeftCompact.toLocaleString('ar-EG')} يوم`}
-                        </span>
+                  {/* Photo first: a place is recognised by how it looks long
+                      before its name is read. Houses with no photo keep the
+                      brand gradient rather than an empty grey box. */}
+                  <div className="p-3 flex items-center gap-3">
+                    <div className="w-[76px] h-[76px] rounded-2xl overflow-hidden shrink-0 bg-gradient-to-br from-[#0A2342] to-[#123E75] relative">
+                      {bookingHouse?.images?.[0] && (
+                        <img src={bookingHouse.images[0]} alt="" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#D6D6C2]/50">
-                      <span className="text-[12.5px] font-black text-[#0A2342]">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</span>
-                      <span className={`flex items-center gap-0.5 text-[10px] font-black ${nextStep.cls}`}>
-                        {nextStep.label}
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                      </span>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-[12.5px] font-black text-[#2E2E24] truncate">{booking.houseName}</h3>
+                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9px] font-black shrink-0 ${badge.color}`}>
+                          <StatusIcon className="w-3 h-3 shrink-0" />
+                          {badge.label}
+                        </span>
+                      </div>
+
+                      {(bookingHouse?.governorate || bookingHouse?.address) && (
+                        <div className="flex items-center gap-1 text-[9.5px] font-bold text-[#8A8A70]">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{[bookingHouse?.address, bookingHouse?.governorate].filter(Boolean).join(' - ')}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2.5 text-[9.5px] font-bold text-[#5A5A40]">
+                        <span className="flex items-center gap-1"><Users className="w-3 h-3 text-[#BCBC9D]" />{booking.guestsCount.toLocaleString('ar-EG')} فرد</span>
+                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-[#BCBC9D]" />{arabicDateRange(booking.checkIn, booking.checkOut)}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-0.5">
+                        <div className="min-w-0">
+                          <span className="text-[12.5px] font-black text-[#0A2342]">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</span>
+                          {/* What is still owed, or that nothing is — the number
+                              a guest scans this row for. */}
+                          <span className={`block text-[9px] font-black ${booking.depositPaid ? 'text-emerald-700' : 'text-[#B8944E]'}`}>
+                            {booking.depositPaid
+                              ? 'العربون مدفوع'
+                              : `المتبقي ${Math.max(0, booking.totalPrice - (booking.depositPaid ? booking.depositAmount : 0)).toLocaleString('ar-EG')} ج.م`}
+                          </span>
+                        </div>
+                        <span className={`flex items-center gap-0.5 text-[9.5px] font-black shrink-0 ${nextStep.cls}`}>
+                          {nextStep.label}
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </span>
+                      </div>
+
+                      {dLeftCompact >= 0 && dLeftCompact <= 7 && (
+                        <span className="inline-block text-[9px] font-black text-[#0A2342] bg-[#0A2342]/5 rounded-full px-2 py-0.5">
+                          {dLeftCompact === 0
+                            ? 'اليوم 🎉'
+                            : `بعد ${arabicPlural(dLeftCompact, { one: 'يوم', two: 'يومين', few: 'أيام', many: 'يوم' })}`}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </button>
@@ -903,15 +1031,17 @@ export default function UserBookings({
                   </div>
                 </div>
 
-                {/* Lifecycle progress stepper (live statuses only) */}
+                {/* The booking's journey with Pima (live statuses only) */}
                 {(booking.status === 'pending' || booking.status === 'approved' || booking.status === 'completed') && (
                   <div className="px-4 py-3 border-b border-[#D6D6C2]/60">
-                    <BookingStepper status={booking.status} depositPaid={booking.depositPaid} />
+                    <BookingJourney booking={booking} payments={payments} />
                     {/* Countdown — a confirmed trip that hasn't happened yet */}
                     {booking.status === 'approved' && (() => {
                       const d = daysUntil(booking.checkIn);
                       if (d < 0) return null;
-                      const text = d === 0 ? 'خلوتك اليوم! 🎉' : d === 1 ? 'باقي يوم واحد على خلوتك' : `باقي ${d.toLocaleString('ar-EG')} يوم على خلوتك`;
+                      const text = d === 0
+                        ? 'خلوتك اليوم! 🎉'
+                        : `باقي ${arabicPlural(d, { one: 'يوم واحد', two: 'يومين', few: 'أيام', many: 'يوم' })} على خلوتك`;
                       return (
                         <div className="mt-2.5 flex items-center justify-center gap-1.5 bg-[#0A2342]/5 text-[#0A2342] rounded-full py-1.5 text-[10.5px] font-black">
                           <CalendarCheck className="w-3.5 h-3.5 text-[#C5A059]" />
@@ -924,8 +1054,8 @@ export default function UserBookings({
 
                 {/* Facts — tidy, consistent key/value grid */}
                 <div className="px-4 py-3.5 grid grid-cols-2 gap-x-3 gap-y-3.5 border-b border-[#D6D6C2]/60">
-                  <Fact icon={Calendar} label="الوصول" value={booking.checkIn} />
-                  <Fact icon={CalendarCheck} label="المغادرة" value={booking.checkOut} />
+                  <Fact icon={Calendar} label="الوصول" value={arabicDate(booking.checkIn)} />
+                  <Fact icon={CalendarCheck} label="المغادرة" value={arabicDate(booking.checkOut)} />
                   <Fact icon={Users} label="عدد الأفراد" value={`${booking.guestsCount.toLocaleString('ar-EG')} فرد`} />
                   <Fact icon={Wallet} label="إجمالي التكلفة" value={`${booking.totalPrice.toLocaleString('ar-EG')} ج.م`} accent="text-[#0A2342]" />
                 </div>
@@ -1221,7 +1351,7 @@ export default function UserBookings({
                       <button
                         onClick={() => {
                           const link = `${window.location.origin}/?join=${booking.id}`;
-                          const msg = `سلام ونعمة 🙏\nانضم لقائمة مشاركين خلوة «${booking.houseName}» (${booking.checkIn} → ${booking.checkOut}) واكتب اسمك من هنا:\n${link}`;
+                          const msg = `سلام ونعمة 🙏\nانضم لقائمة مشاركين خلوة «${booking.houseName}» (${arabicDateRange(booking.checkIn, booking.checkOut)}) واكتب اسمك من هنا:\n${link}`;
                           window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
                         }}
                         className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
@@ -1271,7 +1401,7 @@ export default function UserBookings({
                 </div>
 
                 {chatOpenBookingId === booking.id && (
-                  <div className="px-4 pb-4">
+                  <div ref={chatRef} className="px-4 pb-4 scroll-mt-2">
                     <BookingChatPanel
                       bookingId={booking.id}
                       currentUserId={currentUser.id}
