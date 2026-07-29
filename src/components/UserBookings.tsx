@@ -4,7 +4,8 @@ import {
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
   Printer, Building, AlertTriangle, Bell, Smartphone, CreditCard, 
   Coins, Upload, ShieldCheck, Image, Check, Sparkles, ListTodo, Plus, Trash2, BookOpen,
-  FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft, CalendarPlus, Star, X, UserPlus
+  FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft, CalendarPlus, Star, X, UserPlus,
+  Search, ArrowDownWideNarrow
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
 import BookingJourney from './BookingJourney';
@@ -213,6 +214,10 @@ export default function UserBookings({
   const [notifiedOwner, setNotifiedOwner] = useState<Set<string>>(new Set());
   const [isPaying, setIsPaying] = useState<string | null>(null);
   const [chatOpenBookingId, setChatOpenBookingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  // 'smart' keeps the existing behaviour — whatever needs the guest's attention
+  // floats up. The other two are plain date order, for when they are hunting.
+  const [sortBy, setSortBy] = useState<'smart' | 'newest' | 'oldest'>('smart');
   const chatRef = useRef<HTMLDivElement>(null);
 
   // The chat panel is appended at the end of the detail sheet's scrollable
@@ -449,14 +454,28 @@ export default function UserBookings({
   };
   // Header stat pills — the three numbers a guest actually cares about.
   const upcomingCount = userBookings.filter((b) => b.status === 'approved' && b.checkIn >= todayISO).length;
+  // The trip the guest is actually waiting on — soonest arrival still ahead.
+  const nextBooking = userBookings
+    .filter((b) => b.checkIn >= todayISO && b.status !== 'cancelled' && b.status !== 'rejected')
+    .sort((a, bk) => a.checkIn.localeCompare(bk.checkIn))[0];
   // Rank so the most time-sensitive cards float to the top of whatever tab is open.
   const rankOf = (b: Booking): number => {
     const c = categoryOf(b);
     return c === 'action' ? 0 : c === 'confirmed' ? 1 : c === 'completed' ? 2 : 3;
   };
+  // Search matches the place or the reference, which are the only two things a
+  // guest has to hand when hunting for one booking among many.
+  const q = search.trim().toLowerCase();
   const visibleBookings = userBookings
     .filter((b) => tab === 'all' || categoryOf(b) === tab)
+    .filter((b) => !q || `${b.houseName} ${b.id}`.toLowerCase().includes(q))
     .sort((a, bk) => {
+      if (sortBy === 'newest') return bk.createdAt.localeCompare(a.createdAt);
+      if (sortBy === 'oldest') return a.createdAt.localeCompare(bk.createdAt);
+      return 0;
+    })
+    .sort((a, bk) => {
+      if (sortBy !== 'smart') return 0;
       const r = rankOf(a) - rankOf(bk);
       if (r !== 0) return r;
       // Active piles: soonest check-in first. Past piles: most recent first.
@@ -464,12 +483,15 @@ export default function UserBookings({
       return past ? bk.checkIn.localeCompare(a.checkIn) : a.checkIn.localeCompare(bk.checkIn);
     });
 
+  // Labelled by where the stay sits in time, which is how a guest thinks about
+  // their own bookings. The underlying keys are unchanged, so the filtering,
+  // ranking and empty-state copy below keep working as they did.
   const TABS = [
     { key: 'all' as const, label: 'الكل', count: counts.all },
-    { key: 'action' as const, label: 'بانتظار إجراء', count: counts.action },
-    { key: 'confirmed' as const, label: 'مؤكدة', count: counts.confirmed },
-    { key: 'completed' as const, label: 'مكتملة', count: counts.completed },
-    { key: 'archived' as const, label: 'ملغية', count: counts.archived },
+    { key: 'action' as const, label: 'القادمة', count: counts.action },
+    { key: 'confirmed' as const, label: 'الحالية', count: counts.confirmed },
+    { key: 'completed' as const, label: 'السابقة', count: counts.completed },
+    { key: 'archived' as const, label: 'الملغية', count: counts.archived },
   ];
   const EMPTY_HINT: Record<typeof tab, string> = {
     all: 'تصفح بيوت المؤتمرات الرائعة في مصر وابدأ بالحجز لخلوتك القادمة.',
@@ -680,41 +702,36 @@ export default function UserBookings({
         </div>
       ) : (
         <>
-          {/* Hero — greeting + the three numbers a guest cares about */}
-          <div className="bg-gradient-to-br from-[#0A2342] to-[#123E75] text-white rounded-3xl p-5 relative overflow-hidden">
-            <div className="absolute -top-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
-            <div className="absolute -bottom-12 -right-8 w-36 h-36 bg-[#C5A059]/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="flex items-start justify-between gap-3 relative">
-              <div>
-                <h2 className="text-lg font-black">حجوزاتي</h2>
-                <p className="text-[10.5px] text-slate-300 mt-0.5">كل خلواتك ومؤتمراتك في مكان واحد</p>
-              </div>
-              <span className="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
-                <BookOpen className="w-5 h-5 text-[#C5A059]" />
-              </span>
+          {/* Page title. Deliberately just a title — the app bar above already
+              draws the bell and the avatar, and repeating them here would give
+              the screen two headers. */}
+          <div className="text-center pt-1">
+            <h2 className="text-lg font-black text-[#2D2D24]">حجوزاتي</h2>
+            <p className="text-[10.5px] font-bold text-[#8A8A70] mt-0.5">كل رحلتك في مكان واحد</p>
+          </div>
+
+          {/* Search — a guest hunting for one booking has the place name or the
+              reference, so both match. */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B8B8A0] pointer-events-none" />
+              <input
+                id="bookings-search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="ابحث باسم المكان أو رقم الحجز"
+                className="w-full bg-white border border-[#EDE7DA] rounded-2xl py-2.5 pr-10 pl-3 text-[11px] font-bold text-[#2D2D24] placeholder:text-[#B8B8A0] focus:outline-none focus:border-[#C5A059] shadow-sm"
+              />
             </div>
-            <div className="grid grid-cols-3 gap-2 mt-4 relative">
-              {[
-                { icon: CalendarCheck, value: upcomingCount, label: 'قادمة', go: 'confirmed' as const },
-                { icon: Wallet, value: unpaidApprovedCount, label: 'بانتظار سداد', go: 'action' as const, alert: unpaidApprovedCount > 0 },
-                { icon: BookOpen, value: counts.all, label: 'إجمالي', go: 'all' as const },
-              ].map((s) => {
-                const Icon = s.icon;
-                return (
-                  <button
-                    key={s.label}
-                    onClick={() => setTab(s.go)}
-                    className={`rounded-2xl p-2.5 flex flex-col items-center gap-0.5 border transition-all cursor-pointer active:scale-95 ${
-                      s.alert ? 'bg-[#C5A059]/20 border-[#C5A059]/40' : 'bg-white/8 border-white/10 hover:bg-white/12'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 ${s.alert ? 'text-[#E7C987]' : 'text-slate-300'}`} />
-                    <span className="text-base font-black leading-none">{s.value.toLocaleString('ar-EG')}</span>
-                    <span className="text-[9px] font-bold text-slate-300">{s.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="shrink-0 flex items-center gap-1.5 bg-white border border-[#EDE7DA] rounded-2xl px-3 py-2.5 text-[11px] font-black text-[#5A5A40] shadow-sm cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>مسح</span>
+              </button>
+            )}
           </div>
 
           {/* Status filter tabs */}
@@ -757,12 +774,40 @@ export default function UserBookings({
             </div>
           )}
 
+          {/* The featured card's own journey line, so the next trip's stage is
+              readable without opening it. Same buildBookingJourney as the
+              detail sheet — one source, drawn compactly. */}
+          {nextBooking && !search && tab === 'all' && (
+            <div className="bg-white rounded-3xl border border-[#EDE7DA] p-3.5 shadow-sm">
+              <BookingJourney booking={nextBooking} payments={payments} variant="bar" />
+            </div>
+          )}
+
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[12px] font-black text-[#2D2D24]">جميع الحجوزات</span>
+            <label className="flex items-center gap-1 text-[10px] font-black text-[#5A5A40] cursor-pointer">
+              <ArrowDownWideNarrow className="w-3.5 h-3.5 text-[#B8B8A0]" />
+              <select
+                id="bookings-sort"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                className="bg-transparent focus:outline-none cursor-pointer"
+              >
+                <option value="smart">الأهم أولاً</option>
+                <option value="newest">الأحدث</option>
+                <option value="oldest">الأقدم</option>
+              </select>
+            </label>
+          </div>
+
           {visibleBookings.length === 0 ? (
             <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-3">
               <div className="mx-auto w-12 h-12 bg-[#EBEBE0]/30 border border-[#D6D6C2] rounded-full flex items-center justify-center text-[#8A8A70]">
                 <Sparkles className="w-5 h-5 text-[#8A8A70]" />
               </div>
-              <p className="text-[11px] text-[#8A8A70] leading-relaxed max-w-[260px] mx-auto">{EMPTY_HINT[tab]}</p>
+              <p className="text-[11px] text-[#8A8A70] leading-relaxed max-w-[260px] mx-auto">
+                {search ? `مفيش حجز مطابق لـ"${search}".` : EMPTY_HINT[tab]}
+              </p>
             </div>
           ) : (
             <div className="space-y-3">

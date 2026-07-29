@@ -8,8 +8,12 @@ import type { Booking, Payment } from '../types';
  * is inferred or filled in. A stage whose timestamp is unknown (for example a
  * booking confirmed before migration 087 added `approved_at`) simply carries no
  * date, which is honest; the alternative would be inventing one.
+ *
+ * One journey, used by both the bookings screen and the detail sheet. Showing
+ * the same booking at two different stages in two places is worse than either
+ * wording on its own.
  */
-export type JourneyStepKey = 'submitted' | 'review' | 'confirmed' | 'deposit' | 'completed';
+export type JourneyStepKey = 'submitted' | 'approved' | 'deposit' | 'arrival' | 'departure';
 export type JourneyStepState = 'done' | 'current' | 'upcoming';
 
 export interface JourneyStep {
@@ -31,11 +35,11 @@ export interface BookingJourney {
 }
 
 const LABELS: Record<JourneyStepKey, string> = {
-  submitted: 'تم إرسال الطلب',
-  review: 'جاري مراجعة الحجز',
-  confirmed: 'تم تأكيد الحجز',
+  submitted: 'تم الطلب',
+  approved: 'الموافقة',
   deposit: 'دفع العربون',
-  completed: 'اكتمل الحجز',
+  arrival: 'الوصول',
+  departure: 'انتهاء الإقامة',
 };
 
 /** A booking counts as deposit-paid once the platform has approved the payment. */
@@ -53,28 +57,32 @@ export function buildBookingJourney(booking: Booking, payments: Payment[] = []):
     booking.paymentStatus === 'paid_full' ||
     !!deposit;
 
-  const confirmed = booking.status === 'approved' || booking.status === 'completed';
-  const finished = booking.status === 'completed' || !!booking.checkedOutAt;
+  const approved = booking.status === 'approved' || booking.status === 'completed';
+  // A finished stay implies both ends of it happened, even on an older record
+  // that predates the check-in/out stamps.
+  const departed = !!booking.checkedOutAt || booking.status === 'completed';
+  const arrived = !!booking.checkedInAt || departed;
 
   // Each stage's completion is derived independently, then the first unfinished
   // one becomes "current" — so a booking that skipped ahead (an owner recording
   // an already-paid walk-in) still renders a coherent line.
   const done: Record<JourneyStepKey, boolean> = {
     submitted: true,
-    review: confirmed || finished,
-    confirmed,
+    approved,
     deposit: depositDone,
-    completed: finished,
+    arrival: arrived,
+    departure: departed,
   };
 
   const at: Partial<Record<JourneyStepKey, string | undefined>> = {
     submitted: booking.createdAt,
-    confirmed: booking.approvedAt,
+    approved: booking.approvedAt,
     deposit: deposit?.paymentDate,
-    completed: booking.checkedOutAt,
+    arrival: booking.checkedInAt,
+    departure: booking.checkedOutAt,
   };
 
-  const order: JourneyStepKey[] = ['submitted', 'review', 'confirmed', 'deposit', 'completed'];
+  const order: JourneyStepKey[] = ['submitted', 'approved', 'deposit', 'arrival', 'departure'];
   const currentKey = order.find((k) => !done[k]);
 
   const steps: JourneyStep[] = order.map((key) => ({
@@ -90,24 +98,24 @@ export function buildBookingJourney(booking: Booking, payments: Payment[] = []):
 
 function noteFor(key: JourneyStepKey): string | undefined {
   switch (key) {
-    case 'review': return 'فريق بيما بيتابع طلبك';
+    case 'approved': return 'فريق بيما بيتابع طلبك';
     case 'deposit': return 'مطلوب منك الآن';
-    case 'completed': return 'في انتظار وصولك';
+    case 'arrival': return 'في انتظار وصولك';
     default: return undefined;
   }
 }
 
 function messageFor(key: JourneyStepKey | undefined, booking: Booking): string {
   switch (key) {
-    case 'review':
+    case 'approved':
       return 'فريق بيما بيراجع طلبك مع بيت المؤتمرات دلوقتي. هنخطرك فور تأكيد الحجز.';
-    case 'confirmed':
-      return 'طلبك اتراجع، وفي انتظار تأكيد بيت المؤتمرات.';
     case 'deposit':
       return 'حجزك اتأكد. ادفع العربون علشان يتثبّت نهائيًا.';
-    case 'completed':
+    case 'arrival':
       return `حجزك مؤكد والعربون اتدفع. مستنينك في ${booking.houseName}.`;
+    case 'departure':
+      return 'وصلت بالسلامة — إقامة سعيدة 🌿';
     default:
-      return 'اكتمل حجزك. شكرًا لاختيارك بيما 🌿';
+      return 'اكتملت إقامتك. شكرًا لاختيارك بيما 🌿';
   }
 }

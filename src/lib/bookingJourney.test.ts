@@ -23,32 +23,46 @@ const stateOf = (b: Booking, p: Payment[] = []) =>
   Object.fromEntries(buildBookingJourney(b, p).steps.map((s) => [s.key, s.state]));
 
 describe('booking journey sequencing', () => {
-  it('parks a brand-new request on the review step', () => {
-    const s = stateOf(booking());
-    expect(s).toEqual({
-      submitted: 'done', review: 'current', confirmed: 'upcoming',
-      deposit: 'upcoming', completed: 'upcoming',
+  it('parks a brand-new request on the approval step', () => {
+    expect(stateOf(booking())).toEqual({
+      submitted: 'done', approved: 'current', deposit: 'upcoming',
+      arrival: 'upcoming', departure: 'upcoming',
     });
   });
 
   it('moves to the deposit once the owner approves', () => {
-    const s = stateOf(booking({ status: 'approved' }));
-    expect(s).toEqual({
-      submitted: 'done', review: 'done', confirmed: 'done',
-      deposit: 'current', completed: 'upcoming',
+    expect(stateOf(booking({ status: 'approved' }))).toEqual({
+      submitted: 'done', approved: 'done', deposit: 'current',
+      arrival: 'upcoming', departure: 'upcoming',
     });
   });
 
   it('waits on arrival once the deposit is paid', () => {
     const s = stateOf(booking({ status: 'approved', depositPaid: true }));
     expect(s.deposit).toBe('done');
-    expect(s.completed).toBe('current');
+    expect(s.arrival).toBe('current');
   });
 
-  it('finishes when the stay is completed', () => {
-    const j = buildBookingJourney(booking({ status: 'completed', depositPaid: true }));
+  it('moves to the end of the stay once the guest checks in', () => {
+    const s = stateOf(booking({ status: 'approved', depositPaid: true, checkedInAt: '2026-07-15T14:00:00Z' }));
+    expect(s.arrival).toBe('done');
+    expect(s.departure).toBe('current');
+  });
+
+  it('finishes when the guest has checked out', () => {
+    const j = buildBookingJourney(booking({
+      status: 'approved', depositPaid: true,
+      checkedInAt: '2026-07-15T14:00:00Z', checkedOutAt: '2026-07-18T10:00:00Z',
+    }));
     expect(j.steps.every((s) => s.state === 'done')).toBe(true);
     expect(j.finished).toBe(true);
+  });
+
+  // Older records were marked 'completed' before the check-in/out stamps
+  // existed. A finished stay implies both ends of it happened.
+  it('treats a completed booking as fully travelled even without the stamps', () => {
+    const s = stateOf(booking({ status: 'completed', depositPaid: true }));
+    expect(Object.values(s).every((v) => v === 'done')).toBe(true);
   });
 
   // An owner recording an already-paid walk-in skips the middle entirely; the
@@ -62,24 +76,29 @@ describe('booking journey sequencing', () => {
 describe('booking journey dates', () => {
   it('dates each stage only from a real column', () => {
     const j = buildBookingJourney(
-      booking({ status: 'approved', approvedAt: '2026-07-18T12:00:00Z' }),
+      booking({
+        status: 'approved', approvedAt: '2026-07-18T12:00:00Z',
+        checkedInAt: '2026-07-15T14:00:00Z', checkedOutAt: '2026-07-18T10:00:00Z',
+      }),
       [payment()],
     );
     const at = Object.fromEntries(j.steps.map((s) => [s.key, s.at]));
 
     expect(at.submitted).toBe('2026-07-18T08:00:00Z');
-    expect(at.confirmed).toBe('2026-07-18T12:00:00Z');
+    expect(at.approved).toBe('2026-07-18T12:00:00Z');
     expect(at.deposit).toBe('2026-07-19T09:00:00Z');
+    expect(at.arrival).toBe('2026-07-15T14:00:00Z');
+    expect(at.departure).toBe('2026-07-18T10:00:00Z');
   });
 
   // Bookings confirmed before migration 087 have no approved_at. The step must
   // still render — just without a date. Inventing one would be worse.
-  it('leaves the confirmation undated when the column is empty', () => {
+  it('leaves the approval undated when the column is empty', () => {
     const j = buildBookingJourney(booking({ status: 'approved' }));
-    const confirmed = j.steps.find((s) => s.key === 'confirmed')!;
+    const approved = j.steps.find((s) => s.key === 'approved')!;
 
-    expect(confirmed.state).toBe('done');
-    expect(confirmed.at).toBeUndefined();
+    expect(approved.state).toBe('done');
+    expect(approved.at).toBeUndefined();
   });
 
   // A submitted-but-unverified transfer must not date the deposit step, or the
@@ -93,18 +112,20 @@ describe('booking journey dates', () => {
   });
 
   it('ignores payments belonging to another booking', () => {
-    const other = [payment({ bookingId: 'b2' })];
-    expect(approvedDepositPayment('b1', other)).toBeUndefined();
+    expect(approvedDepositPayment('b1', [payment({ bookingId: 'b2' })])).toBeUndefined();
   });
 });
 
 describe('booking journey message', () => {
-  it('explains each stage in the guest\'s own terms', () => {
+  it("explains each stage in the guest's own terms", () => {
     expect(buildBookingJourney(booking()).message).toContain('بيراجع طلبك');
     expect(buildBookingJourney(booking({ status: 'approved' })).message).toContain('ادفع العربون');
     expect(buildBookingJourney(booking({ status: 'approved', depositPaid: true })).message)
       .toContain(base.houseName);
+    expect(buildBookingJourney(booking({
+      status: 'approved', depositPaid: true, checkedInAt: '2026-07-15T14:00:00Z',
+    })).message).toContain('إقامة سعيدة');
     expect(buildBookingJourney(booking({ status: 'completed', depositPaid: true })).message)
-      .toContain('اكتمل حجزك');
+      .toContain('اكتملت إقامتك');
   });
 });
