@@ -184,7 +184,12 @@ export default function ProfileScreen({
   if (view === 'rewards') {
     return (
       <div className="animate-in fade-in slide-in-from-left-2 duration-200 pb-8">
-        <RewardsDashboard currentUser={currentUser} onBack={() => setView('hub')} />
+        <RewardsDashboard
+          currentUser={currentUser}
+          onBack={() => setView('hub')}
+          bookings={bookings}
+          onNavigateBookings={onNavigateBookings}
+        />
       </div>
     );
   }
