@@ -1889,6 +1889,7 @@ export default function App() {
               onUpdateAvatar={handleUpdateAvatar}
               bookings={bookings}
               reviews={reviews}
+              houses={houses}
               onNavigateBookings={() => setActiveScreen('bookings')}
             />
           )}

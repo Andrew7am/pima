@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+﻿import React, { useMemo, useRef, useState } from 'react';
 import { User, Booking, Review, PointsTransaction } from '../types';
 import {
   Gift, History, ChevronRight, ChevronLeft, Coins, Users, Star, Wallet,
@@ -9,12 +9,16 @@ import { arabicNumber } from '../lib/arabic';
 import { tapFeedback } from '../lib/haptics';
 import { claimDailyAdPoints } from '../lib/db';
 import AdGateModal from '../entertainment/AdGateModal';
+import PassportScreen, { PassportStamp } from './PassportScreen';
+import { RetreatHouse } from '../types';
 
 interface RewardsDashboardProps {
   currentUser: User;
   onBack: () => void;
   bookings?: Booking[];
   reviews?: Review[];
+  /** Coordinates + governorates for the passport's discovery panel. */
+  houses?: RetreatHouse[];
   onNavigateBookings?: () => void;
 }
 
@@ -52,14 +56,14 @@ const isToday = (iso: string) => {
   return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
 };
 
-export default function RewardsDashboard({ currentUser, onBack, bookings = [], reviews = [], onNavigateBookings }: RewardsDashboardProps) {
+export default function RewardsDashboard({ currentUser, onBack, bookings = [], reviews = [], houses = [], onNavigateBookings }: RewardsDashboardProps) {
   const history = currentUser.pointsHistory || [];
   // Optimistic +25 after a successful ad claim — the server wrote it; the prop
   // simply has not refetched yet. Reload converges on the real value.
   const [adBonus, setAdBonus] = useState(0);
   const [adOpen, setAdOpen] = useState(false);
   const [adClaimedNow, setAdClaimedNow] = useState(false);
-  const [passportOpen, setPassportOpen] = useState(false);
+  const [showPassport, setShowPassport] = useState(false);
   const [showAllActivity, setShowAllActivity] = useState(false);
   const activityRef = useRef<HTMLDivElement>(null);
 
@@ -80,10 +84,15 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
     () => myBookings.filter((b) => b.status === 'completed' || !!b.checkedOutAt || !!b.checkedInAt),
     [myBookings],
   );
-  // A stamp is a distinct house actually stayed at — not a booking row.
-  const stamps = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const b of completedStays) if (!seen.has(b.houseId)) seen.set(b.houseId, b.houseName);
+  // A stamp is a distinct house actually stayed at — not a booking row. The
+  // date on the stamp is the FIRST stay, which is when it was earned.
+  const stamps = useMemo<PassportStamp[]>(() => {
+    const seen = new Map<string, PassportStamp>();
+    const ordered = [...completedStays].sort((a, b) =>
+      new Date(a.checkedInAt ?? a.checkIn).getTime() - new Date(b.checkedInAt ?? b.checkIn).getTime());
+    for (const b of ordered) {
+      if (!seen.has(b.houseId)) seen.set(b.houseId, { houseId: b.houseId, houseName: b.houseName, date: b.checkedInAt ?? b.checkIn });
+    }
     return [...seen.values()];
   }, [completedStays]);
 
@@ -114,6 +123,20 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
   };
 
   const shownActivity = showAllActivity ? history.slice().reverse() : history.slice().reverse().slice(0, 3);
+
+  // The passport is its own page, reached from «افتح الجواز» — not an expander.
+  if (showPassport) {
+    return (
+      <PassportScreen
+        stamps={stamps}
+        target={PASSPORT_TARGET}
+        tierName={tier.name}
+        completedBookings={completedStays.length}
+        houses={houses}
+        onBack={() => setShowPassport(false)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4 text-right animate-in fade-in duration-200">
@@ -238,27 +261,13 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
 
           <button
             type="button"
-            onClick={() => { tapFeedback(); setPassportOpen((v) => !v); }}
-            aria-expanded={passportOpen}
+            onClick={() => { tapFeedback(); setShowPassport(true); }}
             className="w-full flex items-center justify-center gap-1 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white rounded-xl h-9 text-[10.5px] font-black shadow-[0_2px_8px_rgba(0,0,0,0.25)] cursor-pointer pima-press"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
             افتح الجواز
           </button>
           <p className="text-[8px] font-bold text-slate-300 text-center">اجمع {arabicNumber(PASSPORT_TARGET)} ختم لتحصل على مكافأة خاصة 🎁</p>
-
-          {passportOpen && (
-            <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
-              {stamps.length === 0 ? (
-                <p className="text-[9px] font-bold text-slate-300 text-center py-1">أول إقامة تكتمل تدق أول ختم.</p>
-              ) : stamps.map((name) => (
-                <div key={name} className="flex items-center gap-1.5 bg-white/10 rounded-lg px-2 py-1.5">
-                  <BadgeCheck className="w-3 h-3 text-[#C5A059] shrink-0" />
-                  <span className="text-[9px] font-bold truncate">{name}</span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Next reward — gift + ring */}

@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react';
-import { User, Booking, Review } from '../types';
+import { User, Booking, Review, RetreatHouse } from '../types';
 import {
   User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft,
   Trash2, ShieldCheck, Camera, Coins, Award, CalendarCheck, ChevronRight, Copy, Check, Mail,
@@ -18,6 +18,7 @@ interface ProfileScreenProps {
   onUpdateAvatar: (avatarUrl: string) => void;
   bookings?: Booking[];
   reviews?: Review[];
+  houses?: RetreatHouse[];
   onNavigateBookings?: () => void;
 }
 
@@ -112,7 +113,7 @@ function ToggleRow({ icon: Icon, label, sublabel, checked, onChange, tint = '#5A
 }
 
 export default function ProfileScreen({
-  currentUser, onLogout, onBack, onNavigateSupport, onNavigatePrivacy, onDeleteAccount, onUpdateAvatar, reviews,
+  currentUser, onLogout, onBack, onNavigateSupport, onNavigatePrivacy, onDeleteAccount, onUpdateAvatar, reviews, houses,
   bookings = [], onNavigateBookings,
 }: ProfileScreenProps) {
   const roleLabel = currentUser.role === 'servant' ? 'خادم' : currentUser.role === 'owner' ? 'صاحب بيت' : 'مستخدم';
@@ -192,6 +193,7 @@ export default function ProfileScreen({
           onBack={() => setView('hub')}
           bookings={bookings}
           reviews={reviews}
+          houses={houses}
           onNavigateBookings={onNavigateBookings}
         />
       </div>
