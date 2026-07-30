@@ -198,9 +198,36 @@ body {
 }
 .pima-medal-in { animation: pima-medal-in 620ms var(--motion-ease) 1 both; }
 
+/* ── Illustrated icons ────────────────────────────────────────────────────
+   These run INSIDE the SVGs, on <g> elements, so a medal can catch the light
+   without the element around it moving. Transform-only, and each one is
+   scoped to a group small enough that the compositor handles it alone. */
+
+/* Specular sweep across a medallion face — clipped to the disc by the SVG. */
+@keyframes pima-icon-shine {
+  0%        { transform: translateX(-130%); }
+  45%, 100% { transform: translateX(130%); }
+}
+.pima-icon-shine { animation: pima-icon-shine 4.5s var(--motion-ease) infinite; }
+
+/* A gift lid breathing a hair off the box — 1.5% is barely there on purpose. */
+@keyframes pima-icon-lift {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3.5%); }
+}
+.pima-icon-lift { animation: pima-icon-lift 3.2s var(--motion-ease) infinite; }
+
+/* Slow rotation for a gem's inner light. */
+@keyframes pima-icon-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.pima-icon-spin { animation: pima-icon-spin 14s linear infinite; transform-origin: center; }
+
 @media (prefers-reduced-motion: reduce) {
   .pima-pulse-slow, .pima-typing-dot, .pima-badge-pop, .pima-bubble-in, .pima-stamp-in,
-  .pima-halo, .pima-twinkle, .pima-medal-in { animation: none; }
+  .pima-halo, .pima-twinkle, .pima-medal-in,
+  .pima-icon-shine, .pima-icon-lift, .pima-icon-spin { animation: none; }
   .pima-foil::after { animation: none; opacity: 0; }
 }
 

@@ -2,8 +2,7 @@
 import { User, Booking, Review, PointsTransaction } from '../types';
 import {
   Gift, History, ChevronRight, ChevronLeft, Coins, Users, Star, Wallet,
-  Sparkles, Medal, Gem, Trophy, Stamp, BadgeCheck, Lock, Home as HomeIcon,
-  Church, PlayCircle, BarChart3, Check,
+  Sparkles, Trophy, Church, PlayCircle, BarChart3, Check,
 } from 'lucide-react';
 import { arabicNumber } from '../lib/arabic';
 import { tapFeedback } from '../lib/haptics';
@@ -11,6 +10,10 @@ import { useCountUp, useGrowOnMount } from '../lib/useCountUp';
 import { claimDailyAdPoints } from '../lib/db';
 import AdGateModal from '../entertainment/AdGateModal';
 import PassportScreen, { PassportStamp } from './PassportScreen';
+import {
+  TierMedal, GiftBox, CoinStack, PassportBook, Rosette,
+  DeedHouse, DeedStar, DeedFriends, DeedPlay,
+} from './rewards/RewardIcons';
 import { RetreatHouse } from '../types';
 
 interface RewardsDashboardProps {
@@ -28,10 +31,10 @@ interface RewardsDashboardProps {
 // tiers; the only real multiplier is the seasonal ×2. Mirrored in
 // ProfileScreen.tierFor.
 const TIERS = [
-  { at: 0,     name: 'البرونزي', short: 'برونزي', icon: Medal,  tint: '#B08D57' },
-  { at: 5000,  name: 'الفضي',    short: 'فضي',    icon: Medal,  tint: '#8E9AAB' },
-  { at: 10000, name: 'الذهبي',   short: 'ذهبي',   icon: Trophy, tint: '#C5A059' },
-  { at: 20000, name: 'الماسي',   short: 'ماسي',   icon: Gem,    tint: '#5B7BD5' },
+  { at: 0,     name: 'البرونزي', short: 'برونزي', metal: 'bronze'  },
+  { at: 5000,  name: 'الفضي',    short: 'فضي',    metal: 'silver'  },
+  { at: 10000, name: 'الذهبي',   short: 'ذهبي',   metal: 'gold'    },
+  { at: 20000, name: 'الماسي',   short: 'ماسي',   metal: 'diamond' },
 ] as const;
 
 // Redemption milestones, shown as rewards — the rate itself is never rendered.
@@ -168,8 +171,8 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
 
         <div className="relative flex justify-between items-start gap-3">
           <div className="flex flex-col items-center gap-1.5 shrink-0">
-            <span className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#F6EBD4] to-[#EAD9B7] border-2 border-[#D9BC85] flex items-center justify-center shadow-[0_4px_12px_rgba(184,148,78,0.25)] pima-halo pima-foil">
-              <tier.icon className="w-8 h-8 relative" style={{ color: tier.tint }} />
+            <span className="relative w-16 h-16 rounded-full flex items-center justify-center pima-halo">
+              <TierMedal metal={tier.metal} size={62} />
             </span>
             <div className="text-center leading-tight">
               <span className="text-[8.5px] font-bold text-[#8A8A70] block">مستواك الحالي</span>
@@ -244,7 +247,9 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
                   }`}
                   style={{ animationDelay: `${140 + i * 90}ms` }}
                 >
-                  <t.icon className="w-6 h-6" style={{ color: reached || i === tierIndex + 1 ? t.tint : '#D2C9B8' }} />
+                  {/* Ahead of you the medal is there but drained of colour —
+                      the shape is a promise, the metal is the reward. */}
+                  <TierMedal metal={t.metal} size={42} className={reached ? '' : 'opacity-40 saturate-0'} />
                 </span>
                 <span className={`text-[9px] font-black ${isCurrent ? 'text-[#B8944E]' : 'text-[#4A4A3A]'}`}>{t.short}</span>
                 <span className="text-[8px] font-bold text-[#B5AF98] leading-none">
@@ -261,7 +266,7 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
         {/* Pima Passport — navy card */}
         <div className="rounded-3xl bg-gradient-to-b from-[#132A52] to-[#0A2342] text-white p-3.5 space-y-2.5 shadow-[0_8px_24px_rgba(10,35,66,0.35)]">
           <div className="flex items-center gap-1.5">
-            <Stamp className="w-4 h-4 text-[#C5A059] shrink-0" />
+            <PassportBook size={22} className="shrink-0" />
             <span className="text-[12.5px] font-black">جواز بيما</span>
           </div>
           <p className="text-[8.5px] font-bold text-slate-300 leading-relaxed">اكتشف أماكن جديدة واجمع الأختام</p>
@@ -305,9 +310,7 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
             <span className="text-[12.5px] font-black text-[#0A2342]">المكافأة القادمة</span>
           </div>
 
-          <span className="w-14 h-14 rounded-2xl bg-gradient-to-b from-[#FBF6EA] to-[#F0E2C4] border border-[#EBD9B4] flex items-center justify-center">
-            <Gift className="w-7 h-7 text-[#B8944E] pima-pulse-slow" />
-          </span>
+          <GiftBox size={58} />
 
           {nextReward ? (
             <>
@@ -356,15 +359,15 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
       {/* ── Ways to earn ── */}
       <div className="space-y-2 pima-rise pima-rise-2">
         <h3 className="text-[11.5px] font-black text-[#0A2342] px-1 flex items-center gap-1.5">
-          <Coins className="w-4 h-4 text-[#C5A059]" />
+          <CoinStack size={18} />
           طرق جمع النقاط
         </h3>
         <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {[
-            { icon: HomeIcon, tint: '#B8944E', label: 'احجز إقامة', pts: 'نقطة لكل جنيه', onClick: undefined as (() => void) | undefined },
-            { icon: Star, tint: '#D97706', label: 'قيّم المكان', pts: `+${arabicNumber(500)} نقطة`, onClick: onNavigateBookings },
-            { icon: Users, tint: '#059669', label: 'ادعُ صديقًا', pts: `+${arabicNumber(2000)} نقطة`, onClick: currentUser.referralCode ? handleShareReferral : undefined },
-            { icon: PlayCircle, tint: '#7C5CBF', label: 'شاهد إعلان', pts: `+${arabicNumber(25)} نقطة`, badge: 'جديد', onClick: adClaimedToday ? undefined : () => { tapFeedback(); setAdOpen(true); } },
+            { Art: DeedHouse,   label: 'احجز إقامة', pts: 'نقطة لكل جنيه', onClick: undefined as (() => void) | undefined },
+            { Art: DeedStar,    label: 'قيّم المكان', pts: `+${arabicNumber(500)} نقطة`, onClick: onNavigateBookings },
+            { Art: DeedFriends, label: 'ادعُ صديقًا', pts: `+${arabicNumber(2000)} نقطة`, onClick: currentUser.referralCode ? handleShareReferral : undefined },
+            { Art: DeedPlay,    label: 'شاهد إعلان', pts: `+${arabicNumber(25)} نقطة`, badge: 'جديد', onClick: adClaimedToday ? undefined : () => { tapFeedback(); setAdOpen(true); } },
           ].map((c) => (
             <button
               key={c.label}
@@ -378,8 +381,8 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
               {'badge' in c && c.badge && (
                 <span className="absolute -top-1.5 left-2 text-[7.5px] font-black text-white bg-rose-500 rounded-full px-1.5 py-0.5">{c.badge}</span>
               )}
-              <span className="w-10 h-10 rounded-xl bg-[#FBF9F4] border border-[#EDE7DA] flex items-center justify-center">
-                <c.icon className="w-5 h-5" style={{ color: c.tint }} />
+              <span className="w-11 h-11 rounded-xl bg-[#FBF9F4] border border-[#EDE7DA] flex items-center justify-center">
+                <c.Art size={30} />
               </span>
               <span className="text-[9.5px] font-black text-[#0A2342] leading-tight">{c.label}</span>
               <span className="text-[8.5px] font-black text-[#B8944E]">{c.pts}</span>
@@ -401,12 +404,10 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
                 {/* Earned badges land like medals, in sequence; locked ones just
                     sit there — the contrast is what makes the row motivating. */}
                 <span
-                  className={`w-9 h-9 rounded-full flex items-center justify-center border-2 ${
-                    a.done ? 'bg-gradient-to-b from-[#FBF6EA] to-[#F0E2C4] border-[#C9A96A] pima-medal-in pima-foil' : 'bg-[#FBF9F4] border-[#EDE7DA]'
-                  }`}
+                  className={`flex items-center justify-center ${a.done ? 'pima-medal-in' : ''}`}
                   style={a.done ? { animationDelay: `${260 + i * 80}ms` } : undefined}
                 >
-                  {a.done ? <Trophy className="w-4 h-4 text-[#B8944E] relative" /> : <Lock className="w-3.5 h-3.5 text-[#C9C2B0]" />}
+                  <Rosette size={38} locked={!a.done} />
                 </span>
                 <span className={`text-[8px] font-black leading-tight ${a.done ? 'text-[#0A2342]' : 'text-[#8A8A70]'}`}>{a.label}</span>
                 <span className={`text-[7.5px] font-bold ${a.done ? 'text-emerald-700' : 'text-[#B5AF98]'}`}>{a.done ? '✓ تم الإنجاز' : a.progress}</span>

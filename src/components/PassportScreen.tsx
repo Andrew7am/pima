@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { RetreatHouse } from '../types';
 import {
-  ChevronRight, Gift, Check, Lock, Stamp as StampIcon, MapPin, Landmark,
-  Church, Building2, Castle, CalendarCheck, Map as MapIcon, Sparkles,
+  ChevronRight, Check, Lock, Stamp as StampIcon, MapPin, Church,
+  CalendarDays, Map as MapIcon, Sparkles,
 } from 'lucide-react';
 import { arabicNumber, arabicDate } from '../lib/arabic';
+import { PassportStamp as StampArt, PassportBook, GiftBox, markForId } from './rewards/RewardIcons';
 import { tapFeedback } from '../lib/haptics';
 
 export interface PassportStamp {
@@ -23,10 +24,8 @@ interface PassportScreenProps {
   onBack: () => void;
 }
 
-// Each collected stamp gets a mark picked deterministically from the house id,
-// with a tiny per-stamp rotation — the closest an implementation can get to
-// "every stamp feels unique" without artwork per house.
-const STAMP_MARKS = [Church, Landmark, Building2, Castle];
+// Per-stamp rotation, so no two sit identically on the page. The mark itself
+// comes from markForId in the icon set — same id, same architecture, always.
 const hashOf = (s: string) => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 
 // Egypt's bounding box, for projecting real house coordinates onto the
@@ -77,7 +76,7 @@ export default function PassportScreen({ stamps, target, tierName, completedBook
   const stats = [
     { icon: StampIcon,     value: stamps.length,     label: 'أختام تم جمعها' },
     { icon: MapPin,        value: stamps.length,     label: 'أماكن مكتشفة' },
-    { icon: CalendarCheck, value: completedBookings, label: 'حجوزات مكتملة' },
+    { icon: CalendarDays, value: completedBookings, label: 'حجوزات مكتملة' },
     { icon: MapIcon,       value: governorates,      label: 'محافظات مكتشفة' },
   ];
 
@@ -115,8 +114,14 @@ export default function PassportScreen({ stamps, target, tierName, completedBook
             <span aria-hidden="true" className="absolute inset-2 rounded-xl border border-[#C5A059]/35" />
             <span className="text-[15px] font-black tracking-[0.18em] text-[#C5A059]" dir="ltr">PIMA</span>
             <span className="text-[8px] font-black tracking-[0.3em] text-[#C5A059]/80 -mt-1.5" dir="ltr">PASSPORT</span>
+            {/* The Pima mark in gold foil: a house carrying a cross. */}
             <span className="w-12 h-12 rounded-full border-2 border-[#C5A059]/70 flex items-center justify-center my-1">
-              <Church className="w-6 h-6 text-[#C5A059]" />
+              <svg viewBox="0 0 48 48" className="w-7 h-7" fill="none" aria-hidden="true">
+                <g stroke="#C5A059" strokeWidth="2.6" strokeLinejoin="round" strokeLinecap="round">
+                  <path d="M12 27 L24 16 L36 27 L36 39 L12 39 Z" />
+                  <path d="M24 8 V16 M20 11.5 H28" />
+                </g>
+              </svg>
             </span>
             <span className="text-[10px] font-black text-[#C5A059]">جواز بيما</span>
             <span aria-hidden="true" className="w-8 h-1 rounded-full bg-[#C5A059]/50 mt-1" />
@@ -141,14 +146,14 @@ export default function PassportScreen({ stamps, target, tierName, completedBook
             </div>
             {remaining > 0 ? (
               <div className="mt-1 rounded-xl border border-[#EBD9B4] bg-[#FDF9EF] px-2.5 py-2 flex items-center gap-1.5">
-                <Gift className="w-3.5 h-3.5 text-[#B8944E] shrink-0" />
+                <GiftBox size={18} className="shrink-0" />
                 <span className="text-[8.5px] font-bold text-[#4A4A3A] leading-snug">
                   تبقى لك <span className="font-black text-[#B8944E]">{arabicNumber(remaining)} {remaining === 1 ? 'ختم' : remaining === 2 ? 'ختمان' : remaining <= 10 ? 'أختام' : 'ختمًا'}</span> لتحصل على مكافأة خاصة
                 </span>
               </div>
             ) : (
               <div className="mt-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-2 flex items-center gap-1.5">
-                <Gift className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                <GiftBox size={18} className="shrink-0" />
                 <span className="text-[8.5px] font-black text-emerald-800">اكتمل جوازك — مكافأتك الخاصة في الطريق من فريق بيما 🎁</span>
               </div>
             )}
@@ -170,26 +175,25 @@ export default function PassportScreen({ stamps, target, tierName, completedBook
                 // Locked: never a future house's name — mystery is the point.
                 return (
                   <div key={`locked-${i}`} className="flex flex-col items-center gap-1 text-center">
-                    <span className="w-[52px] h-[52px] rounded-full border-2 border-dashed border-[#D9D2C2] bg-[#FBF9F4] flex items-center justify-center">
-                      <Lock className="w-3.5 h-3.5 text-[#C9C2B0]" />
+                    <span className="relative w-[52px] h-[52px] flex items-center justify-center">
+                      <StampArt mark="dome" size={52} muted className="opacity-45 blur-[1.2px]" />
+                      <Lock className="absolute w-3.5 h-3.5 text-[#B3AC9C]" />
                     </span>
                     <span className="text-[7px] font-black text-[#B5AF98] leading-tight">ختم غير مكتشف</span>
                     <span className="text-[6.5px] font-bold text-[#C9C2B0] leading-tight">اكتشف مكانًا جديدًا</span>
                   </div>
                 );
               }
-              const h = hashOf(stamp.houseId);
-              const Mark = STAMP_MARKS[h % STAMP_MARKS.length];
-              const tilt = (h % 11) - 5; // -5°..+5° — hand-stamped, not printed
+              const tilt = (hashOf(stamp.houseId) % 11) - 5; // -5°..+5° — hand-stamped, not printed
               const isNewest = hasNew && i === stamps.length - 1;
               return (
                 <div key={stamp.houseId} className="flex flex-col items-center gap-1 text-center">
                   <span
-                    className={`relative w-[52px] h-[52px] rounded-full border-2 border-[#C5A059] flex items-center justify-center bg-[#FDF9EF] ${isNewest ? 'pima-stamp-in' : ''}`}
-                    style={{ transform: `rotate(${tilt}deg)`, boxShadow: 'inset 0 0 0 3px #FDF9EF, inset 0 0 0 4px rgba(197,160,89,0.55)' }}
+                    className={`relative flex items-center justify-center ${isNewest ? 'pima-stamp-in' : ''}`}
+                    style={{ transform: `rotate(${tilt}deg)` }}
                   >
-                    <Mark className="w-5 h-5 text-[#B8944E]" />
-                    <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center">
+                    <StampArt mark={markForId(stamp.houseId)} size={52} />
+                    <span className="absolute -top-0.5 -left-0.5 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center">
                       <Check className="w-2.5 h-2.5 text-white" />
                     </span>
                   </span>
