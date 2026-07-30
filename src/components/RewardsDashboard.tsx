@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { arabicNumber } from '../lib/arabic';
 import { tapFeedback } from '../lib/haptics';
+import { useCountUp, useGrowOnMount } from '../lib/useCountUp';
 import { claimDailyAdPoints } from '../lib/db';
 import AdGateModal from '../entertainment/AdGateModal';
 import PassportScreen, { PassportStamp } from './PassportScreen';
@@ -124,6 +125,14 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
 
   const shownActivity = showAllActivity ? history.slice().reverse() : history.slice().reverse().slice(0, 3);
 
+  // Motion values. Every one of these degrades to its true value instantly
+  // under prefers-reduced-motion — see useCountUp's fail-visible note.
+  const shownPoints = useCountUp(points, 1100);
+  const tierBarWidth = useGrowOnMount(tierProgress, 120);
+  const rewardBarWidth = useGrowOnMount(rewardPct, 220);
+  const stampBarWidth = useGrowOnMount((stamps.length / PASSPORT_TARGET) * 100, 300);
+  const RING_C = 100.5; // 2πr for r=16, the ring's circumference
+
   // The passport is its own page, reached from «افتح الجواز» — not an expander.
   if (showPassport) {
     return (
@@ -151,15 +160,16 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
       </div>
 
       {/* ── Hero: tier right, balance left, gap line, bar, journey ── */}
-      <div className={`${CARD} p-4 space-y-4 relative overflow-hidden`}>
-        <Sparkles aria-hidden="true" className="absolute top-3 left-16 w-3.5 h-3.5 text-[#E3CD9F] pima-pulse-slow" />
-        <Sparkles aria-hidden="true" className="absolute bottom-24 right-4 w-3 h-3 text-[#E3CD9F]" />
+      <div className={`${CARD} p-4 space-y-4 relative overflow-hidden pima-rise`}>
+        {/* Warm light pooling behind the badge — depth without a gradient wash. */}
+        <span aria-hidden="true" className="absolute -top-14 right-2 w-40 h-40 rounded-full bg-[#C5A059]/[0.09] blur-2xl pointer-events-none" />
+        <Sparkles aria-hidden="true" className="absolute top-4 left-14 w-3 h-3 text-[#E3CD9F] pima-twinkle" />
+        <Sparkles aria-hidden="true" className="absolute top-16 left-6 w-2.5 h-2.5 text-[#E3CD9F] pima-twinkle" style={{ animationDelay: '1.3s' }} />
 
-        <div className="flex justify-between items-start gap-3">
+        <div className="relative flex justify-between items-start gap-3">
           <div className="flex flex-col items-center gap-1.5 shrink-0">
-            <span className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#F6EBD4] to-[#EAD9B7] border-2 border-[#D9BC85] flex items-center justify-center shadow-[0_4px_12px_rgba(184,148,78,0.25)]">
-              <tier.icon className="w-8 h-8" style={{ color: tier.tint }} />
-              <Sparkles aria-hidden="true" className="absolute -top-1 -right-1 w-4 h-4 text-[#C5A059] pima-pulse-slow" />
+            <span className="relative w-16 h-16 rounded-full bg-gradient-to-b from-[#F6EBD4] to-[#EAD9B7] border-2 border-[#D9BC85] flex items-center justify-center shadow-[0_4px_12px_rgba(184,148,78,0.25)] pima-halo pima-foil">
+              <tier.icon className="w-8 h-8 relative" style={{ color: tier.tint }} />
             </span>
             <div className="text-center leading-tight">
               <span className="text-[8.5px] font-bold text-[#8A8A70] block">مستواك الحالي</span>
@@ -169,14 +179,17 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
 
           <div className="text-left space-y-1.5">
             <span className="text-[9.5px] text-[#8A8A70] font-bold block text-left">رصيدك الحالي</span>
+            {/* tabular-nums keeps the digits from jittering while they count. */}
             <div className="flex items-baseline gap-1.5 justify-end" dir="ltr">
-              <span className="text-[30px] leading-none font-black text-[#0A2342]">{arabicNumber(points)}</span>
+              <span className="text-[32px] leading-none font-black text-[#0A2342] [font-variant-numeric:tabular-nums]">
+                {arabicNumber(shownPoints)}
+              </span>
             </div>
             <span className="text-[10px] text-[#8A8A70] font-bold block text-left">نقطة</span>
             <button
               type="button"
               onClick={() => { tapFeedback(); activityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
-              className="inline-flex items-center gap-1 rounded-full border border-[#EDE7DA] bg-white px-3 h-8 text-[9.5px] font-black text-[#4A4A3A] hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press"
+              className="inline-flex items-center gap-1 rounded-full border border-[#EDE7DA] bg-white px-3 h-8 text-[9.5px] font-black text-[#4A4A3A] hover:bg-[#F1ECE0] hover:border-[#E3CD9F] transition-colors cursor-pointer pima-press"
             >
               <BarChart3 className="w-3 h-3 text-[#B8944E]" />
               سجل النقاط
@@ -192,8 +205,10 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
             </p>
             <div className="space-y-1">
               <div className="w-full bg-[#F1ECE0] rounded-full h-2 overflow-hidden">
-                <div className="bg-gradient-to-l from-[#C9A96A] to-[#B8944E] h-full rounded-full transition-all duration-700"
-                  style={{ width: `${Math.min(100, Math.max(0, tierProgress))}%` }} />
+                <div
+                  className="bg-gradient-to-l from-[#C9A96A] to-[#B8944E] h-full rounded-full pima-foil"
+                  style={{ width: `${tierBarWidth}%`, transition: 'width 1100ms var(--motion-ease)' }}
+                />
               </div>
               <div className="flex justify-between text-[8.5px] font-bold text-[#B5AF98]">
                 <span>{arabicNumber(nextTier.at)} نقطة</span>
@@ -205,17 +220,30 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
           <p className="text-[12px] font-black text-[#5B7BD5] text-center">وصلت للماسي — أعلى مستوى في بيما 💎</p>
         )}
 
-        {/* Journey — dotted connector behind the four badges. */}
+        {/* Journey — the connector is dotted ahead of you and solid gold behind,
+            so the row reads as a path already walked, not four equal icons. */}
         <div className="relative grid grid-cols-4 gap-1 pt-1">
           <span aria-hidden="true" className="absolute top-6 inset-x-10 border-t-2 border-dotted border-[#E3DCCB]" />
+          <span
+            aria-hidden="true"
+            className="absolute top-6 right-10 border-t-2 border-[#C9A96A]"
+            style={{
+              // Each step spans 1/3 of the track between first and last badge.
+              width: `calc((100% - 5rem) * ${tierIndex / (TIERS.length - 1)})`,
+              transition: 'width 1200ms var(--motion-ease)',
+            }}
+          />
           {TIERS.map((t, i) => {
             const reached = i <= tierIndex;
             const isCurrent = i === tierIndex;
             return (
               <div key={t.name} className="relative flex flex-col items-center gap-1">
-                <span className={`w-12 h-12 rounded-full flex items-center justify-center border-2 bg-white transition-colors ${
-                  isCurrent ? 'border-[#C5A059] shadow-[0_0_0_4px_rgba(197,160,89,0.15)]' : reached ? 'border-[#E3CD9F]' : 'border-[#EDE7DA]'
-                }`}>
+                <span
+                  className={`w-12 h-12 rounded-full flex items-center justify-center border-2 bg-white transition-colors pima-medal-in ${
+                    isCurrent ? 'border-[#C5A059] shadow-[0_0_0_4px_rgba(197,160,89,0.15)] pima-halo' : reached ? 'border-[#E3CD9F]' : 'border-[#EDE7DA]'
+                  }`}
+                  style={{ animationDelay: `${140 + i * 90}ms` }}
+                >
                   <t.icon className="w-6 h-6" style={{ color: reached || i === tierIndex + 1 ? t.tint : '#D2C9B8' }} />
                 </span>
                 <span className={`text-[9px] font-black ${isCurrent ? 'text-[#B8944E]' : 'text-[#4A4A3A]'}`}>{t.short}</span>
@@ -229,7 +257,7 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
       </div>
 
       {/* ── Passport (right) + next reward (left) ── */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 pima-rise pima-rise-1">
         {/* Pima Passport — navy card */}
         <div className="rounded-3xl bg-gradient-to-b from-[#132A52] to-[#0A2342] text-white p-3.5 space-y-2.5 shadow-[0_8px_24px_rgba(10,35,66,0.35)]">
           <div className="flex items-center gap-1.5">
@@ -244,8 +272,8 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
           </div>
 
           <div className="w-full bg-white/15 rounded-full h-1.5 overflow-hidden">
-            <div className="bg-gradient-to-l from-[#C9A96A] to-[#C5A059] h-full rounded-full transition-all duration-700"
-              style={{ width: `${Math.min(100, (stamps.length / PASSPORT_TARGET) * 100)}%` }} />
+            <div className="bg-gradient-to-l from-[#C9A96A] to-[#C5A059] h-full rounded-full pima-foil"
+              style={{ width: `${stampBarWidth}%`, transition: 'width 1100ms var(--motion-ease)' }} />
           </div>
 
           {/* Five stamp slots — filled ones carry the church mark. */}
@@ -288,23 +316,33 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
                 <br />للحصول على {nextReward.label}
               </p>
               <div className="w-full bg-[#F1ECE0] rounded-full h-1.5 overflow-hidden">
-                <div className="bg-gradient-to-l from-[#C9A96A] to-[#B8944E] h-full rounded-full transition-all duration-700"
-                  style={{ width: `${rewardPct}%` }} />
+                <div className="bg-gradient-to-l from-[#C9A96A] to-[#B8944E] h-full rounded-full pima-foil"
+                  style={{ width: `${rewardBarWidth}%`, transition: 'width 1100ms var(--motion-ease)' }} />
               </div>
               <span className="text-[8px] font-bold text-[#B5AF98]" dir="ltr">{arabicNumber(points)} / {arabicNumber(nextReward.points)} نقطة</span>
 
-              {/* Percent ring — SVG arc, no library. */}
+              {/* Percent ring — the arc draws itself by transitioning the dash
+                  offset, so it sweeps round rather than appearing complete. */}
               <span className="relative w-14 h-14">
                 <svg viewBox="0 0 40 40" className="w-14 h-14 -rotate-90">
                   <circle cx="20" cy="20" r="16" fill="none" stroke="#F1ECE0" strokeWidth="4" />
-                  <circle cx="20" cy="20" r="16" fill="none" stroke="#C5A059" strokeWidth="4" strokeLinecap="round"
-                    strokeDasharray={`${(rewardPct / 100) * 100.5} 100.5`} />
+                  <circle
+                    cx="20" cy="20" r="16" fill="none" stroke="#C5A059" strokeWidth="4" strokeLinecap="round"
+                    strokeDasharray={RING_C}
+                    strokeDashoffset={RING_C - (rewardBarWidth / 100) * RING_C}
+                    style={{ transition: 'stroke-dashoffset 1200ms var(--motion-ease)' }}
+                  />
                 </svg>
                 <span className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-                  <span className="text-[11px] font-black text-[#B8944E]">٪{arabicNumber(rewardPct)}</span>
+                  <span className="text-[11px] font-black text-[#B8944E] [font-variant-numeric:tabular-nums]">٪{arabicNumber(Math.round(rewardBarWidth))}</span>
                 </span>
               </span>
-              {rewardPct >= 50 && <span className="text-[9px] font-black text-[#B8944E]">اقتربت!</span>}
+              {rewardPct >= 50 && (
+                <span className="text-[9px] font-black text-[#B8944E] inline-flex items-center gap-1">
+                  <Sparkles className="w-2.5 h-2.5 pima-twinkle" />
+                  اقتربت!
+                </span>
+              )}
             </>
           ) : (
             <p className="text-[10px] font-bold text-[#4A4A3A] leading-relaxed">
@@ -316,7 +354,7 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
       </div>
 
       {/* ── Ways to earn ── */}
-      <div className="space-y-2">
+      <div className="space-y-2 pima-rise pima-rise-2">
         <h3 className="text-[11.5px] font-black text-[#0A2342] px-1 flex items-center gap-1.5">
           <Coins className="w-4 h-4 text-[#C5A059]" />
           طرق جمع النقاط
@@ -333,7 +371,9 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
               type="button"
               disabled={!c.onClick}
               onClick={c.onClick}
-              className={`${CARD} relative shrink-0 w-[104px] p-3 flex flex-col items-center gap-1.5 text-center ${c.onClick ? 'cursor-pointer pima-press' : 'cursor-default'}`}
+              className={`${CARD} relative shrink-0 w-[104px] p-3 flex flex-col items-center gap-1.5 text-center transition-[transform,border-color,box-shadow] duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
+                c.onClick ? 'cursor-pointer pima-press hover:-translate-y-1 hover:border-[#E3CD9F] hover:shadow-[0_12px_28px_rgba(184,148,78,0.18)]' : 'cursor-default opacity-90'
+              }`}
             >
               {'badge' in c && c.badge && (
                 <span className="absolute -top-1.5 left-2 text-[7.5px] font-black text-white bg-rose-500 rounded-full px-1.5 py-0.5">{c.badge}</span>
@@ -349,19 +389,24 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
       </div>
 
       {/* ── Achievements + daily ad, side by side like the mock ── */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-5 gap-3 pima-rise pima-rise-3">
         <div className={`${CARD} col-span-3 p-3 space-y-2`}>
           <h3 className="text-[11px] font-black text-[#0A2342] flex items-center gap-1">
             <Trophy className="w-3.5 h-3.5 text-[#C5A059]" />
             إنجازاتك
           </h3>
           <div className="grid grid-cols-3 gap-1.5">
-            {achievements.slice(0, 5).map((a) => (
+            {achievements.slice(0, 5).map((a, i) => (
               <div key={a.label} className="flex flex-col items-center gap-1 text-center">
-                <span className={`w-9 h-9 rounded-full flex items-center justify-center border-2 ${
-                  a.done ? 'bg-gradient-to-b from-[#FBF6EA] to-[#F0E2C4] border-[#C9A96A]' : 'bg-[#FBF9F4] border-[#EDE7DA]'
-                }`}>
-                  {a.done ? <Trophy className="w-4 h-4 text-[#B8944E]" /> : <Lock className="w-3.5 h-3.5 text-[#C9C2B0]" />}
+                {/* Earned badges land like medals, in sequence; locked ones just
+                    sit there — the contrast is what makes the row motivating. */}
+                <span
+                  className={`w-9 h-9 rounded-full flex items-center justify-center border-2 ${
+                    a.done ? 'bg-gradient-to-b from-[#FBF6EA] to-[#F0E2C4] border-[#C9A96A] pima-medal-in pima-foil' : 'bg-[#FBF9F4] border-[#EDE7DA]'
+                  }`}
+                  style={a.done ? { animationDelay: `${260 + i * 80}ms` } : undefined}
+                >
+                  {a.done ? <Trophy className="w-4 h-4 text-[#B8944E] relative" /> : <Lock className="w-3.5 h-3.5 text-[#C9C2B0]" />}
                 </span>
                 <span className={`text-[8px] font-black leading-tight ${a.done ? 'text-[#0A2342]' : 'text-[#8A8A70]'}`}>{a.label}</span>
                 <span className={`text-[7.5px] font-bold ${a.done ? 'text-emerald-700' : 'text-[#B5AF98]'}`}>{a.done ? '✓ تم الإنجاز' : a.progress}</span>

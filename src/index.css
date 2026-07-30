@@ -157,8 +157,51 @@ body {
 }
 .pima-stamp-in { animation: pima-stamp-in 500ms var(--motion-ease) 1 both; }
 
+/* ── Rewards ──────────────────────────────────────────────────────────────
+   Gold foil sweep. A light band travels across a gold surface every 5s, the
+   way a foil-stamped card catches the light when you tilt it. Long gaps
+   between passes on purpose — a fast repeat reads as a loading skeleton. */
+@keyframes pima-foil {
+  0%        { transform: translate3d(-140%, 0, 0); }
+  55%, 100% { transform: translate3d(140%, 0, 0); }
+}
+.pima-foil { position: relative; overflow: hidden; }
+.pima-foil::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(75deg, transparent 40%, rgba(255,255,255,0.55) 50%, transparent 60%);
+  animation: pima-foil 5s var(--motion-ease) infinite;
+  pointer-events: none;
+}
+
+/* The current tier's badge breathes a soft gold halo — box-shadow only, on an
+   element that never moves, so it costs one paint on an idle screen. */
+@keyframes pima-halo {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(197,160,89,0.35); }
+  50%      { box-shadow: 0 0 0 9px rgba(197,160,89,0); }
+}
+.pima-halo { animation: pima-halo 2.8s var(--motion-ease) infinite; }
+
+/* Sparkles drifting around a badge — two children, opposite phases. */
+@keyframes pima-twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.8) rotate(0deg); }
+  50%      { opacity: 1;    transform: scale(1.15) rotate(18deg); }
+}
+.pima-twinkle { animation: pima-twinkle 2.6s var(--motion-ease) infinite; }
+
+/* A tier badge that has just been reached lands once, like a medal. */
+@keyframes pima-medal-in {
+  0%   { opacity: 0; transform: scale(0.4) rotate(-25deg); }
+  60%  { opacity: 1; transform: scale(1.12) rotate(6deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.pima-medal-in { animation: pima-medal-in 620ms var(--motion-ease) 1 both; }
+
 @media (prefers-reduced-motion: reduce) {
-  .pima-pulse-slow, .pima-typing-dot, .pima-badge-pop, .pima-bubble-in, .pima-stamp-in { animation: none; }
+  .pima-pulse-slow, .pima-typing-dot, .pima-badge-pop, .pima-bubble-in, .pima-stamp-in,
+  .pima-halo, .pima-twinkle, .pima-medal-in { animation: none; }
+  .pima-foil::after { animation: none; opacity: 0; }
 }
 
 /* Hero copy, the search bar and each revealed card share this one movement:
