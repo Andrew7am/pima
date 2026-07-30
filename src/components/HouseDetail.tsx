@@ -1,15 +1,15 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import { RetreatHouse, Booking, Review, User, Room, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
-import { SUITABILITY_MAP } from '../mockData';
+import HouseHero from './house/HouseHero';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice } from '../lib/pricing';
 import { getCapacityStatus } from '../lib/roomOccupancy';
 import { getHouseOwnerProfile, OwnerProfile } from '../lib/db';
 import { 
-  ArrowRight, MapPin, BedDouble, Calendar, Users, 
+  MapPin, BedDouble, Calendar, Users, 
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
   Utensils, Volume2, Monitor, HelpCircle, Send, CheckCircle2,
-  Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Heart, Copy, Share2,
+  Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Copy,
   Calculator, TrendingDown, TrendingUp, Coins, Bus, ChevronDown
 } from 'lucide-react';
 
@@ -558,7 +558,6 @@ export default function HouseDetail({
   previewMode = false,
   onRequireLogin,
 }: HouseDetailProps) {
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
 
   // Deep link to this specific house — shares the prerendered, crawlable
@@ -934,101 +933,24 @@ export default function HouseDetail({
   return (
     <div className="space-y-4 pb-6 text-right text-[#4A4A3A]">
       
-      {/* Back button and navigation */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <button
-            id="detail-back-btn"
-            onClick={onBack}
-            className="p-2 bg-white rounded-full border border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#DEDECB] transition-colors shadow-sm"
-          >
-            <ArrowRight className="w-4 h-4 text-[#4A4A3A]" />
-          </button>
-          <span className="text-xs font-bold text-[#8A8A70]">تفاصيل بيت المؤتمرات</span>
-        </div>
-        
-        {/* Actions button group */}
-        <div className="flex items-center gap-2">
-          {/* WhatsApp share — sends the rich /house/<id>/ link to any contact */}
-          <a
-            id={`whatsapp-share-detail-${house.id}`}
-            href={whatsappShareUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs bg-[#25D366] hover:bg-[#1DA851] text-white"
-          >
-            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-            </svg>
-            <span>واتساب</span>
-          </a>
-          {/* Share button — links directly to this house, not the site root */}
-          <button
-            id={`share-detail-${house.id}`}
-            onClick={handleShare}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-all shadow-xs ${
-              isCopied
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                : 'bg-white border-[#D6D6C2] text-[#8A8A70] hover:bg-[#FDFBF7]'
-            }`}
-          >
-            <Share2 className="w-3.5 h-3.5 text-sky-600" />
-            <span>{isCopied ? 'تم نسخ الرابط!' : 'مشاركة'}</span>
-          </button>
+      {/* Hero — gallery, headline facts and the page's own controls. Kept in
+          its own component so the sections below are untouched by changes
+          to the top of the page. */}
+      <HouseHero
+        house={house}
+        reviewsCount={houseReviews.length}
+        isFavorited={isFavorited}
+        isCopied={isCopied}
+        whatsappShareUrl={whatsappShareUrl}
+        onBack={onBack}
+        onShare={handleShare}
+        onToggleFavorite={onToggleFavorite}
+      />
 
-          {/* Favorite toggle button */}
-          <button
-            id={`toggle-fav-detail-${house.id}`}
-            onClick={() => onToggleFavorite(house.id)}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-all shadow-xs ${
-              isFavorited 
-                ? 'bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100'
-                : 'bg-white border-[#D6D6C2] text-[#8A8A70] hover:bg-[#FDFBF7]'
-            }`}
-          >
-            <Heart className={`w-3.5 h-3.5 transition-colors ${isFavorited ? 'fill-rose-500 text-rose-500' : 'text-[#8A8A70]'}`} />
-            <span>{isFavorited ? 'مضاف للمفضلة' : 'إضافة للمفضلة'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Hero Image Slider */}
       <div className="bg-white rounded-3xl overflow-hidden border border-[#D6D6C2] shadow-sm relative text-right">
-        <div className="h-56 bg-[#EBEBE0] relative">
-          <img referrerPolicy="no-referrer" src={house.images[activeImageIndex]} alt={house.name} className="w-full h-full object-cover" />
-          <div className="absolute top-3 right-3 bg-[#5A5A40]/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-[11px] font-bold">
-            {house.governorate}
-          </div>
-          
-          {/* Suitability filters visual tags */}
-          <div className="absolute bottom-3 right-3 flex flex-wrap gap-1.5">
-            {house.suitability.map((suit) => (
-              <span key={suit} className="bg-[#8A8A70] text-white px-2 py-0.5 rounded text-[9px] font-bold shadow-sm">
-                {SUITABILITY_MAP[suit]}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Thumbnail Selector */}
-        <div className="p-3 flex gap-2 border-b border-[#D6D6C2] overflow-x-auto bg-[#EBEBE0]/30">
-          {house.images.map((img, idx) => (
-            <button
-              id={`detail-thumb-${idx}`}
-              key={idx}
-              onClick={() => setActiveImageIndex(idx)}
-              className={`w-14 h-10 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${
-                idx === activeImageIndex ? 'border-[#5A5A40] scale-105' : 'border-transparent opacity-70'
-              }`}
-            >
-              <img referrerPolicy="no-referrer" src={img} alt="thumbnail" className="w-full h-full object-cover" />
-            </button>
-          ))}
-        </div>
-
-        {/* Title and Address */}
+        {/* Address onwards. The name, rating and review count are in the hero
+            above now, so they are not printed twice. */}
         <div className="p-5 space-y-2">
-          <h1 className="text-sm font-extrabold text-[#4A4A3A] leading-tight">{house.name}</h1>
           <div className="flex items-center gap-1.5 text-xs text-[#8A8A70]">
             <MapPin className="w-4 h-4 text-[#BCBC9D] shrink-0" />
             <span>{house.address}</span>
@@ -1099,14 +1021,9 @@ export default function HouseDetail({
             </div>
           )}
 
+          {/* The price. Rating and review count moved to the hero; what belongs
+              here is the number the visitor is actually deciding on. */}
           <div className="flex items-center gap-3 pt-2 text-xs font-bold text-[#4A4A3A]">
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-              <span>{house.rating.toFixed(1)} / 5</span>
-            </div>
-            <span className="text-[#D6D6C2]">|</span>
-            <div className="text-[#8A8A70] font-medium">{houseReviews.length} تقييم</div>
-            <span className="text-[#D6D6C2]">|</span>
             {house.propertyType === 'student' || house.propertyType === 'staff' ? (
               <div className="text-[#5A5A40] font-extrabold">{house.monthlyRent} ج.م <span className="text-[10px] text-[#8A8A70] font-medium">/ شهرياً</span></div>
             ) : (
