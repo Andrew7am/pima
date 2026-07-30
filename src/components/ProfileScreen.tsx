@@ -32,10 +32,12 @@ function calculateAge(dateOfBirth: string): number {
   return age;
 }
 
-// Loyalty tier for the profile stat — mirrors the thresholds used in RewardsDashboard.
+// Loyalty tier for the profile stat — mirrors the ladder in RewardsDashboard
+// (فضي ٥٬٠٠٠ / ذهبي ١٠٬٠٠٠ / ماسي ٢٠٬٠٠٠+). Display-only: the server's earn
+// triggers know nothing about tiers.
 function tierFor(points: number): { name: string; emoji: string } {
-  if (points >= 40000) return { name: 'بلاتيني', emoji: '💎' };
-  if (points >= 15000) return { name: 'ذهبي', emoji: '🥇' };
+  if (points >= 20000) return { name: 'ماسي', emoji: '💎' };
+  if (points >= 10000) return { name: 'ذهبي', emoji: '🥇' };
   if (points >= 5000) return { name: 'فضي', emoji: '🥈' };
   return { name: 'برونزي', emoji: '🥉' };
 }

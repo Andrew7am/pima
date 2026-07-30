@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+﻿import { supabase } from './supabase';
 import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, AuditLogEntry, Expense, Payout, PromoBanner } from '../types';
 import { DEFAULT_PLATFORM_SETTINGS } from '../types';
 
@@ -417,6 +417,14 @@ export async function loadHouseBookingCounts(): Promise<Record<string, number> |
   return result;
 }
 
+// Daily rewarded-ad claim (migration 088). True = 25 points were granted just
+// now; false = already claimed today (or signed out). The server is the only
+// judge — the client cannot self-grant.
+export async function claimDailyAdPoints(): Promise<boolean> {
+  const { data, error } = await supabase.rpc('claim_daily_ad_points');
+  if (error) { console.error('claimDailyAdPoints:', error); return false; }
+  return data === true;
+}
 export async function deleteHouse(houseId: string): Promise<boolean> {
   const { error } = await supabase.from('houses').delete().eq('id', houseId);
   if (error) { console.error('deleteHouse:', error); return false; }
