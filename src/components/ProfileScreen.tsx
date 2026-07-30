@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { User, Booking, Review, RetreatHouse } from '../types';
 import {
   User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft,
@@ -20,6 +20,12 @@ interface ProfileScreenProps {
   reviews?: Review[];
   houses?: RetreatHouse[];
   onNavigateBookings?: () => void;
+  /** Which sub-view to land on. The home screen's loyalty card sends
+   *  'rewards' so it opens the programme itself rather than this hub. */
+  initialView?: 'hub' | 'rewards';
+  /** Called once the initial view has been taken, so the caller can clear it
+   *  and a later visit through the nav lands on the hub as usual. */
+  onInitialViewConsumed?: () => void;
 }
 
 function calculateAge(dateOfBirth: string): number {
@@ -114,12 +120,21 @@ function ToggleRow({ icon: Icon, label, sublabel, checked, onChange, tint = '#5A
 
 export default function ProfileScreen({
   currentUser, onLogout, onBack, onNavigateSupport, onNavigatePrivacy, onDeleteAccount, onUpdateAvatar, reviews, houses,
-  bookings = [], onNavigateBookings,
+  bookings = [], onNavigateBookings, initialView = 'hub', onInitialViewConsumed,
 }: ProfileScreenProps) {
   const roleLabel = currentUser.role === 'servant' ? 'خادم' : currentUser.role === 'owner' ? 'صاحب بيت' : 'مستخدم';
   const canSelfDelete = currentUser.role === 'individual' || currentUser.role === 'servant';
 
-  const [view, setView] = useState<'hub' | 'personal' | 'rewards'>('hub');
+  // Read once, on mount: this screen unmounts when you navigate away, so each
+  // arrival re-reads whichever entry point sent you here.
+  const [view, setView] = useState<'hub' | 'personal' | 'rewards'>(initialView);
+  useEffect(() => {
+    // Tell the caller the request has been honoured. Doing this on mount (not
+    // on unmount) means a later tap on حسابي in the nav is already back to the
+    // hub — the deep link fires once, not for every visit that follows.
+    if (initialView !== 'hub') onInitialViewConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);

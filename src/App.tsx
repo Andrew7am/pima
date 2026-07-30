@@ -230,6 +230,11 @@ export default function App() {
 
   // --- UI Navigation States ---
   const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'messages' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub' | 'random_match' | 'games_catalog' | 'rewards'>('explore');
+  // Which sub-view the profile screen should open on. The home screen's
+  // loyalty card sets 'rewards' so it lands on the programme instead of the
+  // account hub; ProfileScreen clears it on mount, so every other route in
+  // (the nav tab, the avatar) still arrives at the hub.
+  const [profileEntry, setProfileEntry] = useState<'hub' | 'rewards'>('hub');
   // Conference Hub state — seeded from the sample conference; the opener acts as its host.
   const [conference, setConference] = useState<ConferenceRoom | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
@@ -1726,7 +1731,7 @@ export default function App() {
               houses={houses}
               currentUser={currentUser}
               onSelectHouse={(h) => setSelectedHouse(h)}
-              onSelectRewards={() => setActiveScreen('profile')}
+              onSelectRewards={() => { setProfileEntry('rewards'); setActiveScreen('profile'); }}
               onToggleFavorite={handleToggleFavorite}
               onOpenMap={() => setActiveScreen('map')}
               promoBanners={promoBanners}
@@ -1891,6 +1896,8 @@ export default function App() {
               reviews={reviews}
               houses={houses}
               onNavigateBookings={() => setActiveScreen('bookings')}
+              initialView={profileEntry}
+              onInitialViewConsumed={() => setProfileEntry('hub')}
             />
           )}
 
