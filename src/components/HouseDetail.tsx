@@ -592,10 +592,6 @@ export default function HouseDetail({
   // /house/<id>/ link pre-filled so the recipient sees the preview card.
   const propLabelShort = house.propertyType === 'student' ? 'سكن طلاب'
     : house.propertyType === 'staff' ? 'سكن موظفين' : 'بيت مؤتمرات';
-  const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(
-    `${house.name} — ${propLabelShort} في ${house.governorate}\nشوف التفاصيل واحجز على بيما:\n${window.location.origin}/house/${house.id}/`
-  )}`;
-
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     services: true,
     menu: false,
@@ -941,7 +937,6 @@ export default function HouseDetail({
         reviewsCount={houseReviews.length}
         isFavorited={isFavorited}
         isCopied={isCopied}
-        whatsappShareUrl={whatsappShareUrl}
         onBack={onBack}
         onShare={handleShare}
         onToggleFavorite={onToggleFavorite}
