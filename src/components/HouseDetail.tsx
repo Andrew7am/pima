@@ -4,6 +4,7 @@ import HouseHero from './house/HouseHero';
 import HouseLocationTrust from './house/HouseLocationTrust';
 import HouseReviews from './house/HouseReviews';
 import PimaSheet from './PimaSheet';
+import { ExploreSection, ExploreCard } from './house/HouseExplore';
 import BookingFlow, { ApplicantDetails } from './house/BookingFlow';
 import { arabicNumber } from '../lib/arabic';
 import { tapFeedback } from '../lib/haptics';
@@ -15,7 +16,8 @@ import {
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
   Utensils, Volume2, Monitor, HelpCircle, Send,
   Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Copy,
-  Calculator, TrendingDown, Coins, Bus, ChevronDown, ChevronLeft, ShieldCheck, CalendarDays
+  Calculator, TrendingDown, Coins, Bus, ChevronDown, ChevronLeft, ShieldCheck, CalendarDays,
+  Info, Tag, Lock
 } from 'lucide-react';
 
 
@@ -511,72 +513,6 @@ const DateRangePicker = ({
   );
 };
 
-interface AccordionItemProps {
-  id: string;
-  title: string;
-  /** One quiet line under the title — carries the detail the old long titles
-   *  used to cram into the heading itself. */
-  subtitle?: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  icon: React.ComponentType<any>;
-  children: React.ReactNode;
-}
-
-// The five collapsible sections share this shell, so it is the one place the
-// page's section design lives: gold icon in a cream disc, short title with a
-// quiet subtitle, a chevron that turns, and a panel that interpolates its
-// height instead of snapping open. Same contract as the reviews category
-// panel and the chat booking card — one accordion language across the app.
-const AccordionItem = ({
-  id,
-  title,
-  subtitle,
-  isOpen,
-  onToggle,
-  icon: Icon,
-  children
-}: AccordionItemProps) => {
-  return (
-    <div id={`accordion-item-${id}`} className="bg-white rounded-[28px] border border-[#EDE7DA] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden">
-      <button
-        id={`accordion-trigger-${id}`}
-        type="button"
-        onClick={() => { tapFeedback(); onToggle(); }}
-        aria-expanded={isOpen}
-        className="w-full px-4 py-3.5 flex items-center gap-3 text-right transition-colors hover:bg-[#FBF9F4] cursor-pointer pima-press"
-      >
-        <span className="w-10 h-10 rounded-full bg-[#F6F0E2] flex items-center justify-center shrink-0">
-          <Icon className="w-[18px] h-[18px] text-[#C9A24A]" />
-        </span>
-        <span className="flex-1 min-w-0 leading-tight">
-          <span className="block text-[12.5px] font-black text-[#0A2342]">{title}</span>
-          {subtitle && <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5 truncate">{subtitle}</span>}
-        </span>
-        <ChevronDown
-          aria-hidden="true"
-          className={`w-4 h-4 text-[#B5AF98] shrink-0 transition-transform duration-[300ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {/* Height, not display: the panel unfolds rather than appearing. The
-          content stays mounted so closing animates too. */}
-      <div
-        aria-hidden={!isOpen}
-        className={`grid transition-[grid-template-rows,opacity] duration-[300ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
-          isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="p-4 pt-1 space-y-4">
-            {children}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export default function HouseDetail({
   house,
   currentUser,
@@ -630,23 +566,6 @@ export default function HouseDetail({
   // /house/<id>/ link pre-filled so the recipient sees the preview card.
   const propLabelShort = house.propertyType === 'student' ? 'سكن طلاب'
     : house.propertyType === 'staff' ? 'سكن موظفين' : 'بيت مؤتمرات';
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    services: true,
-    menu: false,
-    rooms: false,
-    facilities: false,
-    rules: false,
-    location: false,
-    contact: false,
-    weather: false,
-  });
-
-  const toggleSection = (sectionKey: string) => {
-    setOpenSections((prev) => ({
-      ...prev,
-      [sectionKey]: !prev[sectionKey],
-    }));
-  };
 
   const [isQuoteMode, setIsQuoteMode] = useState(false); // Toggle between regular booking & large conference quote
 
@@ -904,6 +823,60 @@ export default function HouseDetail({
   // Returns the new booking's id on success, or null if it was refused — the
   // flow needs the id to show the guest their request number, and needs the
   // null to stay on the confirmation step rather than declaring success.
+  // Card previews. Two or three facts each, read off the record — enough to
+  // make the card worth opening, never the section in miniature.
+  const menuPreview = (
+    <div className="space-y-0.5 text-[10px] font-medium text-[#6B6B57]">
+      {house.menu?.weeklyMenu?.length
+        ? <span className="block">{arabicNumber(3)} وجبات يوميًا</span>
+        : <span className="block">لم تُحدَّد القائمة بعد</span>}
+      {house.menu?.isIncluded && <span className="block">مشمولة في قيمة الحجز</span>}
+      {!!house.menu?.fastingWeeklyMenu?.length && <span className="block">خيارات صيام</span>}
+    </div>
+  );
+
+  // Three named, the rest counted: a wall of chips is not a summary.
+  const namedFacilities = [
+    house.conferenceHalls?.length ? 'قاعة اجتماعات' : null,
+    house.services?.some((s) => s.includes('كنيسة')) ? 'كنيسة' : null,
+    house.activities?.some((a) => a.includes('مسرح')) ? 'مسرح' : null,
+  ].filter(Boolean) as string[];
+  const facilitiesTotal = (house.services?.length || 0) + (house.activities?.length || 0)
+    + (house.conferenceHalls?.length || 0) + (house.restaurants?.length || 0);
+  const facilityPreview = (
+    <div className="flex flex-wrap gap-1.5">
+      {namedFacilities.map((f) => (
+        <span key={f} className="rounded-full border border-[#EDE7DA] bg-[#FBF9F4] px-2.5 py-1 text-[9.5px] font-bold text-[#4A4A3A]">{f}</span>
+      ))}
+      {facilitiesTotal > namedFacilities.length && (
+        <span className="rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-2.5 py-1 text-[9.5px] font-black text-[#B8944E]">
+          +{arabicNumber(facilitiesTotal - namedFacilities.length)} المزيد
+        </span>
+      )}
+    </div>
+  );
+
+  const cardWeather = GOVERNORATE_WEATHER_DATA[house.governorate] || DEFAULT_WEATHER;
+  const weatherPreview = (
+    <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2.5 shrink-0">
+        {getWeatherIcon(cardWeather.forecast?.[0]?.icon || 'cloudSun')}
+        <span className="leading-none">
+          <span className="block text-[28px] font-black text-[#0A2342] [font-variant-numeric:tabular-nums]">
+            {arabicNumber(cardWeather.currentTemp)}°
+          </span>
+          <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-1">{cardWeather.conditionText}</span>
+        </span>
+      </div>
+      <span aria-hidden="true" className="w-px self-stretch bg-[#EDE7DA]" />
+      <div className="flex-1 min-w-0 space-y-1">
+        {['درجة الحرارة', 'توقعات الأيام القادمة', 'نصائح للرحلة'].map((r) => (
+          <span key={r} className="block rounded-lg bg-[#FBF9F4] border border-[#EDE7DA] px-2.5 py-1 text-[9.5px] font-bold text-[#4A4A3A]">{r}</span>
+        ))}
+      </div>
+    </div>
+  );
+
   const handleBookingSubmit = async (applicant: ApplicantDetails): Promise<string | null> => {
     if (previewMode) { alert('معاينة فقط — التسجيل معطّل أثناء مراجعة الإدارة.'); return null; }
     if (!currentUser) { onRequireLogin?.(); return null; }
@@ -1125,14 +1098,18 @@ export default function HouseDetail({
         announcements={announcements}
       />
 
-      {/* About section — moved up front so it's the first thing visitors read */}
-      <AccordionItem
+      {/* «استكشف المكان» — the five sections as cards that open into sheets,
+          instead of a column of accordions unfolded one at a time. */}
+      <ExploreSection>
+      <ExploreCard
         id="services"
         title="نبذة عن المكان"
         subtitle="وصف البيت وخدماته ومواعيد الوصول"
-        isOpen={openSections.services}
-        onToggle={() => toggleSection('services')}
-        icon={Award}
+        icon={Info}
+        span={4}
+        cta="اقرأ المزيد"
+        image={house.images?.[0]}
+        preview={<p className="text-[10.5px] font-medium text-[#6B6B57] leading-relaxed line-clamp-3">{house.description}</p>}
       >
         <div className="space-y-3 text-right">
           <p className="text-xs text-[#4A4A3A] leading-relaxed font-medium">{house.description}</p>
@@ -1143,22 +1120,18 @@ export default function HouseDetail({
             </div>
           )}
         </div>
-      </AccordionItem>
-
-      {/* Grid with description and features */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-right">
-
-        {/* Left column: Rooms, Halls, Restaurants */}
-        <div className="space-y-4">
+      </ExploreCard>
 
           {/* Weekly Restaurant Menu Display or Editor */}
-          <AccordionItem
+          <ExploreCard
             id="menu"
             title="قائمة الطعام"
             subtitle="الوجبات والمنيو الأسبوعي وخيارات الصيام"
-            isOpen={openSections.menu}
-            onToggle={() => toggleSection('menu')}
             icon={Utensils}
+            span={3}
+            delay={1}
+            cta="عرض المنيو"
+            preview={menuPreview}
           >
             {(!house.menu && !isOwnerOrAdmin) ? (
             <div className="bg-white rounded-3xl p-5 border border-[#D6D6C2] shadow-sm text-center py-8 space-y-3">
@@ -1611,16 +1584,20 @@ export default function HouseDetail({
               )}
             </div>
           )}
-          </AccordionItem>
+          </ExploreCard>
 
           {/* Rooms and Beds breakdown */}
-          <AccordionItem
+          <ExploreCard
             id="rooms"
             title="الغرف والتسكين"
             subtitle="أنواع الغرف المتاحة وسعة كل منها"
-            isOpen={openSections.rooms}
-            onToggle={() => toggleSection('rooms')}
             icon={BedDouble}
+            span={3}
+            delay={2}
+            cta="عرض الغرف"
+            image={house.images?.[1] || house.images?.[0]}
+            imageMode="band"
+            preview={<span className="block text-[10px] font-medium text-[#6B6B57]">{arabicNumber(house.roomsCount)} غرفة · {arabicNumber(house.bedsCount)} سرير</span>}
           >
             {/* One totals line, not the two identical ones that were here. */}
             <div className="flex items-center gap-2">
@@ -1795,16 +1772,18 @@ export default function HouseDetail({
                 });
               })()}
             </div>
-          </AccordionItem>
+          </ExploreCard>
 
           {/* Facilities Section */}
-          <AccordionItem
+          <ExploreCard
             id="facilities"
             title="المرافق والقاعات"
             subtitle="قاعات المؤتمرات والمطاعم والأنشطة"
-            isOpen={openSections.facilities}
-            onToggle={() => toggleSection('facilities')}
-            icon={Monitor}
+            icon={Users}
+            span={4}
+            delay={2}
+            cta="عرض كل المرافق"
+            preview={facilityPreview}
           >
             <div className="space-y-4">
               {/* Conference Halls (القاعات) */}
@@ -1856,16 +1835,18 @@ export default function HouseDetail({
                 </div>
               </div>
             </div>
-          </AccordionItem>
+          </ExploreCard>
 
           {/* Weather & Trip Planning Accordion */}
-          <AccordionItem
+          <ExploreCard
             id="weather"
             title="حالة الطقس"
             subtitle={`التخطيط للرحلة في ${house.governorate}`}
-            isOpen={openSections.weather}
-            onToggle={() => toggleSection('weather')}
             icon={CloudSun}
+            span={7}
+            delay={3}
+            cta="عرض تفاصيل الطقس"
+            preview={weatherPreview}
           >
             {(() => {
               const weather = GOVERNORATE_WEATHER_DATA[house.governorate] || DEFAULT_WEATHER;
@@ -1932,12 +1913,11 @@ export default function HouseDetail({
                 </div>
               );
             })()}
-          </AccordionItem>
+          </ExploreCard>
+      </ExploreSection>
 
-        </div>
-
-        {/* Right column: Availability, Booking Form & Conference quote requests */}
-        <div className="space-y-4">
+      {/* Booking, availability and the trip calculator. */}
+      <div className="space-y-4">
 
           {/* Booking action card. Not a card with a button in it — the whole
               thing is one control, and its bottom edge IS the action, so the
@@ -2170,8 +2150,6 @@ export default function HouseDetail({
               })()}
             </div>
       </PimaSheet>
-
-        </div>
 
       </div>
 
