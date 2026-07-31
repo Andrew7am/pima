@@ -15,7 +15,7 @@ import {
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
   Utensils, Volume2, Monitor, HelpCircle, Send,
   Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Copy,
-  Calculator, TrendingDown, Coins, Bus, ChevronDown, ChevronLeft, ShieldCheck
+  Calculator, TrendingDown, Coins, Bus, ChevronDown, ChevronLeft, ShieldCheck, Tag, Lock, CalendarDays
 } from 'lucide-react';
 
 
@@ -721,6 +721,7 @@ export default function HouseDetail({
   // Servant Budget Calculator state variables
   const [budgetOpen, setBudgetOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
   const [calcBusPrice, setCalcBusPrice] = useState<number>(3500);
   const [calcBusesCount, setCalcBusesCount] = useState<number>(1);
   const [calcMiscExpenses, setCalcMiscExpenses] = useState<number>(1500);
@@ -940,8 +941,123 @@ export default function HouseDetail({
     return `PM-${bookingId.slice(-5)}`;
   };
 
-  return (
-    <div className="space-y-4 pb-6 text-right text-[#4A4A3A]">
+  // The booking journey is a screen, not a panel: while it is open the place
+  // page is not rendered at all, so the reader is on one thing at a time.
+  if (bookingOpen) {
+    return (
+      <div className="pb-6 text-right text-[#4A4A3A]">
+          {/* The reservation request, as its own three-screen journey. Pricing,
+              capacity and dates stay here; the flow owns the walk through them. */}
+          <BookingFlow
+            house={house}
+            currentUser={currentUser ?? null}
+            checkIn={checkIn}
+            checkOut={checkOut}
+            nights={isMonthlyHousing ? months : nights}
+            guestsCount={guestsCount}
+            setGuestsCount={setGuestsCount}
+            isQuoteMode={isQuoteMode}
+            setIsQuoteMode={setIsQuoteMode}
+            isMonthlyHousing={isMonthlyHousing}
+            originalTotalPrice={originalTotalPrice}
+            totalPrice={totalPrice}
+            depositAmount={depositAmount}
+            breakdown={stayPrice.breakdown}
+            submitting={submitting}
+            onSubmit={handleBookingSubmit}
+            onRequireLogin={onRequireLogin}
+            onExit={() => setBookingOpen(false)}
+            datePicker={
+              <DateRangePicker
+                checkIn={checkIn}
+                setCheckIn={setCheckIn}
+                checkOut={checkOut}
+                setCheckOut={setCheckOut}
+                isMonthlyHousing={isMonthlyHousing}
+                bookedRanges={[
+                  ...approvedBookingsForThisHouse.map((b) => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: 'approved' as const })),
+                  ...pendingBookingsForThisHouse.map((b) => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: 'pending' as const })),
+                ]}
+                blockedDates={house.blockedDates || []}
+              />
+            }
+            notices={
+              <>
+                {/* Points redemption — only worth offering when the guest has
+                    enough for it to change the number. */}
+                {!isMonthlyHousing && maxRedeemablePoints > 0 && (
+                  <label className="flex items-center gap-3 bg-white rounded-[28px] border border-[#EDE7DA] p-4 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
+                    <input
+                      type="checkbox"
+                      checked={usePoints}
+                      onChange={(e) => setUsePoints(e.target.checked)}
+                      className="w-4 h-4 accent-[#C9A24A] shrink-0 cursor-pointer"
+                    />
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-[11.5px] font-black text-[#2D2D24]">استخدم نقاطي في هذا الحجز</span>
+                      <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
+                        {usePoints && redemptionDiscount > 0
+                          ? `خصم ${redemptionDiscount.toLocaleString('ar-EG')} ج.م من ${maxRedeemablePoints.toLocaleString('ar-EG')} نقطة`
+                          : `لديك ${maxRedeemablePoints.toLocaleString('ar-EG')} نقطة قابلة للاستخدام`}
+                      </span>
+                    </span>
+                  </label>
+                )}
+
+                {/* Capacity. Two different problems: a group larger than the
+                    house can never be waitlisted, a full week can. */}
+                {exceedsHouseCapacity && (
+                  <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-4 space-y-2.5">
+                    <p className="text-[10.5px] font-bold text-amber-900 leading-relaxed text-center">
+                      هذا البيت يتسع لـ <strong>{arabicNumber(house.bedsCount)}</strong> فرد كحد أقصى، وأنت طلبت <strong>{arabicNumber(guestsCount)}</strong>.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { tapFeedback(); setGuestsCount(house.bedsCount || 1); }}
+                      className="w-full bg-amber-600 hover:bg-amber-700 text-white text-[11.5px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
+                    >
+                      اضبط العدد على {arabicNumber(house.bedsCount)} فرد
+                    </button>
+                  </div>
+                )}
+                {isFullOnDates && (
+                  <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-4 space-y-2.5">
+                    <p className="text-[10.5px] font-bold text-amber-900 text-center">
+                      البيت مكتمل الإشغال في هذه التواريخ لعدد الأفراد المطلوب.
+                    </p>
+                    <button
+                      id="join-waitlist-btn"
+                      type="button"
+                      disabled={alreadyOnWaitlist}
+                      onClick={handleJoinWaitlistClick}
+                      className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-[11.5px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
+                    >
+                      {alreadyOnWaitlist ? 'أنت مسجل بالفعل في قائمة الانتظار ⏳' : 'انضم لقائمة الانتظار ⏳'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Cancellation terms, stated before anything is committed. */}
+                <div className="rounded-[28px] border border-[#EDE7DA] bg-white p-4 space-y-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
+                  <span className="flex items-center gap-1.5 text-[11.5px] font-black text-[#0A2342]">
+                    <ShieldCheck className="w-4 h-4 text-[#C9A24A]" />
+                    سياسة الإلغاء والاسترداد
+                  </span>
+                  <ul className="space-y-1 text-[10px] font-medium text-[#4A4A3A] pr-4 list-disc marker:text-[#C9A24A]">
+                    <li>الإلغاء قبل الوصول بـ <strong>{arabicNumber(settings.freeCancelDays)} أيام أو أكثر</strong>: استرداد <strong>كامل</strong>.</li>
+                    <li>الإلغاء قبل الوصول بـ <strong>{arabicNumber(settings.partialRefundDays)} أيام أو أكثر</strong>: استرداد <strong>{arabicNumber(Math.round(settings.partialRefundPct * 100))}٪</strong>.</li>
+                    <li>أقل من ذلك: لا يوجد استرداد.</li>
+                  </ul>
+                </div>
+              </>
+            }
+          />
+
+      </div>
+    );
+  }
+
+  return (    <div className="space-y-4 pb-6 text-right text-[#4A4A3A]">
       
       {/* Hero — gallery, headline facts and the page's own controls. Kept in
           its own component so the sections below are untouched by changes
@@ -1773,111 +1889,66 @@ export default function HouseDetail({
         {/* Right column: Availability, Booking Form & Conference quote requests */}
         <div className="space-y-4">
 
-          {/* The reservation request, as its own three-screen journey. Pricing,
-              capacity and dates stay here; the flow owns the walk through them. */}
-          <BookingFlow
-            house={house}
-            currentUser={currentUser ?? null}
-            checkIn={checkIn}
-            checkOut={checkOut}
-            nights={isMonthlyHousing ? months : nights}
-            guestsCount={guestsCount}
-            setGuestsCount={setGuestsCount}
-            isQuoteMode={isQuoteMode}
-            setIsQuoteMode={setIsQuoteMode}
-            isMonthlyHousing={isMonthlyHousing}
-            originalTotalPrice={originalTotalPrice}
-            totalPrice={totalPrice}
-            depositAmount={depositAmount}
-            breakdown={stayPrice.breakdown}
-            submitting={submitting}
-            onSubmit={handleBookingSubmit}
-            onRequireLogin={onRequireLogin}
-            datePicker={
-              <DateRangePicker
-                checkIn={checkIn}
-                setCheckIn={setCheckIn}
-                checkOut={checkOut}
-                setCheckOut={setCheckOut}
-                isMonthlyHousing={isMonthlyHousing}
-                bookedRanges={[
-                  ...approvedBookingsForThisHouse.map((b) => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: 'approved' as const })),
-                  ...pendingBookingsForThisHouse.map((b) => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: 'pending' as const })),
-                ]}
-                blockedDates={house.blockedDates || []}
-              />
-            }
-            notices={
-              <>
-                {/* Points redemption — only worth offering when the guest has
-                    enough for it to change the number. */}
-                {!isMonthlyHousing && maxRedeemablePoints > 0 && (
-                  <label className="flex items-center gap-3 bg-white rounded-[28px] border border-[#EDE7DA] p-4 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
-                    <input
-                      type="checkbox"
-                      checked={usePoints}
-                      onChange={(e) => setUsePoints(e.target.checked)}
-                      className="w-4 h-4 accent-[#C9A24A] shrink-0 cursor-pointer"
-                    />
-                    <span className="flex-1 min-w-0">
-                      <span className="block text-[11.5px] font-black text-[#2D2D24]">استخدم نقاطي في هذا الحجز</span>
-                      <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
-                        {usePoints && redemptionDiscount > 0
-                          ? `خصم ${redemptionDiscount.toLocaleString('ar-EG')} ج.م من ${maxRedeemablePoints.toLocaleString('ar-EG')} نقطة`
-                          : `لديك ${maxRedeemablePoints.toLocaleString('ar-EG')} نقطة قابلة للاستخدام`}
-                      </span>
+          {/* Booking CTA. The journey itself is a separate screen — this card
+              exists only to carry the decision: what it costs, that nothing is
+              charged yet, and the way in. */}
+          <div className="rounded-[30px] bg-[#FAF8F4] border border-[#C9A24A]/10 shadow-[0_10px_30px_rgba(45,45,36,0.07),0_2px_8px_rgba(45,45,36,0.04)] p-5 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+
+              {/* Price, stacked so the number carries the weight. */}
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="w-12 h-12 rounded-full bg-[#F2EBDC] flex items-center justify-center shrink-0">
+                  <Tag className="w-5 h-5 text-[#C9A24A]" />
+                </span>
+                <div className="leading-none">
+                  <span className="block text-[10px] font-bold text-[#8A8A70]">ابتداءً من</span>
+                  <span className="flex items-baseline gap-1 my-1">
+                    <span className="text-[32px] font-black text-[#0A2342] [font-variant-numeric:tabular-nums]">
+                      {arabicNumber(isMonthlyHousing ? (house.monthlyRent || 0) : house.pricePerNightPerPerson)}
                     </span>
-                  </label>
-                )}
-
-                {/* Capacity. Two different problems: a group larger than the
-                    house can never be waitlisted, a full week can. */}
-                {exceedsHouseCapacity && (
-                  <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-4 space-y-2.5">
-                    <p className="text-[10.5px] font-bold text-amber-900 leading-relaxed text-center">
-                      هذا البيت يتسع لـ <strong>{arabicNumber(house.bedsCount)}</strong> فرد كحد أقصى، وأنت طلبت <strong>{arabicNumber(guestsCount)}</strong>.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => { tapFeedback(); setGuestsCount(house.bedsCount || 1); }}
-                      className="w-full bg-amber-600 hover:bg-amber-700 text-white text-[11.5px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
-                    >
-                      اضبط العدد على {arabicNumber(house.bedsCount)} فرد
-                    </button>
-                  </div>
-                )}
-                {isFullOnDates && (
-                  <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-4 space-y-2.5">
-                    <p className="text-[10.5px] font-bold text-amber-900 text-center">
-                      البيت مكتمل الإشغال في هذه التواريخ لعدد الأفراد المطلوب.
-                    </p>
-                    <button
-                      id="join-waitlist-btn"
-                      type="button"
-                      disabled={alreadyOnWaitlist}
-                      onClick={handleJoinWaitlistClick}
-                      className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-[11.5px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
-                    >
-                      {alreadyOnWaitlist ? 'أنت مسجل بالفعل في قائمة الانتظار ⏳' : 'انضم لقائمة الانتظار ⏳'}
-                    </button>
-                  </div>
-                )}
-
-                {/* Cancellation terms, stated before anything is committed. */}
-                <div className="rounded-[28px] border border-[#EDE7DA] bg-white p-4 space-y-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
-                  <span className="flex items-center gap-1.5 text-[11.5px] font-black text-[#0A2342]">
-                    <ShieldCheck className="w-4 h-4 text-[#C9A24A]" />
-                    سياسة الإلغاء والاسترداد
+                    <span className="text-[12px] font-black text-[#0A2342]">ج.م</span>
                   </span>
-                  <ul className="space-y-1 text-[10px] font-medium text-[#4A4A3A] pr-4 list-disc marker:text-[#C9A24A]">
-                    <li>الإلغاء قبل الوصول بـ <strong>{arabicNumber(settings.freeCancelDays)} أيام أو أكثر</strong>: استرداد <strong>كامل</strong>.</li>
-                    <li>الإلغاء قبل الوصول بـ <strong>{arabicNumber(settings.partialRefundDays)} أيام أو أكثر</strong>: استرداد <strong>{arabicNumber(Math.round(settings.partialRefundPct * 100))}٪</strong>.</li>
-                    <li>أقل من ذلك: لا يوجد استرداد.</li>
-                  </ul>
+                  <span className="block text-[10px] font-medium text-[#8A8A70]">
+                    {isMonthlyHousing ? 'لكل فرد / شهر' : 'لكل فرد / ليلة'}
+                  </span>
                 </div>
-              </>
-            }
-          />
+              </div>
+
+              <span aria-hidden="true" className="hidden sm:block w-px self-stretch bg-[#C9A24A]/15" />
+
+              {/* Reassurance, quieter than the price on purpose. */}
+              <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                <ShieldCheck className="w-5 h-5 text-[#C9A24A] shrink-0 mt-0.5" />
+                <div>
+                  <span className="block text-[12px] font-black text-[#0A2342] leading-snug">لن يتم تحصيل أي مبلغ الآن</span>
+                  <span className="block text-[10px] font-medium text-[#8A8A70] leading-relaxed mt-0.5">
+                    سيتم مراجعة طلبك من إدارة المكان أولاً.
+                  </span>
+                </div>
+              </div>
+
+              {/* The way in. Solid Pima gold with one soft highlight — no gradient. */}
+              <button
+                id="open-booking-flow"
+                type="button"
+                onClick={() => { tapFeedback(); setBookingOpen(true); }}
+                className="relative overflow-hidden shrink-0 w-full sm:w-auto flex items-center justify-center gap-3 bg-[#C9A24A] hover:bg-[#BE9840] text-white rounded-3xl px-7 py-4 shadow-[0_8px_22px_rgba(201,162,74,0.35)] transition-colors cursor-pointer pima-press"
+              >
+                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1/2 bg-white/10 pointer-events-none" />
+                <CalendarDays className="relative w-5 h-5" />
+                <span aria-hidden="true" className="relative w-px h-5 bg-white/25" />
+                <span className="relative text-[15px] font-black">احجز الآن</span>
+                <ChevronLeft className="relative w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <p className="flex items-center justify-center gap-2 text-[10.5px] font-bold text-[#8A8A70]">
+            <span aria-hidden="true" className="w-10 h-px bg-[#C9A24A]/25" />
+            <Lock className="w-3.5 h-3.5 text-[#C9A24A]" />
+            لن يتم خصم أي مبلغ الآن
+            <span aria-hidden="true" className="w-10 h-px bg-[#C9A24A]/25" />
+          </p>
 
 {/* Availability Calendar visual display */}
           <div className="bg-white rounded-3xl p-5 border border-[#D6D6C2] shadow-sm space-y-3">

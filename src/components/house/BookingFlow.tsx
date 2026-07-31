@@ -44,6 +44,8 @@ interface BookingFlowProps {
   /** Resolves to the booking id on success, or null if it was rejected. */
   onSubmit: (applicant: ApplicantDetails) => Promise<string | null>;
   onRequireLogin?: () => void;
+  /** Leaves the flow and returns to the place. */
+  onExit: () => void;
 }
 
 const CARD = 'bg-white rounded-[28px] border border-[#EDE7DA] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]';
@@ -87,7 +89,7 @@ const INPUT = 'w-full bg-white border border-[#EDE7DA] rounded-2xl px-3.5 py-3 t
 export default function BookingFlow({
   house, currentUser, checkIn, checkOut, nights, guestsCount, setGuestsCount,
   isQuoteMode, setIsQuoteMode, isMonthlyHousing, originalTotalPrice, totalPrice,
-  depositAmount, breakdown, datePicker, notices, submitting, onSubmit, onRequireLogin,
+  depositAmount, breakdown, datePicker, notices, submitting, onSubmit, onRequireLogin, onExit,
 }: BookingFlowProps) {
   const [step, setStep] = useState(0);
   const [costOpen, setCostOpen] = useState(false);
@@ -187,6 +189,14 @@ export default function BookingFlow({
           ))}
         </div>
 
+        <button
+          type="button"
+          onClick={() => { tapFeedback(); onExit(); }}
+          className="w-full flex items-center justify-center gap-2 bg-[#0A2342] hover:bg-[#123055] text-white font-black text-[13px] py-4 rounded-2xl transition-colors cursor-pointer pima-press"
+        >
+          <FileText className="w-4 h-4" />
+          متابعة الطلب
+        </button>
         <p className="text-[10px] font-medium text-[#8A8A70]">
           تتابع حالة الطلب من صفحة «حجوزاتي».
         </p>
@@ -204,6 +214,23 @@ export default function BookingFlow({
 
   return (
     <div id="pima-booking-flow" className="space-y-4 scroll-mt-4">
+      {/* This is a screen of its own, not a panel on the place page, so it
+          carries its own way back. */}
+      <div className="flex items-center gap-2 pb-1 border-b border-[#EDE7DA]">
+        <button
+          type="button"
+          onClick={() => { tapFeedback(); onExit(); }}
+          aria-label="رجوع"
+          className="w-10 h-10 rounded-xl border border-[#EDE7DA] bg-white hover:bg-[#F1ECE0] text-[#4A4A3A] flex items-center justify-center transition-colors cursor-pointer pima-press"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+        <div className="min-w-0">
+          <h2 className="text-sm font-black text-[#0A2342]">طلب حجز جديد</h2>
+          <p className="text-[10px] text-[#8A8A70] truncate">{house.name}</p>
+        </div>
+      </div>
+
       {/* ── Step rail ── */}
       <div className={`${CARD} px-4 py-4`}>
         <div className="flex items-center">
