@@ -3,6 +3,8 @@ import { RetreatHouse, Booking, Review, User, Room, Announcement, WaitlistEntry,
 import HouseHero from './house/HouseHero';
 import HouseLocationTrust from './house/HouseLocationTrust';
 import HouseReviews from './house/HouseReviews';
+import PimaSheet from './PimaSheet';
+import { tapFeedback } from '../lib/haptics';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice } from '../lib/pricing';
 import { getCapacityStatus } from '../lib/roomOccupancy';
@@ -11,7 +13,7 @@ import {
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
   Utensils, Volume2, Monitor, HelpCircle, Send,
   Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Copy,
-  Calculator, TrendingDown, TrendingUp, Coins, Bus, ChevronDown
+  Calculator, TrendingDown, TrendingUp, Coins, Bus, ChevronDown, ChevronLeft
 } from 'lucide-react';
 
 
@@ -715,6 +717,7 @@ export default function HouseDetail({
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
 
   // Servant Budget Calculator state variables
+  const [budgetOpen, setBudgetOpen] = useState(false);
   const [calcBusPrice, setCalcBusPrice] = useState<number>(3500);
   const [calcBusesCount, setCalcBusesCount] = useState<number>(1);
   const [calcMiscExpenses, setCalcMiscExpenses] = useState<number>(1500);
@@ -2115,16 +2118,33 @@ export default function HouseDetail({
             </div>
           </div>
 
-          {/* Servant Budget Calculator card */}
-          <div className="bg-white rounded-3xl p-5 border border-[#D6D6C2] shadow-sm space-y-3">
-            <div className="flex items-center gap-2 text-xs font-extrabold text-[#4A4A3A]">
-              <Calculator className="w-4 h-4 text-[#5A5A40] shrink-0" />
-              <span>مساعد ميزانية الخلوة (خاص بالخدام) 🧮</span>
-            </div>
-            <p className="text-[10px] text-[#8A8A70] leading-relaxed">
-              أداة تفاعلية لمساعدتك كأمين رحلة أو خادم لحساب تكلفة الفرد وميزانية المؤتمر الكنسي بالكامل.
-            </p>
+          {/* Budget assistant. It is a servant's planning tool, not something a guest
+          browsing a house needs open in front of them — so it lives behind a
+          card that opens a sheet. */}
+      <button
+        type="button"
+        onClick={() => { tapFeedback(); setBudgetOpen(true); }}
+        className="w-full bg-white rounded-3xl p-5 border border-[#EDE7DA] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)] flex items-center gap-3 text-right cursor-pointer pima-press hover:border-[#E3CD9F] transition-colors"
+      >
+        <span className="w-12 h-12 rounded-full bg-[#F6F0E2] flex items-center justify-center shrink-0">
+          <Calculator className="w-5 h-5 text-[#C9A24A]" />
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-[13px] font-black text-[#0A2342]">مساعد ميزانية الخلوة</span>
+          <span className="block text-[10px] font-medium text-[#8A8A70] leading-snug mt-0.5">احسب تكلفة الفرد وميزانية الرحلة بالكامل</span>
+        </span>
+        <ChevronLeft className="w-4 h-4 text-[#B5AF98] shrink-0" />
+      </button>
 
+      <PimaSheet
+        open={budgetOpen}
+        onClose={() => setBudgetOpen(false)}
+        title="مساعد ميزانية الخلوة"
+        subtitle="أداة لأمين الرحلة: احسب تكلفة الفرد وميزانية المؤتمر بالكامل"
+        icon={<Calculator className="w-4 h-4 text-[#C9A24A]" />}
+      >
+        {/* The title and blurb the card used to carry now live in the sheet's
+            own header, so they are not repeated here. */}
             <div className="space-y-2.5 text-[11px] font-bold">
               {/* Bus Costs */}
               <div className="grid grid-cols-2 gap-2">
@@ -2234,7 +2254,7 @@ export default function HouseDetail({
                 );
               })()}
             </div>
-          </div>
+      </PimaSheet>
 
         </div>
 

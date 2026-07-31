@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Review } from '../../types';
 import {
   Star, ChevronDown, Sparkles, UtensilsCrossed, ClipboardList,
-  Wallet, Info, CornerDownLeft, PencilLine, Award, SlidersHorizontal, Users, X,
+  Wallet, Info, CornerDownLeft, PencilLine, Award, SlidersHorizontal, Users,
 } from 'lucide-react';
 import { tapFeedback } from '../../lib/haptics';
+import PimaSheet from '../PimaSheet';
 
 interface HouseReviewsProps {
   reviews: Review[];
@@ -81,17 +82,6 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [openReply, setOpenReply] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-
-  // Escape closes, and the page behind must not scroll while the sheet is up —
-  // same contract as the filter sheet, so the two behave identically.
-  useEffect(() => {
-    if (!sheetOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSheetOpen(false); };
-    window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
-  }, [sheetOpen]);
 
   const count = reviews.length;
   const overallOf = (r: Review) => r.overall_rating ?? r.rating;
@@ -366,39 +356,15 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
       {/* The form lives in a sheet rather than at the foot of the page: it is
           long, and only a guest who has actually stayed can complete it, so it
           has no business occupying the screen for everyone reading reviews. */}
-      {sheetOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label="أضف تقييمك">
-          <div
-            className="absolute inset-0 bg-black/45 backdrop-blur-[2px] animate-in fade-in duration-200"
-            onClick={() => setSheetOpen(false)}
-          />
-
-          <div className="relative w-full sm:max-w-md bg-[#FBF9F4] rounded-t-[28px] sm:rounded-[28px] sm:mb-6 max-h-[92dvh] flex flex-col shadow-[0_-8px_40px_rgba(0,0,0,0.18)] animate-in slide-in-from-bottom duration-300 ease-[cubic-bezier(0.33,1,0.68,1)]">
-            <div className="shrink-0 flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-[#EDE7DA]">
-              <span aria-hidden="true" className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-[#DED6C4]" />
-              <div className="text-right mt-1">
-                <h4 className="text-[14px] font-black text-[#0A2342] flex items-center gap-1.5">
-                  <PencilLine className="w-4 h-4 text-[#C9A24A]" />
-                  أضف تقييمك
-                </h4>
-                <p className="text-[10px] font-medium text-[#8A8A70] mt-0.5">شارك تجربتك لمساعدة الآخرين</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => { tapFeedback(); setSheetOpen(false); }}
-                aria-label="إغلاق"
-                className="mt-1 w-9 h-9 rounded-full border border-[#EDE7DA] bg-white text-[#4A4A3A] flex items-center justify-center shrink-0 hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              {children}
-            </div>
-          </div>
-        </div>
-      )}
+      <PimaSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        title="أضف تقييمك"
+        subtitle="شارك تجربتك لمساعدة الآخرين"
+        icon={<PencilLine className="w-4 h-4 text-[#C9A24A]" />}
+      >
+        {children}
+      </PimaSheet>
     </div>
   );
 }
