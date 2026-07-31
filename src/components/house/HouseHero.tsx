@@ -161,13 +161,23 @@ export default function HouseHero({
 
         {/* Governorate on the reading side; the page's own controls opposite. */}
         {showOverlay && (
-          <span className="absolute top-4 right-4 flex items-center gap-1.5 bg-black/35 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-[11px] font-black">
-            {house.governorate}
+          <span className="absolute top-4 left-4 flex items-center gap-1.5 bg-black/35 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-[11px] font-black">
             <MapPin className="w-3.5 h-3.5" />
+            {house.governorate}
           </span>
         )}
 
-        <div className="absolute top-4 left-4 flex items-center gap-2">
+        {/* Controls on the right. Back is the outermost of the three, so the
+            thumb reaches it first on the side it is held. */}
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          <button
+            id="detail-back-btn"
+            onClick={() => { tapFeedback(); onBack(); }}
+            aria-label="رجوع"
+            className={`${glassBtn} text-white`}
+          >
+            <ArrowRight className="w-4 h-4" />
+          </button>
           <button
             id={`share-detail-${house.id}`}
             onClick={() => { tapFeedback(); onShare(); }}
@@ -184,17 +194,6 @@ export default function HouseHero({
             className={glassBtn}
           >
             <Heart className={`w-4 h-4 transition-colors ${isFavorited ? 'fill-rose-400 text-rose-400' : 'text-white'}`} />
-          </button>
-          {/* Back stays: the mock omits it, but a detail screen with no way out
-              is a regression, not a simplification. Kept as a third glass
-              circle rather than the bar it used to sit in. */}
-          <button
-            id="detail-back-btn"
-            onClick={() => { tapFeedback(); onBack(); }}
-            aria-label="رجوع"
-            className={`${glassBtn} text-white`}
-          >
-            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
 
@@ -221,7 +220,10 @@ export default function HouseHero({
         <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
           {showOverlay && (
             <>
-              <h1 className="text-[21px] leading-tight font-black text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)] max-w-[80%]">
+              {/* The house name keeps the reading side — it is the longest
+                  Arabic run on the screen, and left-aligning it would break
+                  the eye's line down the page. */}
+              <h1 className="text-[21px] leading-tight font-black text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)] max-w-[82%]">
                 {house.name}
               </h1>
               <div className="mt-1.5 flex items-center gap-2">
@@ -234,15 +236,19 @@ export default function HouseHero({
                 <span className="text-[11.5px] font-bold text-white/85">({reviewsCount} تقييم)</span>
               </div>
 
-              {/* Amenities as one glass card with hairline dividers. */}
+              {/* Amenities: dividers only, no panel. The wash below already
+                  carries the text, so a second surface on top of it was one
+                  layer more than the photograph needed. */}
               {amenities.length > 0 && (
-                <div className="mt-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 px-2 py-2.5 flex items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="mt-3 flex items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {amenities.map((a, i) => (
                     <React.Fragment key={a.label}>
-                      {i > 0 && <span aria-hidden="true" className="w-px self-stretch bg-white/20 shrink-0" />}
+                      {i > 0 && <span aria-hidden="true" className="w-px self-stretch bg-white/30 shrink-0 my-0.5" />}
                       <span className="flex-1 min-w-[68px] flex flex-col items-center gap-1 px-1.5">
-                        <span className="text-white">{a.icon}</span>
-                        <span className="text-[9.5px] font-bold text-white whitespace-nowrap">{a.label}</span>
+                        {/* Shadows do the work the panel used to: the strip has
+                            to stay readable straight over a photograph. */}
+                        <span className="text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">{a.icon}</span>
+                        <span className="text-[9.5px] font-bold text-white whitespace-nowrap drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">{a.label}</span>
                       </span>
                     </React.Fragment>
                   ))}
