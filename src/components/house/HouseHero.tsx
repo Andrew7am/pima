@@ -115,6 +115,10 @@ export default function HouseHero({
   if (house.conferenceHalls?.length) amenities.push({ icon: <IconHall />, label: 'قاعة اجتماعات' });
   if (house.menu?.isIncluded) amenities.push({ icon: <IconMeals />, label: 'إقامة كاملة' });
 
+  // The captions belong to the opening frame. Everything after it is a plain
+  // photograph — no wash, no badge, no text — so the gallery reads as a gallery.
+  const showOverlay = index === 0;
+
   const roundStars = Math.round(house.rating);
   const circleBtn = 'w-10 h-10 rounded-full border shadow-[0_2px_8px_rgba(45,45,36,0.08)] flex items-center justify-center transition-colors cursor-pointer pima-press';
 
@@ -193,14 +197,19 @@ export default function HouseHero({
           />
         ))}
 
-        {/* Readability wash, weighted to the side the words sit on. */}
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-transparent" />
-        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/70 to-transparent" />
+        {/* Wash only where words actually sit: the bottom of the first frame,
+            at 30%, so the photograph keeps its own colour. Frames after the
+            first carry nothing and are left completely clean. */}
+        {showOverlay && (
+          <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/30 via-black/15 to-transparent" />
+        )}
 
-        <span className="absolute top-4 right-4 flex items-center gap-1.5 bg-black/45 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-[11px] font-black">
-          <MapPin className="w-3.5 h-3.5" />
-          {house.governorate}
-        </span>
+        {showOverlay && (
+          <span className="absolute top-4 right-4 flex items-center gap-1.5 bg-black/40 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-[11px] font-black">
+            <MapPin className="w-3.5 h-3.5" />
+            {house.governorate}
+          </span>
+        )}
 
         {images.length > 1 && (
           <>
@@ -219,7 +228,10 @@ export default function HouseHero({
           </>
         )}
 
-        {/* Name, rating, amenities — over the darkest part of the wash. */}
+        {/* Name, rating, amenities — first frame only. Every frame after it is
+            a plain photograph, which is what makes the gallery read as a
+            gallery rather than as five captioned covers. */}
+        {showOverlay && (
         <div className="absolute inset-x-0 bottom-0 p-5 pb-14">
           <div className="max-w-[70%] me-auto text-right space-y-2">
             <h1 className="text-[19px] leading-tight font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.55)]">
@@ -251,12 +263,16 @@ export default function HouseHero({
             </div>
           )}
         </div>
+        )}
 
         {/* Dots, with a hint that retires the moment the reader moves a frame. */}
         {images.length > 1 && (
           <div className="absolute inset-x-0 bottom-4 flex items-center justify-center gap-2">
+            {/* Drop shadows rather than a scrim: the dots and the hint have to
+                survive a bright photograph now that the frames after the first
+                carry no wash at all. */}
             {!interacted && (
-              <span className="flex items-center gap-1 text-[9.5px] font-bold text-white/55 ml-2">
+              <span className="flex items-center gap-1 text-[9.5px] font-bold text-white/75 ml-2 drop-shadow-[0_1px_3px_rgba(0,0,0,0.65)]">
                 <MoveHorizontal className="w-3 h-3" />
                 اسحب للتنقل بين الصور
               </span>
@@ -265,8 +281,8 @@ export default function HouseHero({
               <button
                 key={i} type="button" aria-label={`الصورة ${i + 1}`}
                 onClick={() => { tapFeedback(); setInteracted(true); go(i); }}
-                className={`rounded-full transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] cursor-pointer ${
-                  i === index ? 'w-5 h-1.5 bg-[#E3CD9F]' : 'w-1.5 h-1.5 bg-white/45 hover:bg-white/70'
+                className={`rounded-full transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] cursor-pointer drop-shadow-[0_1px_3px_rgba(0,0,0,0.55)] ${
+                  i === index ? 'w-5 h-1.5 bg-[#E3CD9F]' : 'w-1.5 h-1.5 bg-white/70 hover:bg-white'
                 }`}
               />
             ))}
