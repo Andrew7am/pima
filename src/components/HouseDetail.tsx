@@ -5,7 +5,6 @@ import HouseLocationTrust from './house/HouseLocationTrust';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice } from '../lib/pricing';
 import { getCapacityStatus } from '../lib/roomOccupancy';
-import { getHouseOwnerProfile, OwnerProfile } from '../lib/db';
 import { 
   BedDouble, Calendar, Users, 
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
@@ -644,15 +643,10 @@ export default function HouseDetail({
   // Review states
   const [reviewFilter, setReviewFilter] = useState<ReviewCategoryFilter>('all');
   const [reviewsVisibleCount, setReviewsVisibleCount] = useState(5);
-  // Public owner "trust card" — fetched via SECURITY DEFINER RPC (migration
-  // 056), returns first name + avatar + hosted-groups + avg-response-hours.
-  // No contact info (that's intentional — anti-disintermediation).
-  const [ownerProfile, setOwnerProfile] = useState<OwnerProfile | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    getHouseOwnerProfile(house.id).then((p) => { if (!cancelled) setOwnerProfile(p); });
-    return () => { cancelled = true; };
-  }, [house.id]);
+  // The public owner trust card is gone from this screen, and with it the
+  // getHouseOwnerProfile RPC call that only ever fed it — no point paying for
+  // a round trip per house opened to render nothing. The RPC itself (migration
+  // 056) is untouched and still available if the card ever comes back.
 
   // Interactive weekly menu states
   const [selectedMenuDay, setSelectedMenuDay] = useState<string>(house.menu?.weeklyMenu?.[0]?.day || 'السبت');
@@ -945,7 +939,6 @@ export default function HouseDetail({
 
       <HouseLocationTrust
         house={house}
-        ownerProfile={ownerProfile}
         announcements={announcements}
       />
 

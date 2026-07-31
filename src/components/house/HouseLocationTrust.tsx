@@ -1,18 +1,9 @@
-import React from 'react';
-import { RetreatHouse, Announcement, User } from '../../types';
-import { MapPin, ShieldCheck, BadgeCheck, Lock, MessageSquare, Headphones, CheckCircle2 } from 'lucide-react';
-
-interface OwnerProfile {
-  firstName: string;
-  avatarUrl?: string;
-  verified: boolean;
-  hostedGroups: number;
-  avgResponseHours: number | null;
-}
+﻿import React from 'react';
+import { RetreatHouse, Announcement } from '../../types';
+import { MapPin, ShieldCheck, BadgeCheck, Lock, MessageSquare, Headphones } from 'lucide-react';
 
 interface HouseLocationTrustProps {
   house: RetreatHouse;
-  ownerProfile: OwnerProfile | null;
   announcements: Announcement[];
 }
 
@@ -53,7 +44,7 @@ const WazeMark = () => (
  * record — it says the same thing on every house, deliberately, because it
  * describes the platform rather than the property.
  */
-export default function HouseLocationTrust({ house, ownerProfile, announcements }: HouseLocationTrustProps) {
+export default function HouseLocationTrust({ house, announcements }: HouseLocationTrustProps) {
   const hasCoords = !!(house.lat && house.lng);
   const maps = [
     { key: 'waze',   label: 'Waze',        mark: <WazeMark />,       href: `https://waze.com/ul?ll=${house.lat},${house.lng}&navigate=yes` },
@@ -110,37 +101,6 @@ export default function HouseLocationTrust({ house, ownerProfile, announcements 
           </div>
         )}
       </div>
-
-      {/* ── Who is hosting. Kept from the previous layout: the guarantees below
-             describe Pima, this describes the person you will actually be
-             dealing with, and one does not stand in for the other. ── */}
-      {ownerProfile && (
-        <div className={`${CARD} p-4 flex items-center gap-3`}>
-          <div className="w-12 h-12 rounded-full bg-[#5A5A40] text-white flex items-center justify-center text-base font-black shrink-0 overflow-hidden">
-            {ownerProfile.avatarUrl ? (
-              <img src={ownerProfile.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-            ) : (
-              <span>{ownerProfile.firstName.charAt(0)}</span>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-xs font-black text-[#2D2D24]">مضيفك: {ownerProfile.firstName}</span>
-              {ownerProfile.verified && (
-                <span className="text-[9px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                  <CheckCircle2 className="w-3 h-3" /><span>موثّق</span>
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2 mt-1 text-[10px] text-[#8A8A70] font-bold">
-              {ownerProfile.hostedGroups > 0 && <span>🎉 استضاف {ownerProfile.hostedGroups} مجموعة</span>}
-              {ownerProfile.avgResponseHours != null && (
-                <span>⚡ يرد عادةً خلال {ownerProfile.avgResponseHours < 1 ? 'أقل من ساعة' : `${Math.round(ownerProfile.avgResponseHours)} ساعات`}</span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Why it is safe ── */}
       <div className={`${CARD} p-5`}>
