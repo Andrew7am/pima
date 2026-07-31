@@ -15,7 +15,7 @@ import {
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
   Utensils, Volume2, Monitor, HelpCircle, Send,
   Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Copy,
-  Calculator, TrendingDown, Coins, Bus, ChevronDown, ChevronLeft, ShieldCheck, Tag, Lock, CalendarDays
+  Calculator, TrendingDown, Coins, Bus, ChevronDown, ChevronLeft, ShieldCheck, CalendarDays
 } from 'lucide-react';
 
 
@@ -1889,66 +1889,57 @@ export default function HouseDetail({
         {/* Right column: Availability, Booking Form & Conference quote requests */}
         <div className="space-y-4">
 
-          {/* Booking CTA. The journey itself is a separate screen — this card
-              exists only to carry the decision: what it costs, that nothing is
-              charged yet, and the way in. */}
-          <div className="rounded-[30px] bg-[#FAF8F4] border border-[#C9A24A]/10 shadow-[0_10px_30px_rgba(45,45,36,0.07),0_2px_8px_rgba(45,45,36,0.04)] p-5 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-
-              {/* Price, stacked so the number carries the weight. */}
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="w-12 h-12 rounded-full bg-[#F2EBDC] flex items-center justify-center shrink-0">
-                  <Tag className="w-5 h-5 text-[#C9A24A]" />
+          {/* Booking action card. Not a card with a button in it — the whole
+              thing is one control, and its bottom edge IS the action, so the
+              eye runs price → reassurance → book without a seam. */}
+          <button
+            id="open-booking-flow"
+            type="button"
+            onClick={() => { tapFeedback(); setBookingOpen(true); }}
+            aria-label="احجز الآن"
+            className="group block w-full text-right rounded-[30px] overflow-hidden bg-[#FAF8F4] border border-[#C9A24A]/10 shadow-[0_10px_30px_rgba(45,45,36,0.07),0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_14px_36px_rgba(201,162,74,0.18),0_3px_10px_rgba(45,45,36,0.06)] active:scale-[0.98] transition-[transform,box-shadow] duration-200 ease-in-out cursor-pointer"
+          >
+            <div className="flex items-stretch gap-4 p-5">
+              {/* Zone one: the number carries the card. */}
+              <div className="basis-[35%] shrink-0 text-center leading-none">
+                <span className="block text-[11px] font-black text-[#C9A24A]">ابتداءً من</span>
+                <span className="flex items-baseline justify-center gap-1 my-2">
+                  <span className="text-[40px] font-black text-[#0A2342] [font-variant-numeric:tabular-nums]">
+                    {arabicNumber(isMonthlyHousing ? (house.monthlyRent || 0) : house.pricePerNightPerPerson)}
+                  </span>
+                  <span className="text-[13px] font-black text-[#0A2342]">ج.م</span>
                 </span>
-                <div className="leading-none">
-                  <span className="block text-[10px] font-bold text-[#8A8A70]">ابتداءً من</span>
-                  <span className="flex items-baseline gap-1 my-1">
-                    <span className="text-[32px] font-black text-[#0A2342] [font-variant-numeric:tabular-nums]">
-                      {arabicNumber(isMonthlyHousing ? (house.monthlyRent || 0) : house.pricePerNightPerPerson)}
-                    </span>
-                    <span className="text-[12px] font-black text-[#0A2342]">ج.م</span>
-                  </span>
-                  <span className="block text-[10px] font-medium text-[#8A8A70]">
-                    {isMonthlyHousing ? 'لكل فرد / شهر' : 'لكل فرد / ليلة'}
-                  </span>
-                </div>
+                <span className="block text-[10.5px] font-medium text-[#8A8A70]">
+                  {isMonthlyHousing ? 'لكل فرد / شهر' : 'لكل فرد / ليلة'}
+                </span>
+                <span aria-hidden="true" className="block w-12 h-0.5 rounded-full bg-[#C9A24A]/30 mx-auto mt-3" />
               </div>
 
-              <span aria-hidden="true" className="hidden sm:block w-px self-stretch bg-[#C9A24A]/15" />
+              <span aria-hidden="true" className="w-px self-stretch bg-[#C9A24A]/15" />
 
-              {/* Reassurance, quieter than the price on purpose. */}
-              <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                <ShieldCheck className="w-5 h-5 text-[#C9A24A] shrink-0 mt-0.5" />
-                <div>
-                  <span className="block text-[12px] font-black text-[#0A2342] leading-snug">لن يتم تحصيل أي مبلغ الآن</span>
-                  <span className="block text-[10px] font-medium text-[#8A8A70] leading-relaxed mt-0.5">
-                    سيتم مراجعة طلبك من إدارة المكان أولاً.
+              {/* Zone two: the reassurance, compact and beside the price rather
+                  than stacked under it — no empty middle. */}
+              <div className="flex-1 min-w-0 flex items-center gap-3">
+                <span className="w-11 h-11 rounded-full bg-[#F4EDDD] flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-5 h-5 text-[#C9A24A]" />
+                </span>
+                <span className="min-w-0 leading-snug">
+                  <span className="block text-[12.5px] font-black text-[#0A2342]">لن يتم خصم أي مبلغ الآن</span>
+                  <span className="block text-[10px] font-medium text-[#8A8A70] mt-1">
+                    سيتم مراجعة طلبك من إدارة المكان أولاً قبل تأكيد الحجز.
                   </span>
-                </div>
+                </span>
               </div>
-
-              {/* The way in. Solid Pima gold with one soft highlight — no gradient. */}
-              <button
-                id="open-booking-flow"
-                type="button"
-                onClick={() => { tapFeedback(); setBookingOpen(true); }}
-                className="relative overflow-hidden shrink-0 w-full sm:w-auto flex items-center justify-center gap-3 bg-[#C9A24A] hover:bg-[#BE9840] text-white rounded-3xl px-7 py-4 shadow-[0_8px_22px_rgba(201,162,74,0.35)] transition-colors cursor-pointer pima-press"
-              >
-                <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1/2 bg-white/10 pointer-events-none" />
-                <CalendarDays className="relative w-5 h-5" />
-                <span aria-hidden="true" className="relative w-px h-5 bg-white/25" />
-                <span className="relative text-[15px] font-black">احجز الآن</span>
-                <ChevronLeft className="relative w-5 h-5" />
-              </button>
             </div>
-          </div>
 
-          <p className="flex items-center justify-center gap-2 text-[10.5px] font-bold text-[#8A8A70]">
-            <span aria-hidden="true" className="w-10 h-px bg-[#C9A24A]/25" />
-            <Lock className="w-3.5 h-3.5 text-[#C9A24A]" />
-            لن يتم خصم أي مبلغ الآن
-            <span aria-hidden="true" className="w-10 h-px bg-[#C9A24A]/25" />
-          </p>
+            {/* Zone three: the bottom edge of the card, and the action. It
+                inherits the card's radius because the card clips it. */}
+            <span className="flex items-center h-14 px-5 bg-gradient-to-l from-[#B8944E] via-[#C9A24A] to-[#D6AE5C] text-white transition-[filter] duration-200 ease-in-out group-active:brightness-95">
+              <CalendarDays className="w-5 h-5 shrink-0" />
+              <span className="flex-1 text-center text-[15px] font-black">احجز الآن</span>
+              <ChevronLeft className="w-5 h-5 shrink-0 transition-transform duration-200 ease-in-out group-active:-translate-x-1" />
+            </span>
+          </button>
 
 {/* Availability Calendar visual display */}
           <div className="bg-white rounded-3xl p-5 border border-[#D6D6C2] shadow-sm space-y-3">
