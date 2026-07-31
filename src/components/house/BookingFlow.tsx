@@ -216,23 +216,23 @@ export default function BookingFlow({
     <div id="pima-booking-flow" className="space-y-4 scroll-mt-4">
       {/* This is a screen of its own, not a panel on the place page, so it
           carries its own way back. */}
-      <div className="flex items-center gap-2 pb-1 border-b border-[#EDE7DA]">
+      <div className="flex items-center gap-2 pb-2 border-b border-[#EDE7DA]">
         <button
           type="button"
           onClick={() => { tapFeedback(); onExit(); }}
           aria-label="رجوع"
-          className="w-10 h-10 rounded-xl border border-[#EDE7DA] bg-white hover:bg-[#F1ECE0] text-[#4A4A3A] flex items-center justify-center transition-colors cursor-pointer pima-press"
+          className="w-9 h-9 rounded-xl border border-[#EDE7DA] bg-white hover:bg-[#F1ECE0] text-[#4A4A3A] flex items-center justify-center transition-colors cursor-pointer pima-press"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
-        <div className="min-w-0">
-          <h2 className="text-sm font-black text-[#0A2342]">طلب حجز جديد</h2>
+        <div className="min-w-0 leading-tight">
+          <h2 className="text-[13px] font-black text-[#0A2342]">طلب حجز جديد</h2>
           <p className="text-[10px] text-[#8A8A70] truncate">{house.name}</p>
         </div>
       </div>
 
       {/* ── Step rail ── */}
-      <div className={`${CARD} px-4 py-4`}>
+      <div className={`${CARD} px-4 py-3`}>
         <div className="flex items-center">
           {STEPS.map((label, i) => {
             const done = i < step;
@@ -247,15 +247,15 @@ export default function BookingFlow({
                     />
                   </span>
                 )}
-                <span className="flex flex-col items-center gap-1 shrink-0">
-                  <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black transition-colors duration-[250ms] ${
+                <span className="flex flex-col items-center gap-0.5 shrink-0">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-colors duration-[250ms] ${
                     done ? 'bg-[#C9A24A] text-white'
-                      : current ? 'bg-[#C9A24A] text-white ring-4 ring-[#C9A24A]/15'
+                      : current ? 'bg-[#C9A24A] text-white ring-[3px] ring-[#C9A24A]/15'
                       : 'bg-[#F4EFE3] text-[#B5AF98]'
                   }`}>
-                    {done ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : egp(i + 1)}
+                    {done ? <Check className="w-3 h-3" strokeWidth={3} /> : egp(i + 1)}
                   </span>
-                  <span className={`text-[8.5px] font-black ${current ? 'text-[#B8944E]' : 'text-[#B5AF98]'}`}>{label}</span>
+                  <span className={`text-[8.5px] font-black leading-none ${current ? 'text-[#B8944E]' : 'text-[#B5AF98]'}`}>{label}</span>
                 </span>
               </React.Fragment>
             );
@@ -266,92 +266,96 @@ export default function BookingFlow({
       {/* ══ STEP 1 — review the stay ══ */}
       {step === 0 && (
         <div className="space-y-4 pima-rise">
-          <div className="px-1">
-            <h3 className="text-[15px] font-black text-[#0A2342]">مراجعة تفاصيل الحجز</h3>
-            <p className="text-[10.5px] font-medium text-[#8A8A70] mt-0.5">راجع التفاصيل قبل إدخال بياناتك</p>
+          <div className="px-1 leading-tight">
+            <h3 className="text-[14px] font-black text-[#0A2342]">مراجعة تفاصيل الحجز</h3>
+            <p className="text-[10px] font-medium text-[#8A8A70]">راجع التفاصيل قبل إدخال بياناتك</p>
           </div>
 
-          {/* House */}
+          {/* House — the badge sits with the name rather than a line below it. */}
           <div className={`${CARD} p-3 flex items-center gap-3`}>
             {house.images?.[0] && (
-              <img src={house.images[0]} alt="" referrerPolicy="no-referrer" className="w-20 h-20 rounded-2xl object-cover shrink-0" />
+              <img src={house.images[0]} alt="" referrerPolicy="no-referrer" className="w-14 h-14 rounded-2xl object-cover shrink-0" />
             )}
-            <div className="min-w-0 flex-1">
-              <span className="block text-[13px] font-black text-[#0A2342] leading-snug">{house.name}</span>
-              <span className="block text-[10px] font-medium text-[#8A8A70] mt-0.5">{house.governorate}</span>
-              <span className="inline-flex items-center gap-1 mt-1.5 text-[9.5px] font-black text-[#B8944E] bg-[#FDF9EF] border border-[#EBD9B4] rounded-full px-2 py-0.5">
-                <ShieldCheck className="w-3 h-3" />
-                حجز آمن
-              </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[13px] font-black text-[#0A2342]">{house.name}</span>
+                <span className="inline-flex items-center gap-1 text-[9px] font-black text-[#B8944E] bg-[#FDF9EF] border border-[#EBD9B4] rounded-full px-1.5 py-0.5">
+                  <ShieldCheck className="w-2.5 h-2.5" />
+                  حجز آمن
+                </span>
+              </div>
+              <span className="block text-[10px] font-medium text-[#8A8A70] mt-1">{house.governorate}</span>
             </div>
           </div>
 
-          {/* Dates */}
-          <div className={`${CARD} p-4 space-y-3`}>
+          {/* Dates — one row: arrival, the nights between them, departure. */}
+          <div className={`${CARD} p-3 space-y-2`}>
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-[11.5px] font-black text-[#2D2D24]">
+              <span className="flex items-center gap-1.5 text-[11px] font-black text-[#2D2D24]">
                 <CalendarDays className="w-4 h-4 text-[#C9A24A]" />
                 تاريخ الإقامة
               </span>
               <button
                 type="button"
                 onClick={() => { tapFeedback(); setDatesOpen(true); }}
-                className="text-[10px] font-black text-[#B8944E] border border-[#EBD9B4] rounded-full px-3 py-1 hover:bg-[#FDF9EF] transition-colors cursor-pointer pima-press"
+                className="text-[10px] font-black text-[#B8944E] border border-[#EBD9B4] rounded-full px-3 py-0.5 hover:bg-[#FDF9EF] transition-colors cursor-pointer pima-press"
               >
                 تغيير
               </button>
             </div>
-            <div className="flex items-stretch gap-2 text-center">
-              <div className="flex-1 rounded-2xl bg-[#FBF9F4] border border-[#EDE7DA] py-2.5">
+            <div className="flex items-center gap-2 rounded-2xl bg-[#FBF9F4] border border-[#EDE7DA] px-3 py-2">
+              <div className="flex-1 min-w-0 leading-tight">
                 <span className="block text-[8.5px] font-bold text-[#8A8A70]">من</span>
-                <span className="block text-[11px] font-black text-[#0A2342] mt-0.5">{shortDate(checkIn)}</span>
-                <span className="block text-[8.5px] font-medium text-[#B5AF98]">{weekday(checkIn)}</span>
+                <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkIn)}</span>
               </div>
-              <div className="flex flex-col items-center justify-center px-1 shrink-0">
-                <span className="text-[15px] font-black text-[#B8944E] leading-none">{egp(nights)}</span>
-                <span className="text-[8.5px] font-bold text-[#8A8A70]">{nightsWord(nights)}</span>
+              <div className="shrink-0 text-center px-2 border-x border-[#EDE7DA] leading-tight">
+                <span className="block text-[13px] font-black text-[#B8944E]">{egp(nights)}</span>
+                <span className="block text-[8px] font-bold text-[#8A8A70]">{nightsWord(nights)}</span>
               </div>
-              <div className="flex-1 rounded-2xl bg-[#FBF9F4] border border-[#EDE7DA] py-2.5">
+              <div className="flex-1 min-w-0 leading-tight text-left">
                 <span className="block text-[8.5px] font-bold text-[#8A8A70]">إلى</span>
-                <span className="block text-[11px] font-black text-[#0A2342] mt-0.5">{shortDate(checkOut)}</span>
-                <span className="block text-[8.5px] font-medium text-[#B5AF98]">{weekday(checkOut)}</span>
+                <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkOut)}</span>
               </div>
             </div>
           </div>
 
-          {/* Guests */}
-          <div className={`${CARD} p-4 space-y-3`}>
-            <span className="flex items-center gap-1.5 text-[11.5px] font-black text-[#2D2D24]">
-              <Users className="w-4 h-4 text-[#C9A24A]" />
-              عدد الأفراد
-            </span>
-            <div className="flex items-center justify-center gap-5">
-              <button
-                type="button"
-                onClick={() => { tapFeedback(); setGuestsCount(Math.max(1, guestsCount - 1)); }}
-                disabled={guestsCount <= 1}
-                aria-label="إنقاص"
-                className="w-11 h-11 rounded-2xl border border-[#EDE7DA] bg-white text-[#4A4A3A] flex items-center justify-center disabled:opacity-40 hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-              <span className="text-[26px] font-black text-[#0A2342] min-w-[62px] text-center [font-variant-numeric:tabular-nums]">{egp(guestsCount)}</span>
-              <button
-                type="button"
-                onClick={() => { tapFeedback(); setGuestsCount(Math.min(maxGuests, guestsCount + 1)); }}
-                disabled={guestsCount >= maxGuests}
-                aria-label="زيادة"
-                className="w-11 h-11 rounded-2xl border border-[#EDE7DA] bg-white text-[#4A4A3A] flex items-center justify-center disabled:opacity-40 hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
+          {/* Guests — label and counter share a row; the cap sits under it. */}
+          <div className={`${CARD} p-3`}>
+            <div className="flex items-center justify-between gap-3">
+              <span className="leading-tight">
+                <span className="flex items-center gap-1.5 text-[11px] font-black text-[#2D2D24]">
+                  <Users className="w-4 h-4 text-[#C9A24A]" />
+                  عدد الأفراد
+                </span>
+                <span className="block text-[9px] font-medium text-[#8A8A70] mt-0.5">الحد الأقصى {egp(maxGuests)} فرد</span>
+              </span>
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => { tapFeedback(); setGuestsCount(Math.max(1, guestsCount - 1)); }}
+                  disabled={guestsCount <= 1}
+                  aria-label="إنقاص"
+                  className="w-9 h-9 rounded-xl border border-[#EDE7DA] bg-white text-[#4A4A3A] flex items-center justify-center disabled:opacity-40 hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <span className="text-[22px] font-black text-[#0A2342] min-w-[44px] text-center [font-variant-numeric:tabular-nums]">{egp(guestsCount)}</span>
+                <button
+                  type="button"
+                  onClick={() => { tapFeedback(); setGuestsCount(Math.min(maxGuests, guestsCount + 1)); }}
+                  disabled={guestsCount >= maxGuests}
+                  aria-label="زيادة"
+                  className="w-9 h-9 rounded-xl border border-[#EDE7DA] bg-white text-[#4A4A3A] flex items-center justify-center disabled:opacity-40 hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-            <p className="text-[9px] font-medium text-[#8A8A70] text-center">الحد الأقصى {egp(maxGuests)} فرد</p>
           </div>
 
           {/* Type */}
-          <div className={`${CARD} p-4 space-y-2.5`}>
-            <span className="text-[11.5px] font-black text-[#2D2D24]">نوع الحجز</span>
+          <div className={`${CARD} p-3 space-y-2`}>
+            <span className="text-[11px] font-black text-[#2D2D24]">نوع الحجز</span>
             <div className="grid grid-cols-2 gap-2">
               {[{ q: false, label: 'حجز عادي' }, { q: true, label: 'مؤتمر كبير' }].map((o) => (
                 <button
@@ -359,13 +363,13 @@ export default function BookingFlow({
                   type="button"
                   onClick={() => { tapFeedback(); setIsQuoteMode(o.q); }}
                   aria-pressed={isQuoteMode === o.q}
-                  className={`rounded-2xl py-3 text-[11.5px] font-black border transition-colors duration-[250ms] cursor-pointer pima-press flex items-center justify-center gap-1.5 ${
+                  className={`rounded-xl py-1.5 text-[11px] font-black border transition-colors duration-[250ms] cursor-pointer pima-press flex items-center justify-center gap-1.5 ${
                     isQuoteMode === o.q
                       ? 'bg-[#FDF9EF] border-[#C9A24A] text-[#B8944E]'
                       : 'bg-white border-[#EDE7DA] text-[#8A8A70] hover:border-[#E3CD9F]'
                   }`}
                 >
-                  {isQuoteMode === o.q && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+                  {isQuoteMode === o.q && <Check className="w-3 h-3" strokeWidth={3} />}
                   {o.label}
                 </button>
               ))}
@@ -373,18 +377,18 @@ export default function BookingFlow({
           </div>
 
           {/* Cost */}
-          <div className={`${CARD} p-4`}>
+          <div className={`${CARD} p-3`}>
             <div className="flex items-start justify-between">
-              <div>
-                <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#8A8A70]">
+              <div className="leading-tight">
+                <span className="flex items-center gap-1.5 text-[10.5px] font-bold text-[#8A8A70]">
                   <Wallet className="w-4 h-4 text-[#C9A24A]" />
                   التكلفة التقديرية
                 </span>
-                <span className="block text-[24px] font-black text-[#0A2342] mt-1 [font-variant-numeric:tabular-nums]">
+                <span className="block text-[22px] font-black text-[#0A2342] mt-0.5 [font-variant-numeric:tabular-nums]">
                   {egp(shownTotal)} <span className="text-[12px]">ج.م</span>
                 </span>
                 {!isMonthlyHousing && perPerson > 0 && (
-                  <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
+                  <span className="block text-[9.5px] font-medium text-[#8A8A70]">
                     {egp(nights)} {nightsWord(nights)} · {egp(guestsCount)} فرد × {egp(perPerson)} ج.م
                   </span>
                 )}
@@ -393,7 +397,7 @@ export default function BookingFlow({
                 <button
                   type="button"
                   onClick={() => { tapFeedback(); setCostOpen(true); }}
-                  className="flex items-center gap-1 text-[10px] font-black text-[#B8944E] hover:underline cursor-pointer shrink-0 mt-1"
+                  className="flex items-center gap-1 text-[10px] font-black text-[#B8944E] hover:underline cursor-pointer shrink-0"
                 >
                   عرض التفاصيل
                   <ChevronLeft className="w-3.5 h-3.5" />
@@ -404,12 +408,12 @@ export default function BookingFlow({
 
           {/* Reward */}
           {pointsToEarn > 0 && (
-            <div className="rounded-[28px] border border-[#EBD9B4] bg-[#FDF9EF] p-4 flex items-center gap-3">
-              <span className="w-11 h-11 rounded-full bg-white border border-[#EBD9B4] flex items-center justify-center shrink-0">
-                <Star className="w-5 h-5 fill-[#E0A82E] text-[#E0A82E] pima-pulse-slow" />
+            <div className="rounded-[28px] border border-[#EBD9B4] bg-[#FDF9EF] p-3 flex items-center gap-3">
+              <span className="w-9 h-9 rounded-full bg-white border border-[#EBD9B4] flex items-center justify-center shrink-0">
+                <Star className="w-4 h-4 fill-[#E0A82E] text-[#E0A82E] pima-pulse-slow" />
               </span>
-              <div className="min-w-0 flex-1">
-                <span className="block text-[11.5px] font-black text-[#2D2D24]">
+              <div className="min-w-0 flex-1 leading-tight">
+                <span className="block text-[11px] font-black text-[#2D2D24]">
                   ستحصل على <span className="text-[#B8944E]">{egp(shownPoints)} نقطة</span> بيما
                 </span>
                 <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">تُضاف لحسابك بعد إتمام الإقامة</span>
@@ -419,22 +423,23 @@ export default function BookingFlow({
 
           {notices}
 
-          {/* Trust */}
-          <div className={`${CARD} p-4 space-y-2.5`}>
-            <span className="flex items-center gap-1.5 text-[11.5px] font-black text-[#0A2342]">
+          {/* Trust — two columns, so five short promises cost one block of
+              height instead of five rows of it. */}
+          <div className={`${CARD} p-3 space-y-2`}>
+            <span className="flex items-center gap-1.5 text-[11px] font-black text-[#0A2342]">
               <ShieldCheck className="w-4 h-4 text-[#C9A24A]" />
               لماذا تحجز عبر بيما؟
             </span>
-            <ul className="space-y-1.5">
+            <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5">
               {[
                 'لا يوجد أي دفع الآن',
-                'مراجعة الطلب يدويًا من إدارة المكان',
-                'دفع العربون فقط بعد الموافقة',
+                'مراجعة الطلب يدويًا',
+                'العربون بعد الموافقة',
                 'حماية كاملة لبياناتك',
-                'دعم من فريق بيما طوال رحلة الحجز',
+                'دعم بيما طوال رحلة الحجز',
               ].map((line) => (
-                <li key={line} className="flex items-start gap-2 text-[10.5px] font-medium text-[#4A4A3A]">
-                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" strokeWidth={3} />
+                <li key={line} className="flex items-start gap-1.5 text-[9.5px] font-medium text-[#4A4A3A] leading-snug">
+                  <Check className="w-3 h-3 text-emerald-600 shrink-0 mt-0.5" strokeWidth={3} />
                   {line}
                 </li>
               ))}
@@ -445,7 +450,7 @@ export default function BookingFlow({
             type="button"
             disabled={!canContinue}
             onClick={() => (currentUser ? go(1) : onRequireLogin?.())}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[13px] py-4 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[13px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
           >
             متابعة
             <ChevronLeft className="w-4 h-4" />
@@ -467,7 +472,7 @@ export default function BookingFlow({
           {/* Pinned summary */}
           <div className={`${CARD} p-3 flex items-center gap-3`}>
             {house.images?.[0] && (
-              <img src={house.images[0]} alt="" referrerPolicy="no-referrer" className="w-16 h-16 rounded-2xl object-cover shrink-0" />
+              <img src={house.images[0]} alt="" referrerPolicy="no-referrer" className="w-14 h-14 rounded-2xl object-cover shrink-0" />
             )}
             <div className="min-w-0 flex-1">
               <span className="block text-[12px] font-black text-[#0A2342] truncate">{house.name}</span>

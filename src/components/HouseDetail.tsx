@@ -986,7 +986,7 @@ export default function HouseDetail({
                 {/* Points redemption — only worth offering when the guest has
                     enough for it to change the number. */}
                 {!isMonthlyHousing && maxRedeemablePoints > 0 && (
-                  <label className="flex items-center gap-3 bg-white rounded-[28px] border border-[#EDE7DA] p-4 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
+                  <label className="flex items-center gap-3 bg-white rounded-[28px] border border-[#EDE7DA] p-3 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
                     <input
                       type="checkbox"
                       checked={usePoints}
@@ -1007,7 +1007,7 @@ export default function HouseDetail({
                 {/* Capacity. Two different problems: a group larger than the
                     house can never be waitlisted, a full week can. */}
                 {exceedsHouseCapacity && (
-                  <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-4 space-y-2.5">
+                  <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-3 space-y-2">
                     <p className="text-[10.5px] font-bold text-amber-900 leading-relaxed text-center">
                       هذا البيت يتسع لـ <strong>{arabicNumber(house.bedsCount)}</strong> فرد كحد أقصى، وأنت طلبت <strong>{arabicNumber(guestsCount)}</strong>.
                     </p>
@@ -1021,7 +1021,7 @@ export default function HouseDetail({
                   </div>
                 )}
                 {isFullOnDates && (
-                  <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-4 space-y-2.5">
+                  <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-3 space-y-2">
                     <p className="text-[10.5px] font-bold text-amber-900 text-center">
                       البيت مكتمل الإشغال في هذه التواريخ لعدد الأفراد المطلوب.
                     </p>
@@ -1038,14 +1038,14 @@ export default function HouseDetail({
                 )}
 
                 {/* Cancellation terms, stated before anything is committed. */}
-                <div className="rounded-[28px] border border-[#EDE7DA] bg-white p-4 space-y-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
+                <div className="rounded-[28px] border border-[#EDE7DA] bg-white p-3 space-y-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
                   <span className="flex items-center gap-1.5 text-[11.5px] font-black text-[#0A2342]">
                     <ShieldCheck className="w-4 h-4 text-[#C9A24A]" />
                     سياسة الإلغاء والاسترداد
                   </span>
                   <ul className="space-y-1 text-[10px] font-medium text-[#4A4A3A] pr-4 list-disc marker:text-[#C9A24A]">
-                    <li>الإلغاء قبل الوصول بـ <strong>{arabicNumber(settings.freeCancelDays)} أيام أو أكثر</strong>: استرداد <strong>كامل</strong>.</li>
-                    <li>الإلغاء قبل الوصول بـ <strong>{arabicNumber(settings.partialRefundDays)} أيام أو أكثر</strong>: استرداد <strong>{arabicNumber(Math.round(settings.partialRefundPct * 100))}٪</strong>.</li>
+                    <li>قبل الوصول بـ<strong> {arabicNumber(settings.freeCancelDays)} أيام</strong> أو أكثر: استرداد <strong>كامل</strong>.</li>
+                    <li>قبل الوصول بـ<strong> {arabicNumber(settings.partialRefundDays)} أيام</strong> أو أكثر: استرداد <strong>{arabicNumber(Math.round(settings.partialRefundPct * 100))}٪</strong>.</li>
                     <li>أقل من ذلك: لا يوجد استرداد.</li>
                   </ul>
                 </div>
