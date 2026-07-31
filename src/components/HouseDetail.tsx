@@ -514,42 +514,65 @@ const DateRangePicker = ({
 interface AccordionItemProps {
   id: string;
   title: string;
+  /** One quiet line under the title — carries the detail the old long titles
+   *  used to cram into the heading itself. */
+  subtitle?: string;
   isOpen: boolean;
   onToggle: () => void;
   icon: React.ComponentType<any>;
   children: React.ReactNode;
 }
 
+// The five collapsible sections share this shell, so it is the one place the
+// page's section design lives: gold icon in a cream disc, short title with a
+// quiet subtitle, a chevron that turns, and a panel that interpolates its
+// height instead of snapping open. Same contract as the reviews category
+// panel and the chat booking card — one accordion language across the app.
 const AccordionItem = ({
   id,
   title,
+  subtitle,
   isOpen,
   onToggle,
   icon: Icon,
   children
 }: AccordionItemProps) => {
   return (
-    <div id={`accordion-item-${id}`} className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden transition-all duration-300">
+    <div id={`accordion-item-${id}`} className="bg-white rounded-[28px] border border-[#EDE7DA] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden">
       <button
         id={`accordion-trigger-${id}`}
         type="button"
-        onClick={onToggle}
-        className="w-full px-5 py-4 flex items-center justify-between text-right font-black text-xs text-[#0A2342] bg-[#FDFBF7] hover:bg-[#F8F6F0] transition-all cursor-pointer border-b border-transparent hover:border-[#C5A059]/10"
+        onClick={() => { tapFeedback(); onToggle(); }}
+        aria-expanded={isOpen}
+        className="w-full px-4 py-3.5 flex items-center gap-3 text-right transition-colors hover:bg-[#FBF9F4] cursor-pointer pima-press"
       >
-        <div className="flex items-center gap-2.5">
-          <Icon className="w-5 h-5 text-[#C5A059] shrink-0" />
-          <span className="text-[12px] font-black">{title}</span>
-        </div>
-        <span className={`transform transition-transform duration-300 text-[#C5A059] text-xs font-black ${isOpen ? 'rotate-180' : 'rotate-0'}`}>
-          ▼
+        <span className="w-10 h-10 rounded-full bg-[#F6F0E2] flex items-center justify-center shrink-0">
+          <Icon className="w-[18px] h-[18px] text-[#C9A24A]" />
         </span>
+        <span className="flex-1 min-w-0 leading-tight">
+          <span className="block text-[12.5px] font-black text-[#0A2342]">{title}</span>
+          {subtitle && <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5 truncate">{subtitle}</span>}
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          className={`w-4 h-4 text-[#B5AF98] shrink-0 transition-transform duration-[300ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
-      
-      {isOpen && (
-        <div className="p-5 border-t border-[#D6D6C2]/40 bg-white animate-fade-in space-y-4">
-          {children}
+
+      {/* Height, not display: the panel unfolds rather than appearing. The
+          content stays mounted so closing animates too. */}
+      <div
+        aria-hidden={!isOpen}
+        className={`grid transition-[grid-template-rows,opacity] duration-[300ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
+          isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="p-4 pt-1 space-y-4">
+            {children}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -1106,6 +1129,7 @@ export default function HouseDetail({
       <AccordionItem
         id="services"
         title="نبذة عن المكان"
+        subtitle="وصف البيت وخدماته ومواعيد الوصول"
         isOpen={openSections.services}
         onToggle={() => toggleSection('services')}
         icon={Award}
@@ -1130,7 +1154,8 @@ export default function HouseDetail({
           {/* Weekly Restaurant Menu Display or Editor */}
           <AccordionItem
             id="menu"
-            title="قائمة الطعام والوجبات"
+            title="قائمة الطعام"
+            subtitle="الوجبات والمنيو الأسبوعي وخيارات الصيام"
             isOpen={openSections.menu}
             onToggle={() => toggleSection('menu')}
             icon={Utensils}
@@ -1138,7 +1163,7 @@ export default function HouseDetail({
             {(!house.menu && !isOwnerOrAdmin) ? (
             <div className="bg-white rounded-3xl p-5 border border-[#D6D6C2] shadow-sm text-center py-8 space-y-3">
               <Utensils className="w-8 h-8 text-[#BCBC9D] mx-auto" />
-              <h3 className="text-xs font-extrabold text-[#4A4A3A]">قائمة الطعام والوجبات</h3>
+              {/* No heading here: the section header above already says it. */}
               <p className="text-xs text-[#8A8A70]">لم يتم تحديد قائمة وجبات طعام مخصصة لهذا البيت بعد.</p>
             </div>
           ) : (
@@ -1591,19 +1616,19 @@ export default function HouseDetail({
           {/* Rooms and Beds breakdown */}
           <AccordionItem
             id="rooms"
-            title="أنواع الغرف وخيارات التسكين المتاحة"
+            title="الغرف والتسكين"
+            subtitle="أنواع الغرف المتاحة وسعة كل منها"
             isOpen={openSections.rooms}
             onToggle={() => toggleSection('rooms')}
             icon={BedDouble}
           >
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[#D6D6C2]/40 pb-2.5">
-                <span className="text-[10px] font-bold bg-[#0A2342]/10 text-[#0A2342] px-3 py-1 rounded-full">
-                  إجمالي الغرف: {house.roomsCount} | الأسرة: {house.bedsCount}
-                </span>
-              </div>
-              <span className="text-[9px] font-bold bg-[#EBEBE0] text-[#5A5A40] px-2.5 py-0.5 rounded-full">
-                إجمالي الغرف: {house.roomsCount} | الأسرة: {house.bedsCount}
+            {/* One totals line, not the two identical ones that were here. */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black bg-[#F6F0E2] text-[#B8944E] px-3 py-1 rounded-full">
+                {arabicNumber(house.roomsCount)} غرفة
+              </span>
+              <span className="text-[10px] font-black bg-[#F6F0E2] text-[#B8944E] px-3 py-1 rounded-full">
+                {arabicNumber(house.bedsCount)} سرير
               </span>
             </div>
             
@@ -1619,7 +1644,7 @@ export default function HouseDetail({
                       <div>
                         <span className="text-[11px] font-bold text-[#4A4A3A] block">{room.name}</span>
                         <span className="text-[9.5px] text-[#8A8A70]">
-                          {room.bedsCount} سرير{room.pricePerNight ? ` · ${room.pricePerNight} ج.م/ليلة` : ''}
+                          {arabicNumber(room.bedsCount)} سرير{room.pricePerNight ? ` · ${arabicNumber(room.pricePerNight)} ج.م/ليلة` : ''}
                         </span>
                       </div>
                       <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
@@ -1721,7 +1746,7 @@ export default function HouseDetail({
                           <div className="flex justify-between items-baseline">
                             <span className="text-[9px] text-[#8A8A70] font-bold">التسعير التقديري:</span>
                             <span className="text-xs font-black text-[#5A5A40]">
-                              {room.price.toLocaleString()} ج.م <span className="text-[8px] text-[#8A8A70] font-bold">/ {room.priceUnit}</span>
+                              {arabicNumber(room.price)} ج.م <span className="text-[8px] text-[#8A8A70] font-bold">/ {room.priceUnit}</span>
                             </span>
                           </div>
 
@@ -1775,7 +1800,8 @@ export default function HouseDetail({
           {/* Facilities Section */}
           <AccordionItem
             id="facilities"
-            title="المرافق وقاعات المؤتمرات"
+            title="المرافق والقاعات"
+            subtitle="قاعات المؤتمرات والمطاعم والأنشطة"
             isOpen={openSections.facilities}
             onToggle={() => toggleSection('facilities')}
             icon={Monitor}
@@ -1792,9 +1818,9 @@ export default function HouseDetail({
                       <div key={hall.id} className="bg-[#EBEBE0]/30 border border-[#D6D6C2] p-3 rounded-2xl flex justify-between items-center text-xs">
                         <div>
                           <div className="font-bold text-[#4A4A3A]">{hall.name}</div>
-                          <div className="text-[10px] text-[#8A8A70] font-semibold mt-0.5">تتسع لـ: {hall.capacity} فرد</div>
+                          <div className="text-[10px] text-[#8A8A70] font-semibold mt-0.5">تتسع لـ: {arabicNumber(hall.capacity)} فرد</div>
                           {hall.price !== undefined && (
-                            <div className="text-[10px] text-[#5A5A40] font-bold mt-0.5">{hall.price} جنيه / اليوم</div>
+                            <div className="text-[10px] text-[#5A5A40] font-bold mt-0.5">{arabicNumber(hall.price)} جنيه / اليوم</div>
                           )}
                         </div>
                         <div className="flex gap-2">
@@ -1835,7 +1861,8 @@ export default function HouseDetail({
           {/* Weather & Trip Planning Accordion */}
           <AccordionItem
             id="weather"
-            title={`حالة الطقس والتخطيط للرحلة في ${house.governorate}`}
+            title="حالة الطقس"
+            subtitle={`التخطيط للرحلة في ${house.governorate}`}
             isOpen={openSections.weather}
             onToggle={() => toggleSection('weather')}
             icon={CloudSun}
@@ -1844,11 +1871,9 @@ export default function HouseDetail({
               const weather = GOVERNORATE_WEATHER_DATA[house.governorate] || DEFAULT_WEATHER;
               return (
                 <div className="space-y-4 text-right" dir="rtl">
-                  <div className="flex items-center justify-between border-b border-[#D6D6C2]/50 pb-2.5">
-                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#4A4A3A]">
-                      <span className="text-base">🌤️</span>
-                      <span>توقعات وتوصيات طقس {house.governorate}</span>
-                    </div>
+                  {/* The section header already names the place and the
+                      purpose; all that is left to say here is how fresh it is. */}
+                  <div className="flex items-center justify-end">
                     <span className="text-[9px] bg-emerald-50 text-emerald-800 border border-emerald-200/50 px-2 py-0.5 rounded-full font-bold">
                       مباشر ومحدث
                     </span>
@@ -1863,23 +1888,23 @@ export default function HouseDetail({
                         <div className="flex gap-2 text-[9px] text-[#8A8A70] pt-1">
                           <span className="flex items-center gap-0.5">
                             <Droplets className="w-3 h-3 text-blue-400" />
-                            رطوبة: {weather.humidity}%
+                            رطوبة: {arabicNumber(weather.humidity)}٪
                           </span>
                           <span className="flex items-center gap-0.5">
                             <Wind className="w-3 h-3 text-teal-400" />
-                            رياح: {weather.windSpeed} كم/س
+                            رياح: {arabicNumber(weather.windSpeed)} كم/س
                           </span>
                         </div>
                       </div>
                       <div className="flex flex-col items-center justify-center bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 shadow-sm">
-                        <span className="text-lg font-black text-[#5A5A40] tracking-tight">{weather.currentTemp}°م</span>
+                        <span className="text-lg font-black text-[#5A5A40] tracking-tight">{arabicNumber(weather.currentTemp)}°م</span>
                         <Thermometer className="w-4 h-4 text-rose-500 fill-rose-100" />
                       </div>
                     </div>
 
                     {/* 3-day short forecast */}
                     <div className="space-y-1.5">
-                      <span className="block text-[10px] font-extrabold text-[#8A8A70]">توقعات الـ 3 أيام القادمة:</span>
+                      <span className="block text-[10px] font-extrabold text-[#8A8A70]">توقعات الأيام الثلاثة القادمة:</span>
                       <div className="grid grid-cols-3 gap-1.5 text-center">
                         {weather.forecast.map((day, idx) => (
                           <div key={idx} className="bg-[#FBFBFA] border border-[#D6D6C2]/60 p-2 rounded-xl space-y-1">
@@ -1887,7 +1912,7 @@ export default function HouseDetail({
                             <div className="flex justify-center py-0.5">
                               {getWeatherIcon(day.icon)}
                             </div>
-                            <div className="text-[9.5px] font-black text-[#4A4A3A]">{day.tempHigh}° / {day.tempLow}°</div>
+                            <div className="text-[9.5px] font-black text-[#4A4A3A]">{arabicNumber(day.tempHigh)}° / {arabicNumber(day.tempLow)}°</div>
                           </div>
                         ))}
                       </div>
