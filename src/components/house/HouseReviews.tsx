@@ -76,7 +76,9 @@ function Avatar({ name }: { name: string }) {
 export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
   const [sort, setSort] = useState<SortKey>('newest');
   const [visible, setVisible] = useState(5);
-  const [categoriesOpen, setCategoriesOpen] = useState(true);
+  // Collapsed on arrival: opening it is what plays the stagger, and a panel
+  // that unfolds by itself as the page loads reads as something popping up.
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [openReply, setOpenReply] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
