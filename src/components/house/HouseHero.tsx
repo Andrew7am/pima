@@ -230,9 +230,10 @@ export default function HouseHero({
                 <span className="text-[15px] font-black text-white">{house.rating.toFixed(1)}</span>
                 <span className="flex items-center gap-0.5" aria-hidden="true">
                   {[0, 1, 2, 3, 4].map((i) => (
-                    // A paler gold than the dots and the active thumbnail
-                    // border: those mark position, the stars only rate.
-                    <Star key={i} className={`w-4 h-4 ${i < roundStars ? 'fill-[#F2E3C4] text-[#F2E3C4]' : 'text-white/35'}`} />
+                    // Lighter than the brand gold but still saturated — going
+                    // pale drains the colour out of it and it stops reading
+                    // as gold at all.
+                    <Star key={i} className={`w-4 h-4 ${i < roundStars ? 'fill-[#F0C560] text-[#F0C560]' : 'text-white/35'}`} />
                   ))}
                 </span>
                 <span className="text-[11.5px] font-bold text-white/85">({reviewsCount} تقييم)</span>
