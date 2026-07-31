@@ -49,7 +49,23 @@ export function useCountUp(target: number, duration = 1000): number {
     };
     rafRef.current = requestAnimationFrame(tick);
 
-    return () => { if (rafRef.current != null) cancelAnimationFrame(rafRef.current); };
+    // Watchdog. requestAnimationFrame is throttled to nothing in a background
+    // tab, an inactive pane or a renderer that is not compositing — and a
+    // tween that never advances leaves the number frozen at its start value,
+    // which on a booking screen means showing a price of zero. If the frames
+    // have not carried us home by the time the animation should have ended,
+    // stop waiting for them and show the real number.
+    const watchdog = setTimeout(() => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      fromRef.current = safeTarget;
+      setValue(safeTarget);
+    }, duration + 400);
+
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      clearTimeout(watchdog);
+    };
   }, [safeTarget, duration, canAnimate]);
 
   return value;

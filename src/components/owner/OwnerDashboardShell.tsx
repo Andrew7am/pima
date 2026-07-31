@@ -1109,10 +1109,18 @@ export default function OwnerDashboardShell({
                       )}
                     </div>
                   )}
-                  {booking.isLargeConferenceQuote && booking.conferenceDetails && (
+                  {/* Not gated on isLargeConferenceQuote any more: an ordinary
+                      request can carry the applicant's notes too, and notes the
+                      owner never sees are worse than notes never asked for. */}
+                  {booking.conferenceDetails && (booking.conferenceDetails.extraRequests || booking.conferenceDetails.diocese) && (
                     <div className="bg-amber-50/40 p-2.5 rounded-xl border border-amber-200/60 text-[10px] text-[var(--color-owner-text)] space-y-1">
                       <span className="font-bold text-amber-900 block">📝 ملاحظات وطلبات العميل:</span>
-                      <p className="italic text-slate-700">{booking.conferenceDetails.extraRequests}</p>
+                      {booking.conferenceDetails.extraRequests && (
+                        <p className="italic text-slate-700 whitespace-pre-line">{booking.conferenceDetails.extraRequests}</p>
+                      )}
+                      {booking.conferenceDetails.diocese && (
+                        <p className="text-slate-700">الإيبارشية: <strong>{booking.conferenceDetails.diocese}</strong></p>
+                      )}
                     </div>
                   )}
                   {/* Owner private notes — only visible to the owner */}

@@ -169,10 +169,14 @@ export interface Booking {
   source?: 'platform' | 'manual' | 'temporary';
   isLargeConferenceQuote: boolean;
   paymentStatus?: 'unpaid' | 'pending_verification' | 'paid_deposit' | 'paid_full';
+  // Free-form request details, stored as jsonb. Originally conference-only,
+  // now also carries an ordinary booking's applicant notes and diocese — which
+  // is why hallId and mealsIncluded are optional: a normal request has neither.
   conferenceDetails?: {
     hallId?: string;
-    mealsIncluded: boolean;
+    mealsIncluded?: boolean;
     extraRequests: string;
+    diocese?: string;
   };
   checkedInAt?: string;
   checkedOutAt?: string;

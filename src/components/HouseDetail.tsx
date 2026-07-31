@@ -4,6 +4,8 @@ import HouseHero from './house/HouseHero';
 import HouseLocationTrust from './house/HouseLocationTrust';
 import HouseReviews from './house/HouseReviews';
 import PimaSheet from './PimaSheet';
+import BookingFlow, { ApplicantDetails } from './house/BookingFlow';
+import { arabicNumber } from '../lib/arabic';
 import { tapFeedback } from '../lib/haptics';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice } from '../lib/pricing';
@@ -13,7 +15,7 @@ import {
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
   Utensils, Volume2, Monitor, HelpCircle, Send,
   Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Copy,
-  Calculator, TrendingDown, TrendingUp, Coins, Bus, ChevronDown, ChevronLeft
+  Calculator, TrendingDown, Coins, Bus, ChevronDown, ChevronLeft, ShieldCheck
 } from 'lucide-react';
 
 
@@ -718,6 +720,7 @@ export default function HouseDetail({
 
   // Servant Budget Calculator state variables
   const [budgetOpen, setBudgetOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [calcBusPrice, setCalcBusPrice] = useState<number>(3500);
   const [calcBusesCount, setCalcBusesCount] = useState<number>(1);
   const [calcMiscExpenses, setCalcMiscExpenses] = useState<number>(1500);
@@ -797,7 +800,6 @@ export default function HouseDetail({
   const originalTotalPrice = isMonthlyHousing
     ? (house.monthlyRent || 1500) * guestsCount * months
     : stayPrice.total;
-  const hasSeasonalNights = stayPrice.breakdown.some((row) => row.label !== null);
 
   // Whether the currently selected dates/guest count would exceed remaining
   // capacity — used to offer joining the waitlist instead of a doomed booking attempt.
@@ -814,7 +816,6 @@ export default function HouseDetail({
   });
   const exceedsHouseCapacity = capacityStatus === 'exceeds_house';
   const isFullOnDates = capacityStatus === 'full_on_dates';
-  const wouldExceedCapacity = capacityStatus !== 'ok';
 
   const alreadyOnWaitlist = waitlist.some(
     (w) => w.userId === currentUser?.id && w.houseId === house.id && w.checkIn === checkIn && w.checkOut === checkOut && w.status === 'waiting'
@@ -854,13 +855,15 @@ export default function HouseDetail({
   const totalPrice = Math.max(0, originalTotalPrice - redemptionDiscount);
   const depositAmount = Math.round(totalPrice * settings.depositRate); // configurable deposit
 
-  const handleBookingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (previewMode) { alert('معاينة فقط — التسجيل معطّل أثناء مراجعة الإدارة.'); return; }
-    if (!currentUser) { onRequireLogin?.(); return; }
+  // Returns the new booking's id on success, or null if it was refused — the
+  // flow needs the id to show the guest their request number, and needs the
+  // null to stay on the confirmation step rather than declaring success.
+  const handleBookingSubmit = async (applicant: ApplicantDetails): Promise<string | null> => {
+    if (previewMode) { alert('معاينة فقط — التسجيل معطّل أثناء مراجعة الإدارة.'); return null; }
+    if (!currentUser) { onRequireLogin?.(); return null; }
     if (!checkIn || !checkOut || guestsCount <= 0) {
       alert('الرجاء التأكد من إدخال كافة بيانات التواريخ والأعداد.');
-      return;
+      return null;
     }
 
     // Validate if any date in range is blocked
@@ -873,20 +876,48 @@ export default function HouseDetail({
       });
       if (blockedDatesInRange.length > 0) {
         alert(`نأسف، البيت غير متاح للحجز في التواريخ المحددة بسبب: أعمال صيانة أو إشغال مسبق (${blockedDatesInRange.join(', ')}). يرجى تغيير التواريخ.`);
-        return;
+        return null;
       }
     }
 
+    // What the applicant typed wins over what the account holds: a servant
+    // often books on behalf of a church whose details differ from their own.
+    // Blank fields fall back to the account rather than writing an empty name.
+    const bookingId = `book_${Date.now()}`;
+    const trimmed = {
+      fullName: applicant.fullName.trim(),
+      phone: applicant.phone.trim(),
+      organization: applicant.organization.trim(),
+      diocese: applicant.diocese.trim(),
+      email: applicant.email.trim(),
+      notes: applicant.notes.trim(),
+    };
+
+    // Notes and diocese ride in the conference_details jsonb, which needs no
+    // migration to carry them. Written whenever there is anything to say —
+    // not only for conference quotes.
+    const extras = [
+      isQuoteMode ? (extraRequests || 'مطلوب تنظيم اليوم كامل بمائدة محبة وقاعات اجتماعات مناسبة.') : '',
+      trimmed.notes,
+    ].filter(Boolean).join('\n');
+    const details = (isQuoteMode || extras || trimmed.diocese)
+      ? {
+          ...(isQuoteMode ? { hallId: selectedHallId, mealsIncluded } : {}),
+          extraRequests: extras,
+          ...(trimmed.diocese ? { diocese: trimmed.diocese } : {}),
+        }
+      : undefined;
+
     const newBooking: Booking = {
-      id: `book_${Date.now()}`,
+      id: bookingId,
       houseId: house.id,
       houseName: house.name,
       userId: currentUser.id,
-      userName: currentUser.name,
-      userPhone: currentUser.phone,
-      userEmail: currentUser.email,
+      userName: trimmed.fullName || currentUser.name,
+      userPhone: trimmed.phone || currentUser.phone,
+      userEmail: trimmed.email || currentUser.email,
       userRole: currentUser.role,
-      organizationName: currentUser.organizationName,
+      organizationName: trimmed.organization || currentUser.organizationName,
       checkIn,
       checkOut,
       guestsCount,
@@ -895,23 +926,18 @@ export default function HouseDetail({
       depositAmount,
       status: 'pending', // Pending owner approval
       isLargeConferenceQuote: isQuoteMode,
-      conferenceDetails: isQuoteMode ? {
-        hallId: selectedHallId,
-        mealsIncluded,
-        extraRequests: extraRequests || 'مطلوب تنظيم اليوم كامل بمائدة محبة وقاعات اجتماعات مناسبة.'
-      } : undefined,
-      createdAt: new Date().toISOString()
+      conferenceDetails: details,
+      createdAt: new Date().toISOString(),
     };
 
-    // Wait for the DB write. If the capacity trigger rejects, App.tsx
-    // already showed a specific error; we simply skip the success alert.
+    // Wait for the DB write. If the capacity trigger rejects, App.tsx has
+    // already shown a specific error, so stay on the confirmation step.
+    setSubmitting(true);
     const result = await onBook(newBooking, pointsToRedeem);
-    if (result === false) return;
-    alert(
-      isQuoteMode
-        ? 'تم إرسال طلب عرض السعر للمؤتمر الكنسي الكبير بنجاح! سيقوم مالك البيت بمراجعة الطلب وتقديم عرض سعر خاص خلال دقائق.'
-        : 'تم تقديم طلب الحجز بنجاح! ستكسب نقاط مكافآت فور تأكيد دفع العربون. ستجد تفاصيل الحجز وقبول المالك في صفحة "حجوزاتي".'
-    );
+    setSubmitting(false);
+    if (result === false) return null;
+    // A short, readable reference rather than the raw row id.
+    return `PM-${bookingId.slice(-5)}`;
   };
 
   return (
@@ -1747,336 +1773,113 @@ export default function HouseDetail({
         {/* Right column: Availability, Booking Form & Conference quote requests */}
         <div className="space-y-4">
 
-          {/* Booking & Quote Request Form */}
-          <div className="bg-white rounded-3xl p-5 border border-[#D6D6C2] shadow-2xl relative overflow-hidden">
-            
-            {/* Subtle banner accent */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-l from-[#5A5A40] to-[#8A8A70]" />
-
-            <div className="flex justify-between items-center pb-3 border-b border-[#D6D6C2] mb-4">
-              <h3 className="text-xs font-extrabold text-[#4A4A3A]">
-                {isMonthlyHousing ? 'حجز السكن والتعاقد أونلاين' : 'حجز أونلاين وتأكيد الحضور'}
-              </h3>
-              
-              {/* Toggle regular booking or conference quote */}
-              {!isMonthlyHousing && (
-                <div className="flex bg-[#EBEBE0] p-0.5 rounded-xl border border-[#D6D6C2]">
-                  <button
-                    id="toggle-booking-regular"
-                    type="button"
-                    onClick={() => setIsQuoteMode(false)}
-                    className={`px-2.5 py-1 rounded-lg text-[9px] font-bold transition-all ${
-                      !isQuoteMode ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#8A8A70]'
-                    }`}
-                  >
-                    حجز عادي
-                  </button>
-                  <button
-                    id="toggle-booking-quote"
-                    type="button"
-                    onClick={() => setIsQuoteMode(true)}
-                    className={`px-2.5 py-1 rounded-lg text-[9px] font-bold transition-all ${
-                      isQuoteMode ? 'bg-[#8A8A70] text-white shadow-sm' : 'text-[#8A8A70]'
-                    }`}
-                  >
-                    مؤتمر كبير
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {isQuoteMode ? (
-              // Conference Price Quote request form
-              <form onSubmit={handleBookingSubmit} className="space-y-3">
-                <div className="bg-[#EBEBE0]/40 p-2.5 rounded-2xl text-[10px] text-[#4A4A3A] border border-[#D6D6C2] leading-relaxed">
-                  <span className="font-bold text-[#5A5A40]">طلب عرض سعر مخصص للمؤتمرات:</span>
-                  <p>يتيح هذا النموذج إرسال المتطلبات المعقدة والجروبات الضخمة (المدارس الروحية، اجتماعات الخدام الشاملة) مباشرة لمالك البيت للتسعير الخاص.</p>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">تاريخ الإقامة:</label>
-                  <DateRangePicker
-                    checkIn={checkIn}
-                    setCheckIn={setCheckIn}
-                    checkOut={checkOut}
-                    setCheckOut={setCheckOut}
-                    bookedRanges={allBookedRanges}
-                    blockedDates={house.blockedDates}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">العدد الإجمالي التقريبي:</label>
+          {/* The reservation request, as its own three-screen journey. Pricing,
+              capacity and dates stay here; the flow owns the walk through them. */}
+          <BookingFlow
+            house={house}
+            currentUser={currentUser ?? null}
+            checkIn={checkIn}
+            checkOut={checkOut}
+            nights={isMonthlyHousing ? months : nights}
+            guestsCount={guestsCount}
+            setGuestsCount={setGuestsCount}
+            isQuoteMode={isQuoteMode}
+            setIsQuoteMode={setIsQuoteMode}
+            isMonthlyHousing={isMonthlyHousing}
+            originalTotalPrice={originalTotalPrice}
+            totalPrice={totalPrice}
+            depositAmount={depositAmount}
+            breakdown={stayPrice.breakdown}
+            submitting={submitting}
+            onSubmit={handleBookingSubmit}
+            onRequireLogin={onRequireLogin}
+            datePicker={
+              <DateRangePicker
+                checkIn={checkIn}
+                setCheckIn={setCheckIn}
+                checkOut={checkOut}
+                setCheckOut={setCheckOut}
+                isMonthlyHousing={isMonthlyHousing}
+                bookedRanges={[
+                  ...approvedBookingsForThisHouse.map((b) => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: 'approved' as const })),
+                  ...pendingBookingsForThisHouse.map((b) => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: 'pending' as const })),
+                ]}
+                blockedDates={house.blockedDates || []}
+              />
+            }
+            notices={
+              <>
+                {/* Points redemption — only worth offering when the guest has
+                    enough for it to change the number. */}
+                {!isMonthlyHousing && maxRedeemablePoints > 0 && (
+                  <label className="flex items-center gap-3 bg-white rounded-[28px] border border-[#EDE7DA] p-4 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
                     <input
-                      id="quote-guests"
-                      type="number"
-                      required
-                      min={10}
-                      value={guestsCount}
-                      onChange={(e) => setGuestsCount(parseInt(e.target.value) || 30)}
-                      className="w-full bg-white border border-[#D6D6C2] text-xs px-2.5 py-1.5 rounded-xl text-[#4A4A3A]"
+                      type="checkbox"
+                      checked={usePoints}
+                      onChange={(e) => setUsePoints(e.target.checked)}
+                      className="w-4 h-4 accent-[#C9A24A] shrink-0 cursor-pointer"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">القاعة المطلوبة أساسياً:</label>
-                    <select
-                      id="quote-hall"
-                      value={selectedHallId}
-                      onChange={(e) => setSelectedHallId(e.target.value)}
-                      className="w-full bg-white border border-[#D6D6C2] text-[11px] px-2.5 py-1.5 rounded-xl text-[#4A4A3A] outline-none"
-                    >
-                      {house.conferenceHalls.map((h) => (
-                        <option key={h.id} value={h.id}>{h.name}{h.price !== undefined ? ` — ${h.price} ج/اليوم` : ''}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 py-1">
-                  <button
-                    id="quote-meals-toggle"
-                    type="button"
-                    onClick={() => setMealsIncluded(!mealsIncluded)}
-                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                      mealsIncluded ? 'bg-[#5A5A40] border-[#5A5A40] text-white' : 'bg-white border-[#D6D6C2]'
-                    }`}
-                  >
-                    {mealsIncluded && <Check className="w-2.5 h-2.5" />}
-                  </button>
-                  <span className="text-[10px] text-[#8A8A70] font-semibold">شامل تأمين وجبات الإفطار والغداء والعشاء الكاملة للجروب.</span>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">تفاصيل وطلبات إضافية لمالك البيت:</label>
-                  <textarea
-                    id="quote-requests"
-                    rows={3}
-                    placeholder="مثال: نرغب في توفير غرف فردية للآباء الكهنة المرافقين، وتجهيز الكنيسة الكبرى للقداس صباح الجمعة..."
-                    value={extraRequests}
-                    onChange={(e) => setExtraRequests(e.target.value)}
-                    className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none"
-                  />
-                </div>
-
-                <button
-                  id="quote-submit-btn"
-                  type="submit"
-                  className="w-full bg-[#8A8A70] hover:bg-[#5A5A40] text-white text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors cursor-pointer"
-                >
-                  إرسال متطلبات المؤتمر لطلب عرض سعر
-                </button>
-              </form>
-            ) : (
-              // Regular Booking Form / Monthly Student Lease Form
-              <form onSubmit={handleBookingSubmit} className="space-y-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">
-                    تاريخ الإقامة:
-                  </label>
-                  <DateRangePicker
-                    checkIn={checkIn}
-                    setCheckIn={setCheckIn}
-                    checkOut={checkOut}
-                    setCheckOut={setCheckOut}
-                    isMonthlyHousing={isMonthlyHousing}
-                    bookedRanges={allBookedRanges}
-                    blockedDates={house.blockedDates}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">
-                    {isMonthlyHousing ? 'عدد الطلاب / الموظفين:' : 'عدد أفراد الخلوة / الحضور:'}
-                  </label>
-                  <input
-                    id="book-guests"
-                    type="number"
-                    required
-                    min={1}
-                    max={!isMonthlyHousing && house.bedsCount ? house.bedsCount : undefined}
-                    value={guestsCount}
-                    onChange={(e) => setGuestsCount(parseInt(e.target.value) || 1)}
-                    className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A]"
-                  />
-                  {!isMonthlyHousing && !!house.bedsCount && (
-                    <p className="text-[9px] text-[#8A8A70] font-bold mt-0.5">الحد الأقصى لهذا البيت: {house.bedsCount} فرد</p>
-                  )}
-                  {lastBookingHere && (
-                    <p className="text-[9px] text-emerald-700 font-bold mt-0.5">تم ملء العدد تلقائياً من حجزك السابق ({lastBookingHere.guestsCount} فرد)</p>
-                  )}
-                </div>
-
-                {/* Points redemption toggle — logged-in users with a balance only */}
-                {(currentUser?.points || 0) > 0 && (
-                  <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-3 space-y-1.5">
-                    <label htmlFor="use-points-toggle" className="flex items-center justify-between gap-2 cursor-pointer">
-                      <span className="flex items-center gap-2">
-                        <input
-                          id="use-points-toggle"
-                          type="checkbox"
-                          checked={usePoints}
-                          onChange={(e) => setUsePoints(e.target.checked)}
-                          className="w-4 h-4 accent-emerald-600 cursor-pointer shrink-0"
-                        />
-                        <span className="text-[10.5px] font-bold text-emerald-900">
-                          استخدم نقاطك للخصم (رصيدك: {(currentUser?.points || 0).toLocaleString('ar-EG')} نقطة)
-                        </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-[11.5px] font-black text-[#2D2D24]">استخدم نقاطي في هذا الحجز</span>
+                      <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
+                        {usePoints && redemptionDiscount > 0
+                          ? `خصم ${redemptionDiscount.toLocaleString('ar-EG')} ج.م من ${maxRedeemablePoints.toLocaleString('ar-EG')} نقطة`
+                          : `لديك ${maxRedeemablePoints.toLocaleString('ar-EG')} نقطة قابلة للاستخدام`}
                       </span>
-                      {usePoints && redemptionDiscount > 0 && (
-                        <span className="text-[10px] font-black text-emerald-700 shrink-0">
-                          -{redemptionDiscount.toLocaleString('ar-EG')} ج.م
-                        </span>
-                      )}
-                    </label>
-                    <p className="text-[9px] text-emerald-800/70 font-medium">
-                      كل 100 نقطة = 1 ج.م خصم، وتغطي النقاط 10% كحد أقصى من قيمة الحجز (حتى {maxDiscountByPolicy.toLocaleString('ar-EG')} ج.م لهذا الحجز).
-                    </p>
-                  </div>
+                    </span>
+                  </label>
                 )}
 
-                {/* Live pricing display */}
-                <div className="bg-[#EBEBE0]/30 border border-[#D6D6C2] rounded-2xl p-3.5 space-y-2 text-xs">
-                  {isMonthlyHousing ? (
-                    <>
-                      <div className="flex justify-between text-[#8A8A70]">
-                        <span>عدد الشهور الإجمالية التقريبية:</span>
-                        <span className="font-bold text-[#4A4A3A]">{months} شهر</span>
-                      </div>
-                      <div className="flex justify-between text-[#8A8A70]">
-                        <span>الإيجار الشهري للفرد:</span>
-                        <span className="font-bold text-[#4A4A3A]">{house.monthlyRent} ج.م</span>
-                      </div>
-                      {redemptionDiscount > 0 && (
-                        <div className="flex justify-between text-emerald-700">
-                          <span>خصم النقاط المستخدمة:</span>
-                          <span className="font-bold">-{redemptionDiscount.toLocaleString()} ج.م</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between font-black text-sm pt-2 border-t border-[#D6D6C2] text-[#4A4A3A]">
-                        <span>الإجمالي للتعاقد:</span>
-                        <span>{totalPrice.toLocaleString()} ج.م</span>
-                      </div>
-                      <div className="text-[9px] text-[#8A8A70] font-medium pt-1">
-                        * يلتزم الساكن بدفع الإيجار بشكل شهري منتظم لمالك البيت طبقاً للاتفاق.
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex justify-between text-[#8A8A70]">
-                        <span>عدد الليالي الإجمالي:</span>
-                        <span className="font-bold text-[#4A4A3A]">{nights} ليلة</span>
-                      </div>
-                      {hasSeasonalNights ? (
-                        // Seasonal rates hit: show the actual per-night mix
-                        // instead of a single misleading base rate.
-                        stayPrice.breakdown.map((row) => (
-                          <div key={`${row.label ?? 'base'}-${row.rate}`} className="flex justify-between text-[#8A8A70]">
-                            <span>{row.label ? `🏷️ ${row.label}` : 'السعر الأساسي'} ({row.nights} ليلة):</span>
-                            <span className="font-bold text-[#4A4A3A]">{row.rate} ج.م/فرد</span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="flex justify-between text-[#8A8A70]">
-                          <span>التسعير للفرد لليلة:</span>
-                          <span className="font-bold text-[#4A4A3A]">{house.pricePerNightPerPerson} ج.م</span>
-                        </div>
-                      )}
-                      {redemptionDiscount > 0 && (
-                        <div className="flex justify-between text-emerald-700">
-                          <span>خصم النقاط المستخدمة:</span>
-                          <span className="font-bold">-{redemptionDiscount.toLocaleString()} ج.م</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between font-black text-sm pt-2 border-t border-[#D6D6C2] text-[#4A4A3A]">
-                        <span>الإجمالي المقدر:</span>
-                        <span>{totalPrice.toLocaleString()} ج.م</span>
-                      </div>
-                      <div className="text-[9px] text-[#8A8A70] font-medium pt-1">
-                        * يمكنك اختيار دفع عربون مسبق لاحقاً بنسبة ١٥٪ لتأكيد حجزك رسمياً مع المالك.
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Loyalty earn preview — makes the reason to book through
-                    the platform (not off-platform) tangible up front. */}
-                {!isMonthlyHousing && totalPrice > 0 && (() => {
-                  // Mirror the DB trigger (migration 005/024): 1 pt per EGP
-                  // paid (deposit or full), 2× outside peak (Jul/Aug).
-                  const checkinMonth = checkIn ? new Date(checkIn).getMonth() + 1 : 0;
-                  const multiplier = checkinMonth === 7 || checkinMonth === 8 ? 1 : 2;
-                  const pointsPreview = Math.round(depositAmount * multiplier);
-                  return (
-                    <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-3 flex items-center justify-between gap-2 text-[10px]">
-                      <div className="flex items-center gap-1.5 font-extrabold text-amber-950">
-                        <Coins className="w-4 h-4 text-amber-700" />
-                        <span>هتكسب <strong className="text-amber-900">{pointsPreview.toLocaleString('ar-EG')}</strong> نقطة على العربون</span>
-                        {multiplier === 2 && <span className="text-[9px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded-full font-black">×2 موسم غير ذروة</span>}
-                      </div>
-                      <span className="text-[9px] text-amber-800/80 font-bold">= ~{Math.round(pointsPreview / settings.pointsPerEgp)} ج.م خصم في حجزك الجاي</span>
-                    </div>
-                  );
-                })()}
-
-                {/* Declared cancellation policy — shown BEFORE any money moves */}
-                <div className="bg-sky-50/60 border border-sky-200 rounded-2xl p-3 space-y-1.5 text-[10px] text-sky-950">
-                  <div className="font-black flex items-center gap-1">🛡️ سياسة الإلغاء والاسترداد:</div>
-                  <ul className="space-y-1 font-medium pr-4 list-disc">
-                    <li>الإلغاء قبل الوصول بـ <strong>{settings.freeCancelDays} أيام أو أكثر</strong>: استرداد <strong>كامل</strong> لأي مبلغ مدفوع.</li>
-                    <li>الإلغاء قبل الوصول بـ <strong>{settings.partialRefundDays} أيام أو أكثر</strong>: استرداد <strong>{Math.round(settings.partialRefundPct * 100)}%</strong> من المدفوع.</li>
-                    <li>أقل من ذلك: لا يوجد استرداد.</li>
-                  </ul>
-                  <p className="text-[9px] text-sky-800/80 pt-0.5">يقوم المالك بإعادة المبلغ بنفس طريقة الدفع خلال أيام قليلة من الإلغاء.</p>
-                </div>
-
-                {exceedsHouseCapacity ? (
-                  <div className="space-y-2">
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[10.5px] text-amber-900 font-bold text-center leading-relaxed">
-                      هذا البيت يتسع لـ <strong>{house.bedsCount}</strong> فرد كحد أقصى،
-                      وأنت طلبت <strong>{guestsCount}</strong>.
-                      <br />
-                      <span className="font-medium">قلّل عدد الأفراد لتتمكن من الحجز.</span>
-                    </div>
+                {/* Capacity. Two different problems: a group larger than the
+                    house can never be waitlisted, a full week can. */}
+                {exceedsHouseCapacity && (
+                  <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-4 space-y-2.5">
+                    <p className="text-[10.5px] font-bold text-amber-900 leading-relaxed text-center">
+                      هذا البيت يتسع لـ <strong>{arabicNumber(house.bedsCount)}</strong> فرد كحد أقصى، وأنت طلبت <strong>{arabicNumber(guestsCount)}</strong>.
+                    </p>
                     <button
                       type="button"
-                      onClick={() => setGuestsCount(house.bedsCount || 1)}
-                      className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-colors cursor-pointer"
+                      onClick={() => { tapFeedback(); setGuestsCount(house.bedsCount || 1); }}
+                      className="w-full bg-amber-600 hover:bg-amber-700 text-white text-[11.5px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
                     >
-                      اضبط العدد على {house.bedsCount} فرد
+                      اضبط العدد على {arabicNumber(house.bedsCount)} فرد
                     </button>
                   </div>
-                ) : isFullOnDates ? (
-                  <div className="space-y-2">
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[10px] text-amber-800 font-bold text-center">
-                      عذراً، البيت مكتمل الإشغال في هذه التواريخ لعدد الأفراد المطلوب.
-                    </div>
+                )}
+                {isFullOnDates && (
+                  <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-4 space-y-2.5">
+                    <p className="text-[10.5px] font-bold text-amber-900 text-center">
+                      البيت مكتمل الإشغال في هذه التواريخ لعدد الأفراد المطلوب.
+                    </p>
                     <button
                       id="join-waitlist-btn"
                       type="button"
                       disabled={alreadyOnWaitlist}
                       onClick={handleJoinWaitlistClick}
-                      className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors cursor-pointer"
+                      className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-[11.5px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
                     >
                       {alreadyOnWaitlist ? 'أنت مسجل بالفعل في قائمة الانتظار ⏳' : 'انضم لقائمة الانتظار ⏳'}
                     </button>
                   </div>
-                ) : (
-                  <button
-                    id="book-submit-btn"
-                    type="submit"
-                    className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors cursor-pointer"
-                  >
-                    {isMonthlyHousing ? 'أرسل طلب التعاقد وحجز السكن للمالك' : 'احجز الآن وأرسل الطلب للمالك'}
-                  </button>
                 )}
-              </form>
-            )}
 
-          </div>
+                {/* Cancellation terms, stated before anything is committed. */}
+                <div className="rounded-[28px] border border-[#EDE7DA] bg-white p-4 space-y-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
+                  <span className="flex items-center gap-1.5 text-[11.5px] font-black text-[#0A2342]">
+                    <ShieldCheck className="w-4 h-4 text-[#C9A24A]" />
+                    سياسة الإلغاء والاسترداد
+                  </span>
+                  <ul className="space-y-1 text-[10px] font-medium text-[#4A4A3A] pr-4 list-disc marker:text-[#C9A24A]">
+                    <li>الإلغاء قبل الوصول بـ <strong>{arabicNumber(settings.freeCancelDays)} أيام أو أكثر</strong>: استرداد <strong>كامل</strong>.</li>
+                    <li>الإلغاء قبل الوصول بـ <strong>{arabicNumber(settings.partialRefundDays)} أيام أو أكثر</strong>: استرداد <strong>{arabicNumber(Math.round(settings.partialRefundPct * 100))}٪</strong>.</li>
+                    <li>أقل من ذلك: لا يوجد استرداد.</li>
+                  </ul>
+                </div>
+              </>
+            }
+          />
 
-          {/* Availability Calendar visual display */}
+{/* Availability Calendar visual display */}
           <div className="bg-white rounded-3xl p-5 border border-[#D6D6C2] shadow-sm space-y-3">
             <div className="flex items-center gap-2 justify-between">
               <h3 className="text-xs font-extrabold text-[#4A4A3A]">تقويم إشغال البيت (يوليو ٢٠٢٦):</h3>

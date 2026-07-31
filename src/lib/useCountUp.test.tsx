@@ -54,6 +54,17 @@ describe('rewards count-up is fail-visible', () => {
     expect(screen.getByTestId('v').textContent).toBe('0');
   });
 
+  it('arrives at the real number even when animation frames never fire', async () => {
+    // A background tab, an inactive pane or a renderer that is not compositing
+    // all throttle rAF to nothing. Without the watchdog the tween freezes at
+    // its start value — which on the booking screen renders a price of zero.
+    vi.stubGlobal('requestAnimationFrame', () => 1);
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    render(<Balance target={7980} />);
+    expect(screen.getByTestId('v').textContent).toBe('0'); // frozen at the start
+    await waitFor(() => expect(screen.getByTestId('v').textContent).toBe('7980'), { timeout: 2000 });
+  });
+
   it('grows a progress bar to its real width, and skips the growth when motion is reduced', async () => {
     const { unmount } = render(<Bar pct={71} />);
     await waitFor(() => expect(screen.getByTestId('w').textContent).toBe('71'));

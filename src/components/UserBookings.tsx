@@ -1081,20 +1081,28 @@ export default function UserBookings({
                   );
                 })()}
 
-                {/* Large conference custom options if present */}
-                {booking.isLargeConferenceQuote && booking.conferenceDetails && (
+                {/* The request's own details. Shown for an ordinary booking too
+                    now, since that is where the applicant's notes land. */}
+                {booking.conferenceDetails && (booking.conferenceDetails.extraRequests || booking.conferenceDetails.diocese) && (
                   <div className="p-4 bg-[#EBEBE0]/15 border-b border-[#D6D6C2]/60 text-xs text-[#4A4A3A] space-y-1">
                     <div className="font-bold flex items-center gap-1 text-[#464E3D]">
                       <Building className="w-3.5 h-3.5" />
-                      <span>متطلبات المؤتمر الكنسي:</span>
+                      <span>{booking.isLargeConferenceQuote ? 'متطلبات المؤتمر الكنسي:' : 'ملاحظاتك على الطلب:'}</span>
                     </div>
-                    <div className="text-[10px] text-[#2D2D24]/80 leading-relaxed bg-white border border-[#E7E5DB] p-2 rounded-xl mt-1 text-right">
-                      {booking.conferenceDetails.extraRequests}
-                    </div>
-                    <div className="flex gap-4 text-[10px] text-[#464E3D] font-medium pt-1">
-                      <span>• شامل حجز قاعة الاجتماعات</span>
-                      {booking.conferenceDetails.mealsIncluded && <span>• شامل الوجبات اليومية الثلاث كاملة</span>}
-                    </div>
+                    {booking.conferenceDetails.extraRequests && (
+                      <div className="text-[10px] text-[#2D2D24]/80 leading-relaxed bg-white border border-[#E7E5DB] p-2 rounded-xl mt-1 text-right whitespace-pre-line">
+                        {booking.conferenceDetails.extraRequests}
+                      </div>
+                    )}
+                    {booking.conferenceDetails.diocese && (
+                      <div className="text-[10px] text-[#464E3D] font-medium pt-1">الإيبارشية: {booking.conferenceDetails.diocese}</div>
+                    )}
+                    {booking.isLargeConferenceQuote && (
+                      <div className="flex gap-4 text-[10px] text-[#464E3D] font-medium pt-1">
+                        <span>• شامل حجز قاعة الاجتماعات</span>
+                        {booking.conferenceDetails.mealsIncluded && <span>• شامل الوجبات اليومية الثلاث كاملة</span>}
+                      </div>
+                    )}
                   </div>
                 )}
                 {/* One adaptive status note — replaces the old stack of separate
