@@ -2,6 +2,7 @@
 import { RetreatHouse, Booking, Review, User, Room, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import HouseHero from './house/HouseHero';
 import HouseLocationTrust from './house/HouseLocationTrust';
+import HouseReviews from './house/HouseReviews';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice } from '../lib/pricing';
 import { getCapacityStatus } from '../lib/roomOccupancy';
@@ -13,16 +14,6 @@ import {
   Calculator, TrendingDown, TrendingUp, Coins, Bus, ChevronDown
 } from 'lucide-react';
 
-type ReviewCategoryFilter = 'all' | 'food' | 'service' | 'cleanliness' | 'organization' | 'value';
-const REVIEW_CATEGORY_CHIPS: { key: ReviewCategoryFilter; label: string }[] = [
-  { key: 'all', label: 'الكل' },
-  { key: 'food', label: 'الطعام' },
-  { key: 'service', label: 'الخدمة' },
-  { key: 'cleanliness', label: 'النظافة' },
-  { key: 'organization', label: 'التنظيم' },
-  { key: 'value', label: 'القيمة مقابل السعر' },
-];
-const REVIEW_RATING_LABEL = (n: number) => n >= 4.5 ? 'ممتاز' : n >= 3.5 ? 'جيد جداً' : n >= 2.5 ? 'جيد' : n >= 1.5 ? 'مقبول' : 'ضعيف';
 
 interface HouseDetailProps {
   house: RetreatHouse;
@@ -640,9 +631,8 @@ export default function HouseDetail({
   const [mealsIncluded, setMealsIncluded] = useState(true);
   const [extraRequests, setExtraRequests] = useState('');
 
-  // Review states
-  const [reviewFilter, setReviewFilter] = useState<ReviewCategoryFilter>('all');
-  const [reviewsVisibleCount, setReviewsVisibleCount] = useState(5);
+  // Review sorting and paging now live inside HouseReviews, next to the list
+  // they drive.
   // The public owner trust card is gone from this screen, and with it the
   // getHouseOwnerProfile RPC call that only ever fed it — no point paying for
   // a round trip per house opened to render nothing. The RPC itself (migration
@@ -2250,205 +2240,27 @@ export default function HouseDetail({
 
       </div>
 
-      {/* Ratings & Reviews List */}
-      <div className="bg-white rounded-3xl p-5 border border-[#D6D6C2] shadow-sm space-y-5 text-right">
-        <div>
-          <h3 className="text-sm font-black text-[#4A4A3A]">تقييمات الضيوف</h3>
-          <p className="text-[10px] text-[#8A8A70] font-medium mt-0.5">آراء الضيوف عن بيت المؤتمرات</p>
-        </div>
-
-        {houseReviews.length > 0 && (() => {
-          const count = houseReviews.length;
-          const overallOf = (r: Review) => r.overall_rating ?? r.rating;
-          const overallAvg = parseFloat((houseReviews.reduce((s, r) => s + overallOf(r), 0) / count).toFixed(1));
-          const histogram: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-          houseReviews.forEach((r) => {
-            const bucket = Math.min(5, Math.max(1, Math.round(overallOf(r))));
-            histogram[bucket]++;
-          });
-
-          return (
-            <div className="bg-[#FAF8F5] border border-[#D6D6C2] rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Left: average score */}
-              <div className="flex flex-col items-center justify-center text-center gap-1.5 sm:border-l sm:border-[#D6D6C2] sm:pl-4 py-2">
-                <span className="text-3xl font-black text-[#4A4A3A]">{overallAvg}</span>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className={`w-4 h-4 ${s <= Math.round(overallAvg) ? 'fill-amber-500 text-amber-500' : 'text-[#D6D6C2]'}`} />
-                  ))}
-                </div>
-                <span className="text-[10px] font-extrabold text-amber-800">{REVIEW_RATING_LABEL(overallAvg)}</span>
-                <span className="text-[9px] text-[#8A8A70] font-medium">{count} تقييم</span>
-              </div>
-
-              {/* Right: star distribution bar chart */}
-              <div className="space-y-1.5 justify-center flex flex-col">
-                {[5, 4, 3, 2, 1].map((star) => {
-                  const c = histogram[star];
-                  const pct = count ? Math.round((c / count) * 100) : 0;
-                  return (
-                    <div key={star} className="flex items-center gap-2 text-[9.5px] font-bold text-[#4A4A3A]">
-                      <span className="w-7 shrink-0 flex items-center gap-0.5">{star}<Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" /></span>
-                      <div className="flex-1 bg-[#EBEBE0] h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-                      </div>
-                      <span className="w-14 text-left text-[#8A8A70] font-medium">{pct}% ({c})</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Filter chips — reorders reviews by the selected category's score */}
-        {houseReviews.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {REVIEW_CATEGORY_CHIPS.map((chip) => (
-              <button
-                key={chip.key}
-                type="button"
-                onClick={() => { setReviewFilter(chip.key); setReviewsVisibleCount(5); }}
-                className={`px-3 py-1.5 rounded-full text-[10px] font-extrabold border transition-all duration-200 cursor-pointer ${
-                  reviewFilter === chip.key
-                    ? 'bg-[#4A4A3A] text-white border-[#4A4A3A] scale-105'
-                    : 'bg-white text-[#4A4A3A] border-[#D6D6C2] hover:border-[#8A8A70]'
-                }`}
-              >
-                {chip.label}
-              </button>
-            ))}
+      {/* Guest reviews. The wizard (or the sign-in prompt for a logged-out
+          visitor) is handed in as children so the section owns the layout and
+          this file keeps owning who is allowed to write one. */}
+      <HouseReviews reviews={houseReviews}>
+        {currentUser ? (
+          <ReviewWizard house={house} currentUser={currentUser} onSubmitReview={onSubmitReview} previewMode={previewMode} />
+        ) : (
+          // Logged-out visitor: reviews require an account (and a real
+          // booking — enforced server-side), so prompt login instead.
+          <div className="text-center space-y-2">
+            <p className="text-[10.5px] font-medium text-[#8A8A70]">سجّل دخولك لكتابة تقييم بعد إقامتك.</p>
+            <button
+              type="button"
+              onClick={() => onRequireLogin?.()}
+              className="bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[11.5px] px-6 py-2.5 rounded-2xl shadow-[0_2px_8px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
+            >
+              تسجيل الدخول
+            </button>
           </div>
         )}
-
-        {houseReviews.length === 0 ? (
-          <p className="text-[11px] text-[#8A8A70]">لا توجد تقييمات مسجلة لهذا البيت بعد. كن أول من يضيف تقييماً خادماً للآخرين!</p>
-        ) : (() => {
-          const dimensionOf = (r: Review, key: ReviewCategoryFilter) => {
-            switch (key) {
-              case 'food': return r.food_rating ?? r.rating;
-              case 'service': return r.service_rating ?? r.rating;
-              case 'cleanliness': return r.cleanliness_rating ?? r.rating;
-              case 'organization': return r.organization_rating ?? r.rating;
-              case 'value': return r.value_rating ?? r.rating;
-              default: return r.overall_rating ?? r.rating;
-            }
-          };
-          const sortedReviews = reviewFilter === 'all'
-            ? houseReviews
-            : [...houseReviews].sort((a, b) => dimensionOf(b, reviewFilter) - dimensionOf(a, reviewFilter));
-          const visibleReviews = sortedReviews.slice(0, reviewsVisibleCount);
-
-          return (
-            <>
-              <div key={reviewFilter} className="space-y-3 animate-in fade-in duration-300">
-                {visibleReviews.map((rev) => {
-                  const reviewFood = rev.food_rating ?? rev.rating;
-                  const reviewService = rev.service_rating ?? rev.rating;
-                  const reviewClean = rev.cleanliness_rating ?? rev.rating;
-                  const reviewOrg = rev.organization_rating ?? rev.rating;
-                  const reviewVal = rev.value_rating ?? rev.rating;
-                  const reviewOverall = rev.overall_rating ?? rev.rating;
-
-                  return (
-                    <div key={rev.id} className="bg-[#EBEBE0]/25 p-3.5 rounded-2xl border border-[#D6D6C2] space-y-2.5">
-                      <div className="flex justify-between items-start text-xs">
-                        <div>
-                          <span className="font-bold text-[#4A4A3A]">{rev.displayAnonymous ? 'زائر موثق' : rev.userName}</span>
-                          {!rev.displayAnonymous && (
-                            <span className="text-[9px] text-[#8A8A70] font-medium"> ({rev.userRole === 'servant' ? 'خادم' : 'فرد'})</span>
-                          )}
-                          <span className="text-[8px] text-[#9A9A80] font-medium block mt-0.5">
-                            {new Date(rev.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-col items-end gap-1">
-                          <div className="flex gap-0.5">
-                            {[1, 2, 3, 4, 5].map((s) => (
-                              <Star key={s} className={`w-3 h-3 ${s <= Math.round(reviewOverall) ? 'fill-amber-500 text-amber-500' : 'text-[#D6D6C2]'}`} />
-                            ))}
-                          </div>
-                          <span className="text-[9px] font-black text-amber-900">{reviewOverall} / 5</span>
-                        </div>
-                      </div>
-
-                      {/* Multi-dimensional Sub-ratings pills */}
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        <span className="bg-amber-50 border border-amber-200/50 text-amber-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
-                          🍗 طعام: {reviewFood}
-                        </span>
-                        <span className="bg-emerald-50 border border-emerald-200/50 text-emerald-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
-                          🤵 خدمة: {reviewService}
-                        </span>
-                        <span className="bg-blue-50 border border-blue-200/50 text-blue-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
-                          🧼 نظافة: {reviewClean}
-                        </span>
-                        <span className="bg-indigo-50 border border-indigo-200/50 text-indigo-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
-                          📋 تنظيم: {reviewOrg}
-                        </span>
-                        <span className="bg-rose-50 border border-rose-200/50 text-rose-950 text-[9px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-0.5">
-                          💰 قيمة: {reviewVal}
-                        </span>
-                      </div>
-
-                      <p className="text-[11px] text-[#4A4A3A] leading-relaxed font-medium pt-1 border-t border-[#D6D6C2]/40">
-                        {rev.comment}
-                      </p>
-
-                      {rev.ownerReply && (
-                        <div className="bg-[#5A5A40]/5 border-r-2 border-[#5A5A40] p-2.5 rounded-l-xl mt-2 text-right space-y-1">
-                          <div className="flex items-center justify-between text-[10px] font-extrabold text-[#5A5A40]">
-                            <span>رد إدارة البيت 🏨:</span>
-                            {rev.ownerReplyCreatedAt && (
-                              <span className="text-[8px] text-[#8A8A70] font-mono">{new Date(rev.ownerReplyCreatedAt).toLocaleDateString('ar-EG')}</span>
-                            )}
-                          </div>
-                          <p className="text-[10.5px] text-[#4A4A3A] leading-relaxed">
-                            {rev.ownerReply}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {sortedReviews.length > reviewsVisibleCount && (
-                <button
-                  type="button"
-                  onClick={() => setReviewsVisibleCount((c) => c + 5)}
-                  className="w-full flex items-center justify-center gap-1.5 bg-[#FAF8F5] hover:bg-[#EBEBE0]/50 border border-[#D6D6C2] text-[#4A4A3A] font-extrabold py-2.5 rounded-2xl text-[11px] transition-all cursor-pointer"
-                >
-                  <span>عرض المزيد</span>
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </>
-          );
-        })()}
-
-        {/* 3-step guest review flow — replaces the old single-screen form */}
-        <div className="pt-4 border-t border-[#D6D6C2]">
-          {currentUser ? (
-            <ReviewWizard house={house} currentUser={currentUser} onSubmitReview={onSubmitReview} previewMode={previewMode} />
-          ) : (
-            // Logged-out visitor: reviews require an account (and a real
-            // booking — enforced server-side), so prompt login instead.
-            <div className="bg-[#FAF8F5] border border-[#D6D6C2] rounded-3xl p-6 text-center space-y-2">
-              <p className="text-xs font-black text-[#4A4A3A]">عايز تشارك تجربتك في المكان ده؟</p>
-              <p className="text-[10px] text-[#8A8A70] font-medium">سجّل دخولك لكتابة تقييم بعد إقامتك.</p>
-              <button
-                type="button"
-                onClick={() => onRequireLogin?.()}
-                className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white font-extrabold text-xs px-5 py-2.5 rounded-xl transition-colors cursor-pointer"
-              >
-                تسجيل الدخول
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+      </HouseReviews>
 
     </div>
   );
