@@ -38,6 +38,8 @@ interface BookingFlowProps {
   breakdown: { label: string | null; nights: number; rate: number }[];
   /** The calendar, handed in so this file does not own date logic. */
   datePicker: React.ReactNode;
+  /** Increments when the calendar confirms a range — closes the date sheet. */
+  datesConfirmed?: number;
   /** Rendered on step 1 — capacity warnings, waitlist, points redemption. */
   notices?: React.ReactNode;
   submitting?: boolean;
@@ -89,17 +91,24 @@ const INPUT = 'w-full bg-white border border-[#EDE7DA] rounded-2xl px-3.5 py-3 t
 export default function BookingFlow({
   house, currentUser, checkIn, checkOut, nights, guestsCount, setGuestsCount,
   isQuoteMode, setIsQuoteMode, isMonthlyHousing, originalTotalPrice, totalPrice,
-  depositAmount, breakdown, datePicker, notices, submitting, onSubmit, onRequireLogin, onExit,
+  depositAmount, breakdown, datePicker, datesConfirmed, notices, submitting, onSubmit, onRequireLogin, onExit,
 }: BookingFlowProps) {
   const [step, setStep] = useState(0);
   const [costOpen, setCostOpen] = useState(false);
   const [datesOpen, setDatesOpen] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [requestId, setRequestId] = useState<string | null>(null);
+  // null = not being typed in; the committed count is the source of truth.
+  const [guestsDraft, setGuestsDraft] = useState<string | null>(null);
 
   const [applicant, setApplicant] = useState<ApplicantDetails>({
     fullName: '', phone: '', organization: '', diocese: '', email: '', notes: '',
   });
+
+  // The calendar reports it is finished by bumping this counter; the sheet
+  // holding it closes on the change, rather than the calendar reaching up to
+  // close a container it knows nothing about.
+  useEffect(() => { if (datesConfirmed) setDatesOpen(false); }, [datesConfirmed]);
 
   // Prefill from the account the moment it is known — a servant who has booked
   // before should not retype what Pima already holds.
@@ -339,7 +348,32 @@ export default function BookingFlow({
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <span className="text-[22px] font-black text-[#0A2342] min-w-[44px] text-center [font-variant-numeric:tabular-nums]">{egp(guestsCount)}</span>
+                {/* Typeable, not only steppable: a servant booking forty
+                    people should not tap plus thirty-nine times. Held as text
+                    while editing so the field can legitimately be empty
+                    mid-keystroke, and clamped to the house's capacity on blur
+                    rather than fighting the caret on every character. */}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  aria-label="عدد الأفراد"
+                  value={guestsDraft ?? egp(guestsCount)}
+                  onChange={(e) => {
+                    // Accept Arabic-Indic as readily as Latin — the field
+                    // displays Arabic digits, so people type them back.
+                    const digits = e.target.value.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[^\d]/g, '');
+                    setGuestsDraft(digits);
+                    const n = parseInt(digits, 10);
+                    if (Number.isFinite(n) && n >= 1 && n <= maxGuests) setGuestsCount(n);
+                  }}
+                  onBlur={() => {
+                    const n = parseInt(guestsDraft ?? '', 10);
+                    if (Number.isFinite(n)) setGuestsCount(Math.min(maxGuests, Math.max(1, n)));
+                    setGuestsDraft(null);
+                  }}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="w-[56px] bg-transparent text-[22px] font-black text-[#0A2342] text-center [font-variant-numeric:tabular-nums] border-b-2 border-transparent focus:border-[#C9A24A] focus:outline-none transition-colors rounded-none"
+                />
                 <button
                   type="button"
                   onClick={() => { tapFeedback(); setGuestsCount(Math.min(maxGuests, guestsCount + 1)); }}

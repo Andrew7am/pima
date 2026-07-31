@@ -242,6 +242,12 @@ interface DateRangePickerProps {
   isMonthlyHousing?: boolean;
   bookedRanges?: BookedRange[];
   blockedDates?: string[];
+  /** Draw the calendar straight into the parent instead of behind a trigger
+   *  and a modal of its own — used when it is already inside a sheet, where
+   *  the extra step meant tapping twice to reach the dates. */
+  inline?: boolean;
+  /** Called when the inline calendar is done, so the sheet can close itself. */
+  onDone?: () => void;
 }
 
 // Returns all dates (YYYY-MM-DD) within [start, end] inclusive
@@ -264,8 +270,11 @@ const DateRangePicker = ({
   isMonthlyHousing = false,
   bookedRanges = [],
   blockedDates = [],
+  inline = false,
+  onDone,
 }: DateRangePickerProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+  // Inline mode has no trigger to press, so it starts open and stays open.
+  const [isOpen, setIsOpen] = useState(inline);
 
   const [visibleDate, setVisibleDate] = useState(() => {
     const d = checkIn ? new Date(checkIn) : new Date();
@@ -347,33 +356,10 @@ const DateRangePicker = ({
 
   const WEEKDAYS_AR = ['أح', 'اث', 'ث', 'أر', 'خ', 'ج', 'س'];
 
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="w-full bg-white border border-[#D6D6C2] hover:border-[#C5A059] transition-all text-xs px-3 py-2.5 rounded-xl text-[#4A4A3A] flex items-center justify-between text-right cursor-pointer"
-      >
-        <span className="font-bold">{formattedRange}</span>
-        <Calendar className="w-4 h-4 text-[#C5A059] shrink-0" />
-      </button>
-
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
-          <div className="absolute inset-0" onClick={() => setIsOpen(false)} />
-          
-          <div className="relative bg-white rounded-3xl border border-[#D6D6C2] shadow-xl w-full max-w-sm overflow-hidden z-10 p-5 text-right space-y-4" dir="rtl">
-            <div className="flex items-center justify-between border-b border-[#D6D6C2]/40 pb-3">
-              <span className="text-xs font-black text-[#0A2342]">تحديد فترة الإقامة والتعاقد</span>
-              <button 
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="text-[#8A8A70] hover:text-[#4A4A3A] text-xs font-bold p-1"
-              >
-                إغلاق ✕
-              </button>
-            </div>
-
+  // The calendar itself, with no chrome of its own. Inline mode drops it
+  // straight into the sheet; the standalone mode wraps it in the modal below.
+  const calendar = (
+    <>
             <div className="grid grid-cols-2 gap-2 bg-[#FDFBF7] p-2.5 rounded-2xl border border-[#D6D6C2]/50 text-[10px]">
               <div>
                 <span className="text-[#8A8A70] block font-bold mb-0.5">من تاريخ (الوصول):</span>
@@ -467,7 +453,7 @@ const DateRangePicker = ({
             <div className="flex gap-2 border-t border-[#D6D6C2]/40 pt-3">
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
+                onClick={() => (inline ? onDone?.() : setIsOpen(false))}
                 disabled={!checkIn || !checkOut}
                 className="flex-1 bg-[#0A2342] disabled:opacity-50 hover:bg-[#071930] text-white text-xs font-bold py-2 rounded-xl text-center shadow-md transition-colors cursor-pointer"
               >
@@ -484,6 +470,40 @@ const DateRangePicker = ({
                 مسح
               </button>
             </div>
+    </>
+  );
+
+  if (inline) {
+    return <div className="space-y-4 text-right" dir="rtl">{calendar}</div>;
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="w-full bg-white border border-[#D6D6C2] hover:border-[#C5A059] transition-all text-xs px-3 py-2.5 rounded-xl text-[#4A4A3A] flex items-center justify-between text-right cursor-pointer"
+      >
+        <span className="font-bold">{formattedRange}</span>
+        <Calendar className="w-4 h-4 text-[#C5A059] shrink-0" />
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
+          <div className="absolute inset-0" onClick={() => setIsOpen(false)} />
+
+          <div className="relative bg-white rounded-3xl border border-[#D6D6C2] shadow-xl w-full max-w-sm overflow-hidden z-10 p-5 text-right space-y-4" dir="rtl">
+            <div className="flex items-center justify-between border-b border-[#D6D6C2]/40 pb-3">
+              <span className="text-xs font-black text-[#0A2342]">تحديد فترة الإقامة والتعاقد</span>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="text-[#8A8A70] hover:text-[#4A4A3A] text-xs font-bold p-1"
+              >
+                إغلاق ✕
+              </button>
+            </div>
+            {calendar}
           </div>
         </div>
       )}
@@ -722,6 +742,8 @@ export default function HouseDetail({
   const [budgetOpen, setBudgetOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
+  // Bumped when the inline calendar confirms, so the sheet holding it closes.
+  const [datesDone, setDatesDone] = useState(0);
   const [calcBusPrice, setCalcBusPrice] = useState<number>(3500);
   const [calcBusesCount, setCalcBusesCount] = useState<number>(1);
   const [calcMiscExpenses, setCalcMiscExpenses] = useState<number>(1500);
@@ -967,6 +989,7 @@ export default function HouseDetail({
             onSubmit={handleBookingSubmit}
             onRequireLogin={onRequireLogin}
             onExit={() => setBookingOpen(false)}
+            datesConfirmed={datesDone}
             datePicker={
               <DateRangePicker
                 checkIn={checkIn}
@@ -979,6 +1002,8 @@ export default function HouseDetail({
                   ...pendingBookingsForThisHouse.map((b) => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: 'pending' as const })),
                 ]}
                 blockedDates={house.blockedDates || []}
+                inline
+                onDone={() => setDatesDone((n) => n + 1)}
               />
             }
             notices={
