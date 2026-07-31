@@ -1,14 +1,15 @@
 ﻿import React, { useState, useMemo, useEffect } from 'react';
 import { RetreatHouse, Booking, Review, User, Room, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import HouseHero from './house/HouseHero';
+import HouseLocationTrust from './house/HouseLocationTrust';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice } from '../lib/pricing';
 import { getCapacityStatus } from '../lib/roomOccupancy';
 import { getHouseOwnerProfile, OwnerProfile } from '../lib/db';
 import { 
-  MapPin, BedDouble, Calendar, Users, 
+  BedDouble, Calendar, Users, 
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
-  Utensils, Volume2, Monitor, HelpCircle, Send, CheckCircle2,
+  Utensils, Volume2, Monitor, HelpCircle, Send,
   Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Copy,
   Calculator, TrendingDown, TrendingUp, Coins, Bus, ChevronDown
 } from 'lucide-react';
@@ -942,100 +943,11 @@ export default function HouseDetail({
         onToggleFavorite={onToggleFavorite}
       />
 
-      <div className="bg-white rounded-3xl overflow-hidden border border-[#D6D6C2] shadow-sm relative text-right">
-        {/* Address onwards. The name, rating and review count are in the hero
-            above now, so they are not printed twice. */}
-        <div className="p-5 space-y-2">
-          <div className="flex items-center gap-1.5 text-xs text-[#8A8A70]">
-            <MapPin className="w-4 h-4 text-[#BCBC9D] shrink-0" />
-            <span>{house.address}</span>
-          </div>
-
-          {/* Open in external maps */}
-          {house.lat && house.lng && (
-            <div className="flex flex-wrap gap-2 pt-1">
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${house.lat},${house.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-white border border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#F0EDE6] transition-colors shadow-sm"
-              >
-                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                Google Maps
-              </a>
-              <a
-                href={`https://waze.com/ul?ll=${house.lat},${house.lng}&navigate=yes`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-white border border-[#D6D6C2] text-[#5A86E8] hover:bg-blue-50 transition-colors shadow-sm"
-              >
-                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M20.54 6.63A10.5 10.5 0 0 0 3.5 16.5c0 .94.26 1.82.7 2.57A2 2 0 0 0 6 20h12a2 2 0 0 0 1.8-1.13c.44-.75.7-1.63.7-2.57A10.48 10.48 0 0 0 20.54 6.63zM8.5 14a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm7 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
-                Waze
-              </a>
-              <a
-                href={`https://maps.apple.com/?q=${house.lat},${house.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-xl bg-white border border-[#D6D6C2] text-[#555] hover:bg-gray-50 transition-colors shadow-sm"
-              >
-                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-                Apple Maps
-              </a>
-            </div>
-          )}
-
-          {/* Owner trust card — first name + avatar + verified badge +
-              hosted count + avg response time (all from migration 056 RPC);
-              no phone/email intentionally. */}
-          {ownerProfile && (
-            <div className="mt-3 bg-white border border-[#D6D6C2] rounded-2xl p-3 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-[#5A5A40] text-white flex items-center justify-center text-base font-black shrink-0 overflow-hidden">
-                {ownerProfile.avatarUrl ? (
-                  <img src={ownerProfile.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                ) : (
-                  <span>{ownerProfile.firstName.charAt(0)}</span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-xs font-black text-[#4A4A3A]">مضيفك: {ownerProfile.firstName}</span>
-                  {ownerProfile.verified && (
-                    <span className="text-[9px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                      <CheckCircle2 className="w-3 h-3" /><span>موثّق</span>
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-1 text-[10px] text-[#8A8A70] font-bold">
-                  {ownerProfile.hostedGroups > 0 && <span>🎉 استضاف {ownerProfile.hostedGroups} مجموعة</span>}
-                  {ownerProfile.avgResponseHours != null && (
-                    <span>⚡ يرد عادةً خلال {ownerProfile.avgResponseHours < 1 ? 'أقل من ساعة' : `${Math.round(ownerProfile.avgResponseHours)} ساعات`}</span>
-                  )}
-                </div>
-                <p className="text-[9.5px] text-[#8A8A70] font-medium mt-1">🔒 التواصل يتم داخل التطبيق فقط عبر محادثة الحجز — لضمان حقوقك وأمان بياناتك.</p>
-              </div>
-            </div>
-          )}
-
-          {/* The price. Rating and review count moved to the hero; what belongs
-              here is the number the visitor is actually deciding on. */}
-          <div className="flex items-center gap-3 pt-2 text-xs font-bold text-[#4A4A3A]">
-            {house.propertyType === 'student' || house.propertyType === 'staff' ? (
-              <div className="text-[#5A5A40] font-extrabold">{house.monthlyRent} ج.م <span className="text-[10px] text-[#8A8A70] font-medium">/ شهرياً</span></div>
-            ) : (
-              <div className="text-[#5A5A40] font-extrabold">{house.pricePerNightPerPerson} ج.م <span className="text-[10px] text-[#8A8A70] font-medium">لكل فرد / ليلة</span></div>
-            )}
-          </div>
-
-          {/* Owner announcements */}
-          {announcements.filter((a) => a.isActive).map((a) => (
-            <div key={a.id} className="mt-3 p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2 text-[10.5px] text-amber-900 font-bold">
-              <span className="text-sm">📢</span>
-              <span>{a.message}</span>
-            </div>
-          ))}
-
-        </div>
-      </div>
+      <HouseLocationTrust
+        house={house}
+        ownerProfile={ownerProfile}
+        announcements={announcements}
+      />
 
       {/* About section — moved up front so it's the first thing visitors read */}
       <AccordionItem
