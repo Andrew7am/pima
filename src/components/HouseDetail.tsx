@@ -697,6 +697,7 @@ export default function HouseDetail({
 
   // Servant Budget Calculator state variables
   const [budgetOpen, setBudgetOpen] = useState(false);
+  const [availabilityOpen, setAvailabilityOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
   // Bumped when the inline calendar confirms, so the sheet holding it closes.
@@ -750,6 +751,10 @@ export default function HouseDetail({
     const dateStr = `2026-07-${day < 10 ? '0' + day : day}`;
     return isDateFull(dateStr);
   };
+
+  // What the availability card leads with: the count a visitor is actually
+  // looking for, so they can decide without opening the month.
+  const freeJulyDays = JULY_2026_DAYS.filter((d) => !isDateBooked(d)).length;
 
   const calculateNights = () => {
     const start = new Date(checkIn);
@@ -2033,13 +2038,37 @@ export default function HouseDetail({
             </span>
           </button>
 
-{/* Availability Calendar visual display */}
-          <div className="bg-white rounded-3xl p-5 border border-[#D6D6C2] shadow-sm space-y-3">
-            <div className="flex items-center gap-2 justify-between">
-              <h3 className="text-xs font-extrabold text-[#4A4A3A]">تقويم إشغال البيت (يوليو ٢٠٢٦):</h3>
-              <span className="text-[9px] font-bold text-[#8A8A70]">حالة التوافر</span>
-            </div>
-            
+      {/* Occupancy calendar. A month grid is a lot of screen for something a
+          visitor consults rather than reads, so it sits behind a card that
+          leads with the one number they actually want: how many nights are
+          still free. */}
+      <button
+        type="button"
+        onClick={() => { tapFeedback(); setAvailabilityOpen(true); }}
+        className="w-full bg-white rounded-3xl p-5 border border-[#EDE7DA] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)] flex items-center gap-3 text-right cursor-pointer pima-press hover:border-[#E3CD9F] transition-colors"
+      >
+        <span className="w-12 h-12 rounded-full bg-[#F6F0E2] flex items-center justify-center shrink-0">
+          <Calendar className="w-5 h-5 text-[#C9A24A]" />
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-[13px] font-black text-[#0A2342]">جدول الإشغال</span>
+          <span className="block text-[10px] font-medium text-[#8A8A70] leading-snug mt-0.5">
+            {freeJulyDays > 0
+              ? <>{arabicNumber(freeJulyDays)} من {arabicNumber(JULY_2026_DAYS.length)} يوم متاحة في يوليو ٢٠٢٦</>
+              : <>لا توجد أيام متاحة في يوليو ٢٠٢٦</>}
+          </span>
+        </span>
+        <ChevronLeft className="w-4 h-4 text-[#B5AF98] shrink-0" />
+      </button>
+
+      <PimaSheet
+        open={availabilityOpen}
+        onClose={() => setAvailabilityOpen(false)}
+        title="جدول الإشغال"
+        subtitle="تقويم إشغال البيت — يوليو ٢٠٢٦"
+        icon={<Calendar className="w-4 h-4 text-[#C9A24A]" />}
+      >
+          <div className="space-y-3">
             {/* Visual Calendar Grid */}
             <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold">
               {['أ', 'ث', 'خ', 'ج', 'ج', 'س', 'ح'].map((d, i) => (
@@ -2063,7 +2092,7 @@ export default function HouseDetail({
               })}
             </div>
 
-            <div className="flex items-center justify-between text-[10px] text-[#8A8A70] pt-2 border-t border-[#D6D6C2]">
+            <div className="flex items-center justify-between text-[10px] text-[#8A8A70] pt-2 border-t border-[#EDE7DA]">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-rose-500" />
                 <span>محجوز لمؤتمرات أخرى</span>
@@ -2074,6 +2103,7 @@ export default function HouseDetail({
               </span>
             </div>
           </div>
+      </PimaSheet>
 
           {/* Budget assistant. It is a servant's planning tool, not something a guest
           browsing a house needs open in front of them — so it lives behind a
