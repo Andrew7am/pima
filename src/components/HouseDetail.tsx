@@ -43,6 +43,9 @@ interface HouseDetailProps {
   previewMode?: boolean;
   // Guest mode: called instead of submitting when there's no logged-in user
   onRequireLogin?: () => void;
+  /** After a request is sent: «متابعة الطلب» and «العودة للرئيسية». */
+  onNavigateBookings?: () => void;
+  onNavigateHome?: () => void;
 }
 
 // Illustrative food spread for the menu card — same practice as the room-type
@@ -541,6 +544,8 @@ export default function HouseDetail({
   settings = DEFAULT_PLATFORM_SETTINGS,
   previewMode = false,
   onRequireLogin,
+  onNavigateBookings,
+  onNavigateHome,
 }: HouseDetailProps) {
   const [isCopied, setIsCopied] = useState(false);
 
@@ -1030,6 +1035,8 @@ export default function HouseDetail({
             onSubmit={handleBookingSubmit}
             onRequireLogin={onRequireLogin}
             onExit={() => setBookingOpen(false)}
+            onTrackBooking={onNavigateBookings}
+            onGoHome={onNavigateHome}
             datesConfirmed={datesDone}
             datePicker={
               <DateRangePicker

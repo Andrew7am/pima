@@ -4,6 +4,7 @@ import {
   ChevronLeft, ChevronRight, Check, ShieldCheck, CalendarDays, Users, Wallet,
   Star, Send, Clock, FileText, Pencil, Minus, Plus, Building2, Phone, User as UserIcon,
   Mail, MessageSquare, Church, Info, Loader2, Receipt, CreditCard,
+  Sparkles, BedDouble, Copy, Home, Bell,
 } from 'lucide-react';
 import { tapFeedback } from '../../lib/haptics';
 import PimaSheet from '../PimaSheet';
@@ -48,6 +49,10 @@ interface BookingFlowProps {
   onRequireLogin?: () => void;
   /** Leaves the flow and returns to the place. */
   onExit: () => void;
+  /** «متابعة الطلب» — opens حجوزاتي. Falls back to onExit when absent. */
+  onTrackBooking?: () => void;
+  /** «العودة للرئيسية». Falls back to onExit when absent. */
+  onGoHome?: () => void;
 }
 
 const CARD = 'bg-white rounded-[28px] border border-[#EDE7DA] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]';
@@ -92,6 +97,7 @@ export default function BookingFlow({
   house, currentUser, checkIn, checkOut, nights, guestsCount, setGuestsCount,
   isQuoteMode, setIsQuoteMode, isMonthlyHousing, originalTotalPrice, totalPrice,
   depositAmount, breakdown, datePicker, datesConfirmed, notices, submitting, onSubmit, onRequireLogin, onExit,
+  onTrackBooking, onGoHome,
 }: BookingFlowProps) {
   const [step, setStep] = useState(0);
   const [costOpen, setCostOpen] = useState(false);
@@ -100,6 +106,7 @@ export default function BookingFlow({
   const [requestId, setRequestId] = useState<string | null>(null);
   // null = not being typed in; the committed count is the source of truth.
   const [guestsDraft, setGuestsDraft] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState(false);
 
   const [applicant, setApplicant] = useState<ApplicantDetails>({
     fullName: '', phone: '', organization: '', diocese: '', email: '', notes: '',
@@ -150,65 +157,154 @@ export default function BookingFlow({
     if (id) { setRequestId(id); go(3); }
   };
 
-  /* ── Success ─────────────────────────────────────────────────────────── */
+  /* ── Success ─────────────────────────────────────────────────────────────
+     Not the booking record — a confirmation that the request left. The guest
+     has just handed over their trip and paid nothing; what they need is that
+     it arrived, what happens next, and a way onward. ── */
   if (step === 3 && requestId) {
-    const timeline = [
-      { label: 'تم إرسال الطلب', done: true, body: 'استلمنا طلبك بنجاح' },
-      { label: 'قيد مراجعة المكان', done: false, body: 'يتم مراجعة طلبك من قبل إدارة المكان' },
-      { label: 'بانتظار الموافقة', done: false, body: 'ستصلك إشعار بالنتيجة' },
-      { label: 'دفع العربون', done: false, body: 'بعد الموافقة على طلبك' },
-      { label: 'تم تأكيد الحجز', done: false, body: 'استمتع بإقامتك ✨' },
+    const nextSteps = [
+      { icon: ShieldCheck, label: 'قبول الطلب' },
+      { icon: FileText, label: 'طلب بيانات إضافية' },
+      { icon: CreditCard, label: 'تأكيد دفع العربون' },
     ];
+    // Five sparkles, placed by hand around the ring rather than scattered.
+    const sparks = [
+      { top: '4%',  right: '14%', size: 'w-4 h-4',   delay: 780 },
+      { top: '16%', left: '10%',  size: 'w-3 h-3',   delay: 900 },
+      { top: '52%', right: '4%',  size: 'w-3.5 h-3.5', delay: 1020 },
+      { top: '62%', left: '6%',   size: 'w-3 h-3',   delay: 1140 },
+      { top: '86%', right: '22%', size: 'w-2.5 h-2.5', delay: 1260 },
+    ];
+
     return (
-      <div id="pima-booking-flow" className={`${CARD} p-6 text-center space-y-5`}>
-        <span className="inline-flex w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-200 items-center justify-center pima-medal-in">
-          <Check className="w-8 h-8 text-emerald-600" strokeWidth={3} />
-        </span>
-        <div className="space-y-1.5">
-          <h3 className="text-[17px] font-black text-[#0A2342]">تم إرسال طلبك بنجاح</h3>
-          <p className="text-[11px] font-medium text-[#8A8A70] leading-relaxed">
-            تم استلام طلبك وسيتم مراجعته من قبل إدارة المكان.
+      <div id="pima-booking-flow" className="space-y-4 text-right">
+        {/* Hero */}
+        <div className="pima-rise text-center pt-2">
+          <span className="relative inline-block w-[132px] h-[132px]">
+            {sparks.map((s, i) => (
+              <Sparkles
+                key={i}
+                aria-hidden="true"
+                className={`pima-spark absolute ${s.size} text-[#E0A82E]`}
+                style={{ top: s.top, right: s.right, left: s.left, animationDelay: `${s.delay}ms` }}
+              />
+            ))}
+            <span className="pima-success-glow absolute inset-3 rounded-full bg-white" />
+            {/* The ring and the tick are one drawing, written on arrival. */}
+            <svg viewBox="0 0 100 100" className="relative w-full h-full -rotate-90" aria-hidden="true">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#F2EBDC" strokeWidth="4" />
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#C9A24A" strokeWidth="4" strokeLinecap="round" className="pima-ring-draw" />
+              <path d="M33 51 L45 63 L68 39" fill="none" stroke="#B8944E" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" className="pima-check-draw" transform="rotate(90 50 50)" />
+            </svg>
+          </span>
+
+          <h3 className="text-[19px] font-black text-[#0A2342] mt-4 pima-rise pima-rise-1">تم إرسال طلب الحجز بنجاح</h3>
+          <p className="text-[11px] font-medium text-[#8A8A70] leading-relaxed mt-2 pima-rise pima-rise-2">
+            تم استلام طلبك وسيتم مراجعته من قبل بيت المؤتمرات.
+            <br />سيصلك إشعار فور وجود أي تحديث.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-[#EBD9B4] bg-[#FDF9EF] px-4 py-3 flex items-center justify-between">
-          <span className="text-right">
-            <span className="block text-[9.5px] font-bold text-[#8A8A70]">رقم الطلب</span>
-            <span className="block text-[15px] font-black text-[#B8944E] tracking-wide" dir="ltr">{requestId}</span>
-          </span>
-          <FileText className="w-5 h-5 text-[#C9A24A]" />
-        </div>
-
-        <div className="text-right space-y-0">
-          {timeline.map((t, i) => (
-            <div key={t.label} className="flex gap-3">
-              <div className="flex flex-col items-center shrink-0">
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center border-2 ${
-                  t.done ? 'bg-emerald-500 border-emerald-500' : 'bg-white border-[#E3DCCB]'
-                }`}>
-                  {t.done && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-                </span>
-                {i < timeline.length - 1 && <span className="w-0.5 flex-1 min-h-[26px] bg-[#EDE7DA]" />}
-              </div>
-              <div className="pb-3 min-w-0">
-                <span className={`block text-[11.5px] font-black ${t.done ? 'text-[#0A2342]' : 'text-[#8A8A70]'}`}>{t.label}</span>
-                <span className="block text-[9.5px] font-medium text-[#B5AF98] mt-0.5">{t.body}</span>
-              </div>
+        {/* What happens next — three steps, arriving one after another. */}
+        <div className={`${CARD} p-3 grid grid-cols-3`}>
+          {nextSteps.map((s, i) => (
+            <div
+              key={s.label}
+              className={`pima-rise flex flex-col items-center text-center gap-2 px-1 ${i > 0 ? 'border-l border-[#EDE7DA]' : ''}`}
+              style={{ animationDelay: `${1000 + i * 80}ms` }}
+            >
+              <span className="w-10 h-10 rounded-full bg-[#F6F0E2] flex items-center justify-center">
+                <s.icon className="w-[18px] h-[18px] text-[#C9A24A]" />
+              </span>
+              <span className="text-[9.5px] font-black text-[#2D2D24] leading-tight">{s.label}</span>
             </div>
           ))}
         </div>
 
+        {/* The reservation itself */}
+        <div className={`${CARD} p-3 pima-rise pima-rise-3`}>
+          <div className="flex items-center gap-3">
+            {house.images?.[0] && (
+              <img src={house.images[0]} alt="" referrerPolicy="no-referrer" className="w-[86px] h-[86px] rounded-2xl object-cover shrink-0" />
+            )}
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <span className="flex items-center gap-1.5 text-[12.5px] font-black text-[#0A2342]">
+                <Building2 className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
+                <span className="truncate">{house.name}</span>
+              </span>
+              <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#4A4A3A]">
+                <CalendarDays className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
+                {shortDate(checkIn)} — {shortDate(checkOut)}
+              </span>
+              <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#4A4A3A]">
+                <Users className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
+                {egp(guestsCount)} فرد
+              </span>
+              <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#4A4A3A]">
+                <BedDouble className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
+                {egp(house.roomsCount)} غرفة
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[#EDE7DA]">
+            <span className="text-[9.5px] font-bold text-[#8A8A70]">رقم الطلب</span>
+            <button
+              type="button"
+              onClick={() => { tapFeedback(); navigator.clipboard?.writeText(requestId).then(() => setCopiedId(true)); }}
+              className="flex items-center gap-1.5 text-[11px] font-black text-[#0A2342] cursor-pointer hover:text-[#B8944E] transition-colors"
+            >
+              <span dir="ltr">#{requestId}</span>
+              {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#B5AF98]" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Where it stands, and how long the wait usually is */}
+        <div className={`${CARD} p-3 flex items-stretch gap-3 pima-rise pima-rise-3`}>
+          <div className="flex-1 text-center">
+            <span className="block text-[9.5px] font-bold text-[#8A8A70] mb-1.5">متوسط وقت الرد</span>
+            <span className="flex items-center justify-center gap-1.5 text-[12.5px] font-black text-[#0A2342]">
+              <Clock className="w-3.5 h-3.5 text-[#C9A24A]" />
+              من يوم إلى {egp(3)} أيام
+            </span>
+          </div>
+          <span aria-hidden="true" className="w-px bg-[#EDE7DA]" />
+          <div className="flex-1 text-center">
+            <span className="block text-[9.5px] font-bold text-[#8A8A70] mb-1.5">الحالة الحالية</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[11px] font-black text-[#B8944E]">
+              <span aria-hidden="true" className="pima-status-dot w-1.5 h-1.5 rounded-full bg-[#C9A24A]" />
+              قيد المراجعة
+            </span>
+          </div>
+        </div>
+
         <button
           type="button"
-          onClick={() => { tapFeedback(); onExit(); }}
-          className="w-full flex items-center justify-center gap-2 bg-[#0A2342] hover:bg-[#123055] text-white font-black text-[13px] py-4 rounded-2xl transition-colors cursor-pointer pima-press"
+          onClick={() => { tapFeedback(); (onTrackBooking ?? onExit)(); }}
+          className="pima-pop-once w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[13px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
         >
-          <FileText className="w-4 h-4" />
+          <ChevronLeft className="w-4 h-4" />
           متابعة الطلب
         </button>
-        <p className="text-[10px] font-medium text-[#8A8A70]">
-          تتابع حالة الطلب من صفحة «حجوزاتي».
-        </p>
+
+        <button
+          type="button"
+          onClick={() => { tapFeedback(); (onGoHome ?? onExit)(); }}
+          className="w-full flex items-center justify-center gap-2 bg-white border border-[#EDE7DA] hover:border-[#E3CD9F] text-[#4A4A3A] font-black text-[12.5px] py-3.5 rounded-2xl transition-colors cursor-pointer pima-press"
+        >
+          <Home className="w-4 h-4 text-[#C9A24A]" />
+          العودة للرئيسية
+        </button>
+
+        <div className="pima-rise pima-rise-3 flex items-center gap-3 rounded-[28px] border border-[#EBD9B4] bg-[#FDF9EF] p-3.5">
+          <span className="w-10 h-10 rounded-full bg-white border border-[#EBD9B4] flex items-center justify-center shrink-0">
+            <Bell className="w-[18px] h-[18px] text-[#C9A24A]" />
+          </span>
+          <p className="text-[10.5px] font-medium text-[#4A4A3A] leading-relaxed">
+            يمكنك متابعة حالة طلبك من قائمة «حجوزاتي» في أي وقت.
+          </p>
+        </div>
       </div>
     );
   }

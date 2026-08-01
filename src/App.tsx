@@ -1701,6 +1701,11 @@ export default function App() {
       onMarkNotificationAsRead={handleMarkNotificationAsRead}
       onMarkAllRead={handleMarkAllRead}
       messagesUnreadCount={guestUnreadMessages}
+      // A request the house has not answered yet, or has approved but whose
+      // deposit is still owed — both are waiting on someone, so both count.
+      bookingsPendingCount={currentUser ? bookings.filter(
+        (b) => b.userId === currentUser.id && (b.status === 'pending' || (b.status === 'approved' && !b.depositPaid)),
+      ).length : 0}
     >
       {/* Screen Routing & Render Logic */}
       <Suspense fallback={<ScreenFallback />}>
@@ -1722,6 +1727,10 @@ export default function App() {
           waitlist={waitlist}
           onJoinWaitlist={handleJoinWaitlist}
           settings={settings}
+          // After a request is sent, the success screen offers these two ways
+          // on — both leave the place page behind rather than returning to it.
+          onNavigateBookings={() => { setSelectedHouse(null); setActiveScreen('bookings'); }}
+          onNavigateHome={() => { setSelectedHouse(null); setActiveScreen('explore'); }}
         />
       ) : (
         // Main Screen Tabs

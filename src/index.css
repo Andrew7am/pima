@@ -224,11 +224,70 @@ body {
 }
 .pima-icon-spin { animation: pima-icon-spin 14s linear infinite; transform-origin: center; }
 
+/* ── Booking success ──────────────────────────────────────────────────────
+   One sequence, drawn once: the ring closes, the tick is written inside it,
+   a gold glow swells and settles, and five sparkles arrive and leave. Every
+   step is stroke or transform or box-shadow, so the whole thing composites.
+
+   FAIL-VISIBLE: none of these hide anything. The ring and tick animate their
+   stroke offset from a full dash to zero and finish at `both`, so a browser
+   that refuses to animate simply shows the finished mark. */
+@keyframes pima-draw {
+  from { stroke-dashoffset: var(--pima-dash, 100); }
+  to   { stroke-dashoffset: 0; }
+}
+.pima-ring-draw {
+  --pima-dash: 302;
+  stroke-dasharray: 302;
+  animation: pima-draw 620ms var(--motion-ease) both;
+}
+.pima-check-draw {
+  --pima-dash: 48;
+  stroke-dasharray: 48;
+  animation: pima-draw 380ms var(--motion-ease) 520ms both;
+}
+
+/* The halo swells once behind the ring, then rests. */
+@keyframes pima-success-glow {
+  0%   { box-shadow: 0 0 0 0 rgba(201,162,74,0); }
+  55%  { box-shadow: 0 0 0 16px rgba(201,162,74,0.16); }
+  100% { box-shadow: 0 0 0 8px rgba(201,162,74,0.07); }
+}
+.pima-success-glow { animation: pima-success-glow 900ms var(--motion-ease) 700ms both; }
+
+/* A sparkle arrives, holds for a beat and goes. Delays are set inline. */
+@keyframes pima-spark {
+  0%   { opacity: 0; transform: scale(0.4) rotate(-20deg); }
+  35%  { opacity: 1; transform: scale(1) rotate(0deg); }
+  70%  { opacity: 1; transform: scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: scale(0.7) rotate(14deg); }
+}
+.pima-spark { animation: pima-spark 1500ms var(--motion-ease) both; }
+
+/* The primary button asks for attention exactly once. */
+@keyframes pima-pop-once {
+  0%   { transform: scale(0.95); }
+  55%  { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+.pima-pop-once { animation: pima-pop-once 520ms var(--motion-ease) 900ms both; }
+
+/* The status dot breathes every four seconds — alive, not blinking. */
+@keyframes pima-status-dot {
+  0%, 78%, 100% { transform: scale(1);    opacity: 1; }
+  88%           { transform: scale(1.45); opacity: 0.7; }
+}
+.pima-status-dot { animation: pima-status-dot 4s var(--motion-ease) infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .pima-pulse-slow, .pima-typing-dot, .pima-badge-pop, .pima-bubble-in, .pima-stamp-in,
   .pima-halo, .pima-twinkle, .pima-medal-in,
-  .pima-icon-shine, .pima-icon-lift, .pima-icon-spin { animation: none; }
+  .pima-icon-shine, .pima-icon-lift, .pima-icon-spin,
+  .pima-success-glow, .pima-pop-once, .pima-status-dot { animation: none; }
   .pima-foil::after { animation: none; opacity: 0; }
+  /* The marks stay drawn; only the drawing stops. */
+  .pima-ring-draw, .pima-check-draw { animation: none; stroke-dashoffset: 0; }
+  .pima-spark { animation: none; opacity: 0; }
 }
 
 /* Hero copy, the search bar and each revealed card share this one movement:

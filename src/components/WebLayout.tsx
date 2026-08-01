@@ -23,6 +23,8 @@ interface WebLayoutProps {
   onRequireLogin?: () => void;
   // Unread incoming booking-messages — drives the red badge on the محادثات tab
   messagesUnreadCount?: number;
+  // Requests still waiting on the house — drives the badge on the حجوزاتي tab
+  bookingsPendingCount?: number;
 }
 
 interface NavItem {
@@ -72,6 +74,7 @@ export default function WebLayout({
   onMarkAllRead,
   onRequireLogin,
   messagesUnreadCount = 0,
+  bookingsPendingCount = 0,
 }: WebLayoutProps) {
   const [showNotif, setShowNotif] = useState(false);
 
@@ -299,7 +302,8 @@ export default function WebLayout({
       >
         {visibleNav.map(item => {
           const isActive = activeScreen === item.id;
-          const badge = item.id === 'messages' ? messagesUnreadCount : 0;
+          const badge = item.id === 'messages' ? messagesUnreadCount
+            : item.id === 'bookings' ? bookingsPendingCount : 0;
           // The home tab is the primary action, so on the full bar it is drawn
           // as a raised gold disc rather than another flat icon. It stays inside
           // the bar's box — the app shell clips overflow, so a button that broke
