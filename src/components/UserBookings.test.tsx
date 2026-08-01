@@ -60,10 +60,11 @@ function renderBookings(props: Partial<React.ComponentProps<typeof UserBookings>
   return { onAutoPayConsumed };
 }
 
-describe('deposit is collected up front', () => {
-  // The whole point of the change: placing a request lands the guest on the
-  // transfer card instead of leaving them to hunt for it after approval.
-  it('opens the transfer card for the booking just placed', async () => {
+describe('the transfer card can be opened for one booking on arrival', () => {
+  // Nothing hands this over at request time any more — no deposit is due until
+  // the house approves — but the mechanism is what the approval path will use,
+  // so it stays covered.
+  it('opens the transfer card for the booking it is given', async () => {
     renderBookings({ autoPayBookingId: 'b1' });
     expect(await screen.findByText(/إرسال وتأكيد السداد/)).toBeInTheDocument();
   });

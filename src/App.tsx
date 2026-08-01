@@ -249,6 +249,9 @@ export default function App() {
   const [activeChatFriend, setActiveChatFriend] = useState<{ id: string; name: string } | null>(null);
   const [selectedHouse, setSelectedHouse] = useState<RetreatHouse | null>(null);
   // Booking whose transfer card should open on arrival at "حجوزاتي".
+  // Opens the transfer card for one booking on arrival at حجوزاتي. Nothing
+  // sets it at request time any more — no deposit is due until the house
+  // approves — so this is the hook the approval path will use.
   const [pendingPayBookingId, setPendingPayBookingId] = useState<string | null>(null);
   // One place to record a house view, rather than at each of the several call
   // sites that can open one (list, map, deep link, post-login restore).
@@ -821,11 +824,13 @@ export default function App() {
       }
     }
 
-    // Deposit is collected up front, so hand the guest straight to the transfer
-    // card for the booking they just placed rather than making them find it.
-    setPendingPayBookingId(savedBooking.id);
-    setActiveScreen('bookings');
-    setSelectedHouse(null);
+    // Do NOT navigate here. The booking flow shows its own success screen next,
+    // and jumping to حجوزاتي would unmount it before the guest ever sees it —
+    // which is exactly what used to happen. The success screen offers the two
+    // ways on itself («متابعة الطلب» / «العودة للرئيسية»).
+    //
+    // No deposit is taken at request time either: the house reviews first, and
+    // only an approval asks for one, so there is no transfer card to jump to.
     return true;
   };
 
