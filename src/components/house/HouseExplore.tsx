@@ -48,6 +48,9 @@ interface ExploreCardProps {
   /** Faded into the card on its side, or banded across it — never boxed. */
   image?: string;
   imageMode?: 'side' | 'band';
+  /** Absolutely-positioned ornament behind the content — a watermark glyph,
+   *  never information. */
+  decor?: React.ReactNode;
   cta: string;
   /** Staggers the entrance so the grid assembles rather than appears. */
   delay?: 0 | 1 | 2 | 3;
@@ -65,7 +68,7 @@ const TONES = {
 } as const;
 
 export function ExploreCard({
-  id, title, subtitle, icon: Icon, span, tone = 'white', preview, image, imageMode = 'side', cta, delay = 0, children,
+  id, title, subtitle, icon: Icon, span, tone = 'white', preview, image, imageMode = 'side', decor, cta, delay = 0, children,
 }: ExploreCardProps) {
   const [open, setOpen] = useState(false);
   const t = TONES[tone];
@@ -83,9 +86,13 @@ export function ExploreCard({
             runs PHYSICALLY rightwards (to-r), because Tailwind gradients do
             not flip in RTL — an inset-0 to-l veil here is what once painted
             the photo white and left the card looking broken. */}
+        {decor}
+
         {image && imageMode === 'side' && (
           <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[58%] overflow-hidden">
-            <img src={image} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+            {/* The slow Ken Burns breath the hero already uses — photographs
+                on these cards drift rather than sit. */}
+            <img src={image} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover pima-ken-burns" />
             <span
               className="absolute inset-0"
               style={{ background: `linear-gradient(to right, transparent 30%, ${t.hex} 92%)` }}
@@ -103,8 +110,8 @@ export function ExploreCard({
         </div>
 
         {image && imageMode === 'band' && (
-          <span aria-hidden="true" className="relative block w-full h-28">
-            <img src={image} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+          <span aria-hidden="true" className="relative block w-full h-28 overflow-hidden">
+            <img src={image} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover pima-ken-burns" />
             {/* Band tops fade into the paper above them for the same reason. */}
             <span className="absolute inset-x-0 top-0 h-8" style={{ background: `linear-gradient(to bottom, ${t.hex}, transparent)` }} />
           </span>

@@ -17,7 +17,7 @@ import {
   Utensils, Volume2, Monitor, HelpCircle, Send,
   Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Copy,
   Calculator, TrendingDown, Coins, Bus, ChevronDown, ChevronLeft, ShieldCheck, CalendarDays,
-  Info, Tag, Lock, Church, Theater, Lightbulb
+  Info, Tag, Lock, Church, Theater, Lightbulb, Sparkles
 } from 'lucide-react';
 
 
@@ -44,6 +44,12 @@ interface HouseDetailProps {
   // Guest mode: called instead of submitting when there's no logged-in user
   onRequireLogin?: () => void;
 }
+
+// Illustrative food spread for the menu card — same practice as the room-type
+// cards below, which already use curated Unsplash shots. House photos are of
+// the property, not the table, so the card would otherwise show a building
+// over the word «الطعام».
+const FOOD_CARD_IMAGE = 'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=800&q=80';
 
 const GOVERNORATE_WEATHER_DATA: Record<string, {
   currentTemp: number;
@@ -851,18 +857,36 @@ export default function HouseDetail({
     + (house.conferenceHalls?.length || 0) + (house.restaurants?.length || 0);
   const facilityPreview = (
     <div className="flex flex-wrap gap-2">
-      {namedFacilities.map(({ label, Glyph }) => (
-        <span key={label} className="inline-flex items-center gap-1.5 rounded-full border border-[#EDE7DA] bg-white px-3 py-1.5 text-[10.5px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
+      {/* Chips arrive one after another — the same rise the cards use, at
+          80ms steps, so the card has motion without a photograph. */}
+      {namedFacilities.map(({ label, Glyph }, i) => (
+        <span
+          key={label}
+          className="pima-rise inline-flex items-center gap-1.5 rounded-full border border-[#EDE7DA] bg-white px-3 py-1.5 text-[10.5px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]"
+          style={{ animationDelay: `${240 + i * 80}ms` }}
+        >
           <Glyph className="w-3.5 h-3.5 text-[#C9A24A]" />
           {label}
         </span>
       ))}
       {facilitiesTotal > namedFacilities.length && (
-        <span className="inline-flex items-center rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[10.5px] font-black text-[#B8944E]">
+        <span
+          className="pima-rise inline-flex items-center rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[10.5px] font-black text-[#B8944E]"
+          style={{ animationDelay: `${240 + namedFacilities.length * 80}ms` }}
+        >
+          <Sparkles className="w-3 h-3 ml-1 pima-twinkle" />
           +{arabicNumber(facilitiesTotal - namedFacilities.length)} المزيد
         </span>
       )}
     </div>
+  );
+
+  // A faint oversized glyph in the card's empty corner — presence, not
+  // information. aria-hidden and 6% gold, so it reads as texture.
+  const facilityDecor = (
+    <span aria-hidden="true" className="absolute -bottom-6 -left-6 pointer-events-none">
+      <Users className="w-36 h-36 text-[#C9A24A] opacity-[0.06]" />
+    </span>
   );
 
   const cardWeather = GOVERNORATE_WEATHER_DATA[house.governorate] || DEFAULT_WEATHER;
@@ -1149,6 +1173,8 @@ export default function HouseDetail({
             span={3}
             delay={1}
             cta="عرض المنيو"
+            image={FOOD_CARD_IMAGE}
+            imageMode="band"
             preview={menuPreview}
           >
             {(!house.menu && !isOwnerOrAdmin) ? (
@@ -1801,6 +1827,7 @@ export default function HouseDetail({
             span={4}
             delay={2}
             cta="عرض كل المرافق"
+            decor={facilityDecor}
             preview={facilityPreview}
           >
             <div className="space-y-4">
