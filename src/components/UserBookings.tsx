@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Booking, User, RetreatHouse, Attendee, RoomAllocation, Room, Payment, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { 
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
@@ -12,6 +12,7 @@ import BookingJourney from './BookingJourney';
 import BookingChatPanel from './BookingChatPanel';
 import ReviewWizard from './ReviewWizard';
 import { refundAmountFor } from '../lib/cancellationPolicy';
+import { getBookingStage } from '../lib/bookingStage';
 import { downloadBookingIcs } from '../lib/ics';
 import { setAttendeeSharePaid } from '../lib/db';
 import { arabicPlural, arabicDate, arabicDateRange } from '../lib/arabic';
@@ -881,12 +882,11 @@ export default function UserBookings({
               {visibleBookings.map((booking) => {
             const badge = getStatusBadge(booking.status);
             const StatusIcon = badge.icon;
-            // The deposit is collected UP FRONT: the guest transfers to the
-            // platform as soon as the request is placed, and the owner approves
-            // afterwards. Waiting for approval first left a request sitting with
-            // no commitment behind it.
-            const canPayDeposit =
-              (booking.status === 'pending' || booking.status === 'approved') && !booking.depositPaid;
+            // Where this booking stands, and the single thing the guest may do
+            // about it. The rule that matters: no money is asked for until the
+            // house has approved — the booking flow promises exactly that on
+            // three screens, and lib/bookingStage holds us to it.
+            const { stage, canPay: canPayDeposit } = getBookingStage(booking, payments);
             const bookingHouse = houses.find((h) => h.id === booking.houseId);
             // Manual-collection model (migration 069): if the platform has its own
             // payment numbers, the guest pays THOSE (Pima collects the deposit,
@@ -1076,19 +1076,32 @@ export default function UserBookings({
                   </div>
                 )}
 
-                {/* ── The action. Nothing on this screen matters more than the
-                       one thing the guest is being asked to do. ── */}
-                {primaryAction === 'pay' && (
-                  <div className="px-4 pb-4">
+                {/* ── The action. One per stage, and never a step ahead of
+                       where the booking actually is. ── */}
+                <div className="px-4 pb-4">
+                  {stage === 'review' && (
+                    <div className="rounded-[28px] border border-[#EDE7DA] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 text-center space-y-2">
+                      <span className="inline-flex w-14 h-14 rounded-full bg-[#F6F0E2] items-center justify-center">
+                        <Clock className="w-6 h-6 text-[#C9A24A]" />
+                      </span>
+                      <span className="block text-[13px] font-black text-[#0A2342]">بانتظار مراجعة الطلب</span>
+                      <p className="text-[10.5px] font-medium text-[#8A8A70] leading-relaxed">
+                        سيتم إشعارك فور مراجعة طلبك من قبل بيت المؤتمرات.
+                        <br />لن يُطلب منك أي دفع قبل الموافقة.
+                      </p>
+                    </div>
+                  )}
+
+                  {stage === 'awaiting_deposit' && (
                     <div className="rounded-[28px] border border-[#EBD9B4] bg-[#FDF9EF] p-4 space-y-3">
                       <div className="flex items-start gap-3">
                         <span className="w-11 h-11 rounded-full bg-white border border-[#EBD9B4] flex items-center justify-center shrink-0">
                           <ShieldCheck className="w-5 h-5 text-[#C9A24A]" />
                         </span>
                         <div className="min-w-0">
-                          <span className="block text-[12.5px] font-black text-[#0A2342] leading-snug">مطلوب دفع العربون لتأكيد الحجز</span>
+                          <span className="block text-[12.5px] font-black text-[#0A2342] leading-snug">تمت الموافقة على طلبك 🎉</span>
                           <span className="block text-[10px] font-medium text-[#8A8A70] leading-relaxed mt-1">
-                            سيتم تأكيد الحجز النهائي بعد استلام العربون.
+                            وافق بيت المؤتمرات على طلبك. ادفع العربون لتأكيد الحجز النهائي.
                           </span>
                         </div>
                       </div>
@@ -1101,8 +1114,63 @@ export default function UserBookings({
                         ادفع العربون الآن · {Math.round(booking.totalPrice * settings.depositRate).toLocaleString('ar-EG')} ج.م
                       </button>
                     </div>
-                  </div>
-                )}
+                  )}
+
+                  {stage === 'verifying' && (
+                    <div className="rounded-[28px] border border-[#EDE7DA] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 space-y-3">
+                      <div className="flex items-start gap-3">
+                        <span className="w-11 h-11 rounded-full bg-[#F6F0E2] flex items-center justify-center shrink-0">
+                          <FileDown className="w-5 h-5 text-[#C9A24A]" />
+                        </span>
+                        <div className="min-w-0">
+                          <span className="block text-[12.5px] font-black text-[#0A2342] leading-snug">إثبات الدفع قيد المراجعة</span>
+                          <span className="block text-[10px] font-medium text-[#8A8A70] leading-relaxed mt-1">
+                            تم استلام إثبات الدفع بنجاح، وسيتم مراجعته خلال ساعات قليلة.
+                          </span>
+                        </div>
+                      </div>
+                      {/* Indeterminate: we genuinely do not know how far along a
+                          human review is, and a percentage would be invented. */}
+                      <div className="h-1.5 bg-[#F1ECE0] rounded-full overflow-hidden">
+                        <div className="h-full w-1/3 rounded-full bg-gradient-to-l from-[#C9A96A] to-[#B8944E] pima-indeterminate" />
+                      </div>
+                    </div>
+                  )}
+
+                  {stage === 'confirmed' && (
+                    <div className="rounded-[28px] border border-emerald-200 bg-emerald-50/60 p-4 space-y-3">
+                      <div className="flex items-start gap-3">
+                        <span className="w-11 h-11 rounded-full bg-white border border-emerald-200 flex items-center justify-center shrink-0">
+                          <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                        </span>
+                        <div className="min-w-0">
+                          <span className="block text-[12.5px] font-black text-[#0A2342] leading-snug">الحجز مؤكّد 🎉</span>
+                          <span className="block text-[10px] font-medium text-[#8A8A70] leading-relaxed mt-1">
+                            تم تأكيد حجزك بنجاح. نتمنى لك إقامة مباركة.
+                          </span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setActiveReceipt(booking)}
+                          className="flex items-center justify-center gap-1.5 bg-white border border-[#EDE7DA] hover:border-[#E3CD9F] text-[#4A4A3A] font-black text-[11px] py-2.5 rounded-2xl transition-colors cursor-pointer pima-press"
+                        >
+                          <FileDown className="w-3.5 h-3.5 text-[#C9A24A]" />
+                          عرض سند الحجز
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => downloadBookingIcs(booking, bookingHouse?.address)}
+                          className="flex items-center justify-center gap-1.5 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[11px] py-2.5 rounded-2xl shadow-[0_2px_8px_rgba(184,148,78,0.3)] cursor-pointer pima-press"
+                        >
+                          <CalendarPlus className="w-3.5 h-3.5" />
+                          أضف إلى التقويم
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* ── Four facts, four equal cards ── */}
                 <div className="px-4 pb-4 grid grid-cols-2 gap-2.5">
@@ -1905,7 +1973,7 @@ export default function UserBookings({
                        sheet, so the one thing they owe is never scrolled past.
                        Hidden while the transfer form itself is open — the form
                        has its own submit and two pay buttons would compete. ── */}
-                {primaryAction === 'pay' && isPaying !== booking.id && (
+                {stage === 'awaiting_deposit' && isPaying !== booking.id && (
                   <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm border-t border-[#EDE7DA] px-4 py-3 flex items-center gap-3">
                     <div className="shrink-0 leading-tight">
                       <span className="block text-[9px] font-bold text-[#8A8A70]">المتبقي للدفع</span>

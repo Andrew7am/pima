@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
 
@@ -272,6 +272,14 @@ body {
 }
 .pima-pop-once { animation: pima-pop-once 520ms var(--motion-ease) 900ms both; }
 
+/* Indeterminate bar: a band travelling the track, for waits whose length is
+   genuinely unknown. A percentage there would be invented. */
+@keyframes pima-indeterminate {
+  from { transform: translateX(-120%); }
+  to   { transform: translateX(320%); }
+}
+.pima-indeterminate { animation: pima-indeterminate 1.6s var(--motion-ease) infinite; }
+
 /* The status dot breathes every four seconds — alive, not blinking. */
 @keyframes pima-status-dot {
   0%, 78%, 100% { transform: scale(1);    opacity: 1; }
@@ -283,7 +291,7 @@ body {
   .pima-pulse-slow, .pima-typing-dot, .pima-badge-pop, .pima-bubble-in, .pima-stamp-in,
   .pima-halo, .pima-twinkle, .pima-medal-in,
   .pima-icon-shine, .pima-icon-lift, .pima-icon-spin,
-  .pima-success-glow, .pima-pop-once, .pima-status-dot { animation: none; }
+  .pima-success-glow, .pima-pop-once, .pima-status-dot, .pima-indeterminate { animation: none; }
   .pima-foil::after { animation: none; opacity: 0; }
   /* The marks stay drawn; only the drawing stops. */
   .pima-ring-draw, .pima-check-draw { animation: none; stroke-dashoffset: 0; }
