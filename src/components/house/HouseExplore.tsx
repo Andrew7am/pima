@@ -26,9 +26,11 @@ export function ExploreSection({ children }: { children: React.ReactNode }) {
         <p className="text-[10.5px] font-medium text-[#8A8A70]">اكتشف كل ما يقدمه هذا المكان</p>
       </div>
 
-      {/* Seven columns, so a row can split 4/3 rather than in half — the hero
-          is meant to weigh more than what sits beside it. */}
-      <div className="grid grid-cols-7 gap-3 items-stretch">{children}</div>
+      {/* Two columns, placed explicitly rather than left to flow: the menu
+          holds one column over both rows while About and Rooms stack in the
+          other, and facilities runs the full width beneath them. In RTL
+          column 1 is the right-hand one. */}
+      <div className="grid grid-cols-2 grid-rows-[auto_auto] gap-3 items-stretch">{children}</div>
     </div>
   );
 }
@@ -39,15 +41,22 @@ interface ExploreCardProps {
   /** Line under the title on the card, and the sheet's subtitle. */
   subtitle?: string;
   icon: React.ComponentType<{ className?: string }>;
-  /** Columns out of seven. */
-  span: 3 | 4 | 7;
+  /** Where in the two-column grid this sits. Explicit, because the menu has to
+   *  hold a whole column while two cards stack beside it — flow order alone
+   *  cannot express that. */
+  place: 'right-top' | 'right-bottom' | 'left-tall' | 'full';
+  /** Lays the card out along the row: header, then content, then the CTA at
+   *  the far end. Only useful at full width. */
+  horizontal?: boolean;
   /** Warm cream panels give the grid its rhythm; white is the default. */
   tone?: 'white' | 'cream';
   /** The two or three facts that make the card worth opening. */
   preview?: React.ReactNode;
-  /** Faded into the card on its side, or banded across it — never boxed. */
+  /** Faded into the card on its side, banded across it, or a small portrait
+   *  tile standing in for the icon — never boxed. `side` needs a wide card:
+   *  in a half-column it takes 60% of the width and leaves the text a gutter. */
   image?: string;
-  imageMode?: 'side' | 'band';
+  imageMode?: 'side' | 'band' | 'thumb';
   /** Absolutely-positioned ornament behind the content — a watermark glyph,
    *  never information. */
   decor?: React.ReactNode;
@@ -57,7 +66,13 @@ interface ExploreCardProps {
   children: React.ReactNode;
 }
 
-const SPAN: Record<number, string> = { 3: 'col-span-3', 4: 'col-span-4', 7: 'col-span-7' };
+// In an RTL grid, column 1 is the right-hand one.
+const PLACE: Record<NonNullable<ExploreCardProps['place']>, string> = {
+  'right-top': 'col-start-1 row-start-1',
+  'right-bottom': 'col-start-1 row-start-2',
+  'left-tall': 'col-start-2 row-start-1 row-span-2',
+  full: 'col-span-2',
+};
 const DELAY: Record<number, string> = { 0: '', 1: 'pima-rise-1', 2: 'pima-rise-2', 3: 'pima-rise-3' };
 
 // The two card papers. The fade at a photo's edge must end in the paper's own
@@ -68,10 +83,11 @@ const TONES = {
 } as const;
 
 export function ExploreCard({
-  id, title, subtitle, icon: Icon, span, tone = 'white', preview, image, imageMode = 'side', decor, cta, delay = 0, children,
+  id, title, subtitle, icon: Icon, place, horizontal = false, tone = 'white', preview, image, imageMode = 'side', decor, cta, delay = 0, children,
 }: ExploreCardProps) {
   const [open, setOpen] = useState(false);
   const t = TONES[tone];
+  const big = place === 'left-tall' || place === 'full';
 
   return (
     <>
@@ -79,7 +95,9 @@ export function ExploreCard({
         id={`explore-card-${id}`}
         type="button"
         onClick={() => { tapFeedback(); setOpen(true); }}
-        className={`${SPAN[span]} ${DELAY[delay]} ${t.bg} ${t.border} pima-rise relative flex flex-col justify-between text-right rounded-[30px] border overflow-hidden shadow-[0_10px_28px_rgba(45,45,36,0.07),0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_16px_38px_rgba(201,162,74,0.18),0_3px_10px_rgba(45,45,36,0.05)] hover:border-[#E3CD9F] active:scale-[0.98] transition-[transform,box-shadow,border-color] duration-200 ease-out cursor-pointer`}
+        className={`${PLACE[place]} ${DELAY[delay]} ${t.bg} ${t.border} pima-rise relative flex text-right rounded-[30px] border overflow-hidden shadow-[0_10px_28px_rgba(45,45,36,0.07),0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_16px_38px_rgba(201,162,74,0.18),0_3px_10px_rgba(45,45,36,0.05)] hover:border-[#E3CD9F] active:scale-[0.98] transition-[transform,box-shadow,border-color] duration-200 ease-out cursor-pointer ${
+          horizontal ? 'flex-col gap-2.5 p-4' : 'flex-col justify-between'
+        }`}
       >
         {/* The photograph lives on the card's left, fading into the paper at
             its right edge. The gradient is scoped to the image's own box and
@@ -100,29 +118,62 @@ export function ExploreCard({
           </span>
         )}
 
+        {/* Horizontal: a strip, not a panel. The heading holds one end of the
+            row and the CTA the other; the content sits on its own line below.
+            It shared the row at first and a phone had nothing left to give it —
+            `flex-1 min-w-0` shrank it to zero width and the chips vanished. */}
+        {horizontal ? (
+          <>
+            <span className="relative flex items-center gap-3 w-full">
+              <span className={`${t.disc} w-11 h-11 rounded-full border border-[#EBD9B4]/70 shadow-[0_2px_6px_rgba(184,148,78,0.12)] flex items-center justify-center shrink-0`}>
+                <Icon className="w-5 h-5 text-[#C9A24A]" />
+              </span>
+              <span className="flex-1 min-w-0 leading-tight">
+                <span className="block text-[14px] font-black text-[#0A2342]">{title}</span>
+                {subtitle && <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5 leading-snug truncate">{subtitle}</span>}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-[#D9BC85] bg-white text-[#B8944E] px-3.5 py-2 text-[10.5px] font-black shadow-[0_2px_8px_rgba(184,148,78,0.15)] shrink-0">
+                <ChevronLeft className="w-3.5 h-3.5" />
+                {cta}
+              </span>
+            </span>
+            {preview && <div className="relative w-full">{preview}</div>}
+          </>
+        ) : (
         <div className={`relative p-4 ${image && imageMode === 'side' ? 'items-end text-right' : ''}`}>
+          {image && imageMode === 'thumb' ? (
+            // The photograph earns the icon's place: on a card this narrow it
+            // says more about the house than the glyph does.
+            <span className="block w-12 h-14 rounded-2xl overflow-hidden border border-[#EBD9B4]/70 shadow-[0_2px_6px_rgba(184,148,78,0.12)] mb-2.5">
+              <img src={image} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover pima-ken-burns" />
+            </span>
+          ) : (
           <span className={`${t.disc} w-11 h-11 rounded-full border border-[#EBD9B4]/70 shadow-[0_2px_6px_rgba(184,148,78,0.12)] flex items-center justify-center mb-3 ${image && imageMode === 'side' ? 'me-auto' : ''}`}>
             <Icon className="w-5 h-5 text-[#C9A24A]" />
           </span>
-          <span className={`block font-black text-[#0A2342] leading-tight ${span >= 4 ? 'text-[17px]' : 'text-[15px]'}`}>{title}</span>
+          )}
+          <span className={`block font-black text-[#0A2342] leading-tight ${big ? 'text-[17px]' : 'text-[15px]'}`}>{title}</span>
           {subtitle && <span className="block text-[10.5px] font-medium text-[#8A8A70] mt-1 leading-snug">{subtitle}</span>}
           {preview && <div className={`mt-3 ${image && imageMode === 'side' ? 'max-w-[62%] me-auto' : ''}`}>{preview}</div>}
         </div>
+        )}
 
-        {image && imageMode === 'band' && (
-          <span aria-hidden="true" className="relative block w-full h-28 overflow-hidden">
+        {!horizontal && image && imageMode === 'band' && (
+          <span aria-hidden="true" className="relative block w-full flex-1 min-h-28 overflow-hidden">
             <img src={image} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover pima-ken-burns" />
             {/* Band tops fade into the paper above them for the same reason. */}
             <span className="absolute inset-x-0 top-0 h-8" style={{ background: `linear-gradient(to bottom, ${t.hex}, transparent)` }} />
           </span>
         )}
 
-        <div className="relative p-4 pt-3.5">
-          <span className="inline-flex items-center gap-2 rounded-full border-[1.5px] border-[#D9BC85] bg-white text-[#B8944E] px-4 py-2 text-[11.5px] font-black shadow-[0_2px_8px_rgba(184,148,78,0.15)]">
-            <ChevronLeft className="w-4 h-4" />
-            {cta}
-          </span>
-        </div>
+        {!horizontal && (
+          <div className="relative p-4 pt-3.5">
+            <span className="inline-flex items-center gap-2 rounded-full border-[1.5px] border-[#D9BC85] bg-white text-[#B8944E] px-4 py-2 text-[11.5px] font-black shadow-[0_2px_8px_rgba(184,148,78,0.15)]">
+              <ChevronLeft className="w-4 h-4" />
+              {cta}
+            </span>
+          </div>
+        )}
       </button>
 
       <PimaSheet

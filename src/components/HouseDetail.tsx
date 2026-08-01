@@ -17,8 +17,9 @@ import {
   Utensils, Volume2, Monitor, HelpCircle, Send,
   Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Copy,
   Calculator, TrendingDown, Coins, Bus, ChevronDown, ChevronLeft, ShieldCheck, CalendarDays,
-  Info, Tag, Lock, Church, Theater, Lightbulb, Sparkles
+  Info, Tag, Lock, Church, Theater, Lightbulb, Sparkles, DoorOpen
 } from 'lucide-react';
+import { SUITABILITY_MAP } from '../mockData';
 
 
 interface HouseDetailProps {
@@ -869,8 +870,10 @@ export default function HouseDetail({
   ].filter(Boolean) as { label: string; Glyph: React.ComponentType<{ className?: string }> }[];
   const facilitiesTotal = (house.services?.length || 0) + (house.activities?.length || 0)
     + (house.conferenceHalls?.length || 0) + (house.restaurants?.length || 0);
+  // One line that scrolls, not a block that wraps: on a phone this card is a
+  // strip under two columns, and wrapping chips turned it back into a panel.
   const facilityPreview = (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-nowrap gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* Chips arrive one after another — the same rise the cards use, at
           80ms steps, so the card has motion without a photograph. */}
       {namedFacilities.map(({ label, Glyph }, i) => (
@@ -901,6 +904,42 @@ export default function HouseDetail({
     <span aria-hidden="true" className="absolute -bottom-6 -left-6 pointer-events-none">
       <Users className="w-36 h-36 text-[#C9A24A] opacity-[0.06]" />
     </span>
+  );
+
+  // Two counts, each given its own tile: the numbers are the point of this
+  // card, and a single grey line was hiding them.
+  const roomsPreview = (
+    <div className="flex gap-2">
+      {[
+        { n: house.roomsCount, unit: 'غرفة', Glyph: DoorOpen },
+        { n: house.bedsCount, unit: 'سرير', Glyph: BedDouble },
+      ].map(({ n, unit, Glyph }) => (
+        <span key={unit} className="flex-1 min-w-0 rounded-2xl border border-[#EDE7DA] bg-white px-2 py-2 text-center shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
+          <Glyph className="w-3.5 h-3.5 text-[#C9A24A] mx-auto mb-1" />
+          <span className="block text-[15px] font-black text-[#0A2342] leading-none [font-variant-numeric:tabular-nums]">{arabicNumber(n)}</span>
+          <span className="block text-[9px] font-bold text-[#8A8A70] mt-1">{unit}</span>
+        </span>
+      ))}
+    </div>
+  );
+
+  // Who the place suits. The full labels («رحلات أطفال / مدارس أحد») are the
+  // ones the owner picked and belong in the sheet; a chip in a half-column card
+  // has room for one word, so the card gets the short forms.
+  const SUITABILITY_SHORT: Record<RetreatHouse['suitability'][number], string> = {
+    youth: 'شباب', children: 'أطفال', families: 'أسر', retreat: 'خلوات',
+  };
+  const aboutPreview = (
+    <div className="space-y-2">
+      <p className="text-[10.5px] font-bold text-[#4A4A3A] leading-relaxed line-clamp-2">{house.description}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {house.suitability.slice(0, 2).map((s) => (
+          <span key={s} className="inline-flex items-center rounded-full border border-[#EBD9B4] bg-white px-2.5 py-1 text-[9.5px] font-black text-[#B8944E]">
+            {SUITABILITY_SHORT[s]}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 
   const cardWeather = GOVERNORATE_WEATHER_DATA[house.governorate] || DEFAULT_WEATHER;
@@ -1161,16 +1200,30 @@ export default function HouseDetail({
       <ExploreCard
         id="services"
         title="نبذة عن المكان"
-        subtitle="وصف البيت وخدماته ومواعيد الوصول"
+        subtitle="وصف البيت ولمن يناسب"
         icon={Info}
-        span={4}
+        place="right-top"
         tone="cream"
         cta="اقرأ المزيد"
         image={house.images?.[0]}
-        preview={<p className="text-[11px] font-bold text-[#4A4A3A] leading-relaxed line-clamp-3">{house.description}</p>}
+        imageMode="thumb"
+        preview={aboutPreview}
       >
         <div className="space-y-3 text-right">
           <p className="text-xs text-[#4A4A3A] leading-relaxed font-medium">{house.description}</p>
+
+          {house.suitability.length > 0 && (
+            <div className="space-y-2">
+              <span className="block text-[11px] font-extrabold text-[#0A2342]">يناسب:</span>
+              <div className="flex flex-wrap gap-2">
+                {house.suitability.map((s) => (
+                  <span key={s} className="inline-flex items-center rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[10.5px] font-bold text-[#B8944E]">
+                    {SUITABILITY_MAP[s]}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {house.propertyType === 'student' && house.distanceFromUniversity && (
             <div className="bg-amber-50/70 border border-amber-200/50 p-3 rounded-2xl text-xs font-bold text-amber-900 mt-2">
@@ -1186,7 +1239,7 @@ export default function HouseDetail({
             title="قائمة الطعام"
             subtitle="الوجبات والمنيو الأسبوعي وخيارات الصيام"
             icon={Utensils}
-            span={3}
+            place="left-tall"
             delay={1}
             cta="عرض المنيو"
             image={FOOD_CARD_IMAGE}
@@ -1652,12 +1705,12 @@ export default function HouseDetail({
             title="الغرف والتسكين"
             subtitle="أنواع الغرف المتاحة وسعة كل منها"
             icon={BedDouble}
-            span={3}
+            place="right-bottom"
             delay={2}
             cta="عرض الغرف"
             image={house.images?.[1] || house.images?.[0]}
             imageMode="band"
-            preview={<span className="block text-[10px] font-medium text-[#6B6B57]">{arabicNumber(house.roomsCount)} غرفة · {arabicNumber(house.bedsCount)} سرير</span>}
+            preview={roomsPreview}
           >
             {/* One totals line, not the two identical ones that were here. */}
             <div className="flex items-center gap-2">
@@ -1840,8 +1893,9 @@ export default function HouseDetail({
             title="المرافق والقاعات"
             subtitle="قاعات المؤتمرات والمطاعم والأنشطة"
             icon={Users}
-            span={4}
-            delay={2}
+            place="full"
+            horizontal
+            delay={3}
             cta="عرض كل المرافق"
             decor={facilityDecor}
             preview={facilityPreview}
@@ -1908,7 +1962,7 @@ export default function HouseDetail({
             title="حالة الطقس"
             subtitle={`التخطيط للرحلة في ${house.governorate}`}
             icon={CloudSun}
-            span={7}
+            place="full"
             tone="cream"
             delay={3}
             cta="عرض تفاصيل الطقس"
