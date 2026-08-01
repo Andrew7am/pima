@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
+﻿import React, { useCallback, useRef, useState } from 'react';
 import { RetreatHouse } from '../../types';
 import { ArrowRight, ChevronLeft, ChevronRight, Heart, MapPin, Share2, Star, MoveHorizontal } from 'lucide-react';
 import { tapFeedback } from '../../lib/haptics';
@@ -13,7 +13,6 @@ interface HouseHeroProps {
   onToggleFavorite: (houseId: string) => void;
 }
 
-const AUTOPLAY_MS = 5000;
 const SWIPE_THRESHOLD = 40; // px — a shorter drag is a tap, not a swipe
 
 function prefersReducedMotion(): boolean {
@@ -93,14 +92,9 @@ export default function HouseHero({
     go(index + delta);
   };
 
-  // Autoplay, restarted by every index change — so a manual move buys a fresh
-  // five seconds instead of being overtaken a moment later. Off entirely under
-  // reduced motion: an unattended carousel is what that setting exists to stop.
-  useEffect(() => {
-    if (reduced || images.length < 2) return;
-    const t = setTimeout(() => go(index + 1), AUTOPLAY_MS);
-    return () => clearTimeout(t);
-  }, [index, images.length, reduced, go]);
+  // No autoplay. The frame changes only when someone asks for it — by swipe,
+  // arrow, dot or thumbnail. A gallery that moves on its own takes the photo
+  // away mid-look and moves the caption while it is being read.
 
   const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
   const onTouchEnd = (e: React.TouchEvent) => {
