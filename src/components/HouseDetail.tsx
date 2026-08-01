@@ -51,6 +51,10 @@ interface HouseDetailProps {
 // over the word «الطعام».
 const FOOD_CARD_IMAGE = 'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=800&q=80';
 
+// Weather card kill-switch — hidden for now at the owner's request, kept
+// compiled so it comes back with one word.
+const SHOW_WEATHER_CARD = false;
+
 const GOVERNORATE_WEATHER_DATA: Record<string, {
   currentTemp: number;
   humidity: number;
@@ -1882,7 +1886,11 @@ export default function HouseDetail({
             </div>
           </ExploreCard>
 
-          {/* Weather & Trip Planning Accordion */}
+          {/* Weather card — temporarily off at the owner's request (2026-08-01).
+              Flip SHOW_WEATHER_CARD to bring it back exactly as it was; the
+              card, its preview and the governorate data all stay compiled so
+              nothing rots while it is hidden. */}
+          {SHOW_WEATHER_CARD && (
           <ExploreCard
             id="weather"
             title="حالة الطقس"
@@ -1960,6 +1968,7 @@ export default function HouseDetail({
               );
             })()}
           </ExploreCard>
+          )}
       </ExploreSection>
 
       {/* Booking, availability and the trip calculator. */}
