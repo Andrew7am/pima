@@ -5,7 +5,7 @@ import {
   Printer, Building, AlertTriangle, Bell, Smartphone, CreditCard, 
   Coins, Upload, ShieldCheck, Image, Check, Sparkles, ListTodo, Plus, Trash2, BookOpen,
   FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft, CalendarPlus, Star, X, UserPlus,
-  Search, ArrowDownWideNarrow
+  Search, ArrowDownWideNarrow, Copy
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
 import BookingJourney from './BookingJourney';
@@ -185,6 +185,18 @@ export default function UserBookings({
   // Which booking's detail sheet is open. Stored as an id (not the object) so
   // the sheet always renders the freshest booking data from props.
   const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
+  const [copiedBookingId, setCopiedBookingId] = useState<string | null>(null);
+  // The payment bar grows from zero once the sheet is up, so it reads as
+  // filling rather than as a static state. Fail-visible: if the frame never
+  // arrives the bar simply shows its real width from the start.
+  const [barGrown, setBarGrown] = useState(false);
+  useEffect(() => {
+    if (!detailBookingId) { setBarGrown(false); return; }
+    const t = setTimeout(() => setBarGrown(true), 60);
+    const guard = setTimeout(() => setBarGrown(true), 900);
+    return () => { clearTimeout(t); clearTimeout(guard); };
+  }, [detailBookingId]);
+  const paymentBarPct = (pct: number) => (barGrown ? pct : 0);
   // Freeze the list behind the sheet so only the sheet scrolls.
   useEffect(() => {
     if (!detailBookingId) return;
@@ -1010,54 +1022,104 @@ export default function UserBookings({
                         <X className="w-4 h-4 text-[#4A4A3A]" />
                       </button>
                     </div>
-                {/* Header info */}
-                <div className="p-4 border-b border-[#D6D6C2]/60 flex items-start justify-between gap-2">
-                  <div className="space-y-1">
-                    <span className="text-[9px] text-[#8A8A70] font-semibold tracking-wider">
-                      رقم الطلب: #{booking.id.toUpperCase()}
-                    </span>
-                    <h3 className="text-xs font-bold text-[#4A4A3A] line-clamp-1">{booking.houseName}</h3>
-                    
-                    {booking.isLargeConferenceQuote && (
-                      <span className="inline-block text-[9px] bg-[#EBEBE0] border border-[#BCBC9D] text-[#5A5A40] px-1.5 py-0.5 rounded font-extrabold">
-                        طلب عرض سعر لمؤتمر كبير
+                {/* ── Hero: the place, its reference, and where it stands ── */}
+                <div className="p-4">
+                  <div className="rounded-[28px] border border-[#EDE7DA] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-3 flex items-start gap-3">
+                    <div className="w-[86px] h-[86px] rounded-2xl overflow-hidden shrink-0 bg-gradient-to-br from-[#0A2342] to-[#123E75] relative">
+                      {bookingHouse?.images?.[0] && (
+                        <img src={bookingHouse.images[0]} alt="" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <button
+                        type="button"
+                        onClick={() => { navigator.clipboard?.writeText(booking.id); setCopiedBookingId(booking.id); }}
+                        className="flex items-center gap-1.5 text-[9.5px] font-bold text-[#8A8A70] hover:text-[#B8944E] transition-colors cursor-pointer"
+                      >
+                        <span dir="ltr">#{booking.id.toUpperCase()}</span>
+                        {copiedBookingId === booking.id
+                          ? <Check className="w-3 h-3 text-emerald-600" />
+                          : <Copy className="w-3 h-3 text-[#B5AF98]" />}
+                      </button>
+                      <h3 className="text-[14px] font-black text-[#0A2342] leading-tight line-clamp-2">{booking.houseName}</h3>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-black ${badge.color}`}>
+                        <StatusIcon className="w-3.5 h-3.5 shrink-0" />
+                        {badge.label}
                       </span>
-                    )}
-                  </div>
-                  
-                  <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-bold shrink-0 ${badge.color}`}>
-                    <StatusIcon className="w-3.5 h-3.5 shrink-0" />
-                    <span>{badge.label}</span>
+                      {booking.isLargeConferenceQuote && (
+                        <span className="block text-[9px] font-bold text-[#8A8A70]">طلب عرض سعر لمؤتمر كبير</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* The booking's journey with Pima (live statuses only) */}
                 {(booking.status === 'pending' || booking.status === 'approved' || booking.status === 'completed') && (
-                  <div className="px-4 py-3 border-b border-[#D6D6C2]/60">
-                    <BookingJourney booking={booking} payments={payments} />
-                    {/* Countdown — a confirmed trip that hasn't happened yet */}
-                    {booking.status === 'approved' && (() => {
-                      const d = daysUntil(booking.checkIn);
-                      if (d < 0) return null;
-                      const text = d === 0
-                        ? 'خلوتك اليوم! 🎉'
-                        : `باقي ${arabicPlural(d, { one: 'يوم واحد', two: 'يومين', few: 'أيام', many: 'يوم' })} على خلوتك`;
-                      return (
-                        <div className="mt-2.5 flex items-center justify-center gap-1.5 bg-[#0A2342]/5 text-[#0A2342] rounded-full py-1.5 text-[10.5px] font-black">
-                          <CalendarCheck className="w-3.5 h-3.5 text-[#C5A059]" />
-                          <span>{text}</span>
-                        </div>
-                      );
-                    })()}
+                  <div className="px-4 pb-4">
+                    <div className="rounded-[28px] border border-[#EDE7DA] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4">
+                      <BookingJourney booking={booking} payments={payments} />
+                      {/* Countdown — a confirmed trip that hasn't happened yet */}
+                      {booking.status === 'approved' && (() => {
+                        const d = daysUntil(booking.checkIn);
+                        if (d < 0) return null;
+                        const text = d === 0
+                          ? 'خلوتك اليوم! 🎉'
+                          : `باقي ${arabicPlural(d, { one: 'يوم واحد', two: 'يومين', few: 'أيام', many: 'يوم' })} على خلوتك`;
+                        return (
+                          <div className="mt-3 flex items-center justify-center gap-1.5 bg-[#FBF9F4] border border-[#EDE7DA] text-[#0A2342] rounded-full py-1.5 text-[10.5px] font-black">
+                            <CalendarCheck className="w-3.5 h-3.5 text-[#C5A059]" />
+                            <span>{text}</span>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
                 )}
 
-                {/* Facts — tidy, consistent key/value grid */}
-                <div className="px-4 py-3.5 grid grid-cols-2 gap-x-3 gap-y-3.5 border-b border-[#D6D6C2]/60">
-                  <Fact icon={Calendar} label="الوصول" value={arabicDate(booking.checkIn)} />
-                  <Fact icon={CalendarCheck} label="المغادرة" value={arabicDate(booking.checkOut)} />
-                  <Fact icon={Users} label="عدد الأفراد" value={`${booking.guestsCount.toLocaleString('ar-EG')} فرد`} />
-                  <Fact icon={Wallet} label="إجمالي التكلفة" value={`${booking.totalPrice.toLocaleString('ar-EG')} ج.م`} accent="text-[#0A2342]" />
+                {/* ── The action. Nothing on this screen matters more than the
+                       one thing the guest is being asked to do. ── */}
+                {primaryAction === 'pay' && (
+                  <div className="px-4 pb-4">
+                    <div className="rounded-[28px] border border-[#EBD9B4] bg-[#FDF9EF] p-4 space-y-3">
+                      <div className="flex items-start gap-3">
+                        <span className="w-11 h-11 rounded-full bg-white border border-[#EBD9B4] flex items-center justify-center shrink-0">
+                          <ShieldCheck className="w-5 h-5 text-[#C9A24A]" />
+                        </span>
+                        <div className="min-w-0">
+                          <span className="block text-[12.5px] font-black text-[#0A2342] leading-snug">مطلوب دفع العربون لتأكيد الحجز</span>
+                          <span className="block text-[10px] font-medium text-[#8A8A70] leading-relaxed mt-1">
+                            سيتم تأكيد الحجز النهائي بعد استلام العربون.
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setIsPaying(booking.id); setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString()); }}
+                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12.5px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
+                      >
+                        <Wallet className="w-4 h-4" />
+                        ادفع العربون الآن · {Math.round(booking.totalPrice * settings.depositRate).toLocaleString('ar-EG')} ج.م
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Four facts, four equal cards ── */}
+                <div className="px-4 pb-4 grid grid-cols-2 gap-2.5">
+                  {[
+                    { icon: Calendar, label: 'الوصول', value: arabicDate(booking.checkIn) },
+                    { icon: CalendarCheck, label: 'المغادرة', value: arabicDate(booking.checkOut) },
+                    { icon: Users, label: 'عدد الأفراد', value: `${booking.guestsCount.toLocaleString('ar-EG')} فرد` },
+                    { icon: Wallet, label: 'إجمالي التكلفة', value: `${booking.totalPrice.toLocaleString('ar-EG')} ج.م` },
+                  ].map((f) => (
+                    <div key={f.label} className="rounded-2xl border border-[#EDE7DA] bg-[#FBF9F4] p-3">
+                      <span className="flex items-center gap-1.5 text-[9.5px] font-bold text-[#8A8A70]">
+                        <f.icon className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
+                        {f.label}
+                      </span>
+                      <span className="block text-[12.5px] font-black text-[#0A2342] mt-1.5">{f.value}</span>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Payment progress toward the house — paid so far vs. total */}
@@ -1066,17 +1128,29 @@ export default function UserBookings({
                   const pct = Math.min(100, Math.round((paid / booking.totalPrice) * 100));
                   const remaining = Math.max(0, booking.totalPrice - paid);
                   return (
-                    <div className="px-4 py-3 border-b border-[#D6D6C2]/60 space-y-1.5">
-                      <div className="flex items-center justify-between text-[10px] font-black">
-                        <span className="text-[#4A4A3A] flex items-center gap-1"><Wallet className="w-3.5 h-3.5 text-[#867E65]" /> تقدّم السداد</span>
-                        <span className={remaining === 0 ? 'text-emerald-700' : 'text-[#8A8A70]'}>
-                          {remaining === 0 ? 'مدفوع بالكامل ✓' : `المتبقي ${remaining.toLocaleString('ar-EG')} ج.م`}
-                        </span>
+                    <div className="px-4 pb-4">
+                      <div className="rounded-[28px] border border-[#EDE7DA] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-black text-[#0A2342]">تقدّم السداد</span>
+                          <span className={`text-[11px] font-black ${remaining === 0 ? 'text-emerald-700' : 'text-[#B8944E]'}`}>
+                            {pct.toLocaleString('ar-EG')}٪
+                          </span>
+                        </div>
+                        {/* Grows from zero on open, so the bar is read as filling
+                            rather than as a static state. */}
+                        <div className="h-2 bg-[#F1ECE0] rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${remaining === 0 ? 'bg-emerald-500' : 'bg-gradient-to-l from-[#C9A96A] to-[#B8944E]'}`}
+                            style={{ width: `${paymentBarPct(pct)}%`, transition: 'width 800ms var(--motion-ease)' }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[9.5px] font-bold">
+                          <span className="text-[#8A8A70]">مدفوع {paid.toLocaleString('ar-EG')} ج.م</span>
+                          <span className={remaining === 0 ? 'text-emerald-700' : 'text-[#B8944E]'}>
+                            {remaining === 0 ? 'مدفوع بالكامل ✓' : `المتبقي ${remaining.toLocaleString('ar-EG')} ج.م`}
+                          </span>
+                        </div>
                       </div>
-                      <div className="h-2 bg-[#EBEBE0] rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all ${remaining === 0 ? 'bg-emerald-500' : 'bg-[#C5A059]'}`} style={{ width: `${pct}%` }} />
-                      </div>
-                      <div className="text-[9.5px] font-bold text-[#8A8A70]">مدفوع {paid.toLocaleString('ar-EG')} من {booking.totalPrice.toLocaleString('ar-EG')} ج.م ({pct.toLocaleString('ar-EG')}٪)</div>
                     </div>
                   );
                 })()}
@@ -1262,17 +1336,9 @@ export default function UserBookings({
                     </div>
                   )}
 
-                  {/* Primary CTA — the single most important next step, full width */}
-                  {primaryAction === 'pay' && (
-                    <button
-                      id={`pay-deposit-btn-${booking.id}`}
-                      onClick={() => { setIsPaying(booking.id); setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString()); }}
-                      className="w-full flex items-center justify-center gap-2 bg-[#464E3D] hover:bg-[#343A2D] text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
-                    >
-                      <Wallet className="w-4 h-4" />
-                      <span>سداد العربون الآن · {Math.round(booking.totalPrice * settings.depositRate).toLocaleString('ar-EG')} ج.م</span>
-                    </button>
-                  )}
+                  {/* Primary CTA. Paying is deliberately absent here: the action
+                      card at the top and the sticky bar at the foot both carry
+                      it, and a third button for the same thing is noise. */}
                   {primaryAction === 'distribute' && (
                     <button
                       id={`booking-allocation-btn-${booking.id}`}
@@ -1832,6 +1898,29 @@ export default function UserBookings({
                         </div>
                       </div>
                     </form>
+                  </div>
+                )}
+
+                {/* ── Sticky pay bar. Stays with the guest all the way down the
+                       sheet, so the one thing they owe is never scrolled past.
+                       Hidden while the transfer form itself is open — the form
+                       has its own submit and two pay buttons would compete. ── */}
+                {primaryAction === 'pay' && isPaying !== booking.id && (
+                  <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm border-t border-[#EDE7DA] px-4 py-3 flex items-center gap-3">
+                    <div className="shrink-0 leading-tight">
+                      <span className="block text-[9px] font-bold text-[#8A8A70]">المتبقي للدفع</span>
+                      <span className="block text-[15px] font-black text-[#0A2342]">
+                        {Math.round(booking.totalPrice * settings.depositRate).toLocaleString('ar-EG')} ج.م
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setIsPaying(booking.id); setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString()); }}
+                      className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12.5px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
+                    >
+                      <Wallet className="w-4 h-4" />
+                      ادفع العربون الآن
+                    </button>
                   </div>
                 )}
                   </div>
