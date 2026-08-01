@@ -6,6 +6,7 @@ import {
   Building, Settings, MessageSquare, Camera, BedDouble, Phone, Mail, Lock, Menu, ChevronRight,
   MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun, Moon, Download, QrCode,
 } from 'lucide-react';
+import { bookingTypeLabel } from '../../lib/bookingGroups';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
 import OwnerMessages from './OwnerMessages';
@@ -1039,6 +1040,10 @@ export default function OwnerDashboardShell({
                     <div>تاريخ المغادرة: <strong>{booking.checkOut}</strong></div>
                     <div>عدد الأفراد: <strong>{booking.guestsCount} فرد</strong></div>
                     <div>قيمة الحجز: <strong className="text-[var(--color-owner-primary)] font-extrabold">{booking.totalPrice.toLocaleString()} ج.م</strong></div>
+                    {/* Whole width and last: forty ثانوي and forty خدام are
+                        not the same request, and this is what the owner is
+                        deciding on. */}
+                    <div className="col-span-2">نوع الحجز: <strong>{bookingTypeLabel(booking)}</strong></div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[10px]">
                     <div className={`p-2 rounded-xl border ${booking.depositPaid ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>

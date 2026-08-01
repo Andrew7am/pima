@@ -177,6 +177,12 @@ export interface Booking {
     mealsIncluded?: boolean;
     extraRequests: string;
     diocese?: string;
+    /** A BookingGroupKey — «خدمة ثانوي», «خدام وخدامات» and the rest. Rides in
+     *  the existing jsonb, so it needed no migration. See lib/bookingGroups.
+     *  Named `bookingType`, not `groupType`, because Attendee already has a
+     *  `groupType` for a different thing — grouping one person, not the whole
+     *  booking — and the two even share the value 'youth'. */
+    bookingType?: string;
   };
   checkedInAt?: string;
   checkedOutAt?: string;

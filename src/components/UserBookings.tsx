@@ -17,6 +17,7 @@ import DepositPayment from './booking/DepositPayment';
 import { downloadBookingIcs } from '../lib/ics';
 import { setAttendeeSharePaid } from '../lib/db';
 import { arabicPlural, arabicDate, arabicDateRange } from '../lib/arabic';
+import { bookingTypeLabel } from '../lib/bookingGroups';
 
 interface UserBookingsProps {
   bookings: Booking[];
@@ -1194,12 +1195,17 @@ export default function UserBookings({
 
                 {/* The request's own details. Shown for an ordinary booking too
                     now, since that is where the applicant's notes land. */}
-                {booking.conferenceDetails && (booking.conferenceDetails.extraRequests || booking.conferenceDetails.diocese) && (
+                {booking.conferenceDetails && (booking.conferenceDetails.extraRequests || booking.conferenceDetails.diocese || booking.conferenceDetails.bookingType) && (
                   <div className="p-4 bg-[#EBEBE0]/15 border-b border-[#D6D6C2]/60 text-xs text-[#4A4A3A] space-y-1">
                     <div className="font-bold flex items-center gap-1 text-[#464E3D]">
                       <Building className="w-3.5 h-3.5" />
-                      <span>{booking.isLargeConferenceQuote ? 'متطلبات المؤتمر الكنسي:' : 'ملاحظاتك على الطلب:'}</span>
+                      <span>{booking.isLargeConferenceQuote ? 'متطلبات المؤتمر الكنسي:' : 'تفاصيل طلبك:'}</span>
                     </div>
+                    {/* Kept out of the four-fact grid above so it stays four
+                        equal cards; this block is «what you asked for». */}
+                    {booking.conferenceDetails.bookingType && (
+                      <div className="text-[10px] text-[#464E3D] font-medium pt-1">نوع الحجز: {bookingTypeLabel(booking)}</div>
+                    )}
                     {booking.conferenceDetails.extraRequests && (
                       <div className="text-[10px] text-[#2D2D24]/80 leading-relaxed bg-white border border-[#E7E5DB] p-2 rounded-xl mt-1 text-right whitespace-pre-line">
                         {booking.conferenceDetails.extraRequests}

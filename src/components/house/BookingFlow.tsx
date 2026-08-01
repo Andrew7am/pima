@@ -5,11 +5,13 @@ import {
   Star, Send, Clock, FileText, Pencil, Minus, Plus, Building2, Phone, User as UserIcon,
   Mail, MessageSquare, Church, Info, Loader2, Receipt, CreditCard,
   Sparkles, BedDouble, Copy, Home, Bell,
+  Backpack, BookOpen, GraduationCap, Flame, HeartHandshake,
 } from 'lucide-react';
 import { tapFeedback } from '../../lib/haptics';
 import PimaSheet from '../PimaSheet';
 import { useCountUp } from '../../lib/useCountUp';
 import { arabicNumber } from '../../lib/arabic';
+import { BOOKING_GROUPS, BookingGroupKey, isStoredGroup } from '../../lib/bookingGroups';
 
 export interface ApplicantDetails {
   fullName: string;
@@ -18,7 +20,24 @@ export interface ApplicantDetails {
   diocese: string;
   email: string;
   notes: string;
+  /** Empty for «حجز عادي» and for «مؤتمر كبير», which the booking already
+   *  records as isLargeConferenceQuote. See lib/bookingGroups. */
+  bookingType: string;
 }
+
+// Icons live here rather than in lib/bookingGroups: the labels are data the
+// owner's screens share, the glyphs are this screen's dressing.
+const GROUP_ICON: Record<BookingGroupKey, React.ComponentType<{ className?: string }>> = {
+  standard: FileText,
+  primary: Backpack,
+  preparatory: BookOpen,
+  secondary: GraduationCap,
+  youth: Flame,
+  servants: HeartHandshake,
+  families: Home,
+  retreat: Church,
+  conference: Building2,
+};
 
 interface BookingFlowProps {
   house: RetreatHouse;
@@ -109,8 +128,24 @@ export default function BookingFlow({
   const [copiedId, setCopiedId] = useState(false);
 
   const [applicant, setApplicant] = useState<ApplicantDetails>({
-    fullName: '', phone: '', organization: '', diocese: '', email: '', notes: '',
+    fullName: '', phone: '', organization: '', diocese: '', email: '', notes: '', bookingType: '',
   });
+
+  // The chosen kind of group. `isQuoteMode` is derived from it rather than set
+  // beside it — «مؤتمر كبير» is the same choice under another name, and two
+  // controls for one decision is how they end up contradicting each other.
+  const [groupOpen, setGroupOpen] = useState(false);
+  const [groupKey, setGroupKey] = useState<BookingGroupKey>(isQuoteMode ? 'conference' : 'standard');
+  const group = BOOKING_GROUPS.find((g) => g.key === groupKey) ?? BOOKING_GROUPS[0];
+  const GroupIcon = GROUP_ICON[groupKey];
+
+  const chooseGroup = (key: BookingGroupKey) => {
+    tapFeedback();
+    setGroupKey(key);
+    setIsQuoteMode(key === 'conference');
+    setApplicant((a) => ({ ...a, bookingType: isStoredGroup(key) ? key : '' }));
+    setGroupOpen(false);
+  };
 
   // The calendar reports it is finished by bumping this counter; the sheet
   // holding it closes on the change, rather than the calendar reaching up to
@@ -314,7 +349,7 @@ export default function BookingFlow({
     { icon: <Building2 className="w-4 h-4" />, label: 'المكان', value: house.name, sub: house.governorate },
     { icon: <CalendarDays className="w-4 h-4" />, label: 'التاريخ', value: `${shortDate(checkIn)} — ${shortDate(checkOut)}`, sub: `${egp(nights)} ${nightsWord(nights)}` },
     { icon: <Users className="w-4 h-4" />, label: 'عدد الحضور', value: `${egp(guestsCount)} فرد`, sub: '' },
-    { icon: <FileText className="w-4 h-4" />, label: 'نوع الحجز', value: isQuoteMode ? 'مؤتمر كبير' : 'حجز عادي', sub: '' },
+    { icon: <GroupIcon className="w-4 h-4" />, label: 'نوع الحجز', value: group.label, sub: '' },
   ];
 
   return (
@@ -483,28 +518,26 @@ export default function BookingFlow({
             </div>
           </div>
 
-          {/* Type */}
-          <div className={`${CARD} p-3 space-y-2`}>
-            <span className="text-[11px] font-black text-[#2D2D24]">نوع الحجز</span>
-            <div className="grid grid-cols-2 gap-2">
-              {[{ q: false, label: 'حجز عادي' }, { q: true, label: 'مؤتمر كبير' }].map((o) => (
-                <button
-                  key={o.label}
-                  type="button"
-                  onClick={() => { tapFeedback(); setIsQuoteMode(o.q); }}
-                  aria-pressed={isQuoteMode === o.q}
-                  className={`rounded-xl py-1.5 text-[11px] font-black border transition-colors duration-[250ms] cursor-pointer pima-press flex items-center justify-center gap-1.5 ${
-                    isQuoteMode === o.q
-                      ? 'bg-[#FDF9EF] border-[#C9A24A] text-[#B8944E]'
-                      : 'bg-white border-[#EDE7DA] text-[#8A8A70] hover:border-[#E3CD9F]'
-                  }`}
-                >
-                  {isQuoteMode === o.q && <Check className="w-3 h-3" strokeWidth={3} />}
-                  {o.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Type — a row that opens the list, not the list itself. Nine kinds
+              of group laid out on the review screen would outweigh the dates
+              and the price it sits between. */}
+          <button
+            type="button"
+            onClick={() => { tapFeedback(); setGroupOpen(true); }}
+            className={`${CARD} w-full p-3 flex items-center gap-3 text-right cursor-pointer hover:border-[#E3CD9F] transition-colors pima-press`}
+          >
+            <span className="w-9 h-9 rounded-full bg-[#F6F0E2] border border-[#EBD9B4] flex items-center justify-center shrink-0">
+              <GroupIcon className="w-4 h-4 text-[#C9A24A]" />
+            </span>
+            <span className="min-w-0 flex-1 leading-tight">
+              <span className="block text-[10.5px] font-bold text-[#8A8A70]">نوع الحجز</span>
+              <span className="block text-[12.5px] font-black text-[#0A2342] mt-0.5">{group.label}</span>
+            </span>
+            <span className="flex items-center gap-1 text-[10px] font-black text-[#B8944E] shrink-0">
+              تغيير
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </span>
+          </button>
 
           {/* Cost */}
           <div className={`${CARD} p-3`}>
@@ -749,6 +782,50 @@ export default function BookingFlow({
       )}
 
       {/* ── Sheets ── */}
+      <PimaSheet
+        open={groupOpen}
+        onClose={() => setGroupOpen(false)}
+        title="نوع الحجز"
+        subtitle="يساعد البيت يجهّز الغرف والقاعات المناسبة لمجموعتك"
+        icon={<FileText className="w-4 h-4 text-[#C9A24A]" />}
+      >
+        {/* A radio group, not a row of buttons: one of these is true at a
+            time, and a screen reader should hear it that way. */}
+        <div role="radiogroup" aria-label="نوع الحجز" className="space-y-1">
+          {BOOKING_GROUPS.map((g) => {
+            const Glyph = GROUP_ICON[g.key];
+            const on = groupKey === g.key;
+            return (
+              <button
+                key={g.key}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => chooseGroup(g.key)}
+                className={`w-full flex items-center gap-2.5 rounded-2xl border px-3 py-2 text-right transition-colors duration-200 cursor-pointer pima-press ${
+                  on ? 'bg-[#FDF9EF] border-[#C9A24A]' : 'bg-white border-[#EDE7DA] hover:border-[#E3CD9F]'
+                }`}
+              >
+                <span className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${
+                  on ? 'bg-white border-[#EBD9B4]' : 'bg-[#F6F0E2] border-[#EDE7DA]'
+                }`}>
+                  <Glyph className={`w-3.5 h-3.5 ${on ? 'text-[#B8944E]' : 'text-[#8A8A70]'}`} />
+                </span>
+                <span className="min-w-0 flex-1 leading-tight">
+                  <span className={`block text-[11.5px] font-black ${on ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>{g.label}</span>
+                  {g.hint && <span className="block text-[9px] font-medium text-[#8A8A70] mt-0.5">{g.hint}</span>}
+                </span>
+                <span className={`w-4.5 h-4.5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
+                  on ? 'bg-[#C9A24A] border-[#C9A24A]' : 'border-[#DED6C4]'
+                }`}>
+                  {on && <Check className="w-2.5 h-2.5 text-white" strokeWidth={4} />}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </PimaSheet>
+
       <PimaSheet open={datesOpen} onClose={() => setDatesOpen(false)} title="اختر تاريخ الإقامة" icon={<CalendarDays className="w-4 h-4 text-[#C9A24A]" />}>
         {datePicker}
       </PimaSheet>

@@ -492,6 +492,9 @@ export const INITIAL_BOOKINGS: Booking[] = [
     depositAmount: 5000,
     status: 'approved',
     isLargeConferenceQuote: false,
+    // Forty people from a church is a خدمة ثانوي, not an unlabelled group —
+    // the demo data should exercise the type the same way a real request does.
+    conferenceDetails: { extraRequests: '', bookingType: 'secondary' },
     createdAt: '2026-06-15T15:30:00Z',
   },
   {

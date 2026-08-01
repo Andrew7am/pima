@@ -1004,6 +1004,7 @@ export default function HouseDetail({
       diocese: applicant.diocese.trim(),
       email: applicant.email.trim(),
       notes: applicant.notes.trim(),
+      bookingType: applicant.bookingType,
     };
 
     // Notes and diocese ride in the conference_details jsonb, which needs no
@@ -1013,11 +1014,12 @@ export default function HouseDetail({
       isQuoteMode ? (extraRequests || 'مطلوب تنظيم اليوم كامل بمائدة محبة وقاعات اجتماعات مناسبة.') : '',
       trimmed.notes,
     ].filter(Boolean).join('\n');
-    const details = (isQuoteMode || extras || trimmed.diocese)
+    const details = (isQuoteMode || extras || trimmed.diocese || trimmed.bookingType)
       ? {
           ...(isQuoteMode ? { hallId: selectedHallId, mealsIncluded } : {}),
           extraRequests: extras,
           ...(trimmed.diocese ? { diocese: trimmed.diocese } : {}),
+          ...(trimmed.bookingType ? { bookingType: trimmed.bookingType } : {}),
         }
       : undefined;
 
