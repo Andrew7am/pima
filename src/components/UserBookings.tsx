@@ -13,6 +13,7 @@ import BookingChatPanel from './BookingChatPanel';
 import ReviewWizard from './ReviewWizard';
 import { refundAmountFor } from '../lib/cancellationPolicy';
 import { getBookingStage } from '../lib/bookingStage';
+import DepositPayment from './booking/DepositPayment';
 import { downloadBookingIcs } from '../lib/ics';
 import { setAttendeeSharePaid } from '../lib/db';
 import { arabicPlural, arabicDate, arabicDateRange } from '../lib/arabic';
@@ -568,38 +569,6 @@ export default function UserBookings({
       setIsUploading(false);
     };
     reader.readAsDataURL(file);
-  };
-
-  const handleGenerateMockProof = (amountVal: number) => {
-    let iconColor = '%2310B981'; // Emerald
-    let methodText = 'InstaPay%20Transfer';
-    let reference = 'Ref:%20IP-' + Math.floor(10000000 + Math.random() * 90000000);
-
-    if (selectedMethod === 'vodafone') {
-      iconColor = '%23EF4444'; // Red for Vodafone
-      methodText = 'Vodafone%20Cash';
-      reference = 'TxID:%20' + Math.floor(10000000000 + Math.random() * 90000000000);
-    } else if (selectedMethod === 'bank') {
-      iconColor = '%23464E3D'; // Earthy primary for Bank
-      methodText = 'Bank%20Transfer';
-      reference = 'Ref:%20BT-' + Math.floor(100000 + Math.random() * 900000);
-    }
-
-    const displayAmount = paymentAmount ? parseFloat(paymentAmount).toLocaleString('ar-EG') : amountVal.toLocaleString('ar-EG');
-
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="150" viewBox="0 0 300 150">
-      <rect width="300" height="150" fill="%23FAF8F5" rx="10" stroke="${iconColor}" stroke-width="3"/>
-      <circle cx="50" cy="40" r="20" fill="${iconColor}"/>
-      <text x="50" y="45" font-family="sans-serif" font-size="16" font-weight="bold" fill="white" text-anchor="middle">✓</text>
-      <text x="85" y="40" font-family="sans-serif" font-size="14" font-weight="bold" fill="%232D2D24">${methodText}</text>
-      <text x="85" y="55" font-family="sans-serif" font-size="10" fill="%23867E65">Transaction Successful</text>
-      <line x1="20" y1="80" x2="280" y2="80" stroke="%23E7E5DB" stroke-width="1" stroke-dasharray="5,5"/>
-      <text x="20" y="105" font-family="sans-serif" font-size="11" font-weight="bold" fill="%23464E3D">EGP ${displayAmount}</text>
-      <text x="20" y="125" font-family="sans-serif" font-size="9" fill="%23867E65">${reference}</text>
-      <text x="280" y="125" font-family="sans-serif" font-size="8" fill="%23867E65" text-anchor="end">Coptic Retreats Pay</text>
-    </svg>`;
-    const dataUrl = `data:image/svg+xml;utf8,${svg}`;
-    setProofImage(dataUrl);
   };
 
   const handleEgyptianPaymentSubmit = (e: React.FormEvent, booking: Booking) => {
@@ -1556,418 +1525,50 @@ export default function UserBookings({
                 )}
 
                 {/* Egyptian Interactive Payment Module Dialog embedded inline */}
-                {isPaying === booking.id && (
-                  <div className="p-5 bg-[#F3F0E8] border-t border-[#E7E5DB] space-y-4 animate-in slide-in-from-top duration-300">
-                    <div className="flex items-center justify-between border-b border-[#E7E5DB] pb-2">
-                      <div className="space-y-0.5 text-right">
-                        <h4 className="text-xs font-extrabold text-[#2D2D24] flex items-center gap-1">
-                          <Coins className="w-4 h-4 text-[#464E3D]" />
-                          <span>بوابة سداد حجز بيت المؤتمرات</span>
-                        </h4>
-                        <p className="text-[10px] text-[#867E65]">اختر وسيلة الدفع المناسبة لك من الخيارات المتاحة بالسوق المصري</p>
-                      </div>
-                      <button 
-                        id="pay-close-cross-btn"
-                        onClick={() => setIsPaying(null)} 
-                        className="text-[11px] font-bold text-rose-700 hover:bg-rose-50 px-2 py-1 rounded-lg border border-rose-200"
-                      >
-                        إلغاء بوابة السداد ✕
-                      </button>
-                    </div>
-
-                    {/* Payment methods selector tabs */}
-                    <div className={`grid gap-1.5 ${payToPlatform ? 'grid-cols-3' : 'grid-cols-5'}`}>
-                      {[
-                        { id: 'instapay', label: 'إنستا باي', desc: 'InstaPay', icon: Smartphone },
-                        { id: 'vodafone', label: 'فودافون كاش', desc: 'Vodafone', icon: Smartphone },
-                        { id: 'bank', label: 'تحويل بنكي', desc: 'Bank Transfer', icon: Building },
-                        // Cash-at-house routes money to the owner and the "online" card is a
-                        // mock gateway — both bypass platform collection, so hide them when
-                        // the platform holds the deposit (migration 069).
-                        ...(payToPlatform ? [] : [
-                          { id: 'cash', label: 'دفع نقدي', desc: 'Cash Payment', icon: Coins },
-                          { id: 'online', label: 'كارت أونلاين', desc: 'Visa/Master', icon: CreditCard },
-                        ]),
-                      ].map((m) => {
-                        const IconComponent = m.icon;
-                        const isSelected = selectedMethod === m.id;
-                        return (
-                          <button
-                            id={`pay-method-tab-${m.id}`}
-                            key={m.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedMethod(m.id as any);
-                              setProofImage('');
-                            }}
-                            className={`flex flex-col items-center justify-center p-2 rounded-2xl border transition-all text-center space-y-1 cursor-pointer ${
-                              isSelected
-                                ? 'bg-[#464E3D] text-white border-[#464E3D] shadow-md scale-[1.03]'
-                                : 'bg-white text-[#2D2D24] border-[#E7E5DB] hover:bg-[#FAF8F5]'
-                            }`}
-                          >
-                            <IconComponent className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-[#867E65]'}`} />
-                            <div className="text-[9px] font-extrabold leading-tight">{m.label}</div>
-                            <div className="text-[8px] opacity-70 font-mono hidden sm:block">{m.desc}</div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <form onSubmit={(e) => handleEgyptianPaymentSubmit(e, booking)} className="space-y-4">
-                      {/* Amount Input */}
-                      <div className="bg-white p-3 rounded-2xl border border-[#E7E5DB] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner">
-                        <div className="space-y-0.5">
-                          <label className="block text-[10px] font-bold text-[#867E65]">مبلغ الدفع المقترح (ج.م):</label>
-                          <p className="text-[9px] text-[#867E65]">الحد الأدنى للعربون ({Math.round(settings.depositRate * 100)}%): {Math.round(booking.totalPrice * settings.depositRate).toLocaleString('ar-EG')} ج.م / التكلفة الكلية: {booking.totalPrice.toLocaleString('ar-EG')} ج.م</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            id="payment-amount-input"
-                            type="number"
-                            required
-                            min={Math.round(booking.totalPrice * settings.depositRate)}
-                            max={booking.totalPrice}
-                            value={paymentAmount}
-                            onChange={(e) => {
-                              setPaymentAmount(e.target.value);
-                              setProofImage('');
-                            }}
-                            className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs font-bold px-3 py-1.5 w-32 text-center text-[#2D2D24] focus:outline-none focus:ring-1 focus:ring-[#464E3D]"
-                          />
-                          <button
-                            id="pay-amount-full-btn"
-                            type="button"
-                            onClick={() => {
-                              setPaymentAmount(booking.totalPrice.toString());
-                              setProofImage('');
-                            }}
-                            className="bg-[#E7E2D5] hover:bg-[#FAF8F5] border border-[#C5BCA0] text-[#2D2D24] text-[9px] font-bold px-2 py-1.5 rounded-lg transition-colors"
-                          >
-                            دفع كامل المبلغ
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Instruction & custom inputs based on selected method */}
-                      <div className="bg-white p-4 rounded-2xl border border-[#E7E5DB] space-y-3">
-                        {selectedMethod === 'instapay' && (
-                          <div className="space-y-3">
-                            <div className="bg-emerald-50 border border-emerald-100 p-2.5 rounded-xl text-[10px] text-emerald-950 leading-relaxed font-bold">
-                              {ownerPaymentFor('instapay') ? (
-                                <>💡 تعليمات إنستا باي: يرجى التحويل إلى {payeeLabel} على عنوان الدفع (IPA): <span className="font-mono underline text-emerald-900">{ownerPaymentFor('instapay')!.value}</span> عبر تطبيق إنستاباي.</>
-                              ) : (
-                                <>⚠️ لا يوجد رقم إنستاباي متاح حالياً. اختر وسيلة دفع أخرى.</>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-[10px] font-bold text-[#867E65] mb-1">اسم حسابك / عنوانك في InstaPay:</label>
-                                <input
-                                  id="instapay-address"
-                                  type="text"
-                                  required
-                                  placeholder="Mina@instapay"
-                                  value={instaAddress}
-                                  onChange={(e) => setInstaAddress(e.target.value)}
-                                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-[#867E65] mb-1">رقم مرجع التحويل (Ref ID):</label>
-                                <input
-                                  id="instapay-ref"
-                                  type="text"
-                                  required
-                                  placeholder="مرجع التحويل الـ 12 رقم"
-                                  value={instaRef}
-                                  onChange={(e) => setInstaRef(e.target.value)}
-                                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {selectedMethod === 'vodafone' && (
-                          <div className="space-y-3">
-                            <div className="bg-rose-50 border border-rose-100 p-2.5 rounded-xl text-[10px] text-rose-950 leading-relaxed font-bold">
-                              {(() => {
-                                const wallet = ownerPaymentFor('vodafone_cash') ?? ownerPaymentFor('etisalat_cash') ?? ownerPaymentFor('orange_cash') ?? ownerPaymentFor('we_cash');
-                                return wallet ? (
-                                  <>💡 تعليمات المحفظة ({wallet.label}): يرجى إرسال العربون إلى {payeeLabel} على رقم: <span className="font-mono text-rose-900 underline">{wallet.value}</span>.</>
-                                ) : (
-                                  <>⚠️ لا يوجد رقم محفظة متاح حالياً. اختر وسيلة دفع أخرى.</>
-                                );
-                              })()}
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-[10px] font-bold text-[#867E65] mb-1">رقم المحفظة المرسل منها:</label>
-                                <input
-                                  id="vodafone-number"
-                                  type="text"
-                                  required
-                                  maxLength={11}
-                                  placeholder="010XXXXXXXX"
-                                  value={vodafoneNumber}
-                                  onChange={(e) => setVodafoneNumber(e.target.value)}
-                                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-[#867E65] mb-1">معرف العملية (Transaction ID):</label>
-                                <input
-                                  id="vodafone-txid"
-                                  type="text"
-                                  required
-                                  placeholder="الرقم التعريفي من رسالة فودافون"
-                                  value={vodafoneTxId}
-                                  onChange={(e) => setVodafoneTxId(e.target.value)}
-                                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {selectedMethod === 'bank' && (
-                          <div className="space-y-3">
-                            <div className="bg-indigo-50 border border-indigo-100 p-2.5 rounded-xl text-[10px] text-indigo-950 leading-relaxed font-bold">
-                              {ownerPaymentFor('bank_transfer') ? (
-                                <>💡 تعليمات التحويل البنكي: يرجى التحويل إلى حساب {payeeLabel} — <span className="font-mono text-indigo-900 underline">{ownerPaymentFor('bank_transfer')!.value}</span>.</>
-                              ) : (
-                                <>⚠️ لا يوجد حساب بنكي متاح حالياً. اختر وسيلة دفع أخرى.</>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-[10px] font-bold text-[#867E65] mb-1">اسم البنك المرسل منه:</label>
-                                <select
-                                  id="bank-name-select"
-                                  value={bankName}
-                                  onChange={(e) => setBankName(e.target.value)}
-                                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
-                                >
-                                  <option>البنك الأهلي المصري (NBE)</option>
-                                  <option>بنك مصر (Banque Misr)</option>
-                                  <option>البنك التجاري الدولي (CIB)</option>
-                                  <option>بنك قطر الوطني (QNB)</option>
-                                  <option>بنك الإسكندرية</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-[#867E65] mb-1">رقم مرجع التحويل أو الحوالة البنكية:</label>
-                                <input
-                                  id="bank-ref"
-                                  type="text"
-                                  required
-                                  placeholder="رقم العملية البنكية"
-                                  value={bankRef}
-                                  onChange={(e) => setBankRef(e.target.value)}
-                                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {selectedMethod === 'cash' && (
-                          <div className="space-y-3">
-                            <div className="bg-amber-50 border border-amber-100 p-2.5 rounded-xl text-[10px] text-amber-950 leading-relaxed font-bold">
-                              💡 السداد النقدي بالبيت: للدفع مباشرة ببيت المؤتمرات، يرجى تقديم الدفعة لمسؤول الاستقبال أو الراهب المشرف، والحصول على إيصال استلام رسمي. أدخل بياناته هنا ليقوم الأدمن بالمطابقة الفورية.
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-[10px] font-bold text-[#867E65] mb-1">اسم الشخص مستلم النقدية بالبيت:</label>
-                                <input
-                                  id="cash-receiver"
-                                  type="text"
-                                  required
-                                  placeholder="أ. مينا رسمي (مسؤول الاستقبال)"
-                                  value={cashReceiver}
-                                  onChange={(e) => setCashReceiver(e.target.value)}
-                                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-[#867E65] mb-1">رقم الإيصال الورقي المسلم لك:</label>
-                                <input
-                                  id="cash-receipt"
-                                  type="text"
-                                  required
-                                  placeholder="مثال: REC-5023"
-                                  value={cashReceiptNo}
-                                  onChange={(e) => setCashReceiptNo(e.target.value)}
-                                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {selectedMethod === 'online' && (
-                          <div className="space-y-3">
-                            <div className="bg-[#464E3D]/10 border border-[#C5BCA0] p-2.5 rounded-xl text-[10px] text-[#2D2D24] leading-relaxed font-bold">
-                              🔒 بوابة دفع ميزة وفيزا وماستركارد مؤمنة (محاكاة دفع فوري): يرجى إدخال بيانات الكارت لتسجيل دفعتك واعتمادها فورياً بالبرنامج دون انتظار مراجعة يدوية.
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-[10px] font-bold text-[#867E65] mb-1">الاسم بالكامل على البطاقة:</label>
-                                <input
-                                  id="online-card-name"
-                                  type="text"
-                                  required
-                                  placeholder="Mina Raafat George"
-                                  value={cardName}
-                                  onChange={(e) => setCardName(e.target.value)}
-                                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-[#867E65] mb-1">رقم الكارت الائتماني (16 رقم):</label>
-                                <input
-                                  id="online-card-num"
-                                  type="text"
-                                  required
-                                  maxLength={16}
-                                  placeholder="5078123456789012"
-                                  value={cardNumber}
-                                  onChange={(e) => setCardNumber(e.target.value)}
-                                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
-                                />
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-[10px] font-bold text-[#867E65] mb-1">تاريخ الانتهاء (MM/YY):</label>
-                                <input
-                                  id="online-card-exp"
-                                  type="text"
-                                  required
-                                  maxLength={5}
-                                  placeholder="12/28"
-                                  value={expiry}
-                                  onChange={(e) => setExpiry(e.target.value)}
-                                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-[#867E65] mb-1">رمز الأمان (CVV):</label>
-                                <input
-                                  id="online-card-cvv"
-                                  type="password"
-                                  required
-                                  maxLength={3}
-                                  placeholder="***"
-                                  value={cvv}
-                                  onChange={(e) => setCvv(e.target.value)}
-                                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* File Upload screenshot section (For Vodafone, InstaPay, Bank) */}
-                        {selectedMethod !== 'online' && selectedMethod !== 'cash' && (
-                          <div className="border-t border-[#E7E5DB] pt-3 space-y-2">
-                            <label className="block text-[10px] font-extrabold text-[#464E3D] mb-1 flex items-center gap-1">
-                              <Image className="w-3.5 h-3.5 text-[#867E65]" />
-                              <span>إرفاق إثبات الدفع / لقطة الشاشة (مطلوب):</span>
-                            </label>
-
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                              {/* File picker dropzone */}
-                              <div className="flex-1 border-2 border-dashed border-[#C5BCA0] rounded-2xl p-3 bg-[#FAF8F5] hover:bg-[#FAF8F5]/80 transition-colors flex flex-col items-center justify-center relative cursor-pointer group">
-                                <input
-                                  id="proof-file-picker"
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={handleFileChange}
-                                  className="absolute inset-0 opacity-0 cursor-pointer"
-                                />
-                                <Upload className="w-5 h-5 text-[#867E65] mb-1 group-hover:scale-110 transition-transform" />
-                                <span className="text-[10px] text-[#2D2D24] font-bold">اضغط هنا أو اسحب إيصال الدفع</span>
-                                <span className="text-[8px] text-[#867E65] mt-0.5">JPG, PNG أو لقطة شاشة الموبايل</span>
-                              </div>
-
-                              {/* OR easy simulation button */}
-                              <div className="flex flex-col items-center justify-center p-2 border border-[#E7E5DB] bg-[#F3F0E8]/40 rounded-2xl w-full sm:w-44 text-center">
-                                <span className="text-[9px] text-[#867E65] mb-1.5 font-bold">لا تملك صورة إيصال على جهازك؟</span>
-                                <button
-                                  id="generate-mock-receipt-btn"
-                                  type="button"
-                                  onClick={() => handleGenerateMockProof(parseFloat(paymentAmount) || Math.round(booking.totalPrice * settings.depositRate))}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-[9px] font-bold py-1.5 px-3 rounded-xl transition-all w-full flex items-center justify-center gap-1 cursor-pointer"
-                                >
-                                  <Check className="w-3 h-3" />
-                                  <span>توليد إثبات تحويل فوري</span>
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Image preview of uploaded/generated proof */}
-                            {proofImage && (
-                              <div className="mt-2.5 p-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl flex flex-col items-center">
-                                <span className="text-[9px] text-emerald-800 font-bold mb-1 flex items-center gap-1">
-                                  <Check className="w-3 h-3 text-emerald-700" />
-                                  <span>جاهز ومقيد كإثبات سداد:</span>
-                                </span>
-                                <img
-                                  src={proofImage}
-                                  alt="إثبات الدفع"
-                                  referrerPolicy="no-referrer"
-                                  className="max-h-28 rounded-lg border border-[#E7E5DB] object-contain shadow-sm"
-                                />
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* No payee is configured for this method — say so plainly
-                          instead of leaving a disabled button with no reason.
-                          Owner numbers are server-side hidden from guests, so an
-                          empty list here means the platform has not published
-                          its own collection numbers yet. */}
-                      {selectedPayeeMissing && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-2.5 text-[10px] text-amber-900 font-bold leading-relaxed">
-                          {payMethods.length === 0
-                            ? 'لم تُنشر وسيلة سداد بعد. تواصل مع إدارة بيما من خلال المحادثة أو الدعم الفني لاستكمال السداد.'
-                            : 'وسيلة السداد التي اخترتها غير متاحة لهذا الحجز — اختر وسيلة أخرى من القائمة أعلاه.'}
-                        </div>
-                      )}
-
-                      {/* Action buttons */}
-                      <div className="flex items-center justify-between border-t border-[#E7E5DB] pt-3">
-                        <span className="text-[10px] text-[#867E65] font-bold">
-                          المبلغ الذي سيتم تقييده: <strong className="text-[#2D2D24] font-extrabold text-xs">{(parseFloat(paymentAmount) || Math.round(booking.totalPrice * settings.depositRate)).toLocaleString('ar-EG')} ج.م</strong>
-                        </span>
-                        
-                        <div className="flex gap-2">
-                          <button
-                            id="pay-cancel-form-btn"
-                            type="button"
-                            onClick={() => setIsPaying(null)}
-                            className="bg-white hover:bg-[#FAF8F5] border border-[#E7E5DB] text-[#2D2D24] text-[10px] font-bold px-3 py-2 rounded-xl transition-colors cursor-pointer"
-                          >
-                            تراجع وإلغاء
-                          </button>
-                          <button
-                            id="pay-submit-form-btn"
-                            type="submit"
-                            disabled={selectedPayeeMissing}
-                            className="bg-[#464E3D] hover:bg-[#343A2D] text-white text-[10px] font-extrabold px-4 py-2 rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                          >
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                            <span>إرسال وتأكيد السداد للإدارة</span>
-                          </button>
-                        </div>
-                      </div>
-                    </form>
-                  </div>
-                )}
+                {/* ── The deposit, as its own screen over everything else. It
+                       builds the Payment record from what the guest actually
+                       filled in and hands it to the same onSubmitPayment the
+                       old inline form used, so nothing downstream changed. ── */}
+                <DepositPayment
+                  // Gated on the stage, not just on intent: the auto-pay
+                  // hand-off could otherwise open payment on a booking the
+                  // house has not approved, which is the one thing the flow
+                  // promises will never happen.
+                  open={isPaying === booking.id && canPayDeposit}
+                  booking={booking}
+                  house={bookingHouse}
+                  currentUser={currentUser}
+                  amount={Math.round(booking.totalPrice * settings.depositRate)}
+                  payees={{
+                    ...(ownerPaymentFor('instapay') ? { instapay: { label: 'إنستاباي', value: ownerPaymentFor('instapay')!.value } } : {}),
+                    ...(walletPayee ? { vodafone: { label: walletPayee.label, value: walletPayee.value } } : {}),
+                    ...(ownerPaymentFor('bank_transfer') ? { bank: { label: ownerPaymentFor('bank_transfer')!.label, value: ownerPaymentFor('bank_transfer')!.value } } : {}),
+                  }}
+                  onClose={() => setIsPaying(null)}
+                  onSubmit={({ method, proofImage: proofData, reference }) => {
+                    const amount = Math.round(booking.totalPrice * settings.depositRate);
+                    // Every method lands as 'pending': no gateway is wired up,
+                    // so auto-approving would confirm a booking on unverified
+                    // funds. The server-side guard (migration 027) blocks that
+                    // write anyway.
+                    onSubmitPayment({
+                      id: `pay_${Date.now()}`,
+                      bookingId: booking.id,
+                      userId: currentUser.id,
+                      userName: currentUser.name,
+                      amount,
+                      paymentMethod: method,
+                      paymentStatus: 'pending',
+                      paymentDate: new Date().toISOString(),
+                      proofImage: proofData,
+                      transactionReference: reference,
+                      details: {
+                        senderNumberOrAddress: method === 'instapay' || method === 'vodafone' ? reference : undefined,
+                        bankName: method === 'bank' ? (ownerPaymentFor('bank_transfer')?.label ?? undefined) : undefined,
+                      },
+                    });
+                  }}
+                />
 
                 {/* ── Sticky pay bar. Stays with the guest all the way down the
                        sheet, so the one thing they owe is never scrolled past.

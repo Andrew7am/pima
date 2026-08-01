@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+﻿import { describe, it, expect, vi } from 'vitest';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import UserBookings from './UserBookings';
 import type { Booking, RetreatHouse, User, PlatformSettings } from '../types';
@@ -60,52 +60,62 @@ function renderBookings(props: Partial<React.ComponentProps<typeof UserBookings>
   return { onAutoPayConsumed };
 }
 
-describe('the transfer card can be opened for one booking on arrival', () => {
-  // Nothing hands this over at request time any more — no deposit is due until
-  // the house approves — but the mechanism is what the approval path will use,
-  // so it stays covered.
-  it('opens the transfer card for the booking it is given', async () => {
-    renderBookings({ autoPayBookingId: 'b1' });
-    expect(await screen.findByText(/إرسال وتأكيد السداد/)).toBeInTheDocument();
-  });
+const approved = (over: Partial<Booking> = {}) => booking({ status: 'approved', ...over });
 
-  it('prefills the deposit at the configured rate', async () => {
-    renderBookings({ autoPayBookingId: 'b1' });
-    await screen.findByText(/إرسال وتأكيد السداد/);
-    // 15% of 10,000 = 1,500
-    expect(screen.getByDisplayValue('1500')).toBeInTheDocument();
+describe('the deposit screen opens only where a deposit is actually owed', () => {
+  it('opens for an approved booking that still owes its deposit', async () => {
+    renderBookings({ bookings: [approved()], autoPayBookingId: 'b1' });
+    expect(await screen.findByRole('dialog', { name: 'دفع العربون' })).toBeInTheDocument();
   });
 
   it('shows the platform as the payee, never the owner', async () => {
-    renderBookings({ autoPayBookingId: 'b1' });
-    await screen.findByText(/إرسال وتأكيد السداد/);
-    expect(screen.getAllByText(/منصة بيما/).length).toBeGreaterThan(0);
+    renderBookings({ bookings: [approved()], autoPayBookingId: 'b1' });
+    const dialog = await screen.findByRole('dialog', { name: 'دفع العربون' });
+    await userEvent.click(within(dialog).getByText('متابعة'));
+    expect(await within(dialog).findByText('01096126259')).toBeInTheDocument();
   });
 
-  // Regression guard: the hand-off must be consumed, or any later re-render
-  // would reopen the card after the guest deliberately closed it.
-  it('clears the hand-off so a closed card stays closed', async () => {
-    const { onAutoPayConsumed } = renderBookings({ autoPayBookingId: 'b1' });
-    await screen.findByText(/إرسال وتأكيد السداد/);
-    await waitFor(() => expect(onAutoPayConsumed).toHaveBeenCalled());
+  it('shows the deposit at the configured rate', async () => {
+    renderBookings({ bookings: [approved()], autoPayBookingId: 'b1' });
+    const dialog = await screen.findByRole('dialog', { name: 'دفع العربون' });
+    // 15% of 10,000 = 1,500
+    expect(within(dialog).getByText(/١٬٥٠٠/)).toBeInTheDocument();
+  });
 
-    await userEvent.click(screen.getByText('تراجع وإلغاء'));
+  // The promise the booking flow makes, guarded at the last door: even a
+  // direct hand-off must not open payment on a request the house has not
+  // answered.
+  it('refuses to open on a booking still under review', async () => {
+    renderBookings({ bookings: [booking({ status: 'pending' })], autoPayBookingId: 'b1' });
     await waitFor(() => {
-      expect(screen.queryByText(/إرسال وتأكيد السداد/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'دفع العربون' })).not.toBeInTheDocument();
     });
   });
 
-  it('does not reopen the card for a deposit already paid', async () => {
-    renderBookings({ bookings: [booking({ depositPaid: true })], autoPayBookingId: 'b1' });
+  // Regression guard: the hand-off must be consumed, or any later re-render
+  // would reopen the screen after the guest deliberately closed it.
+  it('clears the hand-off so a closed screen stays closed', async () => {
+    const { onAutoPayConsumed } = renderBookings({ bookings: [approved()], autoPayBookingId: 'b1' });
+    const dialog = await screen.findByRole('dialog', { name: 'دفع العربون' });
+    await waitFor(() => expect(onAutoPayConsumed).toHaveBeenCalled());
+
+    await userEvent.click(within(dialog).getByLabelText('إغلاق'));
     await waitFor(() => {
-      expect(screen.queryByText(/إرسال وتأكيد السداد/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'دفع العربون' })).not.toBeInTheDocument();
+    });
+  });
+
+  it('does not reopen for a deposit already paid', async () => {
+    renderBookings({ bookings: [approved({ depositPaid: true })], autoPayBookingId: 'b1' });
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'دفع العربون' })).not.toBeInTheDocument();
     });
   });
 
   it('leaves the card closed when no booking was just placed', async () => {
-    renderBookings();
+    renderBookings({ bookings: [approved()] });
     await waitFor(() => {
-      expect(screen.queryByText(/إرسال وتأكيد السداد/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'دفع العربون' })).not.toBeInTheDocument();
     });
   });
 });
