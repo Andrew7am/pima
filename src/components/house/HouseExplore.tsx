@@ -88,6 +88,12 @@ export function ExploreCard({
   const [open, setOpen] = useState(false);
   const t = TONES[tone];
   const big = place === 'left-tall' || place === 'full';
+  // Only the feature card explains itself on its face. On the satellites the
+  // subtitle cost more height than the facts underneath it — «أنواع الغرف
+  // المتاحة وسعة كل منها» wrapped to two lines in a half column to say what
+  // the title had already said. The sheet still carries it as its subtitle,
+  // so nothing is lost; it is just no longer paid for four times.
+  const showSubtitle = subtitle && place === 'left-tall';
 
   return (
     <>
@@ -130,7 +136,7 @@ export function ExploreCard({
               </span>
               <span className="flex-1 min-w-0 leading-tight">
                 <span className="block text-[14px] font-black text-[#0A2342]">{title}</span>
-                {subtitle && <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5 leading-snug truncate">{subtitle}</span>}
+                {showSubtitle && <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5 leading-snug truncate">{subtitle}</span>}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-[#D9BC85] bg-white text-[#B8944E] px-3.5 py-2 text-[10.5px] font-black shadow-[0_2px_8px_rgba(184,148,78,0.15)] shrink-0">
                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -144,7 +150,7 @@ export function ExploreCard({
           {image && imageMode === 'thumb' ? (
             // The photograph earns the icon's place: on a card this narrow it
             // says more about the house than the glyph does.
-            <span className="block w-12 h-14 rounded-2xl overflow-hidden border border-[#EBD9B4]/70 shadow-[0_2px_6px_rgba(184,148,78,0.12)] mb-2.5">
+            <span className="block w-11 h-12 rounded-2xl overflow-hidden border border-[#EBD9B4]/70 shadow-[0_2px_6px_rgba(184,148,78,0.12)] mb-2.5">
               <img src={image} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover pima-ken-burns" />
             </span>
           ) : (
@@ -153,23 +159,29 @@ export function ExploreCard({
           </span>
           )}
           <span className={`block font-black text-[#0A2342] leading-tight ${big ? 'text-[17px]' : 'text-[15px]'}`}>{title}</span>
-          {subtitle && <span className="block text-[10.5px] font-medium text-[#8A8A70] mt-1 leading-snug">{subtitle}</span>}
-          {preview && <div className={`mt-3 ${image && imageMode === 'side' ? 'max-w-[62%] me-auto' : ''}`}>{preview}</div>}
+          {showSubtitle && <span className="block text-[10.5px] font-medium text-[#8A8A70] mt-1 leading-snug">{subtitle}</span>}
+          {preview && <div className={`mt-2.5 ${image && imageMode === 'side' ? 'max-w-[62%] me-auto' : ''}`}>{preview}</div>}
         </div>
         )}
 
         {!horizontal && image && imageMode === 'band' && (
-          <span aria-hidden="true" className="relative block w-full flex-1 min-h-28 overflow-hidden">
-            <img src={image} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover pima-ken-burns" />
+          // The photograph is positioned out of the flow so it cannot set the
+          // band's height: in flow its intrinsic size pushed the strip to
+          // 109px and `min-h` is a floor, not a ceiling. Now the band is
+          // exactly its minimum and grows only into a tall column's slack.
+          <span aria-hidden="true" className="relative block w-full flex-1 min-h-20 overflow-hidden">
+            <img src={image} alt="" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover pima-ken-burns" />
             {/* Band tops fade into the paper above them for the same reason. */}
             <span className="absolute inset-x-0 top-0 h-8" style={{ background: `linear-gradient(to bottom, ${t.hex}, transparent)` }} />
           </span>
         )}
 
         {!horizontal && (
-          <div className="relative p-4 pt-3.5">
-            <span className="inline-flex items-center gap-2 rounded-full border-[1.5px] border-[#D9BC85] bg-white text-[#B8944E] px-4 py-2 text-[11.5px] font-black shadow-[0_2px_8px_rgba(184,148,78,0.15)]">
-              <ChevronLeft className="w-4 h-4" />
+          // The card is itself the button; the pill is the affordance, not a
+          // second control, so it does not need a padded block of its own.
+          <div className="relative px-4 pb-4 pt-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-[#D9BC85] bg-white text-[#B8944E] px-3.5 py-1.5 text-[11px] font-black shadow-[0_2px_8px_rgba(184,148,78,0.15)]">
+              <ChevronLeft className="w-3.5 h-3.5" />
               {cta}
             </span>
           </div>

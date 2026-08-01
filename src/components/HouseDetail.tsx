@@ -879,7 +879,7 @@ export default function HouseDetail({
       {namedFacilities.map(({ label, Glyph }, i) => (
         <span
           key={label}
-          className="pima-rise inline-flex items-center gap-1.5 rounded-full border border-[#EDE7DA] bg-white px-3 py-1.5 text-[10.5px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]"
+          className="pima-rise shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full border border-[#EDE7DA] bg-white px-3 py-1.5 text-[10.5px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]"
           style={{ animationDelay: `${240 + i * 80}ms` }}
         >
           <Glyph className="w-3.5 h-3.5 text-[#C9A24A]" />
@@ -888,7 +888,7 @@ export default function HouseDetail({
       ))}
       {facilitiesTotal > namedFacilities.length && (
         <span
-          className="pima-rise inline-flex items-center rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[10.5px] font-black text-[#B8944E]"
+          className="pima-rise shrink-0 whitespace-nowrap inline-flex items-center rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[10.5px] font-black text-[#B8944E]"
           style={{ animationDelay: `${240 + namedFacilities.length * 80}ms` }}
         >
           <Sparkles className="w-3 h-3 ml-1 pima-twinkle" />
@@ -914,10 +914,10 @@ export default function HouseDetail({
         { n: house.roomsCount, unit: 'غرفة', Glyph: DoorOpen },
         { n: house.bedsCount, unit: 'سرير', Glyph: BedDouble },
       ].map(({ n, unit, Glyph }) => (
-        <span key={unit} className="flex-1 min-w-0 rounded-2xl border border-[#EDE7DA] bg-white px-2 py-2 text-center shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
-          <Glyph className="w-3.5 h-3.5 text-[#C9A24A] mx-auto mb-1" />
-          <span className="block text-[15px] font-black text-[#0A2342] leading-none [font-variant-numeric:tabular-nums]">{arabicNumber(n)}</span>
-          <span className="block text-[9px] font-bold text-[#8A8A70] mt-1">{unit}</span>
+        <span key={unit} className="flex-1 min-w-0 flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-[#EDE7DA] bg-white px-1.5 py-1.5 shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
+          <Glyph className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
+          <span className="text-[14px] font-black text-[#0A2342] leading-none [font-variant-numeric:tabular-nums]">{arabicNumber(n)}</span>
+          <span className="text-[9px] font-bold text-[#8A8A70]">{unit}</span>
         </span>
       ))}
     </div>
@@ -934,7 +934,7 @@ export default function HouseDetail({
       <p className="text-[10.5px] font-bold text-[#4A4A3A] leading-relaxed line-clamp-2">{house.description}</p>
       <div className="flex flex-wrap gap-1.5">
         {house.suitability.slice(0, 2).map((s) => (
-          <span key={s} className="inline-flex items-center rounded-full border border-[#EBD9B4] bg-white px-2.5 py-1 text-[9.5px] font-black text-[#B8944E]">
+          <span key={s} className="inline-flex items-center whitespace-nowrap rounded-full border border-[#EBD9B4] bg-white px-2.5 py-1 text-[9.5px] font-black text-[#B8944E]">
             {SUITABILITY_SHORT[s]}
           </span>
         ))}
