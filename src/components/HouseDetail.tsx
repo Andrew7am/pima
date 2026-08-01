@@ -17,7 +17,7 @@ import {
   Utensils, Volume2, Monitor, HelpCircle, Send,
   Sun, Cloud, CloudSun, CloudRain, Thermometer, Droplets, Wind, Phone, Copy,
   Calculator, TrendingDown, Coins, Bus, ChevronDown, ChevronLeft, ShieldCheck, CalendarDays,
-  Info, Tag, Lock
+  Info, Tag, Lock, Church, Theater, Lightbulb
 } from 'lucide-react';
 
 
@@ -825,31 +825,40 @@ export default function HouseDetail({
   // null to stay on the confirmation step rather than declaring success.
   // Card previews. Two or three facts each, read off the record — enough to
   // make the card worth opening, never the section in miniature.
+  const menuFacts = [
+    house.menu?.weeklyMenu?.length ? `${arabicNumber(3)} وجبات يوميًا` : 'لم تُحدَّد القائمة بعد',
+    house.menu?.isIncluded ? 'مشمولة في قيمة الحجز' : null,
+    house.menu?.fastingWeeklyMenu?.length ? 'خيارات صيام' : null,
+  ].filter(Boolean) as string[];
   const menuPreview = (
-    <div className="space-y-0.5 text-[10px] font-medium text-[#6B6B57]">
-      {house.menu?.weeklyMenu?.length
-        ? <span className="block">{arabicNumber(3)} وجبات يوميًا</span>
-        : <span className="block">لم تُحدَّد القائمة بعد</span>}
-      {house.menu?.isIncluded && <span className="block">مشمولة في قيمة الحجز</span>}
-      {!!house.menu?.fastingWeeklyMenu?.length && <span className="block">خيارات صيام</span>}
+    <div className="space-y-1.5">
+      {menuFacts.map((f) => (
+        <span key={f} className="flex items-center gap-1.5 text-[11px] font-bold text-[#2D2D24]">
+          <span aria-hidden="true" className="w-1 h-1 rounded-full bg-[#C9A24A] shrink-0" />
+          {f}
+        </span>
+      ))}
     </div>
   );
 
   // Three named, the rest counted: a wall of chips is not a summary.
   const namedFacilities = [
-    house.conferenceHalls?.length ? 'قاعة اجتماعات' : null,
-    house.services?.some((s) => s.includes('كنيسة')) ? 'كنيسة' : null,
-    house.activities?.some((a) => a.includes('مسرح')) ? 'مسرح' : null,
-  ].filter(Boolean) as string[];
+    house.conferenceHalls?.length ? { label: 'قاعة اجتماعات', Glyph: Users } : null,
+    house.services?.some((s) => s.includes('كنيسة')) ? { label: 'كنيسة', Glyph: Church } : null,
+    house.activities?.some((a) => a.includes('مسرح')) ? { label: 'مسرح', Glyph: Theater } : null,
+  ].filter(Boolean) as { label: string; Glyph: React.ComponentType<{ className?: string }> }[];
   const facilitiesTotal = (house.services?.length || 0) + (house.activities?.length || 0)
     + (house.conferenceHalls?.length || 0) + (house.restaurants?.length || 0);
   const facilityPreview = (
-    <div className="flex flex-wrap gap-1.5">
-      {namedFacilities.map((f) => (
-        <span key={f} className="rounded-full border border-[#EDE7DA] bg-[#FBF9F4] px-2.5 py-1 text-[9.5px] font-bold text-[#4A4A3A]">{f}</span>
+    <div className="flex flex-wrap gap-2">
+      {namedFacilities.map(({ label, Glyph }) => (
+        <span key={label} className="inline-flex items-center gap-1.5 rounded-full border border-[#EDE7DA] bg-white px-3 py-1.5 text-[10.5px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
+          <Glyph className="w-3.5 h-3.5 text-[#C9A24A]" />
+          {label}
+        </span>
       ))}
       {facilitiesTotal > namedFacilities.length && (
-        <span className="rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-2.5 py-1 text-[9.5px] font-black text-[#B8944E]">
+        <span className="inline-flex items-center rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[10.5px] font-black text-[#B8944E]">
           +{arabicNumber(facilitiesTotal - namedFacilities.length)} المزيد
         </span>
       )}
@@ -859,19 +868,27 @@ export default function HouseDetail({
   const cardWeather = GOVERNORATE_WEATHER_DATA[house.governorate] || DEFAULT_WEATHER;
   const weatherPreview = (
     <div className="flex items-center gap-4">
-      <div className="flex items-center gap-2.5 shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         {getWeatherIcon(cardWeather.forecast?.[0]?.icon || 'cloudSun')}
         <span className="leading-none">
-          <span className="block text-[28px] font-black text-[#0A2342] [font-variant-numeric:tabular-nums]">
+          <span className="block text-[36px] font-black text-[#0A2342] [font-variant-numeric:tabular-nums]">
             {arabicNumber(cardWeather.currentTemp)}°
           </span>
-          <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-1">{cardWeather.conditionText}</span>
+          <span className="block text-[11px] font-black text-[#2D2D24] mt-1.5">{house.governorate}</span>
+          <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">{cardWeather.conditionText}</span>
         </span>
       </div>
-      <span aria-hidden="true" className="w-px self-stretch bg-[#EDE7DA]" />
-      <div className="flex-1 min-w-0 space-y-1">
-        {['درجة الحرارة', 'توقعات الأيام القادمة', 'نصائح للرحلة'].map((r) => (
-          <span key={r} className="block rounded-lg bg-[#FBF9F4] border border-[#EDE7DA] px-2.5 py-1 text-[9.5px] font-bold text-[#4A4A3A]">{r}</span>
+      <span aria-hidden="true" className="w-px self-stretch bg-[#EBD9B4]/60" />
+      <div className="flex-1 min-w-0 space-y-1.5">
+        {[
+          { label: 'درجة الحرارة', Glyph: Thermometer },
+          { label: 'توقعات الأيام القادمة', Glyph: CalendarDays },
+          { label: 'نصائح للرحلة', Glyph: Lightbulb },
+        ].map(({ label, Glyph }) => (
+          <span key={label} className="flex items-center gap-2 rounded-xl bg-white border border-[#EDE7DA] px-3 py-2 text-[10.5px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
+            <Glyph className="w-4 h-4 text-[#C9A24A] shrink-0" />
+            {label}
+          </span>
         ))}
       </div>
     </div>
@@ -1107,9 +1124,10 @@ export default function HouseDetail({
         subtitle="وصف البيت وخدماته ومواعيد الوصول"
         icon={Info}
         span={4}
+        tone="cream"
         cta="اقرأ المزيد"
         image={house.images?.[0]}
-        preview={<p className="text-[10.5px] font-medium text-[#6B6B57] leading-relaxed line-clamp-3">{house.description}</p>}
+        preview={<p className="text-[11px] font-bold text-[#4A4A3A] leading-relaxed line-clamp-3">{house.description}</p>}
       >
         <div className="space-y-3 text-right">
           <p className="text-xs text-[#4A4A3A] leading-relaxed font-medium">{house.description}</p>
@@ -1844,6 +1862,7 @@ export default function HouseDetail({
             subtitle={`التخطيط للرحلة في ${house.governorate}`}
             icon={CloudSun}
             span={7}
+            tone="cream"
             delay={3}
             cta="عرض تفاصيل الطقس"
             preview={weatherPreview}
