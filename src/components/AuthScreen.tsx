@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { UserRole } from '../types';
 import {
   User as UserIcon, BookOpen, Users, Lock, Mail, Phone, MapPin, Church,
   Home, Calendar as CalendarIcon, ShieldCheck, UserPlus, Award, Headphones,
-  Eye, EyeOff, ChevronLeft,
+  Eye, EyeOff, ChevronLeft, Clock,
 } from 'lucide-react';
+import { authErrorMessage, retryInLabel } from '../lib/authErrors';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import Logo from './Logo';
@@ -115,6 +116,9 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   const [error, setError] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  // Seconds Supabase says to wait. Counted down here so the wait is a visible
+  // timer on the button rather than a number frozen inside a red box.
+  const [cooldown, setCooldown] = useState(0);
 
   // Forgot-password fields
   const [forgotEmail, setForgotEmail] = useState('');
@@ -136,6 +140,21 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   // Sign in fields
   const [signInEmail, setSignInEmail] = useState('');
   const [signInPassword, setSignInPassword] = useState('');
+
+  // One interval for the whole screen, cleared on unmount and whenever the
+  // count reaches zero — a lockout must never outlive the reason for it.
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = window.setInterval(() => setCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => window.clearInterval(id);
+  }, [cooldown > 0]);
+
+  /** Puts a server error on screen in Arabic, and starts the timer if it sent one. */
+  const showAuthError = (err: unknown) => {
+    const { message, retryAfterSec } = authErrorMessage(err);
+    setError(message);
+    if (retryAfterSec) setCooldown(retryAfterSec);
+  };
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -214,8 +233,15 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
       password: signInPassword,
     });
 
+    // A wrong password stays deliberately vague — naming which half was wrong
+    // tells someone guessing that the address exists. Anything else (a
+    // lockout, a network failure) says what it actually is.
     if (error) {
-      setError('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
+      const { message, retryAfterSec } = authErrorMessage(error);
+      if (retryAfterSec) { setError(message); setCooldown(retryAfterSec); }
+      else setError(/credential|password|email/i.test(error.message ?? '')
+        ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة.'
+        : message);
     }
     setLoading(false);
   };
@@ -228,9 +254,19 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
     const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim().toLowerCase(), {
       redirectTo: window.location.origin,
     });
-    // Always show success (even on error) so we don't leak which emails are registered.
-    if (error) console.error('resetPasswordForEmail:', error);
-    setForgotSent(true);
+    // Always show success (even on error) so we don't leak which emails are
+    // registered. The one exception is a timed lockout: that is measured on
+    // the requester, not the address, so saying it leaks nothing — and
+    // claiming an email was sent when the server refused to send it is worse
+    // than saying nothing, because nobody goes looking for the reason.
+    const { message, retryAfterSec } = error ? authErrorMessage(error) : { message: '', retryAfterSec: 0 };
+    if (retryAfterSec) {
+      setError(message);
+      setCooldown(retryAfterSec);
+    } else {
+      if (error) console.error('resetPasswordForEmail:', error);
+      setForgotSent(true);
+    }
     setLoading(false);
   };
 
@@ -281,9 +317,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
       },
     });
 
-    if (error) {
-      setError(error.message === 'User already registered' ? 'البريد الإلكتروني مسجل بالفعل. سجل الدخول.' : error.message);
-    }
+    if (error) showAuthError(error);
     setLoading(false);
   };
 
@@ -461,11 +495,11 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
               </div>
 
               <button
-                type="submit" disabled={loading}
+                type="submit" disabled={loading || cooldown > 0}
                 className="w-full flex items-center justify-center gap-2 bg-[#C5A059] hover:bg-[#B28F4D] disabled:opacity-60 text-white text-sm font-black py-3 rounded-2xl shadow-lg transition-colors"
               >
-                <ChevronLeft className="w-4 h-4" />
-                <span>{loading ? 'جارٍ تسجيل الدخول...' : 'تسجيل الدخول ومتابعة الحجز'}</span>
+                {cooldown > 0 ? <Clock className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                <span>{cooldown > 0 ? retryInLabel(cooldown) : loading ? 'جارٍ تسجيل الدخول...' : 'تسجيل الدخول ومتابعة الحجز'}</span>
               </button>
             </form>
 
@@ -595,9 +629,9 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
                 </div>
               </div>
 
-              <button type="submit" disabled={loading}
+              <button type="submit" disabled={loading || cooldown > 0}
                 className="w-full bg-[#0A2342] hover:bg-[#071930] disabled:opacity-60 text-white text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors">
-                {loading ? 'جارٍ الإرسال...' : 'إرسال رابط إعادة التعيين'}
+                {cooldown > 0 ? retryInLabel(cooldown) : loading ? 'جارٍ الإرسال...' : 'إرسال رابط إعادة التعيين'}
               </button>
 
               <div className="text-center">
@@ -738,9 +772,9 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
               </div>
             </div>
 
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={loading || cooldown > 0}
               className="w-full bg-[#0A2342] hover:bg-[#071930] disabled:opacity-60 text-white text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors">
-              {loading ? 'جارٍ إنشاء الحساب...' : 'تسجيل الحساب الجديد والدخول'}
+              {cooldown > 0 ? retryInLabel(cooldown) : loading ? 'جارٍ إنشاء الحساب...' : 'تسجيل الحساب الجديد والدخول'}
             </button>
 
             <div className="text-center">
