@@ -158,7 +158,10 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live, edgeToEd
           // proportion it had before the bleed — which also ends the iOS habit
           // of resizing itself as Safari's toolbar collapses under a dvh.
           // From sm up nothing moved, so the dvh sizing stays there.
-          ? 'aspect-[6/5] max-h-[430px] rounded-b-[32px] sm:aspect-auto sm:h-[42dvh] sm:min-h-[300px] sm:rounded-[32px]'
+          // No rounding at all on a phone: the bottom corners were curling in
+          // off the screen edges, which is a card's shape, not a full-bleed
+          // one. All four sides run flush.
+          ? 'aspect-[6/5] max-h-[430px] sm:aspect-auto sm:h-[42dvh] sm:min-h-[300px] sm:rounded-[32px]'
           : 'h-[42dvh] min-h-[300px] max-h-[430px] rounded-[32px]'
       }`}
     >
