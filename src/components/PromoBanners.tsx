@@ -84,9 +84,13 @@ const DEFAULT_SLIDES: DefaultSlide[] = [
   { gradient: 'linear-gradient(135deg,#7A5C1E 0%,#C5A059 60%,#E7C987 100%)', badge: 'أسعار واضحة', title: 'احجز بثقة', sub: 'تقييمات حقيقية وأسعار بدون مفاجآت', cta: 'شوف البيوت' },
 ];
 
-export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
+export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live, edgeToEdge }: {
   slides?: PromoBanner[]; onCta?: () => void; onOpenHouse?: (houseId: string) => void;
   live?: Record<string, BannerLiveData>;
+  /** Run the frame to the screen's edges: square top corners, soft bottom.
+   *  For the home hero. The studio preview sits inside a panel and keeps the
+   *  card, so this is a choice the caller makes rather than the frame's own. */
+  edgeToEdge?: boolean;
 }) {
   const items: DefaultSlide[] = slides && slides.length > 0
     ? slides.map((s) => ({
@@ -146,7 +150,12 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live }: {
       // Height is not cosmetic here: BannerCanvas sizes elements in cqh, so a
       // designed banner scales with the box, and saved layouts were drawn at
       // 176px — they need re-laying-out in the studio at this size.
-      className="relative rounded-[32px] overflow-hidden h-[42dvh] min-h-[300px] max-h-[430px] shadow-[0_16px_40px_-8px_rgba(45,45,36,0.28),0_4px_12px_rgba(45,45,36,0.08)] bg-slate-900 group select-none"
+      className={`relative overflow-hidden h-[42dvh] min-h-[300px] max-h-[430px] shadow-[0_16px_40px_-8px_rgba(45,45,36,0.28),0_4px_12px_rgba(45,45,36,0.08)] bg-slate-900 group select-none ${
+        // Edge to edge only where there is an edge to reach: a phone. From sm
+        // up the page is a centred cream card, and a square-cornered hero
+        // floating inside it would read as a mistake rather than a decision.
+        edgeToEdge ? 'rounded-b-[32px] sm:rounded-[32px]' : 'rounded-[32px]'
+      }`}
     >
       {designed?.layout ? (
         // z-10 keeps the artwork and its CTA above the story tap zones.

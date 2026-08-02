@@ -386,17 +386,23 @@ export default function UserDashboard({
           and then solved for the offset, which is how the overlap kept landing
           at 11, 15 and 19px instead of the 35 asked for. mb-5 carries the
           overhang and the bar's shadow. */}
-      <div className="relative mb-9">
+      {/* -mx-4 cancels this page's own px-4 so the hero reaches the phone's
+          edges; sm:mx-0 hands the margins back where the page becomes a
+          centred card. */}
+      <div className="relative mb-9 -mx-4 sm:mx-0">
         {/* Parallax wraps the hero, not the search bar: the bar has to stay
             welded to the hero's edge, and moving both would just move the
             composition. */}
         <div ref={heroParallaxRef} className="pima-parallax">
-          <SummerOfferCarousel slides={carouselSlides} live={bannerLive} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+          <SummerOfferCarousel edgeToEdge slides={carouselSlides} live={bannerLive} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
         </div>
 
         {/* -bottom-4 puts the bar's bottom 16px past the hero, so a 51px bar
             overlaps by 51 − 16 = 35px. Stated directly, not derived. */}
-        <div className="absolute inset-x-3 -bottom-4 z-20 pima-rise pima-rise-2">
+        {/* inset-x-7 on a phone, not inset-x-3: the hero grew by the 16px of
+            page padding it used to sit inside, and the bar has to stay where
+            it was rather than follow it out to the screen edge. */}
+        <div className="absolute inset-x-7 sm:inset-x-3 -bottom-4 z-20 pima-rise pima-rise-2">
           {/* Frosted white: saturated blur is what makes it read as glass over a
               photograph. The shadow is kept tight and low so it does not cast a
               grey band up across the banner it is sitting on. */}
