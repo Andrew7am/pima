@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+﻿import React, { useState, useEffect, useLayoutEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { supportWhatsAppUrl } from './lib/support';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -523,6 +523,42 @@ export default function App() {
       prevHouseRef.current = null;
     }
   }, [selectedHouse]);
+
+  // A page opens at its top.
+  //
+  // The app scrolls inside WebLayout's <main>, not the window, and opening a
+  // house is a state change rather than a navigation — so nothing reset the
+  // scroller. Tapping a house from halfway down the list opened its page
+  // halfway down too, on the room list or the reviews, never on the photo.
+  //
+  // Closing is the other half of the same fault: the list would have come back
+  // sitting whereever the house page was left. The list's position is put back
+  // where the reader left it instead. Layout effect, not effect — this has to
+  // land before the browser paints, or the wrong scroll position is visible
+  // for a frame.
+  const listScrollRef = useRef(0);
+  const scrolledHouseRef = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const main = document.querySelector('main');
+    if (!main) return;
+    const was = scrolledHouseRef.current;
+    const now = selectedHouse?.id ?? null;
+    if (now && !was) {
+      // Leaving the list for a house: remember where the list was.
+      listScrollRef.current = main.scrollTop;
+      main.scrollTop = 0;
+    } else if (now !== was) {
+      // House to another house, or back to the list.
+      main.scrollTop = now ? 0 : listScrollRef.current;
+    }
+    scrolledHouseRef.current = now;
+  }, [selectedHouse?.id]);
+
+  // Switching tabs is a new page too, and had the same fault.
+  useLayoutEffect(() => {
+    const main = document.querySelector('main');
+    if (main) main.scrollTop = 0;
+  }, [activeScreen]);
 
   // Browser back/forward: resolve the house from the URL and open/close the
   // detail view to match, so history navigation feels native.
