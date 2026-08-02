@@ -150,11 +150,16 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live, edgeToEd
       // Height is not cosmetic here: BannerCanvas sizes elements in cqh, so a
       // designed banner scales with the box, and saved layouts were drawn at
       // 176px — they need re-laying-out in the studio at this size.
-      className={`relative overflow-hidden h-[42dvh] min-h-[300px] max-h-[430px] shadow-[0_16px_40px_-8px_rgba(45,45,36,0.28),0_4px_12px_rgba(45,45,36,0.08)] bg-slate-900 group select-none ${
-        // Edge to edge only where there is an edge to reach: a phone. From sm
-        // up the page is a centred cream card, and a square-cornered hero
-        // floating inside it would read as a mistake rather than a decision.
-        edgeToEdge ? 'rounded-b-[32px] sm:rounded-[32px]' : 'rounded-[32px]'
+      className={`relative overflow-hidden shadow-[0_16px_40px_-8px_rgba(45,45,36,0.28),0_4px_12px_rgba(45,45,36,0.08)] bg-slate-900 group select-none ${
+        edgeToEdge
+          // Once it runs to both edges the banner is 9% wider than it was, and
+          // a height that did not follow left it flatter than the design. On a
+          // phone it is now shaped against its own width — 6:5, the exact
+          // proportion it had before the bleed — which also ends the iOS habit
+          // of resizing itself as Safari's toolbar collapses under a dvh.
+          // From sm up nothing moved, so the dvh sizing stays there.
+          ? 'aspect-[6/5] max-h-[430px] rounded-b-[32px] sm:aspect-auto sm:h-[42dvh] sm:min-h-[300px] sm:rounded-[32px]'
+          : 'h-[42dvh] min-h-[300px] max-h-[430px] rounded-[32px]'
       }`}
     >
       {designed?.layout ? (
