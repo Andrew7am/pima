@@ -119,6 +119,11 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   // Seconds Supabase says to wait. Counted down here so the wait is a visible
   // timer on the button rather than a number frozen inside a red box.
   const [cooldown, setCooldown] = useState(0);
+  // Set when sign-up succeeded but confirmation is pending — the address the
+  // activation link went to. While set, the register form gives way to the
+  // «افتح بريدك» screen; without it a confirmations-on signup succeeds in
+  // total silence and people press تسجيل again into the rate limit.
+  const [confirmEmail, setConfirmEmail] = useState('');
 
   // Forgot-password fields
   const [forgotEmail, setForgotEmail] = useState('');
@@ -298,10 +303,14 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
+    const cleanEmail = email.trim().toLowerCase();
+    const { data, error } = await supabase.auth.signUp({
+      email: cleanEmail,
       password,
       options: {
+        // The confirmation link must land back on the site, not wherever the
+        // project's default points.
+        emailRedirectTo: window.location.origin,
         data: {
           name,
           role: selectedRole,
@@ -317,7 +326,39 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
       },
     });
 
+    if (error) {
+      showAuthError(error);
+    } else if (!data.session) {
+      // Email confirmation is on, so success arrives WITHOUT a session — and a
+      // screen that does not change reads as a screen that did nothing. That
+      // silence is what had people pressing تسجيل again and landing on the
+      // 42-second lockout. Two silent shapes to tell apart:
+      if (data.user && data.user.identities?.length === 0) {
+        // An already-registered address. Supabase deliberately returns a
+        // hollow user instead of an error so signup can't be used to probe
+        // who has an account — the tell is the empty identities array.
+        setError('البريد الإلكتروني مسجل بالفعل. سجّل الدخول بدلاً من إنشاء حساب.');
+      } else {
+        setConfirmEmail(cleanEmail);
+      }
+    }
+    // A session means confirmation is off — onAuthStateChange takes it from here.
+    setLoading(false);
+  };
+
+  // Re-send the confirmation email, absorbing the 60-second lockout into the
+  // same countdown the rest of the screen uses.
+  const handleResendConfirmation = async () => {
+    if (!confirmEmail || cooldown > 0) return;
+    setLoading(true);
+    setError('');
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: confirmEmail,
+      options: { emailRedirectTo: window.location.origin },
+    });
     if (error) showAuthError(error);
+    else setCooldown(60); // the server's own resend window
     setLoading(false);
   };
 
@@ -642,6 +683,41 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
               </div>
             </form>
           )
+        ) : confirmEmail ? (
+          /* Sign-up worked; the account is waiting in their inbox. This screen
+             exists so success LOOKS like success — its absence had people
+             re-submitting a form that had already done its job. */
+          <div className="space-y-4 text-center py-2">
+            <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+              <Mail className="w-6 h-6 text-emerald-700" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-sm font-black text-[#0A2342]">افتح بريدك لتفعيل الحساب</h2>
+              <p className="text-[11px] text-[#4A4A3A] leading-relaxed">
+                أرسلنا رابط تفعيل إلى
+                <span dir="ltr" className="block font-black text-[#0A2342] mt-0.5">{confirmEmail}</span>
+              </p>
+              <p className="text-[10px] text-[#8A8A70] leading-relaxed">
+                اضغط الرابط في الرسالة ثم ارجع وسجّل الدخول. لو مش لاقيها، بُص في الرسائل غير المرغوب فيها (Spam).
+              </p>
+            </div>
+            <button type="button" onClick={handleResendConfirmation} disabled={loading || cooldown > 0}
+              className="w-full bg-[#0A2342] hover:bg-[#071930] disabled:opacity-60 text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-colors">
+              {cooldown > 0 ? retryInLabel(cooldown) : loading ? 'جارٍ الإرسال...' : 'أعد إرسال رابط التفعيل'}
+            </button>
+            <div className="flex items-center justify-center gap-4">
+              <button type="button"
+                onClick={() => { setConfirmEmail(''); setIsRegisterMode(false); setError(''); setSignInEmail(confirmEmail); }}
+                className="text-[10px] text-[#8A8A70] hover:text-[#4A4A3A] font-bold underline">
+                فعّلت الحساب؟ سجّل الدخول
+              </button>
+              <button type="button"
+                onClick={() => { setConfirmEmail(''); setError(''); }}
+                className="text-[10px] text-[#8A8A70] hover:text-[#4A4A3A] font-bold underline">
+                استخدم بريدًا آخر
+              </button>
+            </div>
+          </div>
         ) : (
           <form onSubmit={handleRegisterSubmit} className="space-y-4">
             <div className="space-y-1">
