@@ -161,7 +161,11 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live, edgeToEd
           // No rounding at all on a phone: the bottom corners were curling in
           // off the screen edges, which is a card's shape, not a full-bleed
           // one. All four sides run flush.
-          ? 'aspect-[6/5] max-h-[430px] sm:aspect-auto sm:h-[42dvh] sm:min-h-[300px] sm:rounded-[32px]'
+          // 5:4 rather than 6:5 — a notch shorter. 6:5 was the proportion the
+          // banner had before the bleed, but carried over to the full width it
+          // made the banner taller than it had ever actually been on a phone
+          // (328 where it used to be 300). This sits between the two.
+          ? 'aspect-[5/4] max-h-[430px] sm:aspect-auto sm:h-[42dvh] sm:min-h-[300px] sm:rounded-[32px]'
           : 'h-[42dvh] min-h-[300px] max-h-[430px] rounded-[32px]'
       }`}
     >
