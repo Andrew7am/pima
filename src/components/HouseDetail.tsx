@@ -10,7 +10,7 @@ import { arabicNumber } from '../lib/arabic';
 import { tapFeedback } from '../lib/haptics';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice, offersDayUse } from '../lib/pricing';
-import { getCapacityStatus } from '../lib/roomOccupancy';
+import { getCapacityStatus, occupiedEnd } from '../lib/roomOccupancy';
 import { 
   BedDouble, Calendar, Users, 
   DollarSign, Check, Award, Flame, MessageSquare, Star, 
@@ -265,6 +265,9 @@ interface DateRangePickerProps {
   /** Lets check-out equal check-in — a «يوم روحي». Off unless the house has
    *  actually priced one, or a guest could pick a day that costs nothing. */
   allowSameDay?: boolean;
+  /** Day mode: one tap IS the whole stay. Choosing a day retreat by tapping
+   *  the same square twice is a thing nobody discovers. */
+  singleDay?: boolean;
   /** Called when the inline calendar is done, so the sheet can close itself. */
   onDone?: () => void;
 }
@@ -291,6 +294,7 @@ const DateRangePicker = ({
   blockedDates = [],
   inline = false,
   allowSameDay = false,
+  singleDay = false,
   onDone,
 }: DateRangePickerProps) => {
   // Inline mode has no trigger to press, so it starts open and stays open.
@@ -352,6 +356,15 @@ const DateRangePicker = ({
   const handleDayClick = (dayNum: number) => {
     const clickedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
     if (approvedDays.has(clickedDateStr) || clickedDateStr < today) return;
+
+    // A day retreat is one tap. The two-tap range dance exists to express a
+    // span; there is no span here, and asking for the same square twice is a
+    // gesture nobody finds on their own.
+    if (singleDay) {
+      setCheckIn(clickedDateStr);
+      setCheckOut(clickedDateStr);
+      return;
+    }
 
     if (!checkIn || (checkIn && checkOut)) {
       setCheckIn(clickedDateStr);
@@ -482,7 +495,7 @@ const DateRangePicker = ({
                 disabled={!checkIn || !checkOut}
                 className="flex-1 bg-[#0A2342] disabled:opacity-50 hover:bg-[#071930] text-white text-xs font-bold py-2 rounded-xl text-center shadow-md transition-colors cursor-pointer"
               >
-                تأكيد فترة الإقامة
+                {singleDay ? 'تأكيد اليوم' : 'تأكيد فترة الإقامة'}
               </button>
               <button
                 type="button"
@@ -712,6 +725,22 @@ export default function HouseDetail({
   const [bookingOpen, setBookingOpen] = useState(false);
   // Bumped when the inline calendar confirms, so the sheet holding it closes.
   const [datesDone, setDatesDone] = useState(0);
+
+  /**
+   * Switching between a stay with nights in it and a day with none.
+   *
+   * The dates live here, so the switch does too. Going to a day collapses the
+   * range onto the arrival date; coming back from one reopens it by a single
+   * night rather than restoring whatever was there before — the guest is
+   * choosing a kind of stay, not undoing an edit, and a remembered three-night
+   * range reappearing under them reads as the app arguing.
+   */
+  const setStayMode = (mode: 'night' | 'day') => {
+    tapFeedback();
+    if (!checkIn) return;
+    if (mode === 'day') setCheckOut(checkIn);
+    else if (checkOut <= checkIn) setCheckOut(occupiedEnd(checkIn, checkIn));
+  };
   const [calcBusPrice, setCalcBusPrice] = useState<number>(3500);
   const [calcBusesCount, setCalcBusesCount] = useState<number>(1);
   const [calcMiscExpenses, setCalcMiscExpenses] = useState<number>(1500);
@@ -1095,6 +1124,9 @@ export default function HouseDetail({
             onTrackBooking={onNavigateBookings}
             onGoHome={onNavigateHome}
             datesConfirmed={datesDone}
+            dayUseAvailable={offersDayUse(house)}
+            dayUsePrice={house.dayUsePricePerPerson}
+            onSetStayMode={setStayMode}
             datePicker={
               <DateRangePicker
                 checkIn={checkIn}
@@ -1103,6 +1135,7 @@ export default function HouseDetail({
                 setCheckOut={setCheckOut}
                 isMonthlyHousing={isMonthlyHousing}
                 allowSameDay={offersDayUse(house)}
+                singleDay={offersDayUse(house) && Boolean(checkIn) && checkIn === checkOut}
                 bookedRanges={[
                   ...approvedBookingsForThisHouse.map((b) => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: 'approved' as const })),
                   ...pendingBookingsForThisHouse.map((b) => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: 'pending' as const })),

@@ -5,7 +5,7 @@ import {
   Star, Send, Clock, FileText, Pencil, Minus, Plus, Building2, Phone, User as UserIcon,
   Mail, MessageSquare, Church, Info, Loader2, Receipt, CreditCard,
   Sparkles, BedDouble, Copy, Home, Bell,
-  Backpack, BookOpen, GraduationCap, Flame, HeartHandshake,
+  Backpack, BookOpen, GraduationCap, Flame, HeartHandshake, Sun,
 } from 'lucide-react';
 import { tapFeedback } from '../../lib/haptics';
 import PimaSheet from '../PimaSheet';
@@ -60,6 +60,12 @@ interface BookingFlowProps {
   datePicker: React.ReactNode;
   /** Increments when the calendar confirms a range — closes the date sheet. */
   datesConfirmed?: number;
+  /** The house sells a «يوم روحي», so the guest gets the choice at all. */
+  dayUseAvailable?: boolean;
+  /** Per person, shown on the day option so the choice is priced, not blind. */
+  dayUsePrice?: number;
+  /** Collapses the stay onto one day, or reopens it by a night. */
+  onSetStayMode?: (mode: 'night' | 'day') => void;
   /** Rendered on step 1 — capacity warnings, waitlist, points redemption. */
   notices?: React.ReactNode;
   submitting?: boolean;
@@ -115,7 +121,8 @@ const INPUT = 'w-full bg-white border border-[#EDE7DA] rounded-2xl px-3.5 py-3 t
 export default function BookingFlow({
   house, currentUser, checkIn, checkOut, nights, guestsCount, setGuestsCount,
   isQuoteMode, setIsQuoteMode, isMonthlyHousing, originalTotalPrice, totalPrice,
-  depositAmount, breakdown, datePicker, datesConfirmed, notices, submitting, onSubmit, onRequireLogin, onExit,
+  depositAmount, breakdown, datePicker, datesConfirmed, dayUseAvailable, dayUsePrice, onSetStayMode,
+  notices, submitting, onSubmit, onRequireLogin, onExit,
   onTrackBooking, onGoHome,
 }: BookingFlowProps) {
   const [step, setStep] = useState(0);
@@ -436,10 +443,43 @@ export default function BookingFlow({
 
           {/* Dates — one row: arrival, the nights between them, departure. */}
           <div className={`${CARD} p-3 space-y-2`}>
+            {/* The kind of stay comes before its dates, because it decides what
+                the dates even mean. Only where the house sells a day: offering
+                a choice one of whose halves does not exist is worse than not
+                offering it. Each side carries its own rate, so this is a
+                priced decision rather than a blind one. */}
+            {dayUseAvailable && !isMonthlyHousing && (
+              <div role="radiogroup" aria-label="نوع الإقامة" className="grid grid-cols-2 gap-2 pb-1">
+                {([
+                  { mode: 'night' as const, on: !dayUse, Icon: BedDouble, label: 'إقامة بمبيت', rate: house.pricePerNightPerPerson, unit: 'لليلة' },
+                  { mode: 'day' as const, on: dayUse, Icon: Sun, label: 'يوم بدون مبيت', rate: dayUsePrice, unit: 'لليوم' },
+                ]).map((o) => (
+                  <button
+                    key={o.mode}
+                    type="button"
+                    role="radio"
+                    aria-checked={o.on}
+                    onClick={() => onSetStayMode?.(o.mode)}
+                    className={`rounded-2xl border px-2.5 py-2 text-right transition-colors duration-200 cursor-pointer pima-press ${
+                      o.on ? 'bg-[#FDF9EF] border-[#C9A24A]' : 'bg-white border-[#EDE7DA] hover:border-[#E3CD9F]'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <o.Icon className={`w-3.5 h-3.5 shrink-0 ${o.on ? 'text-[#B8944E]' : 'text-[#8A8A70]'}`} />
+                      <span className={`text-[10.5px] font-black truncate ${o.on ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>{o.label}</span>
+                    </span>
+                    <span className="block text-[9px] font-bold text-[#8A8A70] mt-1">
+                      {egp(o.rate ?? 0)} ج.م {o.unit} للفرد
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-[11px] font-black text-[#2D2D24]">
                 <CalendarDays className="w-4 h-4 text-[#C9A24A]" />
-                تاريخ الإقامة
+                {dayUse ? 'تاريخ اليوم' : 'تاريخ الإقامة'}
               </span>
               <button
                 type="button"
@@ -449,20 +489,34 @@ export default function BookingFlow({
                 تغيير
               </button>
             </div>
-            <div className="flex items-center gap-2 rounded-2xl bg-[#FBF9F4] border border-[#EDE7DA] px-3 py-2">
-              <div className="flex-1 min-w-0 leading-tight">
-                <span className="block text-[8.5px] font-bold text-[#8A8A70]">من</span>
-                <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkIn)}</span>
+            {/* A day has one date. Printing «من ٢٢ يوليو إلى ٢٢ يوليو» is
+                arithmetically true and reads as a bug. */}
+            {dayUse ? (
+              <div className="flex items-center gap-2 rounded-2xl bg-[#FBF9F4] border border-[#EDE7DA] px-3 py-2">
+                <span className="w-8 h-8 rounded-full bg-[#F6F0E2] border border-[#EBD9B4] flex items-center justify-center shrink-0">
+                  <Sun className="w-4 h-4 text-[#C9A24A]" />
+                </span>
+                <div className="flex-1 min-w-0 leading-tight">
+                  <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkIn)}</span>
+                  <span className="block text-[8.5px] font-bold text-[#8A8A70] mt-0.5">{weekday(checkIn)} · وصول ومغادرة في نفس اليوم</span>
+                </div>
               </div>
-              <div className="shrink-0 text-center px-2 border-x border-[#EDE7DA] leading-tight">
-                <span className="block text-[13px] font-black text-[#B8944E]">{egp(dayUse ? 1 : nights)}</span>
-                <span className="block text-[8px] font-bold text-[#8A8A70]">{dayUse ? 'يوم' : nightsWord(nights)}</span>
+            ) : (
+              <div className="flex items-center gap-2 rounded-2xl bg-[#FBF9F4] border border-[#EDE7DA] px-3 py-2">
+                <div className="flex-1 min-w-0 leading-tight">
+                  <span className="block text-[8.5px] font-bold text-[#8A8A70]">من</span>
+                  <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkIn)}</span>
+                </div>
+                <div className="shrink-0 text-center px-2 border-x border-[#EDE7DA] leading-tight">
+                  <span className="block text-[13px] font-black text-[#B8944E]">{egp(nights)}</span>
+                  <span className="block text-[8px] font-bold text-[#8A8A70]">{nightsWord(nights)}</span>
+                </div>
+                <div className="flex-1 min-w-0 leading-tight text-left">
+                  <span className="block text-[8.5px] font-bold text-[#8A8A70]">إلى</span>
+                  <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkOut)}</span>
+                </div>
               </div>
-              <div className="flex-1 min-w-0 leading-tight text-left">
-                <span className="block text-[8.5px] font-bold text-[#8A8A70]">إلى</span>
-                <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkOut)}</span>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Guests — label and counter share a row; the cap sits under it. */}
