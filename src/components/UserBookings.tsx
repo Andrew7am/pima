@@ -13,6 +13,7 @@ import BookingChatPanel from './BookingChatPanel';
 import ReviewWizard from './ReviewWizard';
 import { refundAmountFor } from '../lib/cancellationPolicy';
 import { getBookingStage } from '../lib/bookingStage';
+import { depositDue } from '../lib/paymentLedger';
 import DepositPayment from './booking/DepositPayment';
 import { downloadBookingIcs } from '../lib/ics';
 import { setAttendeeSharePaid } from '../lib/db';
@@ -184,15 +185,7 @@ export default function UserBookings({
   autoPayBookingId = null,
   onAutoPayConsumed,
 }: UserBookingsProps) {
-  // What the guest actually owes. The server normalises this on every write
-  // (validate_booking_price: deposit_amount := ROUND(total_price * rate)) and
-  // it is the figure every owner and admin finance screen sums — so the guest
-  // must be quoted THAT number, not one recomputed here. Recomputing meant a
-  // guest was quoted the new rate whenever an admin changed deposit_rate,
-  // while the booking still carried the old one. The multiply is kept only as
-  // a fallback for a row that somehow has no deposit_amount at all.
-  const depositDueFor = (b: Booking) =>
-    b.depositAmount || Math.round(b.totalPrice * settings.depositRate);
+  const depositDueFor = (b: Booking) => depositDue(b, settings.depositRate);
 
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
   // Which booking's detail sheet is open. Stored as an id (not the object) so

@@ -27,6 +27,7 @@ import {
   loadPaymentProofImage,
 } from './lib/db';
 import { autoAllocate } from './lib/roomAllocation';
+import { resolvePaymentVerdict } from './lib/paymentLedger';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout, ConferenceRoom, PromoBanner } from './types';
 import { INITIAL_CONFERENCE_ROOMS } from './entertainment/data/conferenceMocks';
 
@@ -1170,51 +1171,14 @@ export default function App() {
     const b = bookings.find((bk) => bk.id === payment.bookingId);
     if (!b) return;
 
-    // Every OTHER approved payment on this booking. A verdict on one proof
-    // has to be judged against the whole ledger — a booking can be settled
-    // in instalments, and the owner's cash confirmation files a row here too.
-    const otherApproved = payments.filter(
-      (p) => p.bookingId === b.id && p.id !== paymentId && p.paymentStatus === 'approved'
-    );
+    // What this verdict means for the booking — judged against the whole
+    // ledger, not this one proof. `null` means leave the booking alone.
+    const change = resolvePaymentVerdict({ booking: b, payment, payments, verdict: status });
+    if (!change) return;
 
-    if (status === 'approved') {
-      // A proof left in the queue after the guest cancelled or the owner
-      // rejected must not bring the booking back to life — those dates have
-      // very likely been resold since. Record the money against the payment
-      // row (already done above) and leave the booking closed; the refund is
-      // a manual decision.
-      if (b.status === 'cancelled' || b.status === 'rejected') return;
-
-      // Compare the SUM of approved payments against the total, not this one
-      // payment. Two approved half-transfers both read as 'paid_deposit'
-      // before, so a fully-settled booking never reached 'paid_full' and kept
-      // showing the owner an outstanding balance.
-      const paidTotal = otherApproved.reduce((s, p) => s + p.amount, 0) + payment.amount;
-      const nextPaymentStatus: Booking['paymentStatus'] = paidTotal >= b.totalPrice ? 'paid_full' : 'paid_deposit';
-
-      setBookings((prev) => prev.map((bk) => (
-        bk.id === b.id
-          ? { ...bk, paymentStatus: nextPaymentStatus, status: 'approved', depositPaid: true }
-          : bk
-      )));
-      updateBookingFields(b.id, {
-        paymentStatus: nextPaymentStatus,
-        status: 'approved',
-        depositPaid: true,
-      }).then(() => { if (currentUser?.id === b.userId) refreshCurrentUserPoints(b.userId); });
-    } else {
-      // Rejecting a later proof must not erase an earlier valid one. The
-      // points trigger (migration 024) derives what was paid from the
-      // booking's payment_status, so writing 'unpaid' here used to claw back
-      // points the guest had legitimately earned on the first payment.
-      if (otherApproved.length > 0) return;
-
-      setBookings((prev) => prev.map((bk) => (
-        bk.id === b.id ? { ...bk, paymentStatus: 'unpaid', depositPaid: false } : bk
-      )));
-      updateBookingFields(b.id, { paymentStatus: 'unpaid', depositPaid: false })
-        .then(() => { if (currentUser?.id === b.userId) refreshCurrentUserPoints(b.userId); });
-    }
+    setBookings((prev) => prev.map((bk) => (bk.id === b.id ? { ...bk, ...change } : bk)));
+    updateBookingFields(b.id, change)
+      .then(() => { if (currentUser?.id === b.userId) refreshCurrentUserPoints(b.userId); });
 
     // Notification (payment confirmed/rejected, and booking
     // approved/deposit-received when applicable) now fires server-side
