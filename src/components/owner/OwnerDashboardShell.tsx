@@ -1738,9 +1738,14 @@ export default function OwnerDashboardShell({
                           word. Who is coming is the news. */}
                       <div className="ob-who min-w-0">
                         <h4 className="text-[14px] font-black text-[var(--color-owner-text)] truncate leading-snug">{booking.userName}</h4>
+                        {/* Phone and how long they have waited. The group's
+                            name gets its own line rather than sharing this
+                            one: sharing left «بيت مارمرقس للمؤتمرات» 27px of
+                            the 155 it needs, and a sixth of a name is worse
+                            than a line break. */}
                         <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold truncate mt-0.5 flex items-center gap-1.5">
                           <Phone className="w-3 h-3 shrink-0" />
-                          <span dir="ltr">{booking.userPhone}</span>
+                          <span dir="ltr" className="shrink-0">{booking.userPhone}</span>
                           <span className="shrink-0">· {bookingAge(booking.createdAt)}</span>
                           {booking.source === 'manual' && <span className="shrink-0 bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي</span>}
                           {booking.source === 'temporary' && <span className="shrink-0 bg-[var(--color-owner-info)]/10 text-[var(--color-owner-info-ink)] border border-[var(--color-owner-info)]/30 px-1.5 py-0.5 rounded-full">مؤقت</span>}
