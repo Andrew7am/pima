@@ -11,7 +11,14 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
   { value: 'bank_transfer', label: 'تحويل بنكي' },
 ];
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft } from 'lucide-react';
-import { arabicNumber } from '../lib/arabic';
+import { arabicNumber, arabicPlural } from '../lib/arabic';
+import { timeAgo } from '../lib/timeAgo';
+
+// Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
+// to the singular. Shared so this file does not grow a second, differently
+// wrong set.
+const BOOKING_FORMS = { one: 'حجز واحد', two: 'حجزان', few: 'حجوزات', many: 'حجز', zero: 'لا حجوزات' };
+const USER_FORMS = { one: 'مستخدم واحد', two: 'مستخدمان', few: 'مستخدمين', many: 'مستخدم', zero: 'لا مستخدمين' };
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
 import BannerStudio from './banner/BannerStudio';
@@ -769,15 +776,15 @@ export default function AdminDashboard({
             <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-[#4A4A3A]">الحجوزات آخر ١٤ يوم</span>
-                <span className="text-[10px] font-bold text-[#8A8A70]">{days.reduce((s, d) => s + d.count, 0)} حجز</span>
+                <span className="text-[10px] font-bold text-[#8A8A70]">{arabicPlural(days.reduce((s, d) => s + d.count, 0), BOOKING_FORMS)}</span>
               </div>
               <div className="flex items-end gap-1 h-24" dir="ltr">
                 {days.map((d) => (
                   <div key={d.ts} className="flex-1 flex flex-col items-center gap-1 group">
                     <div className="flex-1 w-full flex items-end">
-                      <div className="w-full bg-[#5A5A40] rounded-t-md group-hover:bg-[#4A4A3A] transition-colors" style={{ height: `${(d.count / maxDay) * 100}%`, minHeight: d.count > 0 ? '4px' : '0' }} title={`${new Date(d.ts).toLocaleDateString('ar-EG')} · ${d.count} حجز`} />
+                      <div className="w-full bg-[#5A5A40] rounded-t-md group-hover:bg-[#4A4A3A] transition-colors" style={{ height: `${(d.count / maxDay) * 100}%`, minHeight: d.count > 0 ? '4px' : '0' }} title={`${new Date(d.ts).toLocaleDateString('ar-EG')} · ${arabicPlural(d.count, BOOKING_FORMS)}`} />
                     </div>
-                    <span className="text-[8.5px] font-bold text-[#8A8A70]">{new Date(d.ts).getDate()}</span>
+                    <span className="text-[8.5px] font-bold text-[#8A8A70]">{arabicNumber(new Date(d.ts).getDate())}</span>
                   </div>
                 ))}
               </div>
@@ -795,7 +802,7 @@ export default function AdminDashboard({
                   <div key={step.label} className="space-y-0.5">
                     <div className="flex justify-between items-center text-[10px] font-bold text-[#4A4A3A]">
                       <span>{step.label}</span>
-                      <span>{step.value.toLocaleString('ar-EG')} <span className="text-[#8A8A70] font-medium">({step.pct}%)</span></span>
+                      <span>{step.value.toLocaleString('ar-EG')} <span className="text-[#8A8A70] font-medium">({arabicNumber(step.pct)}٪)</span></span>
                     </div>
                     <div className="h-2 bg-[#EBEBE0]/50 rounded-full overflow-hidden">
                       <div className="h-full bg-[#5A5A40] rounded-full transition-all" style={{ width: `${step.pct}%` }} />
@@ -842,13 +849,14 @@ export default function AdminDashboard({
               ) : (
                 <div className="space-y-1">
                   {recentActivity.map((a, i) => {
-                    const mins = Math.max(0, Math.round((Date.now() - a.ts) / 60_000));
-                    const ago = mins < 60 ? `${mins} د` : mins < 1440 ? `${Math.round(mins / 60)} س` : `${Math.round(mins / 1440)} ي`;
                     return (
                       <div key={i} className="flex items-center gap-2 text-[10px] text-[#4A4A3A] py-1 border-b border-[#EBEBE0]/60 last:border-0">
                         <span className="text-sm">{a.icon}</span>
                         <span className="flex-1 min-w-0 truncate">{a.text}</span>
-                        <span className="text-[9px] text-[#8A8A70] font-bold shrink-0">منذ {ago}</span>
+                        {/* lib/timeAgo already does this, with Arabic-Indic digits
+                            and real plural agreement. This built its own with a
+                            template literal and printed "منذ 21 د". */}
+                        <span className="text-[9px] text-[#8A8A70] font-bold shrink-0">{timeAgo(new Date(a.ts).toISOString())}</span>
                       </div>
                     );
                   })}
@@ -1812,7 +1820,7 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          <div className="text-[10px] text-[#8A8A70] px-1 font-bold">{filteredUsers.length} مستخدم</div>
+          <div className="text-[10px] text-[#8A8A70] px-1 font-bold">{arabicPlural(filteredUsers.length, USER_FORMS)}</div>
 
           <div className="space-y-2">
             {filteredUsers.map((usr) => (
@@ -1919,7 +1927,7 @@ export default function AdminDashboard({
           <div className="bg-[#0A2342] text-white rounded-3xl p-4 space-y-2">
             <div className="flex items-center gap-2">
               <Coins className="w-5 h-5 text-[#C5A059]" />
-              <span className="text-[11px] font-black text-[#C5A059]">عمولة المنصة ({(PLATFORM_COMMISSION * 100).toFixed(0)}%)</span>
+              <span className="text-[11px] font-black text-[#C5A059]">عمولة المنصة ({arabicNumber(Math.round(PLATFORM_COMMISSION * 100))}٪)</span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
