@@ -112,8 +112,23 @@ CREATE INDEX IF NOT EXISTS idx_room_allocations_attendee_id
 
 
 -- ── Confirm ─────────────────────────────────────────────────────────────
--- Expect 17 rows.
-SELECT tablename, indexname
-FROM pg_indexes
-WHERE schemaname = 'public' AND indexname LIKE 'idx_%'
-ORDER BY tablename, indexname;
+-- Checks for exactly the 19 indexes this file creates, and names any that
+-- did not land. A bare `LIKE 'idx_%'` listing is not the check: earlier
+-- migrations already created their own idx_* indexes, so the total is larger
+-- and tells you nothing about whether THIS file worked.
+WITH wanted(n) AS (VALUES
+  ('idx_houses_owner_id'), ('idx_houses_status_created'),
+  ('idx_payments_booking_id'), ('idx_payments_user_id'), ('idx_payments_status_date'),
+  ('idx_bookings_created_at'), ('idx_bookings_house_range'),
+  ('idx_reviews_house_created'), ('idx_rooms_house_id'), ('idx_announcements_house_id'),
+  ('idx_waitlist_house_id'), ('idx_waitlist_user_id'), ('idx_owner_expenses_house_id'),
+  ('idx_notifications_user_created'), ('idx_notifications_booking_id'),
+  ('idx_users_role'), ('idx_points_history_user_created'), ('idx_users_referral_code'),
+  ('idx_room_allocations_attendee_id')
+)
+SELECT
+  w.n AS index_name,
+  CASE WHEN i.indexname IS NULL THEN '✗ MISSING' ELSE '✓' END AS status
+FROM wanted w
+LEFT JOIN pg_indexes i ON i.indexname = w.n AND i.schemaname = 'public'
+ORDER BY (i.indexname IS NOT NULL), w.n;
