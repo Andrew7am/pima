@@ -1000,7 +1000,13 @@ export async function createPayment(p: Payment): Promise<boolean> {
 }
 
 export async function updatePaymentStatus(id: string, status: Payment['paymentStatus'], adminNotes?: string): Promise<boolean> {
-  const { error } = await supabase.from('payments').update({ payment_status: status, admin_notes: adminNotes ?? null }).eq('id', id);
+  // Only write admin_notes when the reviewer actually typed something.
+  // Sending null unconditionally erased whatever note was already on the row
+  // every time someone approved without adding one — on the exact record you
+  // would want to read back if the guest disputes the payment.
+  const patch: Record<string, unknown> = { payment_status: status };
+  if (adminNotes != null && adminNotes.trim() !== '') patch.admin_notes = adminNotes;
+  const { error } = await supabase.from('payments').update(patch).eq('id', id);
   if (error) console.error('updatePaymentStatus:', error);
   return !error;
 }

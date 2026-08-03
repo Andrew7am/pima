@@ -459,7 +459,12 @@ export interface PlatformSettings {
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   commissionRate: 0.05,
-  depositRate: 0.30,
+  // Must match the DB default (migration 024: deposit_rate NUMERIC DEFAULT
+  // 0.15). This is only the fallback used when loadPlatformSettings fails —
+  // at 0.30 the guest was quoted double the deposit that the server had
+  // already normalised into bookings.deposit_amount, which is what every
+  // owner finance screen sums.
+  depositRate: 0.15,
   pointsPerEgp: 100,
   maxRedemptionPct: 0.10,
   referralBonusPoints: 2000,

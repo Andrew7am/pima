@@ -186,7 +186,10 @@ export default function OwnerFinancialCenter({
   // ── Guests arriving today, cash expected in-hand ──
   const arrivalsToday = confirmedBookings.filter((b) => b.checkIn === todayStr);
   const guestsToday = arrivalsToday.reduce((s, b) => s + b.guestsCount, 0);
-  const cashExpectedToday = arrivalsToday.reduce((s, b) => s + Math.max(0, b.totalPrice - b.depositAmount), 0);
+  // Only subtract a deposit that was actually received — depositAmount is set
+  // on every booking regardless. This screen used to show two different
+  // "المتبقي" figures because line 154 guarded on depositPaid and these did not.
+  const cashExpectedToday = arrivalsToday.reduce((s, b) => s + Math.max(0, b.totalPrice - (b.depositPaid ? b.depositAmount : 0)), 0);
 
   // ── Top booking this month (a real, derivable "insight") ──
   const topBookingThisMonth = useMemo(() => {
@@ -240,11 +243,31 @@ export default function OwnerFinancialCenter({
   // an open (pending/processing) request. The rest of the net payout is cash
   // the owner collects directly on arrival — Pima never touches it, so it must
   // not be presented as a transferable balance. See the money-flow timeline.
+  // Shown to the owner as "requests still under review" — pending only.
   const pendingPayoutTotal = payouts
     .filter((p) => p.status === 'pending' || p.status === 'processing')
     .reduce((s, p) => s + p.amount, 0);
+
+  // What must come OFF the balance is wider than that. A completed transfer
+  // used to drop out of the offset entirely, so the full balance sprang back
+  // the moment an admin marked it paid and the owner could request the same
+  // money again, week after week, against funds Pima no longer holds. Only a
+  // rejected request frees its amount up again.
+  const claimedPayoutTotal = payouts
+    .filter((p) => p.status !== 'rejected')
+    .reduce((s, p) => s + p.amount, 0);
+
+  // The admin can also settle bookings one at a time from the payout tab,
+  // which stamps bookings.owner_settled_at and never touches `payouts`. That
+  // channel was invisible here, so an owner already settled per-booking could
+  // still request the whole balance through this screen. Mirror the amount
+  // the admin actually transfers there (deposit minus the full commission).
+  const settledByBooking = confirmedBookings
+    .filter((b) => b.ownerSettledAt)
+    .reduce((s, b) => s + Math.max(0, Math.round((b.depositAmount || 0) - (b.totalPrice || 0) * commissionRate)), 0);
+
   const heldByPima = Math.max(0, depositReceived - platformCommissionAmount);
-  const availableForTransfer = Math.max(0, heldByPima - pendingPayoutTotal);
+  const availableForTransfer = Math.max(0, heldByPima - claimedPayoutTotal - settledByBooking);
 
   const submitTransfer = async () => {
     if (!houseId || !owner || availableForTransfer <= 0 || !onRequestPayout) return;
@@ -278,7 +301,7 @@ export default function OwnerFinancialCenter({
       const comm = Math.round(b.totalPrice * commissionRate);
       rows.push([
         bookingGuestName(b), bookingRef(b), b.checkIn, b.checkOut, b.guestsCount,
-        b.totalPrice, b.depositAmount, Math.max(0, b.totalPrice - b.depositAmount), comm, b.totalPrice - comm,
+        b.totalPrice, b.depositAmount, Math.max(0, b.totalPrice - (b.depositPaid ? b.depositAmount : 0)), comm, b.totalPrice - comm,
         bookingStatusBadge(b).label,
       ]);
     });
@@ -292,7 +315,7 @@ export default function OwnerFinancialCenter({
     const revenue = inMonth.reduce((s, b) => s + b.totalPrice, 0);
     const commission = revenue * commissionRate;
     const deposits = inMonth.filter((b) => b.depositPaid).reduce((s, b) => s + b.depositAmount, 0);
-    const remaining = inMonth.reduce((s, b) => s + Math.max(0, b.totalPrice - b.depositAmount), 0);
+    const remaining = inMonth.reduce((s, b) => s + Math.max(0, b.totalPrice - (b.depositPaid ? b.depositAmount : 0)), 0);
     const expenses = ownerExpenses.filter((e) => { const c = new Date(e.expenseDate); return c.getFullYear() === d.getFullYear() && c.getMonth() === d.getMonth(); }).reduce((s, e) => s + e.amount, 0);
     printMonthlyStatement({
       houseName: confirmedBookings[0]?.houseName || ownerBookings[0]?.houseName || 'بيتك',
@@ -677,7 +700,7 @@ export default function OwnerFinancialCenter({
         ) : filteredBookings.map((b) => {
           const comm = b.totalPrice * commissionRate;
           const net = b.totalPrice - comm;
-          const remaining = Math.max(0, b.totalPrice - b.depositAmount);
+          const remaining = Math.max(0, b.totalPrice - (b.depositPaid ? b.depositAmount : 0));
           const badge = bookingStatusBadge(b);
           return (
             <button key={b.id} type="button" onClick={() => { closeAllSheets(); setOpenBookingId(b.id); }}

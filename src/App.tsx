@@ -1081,6 +1081,34 @@ export default function App() {
           : b
       )
     );
+
+    // File the cash as a real payment row. Two reasons:
+    //
+    //  1. The admin payout screen excludes a booking from "ready to transfer"
+    //     only when it finds an APPROVED payment whose method is 'cash' — the
+    //     money went to the owner's hand, so Pima owes nothing. Without a row
+    //     the booking passed that filter on `depositPaid` alone and the owner
+    //     got transferred a deposit they had already pocketed.
+    //  2. Cash was otherwise the one way money could be recorded with no
+    //     amount evidence, no actor and no timestamp.
+    //
+    // The id is derived from the booking, so a double-tap cannot file it twice.
+    if (target && !payments.some((p) => p.bookingId === bookingId && p.paymentMethod === 'cash')) {
+      const cashPayment: Payment = {
+        id: `pay_cash_${bookingId}`,
+        bookingId,
+        userId: target.userId,
+        userName: target.userName,
+        amount: depositAmount,
+        paymentMethod: 'cash',
+        paymentStatus: 'approved',
+        paymentDate: new Date().toISOString(),
+        adminNotes: 'أكد صاحب البيت استلام العربون نقداً',
+      };
+      setPayments((prev) => [cashPayment, ...prev]);
+      createPayment(cashPayment);
+    }
+
     updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' })
       .then(() => { if (target && currentUser?.id === target.userId) refreshCurrentUserPoints(target.userId); });
   };
@@ -1136,44 +1164,62 @@ export default function App() {
     );
 
     const payment = payments.find((p) => p.id === paymentId);
-    if (payment) {
-      // Persist updated payment to Supabase
-      updatePaymentStatus(paymentId, status, adminNotes);
-      const b = bookings.find((bk) => bk.id === payment.bookingId);
-      if (b) {
-        const updatedPaymentStatus: Booking['paymentStatus'] = payment.amount >= b.totalPrice ? 'paid_full' : 'paid_deposit';
+    if (!payment) return;
+    // Persist updated payment to Supabase
+    updatePaymentStatus(paymentId, status, adminNotes);
+    const b = bookings.find((bk) => bk.id === payment.bookingId);
+    if (!b) return;
 
-        setBookings((prevBookings) =>
-          prevBookings.map((bk) => {
-            if (bk.id === b.id) {
-              return {
-                ...bk,
-                paymentStatus: status === 'approved' ? updatedPaymentStatus : 'unpaid',
-                status: status === 'approved' ? 'approved' : bk.status,
-                depositPaid: status === 'approved' ? true : bk.depositPaid,
-              };
-            }
-            return bk;
-          })
-        );
-        // Persist booking update to Supabase
-        if (status === 'approved') {
-          updateBookingFields(b.id, {
-            paymentStatus: updatedPaymentStatus,
-            status: 'approved',
-            depositPaid: true,
-          }).then(() => { if (currentUser?.id === b.userId) refreshCurrentUserPoints(b.userId); });
-        } else {
-          updateBookingFields(b.id, { paymentStatus: 'unpaid' })
-            .then(() => { if (currentUser?.id === b.userId) refreshCurrentUserPoints(b.userId); });
-        }
+    // Every OTHER approved payment on this booking. A verdict on one proof
+    // has to be judged against the whole ledger — a booking can be settled
+    // in instalments, and the owner's cash confirmation files a row here too.
+    const otherApproved = payments.filter(
+      (p) => p.bookingId === b.id && p.id !== paymentId && p.paymentStatus === 'approved'
+    );
 
-        // Notification (payment confirmed/rejected, and booking
-        // approved/deposit-received when applicable) now fires server-side
-        // (migration 047, trg_notify_guest_on_payment_update +
-        // trg_notify_guest_on_booking_update) — atomic with these writes.
-      }
+    if (status === 'approved') {
+      // A proof left in the queue after the guest cancelled or the owner
+      // rejected must not bring the booking back to life — those dates have
+      // very likely been resold since. Record the money against the payment
+      // row (already done above) and leave the booking closed; the refund is
+      // a manual decision.
+      if (b.status === 'cancelled' || b.status === 'rejected') return;
+
+      // Compare the SUM of approved payments against the total, not this one
+      // payment. Two approved half-transfers both read as 'paid_deposit'
+      // before, so a fully-settled booking never reached 'paid_full' and kept
+      // showing the owner an outstanding balance.
+      const paidTotal = otherApproved.reduce((s, p) => s + p.amount, 0) + payment.amount;
+      const nextPaymentStatus: Booking['paymentStatus'] = paidTotal >= b.totalPrice ? 'paid_full' : 'paid_deposit';
+
+      setBookings((prev) => prev.map((bk) => (
+        bk.id === b.id
+          ? { ...bk, paymentStatus: nextPaymentStatus, status: 'approved', depositPaid: true }
+          : bk
+      )));
+      updateBookingFields(b.id, {
+        paymentStatus: nextPaymentStatus,
+        status: 'approved',
+        depositPaid: true,
+      }).then(() => { if (currentUser?.id === b.userId) refreshCurrentUserPoints(b.userId); });
+    } else {
+      // Rejecting a later proof must not erase an earlier valid one. The
+      // points trigger (migration 024) derives what was paid from the
+      // booking's payment_status, so writing 'unpaid' here used to claw back
+      // points the guest had legitimately earned on the first payment.
+      if (otherApproved.length > 0) return;
+
+      setBookings((prev) => prev.map((bk) => (
+        bk.id === b.id ? { ...bk, paymentStatus: 'unpaid', depositPaid: false } : bk
+      )));
+      updateBookingFields(b.id, { paymentStatus: 'unpaid', depositPaid: false })
+        .then(() => { if (currentUser?.id === b.userId) refreshCurrentUserPoints(b.userId); });
     }
+
+    // Notification (payment confirmed/rejected, and booking
+    // approved/deposit-received when applicable) now fires server-side
+    // (migration 047, trg_notify_guest_on_payment_update +
+    // trg_notify_guest_on_booking_update) — atomic with these writes.
   };
 
   // --- Admin Operations ---

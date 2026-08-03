@@ -184,6 +184,16 @@ export default function UserBookings({
   autoPayBookingId = null,
   onAutoPayConsumed,
 }: UserBookingsProps) {
+  // What the guest actually owes. The server normalises this on every write
+  // (validate_booking_price: deposit_amount := ROUND(total_price * rate)) and
+  // it is the figure every owner and admin finance screen sums — so the guest
+  // must be quoted THAT number, not one recomputed here. Recomputing meant a
+  // guest was quoted the new rate whenever an admin changed deposit_rate,
+  // while the booking still carried the old one. The multiply is kept only as
+  // a fallback for a row that somehow has no deposit_amount at all.
+  const depositDueFor = (b: Booking) =>
+    b.depositAmount || Math.round(b.totalPrice * settings.depositRate);
+
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
   // Which booking's detail sheet is open. Stored as an id (not the object) so
   // the sheet always renders the freshest booking data from props.
@@ -1544,7 +1554,7 @@ export default function UserBookings({
                   booking={booking}
                   house={bookingHouse}
                   currentUser={currentUser}
-                  amount={Math.round(booking.totalPrice * settings.depositRate)}
+                  amount={depositDueFor(booking)}
                   payees={{
                     ...(ownerPaymentFor('instapay') ? { instapay: { label: 'إنستاباي', value: ownerPaymentFor('instapay')!.value } } : {}),
                     ...(walletPayee ? { vodafone: { label: walletPayee.label, value: walletPayee.value } } : {}),
@@ -1552,7 +1562,7 @@ export default function UserBookings({
                   }}
                   onClose={() => setIsPaying(null)}
                   onSubmit={({ method, proofImage: proofData, reference }) => {
-                    const amount = Math.round(booking.totalPrice * settings.depositRate);
+                    const amount = depositDueFor(booking);
                     // Every method lands as 'pending': no gateway is wired up,
                     // so auto-approving would confirm a booking on unverified
                     // funds. The server-side guard (migration 027) blocks that

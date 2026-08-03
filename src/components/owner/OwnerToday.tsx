@@ -41,7 +41,12 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
   const maintenanceRooms = rooms.filter((r) => r.status === 'maintenance');
 
   const guestsToday = arrivals.reduce((s, b) => s + b.guestsCount, 0);
-  const cashExpected = arrivals.reduce((s, b) => s + Math.max(0, b.totalPrice - b.depositAmount), 0);
+  // depositAmount is what the deposit WOULD be, set on every booking whether
+  // or not it was ever paid — so it only comes off what the owner collects at
+  // the door once depositPaid is true. Without that guard an approved booking
+  // whose deposit never arrived told the owner to collect only the remaining
+  // 85%, and the rest was never recovered.
+  const cashExpected = arrivals.reduce((s, b) => s + Math.max(0, b.totalPrice - (b.depositPaid ? b.depositAmount : 0)), 0);
 
   // Current-month occupancy → a simple pricing nudge.
   const now = new Date();
@@ -122,7 +127,7 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
             className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] rounded-2xl p-2.5">
             <button type="button" onClick={() => onViewBooking?.(b.id)} className="min-w-0 text-right">
               <div className="text-[11px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
-              <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{b.guestsCount} فرد · متبقٍ {Math.max(0, b.totalPrice - b.depositAmount).toLocaleString()} ج.م</div>
+              <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{b.guestsCount} فرد · متبقٍ {Math.max(0, b.totalPrice - (b.depositPaid ? b.depositAmount : 0)).toLocaleString()} ج.م</div>
             </button>
             {b.checkedInAt ? (
               <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-1 shrink-0">وصل ✓</span>
