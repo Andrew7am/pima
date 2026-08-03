@@ -10,6 +10,7 @@ import { arabicNumber } from '../lib/arabic';
 import { tapFeedback } from '../lib/haptics';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice, offersDayUse, computeMealPlan } from '../lib/pricing';
+import { bookingRef } from '../lib/bookingRef';
 import { getCapacityStatus, occupiedEnd } from '../lib/roomOccupancy';
 import { 
   BedDouble, Calendar, Users, 
@@ -1175,8 +1176,10 @@ export default function HouseDetail({
     const result = await onBook(newBooking, pointsToRedeem);
     setSubmitting(false);
     if (result === false) return null;
-    // A short, readable reference rather than the raw row id.
-    return `PM-${bookingId.slice(-5)}`;
+    // The same reference the owner's screens show — see lib/bookingRef. It was
+    // built inline here and nowhere else, so the number the guest reads off
+    // their confirmation could not be looked up by the person they read it to.
+    return bookingRef(bookingId);
   };
 
   // The booking journey is a screen, not a panel: while it is open the place

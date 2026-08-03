@@ -31,6 +31,16 @@
   --color-owner-warning: #F59E0B;
   --color-owner-danger: #EF4444;
   --color-owner-info: #3B82F6;
+  /* The four above are fills — bright enough to sit behind white text on a
+     button, too bright to BE the text on a white card (#F59E0B measures
+     2.2:1). The -ink pair is the same four hues at a readable weight, for
+     when the colour is the glyph rather than the background. Both sets are
+     redefined under .owner-dark, where the roles invert. */
+  --color-owner-success-ink: #047857;
+  --color-owner-warning-ink: #B45309;
+  --color-owner-danger-ink: #B91C1C;
+  --color-owner-info-ink: #1D4ED8;
+  --color-owner-accent-ink: #8A6D28;
 }
 
 body {
@@ -61,6 +71,21 @@ body {
   --color-owner-accent: #D4AF37;
   --color-owner-border: #24324C;
   --color-owner-hover: #1B2942;
+  /* The four semantic colours were left out of this block, so night mode kept
+     the light-surface shades: measured on #14203A they land between 1.2:1 and
+     2.0:1, which is a coloured smudge rather than a signal. One step lighter
+     each — the same hues, chosen to clear 3:1 against the dark surface. */
+  --color-owner-success: #34D399;
+  --color-owner-warning: #FBBF24;
+  --color-owner-danger: #F87171;
+  --color-owner-info: #60A5FA;
+  /* On a dark surface the lighter shade is the readable one, so ink and fill
+     converge here rather than sitting either side of the surface. */
+  --color-owner-success-ink: #34D399;
+  --color-owner-warning-ink: #FBBF24;
+  --color-owner-danger-ink: #F87171;
+  --color-owner-info-ink: #60A5FA;
+  --color-owner-accent-ink: #D4AF37;
   background-color: var(--color-owner-bg);
   color: var(--color-owner-text);
 }

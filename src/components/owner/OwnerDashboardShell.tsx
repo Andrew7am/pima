@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { bookingTypeLabel } from '../../lib/bookingGroups';
 import { categorizeBooking as categorize, sortForOwner } from '../../lib/ownerBookingOrder';
+import { bookingRef, bookingAge, paidPercent } from '../../lib/bookingRef';
+import { paidAmountOf } from '../../lib/cancellationPolicy';
 import { editableHouseFields } from '../../lib/houseEdits';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
@@ -138,6 +140,10 @@ export default function OwnerDashboardShell({
   const [sourceFilter, setSourceFilter] = useState<'all' | 'manual' | 'temporary'>('all');
   const [expandedGroup, setExpandedGroup] = useState<'bookings' | 'rooms' | null>(null);
   const [bookingSearch, setBookingSearch] = useState('');
+  const [bookingSort, setBookingSort] = useState<'priority' | 'newest' | 'oldest' | 'checkin'>('priority');
+  // The source chips used to sit open above the list and cost a line to
+  // everyone, though most owners never change them.
+  const [showBookingFilters, setShowBookingFilters] = useState(false);
   const [showAddBooking, setShowAddBooking] = useState(false);
   const [mbName, setMbName] = useState('');
   const [mbPhone, setMbPhone] = useState('');
@@ -338,15 +344,27 @@ export default function OwnerDashboardShell({
   const bookingMatchesSearch = (b: Booking) => {
     const q = bookingSearch.trim().toLowerCase();
     if (!q) return true;
-    return b.userName.toLowerCase().includes(q) || b.houseName.toLowerCase().includes(q) || b.userPhone.includes(q);
+    // The reference is searchable because it is the number a guest reads down
+    // the phone — «معايا حجز PM-2A8F0». Matched with the prefix stripped too,
+    // so typing just the five characters finds it.
+    const ref = bookingRef(b.id).toLowerCase();
+    return b.userName.toLowerCase().includes(q) || b.houseName.toLowerCase().includes(q)
+      || b.userPhone.includes(q) || ref.includes(q) || ref.replace('pm-', '').includes(q);
   };
-  const filteredOwnerBookings = sortForOwner(
-    (bookingFilter === 'all' || bookingFilter === 'waitlist'
-      ? ownerBookings
-      : ownerBookings.filter((b) => categorizeBooking(b) === bookingFilter)
-    ).filter(bookingMatchesSearch).filter((b) => sourceFilter === 'all' || b.source === sourceFilter),
-    todayStr,
-  );
+  const visibleOwnerBookings = (bookingFilter === 'all' || bookingFilter === 'waitlist'
+    ? ownerBookings
+    : ownerBookings.filter((b) => categorizeBooking(b) === bookingFilter)
+  ).filter(bookingMatchesSearch).filter((b) => sourceFilter === 'all' || b.source === sourceFilter);
+  // «حسب الأولوية» stays the default: it is the order that puts the people
+  // waiting on the owner at the top. The other three are for looking something
+  // up, not for working through the list.
+  const filteredOwnerBookings = bookingSort === 'priority'
+    ? sortForOwner(visibleOwnerBookings, todayStr)
+    : visibleOwnerBookings.slice().sort((a, b) => (
+        bookingSort === 'newest' ? b.createdAt.localeCompare(a.createdAt)
+        : bookingSort === 'oldest' ? a.createdAt.localeCompare(b.createdAt)
+        : a.checkIn.localeCompare(b.checkIn)
+      ));
   const bookingCountByCategory = {
     all: ownerBookings.length,
     new: ownerBookings.filter((b) => categorizeBooking(b) === 'new').length,
@@ -1303,27 +1321,97 @@ export default function OwnerDashboardShell({
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
+            {/* The page never said what it was. A title costs one line and
+                tells you where you landed. */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-[17px] font-black text-[var(--color-owner-text)] leading-tight">الحجوزات</h2>
+                <p className="text-[10px] font-bold text-[var(--color-owner-secondary)] mt-0.5">لوحة تحكم المالك</p>
+              </div>
+              <button
+                id="owner-add-booking-toggle"
+                type="button"
+                onClick={() => setShowAddBooking((v) => !v)}
+                className="flex items-center gap-1.5 bg-[var(--color-owner-text)] hover:opacity-90 text-[var(--color-owner-surface)] text-[11px] font-bold px-3.5 py-2 rounded-xl shrink-0 cursor-pointer transition-opacity"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>حجز جديد</span>
+              </button>
+            </div>
+
+            {/* Five counts across the top. Each one is also the filter it
+                describes — a number you cannot click is a number you then have
+                to go and find. */}
+            <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 lg:grid lg:grid-cols-5 lg:overflow-visible">
+              {([
+                // Theme tokens, not palette shades. A fixed sky-600 is tuned
+                // for a white card and measures 1.8:1 on the owner's dark one;
+                // the tokens carry a value for each mode. The wash behind each
+                // icon is the same colour at 10%, so it takes its lightness
+                // from whatever surface is underneath.
+                { key: 'all' as const, label: 'إجمالي الحجوزات', value: bookingCountByCategory.all, Icon: ClipboardList, tint: 'text-[var(--color-owner-primary)]', bg: 'bg-[var(--color-owner-primary)]/10' },
+                { key: 'pending_payment' as const, label: 'بانتظار الدفع', value: bookingCountByCategory.pending_payment, Icon: Coins, tint: 'text-[var(--color-owner-info-ink)]', bg: 'bg-[var(--color-owner-info)]/10' },
+                { key: 'confirmed' as const, label: 'حجوزات مؤكدة', value: bookingCountByCategory.confirmed, Icon: Check, tint: 'text-[var(--color-owner-success-ink)]', bg: 'bg-[var(--color-owner-success)]/10' },
+                { key: 'new' as const, label: 'طلبات جديدة', value: bookingCountByCategory.new, Icon: Bell, tint: 'text-[var(--color-owner-warning-ink)]', bg: 'bg-[var(--color-owner-warning)]/10' },
+                { key: 'waitlist' as const, label: 'قائمة الانتظار', value: bookingCountByCategory.waitlist, Icon: Users, tint: 'text-[var(--color-owner-accent-ink)]', bg: 'bg-[var(--color-owner-accent)]/10' },
+              ]).map(({ key, label, value, Icon, tint, bg }) => (
+                <button
+                  key={key}
+                  type="button"
+                  id={`owner-booking-stat-${key}`}
+                  onClick={() => setBookingFilter(key)}
+                  className={`shrink-0 w-[112px] lg:w-auto text-right bg-[var(--color-owner-surface)] rounded-2xl border p-2.5 cursor-pointer transition-all ${
+                    bookingFilter === key
+                      ? 'border-[var(--color-owner-primary)] shadow-sm'
+                      : 'border-[var(--color-owner-border)] hover:border-[var(--color-owner-primary)]/40'
+                  }`}
+                >
+                  <span className={`flex items-center justify-center w-7 h-7 rounded-full ${bg} ${tint} mb-1.5`}>
+                    <Icon className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="block text-[18px] font-black text-[var(--color-owner-text)] leading-none">{value}</span>
+                  <span className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mt-1 truncate">{label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Search in the middle, filter on one side, order on the other. */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                id="owner-bookings-filter-toggle"
+                onClick={() => setShowBookingFilters((v) => !v)}
+                className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-2.5 rounded-xl border shrink-0 cursor-pointer transition-colors ${
+                  showBookingFilters || sourceFilter !== 'all'
+                    ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]'
+                    : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'
+                }`}
+              >
+                <Shuffle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">فلترة</span>
+              </button>
+              <div className="relative flex-1 min-w-0">
                 <Search className="w-4 h-4 text-[var(--color-owner-secondary)] absolute right-3 top-1/2 -translate-y-1/2" />
                 <input
                   id="owner-bookings-search"
                   type="text"
                   value={bookingSearch}
                   onChange={(e) => setBookingSearch(e.target.value)}
-                  placeholder="ابحث بالاسم أو رقم الهاتف أو اسم البيت..."
-                  className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl pr-9 pl-3 py-2.5 text-xs text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)]"
+                  placeholder="ابحث بالاسم أو رقم الهاتف أو رقم الحجز..."
+                  className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl pr-9 pl-3 py-2.5 text-[11px] text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)]"
                 />
               </div>
-              <button
-                id="owner-add-booking-toggle"
-                type="button"
-                onClick={() => setShowAddBooking((v) => !v)}
-                className="flex items-center gap-1 bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-[10px] font-bold px-3 py-2 rounded-2xl shrink-0 cursor-pointer"
+              <select
+                id="owner-bookings-sort"
+                value={bookingSort}
+                onChange={(e) => setBookingSort(e.target.value as typeof bookingSort)}
+                className="shrink-0 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-2 py-2.5 text-[10px] font-bold text-[var(--color-owner-text)] outline-none cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>إضافة حجز</span>
-              </button>
+                <option value="priority">حسب الأولوية</option>
+                <option value="newest">الأحدث أولاً</option>
+                <option value="oldest">الأقدم أولاً</option>
+                <option value="checkin">حسب تاريخ الوصول</option>
+              </select>
             </div>
 
             {showAddBooking && (
@@ -1397,43 +1485,52 @@ export default function OwnerDashboardShell({
               </div>
             )}
 
-            <div className="flex items-center gap-1.5 text-[10px] font-bold">
-              <span className="text-[var(--color-owner-secondary)] shrink-0">مصدر الحجز:</span>
-              {([
-                { key: 'all' as const, label: 'الكل' },
-                { key: 'manual' as const, label: 'يدوي 📞' },
-                { key: 'temporary' as const, label: 'مؤقت ⏳' },
-              ]).map((s) => (
-                <button key={s.key} type="button" onClick={() => setSourceFilter(s.key)}
-                  className={`px-2 py-1 rounded-xl transition-all cursor-pointer ${
-                    sourceFilter === s.key ? 'bg-[var(--color-owner-primary)] text-white' : 'bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[var(--color-owner-secondary)]'
-                  }`}
-                >{s.label}</button>
-              ))}
-            </div>
+            {showBookingFilters && (
+              <div className="flex items-center gap-1.5 text-[10px] font-bold bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-2.5 py-2">
+                <span className="text-[var(--color-owner-secondary)] shrink-0">مصدر الحجز:</span>
+                {([
+                  { key: 'all' as const, label: 'الكل' },
+                  { key: 'manual' as const, label: 'يدوي 📞' },
+                  { key: 'temporary' as const, label: 'مؤقت ⏳' },
+                ]).map((s) => (
+                  <button key={s.key} type="button" onClick={() => setSourceFilter(s.key)}
+                    className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                      sourceFilter === s.key ? 'bg-[var(--color-owner-primary)] text-white' : 'bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-secondary)]'
+                    }`}
+                  >{s.label}</button>
+                ))}
+              </div>
+            )}
 
-            <div className="flex flex-wrap gap-1.5 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] p-1.5 rounded-2xl">
+            {/* Text tabs with an underline rather than nine coloured pills —
+                the pills wrapped to three rows on a phone and every one of
+                them shouted. */}
+            <div className="flex gap-4 overflow-x-auto border-b border-[var(--color-owner-border)] -mx-1 px-1">
               {([
-                { key: 'all', label: 'الكل', color: 'bg-[var(--color-owner-primary)]' },
-                { key: 'new', label: 'طلبات جديدة', color: 'bg-amber-600' },
-                { key: 'pending_payment', label: 'بانتظار الدفع', color: 'bg-[var(--color-owner-info)]' },
-                { key: 'confirmed', label: 'مؤكدة', color: 'bg-emerald-600' },
-                { key: 'arrivals_today', label: 'وصول اليوم', color: 'bg-sky-600' },
-                { key: 'departures_today', label: 'مغادرة اليوم', color: 'bg-slate-600' },
-                { key: 'completed', label: 'مكتملة', color: 'bg-slate-500' },
-                { key: 'cancelled', label: 'ملغاة', color: 'bg-rose-500' },
-                { key: 'waitlist', label: 'قائمة الانتظار', color: 'bg-purple-600' },
+                { key: 'all', label: 'الكل' },
+                { key: 'new', label: 'جديدة' },
+                { key: 'pending_payment', label: 'بانتظار الدفع' },
+                { key: 'confirmed', label: 'مؤكدة' },
+                { key: 'arrivals_today', label: 'وصول اليوم' },
+                { key: 'departures_today', label: 'مغادرة اليوم' },
+                { key: 'completed', label: 'مكتملة' },
+                { key: 'cancelled', label: 'ملغاة' },
+                { key: 'waitlist', label: 'قائمة الانتظار' },
               ] as const).map((f) => {
                 const isSel = bookingFilter === f.key;
                 const count = bookingCountByCategory[f.key];
                 return (
                   <button key={f.key} id={`owner-booking-filter-${f.key}`} onClick={() => setBookingFilter(f.key)}
-                    className={`flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
-                      isSel ? `${f.color} text-white shadow-sm` : 'bg-[var(--color-owner-bg)] text-[var(--color-owner-secondary)] hover:bg-[var(--color-owner-hover)]'
+                    className={`shrink-0 flex items-center gap-1 text-[11px] font-bold pb-2 -mb-px border-b-2 transition-colors cursor-pointer ${
+                      isSel
+                        ? 'border-[var(--color-owner-primary)] text-[var(--color-owner-text)]'
+                        : 'border-transparent text-[var(--color-owner-secondary)] hover:text-[var(--color-owner-text)]'
                     }`}
                   >
                     <span>{f.label}</span>
-                    <span className={`text-[9px] px-1.5 rounded-full ${isSel ? 'bg-white/25' : 'bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)]'}`}>{count}</span>
+                    <span className={`text-[9px] font-black px-1.5 py-px rounded-full ${
+                      isSel ? 'bg-[var(--color-owner-primary)] text-white' : 'bg-[var(--color-owner-bg)] text-[var(--color-owner-secondary)]'
+                    }`}>{count}</span>
                   </button>
                 );
               })}
@@ -1487,7 +1584,12 @@ export default function OwnerDashboardShell({
                     return { label: 'مؤكد', cls: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
                   })();
                   const depositAmt = booking.depositAmount || Math.round(booking.totalPrice * settings.depositRate);
-                  const outstanding = booking.totalPrice - (booking.depositPaid ? depositAmt : 0);
+                  // paidAmountOf is what the refund math uses; the legacy
+                  // depositPaid flag is honoured too so a row written before
+                  // paymentStatus existed does not read back as nothing paid.
+                  const collected = Math.max(paidAmountOf(booking), booking.depositPaid ? depositAmt : 0);
+                  const outstanding = Math.max(0, booking.totalPrice - collected);
+                  const pct = paidPercent(booking.totalPrice, collected);
                   const whatsappLink = `https://wa.me/2${booking.userPhone.replace(/^0/, '')}`;
                   // A stripe down the leading edge, so the list reads before
                   // it is read: the sort already puts urgent work on top, and
@@ -1498,7 +1600,7 @@ export default function OwnerDashboardShell({
                     : '#22C55E';
                   const nights = Math.max(0, Math.round(
                     (new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86400000));
-                  const shortDay = (iso: string) => new Date(iso).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
+                  const longDay = (iso: string) => new Date(iso).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' });
                   const nightsText = nights === 0 ? 'يوم واحد'
                     : `${nights} ${nights === 1 ? 'ليلة' : nights === 2 ? 'ليلتان' : nights <= 10 ? 'ليالٍ' : 'ليلة'}`;
                   const awaitingProof = booking.paymentStatus === 'pending_verification';
@@ -1508,53 +1610,103 @@ export default function OwnerDashboardShell({
                       key={booking.id}
                       onClick={() => setSelectedBookingId(booking.id)}
                       style={{ borderInlineStartColor: accent, borderInlineStartWidth: 4 }}
-                      className="w-full text-right bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] rounded-2xl border border-[var(--color-owner-border)] shadow-sm p-3.5 space-y-2.5 transition-colors cursor-pointer"
+                      className="w-full text-right bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] rounded-2xl border border-[var(--color-owner-border)] shadow-sm p-3 space-y-2 transition-colors cursor-pointer"
                     >
+                      {/* The reference and how long they have been waiting.
+                          Same PM- number the guest was given, so a phone call
+                          starts from one string both sides can see. */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-mono text-[10px] font-bold text-[var(--color-owner-secondary)] bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-md shrink-0" dir="ltr">
+                            {bookingRef(booking.id)}
+                          </span>
+                          <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] truncate">{bookingAge(booking.createdAt)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {awaitingProof && (
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border bg-sky-50 text-sky-800 border-sky-200">⏳ إيصال</span>
+                          )}
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusBadge.cls}`}>{statusBadge.label}</span>
+                        </div>
+                      </div>
+
                       {/* The PERSON leads. The house name used to be the
                           heading and the guest's name the smallest line on the
                           card — but an owner knows which house is theirs, and
                           in a one-house account every card shouted the same
                           word. Who is coming is the news. */}
-                      <div className="flex justify-between items-start gap-2">
-                        <div className="min-w-0">
-                          <h4 className="text-[12px] font-black text-[var(--color-owner-text)] truncate">{booking.userName}</h4>
-                          <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold truncate mt-0.5 flex items-center gap-1.5">
-                            <span className="truncate">{booking.organizationName || booking.houseName}</span>
-                            {booking.source === 'manual' && <span className="shrink-0 bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي</span>}
-                            {booking.source === 'temporary' && <span className="shrink-0 bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded-full">مؤقت</span>}
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-1 shrink-0">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusBadge.cls}`}>{statusBadge.label}</span>
-                          {awaitingProof && (
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border bg-sky-50 text-sky-800 border-sky-200">⏳ إيصال للمراجعة</span>
-                          )}
+                      <div className="min-w-0">
+                        <h4 className="text-[14px] font-black text-[var(--color-owner-text)] truncate leading-snug">{booking.userName}</h4>
+                        <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold truncate mt-0.5 flex items-center gap-1.5">
+                          <Phone className="w-3 h-3 shrink-0" />
+                          <span dir="ltr">{booking.userPhone}</span>
+                          <span className="truncate">· {booking.organizationName || booking.houseName}</span>
+                          {booking.source === 'manual' && <span className="shrink-0 bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي</span>}
+                          {booking.source === 'temporary' && <span className="shrink-0 bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded-full">مؤقت</span>}
                         </div>
                       </div>
 
-                      {/* Dates in words and the nights spelled out — the card
-                          printed raw ISO and left the arithmetic to the reader. */}
-                      <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-[10px] font-bold text-[var(--color-owner-text)]">
-                        <Calendar className="w-3.5 h-3.5 text-[var(--color-owner-secondary)] shrink-0" />
-                        <span>{shortDay(booking.checkIn)} ← {shortDay(booking.checkOut)}</span>
-                        <span className="text-[var(--color-owner-secondary)]">· {nightsText}</span>
-                        <span className="text-[var(--color-owner-secondary)]">· {booking.guestsCount} فرد</span>
+                      {/* Arrival and departure side by side with the arrow
+                          between them, so the stay reads as a span rather than
+                          two dates the owner has to subtract. */}
+                      <div className="flex items-center gap-2 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-3 py-2">
+                        <span className="leading-tight text-center flex-1 min-w-0">
+                          <span className="block text-[11px] font-black text-[var(--color-owner-text)] truncate">{longDay(booking.checkIn)}</span>
+                          <span className="block text-[9px] font-bold text-[var(--color-owner-secondary)]">وصول</span>
+                        </span>
+                        <span className="flex flex-col items-center shrink-0 px-1">
+                          <span className="text-[var(--color-owner-secondary)] text-[11px]">←</span>
+                          <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] whitespace-nowrap">{nightsText}</span>
+                        </span>
+                        <span className="leading-tight text-center flex-1 min-w-0">
+                          <span className="block text-[11px] font-black text-[var(--color-owner-text)] truncate">{longDay(booking.checkOut)}</span>
+                          <span className="block text-[9px] font-bold text-[var(--color-owner-secondary)]">مغادرة</span>
+                        </span>
+                        <span className="flex items-center gap-1 shrink-0 border-r border-[var(--color-owner-border)] pr-2.5 mr-0.5">
+                          <Users className="w-3.5 h-3.5 text-[var(--color-owner-secondary)]" />
+                          <span className="text-[11px] font-black text-[var(--color-owner-text)]">{booking.guestsCount}</span>
+                        </span>
                       </div>
 
                       {/* The money, always — not only when something is owed.
-                          «كام؟» is the second question after «مين؟». */}
-                      <div className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-3 py-2">
-                        <span className="leading-tight">
-                          <span className="block text-[9px] font-bold text-[var(--color-owner-secondary)]">قيمة الحجز</span>
-                          <span className="block text-[12px] font-black text-[var(--color-owner-text)]">{booking.totalPrice.toLocaleString()} ج.م</span>
-                        </span>
-                        <span className="leading-tight text-left">
-                          <span className="block text-[9px] font-bold text-[var(--color-owner-secondary)]">{outstanding > 0 ? 'المتبقي' : 'مسدَّد بالكامل'}</span>
-                          <span className={`block text-[12px] font-black ${outstanding > 0 ? 'text-[var(--color-owner-warning)]' : 'text-emerald-600'}`}>
-                            {outstanding > 0 ? `${outstanding.toLocaleString()} ج.م` : '✓'}
+                          «كام؟» is the second question after «مين؟», and the bar
+                          answers «وصل منها كام؟» without reading two numbers.
+
+                          But only where a balance actually exists. Nothing is
+                          due on a request the owner has not accepted yet, and
+                          nothing is due on a cancelled one — printing «المتبقي
+                          7,560» against either says the guest owes money they
+                          were never asked for. Those two read as a value. */}
+                      {booking.status === 'pending' || booking.status === 'cancelled' || booking.status === 'rejected' ? (
+                        <div className="flex items-baseline justify-between gap-2 text-[10px] font-bold">
+                          <span className="text-[var(--color-owner-secondary)]">
+                            قيمة الحجز <span className="font-black text-[var(--color-owner-text)]">{booking.totalPrice.toLocaleString()} ج.م</span>
                           </span>
-                        </span>
-                      </div>
+                          <span className="shrink-0 text-[var(--color-owner-secondary)]">
+                            {booking.status === 'pending' ? 'لم يُطلب دفع بعد'
+                              : collected > 0 ? `حُصِّل ${collected.toLocaleString()} ج.م` : 'لم يُدفع شيء'}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5">
+                          <div className="flex items-baseline justify-between gap-2 text-[10px] font-bold">
+                            <span className={outstanding > 0 ? 'text-[var(--color-owner-text)]' : 'text-emerald-700'}>
+                              {outstanding > 0 ? (
+                                <>المتبقي <span className="font-black text-[var(--color-owner-warning-ink)]">{outstanding.toLocaleString()} ج.م</span> من {booking.totalPrice.toLocaleString()} ج.م</>
+                              ) : (
+                                <>مسدَّد بالكامل · {booking.totalPrice.toLocaleString()} ج.م ✓</>
+                              )}
+                            </span>
+                            <span className="shrink-0 font-black text-[var(--color-owner-secondary)]">{pct}%</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${pct >= 100 ? 'bg-emerald-500' : 'bg-[var(--color-owner-info)]'}`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
 
                       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                         <a href={`tel:${booking.userPhone}`} className="flex-1 flex items-center justify-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] px-2.5 py-1.5 rounded-xl text-[10px] font-bold cursor-pointer">
