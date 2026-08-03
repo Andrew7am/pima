@@ -7,6 +7,7 @@ import {
   MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun, Moon, Download, QrCode,
 } from 'lucide-react';
 import { bookingTypeLabel } from '../../lib/bookingGroups';
+import { categorizeBooking as categorize, sortForOwner } from '../../lib/ownerBookingOrder';
 import { editableHouseFields } from '../../lib/houseEdits';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
@@ -331,24 +332,21 @@ export default function OwnerDashboardShell({
 
   // Categories match the refined mockup's Bookings tabs. Data-backed by existing
   // fields only — no "expenses"-style fabricated categories.
-  const categorizeBooking = (b: Booking): 'new' | 'pending_payment' | 'confirmed' | 'arrivals_today' | 'departures_today' | 'completed' | 'cancelled' => {
-    if (b.status === 'pending') return 'new';
-    if (b.status === 'rejected' || b.status === 'cancelled') return 'cancelled';
-    if (b.status === 'completed') return 'completed';
-    if (b.status === 'approved' && b.checkIn === todayStr) return 'arrivals_today';
-    if (b.status === 'approved' && b.checkOut === todayStr) return 'departures_today';
-    if (b.status === 'approved' && !b.depositPaid) return 'pending_payment';
-    return 'confirmed';
-  };
+  // categorizeBooking and the ordering live in lib/ownerBookingOrder so the
+  // rule that decides what an owner sees first can be tested.
+  const categorizeBooking = (b: Booking) => categorize(b, todayStr);
   const bookingMatchesSearch = (b: Booking) => {
     const q = bookingSearch.trim().toLowerCase();
     if (!q) return true;
     return b.userName.toLowerCase().includes(q) || b.houseName.toLowerCase().includes(q) || b.userPhone.includes(q);
   };
-  const filteredOwnerBookings = (bookingFilter === 'all' || bookingFilter === 'waitlist'
-    ? ownerBookings
-    : ownerBookings.filter((b) => categorizeBooking(b) === bookingFilter)
-  ).filter(bookingMatchesSearch).filter((b) => sourceFilter === 'all' || b.source === sourceFilter);
+  const filteredOwnerBookings = sortForOwner(
+    (bookingFilter === 'all' || bookingFilter === 'waitlist'
+      ? ownerBookings
+      : ownerBookings.filter((b) => categorizeBooking(b) === bookingFilter)
+    ).filter(bookingMatchesSearch).filter((b) => sourceFilter === 'all' || b.source === sourceFilter),
+    todayStr,
+  );
   const bookingCountByCategory = {
     all: ownerBookings.length,
     new: ownerBookings.filter((b) => categorizeBooking(b) === 'new').length,
@@ -1672,37 +1670,29 @@ export default function OwnerDashboardShell({
                   )}
                 </div>
               )}
-              <div className="grid grid-cols-3 gap-2">
+              {/* Rates only. The room and bed counts used to share this grid
+                  with them — three columns holding a nightly price, a room
+                  count, a full-width day price and then a bed count, so the
+                  layout read as two half-finished rows and an owner filling
+                  it in crossed from money to capacity and back. */}
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">{propertyType === 'conference' ? 'سعر الفرد لليلة (ج.م):' : 'سعر تأمين الحجز مسبقاً (ج.م):'}</label>
                   <input id="add-house-price" type="number" required min={0} value={propertyType === 'conference' ? pricePerNight : 200} disabled={propertyType !== 'conference'}
                     onChange={(e) => setPricePerNight(parseInt(e.target.value) || 150)} onFocus={(e) => e.target.select()}
-                    className="w-full bg-[var(--color-owner-surface)] disabled:bg-gray-100 border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                    className="w-full bg-[var(--color-owner-surface)] disabled:opacity-60 border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">عدد الغرف الإجمالي:</label>
-                  <input id="add-house-rooms" type="number" required min={1} value={roomsCount} onChange={(e) => setRoomsCount(parseInt(e.target.value) || 10)} onFocus={(e) => e.target.select()}
-                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
-                </div>
-                {/* Day use. Optional and blank by default: a house that does
-                    not host «يوم روحي» leaves it empty and Pima never offers
-                    one. Conference houses only — student and staff housing is
-                    rented by the month. */}
+                {/* Beside the nightly rate, where the two rates belong. */}
                 {propertyType === 'conference' && (
-                  <div className="col-span-3">
-                    <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">سعر الفرد لليوم الواحد بدون مبيت — «يوم روحي» (اختياري):</label>
-                    <input id="add-house-day-price" type="number" min={0} placeholder="اتركه فارغاً لو البيت لا يستقبل حجوزات يومية"
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">سعر اليوم بدون مبيت (اختياري):</label>
+                    <input id="add-house-day-price" type="number" min={0} placeholder="اتركه فارغاً"
                       value={dayUsePrice === null ? '' : dayUsePrice}
                       onChange={(e) => setDayUsePrice(e.target.value === '' ? null : (parseInt(e.target.value) || 0))}
                       onFocus={(e) => e.target.select()}
-                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] placeholder:text-[10px] focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                   </div>
                 )}
-                <div>
-                  <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">عدد الأسرة الكلي:</label>
-                  <input id="add-house-beds" type="number" required min={1} value={bedsCount} onChange={(e) => setBedsCount(parseInt(e.target.value) || 30)} onFocus={(e) => e.target.select()}
-                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
-                </div>
               </div>
 
               {/* Seasonal rates & offers — saved instantly (owner-direct,
@@ -1765,6 +1755,28 @@ export default function OwnerDashboardShell({
                   </div>
                 );
               })()}
+            </div>
+
+            {/* Capacity — its own section now. Rooms and beds were inside
+                «السعر», which is where an owner looking for them would never
+                think to look, and they are the two numbers every other screen
+                in Pima depends on: the booking capacity trigger, the room
+                manager, the availability search. */}
+            <div className="space-y-2 pt-3 border-t border-[var(--color-owner-border)]">
+              <div className="flex items-center gap-1.5"><BedDouble className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">السعة</span></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">عدد الغرف الإجمالي:</label>
+                  <input id="add-house-rooms" type="number" required min={1} value={roomsCount} onChange={(e) => setRoomsCount(parseInt(e.target.value) || 10)} onFocus={(e) => e.target.select()}
+                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">عدد الأسرة الكلي:</label>
+                  <input id="add-house-beds" type="number" required min={1} value={bedsCount} onChange={(e) => setBedsCount(parseInt(e.target.value) || 30)} onFocus={(e) => e.target.select()}
+                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                </div>
+              </div>
+              <p className="text-[9.5px] font-medium text-[var(--color-owner-secondary)]">عدد الأسرّة هو الحد الأقصى للحجز في أي تاريخ — بيمنع البيع الزائد تلقائياً.</p>
             </div>
 
             {/* 3. Facilities — suitability + activities + services checklist + conference halls */}
