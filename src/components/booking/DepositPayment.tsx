@@ -156,7 +156,11 @@ export default function DepositPayment({
     setStep(3);
   };
 
-  const Header = ({ showStep }: { showStep?: boolean }) => (
+  // A render function, deliberately NOT a component. Declaring a component
+  // inside the render body makes React see a brand-new type on every render and
+  // remount the whole header — so the close button becomes a fresh DOM node
+  // mid-interaction and a click already in flight lands on the detached one.
+  const renderHeader = (showStep?: boolean) => (
     <div className="shrink-0 px-4 pt-4 pb-3 flex items-center gap-2">
       {step === 1 ? (
         <button type="button" onClick={() => { tapFeedback(); onClose(); }} aria-label="رجوع"
@@ -192,7 +196,7 @@ export default function DepositPayment({
 
       <div className="relative w-full sm:max-w-md h-[96dvh] sm:h-auto sm:max-h-[94dvh] bg-[#FBF9F4] rounded-t-[28px] sm:rounded-[28px] sm:mb-6 flex flex-col shadow-[0_-8px_40px_rgba(0,0,0,0.2)] animate-in slide-in-from-bottom duration-300 ease-[cubic-bezier(0.33,1,0.68,1)]">
         <span aria-hidden="true" className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-[#DED6C4]" />
-        <Header showStep={step !== 3} />
+        {renderHeader(step !== 3)}
 
         {/* ── Step one: what is owed, and how it will be paid ── */}
         {step === 1 && (

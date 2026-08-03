@@ -33,7 +33,11 @@ export default function SelfRegisterScreen({ bookingId }: { bookingId: string })
     else setError(res.error || 'تعذّر التسجيل.');
   };
 
-  const Shell = ({ children }: { children: React.ReactNode }) => (
+  // A render function, deliberately NOT a component. Declared inside the render
+  // body, a component is a new type on every render, so React remounted this
+  // whole subtree — including the name field, which lost focus after every
+  // single character typed.
+  const renderShell = (children: React.ReactNode) => (
     <div dir="rtl" className="min-h-dvh bg-[#FAF8F5] flex flex-col items-center justify-center p-5 text-right">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-5">
@@ -46,12 +50,12 @@ export default function SelfRegisterScreen({ bookingId }: { bookingId: string })
   );
 
   if (loading) {
-    return <Shell><div className="flex flex-col items-center gap-3 py-16 text-[#8A8A70]"><Loader2 className="w-7 h-7 animate-spin" /><span className="text-xs font-bold">جارٍ فتح الدعوة…</span></div></Shell>;
+    return renderShell(<div className="flex flex-col items-center gap-3 py-16 text-[#8A8A70]"><Loader2 className="w-7 h-7 animate-spin" /><span className="text-xs font-bold">جارٍ فتح الدعوة…</span></div>);
   }
 
   if (!info || (info.status !== 'approved' && !done)) {
-    return (
-      <Shell>
+    return renderShell(
+      <>
         <div className="bg-white rounded-3xl p-7 border border-[#D6D6C2] text-center space-y-3 shadow-sm">
           <h1 className="text-sm font-black text-[#4A4A3A]">الرابط غير متاح</h1>
           <p className="text-[11px] text-[#8A8A70] leading-relaxed">
@@ -59,13 +63,13 @@ export default function SelfRegisterScreen({ bookingId }: { bookingId: string })
           </p>
           <button onClick={goHome} className="text-[11px] font-bold text-[#0A2342] underline cursor-pointer">الذهاب إلى بيما</button>
         </div>
-      </Shell>
+      </>
     );
   }
 
   if (done) {
-    return (
-      <Shell>
+    return renderShell(
+      <>
         <div className="bg-white rounded-3xl p-7 border border-[#D6D6C2] text-center space-y-3 shadow-sm animate-in fade-in zoom-in-95 duration-300">
           <div className="mx-auto w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center">
             <PartyPopper className="w-7 h-7 text-emerald-600" />
@@ -78,14 +82,14 @@ export default function SelfRegisterScreen({ bookingId }: { bookingId: string })
             <CheckCircle2 className="w-3.5 h-3.5" /> سُجِّل {info.registeredCount} من {info.guestsCount}
           </div>
         </div>
-      </Shell>
+      </>
     );
   }
 
   const remaining = Math.max(0, info.guestsCount - info.registeredCount);
 
-  return (
-    <Shell>
+  return renderShell(
+    <>
       <div className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden">
         <div className="bg-gradient-to-br from-[#0A2342] to-[#123E75] text-white p-5 space-y-2">
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#C5A059]"><UserPlus className="w-3.5 h-3.5" /> دعوة انضمام لخلوة</div>
@@ -142,6 +146,6 @@ export default function SelfRegisterScreen({ bookingId }: { bookingId: string })
           </button>
         </div>
       </div>
-    </Shell>
+    </>
   );
 }
