@@ -1025,33 +1025,74 @@ export default function OwnerDashboardShell({
               return (
                 <div id={`owner-booking-detail-${booking.id}`} className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] shadow-sm p-4 space-y-3 text-right">
                   <div>
-                    <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold flex items-center gap-1.5">
+                    {/* WHO. The owner had a name and a phone number and
+                        nothing else: no address to send a confirmation to, and
+                        no idea when the request arrived — which is the whole of
+                        "how long has this person been waiting". */}
+                    <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold flex items-center gap-1.5 flex-wrap">
                       الحساب: {booking.userName}
                       {booking.source === 'manual' && <span className="text-[9px] font-bold bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي 📞</span>}
                       {booking.source === 'temporary' && <span className="text-[9px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded-full">مؤقت ⏳</span>}
+                      {booking.isLargeConferenceQuote && <span className="text-[9px] font-bold bg-[#0A2342] text-[#C8A45D] px-1.5 py-0.5 rounded-full">طلب عرض سعر</span>}
                     </span>
                     <h4 className="text-sm font-black text-[var(--color-owner-text)] mt-0.5">{booking.houseName}</h4>
-                    <div className="text-[10px] text-[var(--color-owner-secondary)] font-medium">
-                      {booking.organizationName && <span>{booking.organizationName} • </span>}رقم الهاتف: {booking.userPhone}
-                    </div>
                   </div>
+
+                  {/* Contact — tappable, because an owner reading this on a
+                      phone wants to call or write, not transcribe a string. */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <a href={`tel:${booking.userPhone}`} className="flex items-center gap-2 bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] rounded-xl px-3 py-2">
+                      <Phone className="w-3.5 h-3.5 text-[var(--color-owner-primary)] shrink-0" />
+                      <span className="min-w-0">
+                        <span className="block text-[9px] font-bold text-[var(--color-owner-secondary)]">الهاتف</span>
+                        <span dir="ltr" className="block text-[11px] font-black text-[var(--color-owner-text)] truncate text-right">{booking.userPhone}</span>
+                      </span>
+                    </a>
+                    {booking.userEmail && (
+                      <a href={`mailto:${booking.userEmail}`} className="flex items-center gap-2 bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] rounded-xl px-3 py-2">
+                        <Mail className="w-3.5 h-3.5 text-[var(--color-owner-primary)] shrink-0" />
+                        <span className="min-w-0">
+                          <span className="block text-[9px] font-bold text-[var(--color-owner-secondary)]">البريد</span>
+                          <span dir="ltr" className="block text-[11px] font-black text-[var(--color-owner-text)] truncate text-right">{booking.userEmail}</span>
+                        </span>
+                      </a>
+                    )}
+                  </div>
+
+                  {(booking.organizationName || booking.conferenceDetails?.diocese) && (
+                    <div className="flex flex-wrap gap-1.5 text-[9px] font-bold">
+                      {booking.organizationName && <span className="bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] px-2 py-1 rounded-full">{booking.organizationName}</span>}
+                      {booking.conferenceDetails?.diocese && <span className="bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] px-2 py-1 rounded-full">إيبارشية {booking.conferenceDetails.diocese}</span>}
+                    </div>
+                  )}
+
                   <div className="bg-[var(--color-owner-hover)] rounded-2xl p-3 grid grid-cols-2 gap-2 text-[10px] text-[var(--color-owner-text)] font-medium border border-[var(--color-owner-border)]">
                     <div>تاريخ الوصول: <strong>{booking.checkIn}</strong></div>
                     <div>تاريخ المغادرة: <strong>{booking.checkOut}</strong></div>
                     <div>عدد الأفراد: <strong>{booking.guestsCount} فرد</strong></div>
                     <div>قيمة الحجز: <strong className="text-[var(--color-owner-primary)] font-extrabold">{booking.totalPrice.toLocaleString()} ج.م</strong></div>
-                    {/* Whole width and last: forty ثانوي and forty خدام are
-                        not the same request, and this is what the owner is
-                        deciding on. */}
-                    <div className="col-span-2">نوع الحجز: <strong>{bookingTypeLabel(booking)}</strong></div>
+                    {/* Forty ثانوي and forty خدام are not the same request. */}
+                    <div>نوع الحجز: <strong>{bookingTypeLabel(booking)}</strong></div>
+                    <div>وصل الطلب: <strong>{new Date(booking.createdAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' })}</strong></div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[10px]">
-                    <div className={`p-2 rounded-xl border ${booking.depositPaid ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
-                      <div className="font-bold text-[9px] mb-0.5" style={{ color: booking.depositPaid ? '#065f46' : '#92400e' }}>
-                        {booking.depositPaid ? '✓ العربون المستلم' : 'العربون (لم يُستلم)'}
-                      </div>
-                      <div className="font-extrabold" style={{ color: booking.depositPaid ? '#065f46' : '#92400e' }}>{depositAmt.toLocaleString()} ج.م</div>
-                    </div>
+                    {(() => {
+                      // Three states, not two. «قيد المراجعة» is the one the
+                      // owner has to act on and the one the old boolean hid.
+                      const awaiting = booking.paymentStatus === 'pending_verification';
+                      const paid = booking.depositPaid;
+                      const tone = awaiting
+                        ? { box: 'bg-sky-50 border-sky-200', ink: '#075985', label: '⏳ إيصال في انتظار مراجعتك' }
+                        : paid
+                          ? { box: 'bg-emerald-50 border-emerald-200', ink: '#065f46', label: '✓ العربون المستلم' }
+                          : { box: 'bg-amber-50 border-amber-200', ink: '#92400e', label: 'العربون (لم يُستلم)' };
+                      return (
+                        <div className={`p-2 rounded-xl border ${tone.box}`}>
+                          <div className="font-bold text-[9px] mb-0.5" style={{ color: tone.ink }}>{tone.label}</div>
+                          <div className="font-extrabold" style={{ color: tone.ink }}>{depositAmt.toLocaleString()} ج.م</div>
+                        </div>
+                      );
+                    })()}
                     <div className="p-2 rounded-xl border bg-slate-50 border-slate-200">
                       <div className="text-slate-700 font-bold text-[9px] mb-0.5">المبلغ المتبقي</div>
                       <div className="text-slate-800 font-extrabold">{bookingRemaining.toLocaleString()} ج.م</div>
