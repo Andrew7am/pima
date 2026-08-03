@@ -3,28 +3,24 @@
 // STATUS: template — wire up the secrets and TEST on a real device before relying
 // on it. It is not (and cannot be) verified from the web repo.
 //
-// ⚠️ SECURITY — MUST BE FIXED BEFORE THIS IS DEPLOYED TO PRODUCTION.
-//
-// This handler takes `userId` from the request body and pushes to that user's
-// devices without ever checking that the caller is entitled to. Anyone who can
-// reach the function can send a notification that appears to come from Pima to
-// any user of the platform — a ready-made phishing channel.
-//
-// It is not exploitable today only because the function has never been
-// deployed (blocked on the Firebase project + google-services.json). Deploying
-// it as-is opens the hole.
-//
-// The fix is the guard `send-email` already uses — see
-// supabase/functions/send-email/index.ts: generate a WEBHOOK_SECRET, require it
-// on an `x-webhook-secret` header (or a service-role bearer token), and return
-// 403 otherwise. Deliberately deferred during the 2026-07-28 security audit
-// because push is not live; do not deploy without closing it.
+// SECURITY: the caller is authenticated by a shared secret before anything is
+// read from the body — see the guard at the top of the handler. Without it this
+// endpoint took `userId` from the request and pushed to that user's devices,
+// which let anyone who could reach it put a notification carrying Pima's name
+// on any user's lock screen.
 //
 // Setup:
 //   supabase secrets set FCM_SERVICE_ACCOUNT="$(cat service-account.json)"
-//   supabase functions deploy send-push
-// Call it (from a DB trigger via pg_net, or the service role):
-//   POST { userId, title, body, data? }  with the service-role key.
+//   supabase functions deploy send-push --no-verify-jwt
+// A Database Webhook cannot present a user JWT, hence --no-verify-jwt; the
+// shared secret below is what actually authenticates the caller, so the
+// function must never be deployed without WEBHOOK_SECRET (or
+// PUSH_WEBHOOK_SECRET) set — with neither, every request is refused.
+//
+// Call it from a Database Webhook on notifications INSERT, with the header
+//   x-webhook-secret: <the secret>
+// or directly:
+//   POST { userId, title, body, data? }  with that same header.
 //
 // It reads every device_tokens row for the user (service role bypasses RLS),
 // mints a short-lived Google OAuth token from the Firebase service account, and
@@ -36,6 +32,13 @@ import { GoogleAuth } from 'npm:google-auth-library@9';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const SERVICE_ACCOUNT = JSON.parse(Deno.env.get('FCM_SERVICE_ACCOUNT') ?? '{}');
+
+// Falls back to the secret send-email already uses, so push works the moment
+// it is deployed with nothing new to configure. Set PUSH_WEBHOOK_SECRET to give
+// the two channels separate credentials — then a leak of one does not open the
+// other, and either can be rotated on its own.
+const WEBHOOK_SECRET =
+  (Deno.env.get('PUSH_WEBHOOK_SECRET') ?? Deno.env.get('WEBHOOK_SECRET') ?? '').trim();
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
@@ -51,6 +54,26 @@ async function fcmAccessToken(): Promise<string> {
 
 Deno.serve(async (req) => {
   try {
+    // Only the database webhook may invoke this. Without the check, anyone
+    // holding the publishable anon key (it ships in the web bundle by design)
+    // could POST an arbitrary userId/title/body and put a notification carrying
+    // Pima's name on any user's lock screen — a ready-made phishing channel
+    // ("your booking is about to be cancelled, pay here").
+    //
+    // Same shape as send-email: a dedicated shared secret is the primary
+    // credential, because Supabase now issues secret keys in the `sb_secret_…`
+    // format while SUPABASE_SERVICE_ROLE_KEY is still injected as the legacy
+    // JWT, so comparing those two never matches. The service-role comparison
+    // stays as a fallback for a legacy-key webhook.
+    const provided = (req.headers.get('x-webhook-secret') ?? '').trim();
+    const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+    const authorised =
+      (WEBHOOK_SECRET !== '' && provided === WEBHOOK_SECRET) ||
+      (SERVICE_ROLE !== '' && bearer === SERVICE_ROLE);
+    if (!authorised) {
+      return new Response('forbidden', { status: 403 });
+    }
+
     const payload = await req.json();
     // Accept both a direct call ({ userId, title, body, data }) and a Supabase
     // Database Webhook on notifications INSERT ({ type, record: {...row} }), so
