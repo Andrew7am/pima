@@ -12,6 +12,24 @@ function rangesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: strin
   return aStart < bEnd && bStart < aEnd;
 }
 
+/**
+ * The exclusive end of the range a booking actually occupies.
+ *
+ * A «يوم روحي» has checkIn === checkOut, which as a half-open range is empty
+ * — and an empty range overlaps nothing. Every occupancy check here, and the
+ * check_booking_capacity trigger behind them, is built on that comparison, so
+ * without this a day booking is invisible to all of them and the house
+ * oversells in silence. A day occupies its own date; this mirrors
+ * GREATEST(check_out, check_in + 1) in migration 089.
+ */
+export function occupiedEnd(checkIn: string, checkOut: string): string {
+  if (!checkIn) return checkOut;
+  if (checkOut > checkIn) return checkOut;
+  const d = new Date(`${checkIn}T00:00:00`);
+  d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 export function getRoomBedState(
   room: Room,
   allocations: RoomAllocation[],
@@ -97,9 +115,12 @@ export function getCapacityStatus(opts: {
   // backstop, so let the request through rather than invent a wall.
   if (bedsCount <= 0) return 'ok';
   if (guestsCount > bedsCount) return 'exceeds_house';
-  if (!checkIn || !checkOut || checkIn >= checkOut) return 'ok';
+  if (!checkIn || !checkOut || checkIn > checkOut) return 'ok';
 
-  const end = new Date(`${checkOut}T00:00:00`);
+  // occupiedEnd, not checkOut: a same-day booking would otherwise leave the
+  // loop with nothing to iterate and be reported free whatever the house
+  // already holds that day.
+  const end = new Date(`${occupiedEnd(checkIn, checkOut)}T00:00:00`);
   for (const d = new Date(`${checkIn}T00:00:00`); d < end; d.setDate(d.getDate() + 1)) {
     const s = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     if (usedBedsOnDate(s) + guestsCount > bedsCount) return 'full_on_dates';

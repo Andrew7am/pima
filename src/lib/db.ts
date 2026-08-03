@@ -52,6 +52,7 @@ export function mapHouse(r: Record<string, unknown>): RetreatHouse {
     bedsCount: r.beds_count as number,
     roomsDescription: r.rooms_description as string,
     pricePerNightPerPerson: r.price_per_night_per_person as number,
+    dayUsePricePerPerson: (r.day_use_price_per_person as number) ?? undefined,
     services: (r.services as string[]) ?? [],
     suitability: (r.suitability as RetreatHouse['suitability']) ?? [],
     activities: (r.activities as string[]) ?? [],
@@ -353,6 +354,7 @@ const HOUSE_PUBLIC_COLUMNS =
   'rooms_description,price_per_night_per_person,services,suitability,activities,images,' +
   'conference_halls,restaurants,seasonal_rates,status,rating,reviews_count,created_at,property_type,' +
   'blocked_dates,sea_proximity,student_housing_gender,distance_from_university,nearby_landmark,monthly_rent,' +
+  'day_use_price_per_person,' +
   'room_capacity,housing_rules,contract_terms,menu,image_descriptions,pending_edit';
 
 export async function loadHouses(includePaymentMethods = false): Promise<RetreatHouse[]> {
@@ -363,7 +365,12 @@ export async function loadHouses(includePaymentMethods = false): Promise<Retreat
     // rather than just drop a field. Retry without the newest column — same
     // deploy→migrate tolerance the payment_methods path below already has.
     console.error('loadHouses:', error);
-    const fallbackColumns = HOUSE_PUBLIC_COLUMNS.replace('nearby_landmark,', '');
+    // Every column added since the last release, not just the newest one:
+    // stripping one and leaving another still errors, the retry fails too,
+    // and loadHouses returns [] — which is the whole site, empty.
+    const fallbackColumns = HOUSE_PUBLIC_COLUMNS
+      .replace('nearby_landmark,', '')
+      .replace('day_use_price_per_person,', '');
     ({ data, error } = await supabase.from('houses').select(fallbackColumns).order('created_at'));
     if (error) { console.error('loadHouses (fallback):', error); return []; }
   }
@@ -440,6 +447,7 @@ export async function createHouse(h: RetreatHouse): Promise<boolean> {
     rooms_count: h.roomsCount, beds_count: h.bedsCount,
     rooms_description: h.roomsDescription,
     price_per_night_per_person: h.pricePerNightPerPerson,
+    day_use_price_per_person: h.dayUsePricePerPerson ?? null,
     services: h.services, suitability: h.suitability,
     activities: h.activities, images: h.images,
     conference_halls: h.conferenceHalls, restaurants: h.restaurants,
@@ -472,6 +480,7 @@ export function houseUpdatePayload(h: RetreatHouse) {
     rooms_count: h.roomsCount, beds_count: h.bedsCount,
     rooms_description: h.roomsDescription,
     price_per_night_per_person: h.pricePerNightPerPerson,
+    day_use_price_per_person: h.dayUsePricePerPerson ?? null,
     images: h.images,
     image_descriptions: h.imageDescriptions ?? {},
     blocked_dates: h.blockedDates ?? [],

@@ -165,7 +165,13 @@ export default function BookingFlow({
     }));
   }, [currentUser]);
 
-  const perPerson = nights > 0 && guestsCount > 0 ? Math.round(originalTotalPrice / nights / guestsCount) : 0;
+  // A «يوم روحي»: arrive and leave the same day, so there is no night to
+  // count and every place that would have printed «٠ ليلة» says so instead.
+  const dayUse = !isMonthlyHousing && Boolean(checkIn) && checkIn === checkOut;
+  const stayLabel = dayUse ? 'يوم واحد بدون مبيت' : `${egp(nights)} ${nightsWord(nights)}`;
+  const perPerson = guestsCount > 0 && (dayUse || nights > 0)
+    ? Math.round(originalTotalPrice / (dayUse ? 1 : nights) / guestsCount)
+    : 0;
   const maxGuests = house.bedsCount || 100;
   // Earning mirrors migration 005: a point per EGP paid, doubled outside the
   // July–August peak. An estimate, and labelled as one.
@@ -347,7 +353,7 @@ export default function BookingFlow({
   /* ── Shared: the stay summary used on steps 2 and 3 ───────────────────── */
   const summaryRows = [
     { icon: <Building2 className="w-4 h-4" />, label: 'المكان', value: house.name, sub: house.governorate },
-    { icon: <CalendarDays className="w-4 h-4" />, label: 'التاريخ', value: `${shortDate(checkIn)} — ${shortDate(checkOut)}`, sub: `${egp(nights)} ${nightsWord(nights)}` },
+    { icon: <CalendarDays className="w-4 h-4" />, label: 'التاريخ', value: dayUse ? shortDate(checkIn) : `${shortDate(checkIn)} — ${shortDate(checkOut)}`, sub: stayLabel },
     { icon: <Users className="w-4 h-4" />, label: 'عدد الحضور', value: `${egp(guestsCount)} فرد`, sub: '' },
     { icon: <GroupIcon className="w-4 h-4" />, label: 'نوع الحجز', value: group.label, sub: '' },
   ];
@@ -449,8 +455,8 @@ export default function BookingFlow({
                 <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkIn)}</span>
               </div>
               <div className="shrink-0 text-center px-2 border-x border-[#EDE7DA] leading-tight">
-                <span className="block text-[13px] font-black text-[#B8944E]">{egp(nights)}</span>
-                <span className="block text-[8px] font-bold text-[#8A8A70]">{nightsWord(nights)}</span>
+                <span className="block text-[13px] font-black text-[#B8944E]">{egp(dayUse ? 1 : nights)}</span>
+                <span className="block text-[8px] font-bold text-[#8A8A70]">{dayUse ? 'يوم' : nightsWord(nights)}</span>
               </div>
               <div className="flex-1 min-w-0 leading-tight text-left">
                 <span className="block text-[8.5px] font-bold text-[#8A8A70]">إلى</span>
@@ -552,7 +558,7 @@ export default function BookingFlow({
                 </span>
                 {!isMonthlyHousing && perPerson > 0 && (
                   <span className="block text-[9.5px] font-medium text-[#8A8A70]">
-                    {egp(nights)} {nightsWord(nights)} · {egp(guestsCount)} فرد × {egp(perPerson)} ج.م
+                    {stayLabel} · {egp(guestsCount)} فرد × {egp(perPerson)} ج.م
                   </span>
                 )}
               </div>
@@ -834,7 +840,7 @@ export default function BookingFlow({
         open={costOpen}
         onClose={() => setCostOpen(false)}
         title="تفاصيل التكلفة"
-        subtitle={`${egp(nights)} ${nightsWord(nights)} · ${egp(guestsCount)} فرد`}
+        subtitle={`${stayLabel} · ${egp(guestsCount)} فرد`}
         icon={<Wallet className="w-4 h-4 text-[#C9A24A]" />}
       >
         <div className="space-y-1.5">
@@ -843,7 +849,7 @@ export default function BookingFlow({
               <span className="text-[10.5px] font-bold text-[#4A4A3A]">
                 {row.label ?? 'السعر الأساسي'}
                 <span className="text-[9px] font-medium text-[#8A8A70] mr-1.5">
-                  {egp(row.nights)} {nightsWord(row.nights)} × {egp(guestsCount)} فرد × {egp(row.rate)} ج.م
+                  {row.nights === 0 ? 'يوم واحد' : `${egp(row.nights)} ${nightsWord(row.nights)}`} × {egp(guestsCount)} فرد × {egp(row.rate)} ج.م
                 </span>
               </span>
               <span className="text-[10.5px] font-black text-[#0A2342] shrink-0">{egp(row.rate * row.nights * guestsCount)} ج.م</span>

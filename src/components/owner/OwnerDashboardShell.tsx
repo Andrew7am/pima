@@ -178,6 +178,9 @@ export default function OwnerDashboardShell({
     setShowTour(false);
   };
   const [pricePerNight, setPricePerNight] = useState<number>(150);
+  // null, not 0: a house that does not take «يوم روحي» has no day price at
+  // all, and 0 would read as "free" rather than "not offered".
+  const [dayUsePrice, setDayUsePrice] = useState<number | null>(null);
   // Seasonal-rate editor drafts (saved owner-direct via onUpdateHouse —
   // no admin re-approval, like payment methods; migration 055)
   const [srLabel, setSrLabel] = useState('');
@@ -390,6 +393,7 @@ export default function OwnerDashboardShell({
     setHouseName(house.name); setHouseDesc(house.description); setHouseGov(house.governorate);
     setHouseAddress(house.address); setHouseLat(house.lat); setHouseLng(house.lng);
     setPricePerNight(house.pricePerNightPerPerson || 150); setRoomsCount(house.roomsCount); setBedsCount(house.bedsCount);
+    setDayUsePrice(typeof house.dayUsePricePerPerson === 'number' ? house.dayUsePricePerPerson : null);
     setRoomsDesc(house.roomsDescription || ''); setSelectedServices(house.services || []); setSelectedSuitability(house.suitability || []);
     setImageUrl(house.images?.[0] || ''); setActivitiesInput((house.activities || []).join('، '));
     setPropertyType(house.propertyType || 'conference'); setMonthlyRent(house.monthlyRent || 1500);
@@ -417,6 +421,10 @@ export default function OwnerDashboardShell({
         name: houseName, description: houseDesc, governorate: houseGov, address: houseAddress,
         lat: houseLat ?? base.lat, lng: houseLng ?? base.lng, roomsCount, bedsCount,
         roomsDescription: roomsDesc || base.roomsDescription, pricePerNightPerPerson: isMonthly ? 0 : pricePerNight,
+        // 0 rather than undefined to clear it: undefined disappears when
+        // pending_edit is serialised, so the owner could never withdraw a
+        // day price once set. 0 fails offersDayUse, which is the same thing.
+        dayUsePricePerPerson: isMonthly ? 0 : (dayUsePrice ?? 0),
         propertyType, monthlyRent: isMonthly ? monthlyRent : undefined,
         studentHousingGender: propertyType === 'student' ? studentHousingGender : undefined,
         distanceFromUniversity: propertyType === 'student' ? distanceFromUniversity : undefined,
@@ -439,6 +447,7 @@ export default function OwnerDashboardShell({
       roomsCount, bedsCount,
       roomsDescription: roomsDesc || (isMonthly ? 'غرف سكنية مجهزة ومريحة تناسب الدراسة والعمل الهادئ.' : 'غرف فندقية نظيفة ومريحة مجهزة بحمام وتكييف.'),
       pricePerNightPerPerson: isMonthly ? 0 : pricePerNight, propertyType, monthlyRent: isMonthly ? monthlyRent : undefined,
+      dayUsePricePerPerson: (!isMonthly && dayUsePrice) ? dayUsePrice : undefined,
       studentHousingGender: propertyType === 'student' ? studentHousingGender : undefined,
       distanceFromUniversity: propertyType === 'student' ? distanceFromUniversity : undefined,
       nearbyLandmark: nearbyLandmark.trim() || undefined,
@@ -463,7 +472,7 @@ export default function OwnerDashboardShell({
 
     onAddHouse(newHouse);
     alert('تم إضافة العقار بنجاح! تم إرساله للمراجعة وسيظهر للجميع بمجرد تفعيله من قبل إدارة النظام.');
-    setHouseName(''); setHouseDesc(''); setHouseGov(GOVERNORATES[0]); setHouseAddress(''); setPricePerNight(150);
+    setHouseName(''); setHouseDesc(''); setHouseGov(GOVERNORATES[0]); setHouseAddress(''); setPricePerNight(150); setDayUsePrice(null);
     setRoomsCount(10); setBedsCount(30); setRoomsDesc(''); setSelectedServices([]); setSelectedSuitability([]);
     setImageUrl(''); setHalls([]); setActivitiesInput(''); setPropertyType('conference'); setMonthlyRent(1500);
     setStudentHousingGender('boys'); setDistanceFromUniversity(''); setNearbyLandmark('');
@@ -1674,6 +1683,20 @@ export default function OwnerDashboardShell({
                   <input id="add-house-rooms" type="number" required min={1} value={roomsCount} onChange={(e) => setRoomsCount(parseInt(e.target.value) || 10)} onFocus={(e) => e.target.select()}
                     className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                 </div>
+                {/* Day use. Optional and blank by default: a house that does
+                    not host «يوم روحي» leaves it empty and Pima never offers
+                    one. Conference houses only — student and staff housing is
+                    rented by the month. */}
+                {propertyType === 'conference' && (
+                  <div className="col-span-3">
+                    <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">سعر الفرد لليوم الواحد بدون مبيت — «يوم روحي» (اختياري):</label>
+                    <input id="add-house-day-price" type="number" min={0} placeholder="اتركه فارغاً لو البيت لا يستقبل حجوزات يومية"
+                      value={dayUsePrice === null ? '' : dayUsePrice}
+                      onChange={(e) => setDayUsePrice(e.target.value === '' ? null : (parseInt(e.target.value) || 0))}
+                      onFocus={(e) => e.target.select()}
+                      className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] placeholder:text-[10px] focus:outline-none" />
+                  </div>
+                )}
                 <div>
                   <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">عدد الأسرة الكلي:</label>
                   <input id="add-house-beds" type="number" required min={1} value={bedsCount} onChange={(e) => setBedsCount(parseInt(e.target.value) || 30)} onFocus={(e) => e.target.select()}

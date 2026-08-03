@@ -93,6 +93,9 @@ export interface RetreatHouse {
   bedsCount: number;
   roomsDescription: string;
   pricePerNightPerPerson: number;
+  /** Per person for a «يوم روحي» — arrive and leave the same day, no night.
+   *  Undefined means the house does not take day bookings. Migration 089. */
+  dayUsePricePerPerson?: number;
   services: string[]; // ["تكييف", "واي فاي", "حمام سباحة", "ملعب كرة", "كنيسة داخل البيت", "مطبخ", "حديقة"]
   suitability: ('youth' | 'children' | 'families' | 'retreat')[]; // ["شباب", "أطفال", "أسر", "خلوات"]
   conferenceHalls: ConferenceHall[];

@@ -9,7 +9,7 @@ import BookingFlow, { ApplicantDetails } from './house/BookingFlow';
 import { arabicNumber } from '../lib/arabic';
 import { tapFeedback } from '../lib/haptics';
 import ReviewWizard from './ReviewWizard';
-import { computeStayPrice } from '../lib/pricing';
+import { computeStayPrice, offersDayUse } from '../lib/pricing';
 import { getCapacityStatus } from '../lib/roomOccupancy';
 import { 
   BedDouble, Calendar, Users, 
@@ -262,6 +262,9 @@ interface DateRangePickerProps {
    *  and a modal of its own — used when it is already inside a sheet, where
    *  the extra step meant tapping twice to reach the dates. */
   inline?: boolean;
+  /** Lets check-out equal check-in — a «يوم روحي». Off unless the house has
+   *  actually priced one, or a guest could pick a day that costs nothing. */
+  allowSameDay?: boolean;
   /** Called when the inline calendar is done, so the sheet can close itself. */
   onDone?: () => void;
 }
@@ -287,6 +290,7 @@ const DateRangePicker = ({
   bookedRanges = [],
   blockedDates = [],
   inline = false,
+  allowSameDay = false,
   onDone,
 }: DateRangePickerProps) => {
   // Inline mode has no trigger to press, so it starts open and stays open.
@@ -355,6 +359,11 @@ const DateRangePicker = ({
     } else {
       if (clickedDateStr < checkIn) {
         setCheckIn(clickedDateStr);
+      } else if (clickedDateStr === checkIn && !allowSameDay) {
+        // Tapping the same day twice used to set check-out equal to check-in,
+        // which priced the stay at nothing. Where the house does not sell a
+        // day, that tap now means nothing rather than meaning free.
+        return;
       } else {
         // Check no approved days fall inside selected range
         const range = expandRange(checkIn, clickedDateStr);
@@ -757,12 +766,14 @@ export default function HouseDetail({
   // looking for, so they can decide without opening the month.
   const freeJulyDays = JULY_2026_DAYS.filter((d) => !isDateBooked(d)).length;
 
+  // 0 means «no night», which is a real answer now: a «يوم روحي» arrives and
+  // leaves the same day. It used to return `diffDays || 1`, so a same-day
+  // booking claimed one night on screen while computeStayPrice charged
+  // nothing for it — the number and the money disagreed.
   const calculateNights = () => {
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays || 1;
+    if (!checkIn || !checkOut) return 0;
+    const diff = Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000);
+    return Number.isFinite(diff) && diff > 0 ? diff : 0;
   };
 
   const isMonthlyHousing = house.propertyType === 'student' || house.propertyType === 'staff';
@@ -1091,6 +1102,7 @@ export default function HouseDetail({
                 checkOut={checkOut}
                 setCheckOut={setCheckOut}
                 isMonthlyHousing={isMonthlyHousing}
+                allowSameDay={offersDayUse(house)}
                 bookedRanges={[
                   ...approvedBookingsForThisHouse.map((b) => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: 'approved' as const })),
                   ...pendingBookingsForThisHouse.map((b) => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: 'pending' as const })),

@@ -26,10 +26,32 @@ export interface StayPriceBreakdownRow {
   rate: number;
 }
 
+/** Does this house take «يوم روحي» bookings — a day with no night in it? */
+export const offersDayUse = (house: RetreatHouse) =>
+  house.propertyType !== 'student' && house.propertyType !== 'staff'
+  && typeof house.dayUsePricePerPerson === 'number' && house.dayUsePricePerPerson > 0;
+
+/** checkIn === checkOut: arrive and leave the same day. */
+export const isDayUse = (checkIn: string, checkOut: string) =>
+  Boolean(checkIn) && checkIn === checkOut;
+
 // Total for [checkIn, checkOut) — checkOut night not included, same as
-// the trigger's generate_series(check_in, check_out - 1).
+// the trigger's generate_series(check_in, check_out - 1). The one exception
+// is a stay with no night at all, which that series cannot express: see
+// migration 089, whose same-day branch this mirrors.
 export function computeStayPrice(house: RetreatHouse, checkIn: string, checkOut: string, guestsCount: number): { total: number; breakdown: StayPriceBreakdownRow[] } {
-  if (!checkIn || !checkOut || checkIn >= checkOut || guestsCount <= 0) return { total: 0, breakdown: [] };
+  if (guestsCount <= 0) return { total: 0, breakdown: [] };
+
+  // A day is not a short night: it has its own rate, no seasonal table, and
+  // one row in the breakdown. `nights: 0` is what tells every reader of this
+  // breakdown that there is no night to count.
+  if (isDayUse(checkIn, checkOut)) {
+    if (!offersDayUse(house)) return { total: 0, breakdown: [] };
+    const rate = house.dayUsePricePerPerson as number;
+    return { total: rate * guestsCount, breakdown: [{ label: 'يوم واحد بدون مبيت', nights: 0, rate }] };
+  }
+
+  if (!checkIn || !checkOut || checkIn >= checkOut) return { total: 0, breakdown: [] };
 
   const rows = new Map<string, StayPriceBreakdownRow>();
   let perPerson = 0;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeStayPrice, nightlyRateFor } from './pricing';
+import { computeStayPrice, nightlyRateFor, offersDayUse, isDayUse } from './pricing';
 import type { RetreatHouse, SeasonalRate } from '../types';
 
 // Only the fields pricing actually reads — the rest of RetreatHouse is
@@ -80,5 +80,62 @@ describe('computeStayPrice', () => {
   it('counts the right number of nights across a month boundary', () => {
     const { total } = computeStayPrice(house(50), '2026-01-30', '2026-02-02', 1);
     expect(total).toBe(150); // 30, 31 Jan + 1 Feb
+  });
+});
+
+// A house that takes «يوم روحي» bookings. Same factory shape as above, plus
+// the one field day pricing reads.
+function dayHouse(nightly: number, dayRate: number, propertyType?: RetreatHouse['propertyType']): RetreatHouse {
+  return { pricePerNightPerPerson: nightly, dayUsePricePerPerson: dayRate, seasonalRates: [], propertyType } as unknown as RetreatHouse;
+}
+
+describe('day use — a stay with no night in it', () => {
+  it('prices the day at the house day rate rather than at nothing', () => {
+    // The whole gap: the calendar has always let a guest tap one day twice,
+    // and this returned 0 — a booking taken for free.
+    const { total, breakdown } = computeStayPrice(dayHouse(200, 120), '2026-07-15', '2026-07-15', 40);
+    expect(total).toBe(4800);
+    expect(breakdown).toEqual([{ label: 'يوم واحد بدون مبيت', nights: 0, rate: 120 }]);
+  });
+
+  it('stays at zero where the house has set no day price', () => {
+    // Mirrors migration 089: with no day rate the server's expected is 0 too,
+    // so the two agree rather than the client quoting a total the trigger
+    // would not recognise.
+    expect(computeStayPrice(house(200), '2026-07-15', '2026-07-15', 40).total).toBe(0);
+    expect(offersDayUse(house(200))).toBe(false);
+    expect(offersDayUse(dayHouse(200, 120))).toBe(true);
+  });
+
+  it('offers nothing for a zero or negative day rate', () => {
+    expect(offersDayUse(dayHouse(200, 0))).toBe(false);
+    expect(computeStayPrice(dayHouse(200, 0), '2026-07-15', '2026-07-15', 10).total).toBe(0);
+  });
+
+  it('does not offer a day in monthly housing', () => {
+    // Student and staff housing is rented by the month; a day in one is not
+    // a thing that can be booked, whatever price sits on the row.
+    expect(offersDayUse(dayHouse(200, 120, 'student'))).toBe(false);
+    expect(offersDayUse(dayHouse(200, 120, 'staff'))).toBe(false);
+    expect(computeStayPrice(dayHouse(200, 120, 'student'), '2026-07-15', '2026-07-15', 3).total).toBe(0);
+  });
+
+  it('ignores the seasonal table — a day has one price', () => {
+    const h = { ...dayHouse(200, 120), seasonalRates: [season('2026-07-01', '2026-08-31', 999, 'صيف')] } as RetreatHouse;
+    expect(computeStayPrice(h, '2026-07-15', '2026-07-15', 2).total).toBe(240);
+  });
+
+  it('still prices one night as a night', () => {
+    // The boundary that matters: the 15th to the 16th is a NIGHT, and must
+    // not fall into the day branch just because a day price exists.
+    const { total, breakdown } = computeStayPrice(dayHouse(200, 120), '2026-07-15', '2026-07-16', 2);
+    expect(breakdown[0].nights).toBe(1);
+    expect(total).toBe(400);
+  });
+
+  it('needs both dates present and equal', () => {
+    expect(isDayUse('2026-07-15', '2026-07-15')).toBe(true);
+    expect(isDayUse('2026-07-15', '2026-07-16')).toBe(false);
+    expect(isDayUse('', '')).toBe(false);
   });
 });

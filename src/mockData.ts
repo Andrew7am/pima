@@ -105,6 +105,10 @@ export const INITIAL_HOUSES: RetreatHouse[] = [
     bedsCount: 150,
     roomsDescription: 'غرف ثنائية وثلاثية مجهزة بتكييف، حمام خاص، وتليفزيون وصالون معيشة مريح.',
     pricePerNightPerPerson: 250,
+    // «يوم روحي» — arrive and leave the same day. Seeded on one house only,
+    // so the demo data exercises both sides: a house that sells a day and
+    // houses that do not and must not offer one.
+    dayUsePricePerPerson: 120,
     services: ['واي فاي', 'تكييف', 'مصلى / كنيسة صغيرة', 'حديقة واسعة', 'ملعب كرة قدم'],
     suitability: ['retreat', 'youth', 'families'],
     conferenceHalls: [
