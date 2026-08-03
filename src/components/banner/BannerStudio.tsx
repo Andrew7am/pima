@@ -58,6 +58,27 @@ interface Props {
   onClose: () => void;
 }
 
+// Module scope on purpose: declared inside a render body these would be new
+// component types on every render, so React would remount every chip and every
+// toolbar button instead of updating them.
+function Chip({ active, onClick, children }: { active?: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={`px-3 py-2 rounded-2xl text-[11px] font-black border transition-all active:scale-95 cursor-pointer shrink-0 ${
+        active ? 'bg-[#0A2342] text-white border-[#0A2342] shadow-sm' : 'bg-white text-[#5A5A40] border-[#E2DFD4]'
+      }`}>{children}</button>
+  );
+}
+
+function Round({ onClick, title, children, danger }: { onClick: () => void; title: string; children: React.ReactNode; danger?: boolean }) {
+  return (
+    <button type="button" onClick={onClick} title={title} aria-label={title}
+      className={`w-9 h-9 rounded-full bg-white/95 backdrop-blur shadow-lg flex items-center justify-center active:scale-90 transition-transform cursor-pointer ${
+        danger ? 'text-rose-600' : 'text-[#2E2E24]'
+      }`}>{children}</button>
+  );
+}
+
 export default function BannerStudio({ banner: initial, onSave, onClose }: Props) {
   const [banner, setBanner] = useState<PromoBanner>(initial);
   const [layout, setLayout] = useState<BannerLayout>(initial.layout ?? DEFAULT_LAYOUT(initial.placement));
@@ -237,20 +258,6 @@ export default function BannerStudio({ banner: initial, onSave, onClose }: Props
   const textField = (el: BannerElement): keyof PromoBanner | null =>
     el.type === 'title' ? 'title' : el.type === 'subtitle' ? 'subtitle'
       : el.type === 'badge' ? 'badge' : el.type === 'button' ? 'ctaText' : null;
-
-  const Chip = ({ active, onClick, children }: { active?: boolean; onClick: () => void; children: React.ReactNode }) => (
-    <button type="button" onClick={onClick}
-      className={`px-3 py-2 rounded-2xl text-[11px] font-black border transition-all active:scale-95 cursor-pointer shrink-0 ${
-        active ? 'bg-[#0A2342] text-white border-[#0A2342] shadow-sm' : 'bg-white text-[#5A5A40] border-[#E2DFD4]'
-      }`}>{children}</button>
-  );
-
-  const Round = ({ onClick, title, children, danger }: { onClick: () => void; title: string; children: React.ReactNode; danger?: boolean }) => (
-    <button type="button" onClick={onClick} title={title} aria-label={title}
-      className={`w-9 h-9 rounded-full bg-white/95 backdrop-blur shadow-lg flex items-center justify-center active:scale-90 transition-transform cursor-pointer ${
-        danger ? 'text-rose-600' : 'text-[#2E2E24]'
-      }`}>{children}</button>
-  );
 
   // ── Fullscreen preview ───────────────────────────────────────────────────
   if (previewing) {

@@ -39,6 +39,27 @@ interface RoomCreateWizardProps {
 
 const PRESET_ROOM_IMAGES = ["⛪", "⛺", "🌟", "🕊️", "📖", "🦁", "🏺", "🕯️"];
 
+// Module scope on purpose: declared inside a render body this would be a new
+// component type on every render, so React would remount the switch and its
+// slide transition would restart instead of animating.
+const ToggleSwitch = ({ checked, onChange, icon }: { checked: boolean; onChange: (v: boolean) => void; icon?: React.ReactNode }) => (
+  <button
+    type="button"
+    onClick={() => onChange(!checked)}
+    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+      checked ? "bg-amber-500" : "bg-slate-200"
+    }`}
+  >
+    <span
+      className={`pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
+        checked ? "-translate-x-5" : "translate-x-0"
+      }`}
+    >
+      {icon && <span className="text-[9px] text-slate-500">{icon}</span>}
+    </span>
+  </button>
+);
+
 export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, onCreateRoom }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
@@ -295,24 +316,6 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
     }, 2800);
   };
 
-  // Custom Toggle Switch Component
-  const ToggleSwitch = ({ checked, onChange, icon }: { checked: boolean; onChange: (v: boolean) => void; icon?: React.ReactNode }) => (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-        checked ? "bg-amber-500" : "bg-slate-200"
-      }`}
-    >
-      <span
-        className={`pointer-events-none relative inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
-          checked ? "-translate-x-5" : "translate-x-0"
-        }`}
-      >
-        {icon && <span className="text-[9px] text-slate-500">{icon}</span>}
-      </span>
-    </button>
-  );
 
   return (
     <div className="relative" dir="rtl">

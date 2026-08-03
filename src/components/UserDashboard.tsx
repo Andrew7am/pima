@@ -86,6 +86,23 @@ interface UserDashboardProps {
   reviews?: Review[];
 }
 
+// Module scope, alongside PriceBox above, on purpose: declared inside the
+// render body these would be new component types on every render and React
+// would remount every comparison row instead of updating it. Band takes the
+// column template as a prop since it can no longer close over it.
+function Win() {
+  return <span className="bg-emerald-600 text-white text-[7px] font-black px-1 py-0.5 rounded-full">الأفضل</span>;
+}
+
+function Band({ label, cols, children }: { label: string; cols: React.CSSProperties; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <span className="text-[8.5px] text-[#8A8A70] font-black block border-b border-[#EDE7DA] pb-0.5">{label}</span>
+      <div className="grid gap-2" style={cols}>{children}</div>
+    </div>
+  );
+}
+
 export default function UserDashboard({
   houses,
   currentUser,
@@ -1152,16 +1169,6 @@ export default function UserDashboard({
               const topRated = bestOf((h) => h.rating, 'max');
 
               const cols = { gridTemplateColumns: `repeat(${picked.length}, minmax(0, 1fr))` };
-              const Win = () => (
-                <span className="bg-emerald-600 text-white text-[7px] font-black px-1 py-0.5 rounded-full">الأفضل</span>
-              );
-              const Band = ({ label, children }: { label: string; children: React.ReactNode }) => (
-                <div className="space-y-1">
-                  <span className="text-[8.5px] text-[#8A8A70] font-black block border-b border-[#EDE7DA] pb-0.5">{label}</span>
-                  <div className="grid gap-2" style={cols}>{children}</div>
-                </div>
-              );
-
               return (
                 <div className="p-4 overflow-y-auto space-y-3 text-[10px] leading-relaxed">
                   {/* Header: photo + name per column */}
@@ -1176,7 +1183,7 @@ export default function UserDashboard({
                     ))}
                   </div>
 
-                  <Band label="الموقع">
+                  <Band cols={cols} label="الموقع">
                     {picked.map((h) => (
                       <span key={h.id} className="font-bold text-[#2D2D24] text-center block">{h.governorate}</span>
                     ))}
@@ -1185,7 +1192,7 @@ export default function UserDashboard({
                   {/* On a mixed set the band label can't name one unit without
                       lying about the other column, so it goes neutral and each
                       value carries its own unit instead. */}
-                  <Band label={!sameBasis ? 'السعر' : picked.every(isMonthly) ? 'الإيجار الشهري' : 'السعر لليلة للفرد'}>
+                  <Band cols={cols} label={!sameBasis ? 'السعر' : picked.every(isMonthly) ? 'الإيجار الشهري' : 'السعر لليلة للفرد'}>
                     {picked.map((h) => (
                       <div key={h.id} className="flex flex-col items-center gap-0.5">
                         <span className={`font-black ${cheapest !== null && priceOf(h) === cheapest ? 'text-emerald-300' : 'text-[#E4E1CB]'}`}>
@@ -1199,7 +1206,7 @@ export default function UserDashboard({
                     ))}
                   </Band>
 
-                  <Band label={!sameBasis ? 'السعة' : picked.every(isMonthly) ? 'سعة الغرفة' : 'عدد الأسرّة'}>
+                  <Band cols={cols} label={!sameBasis ? 'السعة' : picked.every(isMonthly) ? 'سعة الغرفة' : 'عدد الأسرّة'}>
                     {picked.map((h) => (
                       <div key={h.id} className="flex flex-col items-center gap-0.5">
                         <span className={`font-black ${roomiest !== null && capacityOf(h) === roomiest ? 'text-emerald-300' : 'text-[#2D2D24]'}`}>
@@ -1213,7 +1220,7 @@ export default function UserDashboard({
                     ))}
                   </Band>
 
-                  <Band label="التقييم">
+                  <Band cols={cols} label="التقييم">
                     {picked.map((h) => (
                       <div key={h.id} className="flex flex-col items-center gap-0.5">
                         <span className="font-black text-amber-400 flex items-center gap-0.5">
@@ -1225,7 +1232,7 @@ export default function UserDashboard({
                     ))}
                   </Band>
 
-                  <Band label="الفئات المناسبة">
+                  <Band cols={cols} label="الفئات المناسبة">
                     {picked.map((h) => (
                       <div key={h.id} className="flex flex-wrap gap-0.5 justify-center content-start">
                         {h.suitability.map((s) => (
@@ -1237,7 +1244,7 @@ export default function UserDashboard({
                     ))}
                   </Band>
 
-                  <Band label="الخدمات">
+                  <Band cols={cols} label="الخدمات">
                     {picked.map((h) => (
                       <div key={h.id} className="flex flex-wrap gap-0.5 justify-center content-start">
                         {h.services.slice(0, 2).map((s) => (

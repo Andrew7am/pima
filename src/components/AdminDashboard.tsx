@@ -61,6 +61,23 @@ interface AdminDashboardProps {
   onSettleBookings?: (args: { houseId: string; ownerId: string; amount: number; bookingIds: string[]; note?: string }) => void;
 }
 
+// Module scope on purpose: declared inside a render body, this would be a new
+// component type on every render and React would remount the card instead of
+// updating it.
+function KpiCard({ title, value, delta, suffix }: { title: string; value: number | string; delta: string; suffix?: string }) {
+  const isUp = delta.startsWith('+') && delta !== '+0%';
+  const isDown = delta.startsWith('-');
+  return (
+    <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-1">
+      <div className="text-[10px] text-[#8A8A70] font-bold">{title}</div>
+      <div className="text-xl font-black text-[#4A4A3A]">{typeof value === 'number' ? value.toLocaleString('ar-EG') : value}{suffix && <span className="text-[10px] text-[#8A8A70] font-bold mr-1">{suffix}</span>}</div>
+      <div className={`text-[10px] font-extrabold ${isUp ? 'text-emerald-700' : isDown ? 'text-rose-700' : 'text-[#8A8A70]'}`}>
+        {isUp ? '↗' : isDown ? '↘' : '→'} {delta} <span className="text-[#8A8A70] font-medium">vs الأسبوع السابق</span>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard({
   currentUser,
   houses,
@@ -715,20 +732,6 @@ export default function AdminDashboard({
         });
         activity.sort((a, b) => b.ts - a.ts);
         const recentActivity = activity.slice(0, 8);
-
-        const KpiCard = ({ title, value, delta, suffix }: { title: string; value: number | string; delta: string; suffix?: string }) => {
-          const isUp = delta.startsWith('+') && delta !== '+0%';
-          const isDown = delta.startsWith('-');
-          return (
-            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-1">
-              <div className="text-[10px] text-[#8A8A70] font-bold">{title}</div>
-              <div className="text-xl font-black text-[#4A4A3A]">{typeof value === 'number' ? value.toLocaleString('ar-EG') : value}{suffix && <span className="text-[10px] text-[#8A8A70] font-bold mr-1">{suffix}</span>}</div>
-              <div className={`text-[10px] font-extrabold ${isUp ? 'text-emerald-700' : isDown ? 'text-rose-700' : 'text-[#8A8A70]'}`}>
-                {isUp ? '↗' : isDown ? '↘' : '→'} {delta} <span className="text-[#8A8A70] font-medium">vs الأسبوع السابق</span>
-              </div>
-            </div>
-          );
-        };
 
         return (
           <div className="space-y-4">

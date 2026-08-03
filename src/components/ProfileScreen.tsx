@@ -118,6 +118,32 @@ function ToggleRow({ icon: Icon, label, sublabel, checked, onChange, tint = '#5A
   );
 }
 
+// Module scope, alongside the other row components above, on purpose: declared
+// inside the render body this would be a new component type on every render and
+// React would remount the avatar — reloading the image — instead of updating it.
+function Avatar({ user, size, onClick }: { user: User; size: number; onClick?: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!onClick}
+      className="relative rounded-full bg-[#C5A059] text-[#0A2342] flex items-center justify-center font-black shrink-0 overflow-hidden ring-4 ring-white/15 shadow-lg disabled:cursor-default cursor-pointer"
+      style={{ width: size, height: size, fontSize: size / 2.6 }}
+    >
+      {user.avatarUrl ? (
+        <img src={user.avatarUrl} alt="صورتك الشخصية" className="w-full h-full object-cover" />
+      ) : (
+        user.name.charAt(0)
+      )}
+      {onClick && (
+        <span className="absolute bottom-0 inset-x-0 bg-black/45 backdrop-blur-sm flex items-center justify-center py-1">
+          <Camera className="w-3.5 h-3.5 text-white" />
+        </span>
+      )}
+    </button>
+  );
+}
+
 export default function ProfileScreen({
   currentUser, onLogout, onBack, onNavigateSupport, onNavigatePrivacy, onDeleteAccount, onUpdateAvatar, reviews, houses,
   bookings = [], onNavigateBookings, initialView = 'hub', onInitialViewConsumed,
@@ -178,26 +204,6 @@ export default function ProfileScreen({
     });
   };
 
-  const Avatar = ({ size, onClick }: { size: number; onClick?: () => void }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={!onClick}
-      className="relative rounded-full bg-[#C5A059] text-[#0A2342] flex items-center justify-center font-black shrink-0 overflow-hidden ring-4 ring-white/15 shadow-lg disabled:cursor-default cursor-pointer"
-      style={{ width: size, height: size, fontSize: size / 2.6 }}
-    >
-      {currentUser.avatarUrl ? (
-        <img src={currentUser.avatarUrl} alt="صورتك الشخصية" className="w-full h-full object-cover" />
-      ) : (
-        currentUser.name.charAt(0)
-      )}
-      {onClick && (
-        <span className="absolute bottom-0 inset-x-0 bg-black/45 backdrop-blur-sm flex items-center justify-center py-1">
-          <Camera className="w-3.5 h-3.5 text-white" />
-        </span>
-      )}
-    </button>
-  );
 
   // ── Rewards sub-view ─────────────────────────────────────────────
   if (view === 'rewards') {
@@ -234,7 +240,7 @@ export default function ProfileScreen({
         <div className="bg-gradient-to-br from-[#0A2342] to-[#123E75] text-white rounded-3xl p-6 flex flex-col items-center gap-3 relative overflow-hidden">
           <div className="absolute -top-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-12 -right-8 w-32 h-32 bg-[#C5A059]/10 rounded-full blur-2xl pointer-events-none" />
-          <Avatar size={92} />
+          <Avatar user={currentUser} size={92} />
           <div className="text-center">
             <h3 className="text-base font-black">{currentUser.name}</h3>
             <p className="text-[10.5px] text-slate-300">{currentUser.email}</p>
@@ -345,7 +351,7 @@ export default function ProfileScreen({
       <div className="bg-gradient-to-br from-[#0A2342] to-[#123E75] text-white rounded-3xl p-6 flex flex-col items-center gap-3 relative overflow-hidden">
         <div className="absolute -top-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
         <div className="absolute -bottom-12 -right-8 w-36 h-36 bg-[#C5A059]/10 rounded-full blur-2xl pointer-events-none" />
-        <Avatar size={92} onClick={() => setView('personal')} />
+        <Avatar user={currentUser} size={92} onClick={() => setView('personal')} />
         <div className="text-center">
           <h2 className="text-base font-black">{currentUser.name}</h2>
           <p className="text-[10.5px] text-slate-300 mt-0.5">{currentUser.email}</p>

@@ -17,6 +17,21 @@ interface OwnerTodayProps {
 
 const guestName = (b: Booking) => b.organizationName || b.userName;
 
+// Module scope on purpose: declared inside a render body this would be a new
+// component type on every render, so React would remount each whole section
+// instead of updating it.
+function Section({ title, icon: Icon, count, children }: { title: string; icon: React.ElementType; count: number; children: React.ReactNode }) {
+  return (
+    <div className="bg-[var(--color-owner-surface)] rounded-[24px] border border-[var(--color-owner-border)] p-4 space-y-2.5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-black text-[var(--color-owner-text)] flex items-center gap-1.5"><Icon className="w-4 h-4 text-[var(--color-owner-primary)]" /> {title}</span>
+        <span className="text-[10px] font-black text-[var(--color-owner-secondary)] bg-[var(--color-owner-bg)] rounded-full px-2 py-0.5">{count}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckInBooking, onCheckOutBooking, onUpdateRoom, onViewBooking }: OwnerTodayProps) {
   const [scannerOpen, setScannerOpen] = useState(false);
   const confirmed = useMemo(() => bookings.filter((b) => b.status === 'approved' || b.status === 'completed'), [bookings]);
@@ -51,16 +66,6 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
       : null;
 
   const dateLabel = new Date(todayStr).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
-
-  const Section = ({ title, icon: Icon, count, children }: { title: string; icon: React.ElementType; count: number; children: React.ReactNode }) => (
-    <div className="bg-[var(--color-owner-surface)] rounded-[24px] border border-[var(--color-owner-border)] p-4 space-y-2.5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-black text-[var(--color-owner-text)] flex items-center gap-1.5"><Icon className="w-4 h-4 text-[var(--color-owner-primary)]" /> {title}</span>
-        <span className="text-[10px] font-black text-[var(--color-owner-secondary)] bg-[var(--color-owner-bg)] rounded-full px-2 py-0.5">{count}</span>
-      </div>
-      {children}
-    </div>
-  );
 
   return (
     <div className="space-y-3" dir="rtl">
