@@ -15,6 +15,39 @@ import FilterSheet from './FilterSheet';
 import type { FilterDraft } from './FilterSheet';
 import type { BannerLiveData } from './banner/BannerCanvas';
 
+/**
+ * One rate on a listing card.
+ *
+ * The two of these are the loudest thing on the card by design: the number is
+ * the largest type in the panel, larger than the house's own name. A guest
+ * comparing four houses is comparing prices, and a listing that makes them
+ * open the place to find one is a listing they scroll past.
+ *
+ * Equal boxes, equal weight — a day and a night are two offers, not a headline
+ * and a footnote.
+ */
+function PriceBox({ icon: Icon, label, value }: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="flex-1 min-w-0 rounded-[18px] bg-white/[0.06] border border-white/10 px-1.5 py-2 text-center">
+      {/* The icon sits above the label rather than beside it. Beside it, the
+          two together needed a 92px box, and the narrowest real card gives
+          51 — both labels were coming out ellipsised, which is precisely the
+          word that says which price this is. */}
+      <Icon className="w-3.5 h-3.5 text-[#C8A45D] mx-auto" />
+      <span className="block text-[8.5px] font-bold text-[#CFCFCF] mt-1 leading-none truncate">{label}</span>
+      <span className="block text-[7px] font-medium text-[#CFCFCF]/60 mt-1.5 leading-none">يبدأ من</span>
+      <span className="flex items-baseline justify-center gap-0.5 mt-1">
+        <span className="text-[19px] font-black text-[#C8A45D] leading-none [font-variant-numeric:tabular-nums]">{value}</span>
+        <span className="text-[8px] font-bold text-[#CFCFCF]">ج.م</span>
+      </span>
+    </div>
+  );
+}
+
 // Arabic count agreement — 1 is singular, 2 is dual, 3–10 takes the plural,
 // and 11 upwards goes back to the singular. "1 سرير" reads as broken Arabic.
 function bedsLabel(n: number): string {
@@ -707,7 +740,7 @@ export default function UserDashboard({
           // card stretched to the full width and its photo was cropped to a
           // 6.7:1 strip. Columns are what absorb the extra width — the page
           // itself stays full-bleed.
-          <div ref={cardGridRef} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div ref={cardGridRef} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {filteredHouses.map((house) => (
               <div
                 id={`house-card-${house.id}`}
@@ -724,7 +757,7 @@ export default function UserDashboard({
                 // pima-reveal is an entrance only — the observer adds .is-in as
                 // the card scrolls in and then stops watching it. Nothing about
                 // the card's own layout, colour or type is touched.
-                className="pima-reveal relative bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A059] cursor-pointer group"
+                className="pima-reveal relative bg-[#2A2A20] rounded-[32px] border border-[#3C3C2E] shadow-[0_12px_32px_-14px_rgba(45,45,36,0.35),0_2px_8px_rgba(45,45,36,0.06)] overflow-hidden active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A059] cursor-pointer group"
               >
                 {/* The photo is the whole card; the details panel floats over it. */}
                 <div className="absolute inset-0 overflow-hidden">
@@ -746,12 +779,12 @@ export default function UserDashboard({
                 {/* Rating, and real popularity beside it (top-3 by confirmed
                     bookings over the last year — see mostBookedIds) */}
                 <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                  <span className="bg-white/95 backdrop-blur-sm text-[#4A4A3A] text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                  <span className="bg-white/95 backdrop-blur-xl text-[#2D2D24] text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)]">
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                     <span>{house.rating.toFixed(1)}</span>
                   </span>
                   {mostBookedIds.has(house.id) && (
-                    <span className="bg-rose-700/90 backdrop-blur-sm text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                    <span className="bg-rose-700/90 backdrop-blur-xl text-white text-[9px] font-extrabold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)]">
                       <Flame className="w-3 h-3" />
                       الأكثر حجزًا
                     </span>
@@ -763,7 +796,7 @@ export default function UserDashboard({
                     truncates — owners write this freely, and a long one would
                     otherwise slide under the panel. */}
                 <div className="absolute bottom-3 left-3 flex items-center gap-1.5 max-w-[47%]">
-                  <span className="bg-[#5A5A40]/90 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
+                  <span className="bg-black/45 backdrop-blur-xl border border-white/15 text-white text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1 shrink-0 shadow-[0_4px_14px_-4px_rgba(0,0,0,0.45)]">
                     <MapPin className="w-3 h-3" />
                     {house.governorate}
                   </span>
@@ -784,27 +817,27 @@ export default function UserDashboard({
                       tapFeedback();
                       onToggleFavorite(house.id);
                     }}
-                    className="bg-white/95 hover:bg-white text-rose-500 hover:text-rose-600 p-1.5 rounded-full flex items-center justify-center shadow transition-all duration-200 cursor-pointer"
+                    className="w-8 h-8 bg-black/35 hover:bg-black/50 backdrop-blur-xl border border-white/25 rounded-full flex items-center justify-center shadow-[0_4px_14px_-4px_rgba(0,0,0,0.5)] transition-all duration-200 cursor-pointer"
                     title={currentUser?.favorites?.includes(house.id) ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
                     aria-label={currentUser?.favorites?.includes(house.id) ? `إزالة ${house.name} من المفضلة` : `إضافة ${house.name} للمفضلة`}
                   >
-                    <Heart className={`w-3.5 h-3.5 ${currentUser?.favorites?.includes(house.id) ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+                    <Heart className={`w-4 h-4 ${currentUser?.favorites?.includes(house.id) ? 'fill-rose-500 text-rose-500' : 'text-white'}`} />
                   </button>
 
                   <button
                     id={`toggle-compare-card-${house.id}`}
                     type="button"
                     onClick={(e) => handleToggleCompare(house.id, e)}
-                    className={`p-1.5 rounded-full flex items-center justify-center shadow transition-all duration-200 cursor-pointer ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-200 cursor-pointer shadow-[0_4px_14px_-4px_rgba(0,0,0,0.5)] ${
                       comparedHouseIds.includes(house.id)
-                        ? 'bg-amber-600 text-white hover:bg-amber-700'
-                        : 'bg-white/95 text-slate-400 hover:text-[#5A5A40] hover:bg-white'
+                        ? 'bg-[#C8A45D] border-[#C8A45D] text-white'
+                        : 'bg-black/35 border-white/25 text-white hover:bg-black/50'
                     }`}
                     title={comparedHouseIds.includes(house.id) ? 'إزالة من المقارنة' : 'إضافة للمقارنة والمفاضلة'}
                     aria-label={comparedHouseIds.includes(house.id) ? `إزالة ${house.name} من المقارنة` : `إضافة ${house.name} للمقارنة`}
                     aria-pressed={comparedHouseIds.includes(house.id)}
                   >
-                    <ArrowLeftRight className="w-3.5 h-3.5" />
+                    <ArrowLeftRight className="w-4 h-4" />
                   </button>
                 </div>
 
@@ -818,7 +851,7 @@ export default function UserDashboard({
                     </span>
                   )}
                   {bookedBeforeIds.has(house.id) && (
-                    <span className="bg-[#0A2342]/90 backdrop-blur-sm text-[#C5A059] text-[8.5px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+                    <span className="bg-[#0A2342]/85 backdrop-blur-xl text-[#C8A45D] text-[8.5px] font-extrabold px-2.5 py-1 rounded-full shadow-[0_4px_14px_-4px_rgba(0,0,0,0.35)]">
                       ⭐ حجزتم هنا قبل كده
                     </span>
                   )}
@@ -834,22 +867,32 @@ export default function UserDashboard({
                   )}
                 </div>
 
-                {/* Details panel — frosted glass floating over the photo. Its
-                    height is what drives the card's height. */}
-                <div className="relative flex p-2.5">
-                  <div className="w-[47%] bg-black/35 backdrop-blur-xl rounded-2xl border border-white/25 shadow-sm p-2.5 space-y-1.5">
-                    <h3 className="text-[11.5px] font-black text-white leading-snug line-clamp-2">
+                {/* Details panel — a dark card floating over the photo. Its
+                    height is what drives the card's height. 52%, not 47: the
+                    two rates have to sit side by side and read as equals, and
+                    the photograph is still the larger half. */}
+                <div className="relative flex p-3">
+                  <div className="w-[52%] bg-[#1D1D1D]/95 backdrop-blur-xl rounded-[28px] border border-white/10 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.5)] p-3 space-y-2">
+                    <h3 className="text-[12.5px] font-black text-white leading-snug line-clamp-2">
                       {house.name}
                     </h3>
 
-                    <p className="text-[9.5px] text-white/70 font-bold line-clamp-2 leading-relaxed">
-                      {house.description}
+                    {/* The description gave way to this. On a card, where the
+                        place IS matters more than how it describes itself, and
+                        two lines of prose was the crowding the rest of the
+                        panel could not afford. */}
+                    <p className="flex items-center gap-1 text-[9px] font-bold text-[#CFCFCF] leading-none">
+                      <MapPin className="w-3 h-3 text-[#C8A45D] shrink-0" />
+                      <span className="truncate">
+                        {house.nearbyLandmark ? `${house.nearbyLandmark} — ${house.governorate}` : house.governorate}
+                      </span>
                     </p>
 
-                    {/* Capacity is always known; the two service icons only appear
-                        for houses that actually list them, so a house without a
-                        garage shows three icons rather than a blank slot. */}
-                    <div className="flex items-start gap-1.5 pt-0.5">
+                    <span aria-hidden="true" className="block h-px bg-white/[0.12]" />
+
+                    {/* Three, and only three. A fourth and a fifth turned this
+                        row into a legend to be decoded rather than a glance. */}
+                    <div className="flex items-start gap-1.5">
                       <div className="flex flex-col items-center gap-0.5">
                         <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
                           <Users className="w-4 h-4" />
@@ -881,40 +924,37 @@ export default function UserDashboard({
                         </div>
                       )}
 
-                      {house.services.includes('واي فاي') && (
+                      {/* The third slot, and only if the first two left one:
+                          wifi steps in when the house has no parking so the
+                          row is three or two, never a gap where one was. The
+                          «يوم روحي» badge that used to live here is gone — the
+                          day rate now has a box of its own below, and saying
+                          it twice was saying it once too many. */}
+                      {!(house.services.includes('موقف مجاني') || house.services.includes('جراج خاص'))
+                        && house.services.includes('واي فاي') && (
                         <div className="flex flex-col items-center gap-0.5">
-                          <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
+                          <span className="w-7 h-7 rounded-full bg-white/[0.08] border border-white/[0.12] flex items-center justify-center text-white">
                             <Wifi className="w-4 h-4" />
                           </span>
-                          <span className="text-[8px] font-bold text-white/70 leading-none text-center">واي<br />فاي</span>
-                        </div>
-                      )}
-
-                      {/* A day retreat is not an amenity, but this row is what
-                          a guest actually scans, and «does this house do a يوم
-                          روحي» is a question they arrive with. The price is on
-                          the place's own page — here it is only whether. */}
-                      {offersDayUse(house) && (
-                        <div className="flex flex-col items-center gap-0.5">
-                          <span className="w-7 h-7 rounded-full bg-[#C9A24A]/25 border border-[#E8C88A]/40 flex items-center justify-center text-[#E8C88A]">
-                            <Sun className="w-4 h-4" />
-                          </span>
-                          <span className="text-[8px] font-bold text-white/70 leading-none text-center">يوم<br />روحي</span>
+                          <span className="text-[8px] font-bold text-[#CFCFCF] leading-none text-center">واي<br />فاي</span>
                         </div>
                       )}
                     </div>
 
-                    <div className="flex items-baseline gap-1 pt-1">
+                    {/* The rates. In RTL the first box is the RIGHT one, so
+                        the night — the rate every house has — leads, and the
+                        day sits beside it where a house sells one. A house
+                        that does not gets one full-width box rather than an
+                        empty half pretending to be a choice. */}
+                    <div className="flex items-stretch gap-1.5">
                       {house.propertyType === 'student' || house.propertyType === 'staff' ? (
-                        <>
-                          <span className="text-[15px] font-black text-[#E8C88A] leading-none">{house.monthlyRent ?? 0}</span>
-                          <span className="text-[8.5px] font-bold text-white/70">ج.م / شهريًا</span>
-                        </>
+                        <PriceBox icon={BedDouble} label="شهريًا" value={house.monthlyRent ?? 0} />
                       ) : (
                         <>
-                          <span className="text-[8.5px] font-bold text-white/70">من</span>
-                          <span className="text-[15px] font-black text-[#E8C88A] leading-none">{house.pricePerNightPerPerson}</span>
-                          <span className="text-[8.5px] font-bold text-white/70">ج.م / الليلة للفرد</span>
+                          <PriceBox icon={BedDouble} label="الليلة" value={house.pricePerNightPerPerson} />
+                          {offersDayUse(house) && (
+                            <PriceBox icon={Sun} label="اليوم" value={house.dayUsePricePerPerson as number} />
+                          )}
                         </>
                       )}
                     </div>
@@ -986,9 +1026,9 @@ export default function UserDashboard({
                       );
                     })()}
 
-                    <div className="relative flex items-center justify-center bg-gradient-to-l from-[#B8944E] to-[#E0C48A] text-white rounded-full py-2 mt-1">
-                      <span className="text-[10px] font-extrabold">عرض التفاصيل</span>
-                      <span className="absolute right-1.5 w-5 h-5 rounded-full bg-black/25 flex items-center justify-center">
+                    <div className="relative flex items-center justify-center bg-gradient-to-l from-[#B8944E] to-[#DFC084] text-white rounded-[22px] py-2.5 shadow-[0_8px_20px_-8px_rgba(200,164,93,0.6)]">
+                      <span className="text-[10.5px] font-extrabold">عرض التفاصيل</span>
+                      <span className="absolute right-2 w-5 h-5 rounded-full bg-black/25 flex items-center justify-center">
                         <ArrowLeft className="w-3 h-3" />
                       </span>
                     </div>
