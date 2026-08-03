@@ -21,3 +21,27 @@ describe('day use, end to end through the seeded data', () => {
     expect(occupiedEnd('2026-07-15', '2026-07-18')).toBe('2026-07-18');
   });
 });
+
+describe('the browse filter', () => {
+  // The matcher UserDashboard applies, in the same order and with the same
+  // rule, so a filter that silently matches everything cannot pass here.
+  const matches = (h: typeof INITIAL_HOUSES[number], dayUseOnly: boolean) =>
+    dayUseOnly ? offersDayUse(h) : true;
+
+  it('narrows to houses that actually sell a day', () => {
+    const all = INITIAL_HOUSES.filter((h) => matches(h, false));
+    const onlyDay = INITIAL_HOUSES.filter((h) => matches(h, true));
+    expect(all.length).toBe(INITIAL_HOUSES.length);
+    expect(onlyDay.length).toBeGreaterThan(0);
+    expect(onlyDay.length).toBeLessThan(all.length);
+    for (const h of onlyDay) expect(typeof h.dayUsePricePerPerson).toBe('number');
+  });
+
+  it('drops a house whose owner withdrew the offer by zeroing it', () => {
+    // 0 is how the owner form clears the field — undefined would vanish from
+    // pending_edit's JSON and the price could never be taken back.
+    const withdrawn = { ...INITIAL_HOUSES[0], dayUsePricePerPerson: 0 };
+    expect(offersDayUse(INITIAL_HOUSES[0])).toBe(true);
+    expect(offersDayUse(withdrawn)).toBe(false);
+  });
+});

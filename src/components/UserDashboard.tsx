@@ -1,10 +1,10 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { RetreatHouse, User, PromoBanner, Booking, Review } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
-import { Search, MapPin, Map as MapIcon, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking, Flame } from 'lucide-react';
+import { Search, MapPin, Map as MapIcon, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking, Flame, Sun } from 'lucide-react';
 import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
 import { loadHousesAvailability, loadHouseBookingCounts } from '../lib/db';
-import { computeStayPrice } from '../lib/pricing';
+import { computeStayPrice, offersDayUse } from '../lib/pricing';
 import { isBannerLive, matchesAudience, pickExperimentVariants } from '../lib/bannerVisibility';
 import { bannerSeed } from '../lib/bannerEvents';
 import { copticSeason } from '../lib/copticSeason';
@@ -131,6 +131,7 @@ export default function UserDashboard({
   const [selectedGov, setSelectedGov] = useState('');
   const [guestCount, setGuestCount] = useState<number | ''>('');
   const [maxPrice, setMaxPrice] = useState<number>(400);
+  const [dayUseOnly, setDayUseOnly] = useState(false);
   const [selectedSuitabilities, setSelectedSuitabilities] = useState<('youth' | 'children' | 'families' | 'retreat')[]>([]);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
@@ -283,6 +284,11 @@ export default function UserDashboard({
     // Price match
     const matchesPrice = house.pricePerNightPerPerson <= c.maxPrice;
 
+    // «يوم روحي» — only houses that have actually priced a day. A house whose
+    // owner set the price back to 0 has withdrawn the offer, and offersDayUse
+    // is the one place that decision is read.
+    const matchesDayUse = c.dayUseOnly ? offersDayUse(house) : true;
+
     // Suitabilities match (must match all selected suitabilities if any)
     const matchesSuitability = selectedSuitabilities.length > 0 
       ? selectedSuitabilities.every((suit) => house.suitability.includes(suit))
@@ -320,7 +326,7 @@ export default function UserDashboard({
       if (freeBeds < (c.guestCount || 1)) return false;
     }
 
-    return matchesSearch && matchesGov && matchesGuests && matchesPrice && matchesSuitability && matchesAmenities;
+    return matchesSearch && matchesGov && matchesGuests && matchesPrice && matchesDayUse && matchesSuitability && matchesAmenities;
   };
 
   // What the committed filters currently select.
@@ -332,6 +338,7 @@ export default function UserDashboard({
     maxPrice,
     amenities: selectedAmenities,
     seaProximity: selectedSeaProximity,
+    dayUseOnly,
   };
 
   const filteredHouses = houses.filter((h) => matchesCriteria(h, committed)).sort((a, b) => {
@@ -649,6 +656,7 @@ export default function UserDashboard({
           setMaxPrice(d.maxPrice);
           setSelectedAmenities(d.amenities);
           setSelectedSeaProximity(d.seaProximity);
+          setDayUseOnly(d.dayUseOnly);
           setShowFilters(false);
           setFilterPreview(null);
         }}
@@ -879,6 +887,19 @@ export default function UserDashboard({
                             <Wifi className="w-4 h-4" />
                           </span>
                           <span className="text-[8px] font-bold text-white/70 leading-none text-center">واي<br />فاي</span>
+                        </div>
+                      )}
+
+                      {/* A day retreat is not an amenity, but this row is what
+                          a guest actually scans, and «does this house do a يوم
+                          روحي» is a question they arrive with. The price is on
+                          the place's own page — here it is only whether. */}
+                      {offersDayUse(house) && (
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="w-7 h-7 rounded-full bg-[#C9A24A]/25 border border-[#E8C88A]/40 flex items-center justify-center text-[#E8C88A]">
+                            <Sun className="w-4 h-4" />
+                          </span>
+                          <span className="text-[8px] font-bold text-white/70 leading-none text-center">يوم<br />روحي</span>
                         </div>
                       )}
                     </div>

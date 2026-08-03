@@ -2077,6 +2077,16 @@ export default function HouseDetail({
                 <span className="block text-[10.5px] font-medium text-[#8A8A70]">
                   {isMonthlyHousing ? 'لكل فرد / شهر' : 'لكل فرد / ليلة'}
                 </span>
+                {/* The other rate this house sells, where it sells one. Under
+                    the nightly figure rather than beside it: it is the second
+                    answer to the same question, not a competing headline. */}
+                {offersDayUse(house) && (
+                  <span className="block text-[10px] font-bold text-[#B8944E] mt-2 leading-snug">
+                    أو {arabicNumber(house.dayUsePricePerPerson as number)} ج.م
+                    <br />
+                    <span className="font-medium text-[#8A8A70]">لليوم بدون مبيت</span>
+                  </span>
+                )}
                 <span aria-hidden="true" className="block w-12 h-0.5 rounded-full bg-[#C9A24A]/30 mx-auto mt-3" />
               </div>
 

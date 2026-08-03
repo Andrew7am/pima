@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   X, ChevronLeft, ChevronRight, MapPin, Users, CalendarDays, Tag, Star, Waves,
-  Search, Check, RotateCcw,
+  Search, Check, RotateCcw, Sun,
 } from 'lucide-react';
 import { GOVERNORATES, AMENITIES_LIST } from '../mockData';
 import { tapFeedback } from '../lib/haptics';
@@ -19,6 +19,8 @@ export interface FilterDraft {
   maxPrice: number;
   amenities: string[];
   seaProximity: SeaProximity;
+  /** Only houses that host a «يوم روحي» — arrive and leave the same day. */
+  dayUseOnly: boolean;
 }
 
 interface FilterSheetProps {
@@ -96,7 +98,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
     tapFeedback();
     const cleared: FilterDraft = {
       governorate: '', guestCount: '', checkIn: '', checkOut: '',
-      maxPrice: 400, amenities: [], seaProximity: 'all',
+      maxPrice: 400, amenities: [], seaProximity: 'all', dayUseOnly: false,
     };
     setDraft(cleared);
     onPreview(cleared);
@@ -112,6 +114,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
   if (n) chips.push({ icon: <CalendarDays className="w-3 h-3" />, label: `${n} ${n === 1 ? 'ليلة' : n === 2 ? 'ليلتين' : 'ليالٍ'}` });
   if (draft.maxPrice !== 400) chips.push({ icon: <Tag className="w-3 h-3" />, label: `حتى ${draft.maxPrice} ج.م` });
   if (draft.amenities.length) chips.push({ icon: <Star className="w-3 h-3" />, label: `${draft.amenities.length} خدمات` });
+  if (draft.dayUseOnly) chips.push({ icon: <Sun className="w-3 h-3" />, label: 'يوم روحي' });
   if (draft.seaProximity !== 'all') {
     chips.push({ icon: <Waves className="w-3 h-3" />, label: SEA_OPTIONS.find((o) => o.key === draft.seaProximity)!.label });
   }
@@ -124,7 +127,9 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
     { step: 'dates' as Step, icon: <CalendarDays className="w-4 h-4" />, title: 'التواريخ',
       sub: n ? `${prettyDate(draft.checkIn)} - ${prettyDate(draft.checkOut)} (${n} ${n === 1 ? 'ليلة' : n === 2 ? 'ليلتين' : 'ليالٍ'})` : 'اختر تاريخ الوصول والمغادرة' },
     { step: 'budget' as Step, icon: <Tag className="w-4 h-4" />, title: 'الميزانية',
-      sub: draft.maxPrice !== 400 ? `حتى ${draft.maxPrice} ج.م لليلة` : 'أقصى سعر لليلة للفرد' },
+      sub: draft.dayUseOnly
+        ? (draft.maxPrice !== 400 ? `حتى ${draft.maxPrice} ج.م · يوم روحي` : 'يوم روحي بدون مبيت')
+        : (draft.maxPrice !== 400 ? `حتى ${draft.maxPrice} ج.م لليلة` : 'أقصى سعر لليلة للفرد') },
     { step: 'amenities' as Step, icon: <Star className="w-4 h-4" />, title: 'الخدمات والمرافق',
       sub: draft.amenities.length ? `${draft.amenities.length} خدمات محددة` : 'واي فاي، مسبح، جراج...' },
   ];
@@ -344,6 +349,26 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
               <div className="flex justify-between text-[8.5px] font-bold text-[#B5AF98] mt-1">
                 {[100, 200, 300, 400, 500, 600, '+700'].map((t) => <span key={String(t)}>{t}</span>)}
               </div>
+
+              {/* Sits with the budget because it is a question about what the
+                  stay costs: a day retreat is priced apart from the night. */}
+              <button type="button" onClick={() => { tapFeedback(); patch({ dayUseOnly: !draft.dayUseOnly }); }}
+                aria-pressed={draft.dayUseOnly}
+                className={`w-full mt-5 flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-right transition-colors duration-200 pima-press ${
+                  draft.dayUseOnly ? 'bg-[#FDF9EF] border-[#C9A24A]' : 'bg-white border-[#EDE7DA]'}`}>
+                <span className={`w-9 h-9 rounded-full border flex items-center justify-center shrink-0 ${
+                  draft.dayUseOnly ? 'bg-white border-[#EBD9B4]' : 'bg-[#F6F0E2] border-[#EDE7DA]'}`}>
+                  <Sun className={`w-4 h-4 ${draft.dayUseOnly ? 'text-[#B8944E]' : 'text-[#8A8A70]'}`} />
+                </span>
+                <span className="min-w-0 flex-1 leading-tight">
+                  <span className={`block text-[11.5px] font-black ${draft.dayUseOnly ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>يوم روحي بدون مبيت</span>
+                  <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">البيوت التي تستقبل مجموعات ليوم واحد</span>
+                </span>
+                <span className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
+                  draft.dayUseOnly ? 'bg-[#C9A24A] border-[#C9A24A]' : 'border-[#DED6C4]'}`}>
+                  {draft.dayUseOnly && <Check className="w-3 h-3 text-white" strokeWidth={3.5} />}
+                </span>
+              </button>
             </div>
           )}
 
