@@ -383,7 +383,7 @@ export default function OwnerRoomsManager({
                         {type.facilities.map((f) => {
                           const meta2 = FACILITIES.find((x) => x.key === f);
                           if (!meta2) return null;
-                          return <span key={f} className="inline-flex items-center gap-1 text-[9px] font-bold text-[var(--color-owner-secondary)] bg-white border border-[var(--color-owner-border)] rounded-lg px-1.5 py-0.5"><meta2.icon className="w-3 h-3" /> {meta2.label}</span>;
+                          return <span key={f} className="inline-flex items-center gap-1 text-[9px] font-bold text-[var(--color-owner-secondary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-lg px-1.5 py-0.5"><meta2.icon className="w-3 h-3" /> {meta2.label}</span>;
                         })}
                       </div>
                     )}

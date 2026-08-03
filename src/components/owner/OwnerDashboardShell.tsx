@@ -1120,7 +1120,7 @@ export default function OwnerDashboardShell({
                       request can carry the applicant's notes too, and notes the
                       owner never sees are worse than notes never asked for. */}
                   {booking.conferenceDetails && (booking.conferenceDetails.extraRequests || booking.conferenceDetails.diocese || booking.conferenceDetails.mealsIncluded !== undefined) && (
-                    <div className="bg-amber-50/40 p-2.5 rounded-xl border border-amber-200/60 text-[10px] text-[var(--color-owner-text)] space-y-1">
+                    <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-200/60 text-[10px] text-[var(--color-owner-text)] space-y-1">
                       <span className="font-bold text-amber-900 block">📝 ملاحظات وطلبات العميل:</span>
                       {booking.conferenceDetails.extraRequests && (
                         <p className="italic text-slate-700 whitespace-pre-line">{booking.conferenceDetails.extraRequests}</p>
@@ -1152,7 +1152,7 @@ export default function OwnerDashboardShell({
                           booking.ownerNotes = val || undefined;
                         }
                       }}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-[11px] px-2.5 py-1.5 rounded-xl text-[var(--color-owner-text)] outline-none focus:ring-1 focus:ring-[var(--color-owner-primary)] resize-none"
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[11px] px-2.5 py-1.5 rounded-xl text-[var(--color-owner-text)] outline-none focus:ring-1 focus:ring-[var(--color-owner-primary)] resize-none"
                     />
                   </div>
                   {isPending && (
@@ -1298,17 +1298,17 @@ export default function OwnerDashboardShell({
                   <div>
                     <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">اسم الحاجز / الجهة:</label>
                     <input id="mb-name" type="text" value={mbName} onChange={(e) => setMbName(e.target.value)}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">رقم الهاتف:</label>
                     <input id="mb-phone" type="tel" value={mbPhone} onChange={(e) => setMbPhone(e.target.value)}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">نوع الحجز:</label>
                     <select id="mb-type" value={mbType} onChange={(e) => setMbType(e.target.value as 'manual' | 'temporary')}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none">
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none">
                       <option value="manual">يدوي مؤكد</option>
                       <option value="temporary">مؤقت (بانتظار التأكيد)</option>
                     </select>
@@ -1316,22 +1316,22 @@ export default function OwnerDashboardShell({
                   <div>
                     <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">تاريخ الوصول:</label>
                     <input id="mb-checkin" type="date" value={mbCheckIn} onChange={(e) => setMbCheckIn(e.target.value)}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">تاريخ المغادرة:</label>
                     <input id="mb-checkout" type="date" value={mbCheckOut} onChange={(e) => setMbCheckOut(e.target.value)}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">عدد الأفراد:</label>
                     <input id="mb-guests" type="number" min={1} value={mbGuests} onChange={(e) => setMbGuests(parseInt(e.target.value) || 1)} onFocus={(e) => e.target.select()}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">إجمالي السعر (ج.م):</label>
                     <input id="mb-price" type="number" min={0} value={mbPrice} onChange={(e) => setMbPrice(e.target.value)} onFocus={(e) => e.target.select()}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                   </div>
                 </div>
                 {(() => {
@@ -1394,7 +1394,7 @@ export default function OwnerDashboardShell({
                     }`}
                   >
                     <span>{f.label}</span>
-                    <span className={`text-[9px] px-1.5 rounded-full ${isSel ? 'bg-white/25' : 'bg-white border border-[var(--color-owner-border)] text-[var(--color-owner-text)]'}`}>{count}</span>
+                    <span className={`text-[9px] px-1.5 rounded-full ${isSel ? 'bg-white/25' : 'bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)]'}`}>{count}</span>
                   </button>
                 );
               })}
@@ -1615,7 +1615,7 @@ export default function OwnerDashboardShell({
                 <div>
                   <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">نوع وتصنيف العقار السكني:</label>
                   <select id="add-property-type" value={propertyType} onChange={(e) => setPropertyType(e.target.value as 'conference' | 'student' | 'staff')}
-                    className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none">
+                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none">
                     <option value="conference">بيت مؤتمرات / فندق مسيحي</option>
                     <option value="student">سكن طلاب وطالبات مغتربين</option>
                     <option value="staff">سكن موظفين ومغتربين</option>
@@ -1625,7 +1625,7 @@ export default function OwnerDashboardShell({
                   <div>
                     <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">فئة السكن الطلابية:</label>
                     <select value={studentHousingGender} onChange={(e) => setStudentHousingGender(e.target.value as 'boys' | 'girls')}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none">
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none">
                       <option value="boys">بنين (شباب مسيحي)</option><option value="girls">بنات (شابات مسيحيات)</option>
                     </select>
                   </div>
@@ -1635,13 +1635,13 @@ export default function OwnerDashboardShell({
               <div>
                 <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">{propertyType === 'conference' ? 'اسم بيت المؤتمرات / الفندق المسيحي:' : 'اسم السكن المغترب:'}</label>
                 <input id="add-house-name" type="text" required value={houseName} onChange={(e) => setHouseName(e.target.value)} onFocus={(e) => e.target.select()}
-                  className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+                  className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">وصف تفصيلي للبيت ومميزاته:</label>
                 <textarea id="add-house-desc" rows={3} required value={houseDesc} onChange={(e) => setHouseDesc(e.target.value)} onFocus={(e) => e.target.select()}
-                  className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+                  className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
               </div>
             </div>
 
@@ -1661,13 +1661,13 @@ export default function OwnerDashboardShell({
                   <div>
                     <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">الإيجار الشهري المطلوب للفرد (ج.م):</label>
                     <input type="number" required min={100} value={monthlyRent} onChange={(e) => setMonthlyRent(parseInt(e.target.value) || 1500)} onFocus={(e) => e.target.select()}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                   </div>
                   {propertyType === 'student' && (
                     <div>
                       <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">القرب من الجامعة / الكلية:</label>
                       <input type="text" value={distanceFromUniversity} onChange={(e) => setDistanceFromUniversity(e.target.value)}
-                        className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                        className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                     </div>
                   )}
                 </div>
@@ -1677,12 +1677,12 @@ export default function OwnerDashboardShell({
                   <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">{propertyType === 'conference' ? 'سعر الفرد لليلة (ج.م):' : 'سعر تأمين الحجز مسبقاً (ج.م):'}</label>
                   <input id="add-house-price" type="number" required min={0} value={propertyType === 'conference' ? pricePerNight : 200} disabled={propertyType !== 'conference'}
                     onChange={(e) => setPricePerNight(parseInt(e.target.value) || 150)} onFocus={(e) => e.target.select()}
-                    className="w-full bg-white disabled:bg-gray-100 border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                    className="w-full bg-[var(--color-owner-surface)] disabled:bg-gray-100 border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">عدد الغرف الإجمالي:</label>
                   <input id="add-house-rooms" type="number" required min={1} value={roomsCount} onChange={(e) => setRoomsCount(parseInt(e.target.value) || 10)} onFocus={(e) => e.target.select()}
-                    className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                 </div>
                 {/* Day use. Optional and blank by default: a house that does
                     not host «يوم روحي» leaves it empty and Pima never offers
@@ -1695,13 +1695,13 @@ export default function OwnerDashboardShell({
                       value={dayUsePrice === null ? '' : dayUsePrice}
                       onChange={(e) => setDayUsePrice(e.target.value === '' ? null : (parseInt(e.target.value) || 0))}
                       onFocus={(e) => e.target.select()}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] placeholder:text-[10px] focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] placeholder:text-[10px] focus:outline-none" />
                   </div>
                 )}
                 <div>
                   <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">عدد الأسرة الكلي:</label>
                   <input id="add-house-beds" type="number" required min={1} value={bedsCount} onChange={(e) => setBedsCount(parseInt(e.target.value) || 30)} onFocus={(e) => e.target.select()}
-                    className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                 </div>
               </div>
 
@@ -1717,7 +1717,7 @@ export default function OwnerDashboardShell({
                     {currentRates.length > 0 && (
                       <div className="space-y-1.5">
                         {currentRates.map((r) => (
-                          <div key={r.id} className="flex items-center justify-between bg-white border border-[var(--color-owner-border)] rounded-xl px-3 py-1.5 text-[10px]">
+                          <div key={r.id} className="flex items-center justify-between bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-3 py-1.5 text-[10px]">
                             <span className="font-extrabold text-[var(--color-owner-text)]">{r.label}</span>
                             <span className="text-[var(--color-owner-secondary)] font-bold">{r.startDate} ← {r.endDate}</span>
                             <span className="font-black text-amber-800">{r.pricePerNight} ج.م/ليلة</span>
@@ -1732,22 +1732,22 @@ export default function OwnerDashboardShell({
                       <div className="sm:col-span-1">
                         <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">اسم الموسم/العرض:</label>
                         <input id="sr-label-input" type="text" value={srLabel} onChange={(e) => setSrLabel(e.target.value)} onFocus={(e) => e.target.select()} placeholder="موسم الصيف"
-                          className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                       </div>
                       <div>
                         <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">من:</label>
                         <input id="sr-start-input" type="date" value={srStart} onChange={(e) => setSrStart(e.target.value)}
-                          className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                       </div>
                       <div>
                         <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">إلى:</label>
                         <input id="sr-end-input" type="date" value={srEnd} min={srStart || undefined} onChange={(e) => setSrEnd(e.target.value)}
-                          className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                       </div>
                       <div>
                         <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">سعر الفرد/ليلة:</label>
                         <input id="sr-price-input" type="number" min={0} value={srPrice} onChange={(e) => setSrPrice(e.target.value)} onFocus={(e) => e.target.select()}
-                          className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                       </div>
                       <button id="sr-add-btn" type="button" onClick={() => {
                           const price = parseFloat(srPrice);
@@ -1789,7 +1789,7 @@ export default function OwnerDashboardShell({
               <div>
                 <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">الأنشطة (افصل بـ "،"):</label>
                 <input type="text" value={activitiesInput} onChange={(e) => setActivitiesInput(e.target.value)}
-                  className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+                  className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
               </div>
 
               <div>
@@ -1802,7 +1802,7 @@ export default function OwnerDashboardShell({
                         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[10px] font-semibold text-right transition-all cursor-pointer ${
                           isChecked ? 'bg-emerald-50 border-emerald-500 text-emerald-900' : 'bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)]'
                         }`}>
-                        <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-300'}`}>
+                        <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-[var(--color-owner-surface)] border-slate-300'}`}>
                           {isChecked && <Check className="w-2.5 h-2.5" />}
                         </span>
                         <span>{srv}</span>
@@ -1822,7 +1822,7 @@ export default function OwnerDashboardShell({
                   {halls.length > 0 && (
                     <div className="space-y-1 mb-2">
                       {halls.map((h) => (
-                        <div key={h.id} className="flex justify-between items-center bg-white px-2.5 py-1.5 rounded-lg text-[10px] border border-[var(--color-owner-border)]">
+                        <div key={h.id} className="flex justify-between items-center bg-[var(--color-owner-surface)] px-2.5 py-1.5 rounded-lg text-[10px] border border-[var(--color-owner-border)]">
                           <div><span className="font-bold text-[var(--color-owner-text)]">{h.name}</span><span className="text-[var(--color-owner-secondary)] font-medium"> (سعة {h.capacity} فرد)</span></div>
                           <button type="button" onClick={() => handleRemoveHall(h.id)} className="text-rose-600 hover:text-rose-800 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
@@ -1831,10 +1831,10 @@ export default function OwnerDashboardShell({
                   )}
                   <div className="space-y-1.5">
                     <input type="text" placeholder="اسم القاعة" value={hallName} onChange={(e) => setHallName(e.target.value)}
-                      className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
                     <div className="flex gap-2 items-center">
                       <input type="number" placeholder="السعة الاستيعابية" value={hallCapacity} onChange={(e) => setHallCapacity(parseInt(e.target.value) || 50)} onFocus={(e) => e.target.select()}
-                        className="flex-1 bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
+                        className="flex-1 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
                       <button type="button" onClick={handleAddHall} className="bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shrink-0 cursor-pointer">أضف القاعة +</button>
                     </div>
                     <button type="button" onClick={() => requestHouseEdit(ownerHouses[0], { conferenceHalls: halls })}
@@ -1864,20 +1864,20 @@ export default function OwnerDashboardShell({
                 <div>
                   <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">المحافظة التابع لها:</label>
                   <select id="add-house-gov" value={houseGov} onChange={(e) => setHouseGov(e.target.value)}
-                    className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none">
+                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none">
                     {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">العنوان بالتفصيل:</label>
                   <input id="add-house-address" type="text" required value={houseAddress} onChange={(e) => setHouseAddress(e.target.value)} onFocus={(e) => e.target.select()}
-                    className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">أقرب معلم معروف (اختياري) — يظهر على كارت البيت:</label>
                   <input id="add-house-landmark" type="text" value={nearbyLandmark} onChange={(e) => setNearbyLandmark(e.target.value)}
                     maxLength={80} placeholder="مثال: 12 كم من المنتزه"
-                    className="w-full bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">موقع البيت على الخريطة:</label>
@@ -1890,7 +1890,7 @@ export default function OwnerDashboardShell({
                           () => { setGeoError('تعذر تحديد الموقع. تأكد من إذن الموقع في المتصفح.'); setGeoLoading(false); }
                         );
                       }}
-                      className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl border border-[var(--color-owner-primary)] text-[var(--color-owner-primary)] bg-white hover:bg-[var(--color-owner-hover)] transition-colors">
+                      className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl border border-[var(--color-owner-primary)] text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] transition-colors">
                       {geoLoading ? <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-[var(--color-owner-primary)] border-t-transparent rounded-full" /> : '📍'}
                       {geoLoading ? 'جاري تحديد الموقع...' : 'استخدم موقعي الحالي'}
                     </button>
@@ -1898,7 +1898,7 @@ export default function OwnerDashboardShell({
                       type="button"
                       id="toggle-manual-map-btn"
                       onClick={() => setShowManualMap((v) => !v)}
-                      className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl border border-[var(--color-owner-border)] text-[var(--color-owner-text)] bg-white hover:bg-[var(--color-owner-hover)] transition-colors"
+                      className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl border border-[var(--color-owner-border)] text-[var(--color-owner-text)] bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] transition-colors"
                     >
                       <MapPin className="w-3.5 h-3.5" />
                       {showManualMap ? 'إخفاء الخريطة' : 'أو حدد يدوياً على الخريطة'}
@@ -1949,14 +1949,14 @@ export default function OwnerDashboardShell({
                       <div>
                         <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">نوع وتصنيف الصورة:</label>
                         <select value={extraPhotoCategory} onChange={(e) => setExtraPhotoCategory(e.target.value as 'room' | 'service' | 'other')}
-                          className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none">
+                          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none">
                           <option value="room">🛌 غرف النوم والأسرة</option><option value="service">🍽️ الخدمات والمطعم والملاعب</option><option value="other">⛪ المبنى وقاعات الاجتماعات</option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">وصف مختصر:</label>
                         <input type="text" value={extraPhotoLabel} onChange={(e) => setExtraPhotoLabel(e.target.value)}
-                          className="w-full bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
                       </div>
                       <div>
                         <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">صورة الغرفة/الخدمة:</label>
@@ -1984,7 +1984,7 @@ export default function OwnerDashboardShell({
                         {base.images.map((img, idx) => {
                           const desc = base.imageDescriptions?.[img] || (idx === 0 ? 'الصورة الرئيسية' : 'صورة إضافية');
                           return (
-                            <div key={`${img}-${idx}`} className="relative bg-white border border-[var(--color-owner-border)] rounded-xl overflow-hidden">
+                            <div key={`${img}-${idx}`} className="relative bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl overflow-hidden">
                               <img referrerPolicy="no-referrer" src={img} alt="بيت خلوة" className="w-full h-14 object-cover" />
                               <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] p-0.5 text-center truncate font-bold">{desc}</div>
                               {base.images.length > 1 && (
@@ -2004,7 +2004,7 @@ export default function OwnerDashboardShell({
 
           {ownerHouses.length >= 1 && (
             <button type="button" onClick={() => { if (confirm(`هل أنت متأكد من رغبتك في حذف بيت "${ownerHouses[0].name}" نهائياً؟`)) onDeleteHouse?.(ownerHouses[0].id); }}
-              className="w-full flex items-center justify-center gap-1.5 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl py-2.5 transition-colors cursor-pointer bg-white">
+              className="w-full flex items-center justify-center gap-1.5 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-xl py-2.5 transition-colors cursor-pointer bg-[var(--color-owner-surface)]">
               <Trash2 className="w-3.5 h-3.5" /><span>حذف البيت نهائياً</span>
             </button>
           )}
@@ -2081,11 +2081,11 @@ export default function OwnerDashboardShell({
                 )}
                 <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-[var(--color-owner-border)]">
                   <select value={paymentDraftType} onChange={(e) => setPaymentDraftType(e.target.value as typeof paymentDraftType)}
-                    className="bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none">
+                    className="bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none">
                     {Object.entries(PAYMENT_TYPE_LABELS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
                   </select>
                   <input type="text" placeholder="الرقم أو المعرّف" value={paymentDraftValue} onChange={(e) => setPaymentDraftValue(e.target.value)}
-                    className="flex-1 min-w-[120px] bg-white border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
+                    className="flex-1 min-w-[120px] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
                   <button type="button" onClick={handleAddPaymentMethod} className="bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer">إضافة</button>
                 </div>
               </>
@@ -2106,9 +2106,9 @@ export default function OwnerDashboardShell({
             <div className="flex items-center gap-1.5"><KeyRound className="w-4 h-4 text-[var(--color-owner-primary)]" /><h3 className="text-xs font-black text-[var(--color-owner-text)]">تغيير كلمة السر</h3></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input id="owner-new-password" type="password" placeholder="كلمة السر الجديدة" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                className="bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+                className="bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
               <input id="owner-confirm-password" type="password" placeholder="تأكيد كلمة السر" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                className="bg-white border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+                className="bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
             </div>
             {passwordMsg && (
               <p className={`text-[10px] font-bold ${passwordMsg.ok ? 'text-emerald-700' : 'text-rose-600'}`}>{passwordMsg.text}</p>
