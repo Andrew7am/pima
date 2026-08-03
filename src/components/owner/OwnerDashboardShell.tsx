@@ -7,6 +7,7 @@ import {
   MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun, Moon, Download, QrCode,
 } from 'lucide-react';
 import { bookingTypeLabel } from '../../lib/bookingGroups';
+import { editableHouseFields } from '../../lib/houseEdits';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
 import OwnerMessages from './OwnerMessages';
@@ -372,16 +373,8 @@ export default function OwnerDashboardShell({
   };
   const handleRemoveHall = (id: string) => setHalls(halls.filter((h) => h.id !== id));
 
-  const editableHouseFields = (h: RetreatHouse): Partial<RetreatHouse> => ({
-    name: h.name, description: h.description, governorate: h.governorate, address: h.address,
-    lat: h.lat, lng: h.lng, roomsCount: h.roomsCount, bedsCount: h.bedsCount,
-    roomsDescription: h.roomsDescription, pricePerNightPerPerson: h.pricePerNightPerPerson,
-    propertyType: h.propertyType, monthlyRent: h.monthlyRent, studentHousingGender: h.studentHousingGender,
-    distanceFromUniversity: h.distanceFromUniversity, nearbyLandmark: h.nearbyLandmark,
-    services: h.services, suitability: h.suitability,
-    conferenceHalls: h.conferenceHalls, activities: h.activities, images: h.images,
-    imageDescriptions: h.imageDescriptions,
-  });
+  // The allow-list moved to lib/houseEdits so it can be tested against what
+  // this form actually writes — it dropping a field is silent, and did.
   const getEditBase = (house: RetreatHouse): RetreatHouse => house.pendingEdit ? { ...house, ...house.pendingEdit } : house;
   const requestHouseEdit = (house: RetreatHouse, partial: Partial<RetreatHouse>) => {
     if (!onRequestHouseEdit) return;
