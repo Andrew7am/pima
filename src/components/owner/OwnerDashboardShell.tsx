@@ -1489,33 +1489,78 @@ export default function OwnerDashboardShell({
                   const depositAmt = booking.depositAmount || Math.round(booking.totalPrice * settings.depositRate);
                   const outstanding = booking.totalPrice - (booking.depositPaid ? depositAmt : 0);
                   const whatsappLink = `https://wa.me/2${booking.userPhone.replace(/^0/, '')}`;
+                  // A stripe down the leading edge, so the list reads before
+                  // it is read: the sort already puts urgent work on top, and
+                  // this makes that visible rather than merely true.
+                  const accent = booking.status === 'pending' ? '#F59E0B'
+                    : category === 'arrivals_today' || category === 'pending_payment' ? '#0EA5E9'
+                    : booking.status === 'rejected' || booking.status === 'cancelled' || booking.status === 'completed' ? '#CBD5E1'
+                    : '#22C55E';
+                  const nights = Math.max(0, Math.round(
+                    (new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86400000));
+                  const shortDay = (iso: string) => new Date(iso).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
+                  const nightsText = nights === 0 ? 'يوم واحد'
+                    : `${nights} ${nights === 1 ? 'ليلة' : nights === 2 ? 'ليلتان' : nights <= 10 ? 'ليالٍ' : 'ليلة'}`;
+                  const awaitingProof = booking.paymentStatus === 'pending_verification';
                   return (
                     <div
                       id={`owner-booking-${booking.id}`}
                       key={booking.id}
                       onClick={() => setSelectedBookingId(booking.id)}
-                      className="w-full text-right bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] rounded-3xl border border-[var(--color-owner-border)] shadow-sm p-4 space-y-2 transition-colors cursor-pointer"
+                      style={{ borderInlineStartColor: accent, borderInlineStartWidth: 4 }}
+                      className="w-full text-right bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] rounded-2xl border border-[var(--color-owner-border)] shadow-sm p-3.5 space-y-2.5 transition-colors cursor-pointer"
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold flex items-center gap-1.5">
-                            الحساب: {booking.userName}
-                            {booking.source === 'manual' && <span className="text-[9px] font-bold bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي 📞</span>}
-                            {booking.source === 'temporary' && <span className="text-[9px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded-full">مؤقت ⏳</span>}
-                          </span>
-                          <h4 className="text-xs font-bold text-[var(--color-owner-text)] mt-0.5">{booking.houseName}</h4>
-                          <div className="text-[10px] text-[var(--color-owner-secondary)] font-medium">{booking.checkIn} → {booking.checkOut} · {booking.guestsCount} فرد</div>
+                      {/* The PERSON leads. The house name used to be the
+                          heading and the guest's name the smallest line on the
+                          card — but an owner knows which house is theirs, and
+                          in a one-house account every card shouted the same
+                          word. Who is coming is the news. */}
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0">
+                          <h4 className="text-[12px] font-black text-[var(--color-owner-text)] truncate">{booking.userName}</h4>
+                          <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold truncate mt-0.5 flex items-center gap-1.5">
+                            <span className="truncate">{booking.organizationName || booking.houseName}</span>
+                            {booking.source === 'manual' && <span className="shrink-0 bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي</span>}
+                            {booking.source === 'temporary' && <span className="shrink-0 bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded-full">مؤقت</span>}
+                          </div>
                         </div>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${statusBadge.cls}`}>{statusBadge.label}</span>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusBadge.cls}`}>{statusBadge.label}</span>
+                          {awaitingProof && (
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border bg-sky-50 text-sky-800 border-sky-200">⏳ إيصال للمراجعة</span>
+                          )}
+                        </div>
                       </div>
-                      {outstanding > 0 && (
-                        <div className="text-[10px] font-bold text-[var(--color-owner-warning)]">المبلغ المتبقي: {outstanding.toLocaleString()} ج.م</div>
-                      )}
-                      <div className="flex gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                        <a href={`tel:${booking.userPhone}`} className="flex items-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] px-2.5 py-1 rounded-xl text-[10px] font-bold cursor-pointer">
+
+                      {/* Dates in words and the nights spelled out — the card
+                          printed raw ISO and left the arithmetic to the reader. */}
+                      <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-[10px] font-bold text-[var(--color-owner-text)]">
+                        <Calendar className="w-3.5 h-3.5 text-[var(--color-owner-secondary)] shrink-0" />
+                        <span>{shortDay(booking.checkIn)} ← {shortDay(booking.checkOut)}</span>
+                        <span className="text-[var(--color-owner-secondary)]">· {nightsText}</span>
+                        <span className="text-[var(--color-owner-secondary)]">· {booking.guestsCount} فرد</span>
+                      </div>
+
+                      {/* The money, always — not only when something is owed.
+                          «كام؟» is the second question after «مين؟». */}
+                      <div className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-3 py-2">
+                        <span className="leading-tight">
+                          <span className="block text-[9px] font-bold text-[var(--color-owner-secondary)]">قيمة الحجز</span>
+                          <span className="block text-[12px] font-black text-[var(--color-owner-text)]">{booking.totalPrice.toLocaleString()} ج.م</span>
+                        </span>
+                        <span className="leading-tight text-left">
+                          <span className="block text-[9px] font-bold text-[var(--color-owner-secondary)]">{outstanding > 0 ? 'المتبقي' : 'مسدَّد بالكامل'}</span>
+                          <span className={`block text-[12px] font-black ${outstanding > 0 ? 'text-[var(--color-owner-warning)]' : 'text-emerald-600'}`}>
+                            {outstanding > 0 ? `${outstanding.toLocaleString()} ج.م` : '✓'}
+                          </span>
+                        </span>
+                      </div>
+
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                        <a href={`tel:${booking.userPhone}`} className="flex-1 flex items-center justify-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] px-2.5 py-1.5 rounded-xl text-[10px] font-bold cursor-pointer">
                           <Phone className="w-3 h-3" /><span>اتصال</span>
                         </a>
-                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-xl text-[10px] font-bold cursor-pointer">
+                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 px-2.5 py-1.5 rounded-xl text-[10px] font-bold cursor-pointer">
                           <MessageCircle className="w-3 h-3" /><span>واتساب</span>
                         </a>
                       </div>
