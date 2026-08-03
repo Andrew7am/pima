@@ -3,7 +3,7 @@ import React from 'react';
 // Reusable loading skeletons (Tailwind's animate-pulse). Use these instead
 // of a bare "جارٍ التحميل…" so screens feel instant and premium.
 export function SkeletonBar({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse bg-[var(--color-owner-hover)] rounded-lg ${className}`} />;
+  return <div className={`animate-pulse bg-[var(--color-owner-hover)] rounded-xl ${className}`} />;
 }
 
 export function SkeletonRow() {

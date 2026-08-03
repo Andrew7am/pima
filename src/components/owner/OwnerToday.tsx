@@ -93,7 +93,7 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
           <div key={s.label} className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 flex flex-col items-center gap-1 text-center">
             <s.icon className="w-4 h-4 text-[var(--color-owner-primary)]" />
             <span className={`${s.small ? 'text-sm' : 'text-xl'} font-black text-[var(--color-owner-text)] leading-none`}>{s.value}</span>
-            <span className="text-[8.5px] font-bold text-[var(--color-owner-secondary)]">{s.label}</span>
+            <span className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{s.label}</span>
           </div>
         ))}
       </div>
@@ -104,14 +104,14 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
           <div className="w-8 h-8 rounded-xl bg-[#D4AF37]/20 flex items-center justify-center shrink-0">
             {pricing.up ? <TrendingUp className="w-4 h-4 text-[#B8901F]" /> : <TrendingDown className="w-4 h-4 text-[#B8901F]" />}
           </div>
-          <p className="text-[10.5px] font-bold text-[var(--color-owner-text)] leading-relaxed">{pricing.text}</p>
+          <p className="text-[10px] font-bold text-[var(--color-owner-text)] leading-relaxed">{pricing.text}</p>
         </div>
       )}
 
       {/* Arrivals */}
       <Section title="الوصول اليوم" icon={LogIn} count={arrivals.length}>
         {arrivals.length === 0 ? (
-          <p className="text-[10.5px] text-[var(--color-owner-secondary)] font-bold text-center py-2">لا يوجد وصول اليوم.</p>
+          <p className="text-[10px] text-[var(--color-owner-secondary)] font-bold text-center py-2">لا يوجد وصول اليوم.</p>
         ) : arrivals.map((b) => (
           <motion.div key={b.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
             className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] rounded-2xl p-2.5">
@@ -134,7 +134,7 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
       {/* Departures */}
       <Section title="المغادرة اليوم" icon={LogOut} count={departures.length}>
         {departures.length === 0 ? (
-          <p className="text-[10.5px] text-[var(--color-owner-secondary)] font-bold text-center py-2">لا يوجد مغادرة اليوم.</p>
+          <p className="text-[10px] text-[var(--color-owner-secondary)] font-bold text-center py-2">لا يوجد مغادرة اليوم.</p>
         ) : departures.map((b) => (
           <div key={b.id} className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] rounded-2xl p-2.5">
             <button type="button" onClick={() => onViewBooking?.(b.id)} className="min-w-0 text-right">
@@ -156,7 +156,7 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
       {/* Housekeeping */}
       <Section title="النظافة والصيانة" icon={Sparkles} count={cleaningRooms.length + maintenanceRooms.length}>
         {cleaningRooms.length + maintenanceRooms.length === 0 ? (
-          <p className="text-[10.5px] text-emerald-700 font-bold text-center py-2">كل الغرف جاهزة ✨</p>
+          <p className="text-[10px] text-emerald-700 font-bold text-center py-2">كل الغرف جاهزة ✨</p>
         ) : (
           <div className="grid grid-cols-2 gap-2">
             {[...cleaningRooms, ...maintenanceRooms].map((r) => {
@@ -165,13 +165,13 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
                 <div key={r.id} className={`flex items-center justify-between gap-1 rounded-2xl p-2.5 border ${isClean ? 'bg-orange-50 border-orange-200' : 'bg-slate-50 border-slate-200'}`}>
                   <div className="min-w-0">
                     <div className="text-[11px] font-black text-[var(--color-owner-text)]">{r.name}</div>
-                    <div className={`text-[8.5px] font-black flex items-center gap-0.5 ${isClean ? 'text-orange-600' : 'text-slate-500'}`}>
+                    <div className={`text-[9px] font-black flex items-center gap-0.5 ${isClean ? 'text-orange-600' : 'text-slate-500'}`}>
                       {isClean ? <><Sparkles className="w-2.5 h-2.5" /> تنظيف</> : <><Wrench className="w-2.5 h-2.5" /> صيانة</>}
                     </div>
                   </div>
                   {onUpdateRoom && (
                     <button type="button" onClick={() => onUpdateRoom({ ...r, status: 'available' })}
-                      className="flex items-center gap-0.5 bg-emerald-600 text-white text-[9px] font-black px-2 py-1 rounded-lg shrink-0 active:scale-95 transition-transform">
+                      className="flex items-center gap-0.5 bg-emerald-600 text-white text-[9px] font-black px-2 py-1 rounded-xl shrink-0 active:scale-95 transition-transform">
                       <CheckCircle2 className="w-3 h-3" /> خلصت
                     </button>
                   )}

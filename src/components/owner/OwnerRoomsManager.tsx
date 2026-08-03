@@ -222,8 +222,8 @@ export default function OwnerRoomsManager({
           <div key={s.label} className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-2 flex flex-col items-center gap-1 text-center">
             <span className={`w-7 h-7 rounded-xl flex items-center justify-center ${s.chip}`}><s.icon className="w-3.5 h-3.5" /></span>
             <span className="text-base font-black text-[var(--color-owner-text)] leading-none">{s.value}</span>
-            <span className="text-[8px] font-bold text-[var(--color-owner-secondary)] leading-tight">{s.label}</span>
-            {s.sub && <span className="text-[8px] font-bold text-[var(--color-owner-secondary)]">{s.sub}</span>}
+            <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] leading-tight">{s.label}</span>
+            {s.sub && <span className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{s.sub}</span>}
           </div>
         ))}
       </div>
@@ -231,7 +231,7 @@ export default function OwnerRoomsManager({
       {/* Search + filter toggle */}
       <div className="flex items-center gap-2">
         <button type="button" onClick={() => setShowFilters((v) => !v)}
-          className={`flex items-center gap-1 text-[10.5px] font-black rounded-2xl px-3 py-2.5 border shrink-0 ${showFilters ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
+          className={`flex items-center gap-1 text-[10px] font-black rounded-2xl px-3 py-2.5 border shrink-0 ${showFilters ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
           <Filter className="w-3.5 h-3.5" /> فلتر
         </button>
         <div className="relative flex-1">
@@ -249,7 +249,7 @@ export default function OwnerRoomsManager({
             const dot = f.key !== 'all' ? STATUS_META[f.key as EffStatus].dot : '';
             return (
               <button key={f.key} type="button" onClick={() => setStatusFilter(f.key)}
-                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10.5px] font-black border transition-colors ${active ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
+                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black border transition-colors ${active ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
                 {dot && <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />}
                 {f.label}
               </button>
@@ -263,10 +263,10 @@ export default function OwnerRoomsManager({
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
           <span className="text-[10px] font-black text-[var(--color-owner-text)] shrink-0">الدور</span>
           <button type="button" onClick={() => setFloorFilter('all')}
-            className={`shrink-0 px-3 py-1.5 rounded-xl text-[10.5px] font-black border ${floorFilter === 'all' ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>الكل</button>
+            className={`shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-black border ${floorFilter === 'all' ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>الكل</button>
           {floors.map((f) => (
             <button key={f} type="button" onClick={() => setFloorFilter(f)}
-              className={`shrink-0 px-3 py-1.5 rounded-xl text-[10.5px] font-black border ${floorFilter === f ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>{f === 0 ? 'أرضي' : f}</button>
+              className={`shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-black border ${floorFilter === f ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>{f === 0 ? 'أرضي' : f}</button>
           ))}
         </div>
       )}
@@ -302,13 +302,13 @@ export default function OwnerRoomsManager({
                     </button>
                   )}
                 </div>
-                <div className="mt-2 inline-flex items-center gap-1 bg-white/70 rounded-lg px-1.5 py-0.5">
+                <div className="mt-2 inline-flex items-center gap-1 bg-white/70 rounded-xl px-1.5 py-0.5">
                   <TypeIcon className="w-3 h-3 text-[var(--color-owner-primary)]" />
                   <span className="text-[9px] font-black text-[var(--color-owner-text)]">{type?.name ?? `${room.bedsCount} سرير`}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-1.5">
                   <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                  <span className={`text-[9.5px] font-black ${meta.text}`}>{meta.label}</span>
+                  <span className={`text-[10px] font-black ${meta.text}`}>{meta.label}</span>
                 </div>
               </div>
             );
@@ -383,7 +383,7 @@ export default function OwnerRoomsManager({
                         {type.facilities.map((f) => {
                           const meta2 = FACILITIES.find((x) => x.key === f);
                           if (!meta2) return null;
-                          return <span key={f} className="inline-flex items-center gap-1 text-[9px] font-bold text-[var(--color-owner-secondary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-lg px-1.5 py-0.5"><meta2.icon className="w-3 h-3" /> {meta2.label}</span>;
+                          return <span key={f} className="inline-flex items-center gap-1 text-[9px] font-bold text-[var(--color-owner-secondary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-1.5 py-0.5"><meta2.icon className="w-3 h-3" /> {meta2.label}</span>;
                         })}
                       </div>
                     )}
@@ -482,7 +482,7 @@ function SheetAction({ icon: Icon, label, onClick, tone = 'primary' }: { icon: R
     <button type="button" onClick={onClick}
       className={`flex flex-col items-center justify-center gap-1 rounded-2xl border py-2.5 px-1 text-center ${TONE[tone]}`}>
       <Icon className="w-4 h-4" />
-      <span className="text-[9.5px] font-black leading-tight">{label}</span>
+      <span className="text-[10px] font-black leading-tight">{label}</span>
     </button>
   );
 }
@@ -492,7 +492,7 @@ function BulkBtn({ icon: Icon, label, onClick, danger }: { icon: React.ElementTy
     <button type="button" onClick={onClick}
       className={`shrink-0 flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-xl ${danger ? 'text-rose-200' : 'text-white'}`}>
       <Icon className="w-4 h-4" />
-      <span className="text-[8.5px] font-black">{label}</span>
+      <span className="text-[9px] font-black">{label}</span>
     </button>
   );
 }
@@ -594,7 +594,7 @@ function RoomTypesPage({ houseId, roomTypes, rooms, onBack, onAddRoomType, onUpd
         <button type="button" onClick={onBack} className="flex items-center gap-1 text-[11px] font-bold text-[var(--color-owner-secondary)]">
           <ChevronLeft className="w-4 h-4 rotate-180" /> رجوع للغرف
         </button>
-        <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10.5px] font-black px-3 py-2 rounded-xl">
+        <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-black px-3 py-2 rounded-xl">
           <Plus className="w-3.5 h-3.5" /> إضافة نوع غرفة
         </button>
       </div>
@@ -612,7 +612,7 @@ function RoomTypesPage({ houseId, roomTypes, rooms, onBack, onAddRoomType, onUpd
                 <span className="w-10 h-10 rounded-2xl bg-[var(--color-owner-hover)] flex items-center justify-center shrink-0"><TypeIcon className="w-5 h-5 text-[var(--color-owner-primary)]" /></span>
                 <div className="flex-1 min-w-0">
                   <div className="text-[12px] font-black text-[var(--color-owner-text)]">{t.name}</div>
-                  <div className="text-[9.5px] font-bold text-[var(--color-owner-secondary)]">{countByType(t.id)} غرفة · {t.bedsCount} سرير · {t.facilities.length} مرافق</div>
+                  <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{countByType(t.id)} غرفة · {t.bedsCount} سرير · {t.facilities.length} مرافق</div>
                 </div>
                 <div className="text-[12px] font-black text-[var(--color-owner-primary)] shrink-0">{t.price.toLocaleString()} ج.م</div>
               </button>
@@ -664,7 +664,7 @@ function RoomTypeForm({ houseId, initial, onSubmit, onDelete }: {
             return (
               <button key={o.key} type="button" onClick={() => setIcon(o.key)}
                 className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border ${active ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-bg)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
-                <Icon className="w-4 h-4" /><span className="text-[8.5px] font-black">{o.label}</span>
+                <Icon className="w-4 h-4" /><span className="text-[9px] font-black">{o.label}</span>
               </button>
             );
           })}
@@ -680,7 +680,7 @@ function RoomTypeForm({ houseId, initial, onSubmit, onDelete }: {
             const active = facilities.includes(f.key);
             return (
               <button key={f.key} type="button" onClick={() => toggle(f.key)}
-                className={`flex items-center gap-1 justify-center py-2 rounded-xl border text-[9.5px] font-bold ${active ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-bg)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
+                className={`flex items-center gap-1 justify-center py-2 rounded-xl border text-[10px] font-bold ${active ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-bg)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
                 <f.icon className="w-3 h-3" /> {f.label}
               </button>
             );
@@ -689,7 +689,7 @@ function RoomTypeForm({ houseId, initial, onSubmit, onDelete }: {
       </Field>
       <Field label="الوصف (اختياري)"><textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={2} className={`${INPUT} resize-none`} /></Field>
       <button type="button" onClick={submit} className="w-full bg-[var(--color-owner-primary)] text-white text-[11px] font-black py-3 rounded-2xl">{initial ? 'حفظ التغييرات' : 'إضافة نوع غرفة'}</button>
-      {onDelete && <button type="button" onClick={onDelete} className="w-full text-rose-600 text-[10.5px] font-black py-2">حذف النوع</button>}
+      {onDelete && <button type="button" onClick={onDelete} className="w-full text-rose-600 text-[10px] font-black py-2">حذف النوع</button>}
     </div>
   );
 }
@@ -698,7 +698,7 @@ const INPUT = 'w-full bg-[var(--color-owner-bg)] border border-[var(--color-owne
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[9.5px] font-black text-[var(--color-owner-secondary)] mb-1">{label}</label>
+      <label className="block text-[10px] font-black text-[var(--color-owner-secondary)] mb-1">{label}</label>
       {children}
     </div>
   );

@@ -66,7 +66,7 @@ export default function OwnerSpotlight({ open, onClose, bookings, rooms, onOpenB
                           className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl hover:bg-[var(--color-owner-hover)] text-right">
                           <span className="w-8 h-8 rounded-xl bg-[var(--color-owner-hover)] flex items-center justify-center shrink-0"><ClipboardList className="w-4 h-4 text-[var(--color-owner-primary)]" /></span>
                           <div className="flex-1 min-w-0">
-                            <div className="text-[11.5px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
+                            <div className="text-[11px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
                             <div className="text-[9px] font-bold text-[var(--color-owner-secondary)] flex items-center gap-1.5">
                               <span className="font-mono">{bookingRef(b)}</span><span>· {b.checkIn}</span>
                               {b.userPhone && <span className="flex items-center gap-0.5"><Phone className="w-2.5 h-2.5" />{b.userPhone}</span>}
@@ -84,7 +84,7 @@ export default function OwnerSpotlight({ open, onClose, bookings, rooms, onOpenB
                           className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl hover:bg-[var(--color-owner-hover)] text-right">
                           <span className="w-8 h-8 rounded-xl bg-[var(--color-owner-hover)] flex items-center justify-center shrink-0"><BedDouble className="w-4 h-4 text-[var(--color-owner-primary)]" /></span>
                           <div className="flex-1 min-w-0">
-                            <div className="text-[11.5px] font-black text-[var(--color-owner-text)]">غرفة {r.name}</div>
+                            <div className="text-[11px] font-black text-[var(--color-owner-text)]">غرفة {r.name}</div>
                             <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{r.bedsCount} سرير</div>
                           </div>
                         </button>

@@ -66,7 +66,7 @@ export default function OwnerRoomDistribution({ rooms, allocations, bookings, on
                 <div key={room.id} className={`flex flex-col items-center justify-center gap-1 aspect-square rounded-2xl border-2 p-2 text-center ${STATE_CLASS[state]}`}>
                   <BedDouble className="w-4 h-4" />
                   <span className="text-[10px] font-black truncate w-full">{room.name}</span>
-                  <span className="text-[8px] font-bold">{used} / {room.bedsCount} — {STATE_LABEL[state]}</span>
+                  <span className="text-[9px] font-bold">{used} / {room.bedsCount} — {STATE_LABEL[state]}</span>
                 </div>
               );
             })}
@@ -84,7 +84,7 @@ export default function OwnerRoomDistribution({ rooms, allocations, bookings, on
               <div key={booking.id} className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl p-3">
                 <div className="min-w-0">
                   <div className="text-[11px] font-bold text-[var(--color-owner-text)] truncate">{booking.userName}</div>
-                  <div className="text-[9.5px] text-[var(--color-owner-secondary)]">{booking.checkIn} → {booking.checkOut} • مُوزَّع {allocatedCount} / {booking.guestsCount}</div>
+                  <div className="text-[10px] text-[var(--color-owner-secondary)]">{booking.checkIn} → {booking.checkOut} • مُوزَّع {allocatedCount} / {booking.guestsCount}</div>
                 </div>
                 <button type="button" onClick={() => onOpenBooking(booking)}
                   className="flex items-center gap-1 shrink-0 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer">

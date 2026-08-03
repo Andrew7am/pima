@@ -202,15 +202,15 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
           </div>
         </div>
 
-        {rev.comment && <p className="text-[11.5px] text-[var(--color-owner-text)] leading-relaxed">"{rev.comment}"</p>}
+        {rev.comment && <p className="text-[11px] text-[var(--color-owner-text)] leading-relaxed">"{rev.comment}"</p>}
 
         {(rev.likedTags?.length || rev.problemTags?.length) ? (
           <div className="flex flex-wrap gap-1.5">
             {rev.likedTags?.map((tag) => (
-              <span key={`l-${tag}`} className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-1.5 py-0.5"><ThumbsUp className="w-2.5 h-2.5" /> {tag}</span>
+              <span key={`l-${tag}`} className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-1.5 py-0.5"><ThumbsUp className="w-2.5 h-2.5" /> {tag}</span>
             ))}
             {rev.problemTags?.map((tag) => (
-              <span key={`p-${tag}`} className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-1.5 py-0.5"><AlertTriangle className="w-2.5 h-2.5" /> {tag}</span>
+              <span key={`p-${tag}`} className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-1.5 py-0.5"><AlertTriangle className="w-2.5 h-2.5" /> {tag}</span>
             ))}
           </div>
         ) : null}
@@ -218,23 +218,23 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
         {rev.ownerReply ? (
           <div className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl p-3 space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[9.5px] font-black text-[var(--color-owner-primary)] flex items-center gap-1"><MessageSquare className="w-3 h-3" /> رد الإدارة</span>
-              {rev.ownerReplyCreatedAt && <span className="text-[8.5px] text-[var(--color-owner-secondary)] font-bold">{reviewAge(rev.ownerReplyCreatedAt)}</span>}
+              <span className="text-[10px] font-black text-[var(--color-owner-primary)] flex items-center gap-1"><MessageSquare className="w-3 h-3" /> رد الإدارة</span>
+              {rev.ownerReplyCreatedAt && <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{reviewAge(rev.ownerReplyCreatedAt)}</span>}
             </div>
-            <p className="text-[10.5px] text-[var(--color-owner-text)] leading-relaxed">{rev.ownerReply}</p>
+            <p className="text-[10px] text-[var(--color-owner-text)] leading-relaxed">{rev.ownerReply}</p>
             <div className="flex gap-2 justify-end pt-0.5">
-              <button type="button" onClick={() => openReply(rev)} className="flex items-center gap-1 text-[9.5px] font-bold text-[var(--color-owner-primary)]"><Pencil className="w-3 h-3" /> تعديل</button>
-              <button type="button" onClick={() => deleteReply(rev)} className="flex items-center gap-1 text-[9.5px] font-bold text-rose-600"><Trash2 className="w-3 h-3" /> حذف</button>
+              <button type="button" onClick={() => openReply(rev)} className="flex items-center gap-1 text-[10px] font-bold text-[var(--color-owner-primary)]"><Pencil className="w-3 h-3" /> تعديل</button>
+              <button type="button" onClick={() => deleteReply(rev)} className="flex items-center gap-1 text-[10px] font-bold text-rose-600"><Trash2 className="w-3 h-3" /> حذف</button>
             </div>
           </div>
         ) : (
           <div className="flex items-center justify-end gap-2 pt-0.5">
             <button type="button" onClick={() => openReplyWithSuggestion(rev)}
-              className="flex items-center gap-1 bg-[#D4AF37]/12 text-[#B8901F] border border-[#D4AF37]/30 text-[10.5px] font-black px-3 py-1.5 rounded-xl active:scale-[0.98] transition-transform">
+              className="flex items-center gap-1 bg-[#D4AF37]/12 text-[#B8901F] border border-[#D4AF37]/30 text-[10px] font-black px-3 py-1.5 rounded-xl active:scale-[0.98] transition-transform">
               <Sparkles className="w-3.5 h-3.5" /> اقتراح رد
             </button>
             <button type="button" onClick={() => openReply(rev)}
-              className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10.5px] font-black px-3.5 py-1.5 rounded-xl active:scale-[0.98] transition-transform">
+              className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-black px-3.5 py-1.5 rounded-xl active:scale-[0.98] transition-transform">
               <CornerDownLeft className="w-3.5 h-3.5" /> الرد
             </button>
           </div>
@@ -286,7 +286,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
           <div className="flex gap-1.5">
             {([['newest', 'الأحدث'], ['oldest', 'الأقدم'], ['highest', 'الأعلى'], ['lowest', 'الأقل']] as [SortKey, string][]).map(([k, label]) => (
               <button key={k} type="button" onClick={() => setSort(k)}
-                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border ${sort === k ? 'bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border-[var(--color-owner-border)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>{label}</button>
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border ${sort === k ? 'bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border-[var(--color-owner-border)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>{label}</button>
             ))}
           </div>
         </div>
@@ -343,7 +343,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
             <div className="w-9 h-9 rounded-full bg-[#D4AF37]/20 flex items-center justify-center shrink-0"><Award className="w-4.5 h-4.5 text-[#B8901F]" /></div>
             <div className="min-w-0">
               <div className="text-[11px] font-black text-[var(--color-owner-text)]">{badge.label}</div>
-              <div className="text-[9.5px] font-bold text-[var(--color-owner-secondary)]">{badge.sub}</div>
+              <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{badge.sub}</div>
             </div>
           </div>
         )}
@@ -366,7 +366,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
               <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0"><Smile className="w-4 h-4 text-emerald-600" /></div>
               <div>
                 <div className="text-[10px] font-black text-[var(--color-owner-text)]">أكثر ما أعجب الضيوف</div>
-                <div className="text-[10.5px] font-bold text-[var(--color-owner-secondary)]">{likedTop.join(' · ')}</div>
+                <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{likedTop.join(' · ')}</div>
               </div>
             </div>
           )}
@@ -394,7 +394,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
           {complaintTop && (
             <div className="flex items-start gap-2.5 bg-[var(--color-owner-bg)] rounded-2xl p-2.5">
               <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center shrink-0"><Lightbulb className="w-4 h-4 text-sky-600" /></div>
-              <p className="text-[10.5px] font-bold text-[var(--color-owner-text)] leading-relaxed">تحسين <span className="text-[var(--color-owner-primary)]">{complaintTop}</span> قد يرفع متوسط تقييمك إلى {targetRating.toFixed(1)}.</p>
+              <p className="text-[10px] font-bold text-[var(--color-owner-text)] leading-relaxed">تحسين <span className="text-[var(--color-owner-primary)]">{complaintTop}</span> قد يرفع متوسط تقييمك إلى {targetRating.toFixed(1)}.</p>
             </div>
           )}
         </div>
@@ -446,7 +446,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
                 <span className="text-[11px] font-black text-[var(--color-owner-text)]">{replyFor.userName}</span>
                 <Stars value={replyFor.rating} className="w-3 h-3" />
               </div>
-              <p className="text-[10.5px] text-[var(--color-owner-secondary)] leading-relaxed">"{replyFor.comment}"</p>
+              <p className="text-[10px] text-[var(--color-owner-secondary)] leading-relaxed">"{replyFor.comment}"</p>
             </div>
 
             {/* AI reply suggestions */}
@@ -455,7 +455,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
               <div className="flex gap-1.5">
                 {suggestions.map((s) => (
                   <button key={s.key} type="button" onClick={() => setReplyText(s.text)}
-                    className="flex-1 text-[9.5px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl py-2">{s.label}</button>
+                    className="flex-1 text-[10px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl py-2">{s.label}</button>
                 ))}
               </div>
             </div>
@@ -464,7 +464,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
               <textarea value={replyText} onChange={(e) => setReplyText(e.target.value.slice(0, REPLY_MAX))} rows={4}
                 placeholder="اكتب ردًا رسميًا ومهذبًا باسم بيتك…"
                 className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl p-3 text-[11px] text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)] resize-none" />
-              <span className="absolute bottom-2 left-3 text-[8.5px] font-bold text-[var(--color-owner-secondary)]">{replyText.length}/{REPLY_MAX}</span>
+              <span className="absolute bottom-2 left-3 text-[9px] font-bold text-[var(--color-owner-secondary)]">{replyText.length}/{REPLY_MAX}</span>
             </div>
 
             <button type="button" onClick={submitReply} disabled={!replyText.trim()}

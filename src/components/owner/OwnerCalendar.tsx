@@ -98,9 +98,9 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
       {/* Calendar */}
       <div className="bg-[var(--color-owner-surface)] rounded-[24px] border border-[var(--color-owner-border)] p-4 space-y-3 shadow-sm">
         <div className="flex items-center justify-between">
-          <button type="button" onClick={() => shift(-1)} className="p-1.5 rounded-lg hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-secondary)]"><ChevronRight className="w-4 h-4" /></button>
+          <button type="button" onClick={() => shift(-1)} className="p-1.5 rounded-xl hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-secondary)]"><ChevronRight className="w-4 h-4" /></button>
           <div className="text-sm font-black text-[var(--color-owner-text)]">{monthLabel}</div>
-          <button type="button" onClick={() => shift(1)} className="p-1.5 rounded-lg hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-secondary)]"><ChevronLeft className="w-4 h-4" /></button>
+          <button type="button" onClick={() => shift(1)} className="p-1.5 rounded-xl hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-secondary)]"><ChevronLeft className="w-4 h-4" /></button>
         </div>
 
         <div className="grid grid-cols-7 gap-1 text-[9px] font-black text-[var(--color-owner-secondary)] text-center">
@@ -150,8 +150,8 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
                 <div className="text-[11px] font-black text-[var(--color-owner-text)]">{openBookings.length} حجز في هذا اليوم</div>
                 {openBookings.map((b) => (
                   <div key={b.id} className="bg-[var(--color-owner-bg)] rounded-2xl p-3 space-y-1">
-                    <div className="text-[11.5px] font-black text-[var(--color-owner-text)]">{b.organizationName || b.userName}</div>
-                    <div className="text-[9.5px] font-bold text-[var(--color-owner-secondary)] flex items-center gap-2 flex-wrap">
+                    <div className="text-[11px] font-black text-[var(--color-owner-text)]">{b.organizationName || b.userName}</div>
+                    <div className="text-[10px] font-bold text-[var(--color-owner-secondary)] flex items-center gap-2 flex-wrap">
                       <span>{b.checkIn} ← {b.checkOut}</span>
                       <span className="flex items-center gap-0.5"><Users className="w-3 h-3" /> {b.guestsCount}</span>
                       <span>{b.totalPrice.toLocaleString()} ج.م</span>
@@ -176,15 +176,15 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
       {/* Block range sheet */}
       <BottomSheet open={blockSheet} onClose={() => setBlockSheet(false)} title="حظر فترة">
         <div className="space-y-3">
-          <p className="text-[10.5px] font-bold text-[var(--color-owner-secondary)] leading-relaxed">الأيام المحظورة تظهر فورًا كغير متاحة للحجز للجميع.</p>
+          <p className="text-[10px] font-bold text-[var(--color-owner-secondary)] leading-relaxed">الأيام المحظورة تظهر فورًا كغير متاحة للحجز للجميع.</p>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[9.5px] font-black text-[var(--color-owner-secondary)] mb-1">من تاريخ</label>
+              <label className="block text-[10px] font-black text-[var(--color-owner-secondary)] mb-1">من تاريخ</label>
               <input type="date" value={blkFrom} onChange={(e) => setBlkFrom(e.target.value)}
                 className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[11px] px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] outline-none text-left" />
             </div>
             <div>
-              <label className="block text-[9.5px] font-black text-[var(--color-owner-secondary)] mb-1">إلى تاريخ (اختياري)</label>
+              <label className="block text-[10px] font-black text-[var(--color-owner-secondary)] mb-1">إلى تاريخ (اختياري)</label>
               <input type="date" min={blkFrom || undefined} value={blkTo} onChange={(e) => setBlkTo(e.target.value)}
                 className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[11px] px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] outline-none text-left" />
             </div>

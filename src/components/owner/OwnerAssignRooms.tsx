@@ -66,7 +66,7 @@ export default function OwnerAssignRooms({ open, onClose, booking, rooms, alloca
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--color-owner-secondary)]">
             <Users className="w-3.5 h-3.5" /> {booking.organizationName || booking.userName} · {booking.guestsCount} فرد
           </div>
-          <button type="button" onClick={autoSuggest} className="flex items-center gap-1 text-[10px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-lg px-2 py-1">
+          <button type="button" onClick={autoSuggest} className="flex items-center gap-1 text-[10px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-2 py-1">
             <Sparkles className="w-3 h-3" /> اقتراح تلقائي
           </button>
         </div>
@@ -104,7 +104,7 @@ export default function OwnerAssignRooms({ open, onClose, booking, rooms, alloca
           className="w-full flex items-center justify-center gap-1.5 bg-[var(--color-owner-primary)] disabled:opacity-40 text-white text-[11px] font-black py-3 rounded-2xl">
           <Send className="w-4 h-4" /> إرسال {selected.size} غرفة للحاجز
         </button>
-        <p className="text-[9.5px] font-bold text-[var(--color-owner-secondary)] text-center leading-relaxed">بعد الإرسال، الحاجز (الخادم) هو اللي يكتب أسماء المشاركين ويوزّعهم داخل الغرف دي.</p>
+        <p className="text-[10px] font-bold text-[var(--color-owner-secondary)] text-center leading-relaxed">بعد الإرسال، الحاجز (الخادم) هو اللي يكتب أسماء المشاركين ويوزّعهم داخل الغرف دي.</p>
       </div>
     </BottomSheet>
   );

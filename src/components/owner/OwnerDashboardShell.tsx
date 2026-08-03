@@ -749,7 +749,7 @@ export default function OwnerDashboardShell({
                   id={`owner-overflow-${item.key}`}
                   type="button"
                   onClick={() => item.key === 'house' ? openHouseTab() : (() => { setActiveTab(item.key); setShowOverflow(false); })()}
-                  className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[10.5px] font-bold text-right transition-all cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[10px] font-bold text-right transition-all cursor-pointer ${
                     activeTab === item.key ? 'bg-[var(--color-owner-primary)] text-white' : 'text-[var(--color-owner-text)] hover:bg-[var(--color-owner-hover)]'
                   }`}
                 >
@@ -830,7 +830,7 @@ export default function OwnerDashboardShell({
                       className="relative p-2 rounded-xl bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] cursor-pointer">
                       <Bell className="w-4 h-4" />
                       {unreadNotificationsCount > 0 && (
-                        <span className="absolute -top-1 -left-1 min-w-[15px] h-[15px] px-0.5 bg-rose-500 text-white text-[8.5px] font-black rounded-full flex items-center justify-center">
+                        <span className="absolute -top-1 -left-1 min-w-[15px] h-[15px] px-0.5 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
                           {unreadNotificationsCount > 9 ? '9+' : unreadNotificationsCount}
                         </span>
                       )}
@@ -884,7 +884,7 @@ export default function OwnerDashboardShell({
                   <span className={`w-10 h-10 rounded-2xl flex items-center justify-center ${k.chip}`}><k.icon className="w-4.5 h-4.5 w-[18px] h-[18px]" /></span>
                   <span className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{k.label}</span>
                   <span className="text-xl font-black text-[var(--color-owner-text)] leading-none">{k.value}</span>
-                  <span className="text-[9.5px] font-bold text-[var(--color-owner-secondary)]">{k.unit}</span>
+                  <span className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{k.unit}</span>
                 </button>
               ))}
             </div>
@@ -910,7 +910,7 @@ export default function OwnerDashboardShell({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[12px] font-black text-[var(--color-owner-text)]">التقييمات</span>
-                        {unanswered > 0 && <span className="text-[8.5px] font-black text-rose-600 bg-rose-50 border border-rose-200 rounded-full px-1.5">{unanswered} بدون رد</span>}
+                        {unanswered > 0 && <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 rounded-full px-1.5">{unanswered} بدون رد</span>}
                       </div>
                       <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">
                         {ownerReviews.length > 0 ? `${avgRating.toFixed(1)} ★ · ${ownerReviews.length} تقييم` : 'لا توجد تقييمات بعد'}
@@ -946,7 +946,7 @@ export default function OwnerDashboardShell({
                 <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-2.5 shadow-sm">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-black text-[var(--color-owner-text)]">تحتاج انتباه</span>
-                    {items.length > 0 && <span className="min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[9.5px] font-black rounded-full flex items-center justify-center">{items.length}</span>}
+                    {items.length > 0 && <span className="min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center">{items.length}</span>}
                   </div>
                   {items.length === 0 ? (
                     <p className="text-[10px] text-[var(--color-owner-secondary)] text-center py-3">لا توجد مهام معلّقة — كل شيء تمام 🎉</p>
@@ -958,7 +958,7 @@ export default function OwnerDashboardShell({
                           <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${it.chip}`}><it.icon className="w-4 h-4" /></span>
                           <div className="flex-1 min-w-0">
                             <div className="text-[11px] font-extrabold text-[var(--color-owner-text)] truncate">{it.title}</div>
-                            <div className="text-[9.5px] font-bold text-[var(--color-owner-secondary)] truncate">{it.sub}</div>
+                            <div className="text-[10px] font-bold text-[var(--color-owner-secondary)] truncate">{it.sub}</div>
                           </div>
                           <ChevronRight className="w-4 h-4 text-[var(--color-owner-secondary)] rotate-180 shrink-0" />
                         </button>
@@ -991,7 +991,7 @@ export default function OwnerDashboardShell({
                       </div>
                       <div className="flex-1 min-w-0 pb-3">
                         <div className="text-[11px] font-extrabold text-[var(--color-owner-text)] truncate">{n.title}</div>
-                        <div className="text-[9.5px] font-bold text-[var(--color-owner-secondary)] truncate">{n.message}</div>
+                        <div className="text-[10px] font-bold text-[var(--color-owner-secondary)] truncate">{n.message}</div>
                       </div>
                       <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] shrink-0 mt-1">{timeAgo(n.createdAt)}</span>
                     </div>
@@ -1027,8 +1027,8 @@ export default function OwnerDashboardShell({
                   <div>
                     <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold flex items-center gap-1.5">
                       الحساب: {booking.userName}
-                      {booking.source === 'manual' && <span className="text-[8px] font-bold bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي 📞</span>}
-                      {booking.source === 'temporary' && <span className="text-[8px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded-full">مؤقت ⏳</span>}
+                      {booking.source === 'manual' && <span className="text-[9px] font-bold bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي 📞</span>}
+                      {booking.source === 'temporary' && <span className="text-[9px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded-full">مؤقت ⏳</span>}
                     </span>
                     <h4 className="text-sm font-black text-[var(--color-owner-text)] mt-0.5">{booking.houseName}</h4>
                     <div className="text-[10px] text-[var(--color-owner-secondary)] font-medium">
@@ -1065,17 +1065,17 @@ export default function OwnerDashboardShell({
                             <div>
                               <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">الوصول</label>
                               <input type="date" value={editCheckIn} onChange={(e) => setEditCheckIn(e.target.value)} onFocus={(e) => e.target.select()}
-                                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-lg px-2 py-1.5 text-[10px] text-[var(--color-owner-text)]" />
+                                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-2 py-1.5 text-[10px] text-[var(--color-owner-text)]" />
                             </div>
                             <div>
                               <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">المغادرة</label>
                               <input type="date" value={editCheckOut} onChange={(e) => setEditCheckOut(e.target.value)} onFocus={(e) => e.target.select()}
-                                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-lg px-2 py-1.5 text-[10px] text-[var(--color-owner-text)]" />
+                                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-2 py-1.5 text-[10px] text-[var(--color-owner-text)]" />
                             </div>
                             <div>
                               <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">عدد الأفراد</label>
                               <input type="number" min={1} value={editGuests} onChange={(e) => setEditGuests(parseInt(e.target.value) || 1)} onFocus={(e) => e.target.select()}
-                                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-lg px-2 py-1.5 text-[10px] text-[var(--color-owner-text)]" />
+                                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-2 py-1.5 text-[10px] text-[var(--color-owner-text)]" />
                             </div>
                           </div>
                           {(() => {
@@ -1085,7 +1085,7 @@ export default function OwnerDashboardShell({
                             if (availability.length === 0) return null;
                             const totalFree = availability.reduce((s, a) => s + a.freeBeds, 0);
                             return totalFree < editGuests ? (
-                              <div className="bg-amber-50 border border-amber-200 rounded-xl p-2 text-[9.5px] text-amber-900 font-bold">
+                              <div className="bg-amber-50 border border-amber-200 rounded-xl p-2 text-[10px] text-amber-900 font-bold">
                                 يمكن استيعاب {totalFree} من {editGuests} فرد فقط في هذه التواريخ حسب الغرف المتاحة. سيتم قبول الحجز رغم ذلك حسب سعة البيت الكلية، لكن التوزيع على الغرف سيحتاج مراجعة يدوية.
                               </div>
                             ) : null;
@@ -1291,45 +1291,45 @@ export default function OwnerDashboardShell({
                   <span className="text-xs font-black text-[var(--color-owner-text)]">إضافة حجز يدوي / مؤقت</span>
                   <button type="button" onClick={() => setShowAddBooking(false)} className="text-[var(--color-owner-secondary)] cursor-pointer"><X className="w-4 h-4" /></button>
                 </div>
-                <p className="text-[9.5px] text-[var(--color-owner-secondary)]">للحجوزات اللي بتوصلك بالتليفون أو الحضور المباشر. الحجز المؤقت بيحجز السعة لحد ما المجموعة تأكد، وتقدر ترفضه في أي وقت لإلغائه.</p>
+                <p className="text-[10px] text-[var(--color-owner-secondary)]">للحجوزات اللي بتوصلك بالتليفون أو الحضور المباشر. الحجز المؤقت بيحجز السعة لحد ما المجموعة تأكد، وتقدر ترفضه في أي وقت لإلغائه.</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">اسم الحاجز / الجهة:</label>
+                    <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">اسم الحاجز / الجهة:</label>
                     <input id="mb-name" type="text" value={mbName} onChange={(e) => setMbName(e.target.value)}
-                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">رقم الهاتف:</label>
+                    <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">رقم الهاتف:</label>
                     <input id="mb-phone" type="tel" value={mbPhone} onChange={(e) => setMbPhone(e.target.value)}
-                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">نوع الحجز:</label>
+                    <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">نوع الحجز:</label>
                     <select id="mb-type" value={mbType} onChange={(e) => setMbType(e.target.value as 'manual' | 'temporary')}
-                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none">
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl focus:outline-none">
                       <option value="manual">يدوي مؤكد</option>
                       <option value="temporary">مؤقت (بانتظار التأكيد)</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">تاريخ الوصول:</label>
+                    <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">تاريخ الوصول:</label>
                     <input id="mb-checkin" type="date" value={mbCheckIn} onChange={(e) => setMbCheckIn(e.target.value)}
-                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">تاريخ المغادرة:</label>
+                    <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">تاريخ المغادرة:</label>
                     <input id="mb-checkout" type="date" value={mbCheckOut} onChange={(e) => setMbCheckOut(e.target.value)}
-                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">عدد الأفراد:</label>
+                    <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">عدد الأفراد:</label>
                     <input id="mb-guests" type="number" min={1} value={mbGuests} onChange={(e) => setMbGuests(parseInt(e.target.value) || 1)} onFocus={(e) => e.target.select()}
-                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">إجمالي السعر (ج.م):</label>
+                    <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">إجمالي السعر (ج.م):</label>
                     <input id="mb-price" type="number" min={0} value={mbPrice} onChange={(e) => setMbPrice(e.target.value)} onFocus={(e) => e.target.select()}
-                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl focus:outline-none" />
                   </div>
                 </div>
                 {(() => {
@@ -1339,7 +1339,7 @@ export default function OwnerDashboardShell({
                   if (availability.length === 0) return null;
                   const totalFree = availability.reduce((s, a) => s + a.freeBeds, 0);
                   return totalFree < mbGuests ? (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[9.5px] text-amber-900 font-bold">
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[10px] text-amber-900 font-bold">
                       يمكن استيعاب {totalFree} من {mbGuests} فرد فقط في هذه التواريخ حسب الغرف المتاحة حالياً. يمكنك المتابعة، لكن التوزيع على الغرف سيحتاج مراجعة يدوية بعد الحفظ.
                     </div>
                   ) : null;
@@ -1364,7 +1364,7 @@ export default function OwnerDashboardShell({
                 { key: 'temporary' as const, label: 'مؤقت ⏳' },
               ]).map((s) => (
                 <button key={s.key} type="button" onClick={() => setSourceFilter(s.key)}
-                  className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+                  className={`px-2 py-1 rounded-xl transition-all cursor-pointer ${
                     sourceFilter === s.key ? 'bg-[var(--color-owner-primary)] text-white' : 'bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[var(--color-owner-secondary)]'
                   }`}
                 >{s.label}</button>
@@ -1419,7 +1419,7 @@ export default function OwnerDashboardShell({
                       <div className="text-[10px] text-[var(--color-owner-secondary)]">{w.checkIn} → {w.checkOut} · {w.guestsCount} فرد · {w.userPhone}</div>
                       {w.status === 'waiting' && onNotifyWaitlist && (
                         <button type="button" onClick={() => { if (confirm(`إشعار ${w.userName} بتوفّر مكان؟`)) onNotifyWaitlist(w.id); }}
-                          className="w-full mt-1 flex items-center justify-center gap-1 bg-emerald-600 text-white text-[10px] font-black py-1.5 rounded-lg active:scale-[0.98] transition-transform">
+                          className="w-full mt-1 flex items-center justify-center gap-1 bg-emerald-600 text-white text-[10px] font-black py-1.5 rounded-xl active:scale-[0.98] transition-transform">
                           <Bell className="w-3.5 h-3.5" /> إشعار بتوفّر مكان
                         </button>
                       )}
@@ -1459,8 +1459,8 @@ export default function OwnerDashboardShell({
                         <div>
                           <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold flex items-center gap-1.5">
                             الحساب: {booking.userName}
-                            {booking.source === 'manual' && <span className="text-[8px] font-bold bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي 📞</span>}
-                            {booking.source === 'temporary' && <span className="text-[8px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded-full">مؤقت ⏳</span>}
+                            {booking.source === 'manual' && <span className="text-[9px] font-bold bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي 📞</span>}
+                            {booking.source === 'temporary' && <span className="text-[9px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded-full">مؤقت ⏳</span>}
                           </span>
                           <h4 className="text-xs font-bold text-[var(--color-owner-text)] mt-0.5">{booking.houseName}</h4>
                           <div className="text-[10px] text-[var(--color-owner-secondary)] font-medium">{booking.checkIn} → {booking.checkOut} · {booking.guestsCount} فرد</div>
@@ -1471,10 +1471,10 @@ export default function OwnerDashboardShell({
                         <div className="text-[10px] font-bold text-[var(--color-owner-warning)]">المبلغ المتبقي: {outstanding.toLocaleString()} ج.م</div>
                       )}
                       <div className="flex gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                        <a href={`tel:${booking.userPhone}`} className="flex items-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer">
+                        <a href={`tel:${booking.userPhone}`} className="flex items-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] px-2.5 py-1 rounded-xl text-[10px] font-bold cursor-pointer">
                           <Phone className="w-3 h-3" /><span>اتصال</span>
                         </a>
-                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer">
+                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-xl text-[10px] font-bold cursor-pointer">
                           <MessageCircle className="w-3 h-3" /><span>واتساب</span>
                         </a>
                       </div>
@@ -1595,7 +1595,7 @@ export default function OwnerDashboardShell({
                 </span>
               </div>
               {ownerHouses[0].pendingEdit && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-2.5 text-[10.5px] font-bold flex items-start gap-2">
+                <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-2.5 text-[10px] font-bold flex items-start gap-2">
                   <span>⏳</span><span>لديك تعديل مُرسل بانتظار موافقة الإدارة.</span>
                 </div>
               )}
@@ -1726,7 +1726,7 @@ export default function OwnerDashboardShell({
                     className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                 </div>
               </div>
-              <p className="text-[9.5px] font-medium text-[var(--color-owner-secondary)]">عدد الأسرّة هو الحد الأقصى للحجز في أي تاريخ — بيمنع البيع الزائد تلقائياً.</p>
+              <p className="text-[10px] font-medium text-[var(--color-owner-secondary)]">عدد الأسرّة هو الحد الأقصى للحجز في أي تاريخ — بيمنع البيع الزائد تلقائياً.</p>
             </div>
 
             {/* 2. Pricing */}
@@ -1881,7 +1881,7 @@ export default function OwnerDashboardShell({
                 </div>
                 {ownerHouses.length >= 1 && (
                   <button type="button" onClick={() => requestHouseEdit(ownerHouses[0], { services: selectedServices })}
-                    className="w-full mt-1.5 bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] text-[10px] font-bold py-1.5 rounded-lg cursor-pointer">حفظ الخدمات الآن</button>
+                    className="w-full mt-1.5 bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] text-[10px] font-bold py-1.5 rounded-xl cursor-pointer">حفظ الخدمات الآن</button>
                 )}
               </div>
 
@@ -1891,7 +1891,7 @@ export default function OwnerDashboardShell({
                   {halls.length > 0 && (
                     <div className="space-y-1 mb-2">
                       {halls.map((h) => (
-                        <div key={h.id} className="flex justify-between items-center bg-[var(--color-owner-surface)] px-2.5 py-1.5 rounded-lg text-[10px] border border-[var(--color-owner-border)]">
+                        <div key={h.id} className="flex justify-between items-center bg-[var(--color-owner-surface)] px-2.5 py-1.5 rounded-xl text-[10px] border border-[var(--color-owner-border)]">
                           <div><span className="font-bold text-[var(--color-owner-text)]">{h.name}</span><span className="text-[var(--color-owner-secondary)] font-medium"> (سعة {h.capacity} فرد)</span></div>
                           <button type="button" onClick={() => handleRemoveHall(h.id)} className="text-rose-600 hover:text-rose-800 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
@@ -1900,14 +1900,14 @@ export default function OwnerDashboardShell({
                   )}
                   <div className="space-y-1.5">
                     <input type="text" placeholder="اسم القاعة" value={hallName} onChange={(e) => setHallName(e.target.value)}
-                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
+                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
                     <div className="flex gap-2 items-center">
                       <input type="number" placeholder="السعة الاستيعابية" value={hallCapacity} onChange={(e) => setHallCapacity(parseInt(e.target.value) || 50)} onFocus={(e) => e.target.select()}
-                        className="flex-1 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
-                      <button type="button" onClick={handleAddHall} className="bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shrink-0 cursor-pointer">أضف القاعة +</button>
+                        className="flex-1 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                      <button type="button" onClick={handleAddHall} className="bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-3 py-1.5 rounded-xl shrink-0 cursor-pointer">أضف القاعة +</button>
                     </div>
                     <button type="button" onClick={() => requestHouseEdit(ownerHouses[0], { conferenceHalls: halls })}
-                      className="w-full bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] text-[10px] font-bold py-1.5 rounded-lg cursor-pointer">حفظ القاعات</button>
+                      className="w-full bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] text-[10px] font-bold py-1.5 rounded-xl cursor-pointer">حفظ القاعات</button>
                   </div>
                 </div>
               )}
@@ -1917,7 +1917,7 @@ export default function OwnerDashboardShell({
             <div className="space-y-2 pt-3 border-t border-[var(--color-owner-border)]">
               <div className="flex items-center gap-1.5"><ShieldAlert className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">السياسات</span></div>
               {ownerHouses.length >= 1 && (ownerHouses[0].housingRules?.length || ownerHouses[0].contractTerms) ? (
-                <div className="bg-[var(--color-owner-hover)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1.5 text-[10.5px] text-[var(--color-owner-text)]">
+                <div className="bg-[var(--color-owner-hover)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1.5 text-[10px] text-[var(--color-owner-text)]">
                   {ownerHouses[0].contractTerms && <p className="font-bold">{ownerHouses[0].contractTerms}</p>}
                   {ownerHouses[0].housingRules?.map((rule, i) => <p key={i}>• {rule}</p>)}
                 </div>
@@ -1962,23 +1962,23 @@ export default function OwnerDashboardShell({
                   <div className="p-3 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl space-y-3 text-right">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <div>
-                        <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">نوع وتصنيف الصورة:</label>
+                        <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">نوع وتصنيف الصورة:</label>
                         <select value={extraPhotoCategory} onChange={(e) => setExtraPhotoCategory(e.target.value as 'room' | 'service' | 'other')}
-                          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none">
+                          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl focus:outline-none">
                           <option value="room">🛌 غرف النوم والأسرة</option><option value="service">🍽️ الخدمات والمطعم والملاعب</option><option value="other">⛪ المبنى وقاعات الاجتماعات</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">وصف مختصر:</label>
+                        <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">وصف مختصر:</label>
                         <input type="text" value={extraPhotoLabel} onChange={(e) => setExtraPhotoLabel(e.target.value)}
-                          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl focus:outline-none" />
                       </div>
                       <div>
-                        <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">صورة الغرفة/الخدمة:</label>
+                        <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">صورة الغرفة/الخدمة:</label>
                         <PhotoPickerButtons idPrefix={`photo-${house.id}`} onSelect={setExtraPhotoUrl} />
                         {extraPhotoUrl && (
                           <div className="flex items-center gap-2 mt-1.5">
-                            <img src={extraPhotoUrl} alt="معاينة" className="w-10 h-10 object-cover rounded-lg border border-[var(--color-owner-border)]" />
+                            <img src={extraPhotoUrl} alt="معاينة" className="w-10 h-10 object-cover rounded-xl border border-[var(--color-owner-border)]" />
                             <button type="button" onClick={() => {
                                 const labelPrefix = extraPhotoCategory === 'room' ? '🛌 غرف' : extraPhotoCategory === 'service' ? '🍽️ خدمات' : '⛪ مباني';
                                 const descStr = extraPhotoLabel.trim() ? `${labelPrefix}: ${extraPhotoLabel.trim()}` : labelPrefix;
@@ -1987,24 +1987,24 @@ export default function OwnerDashboardShell({
                                 setPhotosSuccessMsg('تم إرسال الصورة ضمن طلب تعديل بانتظار موافقة الإدارة!');
                                 setTimeout(() => setPhotosSuccessMsg(''), 3000);
                               }}
-                              className="flex-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-2 py-1.5 rounded-lg cursor-pointer">إضافة للألبوم</button>
+                              className="flex-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-2 py-1.5 rounded-xl cursor-pointer">إضافة للألبوم</button>
                           </div>
                         )}
                       </div>
                     </div>
-                    {photosSuccessMsg && <p className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-1.5 text-center font-bold">{photosSuccessMsg}</p>}
+                    {photosSuccessMsg && <p className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl p-1.5 text-center font-bold">{photosSuccessMsg}</p>}
                     <div className="space-y-1.5 pt-2 border-t border-[var(--color-owner-border)]">
-                      <span className="text-[9.5px] font-extrabold text-[var(--color-owner-text)]">الصور المضافة حالياً للبيت ({base.images.length}):</span>
+                      <span className="text-[10px] font-extrabold text-[var(--color-owner-text)]">الصور المضافة حالياً للبيت ({base.images.length}):</span>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {base.images.map((img, idx) => {
                           const desc = base.imageDescriptions?.[img] || (idx === 0 ? 'الصورة الرئيسية' : 'صورة إضافية');
                           return (
                             <div key={`${img}-${idx}`} className="relative bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl overflow-hidden">
                               <img referrerPolicy="no-referrer" src={img} alt="بيت خلوة" className="w-full h-14 object-cover" />
-                              <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] p-0.5 text-center truncate font-bold">{desc}</div>
+                              <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] p-0.5 text-center truncate font-bold">{desc}</div>
                               {base.images.length > 1 && (
                                 <button type="button" onClick={() => { if (confirm('حذف هذه الصورة؟')) requestHouseEdit(house, { images: base.images.filter((_, i) => i !== idx) }); }}
-                                  className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[8px] font-bold hover:bg-red-700 cursor-pointer">✕</button>
+                                  className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold hover:bg-red-700 cursor-pointer">✕</button>
                               )}
                             </div>
                           );
@@ -2096,12 +2096,12 @@ export default function OwnerDashboardShell({
                 )}
                 <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-[var(--color-owner-border)]">
                   <select value={paymentDraftType} onChange={(e) => setPaymentDraftType(e.target.value as typeof paymentDraftType)}
-                    className="bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none">
+                    className="bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none">
                     {Object.entries(PAYMENT_TYPE_LABELS).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
                   </select>
                   <input type="text" placeholder="الرقم أو المعرّف" value={paymentDraftValue} onChange={(e) => setPaymentDraftValue(e.target.value)}
-                    className="flex-1 min-w-[120px] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none" />
-                  <button type="button" onClick={handleAddPaymentMethod} className="bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer">إضافة</button>
+                    className="flex-1 min-w-[120px] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                  <button type="button" onClick={handleAddPaymentMethod} className="bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-3 py-1.5 rounded-xl cursor-pointer">إضافة</button>
                 </div>
               </>
             ) : (

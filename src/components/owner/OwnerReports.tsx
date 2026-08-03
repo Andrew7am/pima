@@ -128,7 +128,7 @@ export default function OwnerReports({ ownerBookings, ownerReviews, occupancyRat
       </div>
 
       {ownerReviews.length > 0 && (
-        <p className="text-[9.5px] text-[var(--color-owner-secondary)] font-bold text-center">توزيع التقييمات وتفاصيلها في صفحة "التقييمات".</p>
+        <p className="text-[10px] text-[var(--color-owner-secondary)] font-bold text-center">توزيع التقييمات وتفاصيلها في صفحة "التقييمات".</p>
       )}
     </div>
   );

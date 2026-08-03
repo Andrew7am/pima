@@ -315,8 +315,8 @@ export default function OwnerFinancialCenter({
         return (
           <div key={e.id} className="relative rounded-2xl overflow-hidden">
             <div className="absolute inset-0 flex items-center justify-between px-4">
-              <span className="text-[10px] font-black text-white bg-[var(--color-owner-primary)] px-2.5 py-1 rounded-lg flex items-center gap-1"><Pencil className="w-3 h-3" /> تعديل</span>
-              <span className="text-[10px] font-black text-white bg-rose-500 px-2.5 py-1 rounded-lg flex items-center gap-1">حذف <Trash2 className="w-3 h-3" /></span>
+              <span className="text-[10px] font-black text-white bg-[var(--color-owner-primary)] px-2.5 py-1 rounded-xl flex items-center gap-1"><Pencil className="w-3 h-3" /> تعديل</span>
+              <span className="text-[10px] font-black text-white bg-rose-500 px-2.5 py-1 rounded-xl flex items-center gap-1">حذف <Trash2 className="w-3 h-3" /></span>
             </div>
             <motion.div
               drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.25} dragSnapToOrigin
@@ -332,7 +332,7 @@ export default function OwnerFinancialCenter({
                   <Icon className="w-4 h-4 text-[var(--color-owner-primary)]" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10.5px] font-black text-[var(--color-owner-text)] truncate">{e.description}</div>
+                  <div className="text-[10px] font-black text-[var(--color-owner-text)] truncate">{e.description}</div>
                   <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{e.expenseDate}</div>
                 </div>
               </div>
@@ -379,7 +379,7 @@ export default function OwnerFinancialCenter({
             <ChevronDown className="w-4 h-4 rotate-90" /> رجوع للمركز المالي
           </button>
           <button type="button" onClick={openAddExpense}
-            className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10.5px] font-black px-3 py-2 rounded-xl active:scale-[0.98] transition-transform">
+            className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-black px-3 py-2 rounded-xl active:scale-[0.98] transition-transform">
             <Plus className="w-3.5 h-3.5" /> إضافة مصروف
           </button>
         </div>
@@ -398,7 +398,7 @@ export default function OwnerFinancialCenter({
           <Money value={netProfit} className="text-sm font-black text-[var(--color-owner-primary)]" />
         </div>
 
-        <p className="text-[9.5px] text-[var(--color-owner-secondary)] font-bold text-center">اسحب المصروف لليمين للتعديل، ولليسار للحذف.</p>
+        <p className="text-[10px] text-[var(--color-owner-secondary)] font-bold text-center">اسحب المصروف لليمين للتعديل، ولليسار للحذف.</p>
 
         {addExpenseSheet}
       </div>
@@ -438,7 +438,7 @@ export default function OwnerFinancialCenter({
           <div className="bg-white/5 border border-white/10 rounded-2xl p-2.5">
             <div className="text-[9px] text-white/60 font-bold">الرصيد المتاح للتحويل عبر Pima</div>
             <div className="text-sm font-black mt-0.5">{availableForTransfer.toLocaleString()} ج.م</div>
-            <div className="text-[8px] text-white/45 font-bold mt-0.5">الباقي يُحصَّل نقدًا عند الوصول</div>
+            <div className="text-[9px] text-white/45 font-bold mt-0.5">الباقي يُحصَّل نقدًا عند الوصول</div>
           </div>
           <div className="bg-white/5 border border-white/10 rounded-2xl p-2.5">
             <div className="text-[9px] text-white/60 font-bold">إجمالي الحجوزات</div>
@@ -455,7 +455,7 @@ export default function OwnerFinancialCenter({
             className="relative flex-1 flex items-center justify-center gap-1.5 bg-white/10 border border-white/15 text-white text-[11px] font-black py-2.5 rounded-2xl active:scale-[0.98] transition-transform">
             <History className="w-3.5 h-3.5" /> سجل التحويلات
             {payouts.length > 0 && (
-              <span className="absolute -top-1.5 -left-1.5 min-w-[16px] h-4 px-1 bg-[#D4AF37] text-[#1F2E4E] text-[8.5px] font-black rounded-full flex items-center justify-center">{payouts.length}</span>
+              <span className="absolute -top-1.5 -left-1.5 min-w-[16px] h-4 px-1 bg-[#D4AF37] text-[#1F2E4E] text-[9px] font-black rounded-full flex items-center justify-center">{payouts.length}</span>
             )}
           </button>
         </div>
@@ -467,7 +467,7 @@ export default function OwnerFinancialCenter({
           <span className="text-white/40">=</span>
           <span className="text-emerald-400">{netOwnerPayout.toLocaleString()}</span>
         </div>
-        <div className="relative flex items-center justify-center gap-4 mt-1 text-[8.5px] text-white/50 font-bold">
+        <div className="relative flex items-center justify-center gap-4 mt-1 text-[9px] text-white/50 font-bold">
           <span>إجمالي الحجوزات</span><span>عمولة Pima</span><span>صافي مستحقاتك</span>
         </div>
       </div>
@@ -508,7 +508,7 @@ export default function OwnerFinancialCenter({
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: `${step.color}1A` }}>
                   <step.icon className="w-4.5 h-4.5" style={{ color: step.color }} />
                 </div>
-                <span className="text-[8.5px] font-bold text-[var(--color-owner-secondary)] leading-tight" dir="rtl">{step.label}</span>
+                <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] leading-tight" dir="rtl">{step.label}</span>
               </motion.div>
               {i < arr.length - 1 && (
                 <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: i * 0.12 + 0.1, duration: 0.35 }}
@@ -536,7 +536,7 @@ export default function OwnerFinancialCenter({
               </div>
               <TrendBadge pct={pct(s.key)} />
             </div>
-            <div className="text-[9.5px] text-[var(--color-owner-secondary)] font-bold">{s.label}</div>
+            <div className="text-[10px] text-[var(--color-owner-secondary)] font-bold">{s.label}</div>
             <Money value={s.value} className="text-base font-black text-[var(--color-owner-text)] block" />
           </div>
         ))}
@@ -546,7 +546,7 @@ export default function OwnerFinancialCenter({
               <CheckCircle2 className="w-4 h-4 text-emerald-700" />
             </div>
             <div>
-              <div className="text-[9.5px] text-emerald-800 font-bold">صافي المستحقات</div>
+              <div className="text-[10px] text-emerald-800 font-bold">صافي المستحقات</div>
               <Money value={netOwnerPayout} className="text-base font-black text-emerald-900 block" />
             </div>
           </div>
@@ -570,7 +570,7 @@ export default function OwnerFinancialCenter({
             <span className="text-sm font-black text-amber-900">{cashExpectedToday.toLocaleString()} ج.م</span>
           </div>
           <button type="button" onClick={() => setPeriod('today')}
-            className="w-full text-[10.5px] font-black text-amber-900 bg-amber-100 rounded-xl py-2">عرض التفاصيل</button>
+            className="w-full text-[10px] font-black text-amber-900 bg-amber-100 rounded-xl py-2">عرض التفاصيل</button>
         </div>
       )}
 
@@ -629,7 +629,7 @@ export default function OwnerFinancialCenter({
               });
             })()}
           </svg>
-          <div className="space-y-2 text-[10.5px] font-bold flex-1">
+          <div className="space-y-2 text-[10px] font-bold flex-1">
             {flowSegments.map((seg) => (
               <div key={seg.key} className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-[var(--color-owner-text)]">
@@ -647,7 +647,7 @@ export default function OwnerFinancialCenter({
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
           {PERIODS.map((p) => (
             <button key={p.key} type="button" onClick={() => setPeriod(p.key)}
-              className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10.5px] font-black border transition-colors ${
+              className={`shrink-0 px-3.5 py-1.5 rounded-full text-[10px] font-black border transition-colors ${
                 period === p.key ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'
               }`}>{p.label}</button>
           ))}
@@ -665,7 +665,7 @@ export default function OwnerFinancialCenter({
           <h3 className="text-xs font-black text-[var(--color-owner-text)]">العمليات المالية</h3>
           {filteredBookings.length > 0 && (
             <button type="button" onClick={exportTransactions}
-              className="flex items-center gap-1 text-[10px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-lg px-2.5 py-1.5">
+              className="flex items-center gap-1 text-[10px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-2.5 py-1.5">
               <Download className="w-3.5 h-3.5" /> تصدير Excel
             </button>
           )}
@@ -684,7 +684,7 @@ export default function OwnerFinancialCenter({
               className="w-full text-right bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3.5 active:scale-[0.99] transition-transform">
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <div className="text-[11.5px] font-black text-[var(--color-owner-text)]">{bookingGuestName(b)}</div>
+                  <div className="text-[11px] font-black text-[var(--color-owner-text)]">{bookingGuestName(b)}</div>
                   <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold font-mono">{bookingRef(b)} · {b.checkIn}</div>
                 </div>
                 <span className={`text-[9px] font-black px-2 py-1 rounded-full border ${badge.className}`}>{badge.label}</span>
@@ -696,8 +696,8 @@ export default function OwnerFinancialCenter({
                   { label: 'المتبقي', value: remaining },
                   { label: 'صافيك', value: net },
                 ].map((c) => (
-                  <div key={c.label} className="bg-[var(--color-owner-bg)] rounded-lg py-1.5">
-                    <div className="text-[8px] text-[var(--color-owner-secondary)] font-bold">{c.label}</div>
+                  <div key={c.label} className="bg-[var(--color-owner-bg)] rounded-xl py-1.5">
+                    <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{c.label}</div>
                     <div className="text-[10px] font-black text-[var(--color-owner-text)]">{c.value.toLocaleString()}</div>
                   </div>
                 ))}
@@ -712,7 +712,7 @@ export default function OwnerFinancialCenter({
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-black text-[var(--color-owner-text)]">المصروفات</h3>
           <button type="button" onClick={openAddExpense}
-            className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-black px-2.5 py-1.5 rounded-lg active:scale-[0.98] transition-transform">
+            className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-black px-2.5 py-1.5 rounded-xl active:scale-[0.98] transition-transform">
             <Plus className="w-3 h-3" /> إضافة
           </button>
         </div>
@@ -721,8 +721,8 @@ export default function OwnerFinancialCenter({
           className="w-full flex items-center gap-3 bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3.5 text-right active:scale-[0.99] transition-transform">
           <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-rose-50 text-rose-600"><Receipt className="w-4.5 h-4.5" /></span>
           <div className="flex-1 min-w-0">
-            <div className="text-[11.5px] font-black text-[var(--color-owner-text)]">إدارة المصروفات</div>
-            <div className="text-[9.5px] font-bold text-[var(--color-owner-secondary)]">{ownerExpenses.length} مصروف · إجمالي {totalExpenses.toLocaleString()} ج.م</div>
+            <div className="text-[11px] font-black text-[var(--color-owner-text)]">إدارة المصروفات</div>
+            <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{ownerExpenses.length} مصروف · إجمالي {totalExpenses.toLocaleString()} ج.م</div>
           </div>
           <ChevronDown className="w-4 h-4 text-[var(--color-owner-secondary)] -rotate-90 shrink-0" />
         </button>
@@ -742,7 +742,7 @@ export default function OwnerFinancialCenter({
           {topBookingThisMonth && (
             <div className="flex items-center gap-2.5 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl p-3">
               <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center shrink-0"><ArrowUpRight className="w-4 h-4 text-amber-600" /></div>
-              <p className="text-[10.5px] font-bold text-[var(--color-owner-text)]">
+              <p className="text-[10px] font-bold text-[var(--color-owner-text)]">
                 حجز {bookingGuestName(topBookingThisMonth)} حقق أعلى إيراد هذا الشهر ({topBookingThisMonth.totalPrice.toLocaleString()} ج.م).
               </p>
             </div>
@@ -752,7 +752,7 @@ export default function OwnerFinancialCenter({
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${expensesPct < 0 ? 'bg-emerald-50' : 'bg-rose-50'}`}>
                 {expensesPct < 0 ? <ArrowDownRight className="w-4 h-4 text-emerald-600" /> : <ArrowUpRight className="w-4 h-4 text-rose-600" />}
               </div>
-              <p className="text-[10.5px] font-bold text-[var(--color-owner-text)]">
+              <p className="text-[10px] font-bold text-[var(--color-owner-text)]">
                 المصروفات {expensesPct < 0 ? 'أقل' : 'أعلى'} {Math.abs(expensesPct)}٪ من الشهر الماضي.
               </p>
             </div>
@@ -760,7 +760,7 @@ export default function OwnerFinancialCenter({
           {cashExpectedToday > 0 && (
             <div className="flex items-center gap-2.5 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl p-3">
               <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center shrink-0"><Banknote className="w-4 h-4 text-sky-600" /></div>
-              <p className="text-[10.5px] font-bold text-[var(--color-owner-text)]">
+              <p className="text-[10px] font-bold text-[var(--color-owner-text)]">
                 التحصيل النقدي المتوقع اليوم {cashExpectedToday.toLocaleString()} ج.م.
               </p>
             </div>
@@ -768,7 +768,7 @@ export default function OwnerFinancialCenter({
           {pct('net') !== null && (
             <div className="flex items-center gap-2.5 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl p-3">
               <div className="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center shrink-0"><TrendingUp className="w-4 h-4 text-violet-600" /></div>
-              <p className="text-[10.5px] font-bold text-[var(--color-owner-text)]">
+              <p className="text-[10px] font-bold text-[var(--color-owner-text)]">
                 صافي مستحقاتك {(pct('net') ?? 0) >= 0 ? 'ارتفع' : 'انخفض'} {Math.abs(pct('net') ?? 0)}٪ عن الشهر الماضي.
               </p>
             </div>
@@ -818,7 +818,7 @@ export default function OwnerFinancialCenter({
                       {i < steps.length - 1 && <div className={`w-0.5 h-6 ${s.done ? 'bg-emerald-500' : 'bg-[var(--color-owner-border)]'}`} />}
                     </div>
                     <div className="pt-0.5">
-                      <div className={`text-[10.5px] font-bold ${s.done ? 'text-[var(--color-owner-text)]' : 'text-[var(--color-owner-secondary)]'}`}>{s.label}</div>
+                      <div className={`text-[10px] font-bold ${s.done ? 'text-[var(--color-owner-text)]' : 'text-[var(--color-owner-secondary)]'}`}>{s.label}</div>
                       {s.date && <div className="text-[9px] text-[var(--color-owner-secondary)]">{s.date}</div>}
                     </div>
                   </div>
@@ -836,7 +836,7 @@ export default function OwnerFinancialCenter({
             <div className="w-12 h-12 rounded-2xl bg-[var(--color-owner-hover)] flex items-center justify-center mx-auto"><History className="w-5 h-5 text-[var(--color-owner-secondary)]" /></div>
             <p className="text-[11px] font-bold text-[var(--color-owner-secondary)]">لا توجد تحويلات مسجلة بعد.</p>
             <button type="button" onClick={() => { setShowHistorySheet(false); openTransferSheet(); }}
-              className="text-[10.5px] font-black text-[var(--color-owner-primary)] underline">اطلب أول تحويل الآن</button>
+              className="text-[10px] font-black text-[var(--color-owner-primary)] underline">اطلب أول تحويل الآن</button>
           </div>
         ) : (
           <div className="space-y-1.5">
@@ -867,9 +867,9 @@ export default function OwnerFinancialCenter({
           <div className="text-center py-6 space-y-2">
             <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto"><CheckCircle2 className="w-7 h-7 text-emerald-600" /></div>
             <p className="text-[12px] font-black text-[var(--color-owner-text)]">تم إرسال طلب التحويل بنجاح</p>
-            <p className="text-[10.5px] font-bold text-[var(--color-owner-secondary)] leading-relaxed">هيراجعه فريق Pima ويحوّل لك المبلغ على وسيلتك المسجلة. تقدر تتابع الحالة من "سجل التحويلات".</p>
+            <p className="text-[10px] font-bold text-[var(--color-owner-secondary)] leading-relaxed">هيراجعه فريق Pima ويحوّل لك المبلغ على وسيلتك المسجلة. تقدر تتابع الحالة من "سجل التحويلات".</p>
             <button type="button" onClick={() => { setShowTransferSheet(false); setShowHistorySheet(true); }}
-              className="text-[10.5px] font-black text-[var(--color-owner-primary)] underline">عرض سجل التحويلات</button>
+              className="text-[10px] font-black text-[var(--color-owner-primary)] underline">عرض سجل التحويلات</button>
           </div>
         ) : (
           <div className="space-y-3">
@@ -879,7 +879,7 @@ export default function OwnerFinancialCenter({
               <div className="text-[9px] font-bold text-[var(--color-owner-secondary)] mt-0.5">من العربون المحصّل ({depositReceived.toLocaleString()} ج.م) بعد خصم عمولة Pima</div>
             </div>
             {pendingPayoutTotal > 0 && (
-              <p className="text-[9.5px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">لديك طلبات تحويل قيد المراجعة بقيمة {pendingPayoutTotal.toLocaleString()} ج.م، تم خصمها من الرصيد المتاح.</p>
+              <p className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">لديك طلبات تحويل قيد المراجعة بقيمة {pendingPayoutTotal.toLocaleString()} ج.م، تم خصمها من الرصيد المتاح.</p>
             )}
             <textarea placeholder="ملاحظة للفريق (اختياري) — مثلاً وسيلة الاستلام المفضّلة" value={transferNote} onChange={(e) => setTransferNote(e.target.value)} rows={2}
               className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[11px] px-3 py-2.5 rounded-xl text-[var(--color-owner-text)] outline-none resize-none" />

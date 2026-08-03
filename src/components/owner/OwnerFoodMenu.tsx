@@ -85,7 +85,7 @@ export default function OwnerFoodMenu({ house, onUpdateHouse }: OwnerFoodMenuPro
                 min={0}
                 value={menu.extraMealPrice ?? ''}
                 onChange={(e) => commit({ ...menu, extraMealPrice: e.target.value ? parseFloat(e.target.value) : undefined })}
-                className="w-20 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1 rounded-lg text-[var(--color-owner-text)] focus:outline-none"
+                className="w-20 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1 rounded-xl text-[var(--color-owner-text)] focus:outline-none"
               />
             </div>
           )}
@@ -116,7 +116,7 @@ export default function OwnerFoodMenu({ house, onUpdateHouse }: OwnerFoodMenuPro
       </div>
 
       {savedMsg && (
-        <div className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-1.5 text-center font-bold">{savedMsg}</div>
+        <div className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl p-1.5 text-center font-bold">{savedMsg}</div>
       )}
 
       <div className="space-y-2">
@@ -125,33 +125,33 @@ export default function OwnerFoodMenu({ house, onUpdateHouse }: OwnerFoodMenuPro
             <div className="text-xs font-black text-[var(--color-owner-text)]">{d.day}</div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div>
-                <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">الإفطار:</label>
+                <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">الإفطار:</label>
                 <input
                   id={`menu-${activeMenu}-${i}-breakfast`}
                   type="text"
                   value={d.breakfast}
                   onChange={(e) => updateDay(i, 'breakfast', e.target.value)}
-                  className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none"
+                  className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">الغداء:</label>
+                <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">الغداء:</label>
                 <input
                   id={`menu-${activeMenu}-${i}-lunch`}
                   type="text"
                   value={d.lunch}
                   onChange={(e) => updateDay(i, 'lunch', e.target.value)}
-                  className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none"
+                  className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">العشاء:</label>
+                <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">العشاء:</label>
                 <input
                   id={`menu-${activeMenu}-${i}-dinner`}
                   type="text"
                   value={d.dinner}
                   onChange={(e) => updateDay(i, 'dinner', e.target.value)}
-                  className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] focus:outline-none"
+                  className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none"
                 />
               </div>
             </div>
@@ -164,7 +164,7 @@ export default function OwnerFoodMenu({ house, onUpdateHouse }: OwnerFoodMenuPro
                 be a second price for something already paid for. */}
             {!menu.isIncluded && (
               <div className="pt-1">
-                <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">
+                <label className="block text-[9px] font-bold text-[var(--color-owner-secondary)] mb-0.5">
                   سعر الثلاث وجبات لهذا اليوم — للفرد (ج.م):
                 </label>
                 <input
@@ -174,7 +174,7 @@ export default function OwnerFoodMenu({ house, onUpdateHouse }: OwnerFoodMenuPro
                   value={d.price ?? ''}
                   placeholder="اتركه فارغاً لو الإعاشة غير متاحة هذا اليوم"
                   onChange={(e) => updateDay(i, 'price', e.target.value)}
-                  className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] placeholder:text-[9px] focus:outline-none"
+                  className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] placeholder:text-[9px] focus:outline-none"
                 />
               </div>
             )}
@@ -186,7 +186,7 @@ export default function OwnerFoodMenu({ house, onUpdateHouse }: OwnerFoodMenuPro
           a bill for four nights of a five-night stay would look like a quote
           and would not be one. */}
       {!menu.isIncluded && days.some((d) => !d.price) && (
-        <p className="text-[9.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-2 text-center">
+        <p className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-2 text-center">
           لن تُعرض الإعاشة كخيار مُسعَّر للضيف حتى تُسعِّر كل أيام الأسبوع.
         </p>
       )}

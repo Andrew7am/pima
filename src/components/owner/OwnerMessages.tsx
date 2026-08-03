@@ -151,7 +151,7 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
                 <div className="flex-1 min-w-0 space-y-0.5">
                   <div className="flex items-center justify-between gap-2">
                     <span className={`text-[13px] truncate ${unreadCount > 0 ? 'font-black text-[var(--color-owner-text)]' : 'font-bold text-[var(--color-owner-text)]'}`}>{b.userName}</span>
-                    <span className={`text-[9.5px] shrink-0 ${unreadCount > 0 ? 'text-emerald-700 font-black' : 'text-[var(--color-owner-secondary)] font-bold'}`}>{timeText}</span>
+                    <span className={`text-[10px] shrink-0 ${unreadCount > 0 ? 'text-emerald-700 font-black' : 'text-[var(--color-owner-secondary)] font-bold'}`}>{timeText}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <span className={`text-[11px] truncate flex items-center gap-1 ${unreadCount > 0 && !isMine ? 'text-[var(--color-owner-text)] font-bold' : 'text-[var(--color-owner-secondary)] font-medium'}`}>
@@ -163,7 +163,7 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
                       <span className="truncate">{previewText}</span>
                     </span>
                     {unreadCount > 0 && !isMine && (
-                      <span className="min-w-[18px] h-[18px] px-1.5 bg-emerald-500 text-white text-[9.5px] font-black rounded-full flex items-center justify-center shrink-0">
+                      <span className="min-w-[18px] h-[18px] px-1.5 bg-emerald-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shrink-0">
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
                     )}
