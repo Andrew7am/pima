@@ -11,6 +11,7 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
   { value: 'bank_transfer', label: 'تحويل بنكي' },
 ];
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft } from 'lucide-react';
+import { arabicNumber } from '../lib/arabic';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
 import BannerStudio from './banner/BannerStudio';
@@ -64,15 +65,30 @@ interface AdminDashboardProps {
 // Module scope on purpose: declared inside a render body, this would be a new
 // component type on every render and React would remount the card instead of
 // updating it.
-function KpiCard({ title, value, delta, suffix }: { title: string; value: number | string; delta: string; suffix?: string }) {
-  const isUp = delta.startsWith('+') && delta !== '+0%';
-  const isDown = delta.startsWith('-');
+function KpiCard({ title, value, delta, suffix }: {
+  title: string;
+  /** null = last week was zero, so there is no percentage to state. */
+  delta: string | null;
+  value: number | string;
+  suffix?: string;
+}) {
+  const isUp = !!delta && delta.startsWith('+') && !delta.startsWith('+٠');
+  const isDown = !!delta && delta.startsWith('−');
   return (
     <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-1">
       <div className="text-[10px] text-[#8A8A70] font-bold">{title}</div>
-      <div className="text-xl font-black text-[#4A4A3A]">{typeof value === 'number' ? value.toLocaleString('ar-EG') : value}{suffix && <span className="text-[10px] text-[#8A8A70] font-bold mr-1">{suffix}</span>}</div>
+      <div className="text-xl font-black text-[#4A4A3A]">
+        {typeof value === 'number' ? value.toLocaleString('ar-EG') : value}
+        {/* An explicit space: the currency was rendering flush against the
+            number (٠ج.م) because a margin utility alone does not separate
+            two inline runs reliably in RTL. */}
+        {suffix && <span className="text-[10px] text-[#8A8A70] font-bold">{' '}{suffix}</span>}
+      </div>
       <div className={`text-[10px] font-extrabold ${isUp ? 'text-emerald-700' : isDown ? 'text-rose-700' : 'text-[#8A8A70]'}`}>
-        {isUp ? '↗' : isDown ? '↘' : '→'} {delta} <span className="text-[#8A8A70] font-medium">vs الأسبوع السابق</span>
+        {delta === null
+          ? <span className="text-[#8A8A70] font-medium">لا يوجد أسبوع سابق للمقارنة</span>
+          : <>{isUp ? '↗' : isDown ? '↘' : '→'} {delta}{' '}
+              <span className="text-[#8A8A70] font-medium">عن الأسبوع السابق</span></>}
       </div>
     </div>
   );
@@ -685,8 +701,14 @@ export default function AdminDashboard({
           .filter((b) => (b.status === 'approved' || b.status === 'completed') && bookingTs(b) >= lastMonthStart && bookingTs(b) < monthStart)
           .reduce((s, b) => s + b.totalPrice, 0);
 
-        const pctChange = (curr: number, prev: number) =>
-          prev === 0 ? (curr > 0 ? '+∞' : '0') : `${curr >= prev ? '+' : ''}${Math.round(((curr - prev) / prev) * 100)}%`;
+        // null means "there is nothing to compare against" — last week was
+        // zero, so the change is undefined, not infinite. It used to render
+        // '+∞', which looks like a number and tells you nothing.
+        const pctChange = (curr: number, prev: number): string | null => {
+          if (prev === 0) return null;
+          const pct = Math.round(((curr - prev) / prev) * 100);
+          return `${pct >= 0 ? '+' : '−'}${arabicNumber(Math.abs(pct))}٪`;
+        };
 
         // Funnel: total non-owner/admin users → those with any booking → those with any paid booking
         const guestUsers = users.filter((u) => u.role === 'individual' || u.role === 'servant');
@@ -740,7 +762,7 @@ export default function AdminDashboard({
               <KpiCard title="مستخدمين جدد (٧ أيام)" value={usersThisWeek} delta={pctChange(usersThisWeek, usersLastWeek)} />
               <KpiCard title="حجوزات جديدة (٧ أيام)" value={bookingsThisWeek} delta={pctChange(bookingsThisWeek, bookingsLastWeek)} />
               <KpiCard title="إيرادات هذا الشهر" value={revThisMonth} suffix="ج.م" delta={pctChange(revThisMonth, revLastMonth)} />
-              <KpiCard title="بيوت نشطة" value={houses.filter((h) => h.status === 'approved').length} delta="—" />
+              <KpiCard title="بيوت نشطة" value={houses.filter((h) => h.status === 'approved').length} delta={null} />
             </div>
 
             {/* 14-day bookings sparkline */}
