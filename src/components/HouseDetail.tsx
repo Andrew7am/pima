@@ -272,6 +272,11 @@ interface DateRangePickerProps {
   onDone?: () => void;
 }
 
+// Sunday-first, matching JS getDay(), so index 0 is الأحد. Both calendars in
+// this file print this row and both offset their first cell by getDay(), so
+// every date sits under its real weekday.
+const WEEKDAY_INITIALS = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'];
+
 // ── Dates the booking form opens on ──────────────────────────────────────
 // Everything here is relative to the day the page is opened. The previous
 // literals ('2026-07-15' etc.) were correct only until that date passed;
@@ -429,7 +434,10 @@ const DateRangePicker = ({
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
   ];
 
-  const WEEKDAYS_AR = ['أح', 'اث', 'ث', 'أر', 'خ', 'ج', 'س'];
+  // Same set as the occupancy calendar below, so the two grids in this file
+  // read alike. The old row was ['أح','اث','ث','أر',…] — 'اث' and 'ث' differ
+  // by one character at 10px, which is a coin flip to read.
+  const WEEKDAYS_AR = WEEKDAY_INITIALS;
 
   // The calendar itself, with no chrome of its own. Inline mode drops it
   // straight into the sheet; the standalone mode wraps it in the modal below.
@@ -2261,10 +2269,10 @@ export default function HouseDetail({
           <div className="space-y-3">
             {/* Visual Calendar Grid */}
             <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold">
-              {/* Sunday-first, matching JS getDay(). The old row was
-                  ['أ','ث','خ','ج','ج','س','ح'] — ج twice and الأربعاء missing
-                  entirely, and it did not line up with the dates beneath it. */}
-              {['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'].map((d, i) => (
+              {/* The old row here was ['أ','ث','خ','ج','ج','س','ح'] — ج twice,
+                  الأربعاء missing entirely, and no offset before the 1st, so
+                  every date sat under the wrong weekday. */}
+              {WEEKDAY_INITIALS.map((d, i) => (
                 <div key={i} className="text-[#8A8A70] py-1">{d}</div>
               ))}
               {Array.from({ length: calendarLeadingBlanks }, (_, i) => (
