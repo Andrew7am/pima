@@ -272,6 +272,41 @@ interface DateRangePickerProps {
   onDone?: () => void;
 }
 
+// ── Dates the booking form opens on ──────────────────────────────────────
+// Everything here is relative to the day the page is opened. The previous
+// literals ('2026-07-15' etc.) were correct only until that date passed;
+// after it, every visitor arrived on a form pointed at the past.
+//
+// Local date parts, not toISOString(): Egypt is UTC+2/+3, so the UTC day can
+// already be tomorrow late in the evening.
+function localISODate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function daysFromToday(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return localISODate(d);
+}
+
+export function isMonthlyStay(propertyType?: string): boolean {
+  return propertyType === 'student' || propertyType === 'staff';
+}
+
+/** Student and staff housing is let by the month, so it starts on a 1st. */
+function firstOfNextMonth(): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 1, 1);
+  return localISODate(d);
+}
+
+/** …and runs to the end of the academic year, the next 30 June ahead of us. */
+function endOfAcademicYear(): string {
+  const now = new Date();
+  const year = now.getMonth() >= 5 ? now.getFullYear() + 1 : now.getFullYear();
+  return `${year}-06-30`;
+}
+
 // Returns all dates (YYYY-MM-DD) within [start, end] inclusive
 function expandRange(start: string, end: string): string[] {
   const dates: string[] = [];
@@ -615,9 +650,17 @@ export default function HouseDetail({
         .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0]
     : undefined;
 
-  // Form states for booking
-  const [checkIn, setCheckIn] = useState((house.propertyType === 'student' || house.propertyType === 'staff') ? '2026-09-01' : '2026-07-15');
-  const [checkOut, setCheckOut] = useState((house.propertyType === 'student' || house.propertyType === 'staff') ? '2027-06-30' : '2026-07-18');
+  // Form states for booking.
+  //
+  // These used to be the literals '2026-07-15' / '2026-07-18'. A hardcoded
+  // date is only ever right for as long as it is in the future: by August
+  // 2026 every visitor was opening the booking form on a window that had
+  // already passed, and nothing server-side refuses a booking in the past —
+  // so an unchanged form submitted a request for a month that was over.
+  const [checkIn, setCheckIn] = useState(() =>
+    isMonthlyStay(house.propertyType) ? firstOfNextMonth() : daysFromToday(14));
+  const [checkOut, setCheckOut] = useState(() =>
+    isMonthlyStay(house.propertyType) ? endOfAcademicYear() : daysFromToday(17));
   const [guestsCount, setGuestsCount] = useState<number>(() => {
     const isMonthly = house.propertyType === 'student' || house.propertyType === 'staff';
     const fallback = isMonthly ? 1 : 30;
@@ -787,17 +830,29 @@ export default function HouseDetail({
     })
     .map(b => ({ checkIn: b.checkIn, checkOut: b.checkOut, status: b.status as 'approved' | 'pending' }));
 
-  // Simple calendar generator for July 2026 (since current year is 2026, and booking season is July)
-  const JULY_2026_DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+  // The occupancy calendar follows the month the guest is actually looking
+  // at — the check-in they picked — rather than a month named in the source.
+  // It used to be hardcoded to July 2026 and kept saying so after July ended.
+  const calendarMonth = useMemo(() => {
+    const d = new Date(`${checkIn}T00:00:00`);
+    return Number.isNaN(d.getTime()) ? new Date() : d;
+  }, [checkIn]);
+  const calYear = calendarMonth.getFullYear();
+  const calMonthIndex = calendarMonth.getMonth();
+  const CALENDAR_DAYS = Array.from(
+    { length: new Date(calYear, calMonthIndex + 1, 0).getDate() },
+    (_, i) => i + 1,
+  );
+  // Blank cells before the 1st so each day sits under its real weekday.
+  const calendarLeadingBlanks = new Date(calYear, calMonthIndex, 1).getDay();
+  const calendarMonthLabel = calendarMonth.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
 
-  const isDateBooked = (day: number) => {
-    const dateStr = `2026-07-${day < 10 ? '0' + day : day}`;
-    return isDateFull(dateStr);
-  };
+  const isDateBooked = (day: number) =>
+    isDateFull(`${calYear}-${String(calMonthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
 
   // What the availability card leads with: the count a visitor is actually
   // looking for, so they can decide without opening the month.
-  const freeJulyDays = JULY_2026_DAYS.filter((d) => !isDateBooked(d)).length;
+  const freeCalendarDays = CALENDAR_DAYS.filter((d) => !isDateBooked(d)).length;
 
   // 0 means «no night», which is a real answer now: a «يوم روحي» arrives and
   // leaves the same day. It used to return `diffDays || 1`, so a same-day
@@ -2181,9 +2236,9 @@ export default function HouseDetail({
         <span className="flex-1 min-w-0">
           <span className="block text-[13px] font-black text-[#0A2342]">جدول الإشغال</span>
           <span className="block text-[10px] font-medium text-[#8A8A70] leading-snug mt-0.5">
-            {freeJulyDays > 0
-              ? <>{arabicNumber(freeJulyDays)} من {arabicNumber(JULY_2026_DAYS.length)} يوم متاحة في يوليو ٢٠٢٦</>
-              : <>لا توجد أيام متاحة في يوليو ٢٠٢٦</>}
+            {freeCalendarDays > 0
+              ? <>{arabicNumber(freeCalendarDays)} من {arabicNumber(CALENDAR_DAYS.length)} يوم متاحة في {calendarMonthLabel}</>
+              : <>لا توجد أيام متاحة في {calendarMonthLabel}</>}
           </span>
         </span>
         <ChevronLeft className="w-4 h-4 text-[#B5AF98] shrink-0" />
@@ -2193,16 +2248,22 @@ export default function HouseDetail({
         open={availabilityOpen}
         onClose={() => setAvailabilityOpen(false)}
         title="جدول الإشغال"
-        subtitle="تقويم إشغال البيت — يوليو ٢٠٢٦"
+        subtitle={`تقويم إشغال البيت — ${calendarMonthLabel}`}
         icon={<Calendar className="w-4 h-4 text-[#C9A24A]" />}
       >
           <div className="space-y-3">
             {/* Visual Calendar Grid */}
             <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold">
-              {['أ', 'ث', 'خ', 'ج', 'ج', 'س', 'ح'].map((d, i) => (
+              {/* Sunday-first, matching JS getDay(). The old row was
+                  ['أ','ث','خ','ج','ج','س','ح'] — ج twice and الأربعاء missing
+                  entirely, and it did not line up with the dates beneath it. */}
+              {['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'].map((d, i) => (
                 <div key={i} className="text-[#8A8A70] py-1">{d}</div>
               ))}
-              {JULY_2026_DAYS.map((day) => {
+              {Array.from({ length: calendarLeadingBlanks }, (_, i) => (
+                <div key={`blank-${i}`} aria-hidden="true" />
+              ))}
+              {CALENDAR_DAYS.map((day) => {
                 const booked = isDateBooked(day);
                 return (
                   <div
@@ -2214,7 +2275,7 @@ export default function HouseDetail({
                     }`}
                     title={booked ? 'محجوز بالكامل' : 'متاح للحجز'}
                   >
-                    {day}
+                    {arabicNumber(day)}
                   </div>
                 );
               })}
