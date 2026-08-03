@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { X, ScanLine, Keyboard, CheckCircle2 } from 'lucide-react';
 import { Booking } from '../../types';
 import { parseBookingQr } from '../../lib/qr';
+import { matchesBookingCode } from '../../lib/bookingRef';
 
 interface OwnerScannerProps {
   open: boolean;
@@ -12,7 +13,7 @@ interface OwnerScannerProps {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const BarcodeDetectorCtor: any = typeof window !== 'undefined' ? (window as any).BarcodeDetector : undefined;
-const bookingRef = (b: Booking) => b.id.replace(/^booking_/, '').slice(-6);
+const matchesTypedCode = (b: Booking, code: string) => matchesBookingCode(b.id, code);
 
 export default function OwnerScanner({ open, onClose, bookings, onCheckIn }: OwnerScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -26,7 +27,7 @@ export default function OwnerScanner({ open, onClose, bookings, onCheckIn }: Own
   const supported = !!BarcodeDetectorCtor;
 
   const resolveBooking = (bookingId: string): Booking | null =>
-    bookings.find((b) => b.id === bookingId) || bookings.find((b) => bookingRef(b) === bookingId) || null;
+    bookings.find((b) => b.id === bookingId) || bookings.find((b) => matchesTypedCode(b, bookingId)) || null;
 
   const finish = (b: Booking) => {
     stop();
@@ -75,8 +76,7 @@ export default function OwnerScanner({ open, onClose, bookings, onCheckIn }: Own
   if (!open) return null;
 
   const submitManual = () => {
-    const code = manualCode.trim().toLowerCase();
-    const b = bookings.find((x) => bookingRef(x).toLowerCase() === code || x.id.toLowerCase() === code);
+    const b = bookings.find((x) => matchesTypedCode(x, manualCode));
     if (b) finish(b); else setError('لم يتم العثور على حجز بهذا الرقم.');
   };
 
@@ -97,7 +97,7 @@ export default function OwnerScanner({ open, onClose, bookings, onCheckIn }: Own
         <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6">
           <Keyboard className="w-8 h-8 text-white/70" />
           <p className="text-white/80 text-[12px] font-bold text-center">{supported ? 'أدخل رقم الحجز يدويًا:' : 'المسح غير مدعوم على هذا المتصفح — أدخل رقم الحجز يدويًا:'}</p>
-          <input type="text" value={manualCode} onChange={(e) => setManualCode(e.target.value)} placeholder="رقم الحجز (آخر 6 أرقام)"
+          <input type="text" value={manualCode} onChange={(e) => setManualCode(e.target.value)} placeholder="رقم الحجز — PM-XXXXX"
             className="w-full max-w-xs bg-white/10 border border-white/20 rounded-2xl px-4 py-3 text-white text-center outline-none placeholder-white/40" />
           {error && <p className="text-rose-300 text-[11px] font-bold">{error}</p>}
           <button type="button" onClick={submitManual} disabled={!manualCode.trim()} className="bg-emerald-500 disabled:opacity-40 text-white text-xs font-black px-6 py-3 rounded-2xl">تسجيل وصول</button>

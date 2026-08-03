@@ -1,5 +1,39 @@
 import { describe, it, expect } from 'vitest';
-import { bookingRef, bookingAge, paidPercent } from './bookingRef';
+import { bookingRef, bookingAge, paidPercent, matchesBookingCode } from './bookingRef';
+
+describe('matchesBookingCode', () => {
+  const id = 'booking_1784292488580';
+
+  it('accepts the reference printed on the sheet and read down the phone', () => {
+    expect(matchesBookingCode(id, bookingRef(id))).toBe(true);
+    expect(matchesBookingCode(id, 'pm-88580')).toBe(true);
+    expect(matchesBookingCode(id, '88580')).toBe(true);
+  });
+
+  it('still accepts the six-character code older sheets carry', () => {
+    // The scanner was the only reader of this form. Sheets already printed
+    // and sitting in a folder have to keep working.
+    expect(matchesBookingCode(id, '488580')).toBe(true);
+  });
+
+  it('accepts the full row id, which is what the QR actually encodes', () => {
+    expect(matchesBookingCode(id, id)).toBe(true);
+  });
+
+  it('ignores case and stray spaces from a phone keyboard', () => {
+    expect(matchesBookingCode(id, ' PM-88580 ')).toBe(true);
+  });
+
+  it('refuses a code belonging to a different booking', () => {
+    expect(matchesBookingCode(id, 'PM-11111')).toBe(false);
+    expect(matchesBookingCode(id, '999999')).toBe(false);
+  });
+
+  it('refuses an empty code rather than matching the first booking', () => {
+    expect(matchesBookingCode(id, '')).toBe(false);
+    expect(matchesBookingCode(id, '   ')).toBe(false);
+  });
+});
 
 describe('bookingRef', () => {
   it('matches what the guest was shown on their confirmation', () => {

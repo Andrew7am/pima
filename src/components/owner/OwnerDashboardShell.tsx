@@ -8,8 +8,11 @@ import {
 } from 'lucide-react';
 import { bookingTypeLabel } from '../../lib/bookingGroups';
 import { categorizeBooking as categorize, sortForOwner } from '../../lib/ownerBookingOrder';
-import { bookingRef, bookingAge, paidPercent } from '../../lib/bookingRef';
-import { paidAmountOf } from '../../lib/cancellationPolicy';
+import { bookingRef, bookingAge } from '../../lib/bookingRef';
+import { bookingMoney } from '../../lib/bookingMoney';
+import { ownerBookingBadge } from '../../lib/ownerBookingBadge';
+import { arabicDay, arabicDayYear, nightsBetween, nightsLabel } from '../../lib/bookingDates';
+import OwnerDisclosure from './OwnerDisclosure';
 import { editableHouseFields } from '../../lib/houseEdits';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
@@ -726,7 +729,7 @@ export default function OwnerDashboardShell({
                 className="flex-1 flex flex-col items-center gap-1 -mt-8 cursor-pointer"
               >
                 <span className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ring-4 ring-[var(--color-owner-surface)] ${
-                  isSel ? 'bg-[var(--color-owner-primary)] text-white shadow-xl scale-105' : 'bg-[var(--color-owner-primary)]/85 text-white shadow-lg'
+                  isSel ? 'bg-[var(--color-owner-primary)] text-[var(--color-owner-on-primary)] shadow-xl scale-105' : 'bg-[var(--color-owner-primary)]/85 text-[var(--color-owner-on-primary)] shadow-lg'
                 }`}>
                   <Icon className="w-6 h-6" />
                 </span>
@@ -768,7 +771,7 @@ export default function OwnerDashboardShell({
                   type="button"
                   onClick={() => item.key === 'house' ? openHouseTab() : (() => { setActiveTab(item.key); setShowOverflow(false); })()}
                   className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-[10px] font-bold text-right transition-all cursor-pointer ${
-                    activeTab === item.key ? 'bg-[var(--color-owner-primary)] text-white' : 'text-[var(--color-owner-text)] hover:bg-[var(--color-owner-hover)]'
+                    activeTab === item.key ? 'bg-[var(--color-owner-primary)] text-[var(--color-owner-on-primary)]' : 'text-[var(--color-owner-text)] hover:bg-[var(--color-owner-hover)]'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -825,7 +828,7 @@ export default function OwnerDashboardShell({
                   <div className="flex items-center gap-1.5 shrink-0">
                     {canInstall && (
                       <button type="button" onClick={doInstall}
-                        className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-[var(--color-owner-primary)] text-white text-[10px] font-black cursor-pointer"
+                        className="flex items-center gap-1 px-2.5 py-2 rounded-xl bg-[var(--color-owner-primary)] text-[var(--color-owner-on-primary)] text-[10px] font-black cursor-pointer"
                         title="ثبّت بيما على شاشتك">
                         <Download className="w-3.5 h-3.5" /> تثبيت
                       </button>
@@ -1038,23 +1041,57 @@ export default function OwnerDashboardShell({
               // already-terminal ones — active guest bookings stay soft-cancel.
               const canDelete = booking.source === 'manual' || booking.source === 'temporary'
                 || booking.status === 'cancelled' || booking.status === 'rejected';
-              const depositAmt = booking.depositAmount || Math.round(booking.totalPrice * settings.depositRate);
-              const bookingRemaining = booking.totalPrice - (booking.depositPaid ? depositAmt : 0);
+              const money = bookingMoney(booking, settings.depositRate);
+              const depositAmt = money.deposit;
+              const badge = ownerBookingBadge(booking, todayStr);
+              const nights = nightsBetween(booking.checkIn, booking.checkOut);
               return (
                 <div id={`owner-booking-detail-${booking.id}`} className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] shadow-sm p-4 space-y-3 text-right">
+                  {/* The reference, how long they have waited, and where the
+                      booking stands. Status was computed for the list card and
+                      never rendered here at all, so a booking the guest had
+                      cancelled opened looking like a live one. */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-mono text-[10px] font-bold text-[var(--color-owner-secondary)] bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-md shrink-0" dir="ltr">
+                        {bookingRef(booking.id)}
+                      </span>
+                      <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] truncate">{bookingAge(booking.createdAt)}</span>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${badge.cls}`}>{badge.label}</span>
+                  </div>
+
                   <div>
                     {/* WHO. The owner had a name and a phone number and
                         nothing else: no address to send a confirmation to, and
                         no idea when the request arrived — which is the whole of
                         "how long has this person been waiting". */}
-                    <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold flex items-center gap-1.5 flex-wrap">
-                      الحساب: {booking.userName}
-                      {booking.source === 'manual' && <span className="text-[9px] font-bold bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي 📞</span>}
-                      {booking.source === 'temporary' && <span className="text-[9px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded-full">مؤقت ⏳</span>}
-                      {booking.isLargeConferenceQuote && <span className="text-[9px] font-bold bg-[#0A2342] text-[#C8A45D] px-1.5 py-0.5 rounded-full">طلب عرض سعر</span>}
+                    <h4 className="text-[15px] font-black text-[var(--color-owner-text)] leading-snug">{booking.userName}</h4>
+                    <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold flex items-center gap-1.5 flex-wrap mt-1">
+                      <span>{booking.houseName}</span>
+                      {booking.source === 'manual' && <span className="bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي 📞</span>}
+                      {booking.source === 'temporary' && <span className="bg-[var(--color-owner-info)]/10 text-[var(--color-owner-info-ink)] border border-[var(--color-owner-info)]/30 px-1.5 py-0.5 rounded-full">مؤقت ⏳</span>}
+                      {booking.isLargeConferenceQuote && <span className="bg-[var(--color-owner-primary)] text-[var(--color-owner-surface)] px-1.5 py-0.5 rounded-full">طلب عرض سعر</span>}
                     </span>
-                    <h4 className="text-sm font-black text-[var(--color-owner-text)] mt-0.5">{booking.houseName}</h4>
                   </div>
+
+                  {/* THE DECISION, immediately. On a new request this used to
+                      be the eighth block down — below the private-notes
+                      textarea and off the bottom of a 375×667 screen. The one
+                      thing the owner opened this panel to do now needs no
+                      scrolling to reach. */}
+                  {isPending && (
+                    <div className="flex gap-2 flex-wrap">
+                      <button onClick={() => onApproveBooking(booking.id)}
+                        className="flex-1 flex items-center justify-center gap-1 bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-[var(--color-owner-on-primary)] px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all shadow-sm cursor-pointer">
+                        <Check className="w-4 h-4" /><span>قبول وتأكيد الحجز</span>
+                      </button>
+                      <button onClick={() => { if (confirm('هل أنت متأكد من رفض هذا الحجز؟')) onRejectBooking(booking.id); }}
+                        className="flex items-center justify-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-danger-ink)] border border-[var(--color-owner-border)] px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                        <X className="w-4 h-4" /><span>رفض</span>
+                      </button>
+                    </div>
+                  )}
 
                   {/* Contact — tappable, because an owner reading this on a
                       phone wants to call or write, not transcribe a string. */}
@@ -1084,36 +1121,66 @@ export default function OwnerDashboardShell({
                     </div>
                   )}
 
+                  {/* The stay, in Arabic. These two cells printed 2026-08-15
+                      in Latin digits next to an Arabic-formatted date in the
+                      same box, and never said how many nights that was. */}
                   <div className="bg-[var(--color-owner-hover)] rounded-2xl p-3 grid grid-cols-2 gap-2 text-[10px] text-[var(--color-owner-text)] font-medium border border-[var(--color-owner-border)]">
-                    <div>تاريخ الوصول: <strong>{booking.checkIn}</strong></div>
-                    <div>تاريخ المغادرة: <strong>{booking.checkOut}</strong></div>
+                    <div>تاريخ الوصول: <strong>{arabicDay(booking.checkIn)}</strong></div>
+                    <div>تاريخ المغادرة: <strong>{arabicDay(booking.checkOut)}</strong></div>
+                    <div>مدة الإقامة: <strong>{nightsLabel(nights)}</strong></div>
                     <div>عدد الأفراد: <strong>{booking.guestsCount} فرد</strong></div>
-                    <div>قيمة الحجز: <strong className="text-[var(--color-owner-primary)] font-extrabold">{booking.totalPrice.toLocaleString()} ج.م</strong></div>
+                    {/* Was primary-coloured — 4.1:1 on this tinted tile at
+                        10px. It is already the boldest thing in the grid; it
+                        does not need a colour to be found. */}
+                    <div>قيمة الحجز: <strong className="text-[var(--color-owner-text)] font-extrabold">{booking.totalPrice.toLocaleString()} ج.م</strong></div>
                     {/* Forty ثانوي and forty خدام are not the same request. */}
                     <div>نوع الحجز: <strong>{bookingTypeLabel(booking)}</strong></div>
-                    <div>وصل الطلب: <strong>{new Date(booking.createdAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' })}</strong></div>
                   </div>
+
+                  {/* What the record knows about the journey and never showed:
+                      these stamps were read as booleans to swap a button and
+                      then thrown away, so once a guest was checked in there
+                      was nothing on the screen saying when. */}
+                  {(booking.approvedAt || booking.checkedInAt || booking.checkedOutAt) && (
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[9px] font-bold text-[var(--color-owner-secondary)]">
+                      {booking.approvedAt && <span>تم التأكيد: <strong className="text-[var(--color-owner-text)]">{arabicDayYear(booking.approvedAt)}</strong></span>}
+                      {booking.checkedInAt && <span>سُجّل الوصول: <strong className="text-[var(--color-owner-text)]">{arabicDayYear(booking.checkedInAt)}</strong></span>}
+                      {booking.checkedOutAt && <span>سُجّلت المغادرة: <strong className="text-[var(--color-owner-text)]">{arabicDayYear(booking.checkedOutAt)}</strong></span>}
+                    </div>
+                  )}
+
+                  {/* The money. Every fill here used to be a light-mode
+                      palette shade with an inline hex ink that no dark-mode
+                      rule could reach — two white slabs on a navy card. */}
                   <div className="grid grid-cols-2 gap-2 text-[10px]">
                     {(() => {
-                      // Three states, not two. «قيد المراجعة» is the one the
-                      // owner has to act on and the one the old boolean hid.
-                      const awaiting = booking.paymentStatus === 'pending_verification';
-                      const paid = booking.depositPaid;
-                      const tone = awaiting
-                        ? { box: 'bg-sky-50 border-sky-200', ink: '#075985', label: '⏳ إيصال في انتظار مراجعتك' }
-                        : paid
-                          ? { box: 'bg-emerald-50 border-emerald-200', ink: '#065f46', label: '✓ العربون المستلم' }
-                          : { box: 'bg-amber-50 border-amber-200', ink: '#92400e', label: 'العربون (لم يُستلم)' };
+                      // Four states. The old three never asked about full
+                      // payment, so a guest who had paid everything still got
+                      // «✓ العربون المستلم» beside a balance owed.
+                      const tone = money.awaitingProof
+                        ? { token: 'info', label: '⏳ إيصال في انتظار المراجعة', amount: money.deposit }
+                        : money.fullyPaid
+                          ? { token: 'success', label: '✓ مسدَّد بالكامل', amount: money.collected }
+                          : money.collected > 0
+                            ? { token: 'success', label: '✓ العربون المستلم', amount: money.collected }
+                            : { token: 'warning', label: 'العربون (لم يُستلم)', amount: money.deposit };
                       return (
-                        <div className={`p-2 rounded-xl border ${tone.box}`}>
-                          <div className="font-bold text-[9px] mb-0.5" style={{ color: tone.ink }}>{tone.label}</div>
-                          <div className="font-extrabold" style={{ color: tone.ink }}>{depositAmt.toLocaleString()} ج.م</div>
+                        <div className={`p-2 rounded-xl border bg-[var(--color-owner-${tone.token})]/10 border-[var(--color-owner-${tone.token})]/30`}>
+                          <div className={`font-bold text-[9px] mb-0.5 text-[var(--color-owner-${tone.token}-ink)]`}>{tone.label}</div>
+                          <div className={`font-extrabold text-[var(--color-owner-${tone.token}-ink)]`}>{tone.amount.toLocaleString()} ج.م</div>
                         </div>
                       );
                     })()}
-                    <div className="p-2 rounded-xl border bg-slate-50 border-slate-200">
-                      <div className="text-slate-700 font-bold text-[9px] mb-0.5">المبلغ المتبقي</div>
-                      <div className="text-slate-800 font-extrabold">{bookingRemaining.toLocaleString()} ج.م</div>
+                    {/* «المبلغ المتبقي» only where a balance is a real claim.
+                        It had no status guard, so a request nobody had
+                        approved read as money the guest already owed. */}
+                    <div className="p-2 rounded-xl border bg-[var(--color-owner-hover)] border-[var(--color-owner-border)]">
+                      <div className="text-[var(--color-owner-secondary)] font-bold text-[9px] mb-0.5">
+                        {money.balanceApplies ? 'المبلغ المتبقي' : booking.status === 'pending' ? 'لم يُطلب دفع بعد' : 'حُصِّل حتى الآن'}
+                      </div>
+                      <div className="text-[var(--color-owner-text)] font-extrabold">
+                        {(money.balanceApplies ? money.outstanding : money.collected).toLocaleString()} ج.م
+                      </div>
                     </div>
                   </div>
                   {(isPending || isApproved) && onUpdateBookingDetails && (
@@ -1144,7 +1211,7 @@ export default function OwnerDashboardShell({
                             if (availability.length === 0) return null;
                             const totalFree = availability.reduce((s, a) => s + a.freeBeds, 0);
                             return totalFree < editGuests ? (
-                              <div className="bg-amber-50 border border-amber-200 rounded-xl p-2 text-[10px] text-amber-900 font-bold">
+                              <div className="bg-[var(--color-owner-warning)]/10 border border-[var(--color-owner-warning)]/30 rounded-xl p-2 text-[10px] text-[var(--color-owner-warning-ink)] font-bold">
                                 يمكن استيعاب {totalFree} من {editGuests} فرد فقط في هذه التواريخ حسب الغرف المتاحة. سيتم قبول الحجز رغم ذلك حسب سعة البيت الكلية، لكن التوزيع على الغرف سيحتاج مراجعة يدوية.
                               </div>
                             ) : null;
@@ -1160,7 +1227,7 @@ export default function OwnerDashboardShell({
                                 setEditSaving(false);
                                 if (ok) setEditingBookingId(null);
                               }}
-                              className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-[10px] font-extrabold px-3 py-1.5 rounded-xl cursor-pointer disabled:opacity-60"
+                              className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-[var(--color-owner-on-primary)] text-[10px] font-extrabold px-3 py-1.5 rounded-xl cursor-pointer disabled:opacity-60"
                             >{editSaving ? 'جارٍ الحفظ...' : 'حفظ التعديل'}</button>
                           </div>
                         </>
@@ -1177,13 +1244,13 @@ export default function OwnerDashboardShell({
                       request can carry the applicant's notes too, and notes the
                       owner never sees are worse than notes never asked for. */}
                   {booking.conferenceDetails && (booking.conferenceDetails.extraRequests || booking.conferenceDetails.diocese || booking.conferenceDetails.mealsIncluded !== undefined) && (
-                    <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-200/60 text-[10px] text-[var(--color-owner-text)] space-y-1">
-                      <span className="font-bold text-amber-900 block">📝 ملاحظات وطلبات العميل:</span>
+                    <div className="bg-[var(--color-owner-warning)]/10 p-2.5 rounded-xl border border-[var(--color-owner-warning)]/30 text-[10px] text-[var(--color-owner-text)] space-y-1">
+                      <span className="font-bold text-[var(--color-owner-warning-ink)] block">📝 ملاحظات وطلبات العميل:</span>
                       {booking.conferenceDetails.extraRequests && (
-                        <p className="italic text-slate-700 whitespace-pre-line">{booking.conferenceDetails.extraRequests}</p>
+                        <p className="italic whitespace-pre-line">{booking.conferenceDetails.extraRequests}</p>
                       )}
                       {booking.conferenceDetails.mealsIncluded !== undefined && (
-                        <p className="text-slate-700">
+                        <p>
                           الإعاشة: <strong>{booking.conferenceDetails.mealsIncluded ? 'مطلوبة — ٣ وجبات يوميًا' : 'غير مطلوبة'}</strong>
                           {booking.conferenceDetails.mealsIncluded && booking.conferenceDetails.mealsCost
                             ? ` (${booking.conferenceDetails.mealsCost.toLocaleString()} ج.م ضمن الإجمالي)`
@@ -1191,13 +1258,58 @@ export default function OwnerDashboardShell({
                         </p>
                       )}
                       {booking.conferenceDetails.diocese && (
-                        <p className="text-slate-700">الإيبارشية: <strong>{booking.conferenceDetails.diocese}</strong></p>
+                        <p>الإيبارشية: <strong>{booking.conferenceDetails.diocese}</strong></p>
                       )}
                     </div>
                   )}
-                  {/* Owner private notes — only visible to the owner */}
-                  <div className="bg-[var(--color-owner-bg)] p-2.5 rounded-xl border border-[var(--color-owner-border)]">
-                    <label className="block text-[10px] font-bold text-[var(--color-owner-muted)] mb-1">ملاحظاتك الخاصة (لا يراها العميل):</label>
+
+                  {isApproved && (
+                    <div className="flex gap-2 flex-wrap">
+                      {!booking.depositPaid && onConfirmDeposit && (
+                        <button onClick={() => { if (confirm(`تأكيد استلام عربون بمبلغ ${depositAmt.toLocaleString()} ج.م؟`)) onConfirmDeposit(booking.id); }}
+                          className="flex items-center gap-1 bg-[var(--color-owner-warning)]/10 hover:bg-[var(--color-owner-warning)]/20 text-[var(--color-owner-warning-ink)] border border-[var(--color-owner-warning)]/30 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                          <Coins className="w-4 h-4" /><span>تأكيد استلام العربون</span>
+                        </button>
+                      )}
+                      {!booking.checkedInAt && onCheckInBooking && (
+                        <button onClick={() => onCheckInBooking(booking.id)}
+                          className="flex items-center gap-1 bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-[var(--color-owner-on-primary)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                          <Home className="w-4 h-4" /><span>تسجيل وصول</span>
+                        </button>
+                      )}
+                      {booking.checkedInAt && !booking.checkedOutAt && onCheckOutBooking && (
+                        <button onClick={() => { if (confirm('تسجيل مغادرة العميل وإنهاء الحجز؟')) onCheckOutBooking(booking.id); }}
+                          className="flex items-center gap-1 bg-[var(--color-owner-hover)] hover:bg-[var(--color-owner-border)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                          <span>🚪 تسجيل مغادرة</span>
+                        </button>
+                      )}
+                      {onAssignRooms && (
+                        <button onClick={() => setAssignRoomsBooking(booking)}
+                          className="flex items-center gap-1 bg-[var(--color-owner-hover)] hover:bg-[var(--color-owner-border)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                          <BedDouble className="w-4 h-4" /><span>{booking.assignedRoomIds?.length ? `الغرف المخصّصة (${booking.assignedRoomIds.length})` : 'تخصيص الغرف'}</span>
+                        </button>
+                      )}
+                      {booking.source === 'temporary' && (
+                        <button onClick={() => { if (confirm('إلغاء الحجز المؤقت وتحرير السعة المحجوزة؟')) onRejectBooking(booking.id); }}
+                          className="flex items-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-danger-ink)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                          <X className="w-4 h-4" /><span>إلغاء الحجز المؤقت</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Everything below is reference material ──────────────
+                      Consulted occasionally, and until now it sat between the
+                      owner and the decision. Folded, with the count or the
+                      state on the closed row so nobody has to open a section
+                      to learn whether it is worth opening. ── */}
+
+                  <OwnerDisclosure
+                    id={`owner-booking-notes-${booking.id}`}
+                    title="ملاحظاتك الخاصة"
+                    hint={booking.ownerNotes ? 'مكتوبة' : 'لا يراها العميل'}
+                    icon={<MessageSquare className="w-3.5 h-3.5 text-[var(--color-owner-secondary)]" />}
+                  >
                     <textarea
                       rows={2}
                       defaultValue={booking.ownerNotes || ''}
@@ -1211,110 +1323,78 @@ export default function OwnerDashboardShell({
                       }}
                       className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[11px] px-2.5 py-1.5 rounded-xl text-[var(--color-owner-text)] outline-none focus:ring-1 focus:ring-[var(--color-owner-primary)] resize-none"
                     />
-                  </div>
-                  {isPending && (
-                    <div className="flex gap-2 justify-end pt-2 flex-wrap">
-                      <button onClick={() => { if (confirm('هل أنت متأكد من رفض هذا الحجز؟')) onRejectBooking(booking.id); }}
-                        className="flex items-center gap-1 bg-[var(--color-owner-bg)] hover:bg-rose-50 hover:text-rose-800 text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                        <X className="w-4 h-4" /><span>رفض الطلب</span>
-                      </button>
-                      <button onClick={() => onApproveBooking(booking.id)}
-                        className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-1.5 rounded-xl text-xs font-extrabold transition-all shadow-sm cursor-pointer">
-                        <Check className="w-4 h-4" /><span>قبول وتأكيد الحجز</span>
-                      </button>
-                    </div>
-                  )}
-                  {isApproved && (
-                    <div className="flex gap-2 justify-end pt-2 flex-wrap">
-                      {booking.source === 'temporary' && (
-                        <button onClick={() => { if (confirm('إلغاء الحجز المؤقت وتحرير السعة المحجوزة؟')) onRejectBooking(booking.id); }}
-                          className="flex items-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                          <X className="w-4 h-4" /><span>إلغاء الحجز المؤقت</span>
-                        </button>
-                      )}
-                      {!booking.depositPaid && onConfirmDeposit && (
-                        <button onClick={() => { if (confirm(`تأكيد استلام عربون بمبلغ ${depositAmt.toLocaleString()} ج.م؟`)) onConfirmDeposit(booking.id); }}
-                          className="flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                          <Coins className="w-4 h-4" /><span>تأكيد استلام العربون</span>
-                        </button>
-                      )}
-                      {!booking.checkedInAt && onCheckInBooking && (
-                        <button onClick={() => onCheckInBooking(booking.id)}
-                          className="flex items-center gap-1 bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                          <Home className="w-4 h-4" /><span>تسجيل وصول</span>
-                        </button>
-                      )}
-                      {booking.checkedInAt && !booking.checkedOutAt && onCheckOutBooking && (
-                        <button onClick={() => { if (confirm('تسجيل مغادرة العميل وإنهاء الحجز؟')) onCheckOutBooking(booking.id); }}
-                          className="flex items-center gap-1 bg-slate-600 hover:bg-slate-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                          <span>🚪 تسجيل مغادرة</span>
-                        </button>
-                      )}
-                      {onAssignRooms && (
-                        <button onClick={() => setAssignRoomsBooking(booking)}
-                          className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer">
-                          <BedDouble className="w-4 h-4" /><span>{booking.assignedRoomIds?.length ? `الغرف المخصّصة (${booking.assignedRoomIds.length})` : 'تخصيص الغرف للحاجز'}</span>
-                        </button>
-                      )}
-                      <button onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
-                        className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                        <Building className="w-4 h-4 text-amber-700" /><span>عرض التوزيع 🛏️</span>
-                      </button>
-                      {onRecalculateAllocation && (
-                        <button
-                          disabled={recalcSaving}
-                          onClick={async () => { setRecalcSaving(true); await onRecalculateAllocation(booking.houseId, booking.id); setRecalcSaving(false); }}
-                          className="flex items-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-60">
-                          <Shuffle className="w-4 h-4" /><span>{recalcSaving ? 'جارٍ إعادة التوزيع...' : 'إعادة حساب التوزيع'}</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  {isCompleted && (
-                    <div className="flex justify-end pt-1">
-                      <button onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
-                        className="flex items-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                        <Building className="w-4 h-4" /><span>عرض توزيع الغرف</span>
-                      </button>
-                    </div>
-                  )}
-                  {(booking.status === 'approved' || booking.status === 'completed') && (
-                    <div className="pt-2 mt-1 border-t border-[var(--color-owner-border)]">
-                      <div className="text-[9px] font-black text-[var(--color-owner-secondary)] mb-1.5">أدوات منظّم المؤتمر</div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <button onClick={() => printRoomingList(booking, attendees, allocations, ownerRooms)}
-                          className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                          <ClipboardList className="w-4 h-4" /><span>كشف الغرف</span>
-                        </button>
-                        <button onClick={() => printBadges(booking, attendees, allocations, ownerRooms)}
-                          className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                          <QrCode className="w-4 h-4" /><span>بادجات الأسماء</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between pt-2 mt-1 border-t border-[var(--color-owner-border)]">
-                    <div className="flex items-center gap-2">
+                  </OwnerDisclosure>
+
+                  <OwnerDisclosure
+                    id={`owner-booking-tools-${booking.id}`}
+                    title="مستندات وأدوات"
+                    hint="فاتورة · QR · كشوف"
+                    icon={<ClipboardList className="w-3.5 h-3.5 text-[var(--color-owner-secondary)]" />}
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
                       <button onClick={() => printBookingInvoice(booking, booking.houseName)}
-                        className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                        className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
                         <ClipboardList className="w-4 h-4" /><span>فاتورة</span>
                       </button>
-                      <button onClick={() => openBookingQrWindow(booking.id, booking.organizationName || booking.userName, booking.houseName, booking.id.replace(/^booking_/, '').slice(-6))}
-                        className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                      {/* The printed sheet used to carry a third derivation of
+                          the reference — six characters, no PM- — so the paper
+                          in the owner's hand disagreed with the guest's phone
+                          and with the list. One number now. */}
+                      <button onClick={() => openBookingQrWindow(booking.id, booking.organizationName || booking.userName, booking.houseName, bookingRef(booking.id))}
+                        className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
                         <QrCode className="w-4 h-4" /><span>رمز QR</span>
                       </button>
+                      {(booking.status === 'approved' || booking.status === 'completed') && (
+                        <>
+                          <button onClick={() => printRoomingList(booking, attendees, allocations, ownerRooms)}
+                            className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                            <ClipboardList className="w-4 h-4" /><span>كشف الغرف</span>
+                          </button>
+                          <button onClick={() => printBadges(booking, attendees, allocations, ownerRooms)}
+                            className="flex items-center gap-1 text-[var(--color-owner-primary)] hover:bg-[var(--color-owner-hover)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                            <QrCode className="w-4 h-4" /><span>بادجات الأسماء</span>
+                          </button>
+                        </>
+                      )}
                     </div>
-                    {onDeleteBooking && canDelete && (
+                  </OwnerDisclosure>
+
+                  {(isApproved || isCompleted) && (
+                    <OwnerDisclosure
+                      id={`owner-booking-rooms-${booking.id}`}
+                      title="توزيع الغرف"
+                      hint={booking.assignedRoomIds?.length ? `${booking.assignedRoomIds.length} غرفة` : undefined}
+                      icon={<Building className="w-3.5 h-3.5 text-[var(--color-owner-secondary)]" />}
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
+                          className="flex items-center gap-1 bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                          <Building className="w-4 h-4" /><span>عرض التوزيع 🛏️</span>
+                        </button>
+                        {isApproved && onRecalculateAllocation && (
+                          <button
+                            disabled={recalcSaving}
+                            onClick={async () => { setRecalcSaving(true); await onRecalculateAllocation(booking.houseId, booking.id); setRecalcSaving(false); }}
+                            className="flex items-center gap-1 bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-60">
+                            <Shuffle className="w-4 h-4" /><span>{recalcSaving ? 'جارٍ إعادة التوزيع...' : 'إعادة حساب التوزيع'}</span>
+                          </button>
+                        )}
+                      </div>
+                    </OwnerDisclosure>
+                  )}
+
+                  {onDeleteBooking && canDelete && (
+                    <div className="flex justify-end pt-1">
                       <button onClick={() => {
                           if (confirm('حذف هذا الحجز نهائيًا؟ لا يمكن التراجع، وسيتم حذف بيانات الحضور وتوزيع الغرف المرتبطة به.')) {
                             onDeleteBooking(booking.id); setSelectedBookingId(null);
                           }
                         }}
-                        className="flex items-center gap-1 text-rose-600 hover:bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                        className="flex items-center gap-1 text-[var(--color-owner-danger-ink)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
                         <Trash2 className="w-4 h-4" /><span>حذف نهائيًا</span>
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -1383,7 +1463,7 @@ export default function OwnerDashboardShell({
                 onClick={() => setShowBookingFilters((v) => !v)}
                 className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-2.5 rounded-xl border shrink-0 cursor-pointer transition-colors ${
                   showBookingFilters || sourceFilter !== 'all'
-                    ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]'
+                    ? 'bg-[var(--color-owner-primary)] text-[var(--color-owner-on-primary)] border-[var(--color-owner-primary)]'
                     : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'
                 }`}
               >
@@ -1478,7 +1558,7 @@ export default function OwnerDashboardShell({
                   type="button"
                   onClick={handleCreateManualBooking}
                   disabled={mbSaving}
-                  className="w-full bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] disabled:opacity-50 text-white text-xs font-bold py-2.5 rounded-xl cursor-pointer"
+                  className="w-full bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] disabled:opacity-50 text-[var(--color-owner-on-primary)] text-xs font-bold py-2.5 rounded-xl cursor-pointer"
                 >
                   {mbSaving ? 'جارٍ الحفظ...' : mbType === 'manual' ? 'تسجيل الحجز المؤكد' : 'تسجيل الحجز المؤقت'}
                 </button>
@@ -1495,7 +1575,7 @@ export default function OwnerDashboardShell({
                 ]).map((s) => (
                   <button key={s.key} type="button" onClick={() => setSourceFilter(s.key)}
                     className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
-                      sourceFilter === s.key ? 'bg-[var(--color-owner-primary)] text-white' : 'bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-secondary)]'
+                      sourceFilter === s.key ? 'bg-[var(--color-owner-primary)] text-[var(--color-owner-on-primary)]' : 'bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-secondary)]'
                     }`}
                   >{s.label}</button>
                 ))}
@@ -1529,7 +1609,7 @@ export default function OwnerDashboardShell({
                   >
                     <span>{f.label}</span>
                     <span className={`text-[9px] font-black px-1.5 py-px rounded-full ${
-                      isSel ? 'bg-[var(--color-owner-primary)] text-white' : 'bg-[var(--color-owner-bg)] text-[var(--color-owner-secondary)]'
+                      isSel ? 'bg-[var(--color-owner-primary)] text-[var(--color-owner-on-primary)]' : 'bg-[var(--color-owner-bg)] text-[var(--color-owner-secondary)]'
                     }`}>{count}</span>
                   </button>
                 );
@@ -1573,37 +1653,24 @@ export default function OwnerDashboardShell({
               <div className="space-y-3">
                 {filteredOwnerBookings.map((booking) => {
                   const category = categorizeBooking(booking);
-                  const statusBadge = (() => {
-                    if (booking.status === 'rejected') return { label: 'مرفوض', cls: 'bg-rose-50 text-rose-800 border-rose-200' };
-                    if (booking.status === 'cancelled') return { label: 'ملغى من المستخدم', cls: 'bg-slate-50 text-slate-600 border-slate-200' };
-                    if (booking.status === 'completed') return { label: 'مكتمل', cls: 'bg-slate-100 text-slate-700 border-slate-200' };
-                    if (booking.status === 'pending') return { label: 'جديد ⚠️', cls: 'bg-amber-50 text-amber-800 border-amber-200' };
-                    if (category === 'arrivals_today') return { label: 'وصول اليوم', cls: 'bg-sky-50 text-sky-800 border-sky-200' };
-                    if (category === 'departures_today') return { label: 'مغادرة اليوم', cls: 'bg-slate-50 text-slate-700 border-slate-200' };
-                    if (category === 'pending_payment') return { label: 'بانتظار الدفع', cls: 'bg-sky-50 text-sky-800 border-sky-200' };
-                    return { label: 'مؤكد', cls: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
-                  })();
-                  const depositAmt = booking.depositAmount || Math.round(booking.totalPrice * settings.depositRate);
-                  // paidAmountOf is what the refund math uses; the legacy
-                  // depositPaid flag is honoured too so a row written before
-                  // paymentStatus existed does not read back as nothing paid.
-                  const collected = Math.max(paidAmountOf(booking), booking.depositPaid ? depositAmt : 0);
-                  const outstanding = Math.max(0, booking.totalPrice - collected);
-                  const pct = paidPercent(booking.totalPrice, collected);
+                  // Shared with the detail panel, so the row and the screen it
+                  // opens cannot label the same booking differently.
+                  const statusBadge = ownerBookingBadge(booking, todayStr);
+                  const money = bookingMoney(booking, settings.depositRate);
+                  const { collected, outstanding, percent: pct } = money;
                   const whatsappLink = `https://wa.me/2${booking.userPhone.replace(/^0/, '')}`;
                   // A stripe down the leading edge, so the list reads before
                   // it is read: the sort already puts urgent work on top, and
                   // this makes that visible rather than merely true.
-                  const accent = booking.status === 'pending' ? '#F59E0B'
-                    : category === 'arrivals_today' || category === 'pending_payment' ? '#0EA5E9'
-                    : booking.status === 'rejected' || booking.status === 'cancelled' || booking.status === 'completed' ? '#CBD5E1'
-                    : '#22C55E';
-                  const nights = Math.max(0, Math.round(
-                    (new Date(booking.checkOut).getTime() - new Date(booking.checkIn).getTime()) / 86400000));
-                  const longDay = (iso: string) => new Date(iso).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' });
-                  const nightsText = nights === 0 ? 'يوم واحد'
-                    : `${nights} ${nights === 1 ? 'ليلة' : nights === 2 ? 'ليلتان' : nights <= 10 ? 'ليالٍ' : 'ليلة'}`;
-                  const awaitingProof = booking.paymentStatus === 'pending_verification';
+                  // Tokens rather than fixed hex: the stripe has to stay
+                  // visible on the owner's dark surface too.
+                  const accent = booking.status === 'pending' ? 'var(--color-owner-warning)'
+                    : category === 'arrivals_today' || category === 'pending_payment' ? 'var(--color-owner-info)'
+                    : booking.status === 'rejected' || booking.status === 'cancelled' || booking.status === 'completed' ? 'var(--color-owner-border)'
+                    : 'var(--color-owner-success)';
+                  const longDay = arabicDay;
+                  const nightsText = nightsLabel(nightsBetween(booking.checkIn, booking.checkOut));
+                  const awaitingProof = money.awaitingProof;
                   return (
                     <div
                       id={`owner-booking-${booking.id}`}
@@ -1624,7 +1691,7 @@ export default function OwnerDashboardShell({
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           {awaitingProof && (
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border bg-sky-50 text-sky-800 border-sky-200">⏳ إيصال</span>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border bg-[var(--color-owner-info)]/10 text-[var(--color-owner-info-ink)] border-[var(--color-owner-info)]/30">⏳ إيصال</span>
                           )}
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusBadge.cls}`}>{statusBadge.label}</span>
                         </div>
@@ -1641,8 +1708,8 @@ export default function OwnerDashboardShell({
                           <Phone className="w-3 h-3 shrink-0" />
                           <span dir="ltr">{booking.userPhone}</span>
                           <span className="truncate">· {booking.organizationName || booking.houseName}</span>
-                          {booking.source === 'manual' && <span className="shrink-0 bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي</span>}
-                          {booking.source === 'temporary' && <span className="shrink-0 bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded-full">مؤقت</span>}
+                          {booking.source === 'manual' && <span className="shrink-0 bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي</span>}
+                          {booking.source === 'temporary' && <span className="shrink-0 bg-[var(--color-owner-info)]/10 text-[var(--color-owner-info-ink)] border border-[var(--color-owner-info)]/30 px-1.5 py-0.5 rounded-full">مؤقت</span>}
                         </div>
                       </div>
 
@@ -1690,7 +1757,7 @@ export default function OwnerDashboardShell({
                       ) : (
                         <div className="space-y-1.5">
                           <div className="flex items-baseline justify-between gap-2 text-[10px] font-bold">
-                            <span className={outstanding > 0 ? 'text-[var(--color-owner-text)]' : 'text-emerald-700'}>
+                            <span className={outstanding > 0 ? 'text-[var(--color-owner-text)]' : 'text-[var(--color-owner-success-ink)]'}>
                               {outstanding > 0 ? (
                                 <>المتبقي <span className="font-black text-[var(--color-owner-warning-ink)]">{outstanding.toLocaleString()} ج.م</span> من {booking.totalPrice.toLocaleString()} ج.م</>
                               ) : (
@@ -1701,7 +1768,7 @@ export default function OwnerDashboardShell({
                           </div>
                           <div className="h-1.5 w-full rounded-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all ${pct >= 100 ? 'bg-emerald-500' : 'bg-[var(--color-owner-info)]'}`}
+                              className={`h-full rounded-full transition-all ${pct >= 100 ? 'bg-[var(--color-owner-success)]' : 'bg-[var(--color-owner-info)]'}`}
                               style={{ width: `${pct}%` }}
                             />
                           </div>
@@ -1712,7 +1779,7 @@ export default function OwnerDashboardShell({
                         <a href={`tel:${booking.userPhone}`} className="flex-1 flex items-center justify-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] px-2.5 py-1.5 rounded-xl text-[10px] font-bold cursor-pointer">
                           <Phone className="w-3 h-3" /><span>اتصال</span>
                         </a>
-                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 px-2.5 py-1.5 rounded-xl text-[10px] font-bold cursor-pointer">
+                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1 bg-[var(--color-owner-success)]/10 hover:bg-[var(--color-owner-success)]/20 border border-[var(--color-owner-success)]/30 text-[var(--color-owner-success-ink)] px-2.5 py-1.5 rounded-xl text-[10px] font-bold cursor-pointer">
                           <MessageCircle className="w-3 h-3" /><span>واتساب</span>
                         </a>
                       </div>
@@ -2064,7 +2131,7 @@ export default function OwnerDashboardShell({
                           onUpdateHouse?.({ ...srHouse, seasonalRates: [...currentRates, { id: `sr_${Date.now()}`, label: srLabel.trim(), startDate: srStart, endDate: srEnd, pricePerNight: price }] });
                           setSrLabel(''); setSrStart(''); setSrEnd(''); setSrPrice('');
                         }}
-                        className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-[10px] font-bold py-1.5 px-3 rounded-xl cursor-pointer">
+                        className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-[var(--color-owner-on-primary)] text-[10px] font-bold py-1.5 px-3 rounded-xl cursor-pointer">
                         + إضافة
                       </button>
                     </div>
@@ -2086,7 +2153,7 @@ export default function OwnerDashboardShell({
                     return (
                       <button key={key} type="button" onClick={() => handleSuitabilityToggle(key)}
                         className={`text-[10px] font-bold px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer ${
-                          isSelected ? 'bg-[var(--color-owner-primary)] border-[var(--color-owner-primary)] text-white shadow-sm' : 'bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)]'
+                          isSelected ? 'bg-[var(--color-owner-primary)] border-[var(--color-owner-primary)] text-[var(--color-owner-on-primary)] shadow-sm' : 'bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)]'
                         }`}>{SUITABILITY_MAP[key]}</button>
                     );
                   })}
@@ -2142,7 +2209,7 @@ export default function OwnerDashboardShell({
                     <div className="flex gap-2 items-center">
                       <input type="number" placeholder="السعة الاستيعابية" value={hallCapacity} onChange={(e) => setHallCapacity(parseInt(e.target.value) || 50)} onFocus={(e) => e.target.select()}
                         className="flex-1 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
-                      <button type="button" onClick={handleAddHall} className="bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-3 py-1.5 rounded-xl shrink-0 cursor-pointer">أضف القاعة +</button>
+                      <button type="button" onClick={handleAddHall} className="bg-[var(--color-owner-primary)] text-[var(--color-owner-on-primary)] text-[10px] font-bold px-3 py-1.5 rounded-xl shrink-0 cursor-pointer">أضف القاعة +</button>
                     </div>
                     <button type="button" onClick={() => requestHouseEdit(ownerHouses[0], { conferenceHalls: halls })}
                       className="w-full bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] text-[10px] font-bold py-1.5 rounded-xl cursor-pointer">حفظ القاعات</button>
@@ -2165,7 +2232,7 @@ export default function OwnerDashboardShell({
             </div>
 
 
-            <button id="add-house-submit" type="submit" className="w-full bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-all cursor-pointer">
+            <button id="add-house-submit" type="submit" className="w-full bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-[var(--color-owner-on-primary)] text-xs font-bold py-2.5 rounded-xl shadow-md transition-all cursor-pointer">
               {ownerHouses.length >= 1 ? 'إرسال التعديلات للمراجعة' : 'إرسال البيت الجديد للمراجعة وتأكيده للظهور'}
             </button>
             {/* 1. Images */}
@@ -2225,7 +2292,7 @@ export default function OwnerDashboardShell({
                                 setPhotosSuccessMsg('تم إرسال الصورة ضمن طلب تعديل بانتظار موافقة الإدارة!');
                                 setTimeout(() => setPhotosSuccessMsg(''), 3000);
                               }}
-                              className="flex-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-2 py-1.5 rounded-xl cursor-pointer">إضافة للألبوم</button>
+                              className="flex-1 bg-[var(--color-owner-primary)] text-[var(--color-owner-on-primary)] text-[10px] font-bold px-2 py-1.5 rounded-xl cursor-pointer">إضافة للألبوم</button>
                           </div>
                         )}
                       </div>
@@ -2339,7 +2406,7 @@ export default function OwnerDashboardShell({
                   </select>
                   <input type="text" placeholder="الرقم أو المعرّف" value={paymentDraftValue} onChange={(e) => setPaymentDraftValue(e.target.value)}
                     className="flex-1 min-w-[120px] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
-                  <button type="button" onClick={handleAddPaymentMethod} className="bg-[var(--color-owner-primary)] text-white text-[10px] font-bold px-3 py-1.5 rounded-xl cursor-pointer">إضافة</button>
+                  <button type="button" onClick={handleAddPaymentMethod} className="bg-[var(--color-owner-primary)] text-[var(--color-owner-on-primary)] text-[10px] font-bold px-3 py-1.5 rounded-xl cursor-pointer">إضافة</button>
                 </div>
               </>
             ) : (
@@ -2367,7 +2434,7 @@ export default function OwnerDashboardShell({
               <p className={`text-[10px] font-bold ${passwordMsg.ok ? 'text-emerald-700' : 'text-rose-600'}`}>{passwordMsg.text}</p>
             )}
             <button id="owner-change-password-btn" type="button" onClick={handleChangePassword} disabled={passwordSaving || !newPassword || !confirmPassword}
-              className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] disabled:opacity-50 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer">
+              className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] disabled:opacity-50 text-[var(--color-owner-on-primary)] text-xs font-bold px-4 py-2 rounded-xl cursor-pointer">
               {passwordSaving ? 'جارٍ الحفظ...' : 'حفظ كلمة السر الجديدة'}
             </button>
           </div>

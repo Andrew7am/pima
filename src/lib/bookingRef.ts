@@ -14,6 +14,26 @@ export const bookingRef = (bookingId: string): string =>
   `PM-${bookingId.slice(-5).toUpperCase()}`;
 
 /**
+ * Does a code someone typed identify this booking?
+ *
+ * The check-in scanner had its own, third derivation — the last six characters
+ * with the `booking_` prefix stripped — and matched only that. So the moment
+ * the printed sheet showed the same PM- number as the guest's phone, typing it
+ * in by hand would have failed. Both forms are accepted: the legacy one keeps
+ * sheets already printed and sitting in a folder working.
+ */
+export function matchesBookingCode(bookingId: string, code: string): boolean {
+  const typed = code.trim().toLowerCase().replace(/\s/g, '');
+  if (!typed) return false;
+  const bare = (s: string) => s.replace(/^pm-/, '');
+  const id = bookingId.toLowerCase();
+  const legacy = bookingId.replace(/^booking_/, '').slice(-6).toLowerCase();
+  return id === typed
+    || bare(bookingRef(bookingId).toLowerCase()) === bare(typed)
+    || legacy === typed;
+}
+
+/**
  * «منذ ساعتين», «أمس ٦:٣٠ م», «١٨ يوليو ٢٠٢٦».
  *
  * How long someone has been waiting is the thing an owner reads first on a new

@@ -36,8 +36,16 @@
      2.2:1). The -ink pair is the same four hues at a readable weight, for
      when the colour is the glyph rather than the background. Both sets are
      redefined under .owner-dark, where the roles invert. */
+  /* Text and icons that sit ON the primary fill. Split out because primary
+     cannot serve both roles at one value: in dark mode it is deliberately a
+     lighter blue so it still reads as emphasis text, and white on that blue
+     measures 3.6:1 — under AA for a button label. */
+  --color-owner-on-primary: #FFFFFF;
   --color-owner-success-ink: #047857;
-  --color-owner-warning-ink: #B45309;
+  /* amber-800 rather than -700. Both clear AA on the 10% amber wash these
+     inks sit on — measured 6.6:1 and 4.7:1 — but these labels run at 9-10px
+     in Arabic, and 4.7 is not much of a margin at that size. */
+  --color-owner-warning-ink: #92400E;
   --color-owner-danger-ink: #B91C1C;
   --color-owner-info-ink: #1D4ED8;
   --color-owner-accent-ink: #8A6D28;
@@ -81,6 +89,9 @@ body {
   --color-owner-info: #60A5FA;
   /* On a dark surface the lighter shade is the readable one, so ink and fill
      converge here rather than sitting either side of the surface. */
+  /* The page background rather than white: on the lighter dark-mode primary
+     it reaches 4.9:1 where white only manages 3.6:1. */
+  --color-owner-on-primary: #0C1424;
   --color-owner-success-ink: #34D399;
   --color-owner-warning-ink: #FBBF24;
   --color-owner-danger-ink: #F87171;
