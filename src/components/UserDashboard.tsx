@@ -38,7 +38,11 @@ function PriceBox({ icon: Icon, label, value }: {
           barely half that — both labels came out ellipsised, and the ellipsis
           ate the word that says which price this is. */}
       <Icon className="w-3 h-3 text-[#E8C88A] mx-auto" />
-      <span className="block text-[8px] font-bold text-white/70 mt-0.5 leading-none truncate">{label}</span>
+      {/* 9.5px and full white, not 8px at 70%. This word is the whole
+          difference between the two boxes, and it was the faintest thing in
+          them — sitting on glass over an uncontrolled photograph, where 70%
+          of white is not a reliable 70% of anything. */}
+      <span className="block text-[9.5px] font-black text-white mt-0.5 leading-none truncate">{label}</span>
       <span className="flex items-baseline justify-center gap-0.5 mt-1">
         <span className="text-[15px] font-black text-[#E8C88A] leading-none [font-variant-numeric:tabular-nums]">{value}</span>
         <span className="text-[8px] font-bold text-white/70">ج.م</span>
@@ -945,12 +949,12 @@ export default function UserDashboard({
                         empty half pretending to be a choice. */}
                     <div className="flex items-stretch gap-1.5">
                       {house.propertyType === 'student' || house.propertyType === 'staff' ? (
-                        <PriceBox icon={BedDouble} label="شهريًا" value={house.monthlyRent ?? 0} />
+                        <PriceBox icon={BedDouble} label="شهر" value={house.monthlyRent ?? 0} />
                       ) : (
                         <>
-                          <PriceBox icon={BedDouble} label="الليلة" value={house.pricePerNightPerPerson} />
+                          <PriceBox icon={BedDouble} label="ليلة" value={house.pricePerNightPerPerson} />
                           {offersDayUse(house) && (
-                            <PriceBox icon={Sun} label="اليوم" value={house.dayUsePricePerPerson as number} />
+                            <PriceBox icon={Sun} label="يوم" value={house.dayUsePricePerPerson as number} />
                           )}
                         </>
                       )}
