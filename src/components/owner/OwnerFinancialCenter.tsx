@@ -127,6 +127,8 @@ export default function OwnerFinancialCenter({
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [swipedExpenseId, setSwipedExpenseId] = useState<string | null>(null);
   const [showExpensesPage, setShowExpensesPage] = useState(false);
+  // Collapsed by default: it is an explanation, not a number.
+  const [showJourney, setShowJourney] = useState(false);
   const [showTransferSheet, setShowTransferSheet] = useState(false);
   const [transferNote, setTransferNote] = useState('');
   const [transferSubmitting, setTransferSubmitting] = useState(false);
@@ -476,8 +478,19 @@ export default function OwnerFinancialCenter({
         <FileText className="w-4 h-4" /> كشف حساب هذا الشهر (PDF)
       </button>
 
-      {/* ── Section 2: Financial Journey ────────────────────────── */}
-      <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4">
+      {/* ── Section 2: Financial Journey — behind a disclosure ────────
+          Four fixed steps with no numbers in them: the same explanation
+          every time the screen opens, sitting between the money and the
+          money. An owner checking a figure scrolled past a tutorial to
+          reach it. Still here for whoever wants it, one tap away. ── */}
+      <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] overflow-hidden">
+        <button type="button" onClick={() => setShowJourney((v) => !v)} aria-expanded={showJourney}
+          className="w-full flex items-center justify-between gap-2 p-3.5 text-right cursor-pointer">
+          <span className="text-xs font-black text-[var(--color-owner-text)]">كيف تُحسب مستحقاتك؟</span>
+          <ChevronDown className={`w-4 h-4 text-[var(--color-owner-secondary)] transition-transform duration-200 ${showJourney ? 'rotate-180' : ''}`} />
+        </button>
+        {showJourney && (
+          <div className="px-4 pb-4">
         <h3 className="text-xs font-black text-[var(--color-owner-text)] mb-4">رحلة الأموال</h3>
         <div className="flex items-start justify-between" dir="ltr">
           {[
@@ -504,6 +517,8 @@ export default function OwnerFinancialCenter({
             </React.Fragment>
           ))}
         </div>
+          </div>
+        )}
       </div>
 
       {/* ── Section 3: Statistics ───────────────────────────────── */}

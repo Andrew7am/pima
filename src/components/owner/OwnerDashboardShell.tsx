@@ -1643,12 +1643,90 @@ export default function OwnerDashboardShell({
               </div>
             </div>
 
-            {/* 1. Images */}
+
+            {/* 5. Location */}
             <div className="space-y-2 pt-3 border-t border-[var(--color-owner-border)]">
-              <div className="flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">الصور</span></div>
-              <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">صورة واجهة البيت:</label>
-              <PhotoPickerButtons idPrefix="add-house-image" onSelect={setImageUrl} />
-              {imageUrl && <img src={imageUrl} alt="معاينة صورة الواجهة" className="mt-2 w-full h-28 object-cover rounded-xl border border-[var(--color-owner-border)]" />}
+              <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">الموقع</span></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">المحافظة التابع لها:</label>
+                  <select id="add-house-gov" value={houseGov} onChange={(e) => setHouseGov(e.target.value)}
+                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none">
+                    {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">العنوان بالتفصيل:</label>
+                  <input id="add-house-address" type="text" required value={houseAddress} onChange={(e) => setHouseAddress(e.target.value)} onFocus={(e) => e.target.select()}
+                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">أقرب معلم معروف (اختياري) — يظهر على كارت البيت:</label>
+                  <input id="add-house-landmark" type="text" value={nearbyLandmark} onChange={(e) => setNearbyLandmark(e.target.value)}
+                    maxLength={80} placeholder="مثال: 12 كم من المنتزه"
+                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">موقع البيت على الخريطة:</label>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button type="button" onClick={() => {
+                        if (!navigator.geolocation) { setGeoError('المتصفح لا يدعم تحديد الموقع.'); return; }
+                        setGeoLoading(true); setGeoError('');
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => { setHouseLat(pos.coords.latitude); setHouseLng(pos.coords.longitude); setGeoLoading(false); },
+                          () => { setGeoError('تعذر تحديد الموقع. تأكد من إذن الموقع في المتصفح.'); setGeoLoading(false); }
+                        );
+                      }}
+                      className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl border border-[var(--color-owner-primary)] text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] transition-colors">
+                      {geoLoading ? <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-[var(--color-owner-primary)] border-t-transparent rounded-full" /> : '📍'}
+                      {geoLoading ? 'جاري تحديد الموقع...' : 'استخدم موقعي الحالي'}
+                    </button>
+                    <button
+                      type="button"
+                      id="toggle-manual-map-btn"
+                      onClick={() => setShowManualMap((v) => !v)}
+                      className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl border border-[var(--color-owner-border)] text-[var(--color-owner-text)] bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] transition-colors"
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      {showManualMap ? 'إخفاء الخريطة' : 'أو حدد يدوياً على الخريطة'}
+                    </button>
+                  </div>
+                  {houseLat && houseLng && <p className="mt-1.5 text-[11px] text-emerald-600 font-semibold">تم تحديد الموقع: {houseLat.toFixed(5)}, {houseLng.toFixed(5)}</p>}
+                  {geoError && <p className="mt-1.5 text-[11px] text-red-500">{geoError}</p>}
+                  {showManualMap && (
+                    <div className="mt-2 space-y-1.5">
+                      <p className="text-[10px] text-[var(--color-owner-secondary)] font-medium">اضغط على أي نقطة بالخريطة لتحديد موقع البيت، أو اسحب الدبوس لضبطه بدقة.</p>
+                      <LocationPicker
+                        lat={houseLat ?? 30.0444}
+                        lng={houseLng ?? 31.2357}
+                        onChange={(lat, lng) => { setHouseLat(lat); setHouseLng(lng); }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Capacity — its own section now. Rooms and beds were inside
+                «السعر», which is where an owner looking for them would never
+                think to look, and they are the two numbers every other screen
+                in Pima depends on: the booking capacity trigger, the room
+                manager, the availability search. */}
+            <div className="space-y-2 pt-3 border-t border-[var(--color-owner-border)]">
+              <div className="flex items-center gap-1.5"><BedDouble className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">السعة</span></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">عدد الغرف الإجمالي:</label>
+                  <input id="add-house-rooms" type="number" required min={1} value={roomsCount} onChange={(e) => setRoomsCount(parseInt(e.target.value) || 10)} onFocus={(e) => e.target.select()}
+                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">عدد الأسرة الكلي:</label>
+                  <input id="add-house-beds" type="number" required min={1} value={bedsCount} onChange={(e) => setBedsCount(parseInt(e.target.value) || 30)} onFocus={(e) => e.target.select()}
+                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
+                </div>
+              </div>
+              <p className="text-[9.5px] font-medium text-[var(--color-owner-secondary)]">عدد الأسرّة هو الحد الأقصى للحجز في أي تاريخ — بيمنع البيع الزائد تلقائياً.</p>
             </div>
 
             {/* 2. Pricing */}
@@ -1757,27 +1835,6 @@ export default function OwnerDashboardShell({
               })()}
             </div>
 
-            {/* Capacity — its own section now. Rooms and beds were inside
-                «السعر», which is where an owner looking for them would never
-                think to look, and they are the two numbers every other screen
-                in Pima depends on: the booking capacity trigger, the room
-                manager, the availability search. */}
-            <div className="space-y-2 pt-3 border-t border-[var(--color-owner-border)]">
-              <div className="flex items-center gap-1.5"><BedDouble className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">السعة</span></div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">عدد الغرف الإجمالي:</label>
-                  <input id="add-house-rooms" type="number" required min={1} value={roomsCount} onChange={(e) => setRoomsCount(parseInt(e.target.value) || 10)} onFocus={(e) => e.target.select()}
-                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">عدد الأسرة الكلي:</label>
-                  <input id="add-house-beds" type="number" required min={1} value={bedsCount} onChange={(e) => setBedsCount(parseInt(e.target.value) || 30)} onFocus={(e) => e.target.select()}
-                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none" />
-                </div>
-              </div>
-              <p className="text-[9.5px] font-medium text-[var(--color-owner-secondary)]">عدد الأسرّة هو الحد الأقصى للحجز في أي تاريخ — بيمنع البيع الزائد تلقائياً.</p>
-            </div>
 
             {/* 3. Facilities — suitability + activities + services checklist + conference halls */}
             <div className="space-y-3 pt-3 border-t border-[var(--color-owner-border)]">
@@ -1869,72 +1926,18 @@ export default function OwnerDashboardShell({
               )}
             </div>
 
-            {/* 5. Location */}
-            <div className="space-y-2 pt-3 border-t border-[var(--color-owner-border)]">
-              <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">الموقع</span></div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">المحافظة التابع لها:</label>
-                  <select id="add-house-gov" value={houseGov} onChange={(e) => setHouseGov(e.target.value)}
-                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none">
-                    {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">العنوان بالتفصيل:</label>
-                  <input id="add-house-address" type="text" required value={houseAddress} onChange={(e) => setHouseAddress(e.target.value)} onFocus={(e) => e.target.select()}
-                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">أقرب معلم معروف (اختياري) — يظهر على كارت البيت:</label>
-                  <input id="add-house-landmark" type="text" value={nearbyLandmark} onChange={(e) => setNearbyLandmark(e.target.value)}
-                    maxLength={80} placeholder="مثال: 12 كم من المنتزه"
-                    className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-xs px-3 py-2 rounded-xl text-[var(--color-owner-text)] focus:outline-none focus:border-[var(--color-owner-primary)]" />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-1">موقع البيت على الخريطة:</label>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <button type="button" onClick={() => {
-                        if (!navigator.geolocation) { setGeoError('المتصفح لا يدعم تحديد الموقع.'); return; }
-                        setGeoLoading(true); setGeoError('');
-                        navigator.geolocation.getCurrentPosition(
-                          (pos) => { setHouseLat(pos.coords.latitude); setHouseLng(pos.coords.longitude); setGeoLoading(false); },
-                          () => { setGeoError('تعذر تحديد الموقع. تأكد من إذن الموقع في المتصفح.'); setGeoLoading(false); }
-                        );
-                      }}
-                      className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl border border-[var(--color-owner-primary)] text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] transition-colors">
-                      {geoLoading ? <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-[var(--color-owner-primary)] border-t-transparent rounded-full" /> : '📍'}
-                      {geoLoading ? 'جاري تحديد الموقع...' : 'استخدم موقعي الحالي'}
-                    </button>
-                    <button
-                      type="button"
-                      id="toggle-manual-map-btn"
-                      onClick={() => setShowManualMap((v) => !v)}
-                      className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl border border-[var(--color-owner-border)] text-[var(--color-owner-text)] bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] transition-colors"
-                    >
-                      <MapPin className="w-3.5 h-3.5" />
-                      {showManualMap ? 'إخفاء الخريطة' : 'أو حدد يدوياً على الخريطة'}
-                    </button>
-                  </div>
-                  {houseLat && houseLng && <p className="mt-1.5 text-[11px] text-emerald-600 font-semibold">تم تحديد الموقع: {houseLat.toFixed(5)}, {houseLng.toFixed(5)}</p>}
-                  {geoError && <p className="mt-1.5 text-[11px] text-red-500">{geoError}</p>}
-                  {showManualMap && (
-                    <div className="mt-2 space-y-1.5">
-                      <p className="text-[10px] text-[var(--color-owner-secondary)] font-medium">اضغط على أي نقطة بالخريطة لتحديد موقع البيت، أو اسحب الدبوس لضبطه بدقة.</p>
-                      <LocationPicker
-                        lat={houseLat ?? 30.0444}
-                        lng={houseLng ?? 31.2357}
-                        onChange={(lat, lng) => { setHouseLat(lat); setHouseLng(lng); }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
 
             <button id="add-house-submit" type="submit" className="w-full bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-all cursor-pointer">
               {ownerHouses.length >= 1 ? 'إرسال التعديلات للمراجعة' : 'إرسال البيت الجديد للمراجعة وتأكيده للظهور'}
             </button>
+            {/* 1. Images */}
+            <div className="space-y-2 pt-3 border-t border-[var(--color-owner-border)]">
+              <div className="flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[11px] font-black text-[var(--color-owner-text)]">الصور</span></div>
+              <label className="block text-[10px] font-bold text-[var(--color-owner-secondary)] mb-1">صورة واجهة البيت:</label>
+              <PhotoPickerButtons idPrefix="add-house-image" onSelect={setImageUrl} />
+              {imageUrl && <img src={imageUrl} alt="معاينة صورة الواجهة" className="mt-2 w-full h-28 object-cover rounded-xl border border-[var(--color-owner-border)]" />}
+            </div>
+
           </form>
 
           {/* 6. Food */}
