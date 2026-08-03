@@ -1,7 +1,7 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import * as Sentry from '@sentry/react';
-import App from './App.tsx';
+import Boot from './Boot.tsx';
 import './index.css';
 
 // Error tracking — production builds only, so local dev noise never pollutes
@@ -17,7 +17,7 @@ if (import.meta.env.PROD) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <Boot />
   </StrictMode>,
 );
 

@@ -369,3 +369,171 @@ body {
   .pima-press:active { transform: none; }
 }
 
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Splash — six seconds, seven scenes, one story.
+
+   Every scene is a keyframe on its own element with a delay, so the whole
+   sequence runs on the compositor and React paints the screen exactly once.
+   The one shared rule: EaseInOutCubic and nothing else. No bounce, no
+   elastic, no overshoot — the spec is right that those read as cheap.
+   ────────────────────────────────────────────────────────────────────────── */
+.pima-splash {
+  --splash-ease: cubic-bezier(0.65, 0, 0.35, 1);
+}
+/* Scene 7: the whole surface dissolves. No cut, no flash — the app is already
+   mounted underneath, so this is the only thing that has to leave. */
+@keyframes pima-splash-out { to { opacity: 0; } }
+.pima-splash-out { animation: pima-splash-out 350ms var(--splash-ease) both; pointer-events: none; }
+
+/* Scene 1 (0.0–0.8): one point of light. It is its own element so the SVG
+   above it owes scene one nothing. */
+@keyframes pima-splash-spark {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+  45%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+}
+.pima-splash-spark {
+  width: 10px; height: 10px; border-radius: 9999px;
+  background: radial-gradient(circle, #ffffff 0%, #E8D4A8 45%, rgba(201, 161, 90, 0) 72%);
+  box-shadow: 0 0 22px 8px rgba(201, 161, 90, 0.28);
+  animation: pima-splash-spark 0.95s var(--splash-ease) both;
+  will-change: opacity, transform;
+}
+
+/* Scene 2 (0.8–1.8): the light writes the house. The ink is gold while it is
+   being laid down; the outline underneath is the real navy one, and it is
+   revealed on the same dash so the two are never out of register.
+   1000 is not an over-estimate of the path length — both paths carry
+   pathLength="1000", so it is the path, exactly, and these numbers are
+   percent-of-path. An over-estimate is what put the finished house on screen
+   at 1.29s with the pen barely halfway round it. */
+@keyframes pima-splash-draw { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
+@keyframes pima-splash-ink-fade { to { opacity: 0; } }
+.pima-splash-ink {
+  fill: none;
+  stroke-dasharray: 1000;
+  animation:
+    pima-splash-draw 1s var(--splash-ease) 0.8s both,
+    pima-splash-ink-fade 0.5s var(--splash-ease) 1.8s both;
+  will-change: stroke-dashoffset, opacity;
+}
+.pima-splash-outline {
+  stroke-dasharray: 1000;
+  animation: pima-splash-draw 1s var(--splash-ease) 0.85s both;
+  will-change: stroke-dashoffset;
+}
+/* The pen rides the outline from 0.8 to 1.8 and then has no more to write.
+   offset-path rather than SMIL <animateMotion>: it is a real CSS animation, so
+   it shares the one easing curve with everything else here, it composites, and
+   it can be seeked — which is the only reason the pen standing still was
+   caught at all. Same `d` as the outline, so the light cannot drift off the
+   line it is drawing. */
+@keyframes pima-splash-pen-move { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+/* Starts at 0 rather than 1: with a backwards fill, a keyframe that opens at
+   opacity 1 puts the pen on the roof line from the first frame, and scene one
+   is supposed to be one point of light in the middle and nothing else. */
+@keyframes pima-splash-pen-fade { 0% { opacity: 0; } 6%, 70% { opacity: 1; } 100% { opacity: 0; } }
+.pima-splash-pen {
+  offset-path: path('M25 65 L80 20 L135 65 V110 C135 112.2 133.2 114 131 114 H29 C26.8 114 25 112.2 25 110 V65 Z');
+  offset-rotate: 0deg;
+  opacity: 0;
+  animation:
+    pima-splash-pen-move 1s var(--splash-ease) 0.8s both,
+    pima-splash-pen-fade 1.25s linear 0.8s forwards;
+  will-change: offset-distance, opacity;
+}
+
+/* Scene 3 (1.8–2.5): the house is whole. Chimney, cross and window arrive,
+   and the logo takes one breath — 1.00 → 1.03 → 1.00, once. */
+@keyframes pima-splash-inner { from { opacity: 0; } to { opacity: 1; } }
+.pima-splash-inner { animation: pima-splash-inner 0.5s var(--splash-ease) 1.75s both; }
+
+@keyframes pima-splash-breathe {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -50%) scale(1.03); }
+}
+/* Scene 7 again, for the logo alone: it rises as the surface dissolves. */
+@keyframes pima-splash-lift {
+  from { transform: translate(-50%, -50%) scale(1); }
+  to   { transform: translate(-50%, calc(-50% - 26px)) scale(0.97); }
+}
+.pima-splash-logo {
+  transform: translate(-50%, -50%);
+  animation:
+    pima-splash-breathe 0.7s var(--splash-ease) 1.8s 1 both,
+    /* `forwards`, not `both`. With `both` the lift's backwards fill applies
+       from t=0 and, being later in the list, wins the transform outright —
+       which silently cancelled the breath four seconds before the lift was
+       due. Caught by seeking to 2.1s and reading a scale of exactly 1. */
+    pima-splash-lift 0.45s var(--splash-ease) 5.75s forwards;
+  will-change: transform;
+}
+
+/* Scene 4 (2.5–4.2): a line leaves the house and calls on each thing Pima
+   does. Scene 5 (4.2–5.0): it retraces itself home and the cards go with it.
+   One dash animation forwards, one back — the line is never redrawn. */
+/* 68% of 2.5s is 1.7s: the line finishes reaching the last card at 4.2, the
+   moment scene 4 ends, and spends the remaining 0.8s retracing itself home. */
+@keyframes pima-splash-line {
+  0%   { stroke-dashoffset: 100; opacity: 0; }
+  5%   { opacity: 1; }
+  68%  { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: -100; opacity: 0; }
+}
+/* 100 because the path carries pathLength="100": these are percent-of-path,
+   not user units, so they are right on every screen size without being tuned
+   per device. */
+.pima-splash-journey path {
+  stroke-dasharray: 100;
+  animation: pima-splash-line 2.5s var(--splash-ease) 2.5s both;
+  will-change: stroke-dashoffset, opacity;
+}
+
+/* Two animations, not one. Arriving is staggered — the line places each card
+   as it reaches it — but leaving is not: at 4.2 every card goes home together,
+   because that is the sentence scene 5 is saying. One shared keyframe with a
+   per-card delay could not express that, and had the last card still fading at
+   6.3s, a third of a second after the splash was gone. */
+@keyframes pima-splash-card-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); filter: blur(3px); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1);    filter: blur(0); }
+}
+/* Toward the centre as it goes: the card is not dismissed, it is taken in. */
+@keyframes pima-splash-card-out {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1);    filter: blur(0); }
+  to   { opacity: 0; transform: translate(-50%, -50%) scale(0.5);  filter: blur(2px); }
+}
+.pima-splash-card {
+  opacity: 0;
+  animation:
+    pima-splash-card-in 0.45s var(--splash-ease) both,
+    pima-splash-card-out 0.8s var(--splash-ease) 4.2s forwards;
+  will-change: opacity, transform, filter;
+}
+
+/* Scene 6 (5.0–5.8): the name and what it is for. */
+@keyframes pima-splash-word { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes pima-splash-word-out { to { opacity: 0; } }
+.pima-splash-word {
+  opacity: 0;
+  animation:
+    pima-splash-word 0.8s var(--splash-ease) 5s both,
+    pima-splash-word-out 0.3s var(--splash-ease) 5.8s both;
+  will-change: opacity, transform;
+}
+
+/* Reduced motion: the story is told as a still. The house is already drawn,
+   the line is already there, the cards are already home. Nothing travels. */
+@media (prefers-reduced-motion: reduce) {
+  .pima-splash-spark,
+  .pima-splash-pen,
+  .pima-splash-card { animation: none; opacity: 0; }
+  .pima-splash-ink { animation: none; opacity: 0; }
+  .pima-splash-outline { animation: none; stroke-dashoffset: 0; }
+  .pima-splash-inner { animation: none; opacity: 1; }
+  .pima-splash-journey path { animation: none; stroke-dashoffset: 0; opacity: 0.35; }
+  .pima-splash-logo { animation: none; transform: translate(-50%, -50%); }
+  .pima-splash-word { animation: none; opacity: 1; transform: translate(-50%, 0); }
+  .pima-splash-out { animation: pima-splash-out 200ms linear both; }
+}
