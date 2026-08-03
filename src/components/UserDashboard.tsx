@@ -42,7 +42,7 @@ function PriceBox({ icon: Icon, label, value }: {
           difference between the two boxes, and it was the faintest thing in
           them — sitting on glass over an uncontrolled photograph, where 70%
           of white is not a reliable 70% of anything. */}
-      <span className="block text-[9.5px] font-black text-white mt-0.5 leading-none truncate">{label}</span>
+      <span className="block text-[9.5px] font-black text-white mt-0.5">{label}</span>
       <span className="flex items-baseline justify-center gap-0.5 mt-1">
         <span className="text-[15px] font-black text-[#E8C88A] leading-none [font-variant-numeric:tabular-nums]">{value}</span>
         <span className="text-[8px] font-bold text-white/70">ج.م</span>
@@ -803,8 +803,12 @@ export default function UserDashboard({
                     <MapPin className="w-3 h-3" />
                     {house.governorate}
                   </span>
+                  {/* leading-[1.7]: owners write these freely and «كينج» has a
+                      descender a tight line box eats — the pill is `truncate`,
+                      so anything below the line is cut, not merely hidden past
+                      the end. */}
                   {house.nearbyLandmark && (
-                    <span className="bg-black/45 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-1 rounded-full truncate min-w-0">
+                    <span className="bg-black/45 backdrop-blur-sm text-white text-[9px] font-bold leading-[1.7] px-2 py-1 rounded-full truncate min-w-0">
                       {house.nearbyLandmark}
                     </span>
                   )}
@@ -874,7 +878,11 @@ export default function UserDashboard({
                     height is what drives the card's height. */}
                 <div className="relative flex p-2.5">
                   <div className="w-[47%] bg-black/35 backdrop-blur-xl rounded-2xl border border-white/25 shadow-sm p-2.5 space-y-1.5">
-                    <h3 className="text-[11.5px] font-black text-white leading-snug line-clamp-2">
+                    {/* leading-[1.9], not leading-snug. Cairo asks for about
+                        1.9× its size in Arabic, and line-clamp clips at the
+                        line box — so «كينج» lost the tail of its ج on every
+                        card whose name happens to carry a descender. */}
+                    <h3 className="text-[11.5px] font-black text-white leading-[2] line-clamp-2">
                       {house.name}
                     </h3>
 
@@ -882,7 +890,7 @@ export default function UserDashboard({
                         place IS matters more than how it describes itself, and
                         two lines of prose was the crowding the rest of the
                         panel could not afford. */}
-                    <p className="flex items-center gap-1 text-[9px] font-bold text-white/70 leading-none">
+                    <p className="flex items-center gap-1 text-[9px] font-bold text-white/70 leading-[1.9]">
                       <MapPin className="w-3 h-3 text-[#E8C88A] shrink-0" />
                       <span className="truncate">
                         {house.nearbyLandmark ? `${house.nearbyLandmark} — ${house.governorate}` : house.governorate}
@@ -901,7 +909,7 @@ export default function UserDashboard({
                         <span className="text-[9.5px] font-black text-white leading-none">
                           {house.propertyType === 'student' || house.propertyType === 'staff' ? house.roomCapacity : house.bedsCount}
                         </span>
-                        <span className="text-[8px] font-bold text-white/70 leading-none">
+                        <span className="text-[8px] font-bold text-white/70">
                           {house.propertyType === 'student' || house.propertyType === 'staff' ? 'بالغرفة' : 'فرد'}
                         </span>
                       </div>
@@ -911,7 +919,7 @@ export default function UserDashboard({
                           <BedDouble className="w-4 h-4" />
                         </span>
                         <span className="text-[9.5px] font-black text-white leading-none">{house.roomsCount}</span>
-                        <span className="text-[8px] font-bold text-white/70 leading-none">غرف</span>
+                        <span className="text-[8px] font-bold text-white/70">غرف</span>
                       </div>
 
                       {(house.services.includes('موقف مجاني') || house.services.includes('جراج خاص')) && (
@@ -919,7 +927,7 @@ export default function UserDashboard({
                           <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
                             <SquareParking className="w-4 h-4" />
                           </span>
-                          <span className="text-[8px] font-bold text-white/70 leading-none text-center">
+                          <span className="text-[8px] font-bold text-white/70 text-center">
                             {house.services.includes('موقف مجاني') ? <>موقف<br />مجاني</> : <>جراج<br />خاص</>}
                           </span>
                         </div>
@@ -937,7 +945,7 @@ export default function UserDashboard({
                           <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
                             <Wifi className="w-4 h-4" />
                           </span>
-                          <span className="text-[8px] font-bold text-white/70 leading-none text-center">واي<br />فاي</span>
+                          <span className="text-[8px] font-bold text-white/70 text-center">واي<br />فاي</span>
                         </div>
                       )}
                     </div>
