@@ -45,3 +45,32 @@ describe('the browse filter', () => {
     expect(offersDayUse(withdrawn)).toBe(false);
   });
 });
+
+describe("the admin's pending-edit diff", () => {
+  // The exact rule AdminDashboard applies for the day price. A field with no
+  // entry in HOUSE_EDIT_DIFF_FIELDS is approved without ever being shown, and
+  // an edit that touches only that field reports «لا توجد تغييرات» — which is
+  // what an owner sees as «the admin never got it».
+  const same = (a: unknown, b: unknown) => (Number(a) || 0) === (Number(b) || 0);
+  const shows = (pending: unknown, live: unknown) => pending !== undefined && !same(pending, live);
+
+  it('shows a day price being set for the first time', () => {
+    expect(shows(120, undefined)).toBe(true);
+  });
+
+  it('shows a day price being changed', () => {
+    expect(shows(150, 120)).toBe(true);
+  });
+
+  it('shows a day price being withdrawn', () => {
+    expect(shows(0, 120)).toBe(true);
+  });
+
+  it('does NOT invent a change on a house that never had one', () => {
+    // The owner form sends 0 for «not offered», so without the normalisation
+    // every edit to any other field would claim the day price changed.
+    expect(shows(0, undefined)).toBe(false);
+    expect(shows(0, 0)).toBe(false);
+    expect(shows(120, 120)).toBe(false);
+  });
+});

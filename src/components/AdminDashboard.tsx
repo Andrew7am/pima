@@ -118,7 +118,15 @@ export default function AdminDashboard({
 
   const startEdit = (house: RetreatHouse) => {
     setEditingHouseId(house.id);
-    setEditDraft({ name: house.name, description: house.description, pricePerNightPerPerson: house.pricePerNightPerPerson, services: house.services });
+    // Seeded, not left blank: an unseeded field shows empty on a house that
+    // has one, and an admin who reads that as «not set» and types a value has
+    // been misled by the form rather than by the data.
+    setEditDraft({
+      name: house.name, description: house.description,
+      pricePerNightPerPerson: house.pricePerNightPerPerson,
+      dayUsePricePerPerson: house.dayUsePricePerPerson,
+      services: house.services,
+    });
   };
   const saveEdit = (house: RetreatHouse) => {
     onUpdateHouse?.({ ...house, ...editDraft });
@@ -293,10 +301,30 @@ export default function AdminDashboard({
   // Already-approved houses with an owner-submitted edit awaiting review
   const pendingHouseEdits = houses.filter((h) => h.pendingEdit);
 
-  // Only the fields that actually changed vs. the live house, for a clean diff view
-  const HOUSE_EDIT_DIFF_FIELDS: { key: keyof RetreatHouse; label: string; suffix?: string }[] = [
+  // Only the fields that actually changed vs. the live house, for a clean diff
+  // view. A field missing from this list is a field an admin approves without
+  // ever seeing it — the edit still applies in full, so the omission reads to
+  // them as «لا توجد تغييرات» on a change that is really there.
+  const HOUSE_EDIT_DIFF_FIELDS: {
+    key: keyof RetreatHouse;
+    label: string;
+    suffix?: string;
+    /** Override equality where two different values mean the same thing. */
+    same?: (a: unknown, b: unknown) => boolean;
+    /** Override rendering where the raw number is not the meaning. */
+    format?: (v: unknown) => string;
+  }[] = [
     { key: 'name', label: 'الاسم' },
     { key: 'pricePerNightPerPerson', label: 'سعر الفرد/ليلة', suffix: ' ج.م' },
+    {
+      key: 'dayUsePricePerPerson',
+      label: 'سعر اليوم بدون مبيت',
+      // Undefined and 0 both mean «the house does not sell a day», and the
+      // owner form sends 0 to withdraw one — without this, every edit to any
+      // other field would report a day-price change that never happened.
+      same: (a, b) => (Number(a) || 0) === (Number(b) || 0),
+      format: (v) => (Number(v) ? `${Number(v)} ج.م` : 'غير متاح'),
+    },
     { key: 'monthlyRent', label: 'الإيجار الشهري', suffix: ' ج.م' },
     { key: 'roomsCount', label: 'عدد الغرف' },
     { key: 'bedsCount', label: 'عدد الأسرة' },
@@ -308,9 +336,11 @@ export default function AdminDashboard({
   ];
   const getHouseEditDiff = (house: RetreatHouse) => {
     const pending = house.pendingEdit || {};
-    const rows = HOUSE_EDIT_DIFF_FIELDS.filter(
-      (f) => pending[f.key] !== undefined && pending[f.key] !== house[f.key]
-    );
+    const rows = HOUSE_EDIT_DIFF_FIELDS.filter((f) => {
+      if (pending[f.key] === undefined) return false;
+      const same = f.same ?? ((a: unknown, b: unknown) => a === b);
+      return !same(pending[f.key], house[f.key]);
+    });
     const arrayFieldsChanged: string[] = [];
     const changed = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b);
     if (pending.services && changed(pending.services, house.services)) arrayFieldsChanged.push('الخدمات والمرافق');
@@ -906,9 +936,13 @@ export default function AdminDashboard({
                               <div key={f.key as string} className="bg-[#EBEBE0]/30 rounded-xl p-2 text-[10px] border border-[#D6D6C2]">
                                 <span className="font-bold text-[#4A4A3A] block mb-0.5">{f.label}:</span>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-rose-600 line-through">{String(house[f.key] ?? '-')}{f.suffix || ''}</span>
+                                  <span className="text-rose-600 line-through">
+                                    {f.format ? f.format(house[f.key]) : `${String(house[f.key] ?? '-')}${f.suffix || ''}`}
+                                  </span>
                                   <span className="text-[#8A8A70]">←</span>
-                                  <span className="text-emerald-700 font-bold">{String(house.pendingEdit?.[f.key] ?? '-')}{f.suffix || ''}</span>
+                                  <span className="text-emerald-700 font-bold">
+                                    {f.format ? f.format(house.pendingEdit?.[f.key]) : `${String(house.pendingEdit?.[f.key] ?? '-')}${f.suffix || ''}`}
+                                  </span>
                                 </div>
                               </div>
                             ))}
@@ -2732,6 +2766,12 @@ export default function AdminDashboard({
                   placeholder="الوصف" rows={3} className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl resize-none" />
                 <input type="number" value={editDraft.pricePerNightPerPerson ?? 0} onChange={(e) => setEditDraft((d) => ({ ...d, pricePerNightPerPerson: Number(e.target.value) }))}
                   placeholder="السعر لليلة للفرد" className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
+                {/* Blank, not 0, when the house does not sell a day — so an
+                    admin opening this form cannot set a price by saving it. */}
+                <input type="number" min={0} value={editDraft.dayUsePricePerPerson ?? ''}
+                  onChange={(e) => setEditDraft((d) => ({ ...d, dayUsePricePerPerson: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                  placeholder="سعر اليوم بدون مبيت للفرد (اتركه فارغاً لو غير متاح)"
+                  className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
                 <div>
                   <p className="text-[11px] font-bold text-[#8A8A70] mb-1.5">الخدمات:</p>
                   <div className="grid grid-cols-2 gap-1.5">
