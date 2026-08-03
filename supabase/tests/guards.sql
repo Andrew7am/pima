@@ -225,5 +225,47 @@ BEGIN
 END $$;
 
 
+-- ════════════════════════════════════════════════════════════════════════
+--  098 — a booking cannot start in the past
+-- ════════════════════════════════════════════════════════════════════════
+DO $$
+DECLARE blocked BOOLEAN := FALSE; allowed BOOLEAN := FALSE;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'bk_reject_past') THEN
+    RAISE NOTICE 'SKIP  098 not applied (bk_reject_past absent)';
+    RETURN;
+  END IF;
+
+  PERFORM pg_temp.become('00000000-0000-0000-0000-0000000000a1');
+
+  SET LOCAL ROLE authenticated;
+  BEGIN
+    INSERT INTO public.bookings (id, user_id, user_name, user_email, user_phone, house_id, house_name,
+                                 check_in, check_out, guests_count, total_price, deposit_amount)
+    VALUES ('guard_bk_past', '00000000-0000-0000-0000-0000000000a1', 'ضيف أ', 'guard.a@pima.test',
+            '01000000001', 'guard_house', 'بيت الاختبار',
+            CURRENT_DATE - 21, CURRENT_DATE - 18, 10, 3000, 450);
+  EXCEPTION WHEN OTHERS THEN blocked := TRUE;
+  END;
+  RESET ROLE;
+  PERFORM pg_temp.check('a booking three weeks in the past is refused', blocked);
+
+  -- …and a stay already under way is still editable/creatable, which is the
+  -- whole reason the rule keys on check_in and allows a day of slack.
+  SET LOCAL ROLE authenticated;
+  BEGIN
+    INSERT INTO public.bookings (id, user_id, user_name, user_email, user_phone, house_id, house_name,
+                                 check_in, check_out, guests_count, total_price, deposit_amount)
+    VALUES ('guard_bk_today', '00000000-0000-0000-0000-0000000000a1', 'ضيف أ', 'guard.a@pima.test',
+            '01000000001', 'guard_house', 'بيت الاختبار',
+            CURRENT_DATE, CURRENT_DATE + 3, 10, 3000, 450);
+    allowed := TRUE;
+  EXCEPTION WHEN OTHERS THEN allowed := FALSE;
+  END;
+  RESET ROLE;
+  PERFORM pg_temp.check('a booking starting today is still accepted', allowed);
+END $$;
+
+
 -- ── Leave nothing behind ────────────────────────────────────────────────
 ROLLBACK;

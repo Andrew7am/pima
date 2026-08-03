@@ -354,7 +354,9 @@ const DateRangePicker = ({
     return set;
   }, [bookedRanges]);
 
-  const today = new Date().toISOString().split('T')[0];
+  // Local, not toISOString(): Cairo is UTC+2/+3, so between midnight and 2am
+  // the UTC date is still yesterday — and yesterday would stay clickable.
+  const today = localISODate(new Date());
 
   const year = visibleDate.getFullYear();
   const month = visibleDate.getMonth();
@@ -847,12 +849,17 @@ export default function HouseDetail({
   const calendarLeadingBlanks = new Date(calYear, calMonthIndex, 1).getDay();
   const calendarMonthLabel = calendarMonth.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
 
-  const isDateBooked = (day: number) =>
-    isDateFull(`${calYear}-${String(calMonthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
+  const calendarDateStr = (day: number) =>
+    `${calYear}-${String(calMonthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  const isDateBooked = (day: number) => isDateFull(calendarDateStr(day));
+  // A day that has already gone is not "available" — it is simply over. The
+  // grid used to paint it the same green as a free future day.
+  const isDatePast = (day: number) => calendarDateStr(day) < localISODate(new Date());
 
   // What the availability card leads with: the count a visitor is actually
-  // looking for, so they can decide without opening the month.
-  const freeCalendarDays = CALENDAR_DAYS.filter((d) => !isDateBooked(d)).length;
+  // looking for, so they can decide without opening the month. Days already
+  // behind us are not offered.
+  const freeCalendarDays = CALENDAR_DAYS.filter((d) => !isDateBooked(d) && !isDatePast(d)).length;
 
   // 0 means «no night», which is a real answer now: a «يوم روحي» arrives and
   // leaves the same day. It used to return `diffDays || 1`, so a same-day
@@ -2264,16 +2271,19 @@ export default function HouseDetail({
                 <div key={`blank-${i}`} aria-hidden="true" />
               ))}
               {CALENDAR_DAYS.map((day) => {
+                const past = isDatePast(day);
                 const booked = isDateBooked(day);
                 return (
                   <div
                     key={day}
                     className={`py-1.5 rounded-lg border text-center transition-all ${
-                      booked 
-                        ? 'bg-rose-50 border-rose-100 text-rose-700 font-extrabold' 
-                        : 'bg-emerald-50 border-emerald-100 text-emerald-850'
+                      past
+                        ? 'bg-[#F4F2EC] border-[#E5E1D6] text-[#B5AF98]'
+                        : booked
+                          ? 'bg-rose-50 border-rose-100 text-rose-700 font-extrabold'
+                          : 'bg-emerald-50 border-emerald-100 text-emerald-850'
                     }`}
-                    title={booked ? 'محجوز بالكامل' : 'متاح للحجز'}
+                    title={past ? 'تاريخ مضى' : booked ? 'محجوز بالكامل' : 'متاح للحجز'}
                   >
                     {arabicNumber(day)}
                   </div>
@@ -2289,6 +2299,10 @@ export default function HouseDetail({
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 <span>متاح لخلوتكم</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-[#D6D2C4]" />
+                <span>تاريخ مضى</span>
               </span>
             </div>
           </div>
