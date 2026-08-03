@@ -9,7 +9,7 @@ import BookingFlow, { ApplicantDetails } from './house/BookingFlow';
 import { arabicNumber } from '../lib/arabic';
 import { tapFeedback } from '../lib/haptics';
 import ReviewWizard from './ReviewWizard';
-import { computeStayPrice, offersDayUse } from '../lib/pricing';
+import { computeStayPrice, offersDayUse, computeMealPlan } from '../lib/pricing';
 import { getCapacityStatus, occupiedEnd } from '../lib/roomOccupancy';
 import { 
   BedDouble, Calendar, Users, 
@@ -632,7 +632,9 @@ export default function HouseDetail({
   
   // Custom price quote states
   const [selectedHallId, setSelectedHallId] = useState(house.conferenceHalls[0]?.id || '');
-  const [mealsIncluded, setMealsIncluded] = useState(true);
+  // `mealsIncluded` used to be a state here that nothing ever set, spread into
+  // every conference quote as a hardcoded true. The guest's real answer is
+  // `withMeals` — one source for it, and it comes from a control they touched.
   const [extraRequests, setExtraRequests] = useState('');
 
   // Review sorting and paging now live inside HouseReviews, next to the list
@@ -725,6 +727,8 @@ export default function HouseDetail({
   const [bookingOpen, setBookingOpen] = useState(false);
   // Bumped when the inline calendar confirms, so the sheet holding it closes.
   const [datesDone, setDatesDone] = useState(0);
+  // Off until asked for. See mealPlan below.
+  const [withMeals, setWithMeals] = useState(false);
 
   /**
    * Switching between a stay with nights in it and a day with none.
@@ -823,9 +827,15 @@ export default function HouseDetail({
   const stayPrice = !isMonthlyHousing && checkIn && checkOut
     ? computeStayPrice(house, checkIn, checkOut, guestsCount)
     : { total: 0, breakdown: [] };
-  const originalTotalPrice = isMonthlyHousing
+  // What the house will feed them, and whether they have asked for it.
+  // Opt-in: a charge the guest did not choose turning up in their total is
+  // the one thing a booking screen must never do.
+  const mealPlan = computeMealPlan(house, checkIn, checkOut, guestsCount);
+  const mealsChargeable = mealPlan.state === 'priced' && !isMonthlyHousing;
+  const mealsCost = withMeals && mealsChargeable ? mealPlan.total : 0;
+  const originalTotalPrice = (isMonthlyHousing
     ? (house.monthlyRent || 1500) * guestsCount * months
-    : stayPrice.total;
+    : stayPrice.total) + mealsCost;
 
   // Whether the currently selected dates/guest count would exceed remaining
   // capacity — used to offer joining the waitlist instead of a doomed booking attempt.
@@ -1056,10 +1066,14 @@ export default function HouseDetail({
     ].filter(Boolean).join('\n');
     const details = (isQuoteMode || extras || trimmed.diocese || trimmed.bookingType)
       ? {
-          ...(isQuoteMode ? { hallId: selectedHallId, mealsIncluded } : {}),
+          ...(isQuoteMode ? { hallId: selectedHallId } : {}),
           extraRequests: extras,
           ...(trimmed.diocese ? { diocese: trimmed.diocese } : {}),
           ...(trimmed.bookingType ? { bookingType: trimmed.bookingType } : {}),
+          // Recorded whenever the house prices meals at all, true or false —
+          // an absent key would read as «not asked», and the kitchen needs
+          // the difference between «no» and «nobody said».
+          ...(mealsChargeable ? { mealsIncluded: withMeals, mealsCost } : {}),
         }
       : undefined;
 
@@ -1124,6 +1138,9 @@ export default function HouseDetail({
             onTrackBooking={onNavigateBookings}
             onGoHome={onNavigateHome}
             datesConfirmed={datesDone}
+            mealPlan={mealPlan}
+            withMeals={withMeals}
+            onSetWithMeals={(v) => { tapFeedback(); setWithMeals(v); }}
             dayUseAvailable={offersDayUse(house)}
             dayUsePrice={house.dayUsePricePerPerson}
             onSetStayMode={setStayMode}

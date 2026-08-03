@@ -155,9 +155,41 @@ export default function OwnerFoodMenu({ house, onUpdateHouse }: OwnerFoodMenuPro
                 />
               </div>
             </div>
+
+            {/* The per-day board price. `updateDay` has always accepted it and
+                nothing here ever offered it, so it was reachable only from the
+                editor buried in the house page — which is why no house has one
+                and why Pima cannot quote board to a guest. Shown only when the
+                meals are not already inside the nightly rate: there it would
+                be a second price for something already paid for. */}
+            {!menu.isIncluded && (
+              <div className="pt-1">
+                <label className="block text-[8.5px] font-bold text-[var(--color-owner-secondary)] mb-0.5">
+                  سعر الثلاث وجبات لهذا اليوم — للفرد (ج.م):
+                </label>
+                <input
+                  id={`menu-${activeMenu}-${i}-price`}
+                  type="number"
+                  min={0}
+                  value={d.price ?? ''}
+                  placeholder="اتركه فارغاً لو الإعاشة غير متاحة هذا اليوم"
+                  onChange={(e) => updateDay(i, 'price', e.target.value)}
+                  className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[10px] px-2 py-1.5 rounded-lg text-[var(--color-owner-text)] placeholder:text-[9px] focus:outline-none"
+                />
+              </div>
+            )}
           </div>
         ))}
       </div>
+
+      {/* Pima only quotes board when every day of a stay carries a price —
+          a bill for four nights of a five-night stay would look like a quote
+          and would not be one. */}
+      {!menu.isIncluded && days.some((d) => !d.price) && (
+        <p className="text-[9.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-2 text-center">
+          لن تُعرض الإعاشة كخيار مُسعَّر للضيف حتى تُسعِّر كل أيام الأسبوع.
+        </p>
+      )}
     </div>
   );
 }

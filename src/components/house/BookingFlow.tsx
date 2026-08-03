@@ -5,13 +5,14 @@ import {
   Star, Send, Clock, FileText, Pencil, Minus, Plus, Building2, Phone, User as UserIcon,
   Mail, MessageSquare, Church, Info, Loader2, Receipt, CreditCard,
   Sparkles, BedDouble, Copy, Home, Bell,
-  Backpack, BookOpen, GraduationCap, Flame, HeartHandshake, Sun,
+  Backpack, BookOpen, GraduationCap, Flame, HeartHandshake, Sun, Utensils,
 } from 'lucide-react';
 import { tapFeedback } from '../../lib/haptics';
 import PimaSheet from '../PimaSheet';
 import { useCountUp } from '../../lib/useCountUp';
 import { arabicNumber } from '../../lib/arabic';
 import { BOOKING_GROUPS, BookingGroupKey, isStoredGroup } from '../../lib/bookingGroups';
+import type { MealPlan } from '../../lib/pricing';
 
 export interface ApplicantDetails {
   fullName: string;
@@ -60,6 +61,11 @@ interface BookingFlowProps {
   datePicker: React.ReactNode;
   /** Increments when the calendar confirms a range — closes the date sheet. */
   datesConfirmed?: number;
+  /** What the house says about feeding them — see lib/pricing.computeMealPlan. */
+  mealPlan?: MealPlan;
+  /** Whether they have asked for board. Only meaningful when it is priced. */
+  withMeals?: boolean;
+  onSetWithMeals?: (v: boolean) => void;
   /** The house sells a «يوم روحي», so the guest gets the choice at all. */
   dayUseAvailable?: boolean;
   /** Per person, shown on the day option so the choice is priced, not blind. */
@@ -122,6 +128,7 @@ export default function BookingFlow({
   house, currentUser, checkIn, checkOut, nights, guestsCount, setGuestsCount,
   isQuoteMode, setIsQuoteMode, isMonthlyHousing, originalTotalPrice, totalPrice,
   depositAmount, breakdown, datePicker, datesConfirmed, dayUseAvailable, dayUsePrice, onSetStayMode,
+  mealPlan, withMeals, onSetWithMeals,
   notices, submitting, onSubmit, onRequireLogin, onExit,
   onTrackBooking, onGoHome,
 }: BookingFlowProps) {
@@ -598,6 +605,69 @@ export default function BookingFlow({
               <ChevronLeft className="w-3.5 h-3.5" />
             </span>
           </button>
+
+          {/* Meals. Four data states, four different things to say — the one
+              thing none of them does is invent a number. */}
+          {mealPlan && mealPlan.state !== 'none' && !isMonthlyHousing && (
+            <div className={`${CARD} p-3`}>
+              {mealPlan.state === 'included' ? (
+                <div className="flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+                    <Utensils className="w-4 h-4 text-emerald-700" />
+                  </span>
+                  <span className="min-w-0 leading-tight">
+                    <span className="block text-[11.5px] font-black text-[#2D2D24]">الوجبات مشمولة في السعر</span>
+                    <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
+                      ٣ وجبات يوميًا داخل قيمة الإقامة — لا يُضاف شيء على الإجمالي.
+                    </span>
+                  </span>
+                </div>
+              ) : mealPlan.state === 'perMealOnly' ? (
+                <div className="flex items-center gap-3">
+                  <span className="w-9 h-9 rounded-full bg-[#F6F0E2] border border-[#EBD9B4] flex items-center justify-center shrink-0">
+                    <Utensils className="w-4 h-4 text-[#C9A24A]" />
+                  </span>
+                  <span className="min-w-0 leading-tight">
+                    <span className="block text-[11.5px] font-black text-[#2D2D24]">الوجبات غير مشمولة</span>
+                    {/* Reported, not multiplied: how many meals a group eats in
+                        a day is theirs to say, not ours to assume. */}
+                    <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
+                      سعر الوجبة {egp(mealPlan.perMealPrice ?? 0)} ج.م للفرد — تُتفق تفاصيلها مع إدارة المكان.
+                    </span>
+                  </span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={Boolean(withMeals)}
+                  onClick={() => onSetWithMeals?.(!withMeals)}
+                  className={`w-full flex items-center gap-3 rounded-2xl border px-3 py-2.5 text-right transition-colors duration-200 cursor-pointer pima-press ${
+                    withMeals ? 'bg-[#FDF9EF] border-[#C9A24A]' : 'bg-white border-[#EDE7DA] hover:border-[#E3CD9F]'
+                  }`}
+                >
+                  <span className={`w-9 h-9 rounded-full border flex items-center justify-center shrink-0 ${
+                    withMeals ? 'bg-white border-[#EBD9B4]' : 'bg-[#F6F0E2] border-[#EDE7DA]'
+                  }`}>
+                    <Utensils className={`w-4 h-4 ${withMeals ? 'text-[#B8944E]' : 'text-[#8A8A70]'}`} />
+                  </span>
+                  <span className="min-w-0 flex-1 leading-tight">
+                    <span className={`block text-[11.5px] font-black ${withMeals ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>
+                      أضف الإعاشة الكاملة
+                    </span>
+                    <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
+                      ٣ وجبات يوميًا · {egp(mealPlan.total)} ج.م لكل المجموعة
+                    </span>
+                  </span>
+                  <span className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
+                    withMeals ? 'bg-[#C9A24A] border-[#C9A24A]' : 'border-[#DED6C4]'
+                  }`}>
+                    {withMeals && <Check className="w-3 h-3 text-white" strokeWidth={3.5} />}
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Cost */}
           <div className={`${CARD} p-3`}>

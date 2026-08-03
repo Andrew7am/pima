@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeStayPrice, nightlyRateFor, offersDayUse, isDayUse } from './pricing';
+import { computeStayPrice, nightlyRateFor, offersDayUse, isDayUse, computeMealPlan } from './pricing';
 import type { RetreatHouse, SeasonalRate } from '../types';
 
 // Only the fields pricing actually reads — the rest of RetreatHouse is
@@ -137,5 +137,91 @@ describe('day use — a stay with no night in it', () => {
     expect(isDayUse('2026-07-15', '2026-07-15')).toBe(true);
     expect(isDayUse('2026-07-15', '2026-07-16')).toBe(false);
     expect(isDayUse('', '')).toBe(false);
+  });
+});
+
+// A menu whose days carry a per-person, per-day board price.
+function menuHouse(over: Partial<NonNullable<RetreatHouse['menu']>> = {}): RetreatHouse {
+  return {
+    pricePerNightPerPerson: 200,
+    seasonalRates: [],
+    menu: {
+      isIncluded: false,
+      allowsSpecialRequests: true,
+      weeklyMenu: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة']
+        .map((day) => ({ day, breakfast: 'ف', lunch: 'غ', dinner: 'ع', price: 80 })),
+      ...over,
+    },
+  } as unknown as RetreatHouse;
+}
+
+describe('computeMealPlan', () => {
+  it('says «included» and charges nothing when the rate already covers meals', () => {
+    // Every house in the live data is this. A charge here would be the guest
+    // paying twice for one dinner.
+    const p = computeMealPlan(menuHouse({ isIncluded: true }), '2026-07-15', '2026-07-18', 10);
+    expect(p.state).toBe('included');
+    expect(p.total).toBe(0);
+  });
+
+  it('prices board per night, the unit the room is sold in', () => {
+    const p = computeMealPlan(menuHouse(), '2026-07-15', '2026-07-18', 10); // 3 nights
+    expect(p.state).toBe('priced');
+    expect(p.total).toBe(80 * 3 * 10);
+    expect(p.rows).toEqual([{ label: 'إعاشة كاملة (٣ وجبات)', nights: 3, rate: 80 }]);
+  });
+
+  it('prices a day retreat as one day of board', () => {
+    const p = computeMealPlan(menuHouse(), '2026-07-15', '2026-07-15', 10);
+    expect(p.state).toBe('priced');
+    expect(p.total).toBe(800);
+    expect(p.rows[0].nights).toBe(1);
+  });
+
+  it('groups days that share a rate and separates ones that do not', () => {
+    const h = menuHouse({
+      weeklyMenu: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة']
+        .map((day) => ({ day, breakfast: 'ف', lunch: 'غ', dinner: 'ع', price: day === 'الجمعة' ? 120 : 80 })),
+    });
+    // 2026-07-15 is a Wednesday: Wed, Thu, Fri.
+    const p = computeMealPlan(h, '2026-07-15', '2026-07-18', 1);
+    expect(p.total).toBe(80 + 80 + 120);
+    expect(p.rows.map((r) => [r.nights, r.rate])).toEqual([[2, 80], [1, 120]]);
+  });
+
+  it('matches «الإثنين» against «الاثنين»', () => {
+    // The owner types this by hand and both spellings are correct Arabic. A
+    // miss would silently drop that day from the bill.
+    const h = menuHouse({
+      weeklyMenu: [{ day: 'الإثنين', breakfast: 'ف', lunch: 'غ', dinner: 'ع', price: 90 }],
+    });
+    // 2026-07-20 is a Monday.
+    expect(computeMealPlan(h, '2026-07-20', '2026-07-21', 2).total).toBe(180);
+  });
+
+  it('refuses to total when a single day of the stay is unpriced', () => {
+    // Charging for two nights of a three-night stay is worse than saying we
+    // cannot price it: it looks like a quote and is not one.
+    const h = menuHouse({
+      weeklyMenu: [{ day: 'الأربعاء', breakfast: 'ف', lunch: 'غ', dinner: 'ع', price: 80 }],
+      extraMealPrice: 70,
+    });
+    const p = computeMealPlan(h, '2026-07-15', '2026-07-18', 10);
+    expect(p.state).toBe('perMealOnly');
+    expect(p.total).toBe(0);
+    expect(p.perMealPrice).toBe(70);
+  });
+
+  it('reports a per-meal rate without ever multiplying it', () => {
+    // How many meals a group eats in a day is not ours to assume.
+    const h = menuHouse({ weeklyMenu: [], extraMealPrice: 70 });
+    const p = computeMealPlan(h, '2026-07-15', '2026-07-18', 10);
+    expect(p.state).toBe('perMealOnly');
+    expect(p.total).toBe(0);
+  });
+
+  it('says nothing where the house has said nothing', () => {
+    expect(computeMealPlan(house(200), '2026-07-15', '2026-07-18', 10).state).toBe('none');
+    expect(computeMealPlan(menuHouse({ weeklyMenu: [] }), '2026-07-15', '2026-07-18', 10).state).toBe('none');
   });
 });

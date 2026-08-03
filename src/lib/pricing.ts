@@ -70,3 +70,88 @@ export function computeStayPrice(house: RetreatHouse, checkIn: string, checkOut:
 
   return { total: perPerson * guestsCount, breakdown: [...rows.values()] };
 }
+
+/**
+ * What the house is willing to say about feeding a group.
+ *
+ * Four states, because the data really has four, and collapsing them would
+ * mean inventing a number:
+ *
+ *  included    — the nightly rate already covers the meals. Every house in
+ *                the live data is this. Charging again would be charging
+ *                twice for the same thing; all this state does is say so.
+ *  priced      — not included, and the owner has priced the day's three
+ *                meals per person on the weekly menu. That is a total we can
+ *                actually compute, day by day, the way the room is computed.
+ *  perMealOnly — not included, and the only figure is a per-MEAL price. How
+ *                many meals a group eats in a day is not ours to assume, so
+ *                this reports the rate and refuses to multiply it.
+ *  none        — the house has said nothing. Say nothing.
+ */
+export type MealPlanState = 'included' | 'priced' | 'perMealOnly' | 'none';
+
+export interface MealPlan {
+  state: MealPlanState;
+  /** One row per distinct day-rate, same shape the stay breakdown uses. */
+  rows: StayPriceBreakdownRow[];
+  /** For the whole party. Zero unless `priced`. */
+  total: number;
+  /** Reported, never multiplied. Only for `perMealOnly`. */
+  perMealPrice?: number;
+}
+
+// The weekly menu is keyed by the Arabic weekday name the owner typed, and
+// «الاثنين» is also written «الإثنين». Normalise before matching rather than
+// silently missing a day and charging nothing for it.
+const normalizeDay = (s: string) => s.trim().replace(/[إأآ]/g, 'ا').replace(/\s+/g, ' ');
+
+const weekdayName = (iso: string) =>
+  new Date(`${iso}T00:00:00`).toLocaleDateString('ar-EG', { weekday: 'long' });
+
+export function computeMealPlan(
+  house: RetreatHouse, checkIn: string, checkOut: string, guestsCount: number
+): MealPlan {
+  const menu = house.menu;
+  if (!menu) return { state: 'none', rows: [], total: 0 };
+  if (menu.isIncluded) return { state: 'included', rows: [], total: 0 };
+
+  const byDay = new Map<string, number>();
+  for (const d of menu.weeklyMenu ?? []) {
+    if (typeof d.price === 'number' && d.price > 0) byDay.set(normalizeDay(d.day), d.price);
+  }
+
+  const dayUse = isDayUse(checkIn, checkOut);
+  const days: string[] = [];
+  if (dayUse) days.push(checkIn);
+  else if (checkIn && checkOut && checkIn < checkOut) {
+    // One day of board per night, the same unit the room is sold in. A stay
+    // is physically present on N+1 dates, but N is what the guest is paying
+    // for and what «شامل الإقامة» means to a house.
+    const cursor = new Date(`${checkIn}T00:00:00`);
+    const end = new Date(`${checkOut}T00:00:00`);
+    while (cursor < end) {
+      days.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+
+  // Every day of the stay must have a price, or the total would quietly be
+  // for fewer days than the group is actually there.
+  const rates = days.map((d) => byDay.get(normalizeDay(weekdayName(d))));
+  if (!days.length || guestsCount <= 0 || rates.some((r) => r === undefined)) {
+    return menu.extraMealPrice && menu.extraMealPrice > 0
+      ? { state: 'perMealOnly', rows: [], total: 0, perMealPrice: menu.extraMealPrice }
+      : { state: 'none', rows: [], total: 0 };
+  }
+
+  const rows = new Map<number, StayPriceBreakdownRow>();
+  let perPerson = 0;
+  for (const rate of rates as number[]) {
+    perPerson += rate;
+    const row = rows.get(rate);
+    if (row) row.nights += 1;
+    else rows.set(rate, { label: 'إعاشة كاملة (٣ وجبات)', nights: 1, rate });
+  }
+
+  return { state: 'priced', rows: [...rows.values()], total: perPerson * guestsCount };
+}

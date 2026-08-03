@@ -186,6 +186,11 @@ export interface Booking {
      *  `groupType` for a different thing — grouping one person, not the whole
      *  booking — and the two even share the value 'youth'. */
     bookingType?: string;
+    /** What the board actually cost when the guest agreed to it. Snapshotted,
+     *  not re-derived: houses.menu is owner-direct editable with no approval
+     *  and no history, so a rate read back later is the rate today, not the
+     *  one that was quoted. Migration-free — conference_details is jsonb. */
+    mealsCost?: number;
   };
   checkedInAt?: string;
   checkedOutAt?: string;

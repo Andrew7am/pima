@@ -1119,11 +1119,19 @@ export default function OwnerDashboardShell({
                   {/* Not gated on isLargeConferenceQuote any more: an ordinary
                       request can carry the applicant's notes too, and notes the
                       owner never sees are worse than notes never asked for. */}
-                  {booking.conferenceDetails && (booking.conferenceDetails.extraRequests || booking.conferenceDetails.diocese) && (
+                  {booking.conferenceDetails && (booking.conferenceDetails.extraRequests || booking.conferenceDetails.diocese || booking.conferenceDetails.mealsIncluded !== undefined) && (
                     <div className="bg-amber-50/40 p-2.5 rounded-xl border border-amber-200/60 text-[10px] text-[var(--color-owner-text)] space-y-1">
                       <span className="font-bold text-amber-900 block">📝 ملاحظات وطلبات العميل:</span>
                       {booking.conferenceDetails.extraRequests && (
                         <p className="italic text-slate-700 whitespace-pre-line">{booking.conferenceDetails.extraRequests}</p>
+                      )}
+                      {booking.conferenceDetails.mealsIncluded !== undefined && (
+                        <p className="text-slate-700">
+                          الإعاشة: <strong>{booking.conferenceDetails.mealsIncluded ? 'مطلوبة — ٣ وجبات يوميًا' : 'غير مطلوبة'}</strong>
+                          {booking.conferenceDetails.mealsIncluded && booking.conferenceDetails.mealsCost
+                            ? ` (${booking.conferenceDetails.mealsCost.toLocaleString()} ج.م ضمن الإجمالي)`
+                            : ''}
+                        </p>
                       )}
                       {booking.conferenceDetails.diocese && (
                         <p className="text-slate-700">الإيبارشية: <strong>{booking.conferenceDetails.diocese}</strong></p>
