@@ -64,6 +64,43 @@ body {
   font-family: "Tajawal", var(--font-sans);
 }
 
+/* A booking row in the owner's list. One DOM, two layouts.
+
+   The approved design is a single wide row — reference, who, dates, size,
+   status, money — which is six columns and cannot be six columns on a 375px
+   phone. Rather than render the card twice and keep two copies honest, the
+   same six blocks are placed by name: stacked on a phone, the designed row
+   once there is width for it. Nothing is duplicated and nothing is hidden.
+
+   Column order reads right-to-left on its own: the grid inherits dir="rtl"
+   from the shell, so the first named column is the rightmost one. */
+.owner-booking-row {
+  display: grid;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "ref    status"
+    "who    who"
+    "dates  meta"
+    "money  money";
+}
+.owner-booking-row > .ob-ref    { grid-area: ref; }
+.owner-booking-row > .ob-who    { grid-area: who; }
+.owner-booking-row > .ob-dates  { grid-area: dates; }
+.owner-booking-row > .ob-meta   { grid-area: meta; }
+.owner-booking-row > .ob-status { grid-area: status; justify-self: end; }
+.owner-booking-row > .ob-money  { grid-area: money; }
+
+@media (min-width: 1024px) {
+  .owner-booking-row {
+    grid-template-areas: "ref who dates meta status money";
+    grid-template-columns: auto minmax(0, 1.5fr) auto auto auto minmax(0, 1.2fr);
+    gap: 0 1rem;
+  }
+  .owner-booking-row > .ob-status { justify-self: center; }
+}
+
 /* Owner dark mode — overrides the navy/gold tokens to a dark palette.
    Applied via the .owner-dark class on the .owner-theme wrapper, so only
    the owner dashboard switches; guest screens are never affected. Primary

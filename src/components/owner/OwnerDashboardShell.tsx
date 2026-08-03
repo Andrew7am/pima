@@ -4,7 +4,7 @@ import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
 import {
   Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2,
   Building, Settings, MessageSquare, Camera, BedDouble, Phone, Mail, Lock, Menu, ChevronRight,
-  MessageCircle, Bell, BarChart3, Search, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun, Moon, Download, QrCode,
+  MessageCircle, Bell, BarChart3, Search, MoreVertical, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun, Moon, Download, QrCode,
 } from 'lucide-react';
 import { bookingTypeLabel } from '../../lib/bookingGroups';
 import { categorizeBooking as categorize, sortForOwner } from '../../lib/ownerBookingOrder';
@@ -143,7 +143,9 @@ export default function OwnerDashboardShell({
   const [sourceFilter, setSourceFilter] = useState<'all' | 'manual' | 'temporary'>('all');
   const [expandedGroup, setExpandedGroup] = useState<'bookings' | 'rooms' | null>(null);
   const [bookingSearch, setBookingSearch] = useState('');
-  const [bookingSort, setBookingSort] = useState<'priority' | 'newest' | 'oldest' | 'checkin'>('priority');
+  const [bookingSort, setBookingSort] = useState<'priority' | 'newest' | 'oldest' | 'checkin'>('newest');
+  /** Which row has its ⋮ menu open. One at a time. */
+  const [rowMenu, setRowMenu] = useState<string | null>(null);
   // The source chips used to sit open above the list and cost a line to
   // everyone, though most owners never change them.
   const [showBookingFilters, setShowBookingFilters] = useState(false);
@@ -1422,7 +1424,7 @@ export default function OwnerDashboardShell({
             {/* Five counts across the top. Each one is also the filter it
                 describes — a number you cannot click is a number you then have
                 to go and find. */}
-            <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 lg:grid lg:grid-cols-5 lg:overflow-visible">
+            <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 sm:grid sm:grid-cols-5 sm:overflow-visible sm:mx-0 sm:px-0">
               {([
                 // Theme tokens, not palette shades. A fixed sky-600 is tuned
                 // for a white card and measures 1.8:1 on the owner's dark one;
@@ -1440,7 +1442,7 @@ export default function OwnerDashboardShell({
                   type="button"
                   id={`owner-booking-stat-${key}`}
                   onClick={() => setBookingFilter(key)}
-                  className={`shrink-0 w-[112px] lg:w-auto text-right bg-[var(--color-owner-surface)] rounded-2xl border p-2.5 cursor-pointer transition-all ${
+                  className={`shrink-0 w-[112px] sm:w-auto text-right bg-[var(--color-owner-surface)] rounded-2xl border p-2.5 cursor-pointer transition-all ${
                     bookingFilter === key
                       ? 'border-[var(--color-owner-primary)] shadow-sm'
                       : 'border-[var(--color-owner-border)] hover:border-[var(--color-owner-primary)]/40'
@@ -1487,8 +1489,8 @@ export default function OwnerDashboardShell({
                 onChange={(e) => setBookingSort(e.target.value as typeof bookingSort)}
                 className="shrink-0 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-2 py-2.5 text-[10px] font-bold text-[var(--color-owner-text)] outline-none cursor-pointer"
               >
-                <option value="priority">حسب الأولوية</option>
                 <option value="newest">الأحدث أولاً</option>
+                <option value="priority">حسب الأولوية</option>
                 <option value="oldest">الأقدم أولاً</option>
                 <option value="checkin">حسب تاريخ الوصول</option>
               </select>
@@ -1677,23 +1679,55 @@ export default function OwnerDashboardShell({
                       key={booking.id}
                       onClick={() => setSelectedBookingId(booking.id)}
                       style={{ borderInlineStartColor: accent, borderInlineStartWidth: 4 }}
-                      className="w-full text-right bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] rounded-2xl border border-[var(--color-owner-border)] shadow-sm p-3 space-y-2 transition-colors cursor-pointer"
+                      className="owner-booking-row w-full text-right bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] rounded-2xl border border-[var(--color-owner-border)] shadow-sm p-3 transition-colors cursor-pointer"
                     >
-                      {/* The reference and how long they have been waiting.
+                      {/* The reference, and the actions behind one control.
                           Same PM- number the guest was given, so a phone call
                           starts from one string both sides can see. */}
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-mono text-[10px] font-bold text-[var(--color-owner-secondary)] bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-md shrink-0" dir="ltr">
-                            {bookingRef(booking.id)}
-                          </span>
-                          <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] truncate">{bookingAge(booking.createdAt)}</span>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {awaitingProof && (
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border bg-[var(--color-owner-info)]/10 text-[var(--color-owner-info-ink)] border-[var(--color-owner-info)]/30">⏳ إيصال</span>
+                      <div className="ob-ref flex items-center gap-1.5 min-w-0">
+                        <span className="font-mono text-[10px] font-bold text-[var(--color-owner-secondary)] bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-md shrink-0" dir="ltr">
+                          {bookingRef(booking.id)}
+                        </span>
+                        <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            id={`owner-booking-menu-${booking.id}`}
+                            aria-label="إجراءات الحجز"
+                            aria-expanded={rowMenu === booking.id}
+                            onClick={() => setRowMenu((v) => (v === booking.id ? null : booking.id))}
+                            className="p-1 rounded-lg text-[var(--color-owner-secondary)] hover:bg-[var(--color-owner-hover)] cursor-pointer"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                          {rowMenu === booking.id && (
+                            <>
+                              {/* Closes on the next click anywhere, so the menu
+                                  cannot be left open behind another one. */}
+                              <div className="fixed inset-0 z-20" onClick={() => setRowMenu(null)} />
+                              <div className="absolute z-30 top-full mt-1 start-0 w-40 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl shadow-lg overflow-hidden">
+                                <a href={`tel:${booking.userPhone}`} onClick={() => setRowMenu(null)}
+                                  className="flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-[var(--color-owner-text)] hover:bg-[var(--color-owner-hover)]">
+                                  <Phone className="w-3.5 h-3.5" /><span>اتصال</span>
+                                </a>
+                                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" onClick={() => setRowMenu(null)}
+                                  className="flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-[var(--color-owner-success-ink)] hover:bg-[var(--color-owner-hover)]">
+                                  <MessageCircle className="w-3.5 h-3.5" /><span>واتساب</span>
+                                </a>
+                                <button type="button" onClick={() => { setRowMenu(null); setSelectedBookingId(booking.id); }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-[var(--color-owner-text)] hover:bg-[var(--color-owner-hover)] cursor-pointer">
+                                  <Info className="w-3.5 h-3.5" /><span>تفاصيل الحجز</span>
+                                </button>
+                                <button type="button" onClick={() => { setRowMenu(null); printBookingInvoice(booking, booking.houseName); }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-[var(--color-owner-text)] hover:bg-[var(--color-owner-hover)] cursor-pointer border-t border-[var(--color-owner-border)]">
+                                  <ClipboardList className="w-3.5 h-3.5" /><span>فاتورة</span>
+                                </button>
+                                <button type="button" onClick={() => { setRowMenu(null); openBookingQrWindow(booking.id, booking.organizationName || booking.userName, booking.houseName, bookingRef(booking.id)); }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-[var(--color-owner-text)] hover:bg-[var(--color-owner-hover)] cursor-pointer">
+                                  <QrCode className="w-3.5 h-3.5" /><span>رمز QR</span>
+                                </button>
+                              </div>
+                            </>
                           )}
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusBadge.cls}`}>{statusBadge.label}</span>
                         </div>
                       </div>
 
@@ -1702,37 +1736,49 @@ export default function OwnerDashboardShell({
                           card — but an owner knows which house is theirs, and
                           in a one-house account every card shouted the same
                           word. Who is coming is the news. */}
-                      <div className="min-w-0">
+                      <div className="ob-who min-w-0">
                         <h4 className="text-[14px] font-black text-[var(--color-owner-text)] truncate leading-snug">{booking.userName}</h4>
                         <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold truncate mt-0.5 flex items-center gap-1.5">
                           <Phone className="w-3 h-3 shrink-0" />
                           <span dir="ltr">{booking.userPhone}</span>
-                          <span className="truncate">· {booking.organizationName || booking.houseName}</span>
+                          <span className="shrink-0">· {bookingAge(booking.createdAt)}</span>
                           {booking.source === 'manual' && <span className="shrink-0 bg-[var(--color-owner-hover)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)] px-1.5 py-0.5 rounded-full">يدوي</span>}
                           {booking.source === 'temporary' && <span className="shrink-0 bg-[var(--color-owner-info)]/10 text-[var(--color-owner-info-ink)] border border-[var(--color-owner-info)]/30 px-1.5 py-0.5 rounded-full">مؤقت</span>}
                         </div>
+                        <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold truncate">{booking.organizationName || booking.houseName}</div>
                       </div>
 
-                      {/* Arrival and departure side by side with the arrow
-                          between them, so the stay reads as a span rather than
-                          two dates the owner has to subtract. */}
-                      <div className="flex items-center gap-2 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-3 py-2">
-                        <span className="leading-tight text-center flex-1 min-w-0">
-                          <span className="block text-[11px] font-black text-[var(--color-owner-text)] truncate">{longDay(booking.checkIn)}</span>
+                      {/* Arrival and departure with the arrow between them, so
+                          the stay reads as a span rather than two dates the
+                          owner has to subtract. */}
+                      <div className="ob-dates flex items-center gap-2 lg:gap-2.5 whitespace-nowrap">
+                        <span className="leading-tight text-center">
+                          <span className="block text-[11px] font-black text-[var(--color-owner-text)]">{longDay(booking.checkIn)}</span>
                           <span className="block text-[9px] font-bold text-[var(--color-owner-secondary)]">وصول</span>
                         </span>
-                        <span className="flex flex-col items-center shrink-0 px-1">
-                          <span className="text-[var(--color-owner-secondary)] text-[11px]">←</span>
-                          <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] whitespace-nowrap">{nightsText}</span>
-                        </span>
-                        <span className="leading-tight text-center flex-1 min-w-0">
-                          <span className="block text-[11px] font-black text-[var(--color-owner-text)] truncate">{longDay(booking.checkOut)}</span>
+                        <span className="text-[var(--color-owner-secondary)] text-[11px] shrink-0">←</span>
+                        <span className="leading-tight text-center">
+                          <span className="block text-[11px] font-black text-[var(--color-owner-text)]">{longDay(booking.checkOut)}</span>
                           <span className="block text-[9px] font-bold text-[var(--color-owner-secondary)]">مغادرة</span>
                         </span>
-                        <span className="flex items-center gap-1 shrink-0 border-r border-[var(--color-owner-border)] pr-2.5 mr-0.5">
-                          <Users className="w-3.5 h-3.5 text-[var(--color-owner-secondary)]" />
-                          <span className="text-[11px] font-black text-[var(--color-owner-text)]">{booking.guestsCount}</span>
+                      </div>
+
+                      {/* How long and how many — the two numbers that decide
+                          whether the house can take them. */}
+                      <div className="ob-meta flex items-center gap-2.5 text-[10px] font-bold text-[var(--color-owner-text)] whitespace-nowrap">
+                        <span className="flex items-center gap-1">
+                          <BedDouble className="w-3.5 h-3.5 text-[var(--color-owner-secondary)]" />{nightsText}
                         </span>
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5 text-[var(--color-owner-secondary)]" />{booking.guestsCount} فرد
+                        </span>
+                      </div>
+
+                      <div className="ob-status flex items-center gap-1 shrink-0">
+                        {awaitingProof && (
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border bg-[var(--color-owner-info)]/10 text-[var(--color-owner-info-ink)] border-[var(--color-owner-info)]/30">⏳ إيصال</span>
+                        )}
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${statusBadge.cls}`}>{statusBadge.label}</span>
                       </div>
 
                       {/* The money, always — not only when something is owed.
@@ -1744,44 +1790,37 @@ export default function OwnerDashboardShell({
                           nothing is due on a cancelled one — printing «المتبقي
                           7,560» against either says the guest owes money they
                           were never asked for. Those two read as a value. */}
-                      {booking.status === 'pending' || booking.status === 'cancelled' || booking.status === 'rejected' ? (
-                        <div className="flex items-baseline justify-between gap-2 text-[10px] font-bold">
-                          <span className="text-[var(--color-owner-secondary)]">
-                            قيمة الحجز <span className="font-black text-[var(--color-owner-text)]">{booking.totalPrice.toLocaleString()} ج.م</span>
-                          </span>
-                          <span className="shrink-0 text-[var(--color-owner-secondary)]">
-                            {booking.status === 'pending' ? 'لم يُطلب دفع بعد'
-                              : collected > 0 ? `حُصِّل ${collected.toLocaleString()} ج.م` : 'لم يُدفع شيء'}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="space-y-1.5">
+                      <div className="ob-money">
+                        {booking.status === 'pending' || booking.status === 'cancelled' || booking.status === 'rejected' ? (
                           <div className="flex items-baseline justify-between gap-2 text-[10px] font-bold">
-                            <span className={outstanding > 0 ? 'text-[var(--color-owner-text)]' : 'text-[var(--color-owner-success-ink)]'}>
-                              {outstanding > 0 ? (
-                                <>المتبقي <span className="font-black text-[var(--color-owner-warning-ink)]">{outstanding.toLocaleString()} ج.م</span> من {booking.totalPrice.toLocaleString()} ج.م</>
-                              ) : (
-                                <>مسدَّد بالكامل · {booking.totalPrice.toLocaleString()} ج.م ✓</>
-                              )}
+                            <span className="text-[var(--color-owner-secondary)]">
+                              قيمة الحجز <span className="font-black text-[var(--color-owner-text)]">{booking.totalPrice.toLocaleString()} ج.م</span>
                             </span>
-                            <span className="shrink-0 font-black text-[var(--color-owner-secondary)]">{pct}%</span>
+                            <span className="shrink-0 text-[var(--color-owner-secondary)]">
+                              {booking.status === 'pending' ? 'لم يُطلب دفع بعد'
+                                : collected > 0 ? `حُصِّل ${collected.toLocaleString()} ج.م` : 'لم يُدفع شيء'}
+                            </span>
                           </div>
-                          <div className="h-1.5 w-full rounded-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all ${pct >= 100 ? 'bg-[var(--color-owner-success)]' : 'bg-[var(--color-owner-info)]'}`}
-                              style={{ width: `${pct}%` }}
-                            />
+                        ) : (
+                          <div className="space-y-1.5">
+                            <div className="flex items-baseline justify-between gap-2 text-[10px] font-bold">
+                              <span className={outstanding > 0 ? 'text-[var(--color-owner-text)]' : 'text-[var(--color-owner-success-ink)]'}>
+                                {outstanding > 0 ? (
+                                  <>المتبقي <span className="font-black text-[var(--color-owner-warning-ink)]">{outstanding.toLocaleString()} ج.م</span> من {booking.totalPrice.toLocaleString()} ج.م</>
+                                ) : (
+                                  <>مسدَّد بالكامل · {booking.totalPrice.toLocaleString()} ج.م ✓</>
+                                )}
+                              </span>
+                              <span className="shrink-0 font-black text-[var(--color-owner-secondary)]">{pct}%</span>
+                            </div>
+                            <div className="h-1.5 w-full rounded-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${pct >= 100 ? 'bg-[var(--color-owner-success)]' : 'bg-[var(--color-owner-info)]'}`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
                           </div>
-                        </div>
-                      )}
-
-                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <a href={`tel:${booking.userPhone}`} className="flex-1 flex items-center justify-center gap-1 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] px-2.5 py-1.5 rounded-xl text-[10px] font-bold cursor-pointer">
-                          <Phone className="w-3 h-3" /><span>اتصال</span>
-                        </a>
-                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1 bg-[var(--color-owner-success)]/10 hover:bg-[var(--color-owner-success)]/20 border border-[var(--color-owner-success)]/30 text-[var(--color-owner-success-ink)] px-2.5 py-1.5 rounded-xl text-[10px] font-bold cursor-pointer">
-                          <MessageCircle className="w-3 h-3" /><span>واتساب</span>
-                        </a>
+                        )}
                       </div>
                     </div>
                   );
