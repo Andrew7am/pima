@@ -1,5 +1,6 @@
 import { Booking } from '../types';
 import { paidAmountOf } from './cancellationPolicy';
+import { depositDue } from './paymentLedger';
 
 /**
  * What has actually been collected on a booking, and whether a balance means
@@ -12,6 +13,13 @@ import { paidAmountOf } from './cancellationPolicy';
  * it. Two screens, one booking, opposite claims about money.
  *
  * One function, so they cannot drift again.
+ *
+ * Not a rival to lib/paymentLedger, which answers the same questions from the
+ * Payment rows themselves — that is the authoritative record and the one to
+ * use wherever the payments array is in hand. This reads the booking's own
+ * summary fields, because the owner's dashboard is never given that array.
+ * The deposit comes from paymentLedger either way rather than being derived
+ * a second time here.
  */
 export interface BookingMoney {
   /** The agreed deposit, or the platform rate applied to the total. */
@@ -36,7 +44,7 @@ export interface BookingMoney {
 }
 
 export function bookingMoney(booking: Booking, depositRate: number): BookingMoney {
-  const deposit = booking.depositAmount || Math.round(booking.totalPrice * depositRate);
+  const deposit = depositDue(booking, depositRate);
   // paidAmountOf is the refund math's answer and the one that knows about
   // 'paid_full'. The legacy depositPaid flag is taken alongside it rather than
   // instead of it: rows written before paymentStatus existed carry only the
