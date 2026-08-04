@@ -1,76 +1,100 @@
 /**
  * The face-off drawing on the random-match banner.
  *
- * Drawn rather than sourced: the approved design uses a rendered
- * illustration, and the repo has exactly one image in it (the logo). Inline
- * SVG means no asset to ship, nothing to fetch on a phone connection, and it
- * stays sharp at any size.
+ * Follows the approved artwork: the blue side on the left with the hood down
+ * and the face showing, the red side on the right with the hood up and the
+ * face in shadow, and a lit VS between them.
  *
- * Two hooded figures leaning into each other, in the blue and red of the
- * design, with the lit seam and bolt between them. If the real artwork turns
- * up later it replaces this component and nothing around it moves — the
- * banner only asks for a box of this shape.
+ * Drawn rather than sourced — the repo holds one image, the logo — so this is
+ * inline SVG: nothing to fetch on a phone connection and sharp at any size.
+ * The two fighters are no longer one mirrored shape, because they are not
+ * mirror images of each other in the reference.
  */
 export default function VersusArt({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 160 110" className={className} role="img" aria-label="مواجهة بين لاعبين">
       <defs>
-        <linearGradient id="vsBlue" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="vaBlue" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#3B82F6" />
           <stop offset="100%" stopColor="#1E3A8A" />
         </linearGradient>
-        <linearGradient id="vsRed" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#EF4444" />
+        <linearGradient id="vaRed" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#DC2626" />
           <stop offset="100%" stopColor="#7F1D1D" />
         </linearGradient>
-        <linearGradient id="vsGold" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#FFE082" />
-          <stop offset="100%" stopColor="#F0A93B" />
+        <linearGradient id="vaVs" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#93C5FD" />
         </linearGradient>
-        <radialGradient id="vsGlowB" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.55" />
+        <radialGradient id="vaGlowB" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.5" />
           <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
         </radialGradient>
-        <radialGradient id="vsGlowR" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#EF4444" stopOpacity="0.55" />
+        <radialGradient id="vaGlowR" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#EF4444" stopOpacity="0.5" />
           <stop offset="100%" stopColor="#EF4444" stopOpacity="0" />
         </radialGradient>
+        <filter id="vaSoft" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2.5" />
+        </filter>
       </defs>
 
       <rect width="160" height="110" fill="#0a1733" />
-      <circle cx="118" cy="58" r="46" fill="url(#vsGlowB)" />
-      <circle cx="42" cy="58" r="46" fill="url(#vsGlowR)" />
+      <circle cx="40" cy="60" r="48" fill="url(#vaGlowB)" />
+      <circle cx="120" cy="60" r="48" fill="url(#vaGlowR)" />
 
-      {/* One figure, drawn once facing left, then mirrored across the middle
-          for the other side. Writing the second one by hand is how the red
-          torso ended up mirrored twice and standing on the blue figure's
-          side of the seam. */}
-      <defs>
-        <g id="vsFighter">
-          {/* torso, leaning into the seam */}
-          <path d="M116 98 q-3 -32 7 -40 q11 -9 22 0 q9 8 6 40 z" />
-          {/* head */}
-          <circle cx="132" cy="40" r="13" />
-          {/* hood over the head */}
-          <path d="M118 42 a14 14 0 0 1 28 0 l3 8 -34 0 z" opacity="0.5" />
-          {/* leading arm and fist */}
-          <path d="M118 62 q-10 0 -14 7 l7 9 q9 -3 11 -10 z" />
-          <circle cx="105" cy="70" r="8.5" />
-        </g>
-      </defs>
+      {/* ── Left: blue, hood down, face showing ───────────────────── */}
+      <g>
+        {/* torso */}
+        <path d="M22 104 q-2 -36 8 -44 q12 -9 24 0 q10 8 8 44 z" fill="url(#vaBlue)" />
+        {/* hood bunched behind the neck */}
+        <path d="M28 58 q12 8 24 0 l2 -8 -28 0 z" fill="#1E3A8A" />
+        {/* head */}
+        <circle cx="40" cy="42" r="12" fill="#F0C09A" />
+        {/* hair */}
+        <path d="M28 40 q1 -14 12 -14 q11 0 12 14 q-5 -7 -12 -6 q-7 1 -12 6 z" fill="#3F2415" />
+        {/* eyes */}
+        <circle cx="36" cy="43" r="1.6" fill="#22303F" />
+        <circle cx="45" cy="43" r="1.6" fill="#22303F" />
+        {/* leading fist, thrown toward the seam */}
+        <path d="M52 66 q10 -1 14 6 l-8 9 q-9 -2 -10 -9 z" fill="url(#vaBlue)" />
+        <circle cx="63" cy="73" r="8" fill="#F0C09A" />
+      </g>
 
-      <use href="#vsFighter" fill="url(#vsBlue)" />
-      <use href="#vsFighter" fill="url(#vsRed)" transform="translate(160 0) scale(-1 1)" />
+      {/* ── Right: red, hood up, face in shadow ───────────────────── */}
+      <g>
+        <path d="M110 104 q-2 -36 8 -44 q12 -9 24 0 q10 8 8 44 z" fill="url(#vaRed)" />
+        {/* the hood itself, pulled over */}
+        <path d="M106 50 q4 -26 22 -26 q18 0 22 26 q-10 6 -22 6 q-12 0 -22 -6 z" fill="url(#vaRed)" />
+        {/* the shadow inside it */}
+        <ellipse cx="128" cy="44" rx="10" ry="10" fill="#2B0808" />
+        {/* two lit eyes in the dark */}
+        <circle cx="124" cy="44" r="1.7" fill="#FCA5A5" />
+        <circle cx="133" cy="44" r="1.7" fill="#FCA5A5" />
+        {/* leading fist */}
+        <path d="M116 66 q-10 -1 -14 6 l8 9 q9 -2 10 -9 z" fill="url(#vaRed)" />
+        <circle cx="99" cy="73" r="8" fill="#C98B6B" />
+      </g>
 
-      {/* The seam and the bolt down the middle */}
-      <rect x="79" y="0" width="2" height="110" fill="url(#vsGold)" opacity="0.35" />
-      <path
-        d="M86 8 L72 52 L82 52 L74 102 L92 48 L82 48 Z"
-        fill="url(#vsGold)"
-        stroke="#0a1733"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
+      {/* ── The clash in the middle ───────────────────────────────── */}
+      <g>
+        <ellipse cx="80" cy="58" rx="20" ry="26" fill="#60A5FA" opacity="0.35" filter="url(#vaSoft)" />
+        <path d="M84 22 L70 56 L79 56 L73 92 L92 52 L82 52 Z" fill="#FDE68A" opacity="0.85" />
+        <text
+          x="80" y="70"
+          textAnchor="middle"
+          fontSize="34"
+          fontWeight="900"
+          fontStyle="italic"
+          fontFamily="system-ui, -apple-system, Segoe UI, sans-serif"
+          fill="url(#vaVs)"
+          stroke="#0a1733"
+          strokeWidth="2"
+          paintOrder="stroke"
+        >
+          VS
+        </text>
+      </g>
     </svg>
   );
 }

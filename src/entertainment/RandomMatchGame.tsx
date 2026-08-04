@@ -1388,13 +1388,10 @@ export default function RandomMatchGame({
                     it: drop a real asset into the <img> slot below and the
                     composition does not move. */}
                 <div className="w-[150px] shrink-0 flex flex-col gap-3">
+                  {/* VS lives inside the drawing now, so it scales with the
+                      figures instead of floating over them at a fixed size. */}
                   <div className="relative h-[104px] rounded-2xl overflow-hidden border border-blue-400/25">
                     <VersusArt className="w-full h-full" />
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <span className="text-[30px] font-black italic text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] tracking-tighter">
-                        VS
-                      </span>
-                    </div>
                   </div>
 
                   <motion.button
