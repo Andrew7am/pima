@@ -31,10 +31,11 @@ function Preview() {
           setCaptured((c) => ({ ...c, house: h })); (window as unknown as Record<string, unknown>).__house = h;
           return Promise.resolve(new URLSearchParams(location.search).get('fail') !== 'house');
         }}
-        onAddRoom={(r) => {
+        onAddRoom={(r) => { (window as unknown as Record<string, unknown>).__rooms = [...(((window as unknown as Record<string, unknown>).__rooms as unknown[]) || []), r];
           setCaptured((c) => ({ ...c, rooms: [...c.rooms, r] }));
           return Promise.resolve(new URLSearchParams(location.search).get('fail') !== 'rooms');
         }}
+        onAddRoomType={(t) => { (window as unknown as Record<string, unknown>).__types = [...(((window as unknown as Record<string, unknown>).__types as unknown[]) || []), t]; return Promise.resolve(true); }}
         onUpdatePaymentMethods={(_h, m) => setCaptured((c) => ({ ...c, methods: m }))}
         onLogout={() => undefined}
       />

@@ -1387,7 +1387,9 @@ export default function App() {
 
   const handleAddRoomType = (t: RoomType) => {
     setRoomTypes((prev) => [...prev, t]);
-    trackWrite(createRoomTypeDb(t), 'إضافة نوع غرفة');
+    // Returned, so the onboarding wizard can wait for it before creating the
+    // rooms that carry its id.
+    return trackWrite(createRoomTypeDb(t), 'إضافة نوع غرفة');
   };
   const handleUpdateRoomType = (t: RoomType) => {
     setRoomTypes((prev) => prev.map((x) => (x.id === t.id ? t : x)));
@@ -1712,6 +1714,7 @@ export default function App() {
             existingRooms={ownerRooms}
             onCreateHouse={handleAddHouse}
             onAddRoom={handleAddRoom}
+            onAddRoomType={handleAddRoomType}
             onUpdatePaymentMethods={(house, methods) => handleUpdateHouse({ ...house, paymentMethods: methods })}
             onLogout={handleLogout}
             onSubmitted={() => setJustFinishedOnboarding(true)}

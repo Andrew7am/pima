@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { RetreatHouse, Room, ConferenceHall, OwnerPaymentMethod, User } from '../types';
+import { RetreatHouse, Room, RoomType, RoomFacility, ConferenceHall, OwnerPaymentMethod, User } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import Logo from './Logo';
@@ -17,6 +17,9 @@ interface OwnerOnboardingWizardProps {
   // registration from a failed one instead of always congratulating the owner.
   onCreateHouse: (house: RetreatHouse) => void | Promise<boolean>;
   onAddRoom: (room: Room) => void | Promise<boolean>;
+  /** Lets the wizard define room types, not just bare rooms — the house page
+   *  shows types, so a house registered without any had nothing to show. */
+  onAddRoomType?: (t: RoomType) => void | Promise<boolean>;
   onUpdatePaymentMethods: (house: RetreatHouse, methods: OwnerPaymentMethod[]) => void | Promise<boolean>;
   onLogout: () => void;
   // Called the instant submission succeeds — the parent keeps rendering
@@ -44,7 +47,35 @@ interface DraftRoom {
   pricePerNight: string;
   floor?: number;
   status?: Room['status'];
+  /** Links to a DraftRoomType below, before either has a real id. */
+  typeKey?: string;
 }
+
+/**
+ * A room type the owner defines while registering.
+ *
+ * The wizard only ever created bare rooms — a number, a bed count, a price.
+ * The house page shows room TYPES, with a name and the facilities in them,
+ * so a house registered through here had nothing to show but «غرفة بسريرين»
+ * and the owner had to go and define the types afterwards in a tab they had
+ * no reason to open.
+ */
+interface DraftRoomType {
+  key: string;
+  name: string;
+  bedsCount: number;
+  price: string;
+  facilities: RoomFacility[];
+}
+
+const FACILITY_OPTIONS: { key: RoomFacility; label: string }[] = [
+  { key: 'ac', label: 'تكييف' },
+  { key: 'bathroom', label: 'حمام خاص' },
+  { key: 'tv', label: 'تلفزيون' },
+  { key: 'wifi', label: 'واي فاي' },
+  { key: 'fridge', label: 'تلاجة' },
+  { key: 'balcony', label: 'شرفة' },
+];
 
 const FLOOR_OPTIONS: { value: number; label: string }[] = [
   { value: 0, label: 'الدور الأرضي' },
@@ -92,7 +123,7 @@ const STEP_LABELS: Record<string, string> = {
 };
 
 export default function OwnerOnboardingWizard({
-  owner, existingHouse, existingRooms, onCreateHouse, onAddRoom, onUpdatePaymentMethods, onLogout,
+  owner, existingHouse, existingRooms, onCreateHouse, onAddRoom, onAddRoomType, onUpdatePaymentMethods, onLogout,
   onSubmitted, onContinue,
 }: OwnerOnboardingWizardProps) {
   const [submitted, setSubmitted] = useState(false);
@@ -146,6 +177,14 @@ export default function OwnerOnboardingWizard({
   const [rangePrice, setRangePrice] = useState('500');
   const [rangeStatus, setRangeStatus] = useState<Room['status']>('available');
   const [showManualRoomForm, setShowManualRoomForm] = useState(false);
+  // The name and facilities that turn a generated batch into a room type.
+  // Optional: leave the name blank and the rooms are created untyped, which
+  // the house page still handles by grouping them on bed count.
+  const [rangeTypeName, setRangeTypeName] = useState('');
+  const [rangeFacilities, setRangeFacilities] = useState<RoomFacility[]>([]);
+  const [draftTypes, setDraftTypes] = useState<DraftRoomType[]>([]);
+  const toggleFacility = (f: RoomFacility) =>
+    setRangeFacilities((prev) => (prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]));
 
   // ── Halls (optional) ────────────────────────────────────────
   const [draftHalls, setDraftHalls] = useState<DraftHall[]>([]);
@@ -200,13 +239,30 @@ export default function OwnerOnboardingWizard({
     // array over the draft, so an owner who added rooms by hand — or who
     // generated the first floor and then the second — lost everything from
     // before the last click, with nothing on screen to say so.
+    // A named batch becomes a room type, so the house page has a name and a
+    // facilities list to show rather than «غرفة بسريرين» and nothing.
+    let typeKey: string | undefined;
+    const typeName = rangeTypeName.trim();
+    if (typeName) {
+      const existing = draftTypes.find((t) => t.name === typeName);
+      if (existing) {
+        typeKey = existing.key;
+      } else {
+        typeKey = `type_${draftTypes.length + 1}`;
+        setDraftTypes((prev) => [...prev, {
+          key: typeKey as string, name: typeName, bedsCount: rangeBeds,
+          price: rangePrice, facilities: rangeFacilities,
+        }]);
+      }
+    }
+
     setDraftRooms((prev) => {
       const taken = new Set([...existingRooms.map((r) => r.name), ...prev.map((r) => r.name)]);
       const added: DraftRoom[] = [];
       for (let n = rangeFrom; n <= rangeTo; n++) {
         const name = String(n);
         if (taken.has(name)) continue;
-        added.push({ name, bedsCount: rangeBeds, pricePerNight: rangePrice, floor, status: rangeStatus });
+        added.push({ name, bedsCount: rangeBeds, pricePerNight: rangePrice, floor, status: rangeStatus, typeKey });
       }
       return [...prev, ...added];
     });
@@ -363,6 +419,30 @@ export default function OwnerOnboardingWizard({
       if (house && needsRooms) {
         const houseId = house.id;
         const stamp = Date.now();
+
+        // Types first — the rooms below carry their ids.
+        const typeIdByKey = new Map<string, string>();
+        if (draftTypes.length > 0 && onAddRoomType) {
+          const typeResults = await Promise.all(draftTypes.map((t, i) => {
+            const id = `roomtype_${stamp}_${i}`;
+            typeIdByKey.set(t.key, id);
+            return onAddRoomType({
+              id,
+              houseId,
+              name: t.name,
+              price: t.price ? Number(t.price) : 0,
+              bedsCount: t.bedsCount,
+              facilities: t.facilities,
+              createdAt: new Date().toISOString(),
+            });
+          }));
+          if (typeResults.some((ok) => ok === false)) {
+            setError('تم حفظ البيت، لكن أنواع الغرف لم تُحفظ. تقدر تضيفها من صفحة الغرف في لوحة التحكم.');
+            setSubmitting(false);
+            return;
+          }
+        }
+
         const results = await Promise.all(draftRooms.map((r, i) => onAddRoom({
           id: `room_${stamp}_${i}`,
           houseId,
@@ -372,6 +452,7 @@ export default function OwnerOnboardingWizard({
           images: [],
           status: r.status ?? 'available',
           floor: r.floor,
+          typeId: r.typeKey ? typeIdByKey.get(r.typeKey) : undefined,
           createdAt: new Date().toISOString(),
         })));
         // A partial room failure is the dangerous one: the gate passes on the
@@ -659,6 +740,53 @@ export default function OwnerOnboardingWizard({
               <div className="bg-white border border-[#D6D6C2] rounded-2xl p-4 space-y-3">
                 <div className="flex items-center gap-1.5 text-[#2D2D24] font-black text-xs">
                   <LayoutGrid className="w-3.5 h-3.5 text-[#5A5A40]" /> إعدادات الغرف
+                </div>
+
+                {/* Name and facilities — the two things that make a batch a
+                    room TYPE. Without them the wizard could only create bare
+                    numbered rooms, and the guest's page had nothing to show
+                    but «غرفة بسريرين». Optional: leave the name empty and the
+                    rooms are still created, just untyped. */}
+                <div className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-xl p-2.5 space-y-2">
+                  <label className="block text-[9.5px] font-bold text-[#8A8A70]">
+                    اسم نوع الغرفة (اختياري — بيظهر للحجاز)
+                  </label>
+                  <input
+                    id="onboarding-room-type-name"
+                    type="text"
+                    value={rangeTypeName}
+                    onChange={(e) => setRangeTypeName(e.target.value)}
+                    placeholder="مثال: غرفة مكيفة بحمام خاص"
+                    className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl"
+                  />
+                  <div className="flex flex-wrap gap-1.5">
+                    {FACILITY_OPTIONS.map((f) => {
+                      const on = rangeFacilities.includes(f.key);
+                      return (
+                        <button
+                          key={f.key}
+                          type="button"
+                          onClick={() => toggleFacility(f.key)}
+                          className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-colors ${
+                            on ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white text-[#5A5A40] border-[#D6D6C2]'
+                          }`}
+                        >
+                          {on ? '✓ ' : ''}{f.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {draftTypes.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1 border-t border-[#D6D6C2]">
+                      <span className="text-[9.5px] font-bold text-[#8A8A70] w-full">الأنواع المضافة:</span>
+                      {draftTypes.map((t) => (
+                        <span key={t.key} className="bg-white border border-[#D6D6C2] text-[9.5px] font-bold text-[#4A4A3A] px-2 py-1 rounded-lg">
+                          {t.name} · {t.bedsCount} سرير
+                          {t.facilities.length > 0 ? ` · ${t.facilities.length} تجهيزة` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-xl p-2.5">
