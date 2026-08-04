@@ -125,7 +125,12 @@ export default function OwnerOnboardingWizard({
   const bedsCount = 0;
 
   // ── Photos ──────────────────────────────────────────────────
-  const [imageUrl, setImageUrl] = useState('');
+  // A list, not one. The step said «ارفع صورة واحدة على الأقل» and then
+  // gave the owner exactly one slot: picking a second replaced the first,
+  // and the house went live with a single photograph.
+  const [images, setImages] = useState<string[]>([]);
+  const addImage = (url: string) => setImages((prev) => (url && !prev.includes(url) ? [...prev, url] : prev));
+  const removeImage = (url: string) => setImages((prev) => prev.filter((u) => u !== url));
 
   // ── Services / suitability ──────────────────────────────────
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -236,7 +241,7 @@ export default function OwnerOnboardingWizard({
       const priceOk = isMonthly ? monthlyRent > 0 : pricePerNight > 0;
       return !!(houseName.trim() && houseDesc.trim() && houseAddress.trim()) && priceOk;
     }
-    if (step === 'photos') return !!imageUrl;
+    if (step === 'photos') return images.length > 0;
     // Suitability is required rather than guessed — see the submit handler.
     if (step === 'services') return selectedServices.length > 0 && selectedSuitability.length > 0;
     if (step === 'rooms') return draftRooms.length > 0;
@@ -312,7 +317,7 @@ export default function OwnerOnboardingWizard({
           restaurants: [],
           activities: [],
           paymentMethods: draftPayments.map((p, i) => ({ id: `pay_${Date.now()}_${i}`, type: p.type, label: p.label || PAYMENT_TYPE_LABELS[p.type], value: p.value })),
-          images: [imageUrl],
+          images,
           status: 'pending',
           // A house nobody has stayed in has no rating. The database already
           // clamps this on insert, so 5.0 only ever misled this session's own
@@ -336,7 +341,7 @@ export default function OwnerOnboardingWizard({
         // dropped — and because the gate re-reads those same fields, they
         // landed straight back in the wizard, every time, with no way out.
         const patch: RetreatHouse = { ...house };
-        if (needsPhotos && imageUrl) patch.images = [imageUrl, ...house.images];
+        if (needsPhotos && images.length > 0) patch.images = [...images, ...house.images];
         if (needsServices && selectedServices.length > 0) {
           patch.services = selectedServices;
           if (selectedSuitability.length > 0) patch.suitability = selectedSuitability;
@@ -534,9 +539,39 @@ export default function OwnerOnboardingWizard({
           {step === 'photos' && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-[#5A5A40] font-black text-sm"><Sparkles className="w-4 h-4" /> صورة البيت</div>
-              <p className="text-[11px] text-[#8A8A70]">ارفع صورة واحدة على الأقل تظهر للحجاز.</p>
-              {imageUrl && <img src={imageUrl} alt="معاينة" className="w-full h-40 object-cover rounded-2xl border border-[#D6D6C2]" />}
-              <PhotoPickerButtons idPrefix="onboarding-cover" onSelect={setImageUrl} />
+              <p className="text-[11px] text-[#8A8A70]">
+                ارفع صورة واحدة على الأقل تظهر للحجاز — وكل ما ضفت صور أكتر، كل ما الحجاز شافوا البيت أوضح.
+                الصورة الأولى هي اللي هتظهر في كارت البيت.
+              </p>
+              {images.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {images.map((url, i) => (
+                    <div key={url} className="relative group">
+                      <img src={url} alt={`صورة ${i + 1}`} className="w-full h-24 object-cover rounded-xl border border-[#D6D6C2]" />
+                      {i === 0 && (
+                        <span className="absolute bottom-1 right-1 bg-[#5A5A40] text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
+                          الغلاف
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeImage(url)}
+                        aria-label={`حذف صورة ${i + 1}`}
+                        className="absolute top-1 left-1 bg-white/90 hover:bg-white text-red-600 rounded-full p-1 shadow"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* onSelect fires once per pick, so this appends rather than
+                  replacing — the old handler was setImageUrl, which meant a
+                  second photograph quietly discarded the first. */}
+              <PhotoPickerButtons idPrefix="onboarding-cover" onSelect={addImage} />
+              {images.length > 0 && (
+                <p className="text-[10px] text-[#8A8A70] font-bold">{images.length} صورة مضافة</p>
+              )}
             </div>
           )}
 
@@ -838,7 +873,7 @@ export default function OwnerOnboardingWizard({
             // whatever's being entered right now — so this shows the WHOLE
             // house, not just the delta from this session.
             const displayName = needsBasics ? houseName : existingHouse?.name;
-            const displayImage = imageUrl || existingHouse?.images[0];
+            const displayImage = images[0] || existingHouse?.images[0];
             const displayServices = needsServices ? selectedServices : (existingHouse?.services ?? []);
             const displayRooms: { name: string; bedsCount: number; price: string | number }[] = [
               ...existingRooms.map((r) => ({ name: r.name, bedsCount: r.bedsCount, price: r.pricePerNight ?? '—' })),

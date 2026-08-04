@@ -1,5 +1,5 @@
 ﻿import React, { useState, useMemo, useEffect } from 'react';
-import { RetreatHouse, Booking, Review, User, Room, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
+import { RetreatHouse, Booking, Review, User, Room, RoomType, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import HouseHero from './house/HouseHero';
 import HouseLocationTrust from './house/HouseLocationTrust';
 import HouseReviews from './house/HouseReviews';
@@ -10,6 +10,7 @@ import { arabicNumber } from '../lib/arabic';
 import { tapFeedback } from '../lib/haptics';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice, offersDayUse, computeMealPlan } from '../lib/pricing';
+import { buildRoomOfferings } from '../lib/roomOffering';
 import { bookingRef } from '../lib/bookingRef';
 import { getCapacityStatus, occupiedEnd } from '../lib/roomOccupancy';
 import { 
@@ -21,7 +22,6 @@ import {
   Info, Tag, Lock, Church, Theater, Lightbulb, Sparkles, DoorOpen
 } from 'lucide-react';
 import { SUITABILITY_MAP } from '../mockData';
-
 
 interface HouseDetailProps {
   house: RetreatHouse;
@@ -35,6 +35,9 @@ interface HouseDetailProps {
   isFavorited: boolean;
   onToggleFavorite: (houseId: string) => void;
   rooms?: Room[];
+  /** The owner-defined room types, when they have any. Without these the
+   *  page falls back to grouping their real rooms by size. */
+  roomTypes?: RoomType[];
   announcements?: Announcement[];
   waitlist?: WaitlistEntry[];
   onJoinWaitlist?: (entry: WaitlistEntry) => boolean;
@@ -607,6 +610,7 @@ export default function HouseDetail({
   isFavorited,
   onToggleFavorite,
   rooms = [],
+  roomTypes = [],
   announcements = [],
   waitlist = [],
   onJoinWaitlist,
@@ -1890,130 +1894,109 @@ export default function HouseDetail({
             {/* Room Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3" dir="rtl">
               {(() => {
-                const isMonthly = house.propertyType === 'student' || house.propertyType === 'staff';
-                const basePrice = isMonthly ? (house.monthlyRent || 1500) : house.pricePerNightPerPerson;
-
-                const roomTypesList = [
-                  {
-                    id: 'single',
-                    name: isMonthly ? 'غرفة فردية فاخرة (سنجل)' : 'غرفة فردية فندقية',
-                    capacity: '١ فرد (سرير واحد مريح)',
-                    capacityLabel: 'فرد واحد',
-                    price: isMonthly ? basePrice : Math.round(basePrice * 1.3),
-                    priceUnit: isMonthly ? 'شهرياً' : 'لكل فرد / ليلة',
-                    image: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=600&q=80',
-                    shortDesc: 'مساحة مخصصة للخلوة الهادئة، المذاكرة، والتركيز الفردي المريح مع كامل الخدمات الخاصة.',
-                    features: ['تكييف مستقل', 'مكتب عمل وقراءة', 'خزانة ملابس خاصة', 'حمام داخلي خاص', 'إنترنت سريع'],
-                    extendedDetails: 'صُممت هذه الغرفة لتلائم الاحتياجات الفردية، سواء للخلوات الروحية الهادئة أو للطلبة والموظفين المغتربين الذين يحتاجون لخصوصية كاملة مع تجهيز عملي للدراسة والقراءة.'
-                  },
-                  {
-                    id: 'double',
-                    name: isMonthly ? 'غرفة مزدوجة مشتركة' : 'غرفة مزدوجة / ثلاثية قياسية',
-                    capacity: isMonthly ? '٢ أفراد (سريرين منفصلين)' : '٢ إلى ٣ أفراد (أسرة منفصلة)',
-                    capacityLabel: isMonthly ? '٢ أفراد' : '٢ - ٣ أفراد',
-                    price: isMonthly ? Math.round(basePrice * 0.7) : basePrice,
-                    priceUnit: isMonthly ? 'شهرياً للفرد' : 'لكل فرد / ليلة',
-                    image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=600&q=80',
-                    shortDesc: 'الخيار القياسي الممتاز للمؤتمرات والخدمات الكنسية والمغتربين مع أسرة طبية مريحة.',
-                    features: ['تكييف ممتاز', 'أسرة منفصلة طبية', 'ثلاجة ميني بار', 'حمام خاص مجهز', 'شرفة مستقلة'],
-                    extendedDetails: 'توفر الغرفة المزدوجة توازناً رائعاً بين القيمة الاقتصادية والمساحة المريحة. مجهزة بمراتب طبية مريحة ومساحات تخزين مستقلة وخزائن منفصلة لكل فرد.'
-                  },
-                  {
-                    id: 'suite',
-                    name: isMonthly ? 'جناح استوديو للمجموعات' : 'جناح خاص / للآباء الكهنة والعائلات',
-                    capacity: '٤ إلى ٦ أفراد (غرف عائلية متصلة)',
-                    capacityLabel: '٤ - ٦ أفراد',
-                    price: isMonthly ? Math.round(basePrice * 1.4) : Math.round(basePrice * 1.8),
-                    priceUnit: isMonthly ? 'شهرياً' : 'لكل فرد / ليلة',
-                    image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80',
-                    shortDesc: 'مساحة عائلية أو قيادية فاخرة تحتوي على صالة ومطبخ تحضيري لإقامة متكاملة.',
-                    features: ['تكييف مركزي', 'صالة معيشة مستقلة', 'مطبخ تحضيري', 'شاشة ذكية سمارت', 'إطلالة بانورامية'],
-                    extendedDetails: 'جناح راقٍ واسع يحتوي على غرف نوم متصلة، صالون استقبال مريح، حمامين مجهزين بالكامل، ومطبخ صغير ومرافق إعداد المشروبات الساخنة. مثالي للعائلات أو الآباء الكهنة والمحاضرين.'
-                  }
-                ];
-
-                return roomTypesList.map((room) => {
+                // Built from what the owner actually entered — their room
+                // types, or failing that their rooms grouped by size. What
+                // stood here was a literal of three room types, identical on
+                // every house on the platform: a hotel single, a standard
+                // double, and a «جناح خاص / للآباء الكهنة والعائلات» — each
+                // with a stock photograph, a written description, invented
+                // features (ميني بار، شرفة مستقلة، شاشة ذكية، إطلالة
+                // بانورامية) and a price got by multiplying the house rate.
+                // No owner could add one, edit one or remove one, because
+                // none of them existed anywhere but in this file.
+                const offerings = buildRoomOfferings(house, rooms ?? [], roomTypes ?? []);
+                if (offerings.length === 0) {
+                  return (
+                    <div className="md:col-span-3 bg-[#EBEBE0]/30 border border-[#D6D6C2] rounded-2xl p-4 text-center">
+                      <p className="text-[11px] text-[#8A8A70] font-bold leading-relaxed">
+                        صاحب البيت لسه ما أضافش تفاصيل الغرف. تقدر تسأله عن الأنواع والأسعار من خلال طلب الحجز.
+                      </p>
+                    </div>
+                  );
+                }
+                return offerings.map((room) => {
                   const isSelected = selectedRoomId === room.id;
                   return (
-                    <div 
+                    <div
                       key={room.id}
                       className={`group bg-white rounded-2xl border transition-all duration-300 overflow-hidden flex flex-col justify-between ${
-                        isSelected 
-                          ? 'border-[#5A5A40] shadow-md ring-1 ring-[#5A5A40]' 
+                        isSelected
+                          ? 'border-[#5A5A40] shadow-md ring-1 ring-[#5A5A40]'
                           : 'border-[#D6D6C2] hover:border-[#8A8A70] hover:shadow-sm'
                       }`}
                     >
-                      {/* Image section with capacity badge */}
-                      <div className="relative h-28 w-full overflow-hidden bg-gray-100">
-                        <img 
-                          src={room.image} 
-                          alt={room.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          referrerPolicy="no-referrer"
-                        />
+                      {/* The owner's own photograph, or nothing. A stock
+                          picture of a room that is not this one is worse
+                          than no picture. */}
+                      <div className="relative h-28 w-full overflow-hidden bg-[#EBEBE0]/50">
+                        {room.image ? (
+                          <img
+                            src={room.image}
+                            alt={room.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <BedDouble className="w-7 h-7 text-[#BCBC9D]" />
+                          </div>
+                        )}
                         <div className="absolute top-2 right-2 bg-[#5A5A40] text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-sm">
                           👤 {room.capacityLabel}
                         </div>
                       </div>
 
-                      {/* Content section */}
                       <div className="p-3.5 space-y-2 text-right flex-1 flex flex-col justify-between">
                         <div>
-                          <div className="flex justify-between items-start gap-1">
-                            <h4 className="text-[11px] font-extrabold text-[#4A4A3A] group-hover:text-[#5A5A40] transition-colors">
-                              {room.name}
-                            </h4>
-                          </div>
-                          <p className="text-[9.5px] text-[#8A8A70] leading-relaxed font-semibold mt-1 line-clamp-2">
-                            {room.shortDesc}
+                          <h4 className="text-[11px] font-extrabold text-[#4A4A3A] group-hover:text-[#5A5A40] transition-colors">
+                            {room.name}
+                          </h4>
+                          {/* Real counts instead of a written-in blurb. */}
+                          <p className="text-[9.5px] text-[#8A8A70] leading-relaxed font-semibold mt-1">
+                            {room.count > 0
+                              ? <>{arabicNumber(room.count)} غرفة من النوع ده{room.availableCount > 0 ? ` · ${arabicNumber(room.availableCount)} متاحة الآن` : ''}</>
+                              : 'غرفة متاحة للحجز'}
                           </p>
+                          {room.description && (
+                            <p className="text-[9.5px] text-[#8A8A70] leading-relaxed font-semibold mt-1 line-clamp-2">
+                              {room.description}
+                            </p>
+                          )}
                         </div>
 
                         <div className="pt-2 border-t border-[#D6D6C2]/40 mt-2 space-y-2">
                           <div className="flex justify-between items-baseline">
-                            <span className="text-[9px] text-[#8A8A70] font-bold">التسعير التقديري:</span>
+                            <span className="text-[9px] text-[#8A8A70] font-bold">السعر:</span>
                             <span className="text-xs font-black text-[#5A5A40]">
                               {arabicNumber(room.price)} ج.م <span className="text-[8px] text-[#8A8A70] font-bold">/ {room.priceUnit}</span>
                             </span>
                           </div>
 
-                          <button
-                            id={`room-detail-btn-${room.id}`}
-                            type="button"
-                            onClick={() => setSelectedRoomId(isSelected ? null : room.id)}
-                            className={`w-full py-1.5 rounded-xl text-[9px] font-black transition-all cursor-pointer text-center ${
-                              isSelected
-                                ? 'bg-[#5A5A40] text-white'
-                                : 'bg-[#EBEBE0]/40 text-[#5A5A40] hover:bg-[#EBEBE0]'
-                            }`}
-                          >
-                            {isSelected ? 'إخفاء التفاصيل الإضافية' : 'عرض التفاصيل والخصائص'}
-                          </button>
+                          {room.features.length > 0 && (
+                            <button
+                              id={`room-detail-btn-${room.id}`}
+                              type="button"
+                              onClick={() => setSelectedRoomId(isSelected ? null : room.id)}
+                              className={`w-full py-1.5 rounded-xl text-[9px] font-black transition-all cursor-pointer text-center ${
+                                isSelected ? 'bg-[#5A5A40] text-white' : 'bg-[#EBEBE0]/40 text-[#5A5A40] hover:bg-[#EBEBE0]'
+                              }`}
+                            >
+                              {isSelected ? 'إخفاء التجهيزات' : 'عرض التجهيزات'}
+                            </button>
+                          )}
                         </div>
                       </div>
 
-                      {/* Expandable Inline section inside the card itself for responsive mobile/tablet layout */}
-                      {isSelected && (
-                        <div className="bg-[#FBFBFA] border-t border-[#D6D6C2] p-3.5 text-right space-y-3 animate-fade-in text-[10px]">
-                          <div className="space-y-1">
-                            <span className="font-extrabold text-[#5A5A40] text-[10.5px]">الوصف التجهيزي:</span>
-                            <p className="text-[#4A4A3A] leading-relaxed font-medium">{room.extendedDetails}</p>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <span className="font-extrabold text-[#5A5A40] text-[10.5px]">المميزات والتجهيزات:</span>
-                            <div className="grid grid-cols-2 gap-1.5 text-right">
-                              {room.features.map((feature, idx) => (
-                                <div key={idx} className="flex items-center gap-1 text-[9.5px] text-[#4A4A3A] font-bold">
-                                  <span className="text-emerald-600 text-xs shrink-0">✓</span>
-                                  <span>{feature}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="bg-amber-50/60 border border-amber-200/50 p-2 rounded-xl text-[9px] text-amber-900 font-bold leading-relaxed">
-                            💡 ملاحظة: يمكن طلب توفير أدوات إضافية (مكواة، مجفف شعر، غلاية مياه) من ريسبشن البيت عند التسكين مجاناً.
+                      {isSelected && room.features.length > 0 && (
+                        <div className="bg-[#FBFBFA] border-t border-[#D6D6C2] p-3.5 text-right space-y-1.5 animate-fade-in text-[10px]">
+                          <span className="font-extrabold text-[#5A5A40] text-[10.5px]">التجهيزات:</span>
+                          <div className="grid grid-cols-2 gap-1.5 text-right">
+                            {room.features.map((feature, idx) => (
+                              <div key={idx} className="flex items-center gap-1 text-[9.5px] text-[#4A4A3A] font-bold">
+                                <span className="text-emerald-600 text-xs shrink-0">✓</span>
+                                <span>{feature}</span>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       )}

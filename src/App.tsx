@@ -1577,6 +1577,7 @@ export default function App() {
             isFavorited={false}
             onToggleFavorite={() => requireLogin(selectedHouse.id)}
             rooms={rooms.filter((r) => r.houseId === selectedHouse.id)}
+            roomTypes={roomTypes.filter((t) => t.houseId === selectedHouse.id)}
             announcements={announcements.filter((a) => a.houseId === selectedHouse.id && a.isActive)}
             waitlist={waitlist}
             settings={settings}
@@ -1761,6 +1762,7 @@ export default function App() {
           isFavorited={currentUser.favorites?.includes(selectedHouse.id) || false}
           onToggleFavorite={handleToggleFavorite}
           rooms={rooms.filter((r) => r.houseId === selectedHouse.id)}
+            roomTypes={roomTypes.filter((t) => t.houseId === selectedHouse.id)}
           announcements={announcements.filter((a) => a.houseId === selectedHouse.id && a.isActive)}
           waitlist={waitlist}
           onJoinWaitlist={handleJoinWaitlist}
