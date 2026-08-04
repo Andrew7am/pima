@@ -1280,21 +1280,40 @@ export default function RandomMatchGame({
               carries the design's «+» button: no top-up or purchase flow
               exists anywhere in the app, and a + that dead-ends reads as a
               shop that isn't there. */}
+          {/* Circular icon, the number, and the «+» from the drawing. The
+              «+» goes where these are actually earned — there is no store,
+              no top-up and no billing anywhere in the app, so a + that meant
+              "buy" would be pointing at nothing. It is hidden entirely if
+              there is nowhere to send it. */}
           <div className="grid grid-cols-2 gap-2 mt-3">
-            <div className="flex items-center gap-2 bg-[#122244]/80 border border-blue-500/20 rounded-xl px-3 py-2">
-              <Coins className="w-5 h-5 text-[#F5C542] shrink-0" />
-              <div className="min-w-0">
-                <p className="text-sm font-black text-white leading-none">{(currentUser.gameCoins ?? 0).toLocaleString()}</p>
-                <p className="text-[8px] text-slate-400 font-bold mt-0.5">عملات الألعاب</p>
+            {([
+              { key: 'coins', value: currentUser.gameCoins ?? 0, label: 'عملات الألعاب',
+                Icon: Coins, ring: 'from-[#F5C542] to-amber-600', tint: 'text-[#0d1b3e]' },
+              { key: 'glory', value: currentUser.points ?? 0, label: 'نقاط المجد',
+                Icon: Sparkles, ring: 'from-cyan-300 to-blue-600', tint: 'text-[#0d1b3e]' },
+            ] as const).map(({ key, value, label, Icon, ring, tint }) => (
+              <div key={key} className="flex items-center justify-between gap-2 bg-[#122244]/80 border border-blue-500/20 rounded-2xl px-2.5 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`w-8 h-8 shrink-0 rounded-full bg-gradient-to-br ${ring} flex items-center justify-center shadow-inner`}>
+                    <Icon className={`w-4 h-4 ${tint}`} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-white leading-none">{value.toLocaleString()}</p>
+                    <p className="text-[8px] text-slate-400 font-bold mt-0.5 truncate">{label}</p>
+                  </div>
+                </div>
+                {onOpenRewards && (
+                  <button
+                    type="button"
+                    onClick={onOpenRewards}
+                    aria-label={`اكسب المزيد من ${label}`}
+                    className="w-6 h-6 shrink-0 rounded-lg bg-[#F5C542]/15 border border-[#F5C542]/40 text-[#F5C542] flex items-center justify-center hover:bg-[#F5C542]/25 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
-            </div>
-            <div className="flex items-center gap-2 bg-[#122244]/80 border border-blue-500/20 rounded-xl px-3 py-2">
-              <Sparkles className="w-5 h-5 text-cyan-400 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-sm font-black text-white leading-none">{(currentUser.points ?? 0).toLocaleString()}</p>
-                <p className="text-[8px] text-slate-400 font-bold mt-0.5">نقاط المجد</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}
@@ -1321,14 +1340,21 @@ export default function RandomMatchGame({
                 this file, so that line would promise a live person and hand
                 over a script. It describes the format instead, which is true
                 whoever is on the other side. */}
-            <div className="relative overflow-hidden rounded-[26px] border-2 border-[#F5C542]/60 bg-gradient-to-br from-[#13285a] via-[#0f1f45] to-[#0a1733] p-4 shadow-2xl shadow-blue-950/50">
-              <div className="absolute -top-10 -left-10 w-40 h-40 bg-[#F5C542]/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="relative flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-2xl font-black text-white leading-tight">
-                    مباراة <span className="text-[#F5C542]">عشوائية</span>
+            {/* The banner, laid out as drawn: text column on the right, the
+                VS artwork above the call to action on the left, gold rule
+                around the whole thing with a glow behind it. */}
+            <div className="relative overflow-hidden rounded-[26px] border-2 border-[#F5C542]/70 bg-gradient-to-br from-[#16306b] via-[#102147] to-[#0a1733] p-4 shadow-[0_0_40px_-8px_rgba(245,197,66,0.35)]">
+              <div className="absolute -top-16 -left-10 w-48 h-48 bg-[#F5C542]/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-20 -right-8 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative grid grid-cols-[1fr_auto] gap-3 items-start">
+                {/* Right column — the words */}
+                <div className="min-w-0">
+                  <h2 className="text-[28px] font-black text-white leading-[1.15] tracking-tight">
+                    مباراة
+                    <span className="block text-[#F5C542]">عشوائية</span>
                   </h2>
-                  <p className="text-[10px] text-slate-300 font-bold mt-1 leading-relaxed">
+                  <p className="text-[10px] text-slate-300 font-bold mt-1.5 leading-relaxed">
                     ٥ أسئلة سريعة — الأصح والأسرع يكسب
                   </p>
 
@@ -1336,7 +1362,8 @@ export default function RandomMatchGame({
                       name with its badge («معلم 💎»), unlike the shared
                       leagues.ts where the two are separate fields. Rendering
                       both printed the emoji twice. */}
-                  <div className={`inline-flex items-center gap-1.5 mt-2.5 bg-gradient-to-r ${userLeague.color} border border-white/20 rounded-xl px-2.5 py-1`}>
+                  <div className="inline-flex items-center gap-1.5 mt-3 bg-[#0b1b3e]/80 border border-blue-400/30 rounded-xl px-2.5 py-1.5">
+                    <Shield className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
                     <span className="text-[10px] font-black text-white">{userLeague.name}</span>
                   </div>
 
@@ -1344,33 +1371,56 @@ export default function RandomMatchGame({
                       but it is a RATING delta. «نقاط» is the loyalty balance
                       redeemable against bookings, so the word would promise
                       money. */}
-                  <div className="flex items-center gap-1.5 mt-2.5">
-                    <Trophy className="w-4 h-4 text-[#F5C542] shrink-0" />
-                    <span className="text-sm font-black text-[#F5C542]">+25</span>
-                    <span className="text-[9px] text-slate-400 font-bold">نقطة تقييم عند الفوز</span>
+                  <div className="flex items-center gap-2 mt-3">
+                    <Trophy className="w-5 h-5 text-[#F5C542] shrink-0" />
+                    <div className="leading-none">
+                      <span className="block text-lg font-black text-[#F5C542]">+25</span>
+                      <span className="block text-[9px] text-slate-400 font-bold mt-0.5">نقطة تقييم عند الفوز</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="shrink-0 w-20 h-20 rounded-2xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
-                  <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 to-blue-500">VS</span>
+                {/* Left column — the face-off, then the button under it.
+                    The drawing here is two angled panels in the colours of
+                    the artwork's hoodies with a lightning seam between them.
+                    It stands in for the illustration rather than imitating
+                    it: drop a real asset into the <img> slot below and the
+                    composition does not move. */}
+                <div className="w-[150px] shrink-0 flex flex-col gap-3">
+                  <div className="relative h-[104px] rounded-2xl overflow-hidden border border-blue-400/25 bg-[#0a1733]">
+                    <div className="absolute inset-0 flex">
+                      <div className="flex-1 bg-gradient-to-br from-[#1e3a8a] to-[#0f1f45]" />
+                      <div className="flex-1 bg-gradient-to-bl from-[#7f1d1d] to-[#2a0e1f]" />
+                    </div>
+                    {/* the seam */}
+                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[3px] bg-gradient-to-b from-transparent via-[#F5C542] to-transparent shadow-[0_0_12px_2px_rgba(245,197,66,0.6)]" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[34px] font-black italic text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] tracking-tighter">
+                        VS
+                      </span>
+                    </div>
+                    <Zap className="absolute top-2 left-2 w-4 h-4 text-[#F5C542] drop-shadow-[0_0_6px_rgba(245,197,66,0.8)]" />
+                  </div>
+
+                  <motion.button
+                    whileHover={{ scale: findingMatch ? 1 : 1.03 }}
+                    whileTap={{ scale: findingMatch ? 1 : 0.97 }}
+                    disabled={findingMatch}
+                    onClick={onEnterMatch ? startRealMatch : startSearching}
+                    className="w-full py-3 bg-gradient-to-r from-[#FFD65C] to-[#F0A93B] hover:from-[#FFE082] hover:to-[#F5B94A] disabled:opacity-70 text-[#0d1b3e] rounded-2xl shadow-[0_6px_20px_-4px_rgba(245,197,66,0.6)] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <span className="text-[13px] font-black whitespace-nowrap">
+                      {findingMatch ? 'جارٍ البحث...' : 'ابدأ البحث'}
+                    </span>
+                    {findingMatch
+                      ? <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
+                      : <Zap className="w-4 h-4 shrink-0" />}
+                  </motion.button>
                 </div>
               </div>
 
-              <motion.button
-                whileHover={{ scale: findingMatch ? 1 : 1.02 }}
-                whileTap={{ scale: findingMatch ? 1 : 0.98 }}
-                disabled={findingMatch}
-                onClick={onEnterMatch ? startRealMatch : startSearching}
-                className="relative w-full mt-3.5 py-3.5 bg-gradient-to-r from-[#F5C542] to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:opacity-70 text-[#0d1b3e] rounded-2xl shadow-xl shadow-amber-900/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <span className="text-base font-black">{findingMatch ? 'جارٍ البحث عن خصم...' : 'ابدأ البحث'}</span>
-                {findingMatch
-                  ? <RefreshCw className="w-5 h-5 animate-spin" />
-                  : <Zap className="w-5 h-5" />}
-              </motion.button>
-
               {matchError && (
-                <p className="mt-2 text-[10px] font-bold text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-xl px-3 py-2 text-center">
+                <p className="relative mt-3 text-[10px] font-bold text-rose-200 bg-rose-500/15 border border-rose-500/40 rounded-xl px-3 py-2 text-center">
                   {matchError}
                 </p>
               )}
