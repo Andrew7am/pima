@@ -885,7 +885,7 @@ export default function AdminDashboard({
                   {pendingHouses.map((house) => (
                     <div key={house.id} className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden text-right">
                       <div className="h-24 bg-[#EBEBE0] relative">
-                        <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-full h-full object-cover" />
+                        {house.images[0] && <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-full h-full object-cover" />}
                         <span className="absolute top-2 right-2 bg-[#5A5A40]/90 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[9px] font-bold">
                           {house.governorate}
                         </span>
@@ -1236,7 +1236,7 @@ export default function AdminDashboard({
                 const owner = users.find((u) => u.id === house.ownerId);
                 return (
                   <div key={house.id} className="bg-white p-3 rounded-2xl border border-[#D6D6C2] flex items-center gap-3 text-right">
-                    <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-14 h-14 rounded-xl object-cover shrink-0" />
+                    {house.images[0] ? <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-14 h-14 rounded-xl object-cover shrink-0" /> : <div className="w-14 h-14 rounded-xl bg-[#EBEBE0] shrink-0" />}
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-bold text-[#4A4A3A] truncate">{house.name}</div>
                       <div className="text-[9.5px] text-[#8A8A70] mt-0.5">{house.governorate} · {owner?.name || house.ownerName}</div>

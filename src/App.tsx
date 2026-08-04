@@ -933,9 +933,12 @@ export default function App() {
   };
 
   // --- Owner Operations ---
+  // Returns the insert's own promise. The onboarding wizard is a gate — it
+  // showed «تم استلام بياناتك بنجاح» whether or not the row ever reached the
+  // database, because there was nothing to wait on.
   const handleAddHouse = (newHouse: RetreatHouse) => {
     setHouses((prev) => [newHouse, ...prev]);
-    createHouseDb(newHouse);
+    return createHouseDb(newHouse);
   };
 
   // Notifications are created server-side through the authorized
@@ -1385,7 +1388,7 @@ export default function App() {
 
   const handleAddRoom = (newRoom: Room) => {
     setRooms((prev) => [...prev, newRoom]);
-    createRoom(newRoom);
+    return createRoom(newRoom);
   };
 
   const handleUpdateRoom = (updatedRoom: Room) => {

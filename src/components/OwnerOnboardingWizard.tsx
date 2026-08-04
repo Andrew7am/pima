@@ -13,9 +13,11 @@ interface OwnerOnboardingWizardProps {
   owner: User;
   existingHouse: RetreatHouse | null;
   existingRooms: Room[];
-  onCreateHouse: (house: RetreatHouse) => void;
-  onAddRoom: (room: Room) => void;
-  onUpdatePaymentMethods: (house: RetreatHouse, methods: OwnerPaymentMethod[]) => void;
+  // These return whatever the write returned, so the wizard can tell a saved
+  // registration from a failed one instead of always congratulating the owner.
+  onCreateHouse: (house: RetreatHouse) => void | Promise<boolean>;
+  onAddRoom: (room: Room) => void | Promise<boolean>;
+  onUpdatePaymentMethods: (house: RetreatHouse, methods: OwnerPaymentMethod[]) => void | Promise<boolean>;
   onLogout: () => void;
   // Called the instant submission succeeds — the parent keeps rendering
   // this wizard (instead of switching straight to the dashboard the
@@ -112,8 +114,11 @@ export default function OwnerOnboardingWizard({
   const [geoError, setGeoError] = useState('');
   const [pricePerNight, setPricePerNight] = useState(200);
   const [monthlyRent, setMonthlyRent] = useState(1500);
-  const [roomsCount, setRoomsCount] = useState(5);
-  const [bedsCount, setBedsCount] = useState(10);
+  // Only a floor for the case where no rooms are entered at all. Nothing sets
+  // these any more: the rooms step is what decides the house's totals, and it
+  // cannot be skipped on a house being created here.
+  const roomsCount = 0;
+  const bedsCount = 0;
 
   // ── Photos ──────────────────────────────────────────────────
   const [imageUrl, setImageUrl] = useState('');
@@ -182,11 +187,20 @@ export default function OwnerOnboardingWizard({
   const generateRangeRooms = () => {
     if (rangeRoomCount <= 0) return;
     const floor = FLOOR_OPTIONS[rangeFloorIdx].value;
-    const rooms: DraftRoom[] = [];
-    for (let n = rangeFrom; n <= rangeTo; n++) {
-      rooms.push({ name: String(n), bedsCount: rangeBeds, pricePerNight: rangePrice, floor, status: rangeStatus });
-    }
-    setDraftRooms(rooms);
+    // Append, and skip numbers already taken. This used to assign a fresh
+    // array over the draft, so an owner who added rooms by hand — or who
+    // generated the first floor and then the second — lost everything from
+    // before the last click, with nothing on screen to say so.
+    setDraftRooms((prev) => {
+      const taken = new Set([...existingRooms.map((r) => r.name), ...prev.map((r) => r.name)]);
+      const added: DraftRoom[] = [];
+      for (let n = rangeFrom; n <= rangeTo; n++) {
+        const name = String(n);
+        if (taken.has(name)) continue;
+        added.push({ name, bedsCount: rangeBeds, pricePerNight: rangePrice, floor, status: rangeStatus });
+      }
+      return [...prev, ...added];
+    });
   };
 
   const addDraftHall = () => {
@@ -201,17 +215,38 @@ export default function OwnerOnboardingWizard({
     setPaymentDraft({ type: 'instapay', label: PAYMENT_TYPE_LABELS.instapay, value: '' });
   };
 
+  // The house's totals are the rooms it actually has. They used to be two
+  // free-typed numbers on the basics step that nothing reconciled with the
+  // rooms step: the default range creates twenty rooms while the defaults
+  // above claim five and ten beds, and both were written. Capacity checks,
+  // the listing card and the overbooking guard all read the totals, so the
+  // typed pair was a quietly wrong answer to a question the wizard could
+  // already answer for itself.
+  const effectiveRoomsCount = draftRooms.length > 0 ? draftRooms.length : roomsCount;
+  const effectiveBedsCount = draftRooms.length > 0
+    ? draftRooms.reduce((sum, r) => sum + (Number(r.bedsCount) || 0), 0)
+    : bedsCount;
+
   const canAdvance = (): boolean => {
-    if (step === 'basics') return !!(houseName.trim() && houseDesc.trim() && houseAddress.trim());
+    if (step === 'basics') {
+      const priceOk = isMonthly ? monthlyRent > 0 : pricePerNight > 0;
+      return !!(houseName.trim() && houseDesc.trim() && houseAddress.trim()) && priceOk;
+    }
     if (step === 'photos') return !!imageUrl;
-    if (step === 'services') return selectedServices.length > 0;
+    // Suitability is required rather than guessed — see the submit handler.
+    if (step === 'services') return selectedServices.length > 0 && selectedSuitability.length > 0;
     if (step === 'rooms') return draftRooms.length > 0;
     if (step === 'halls') return true; // optional
     if (step === 'payment') return draftPayments.length > 0;
     return true;
   };
 
-  const handleSubmit = () => {
+  // Async, and every write is awaited. This was synchronous with a try/catch
+  // that could not see anything: onCreateHouse and onAddRoom hand back
+  // promises nobody held, so «تم استلام بياناتك بنجاح» appeared even when the
+  // insert was rejected, and the rooms were dispatched in the same tick as
+  // the house they reference.
+  const handleSubmit = async () => {
     setSubmitting(true);
     setError('');
     try {
@@ -227,16 +262,32 @@ export default function OwnerOnboardingWizard({
           ownerName: owner.name,
           governorate: houseGov,
           address: houseAddress,
-          lat: houseLat ?? 30.0444 + (Math.random() - 0.5) * 0.4,
-          lng: houseLng ?? 31.2357 + (Math.random() - 0.5) * 0.4,
-          roomsCount,
-          bedsCount,
-          roomsDescription: 'غرف مجهزة ومريحة.',
+          // 0/0 means «we do not know», and every map surface already reads
+          // it that way — HouseLocationTrust hides the navigation card and
+          // InteractiveMap drops the pin. What used to be here was
+          // `30.0444 + (Math.random() - 0.5) * 0.4`: an owner in الإسكندرية
+          // who skipped the location button got a random pin in Greater
+          // Cairo, stated with the same confidence as a real coordinate, and
+          // guests were handed turn-by-turn navigation to it. The owner could
+          // not even correct it afterwards — lat/lng are not on the
+          // owner-update allow-list, so the trigger reverts a direct fix.
+          lat: houseLat ?? 0,
+          lng: houseLng ?? 0,
+          roomsCount: effectiveRoomsCount,
+          bedsCount: effectiveBedsCount,
+          // Left empty rather than filled with «غرف مجهزة ومريحة.» — the
+          // owner writes their own description or the screen shows none.
+          roomsDescription: '',
           pricePerNightPerPerson: isMonthly ? 0 : pricePerNight,
           propertyType,
           monthlyRent: isMonthly ? monthlyRent : undefined,
           services: selectedServices,
-          suitability: selectedSuitability.length > 0 ? selectedSuitability : ['families'],
+          // No fallback. «مناسب للأسر» used to be written for an owner who
+          // ticked nothing, which both put student and staff housing into the
+          // families filter and left a genuine youth house out of the youth
+          // one. An empty list matches no filter, which is the honest answer —
+          // and the services step now requires at least one tick anyway.
+          suitability: selectedSuitability,
           conferenceHalls: draftHalls.map((h, i) => ({
             id: `hall_${Date.now()}_${i}`,
             name: h.name,
@@ -245,38 +296,79 @@ export default function OwnerOnboardingWizard({
             hasProjector: h.hasProjector,
             price: h.price ? Number(h.price) : undefined,
           } as ConferenceHall)),
-          restaurants: [{ id: `rest_${Date.now()}`, name: 'المطعم الرئيسي للبيت', capacity: bedsCount, mealsServed: ['breakfast', 'lunch', 'dinner'] }],
-          activities: ['مسابقات وألعاب روحية', 'عروض مسرحية'],
+          // Both of these used to be invented. Every house got a restaurant
+          // serving three meals a day and a list containing «عروض مسرحية»,
+          // which the guest's facilities strip renders as a مسرح badge — so a
+          // group booked a house for a play and arrived to a bare hall. The
+          // owner sets both from the dashboard when they are true.
+          restaurants: [],
+          activities: [],
           paymentMethods: draftPayments.map((p, i) => ({ id: `pay_${Date.now()}_${i}`, type: p.type, label: p.label || PAYMENT_TYPE_LABELS[p.type], value: p.value })),
           images: [imageUrl],
           status: 'pending',
-          rating: 5.0,
+          // A house nobody has stayed in has no rating. The database already
+          // clamps this on insert, so 5.0 only ever misled this session's own
+          // screens — but a five-star house with zero reviews is a claim
+          // either way.
+          rating: 0,
           reviewsCount: 0,
           createdAt: new Date().toISOString(),
         };
-        onCreateHouse(house);
-      } else if (needsPayment && house) {
-        const methods: OwnerPaymentMethod[] = draftPayments.map((p, i) => ({
-          id: `pay_${Date.now()}_${i}`, type: p.type, label: p.label || PAYMENT_TYPE_LABELS[p.type], value: p.value,
-        }));
-        onUpdatePaymentMethods(house, methods);
+        // The rooms below carry this house's id, so it has to exist first.
+        const created = await onCreateHouse(house);
+        if (created === false) {
+          setError('لم نستطع حفظ بيانات البيت. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.');
+          setSubmitting(false);
+          return;
+        }
+      } else if (house) {
+        // An owner whose house exists but is missing photos, services or
+        // payment details still walks these steps. Only the payment methods
+        // used to be written, so whatever they entered on the other two was
+        // dropped — and because the gate re-reads those same fields, they
+        // landed straight back in the wizard, every time, with no way out.
+        const patch: RetreatHouse = { ...house };
+        if (needsPhotos && imageUrl) patch.images = [imageUrl, ...house.images];
+        if (needsServices && selectedServices.length > 0) {
+          patch.services = selectedServices;
+          if (selectedSuitability.length > 0) patch.suitability = selectedSuitability;
+        }
+        if (needsPayment) {
+          patch.paymentMethods = draftPayments.map((p, i) => ({
+            id: `pay_${Date.now()}_${i}`, type: p.type, label: p.label || PAYMENT_TYPE_LABELS[p.type], value: p.value,
+          }));
+        }
+        const saved = await onUpdatePaymentMethods(patch, patch.paymentMethods);
+        if (saved === false) {
+          setError('لم نستطع حفظ البيانات. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.');
+          setSubmitting(false);
+          return;
+        }
+        house = patch;
       }
 
       if (house && needsRooms) {
         const houseId = house.id;
-        draftRooms.forEach((r, i) => {
-          onAddRoom({
-            id: `room_${Date.now()}_${i}`,
-            houseId,
-            name: r.name,
-            bedsCount: r.bedsCount,
-            pricePerNight: r.pricePerNight ? Number(r.pricePerNight) : undefined,
-            images: [],
-            status: r.status ?? 'available',
-            floor: r.floor,
-            createdAt: new Date().toISOString(),
-          });
-        });
+        const stamp = Date.now();
+        const results = await Promise.all(draftRooms.map((r, i) => onAddRoom({
+          id: `room_${stamp}_${i}`,
+          houseId,
+          name: r.name,
+          bedsCount: r.bedsCount,
+          pricePerNight: r.pricePerNight ? Number(r.pricePerNight) : undefined,
+          images: [],
+          status: r.status ?? 'available',
+          floor: r.floor,
+          createdAt: new Date().toISOString(),
+        })));
+        // A partial room failure is the dangerous one: the gate passes on the
+        // survivors and the missing rooms are invisible until someone counts.
+        const failed = results.filter((ok) => ok === false).length;
+        if (failed > 0) {
+          setError(`تم حفظ البيت، لكن ${failed} من ${draftRooms.length} غرفة لم تُحفظ. افتح صفحة الغرف من لوحة التحكم لإضافتها.`);
+          setSubmitting(false);
+          return;
+        }
       }
 
       setSubmitting(false);
@@ -389,18 +481,13 @@ export default function OwnerOnboardingWizard({
               </button>
               {geoError && <p className="text-[11px] text-red-500">{geoError}</p>}
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">عدد الغرف الإجمالي</label>
-                  <input type="number" min={1} value={roomsCount} onChange={(e) => setRoomsCount(Number(e.target.value))}
-                    className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">عدد الأسرّة الإجمالي</label>
-                  <input type="number" min={1} value={bedsCount} onChange={(e) => setBedsCount(Number(e.target.value))}
-                    className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
-                </div>
-              </div>
+              {/* The «عدد الغرف» and «عدد الأسرّة» boxes used to sit here.
+                  They were asked before the rooms step and never reconciled
+                  with it — the default range makes twenty rooms while these
+                  defaulted to five and ten — so the house was published
+                  claiming a capacity its own room list contradicted. The
+                  rooms step answers this now, and the review screen shows
+                  the totals it arrived at. */}
               {isMonthly ? (
                 <div>
                   <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">الإيجار الشهري (جنيه)</label>
@@ -751,6 +838,28 @@ export default function OwnerOnboardingWizard({
 
                 <div className="bg-[#F7F4EB] border border-[#D6D6C2] rounded-2xl p-4 space-y-3 text-[11px] text-[#4A4A3A]">
                   <p><span className="text-[#8A8A70] font-bold">اسم البيت: </span><span className="font-black">{displayName || '—'}</span></p>
+
+                  {/* The numbers the listing will carry, counted from the
+                      rooms above rather than typed separately — and the price,
+                      which the review screen never showed at all. */}
+                  {needsBasics && (
+                    <p className="flex flex-wrap gap-x-3 gap-y-1">
+                      <span><span className="text-[#8A8A70] font-bold">الغرف: </span><span className="font-black">{effectiveRoomsCount}</span></span>
+                      <span><span className="text-[#8A8A70] font-bold">الأسرّة: </span><span className="font-black">{effectiveBedsCount}</span></span>
+                      <span>
+                        <span className="text-[#8A8A70] font-bold">{isMonthly ? 'الإيجار الشهري: ' : 'السعر لليلة للفرد: '}</span>
+                        <span className="font-black">{(isMonthly ? monthlyRent : pricePerNight).toLocaleString()} ج.م</span>
+                      </span>
+                    </p>
+                  )}
+
+                  {/* Said plainly rather than left for a guest to discover:
+                      without a pin the house cannot be put on the map. */}
+                  {needsBasics && houseLat === null && (
+                    <p className="text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-2">
+                      لم تحدّد موقع البيت على الخريطة، فمش هيظهر في الخريطة ولا هيقدر الحجاز يفتحوا الاتجاهات. تقدر ترجع وتضيفه دلوقتي أو من لوحة التحكم بعدين.
+                    </p>
+                  )}
 
                   <div>
                     <p className="text-[#8A8A70] font-bold mb-1">الخدمات والمرافق ({displayServices.length}):</p>

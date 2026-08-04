@@ -472,16 +472,19 @@ export default function OwnerDashboardShell({
         'المحافظة على نظافة الغرف والهدوء لتمكين الزملاء من المذاكرة والاستراحة.'
       ] : undefined,
       contractTerms: isMonthly ? 'عقد إيجار مخصص للطلبة والمغتربين المسيحيين يبدأ من شهر إلى سنة كاملة قابلة للتجديد.' : undefined,
-      services: selectedServices, suitability: selectedSuitability.length > 0 ? selectedSuitability : ['youth', 'families'],
+      // Nothing below is guessed on the owner's behalf any more. The
+      // suitability fallback put houses into filters nobody claimed, the
+      // restaurant and the two activities were asserted to guests as
+      // facilities — «عروض مسرحية» renders as a مسرح badge — and the images
+      // array carried two stock photographs of a building that is not this
+      // one, shown on the listing card as if the owner had uploaded them.
+      services: selectedServices, suitability: selectedSuitability,
       conferenceHalls: propertyType === 'conference' ? halls : [],
-      restaurants: [{ id: `rest_${Date.now()}`, name: 'المطعم الرئيسي للبيت', capacity: bedsCount, mealsServed: ['breakfast', 'lunch', 'dinner'] }],
-      activities: activitiesInput ? activitiesInput.split('،').map((a) => a.trim()) : ['مسابقات وألعاب روحية', 'عروض مسرحية'],
+      restaurants: [],
+      activities: activitiesInput ? activitiesInput.split('،').map((a) => a.trim()).filter(Boolean) : [],
       paymentMethods: [],
-      images: [
-        imageUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80'
-      ],
-      status: 'pending', rating: 5.0, reviewsCount: 0, createdAt: new Date().toISOString()
+      images: imageUrl ? [imageUrl] : [],
+      status: 'pending', rating: 0, reviewsCount: 0, createdAt: new Date().toISOString()
     };
 
     onAddHouse(newHouse);
