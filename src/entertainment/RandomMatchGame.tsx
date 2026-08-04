@@ -12,7 +12,7 @@ import { User as UserType } from '../types';
 import { xpToNext, xpProgressPct } from './progress';
 import { findOrCreateRandomRoom } from './multiplayer';
 import { buildQuestions } from './multiplayer/matchQuestions';
-import VersusArt from './multiplayer/VersusArt';
+import MatchBannerScene from './multiplayer/MatchBannerScene';
 import { SmartAssistBar } from './SmartAssistBar';
 import { ChatComponent } from './ChatComponent';
 import { FriendChat } from './FriendChat';
@@ -1344,79 +1344,70 @@ export default function RandomMatchGame({
             {/* The banner, laid out as drawn: text column on the right, the
                 VS artwork above the call to action on the left, gold rule
                 around the whole thing with a glow behind it. */}
-            <div className="relative overflow-hidden rounded-[26px] border-2 border-[#F5C542]/70 bg-gradient-to-br from-[#16306b] via-[#102147] to-[#0a1733] p-4 shadow-[0_0_40px_-8px_rgba(245,197,66,0.35)]">
-              <div className="absolute -top-16 -left-10 w-48 h-48 bg-[#F5C542]/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-20 -right-8 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+            {/* The banner, to the reference: 16:9, the artwork filling it,
+                and every piece of interface placed over it as its own layer —
+                league pill top right, title left, reward bottom left, and the
+                capsule button across the bottom centre. */}
+            <div className="relative w-full aspect-[16/9] overflow-hidden rounded-[28px] border border-[#F5C542]/45 shadow-[0_0_44px_-10px_rgba(245,197,66,0.4)]">
+              <MatchBannerScene className="absolute inset-0 w-full h-full" />
 
-              <div className="relative grid grid-cols-[1fr_auto] gap-3 items-start">
-                {/* Right column — the words */}
-                <div className="min-w-0">
-                  <h2 className="text-[28px] font-black text-white leading-[1.15] tracking-tight">
-                    مباراة
-                    <span className="block text-[#F5C542]">عشوائية</span>
-                  </h2>
-                  <p className="text-[10px] text-slate-300 font-bold mt-1.5 leading-relaxed">
-                    ٥ أسئلة سريعة — الأصح والأسرع يكسب
-                  </p>
+              {/* keeps the left-hand type legible over the artwork */}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#070C1F] via-[#070C1F]/70 to-transparent pointer-events-none" />
 
-                  {/* name only — this file's LEAGUES copy already ends each
-                      name with its badge («معلم 💎»), unlike the shared
-                      leagues.ts where the two are separate fields. Rendering
-                      both printed the emoji twice. */}
-                  <div className="inline-flex items-center gap-1.5 mt-3 bg-[#0b1b3e]/80 border border-blue-400/30 rounded-xl px-2.5 py-1.5">
-                    <Shield className="w-3.5 h-3.5 text-cyan-300 shrink-0" />
-                    <span className="text-[10px] font-black text-white">{userLeague.name}</span>
-                  </div>
+              {/* League — the real tier. The reference reads «الدوري الماسي
+                  II»; there is no such league and no divisions, and every
+                  other screen resolves the same rating through getLeague. */}
+              <div className="absolute top-2.5 right-3 flex items-center gap-1.5 bg-[#0b1b3e]/85 border border-blue-400/40 rounded-full px-2.5 py-1 backdrop-blur-sm">
+                <Shield className="w-3 h-3 text-cyan-300 shrink-0" />
+                <span className="text-[9px] font-black text-white whitespace-nowrap">{userLeague.name}</span>
+              </div>
 
-                  {/* +25 is the one number in the design backed end to end —
-                      but it is a RATING delta. «نقاط» is the loyalty balance
-                      redeemable against bookings, so the word would promise
-                      money. */}
-                  <div className="flex items-center gap-2 mt-3">
-                    <Trophy className="w-5 h-5 text-[#F5C542] shrink-0" />
-                    <div className="leading-none">
-                      <span className="block text-lg font-black text-[#F5C542]">+25</span>
-                      <span className="block text-[9px] text-slate-400 font-bold mt-0.5">نقطة تقييم عند الفوز</span>
-                    </div>
-                  </div>
-                </div>
+              {/* Title */}
+              <div className="absolute top-6 left-3.5 max-w-[45%]">
+                <h2 className="text-[20px] font-black text-white leading-[1.1] tracking-tight drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
+                  مباراة
+                  <span className="block text-[#F5C542]">عشوائية</span>
+                </h2>
+                {/* True now in a way it was not before: this button opens a
+                    real matchmade room against a real person. */}
+                <p className="text-[9.5px] text-white font-bold mt-1 drop-shadow-[0_1px_5px_rgba(0,0,0,1)]">
+                  تحدَّ لاعبين الآن
+                </p>
+              </div>
 
-                {/* Left column — the face-off, then the button under it.
-                    The drawing here is two angled panels in the colours of
-                    the artwork's hoodies with a lightning seam between them.
-                    It stands in for the illustration rather than imitating
-                    it: drop a real asset into the <img> slot below and the
-                    composition does not move. */}
-                <div className="w-[150px] shrink-0 flex flex-col gap-3">
-                  {/* VS lives inside the drawing now, so it scales with the
-                      figures instead of floating over them at a fixed size. */}
-                  <div className="relative h-[104px] rounded-2xl overflow-hidden border border-blue-400/25">
-                    <VersusArt className="w-full h-full" />
-                  </div>
-
-                  <motion.button
-                    whileHover={{ scale: findingMatch ? 1 : 1.03 }}
-                    whileTap={{ scale: findingMatch ? 1 : 0.97 }}
-                    disabled={findingMatch}
-                    onClick={onEnterMatch ? startRealMatch : startSearching}
-                    className="w-full py-3 bg-gradient-to-r from-[#FFD65C] to-[#F0A93B] hover:from-[#FFE082] hover:to-[#F5B94A] disabled:opacity-70 text-[#0d1b3e] rounded-2xl shadow-[0_6px_20px_-4px_rgba(245,197,66,0.6)] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <span className="text-[13px] font-black whitespace-nowrap">
-                      {findingMatch ? 'جارٍ البحث...' : 'ابدأ البحث'}
-                    </span>
-                    {findingMatch
-                      ? <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
-                      : <Zap className="w-4 h-4 shrink-0" />}
-                  </motion.button>
+              {/* Reward. +25 is real, but it is a rating delta — «نقاط» is the
+                  loyalty balance redeemable against bookings. */}
+              <div className="absolute bottom-3 left-3.5 flex items-center gap-1.5 bg-[#070C1F]/70 border border-white/10 rounded-xl px-2 py-1.5 backdrop-blur-sm">
+                <Trophy className="w-4 h-4 text-[#F5C542] shrink-0" />
+                <div className="leading-none">
+                  <span className="block text-[13px] font-black text-[#F5C542]">+25</span>
+                  <span className="block text-[8px] text-slate-300 font-bold mt-0.5 whitespace-nowrap">نقطة تقييم</span>
                 </div>
               </div>
 
-              {matchError && (
-                <p className="relative mt-3 text-[10px] font-bold text-rose-200 bg-rose-500/15 border border-rose-500/40 rounded-xl px-3 py-2 text-center">
-                  {matchError}
-                </p>
-              )}
+              {/* Call to action — capsule, centred, a little over half the
+                  banner, as drawn. */}
+              <motion.button
+                whileHover={{ scale: findingMatch ? 1 : 1.03 }}
+                whileTap={{ scale: findingMatch ? 1 : 0.97 }}
+                disabled={findingMatch}
+                onClick={onEnterMatch ? startRealMatch : startSearching}
+                className="absolute bottom-3 left-1/2 -translate-x-1/2 w-[55%] py-2.5 bg-gradient-to-b from-[#FFD65C] to-[#F0A93B] hover:from-[#FFE082] hover:to-[#F5B94A] disabled:opacity-75 text-[#2A1B02] rounded-full shadow-[0_6px_22px_-4px_rgba(245,197,66,0.75)] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                {findingMatch
+                  ? <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
+                  : <Zap className="w-4 h-4 shrink-0" />}
+                <span className="text-[13px] font-black whitespace-nowrap">
+                  {findingMatch ? 'جارٍ البحث...' : 'ابدأ البحث'}
+                </span>
+              </motion.button>
             </div>
+
+            {matchError && (
+              <p className="text-[10px] font-bold text-rose-200 bg-rose-500/15 border border-rose-500/40 rounded-xl px-3 py-2 text-center">
+                {matchError}
+              </p>
+            )}
 
             {/* Two half cards. The design's second was «المكافآت اليومية —
                 صندوق يومي جاهز للفتح» with a red «1». There is no chest, no
