@@ -4,6 +4,7 @@ import { BASE_HYMN_QUESTIONS } from '../data/hymnsData';
 import { RAW_VERSES } from '../data/versesData';
 import { RAW_CHARACTERS } from '../data/whoAmIData';
 import { RAW_CHARACTERS_NT } from '../data/whoAmIData_NT';
+import { initializeQuestionPool, getSmartQuestionRound } from '../questionPoolEngine';
 
 /**
  * The questions a live match is played on.
@@ -12,8 +13,28 @@ import { RAW_CHARACTERS_NT } from '../data/whoAmIData_NT';
  * match too. Both entry points have to build the same shape — the server
  * checks the answer against `correctIdx` in submit_answer, so a second,
  * slightly different builder would be a second way to get that wrong.
+ *
+ * Drawn from questionPoolEngine, which the app already builds and which
+ * already carries 449 questions across five categories with a difficulty
+ * spread and repeat-avoidance. A trivia match used to slice five off
+ * BASE_TRIVIA_QUESTIONS — a hand-written list of SIXTEEN — so four games saw
+ * the whole thing. The literals below stay as a floor: if a filter ever comes
+ * back short, a match still starts rather than failing on the RPC's
+ * three-question minimum.
  */
 export const MATCH_LENGTH = 5;
+
+/** The category the pool files hymn and Coptic-language questions under. */
+const HYMN_CATEGORY = 'الألحان والقبطي';
+
+/** SmartQuestion carries extra fields; a room only needs these four. */
+type PoolQuestion = { question: string; options: string[]; correctIdx: number; explanation?: string };
+const toRoomQuestion = (q: PoolQuestion): RoomQuestion => ({
+  question: q.question,
+  options: q.options,
+  correctIdx: q.correctIdx,
+  explanation: q.explanation,
+});
 
 function shuffle<T>(arr: T[]): T[] {
   const copy = arr.slice();
@@ -29,10 +50,22 @@ function shuffle<T>(arr: T[]): T[] {
 // server checks against it in submit_answer.
 export function buildQuestions(mode: GameMode): RoomQuestion[] {
   if (mode === 'trivia') {
+    const round = getSmartQuestionRound('trivia', MATCH_LENGTH).map(toRoomQuestion);
+    if (round.length >= MATCH_LENGTH) return round;
     return shuffle(BASE_TRIVIA_QUESTIONS).slice(0, MATCH_LENGTH);
   }
   if (mode === 'hymns') {
+    // The engine has no 'hymns' game type, but it does file these under a
+    // category — 112 of them, against the 60 in the literal.
+    const hymns = initializeQuestionPool().filter((q) => q.category === HYMN_CATEGORY);
+    if (hymns.length >= MATCH_LENGTH) {
+      return shuffle(hymns).slice(0, MATCH_LENGTH).map(toRoomQuestion);
+    }
     return shuffle(BASE_HYMN_QUESTIONS).slice(0, MATCH_LENGTH);
+  }
+  if (mode === 'whoami') {
+    const round = getSmartQuestionRound('whoami', MATCH_LENGTH).map(toRoomQuestion);
+    if (round.length >= MATCH_LENGTH) return round;
   }
   if (mode === 'fillverse') {
     const allWords = Array.from(new Set(RAW_VERSES.map((v) => v.word)));
