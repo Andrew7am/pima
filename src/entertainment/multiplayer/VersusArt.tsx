@@ -1,95 +1,112 @@
 /**
  * The face-off drawing on the random-match banner.
  *
- * Follows the approved artwork: the blue side on the left with the hood down
- * and the face showing, the red side on the right with the hood up and the
- * face in shadow, and a lit VS between them.
+ * Follows the approved artwork: a blue hoodie with gold trim on the left,
+ * hood down, brown hair and a confident face; a maroon hoodie on the right
+ * with the hood UP but the face still lit and visible under it; and between
+ * them a two-tone bolt with a white-to-cyan VS and a magenta bloom.
  *
  * Drawn rather than sourced — the repo holds one image, the logo — so this is
  * inline SVG: nothing to fetch on a phone connection and sharp at any size.
- * The two fighters are no longer one mirrored shape, because they are not
- * mirror images of each other in the reference.
+ * A stylised vector, not the rendered illustration; swap the component out if
+ * the real asset arrives and the banner does not move.
  */
 export default function VersusArt({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 160 110" className={className} role="img" aria-label="مواجهة بين لاعبين">
       <defs>
-        <linearGradient id="vaBlue" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#3B82F6" />
-          <stop offset="100%" stopColor="#1E3A8A" />
+        <linearGradient id="vaHoodB" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3B6FE8" />
+          <stop offset="100%" stopColor="#16307A" />
         </linearGradient>
-        <linearGradient id="vaRed" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#DC2626" />
-          <stop offset="100%" stopColor="#7F1D1D" />
+        <linearGradient id="vaHoodR" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#A11F35" />
+          <stop offset="100%" stopColor="#4E0D1B" />
         </linearGradient>
         <linearGradient id="vaVs" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="100%" stopColor="#93C5FD" />
+          <stop offset="55%" stopColor="#E0F2FE" />
+          <stop offset="100%" stopColor="#38BDF8" />
+        </linearGradient>
+        <linearGradient id="vaBolt" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#22D3EE" />
+          <stop offset="50%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="#F43F5E" />
         </linearGradient>
         <radialGradient id="vaGlowB" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.5" />
+          <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.55" />
           <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="vaGlowR" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#EF4444" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="#EF4444" stopOpacity="0" />
+          <stop offset="0%" stopColor="#E11D48" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#E11D48" stopOpacity="0" />
         </radialGradient>
-        <filter id="vaSoft" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="2.5" />
-        </filter>
+        <radialGradient id="vaGlowM" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#E879F9" stopOpacity="0.75" />
+          <stop offset="100%" stopColor="#E879F9" stopOpacity="0" />
+        </radialGradient>
       </defs>
 
       <rect width="160" height="110" fill="#0a1733" />
-      <circle cx="40" cy="60" r="48" fill="url(#vaGlowB)" />
-      <circle cx="120" cy="60" r="48" fill="url(#vaGlowR)" />
+      <circle cx="38" cy="58" r="50" fill="url(#vaGlowB)" />
+      <circle cx="124" cy="58" r="50" fill="url(#vaGlowR)" />
 
-      {/* ── Left: blue, hood down, face showing ───────────────────── */}
+      {/* ── LEFT — blue hoodie, gold trim, hood down, face showing ── */}
       <g>
-        {/* torso */}
-        <path d="M22 104 q-2 -36 8 -44 q12 -9 24 0 q10 8 8 44 z" fill="url(#vaBlue)" />
-        {/* hood bunched behind the neck */}
-        <path d="M28 58 q12 8 24 0 l2 -8 -28 0 z" fill="#1E3A8A" />
+        {/* body */}
+        <path d="M20 106 q-3 -38 9 -47 q14 -10 28 0 q12 9 9 47 z" fill="url(#vaHoodB)" />
+        {/* hood bunched at the shoulders */}
+        <path d="M27 62 q13 10 27 0 l3 -9 -33 0 z" fill="#16307A" />
+        {/* gold zip and cuff trim */}
+        <path d="M40 62 L40 106" stroke="#F5C542" strokeWidth="2.2" fill="none" />
+        <path d="M23 92 q17 6 34 0" stroke="#F5C542" strokeWidth="1.8" fill="none" />
         {/* head */}
-        <circle cx="40" cy="42" r="12" fill="#F0C09A" />
-        {/* hair */}
-        <path d="M28 40 q1 -14 12 -14 q11 0 12 14 q-5 -7 -12 -6 q-7 1 -12 6 z" fill="#3F2415" />
-        {/* eyes */}
-        <circle cx="36" cy="43" r="1.6" fill="#22303F" />
-        <circle cx="45" cy="43" r="1.6" fill="#22303F" />
-        {/* leading fist, thrown toward the seam */}
-        <path d="M52 66 q10 -1 14 6 l-8 9 q-9 -2 -10 -9 z" fill="url(#vaBlue)" />
-        <circle cx="63" cy="73" r="8" fill="#F0C09A" />
+        <circle cx="40" cy="40" r="13" fill="#F2C6A0" />
+        {/* brown wavy hair */}
+        <path d="M27 38 q0 -16 13 -16 q13 0 13 16 q-4 -8 -8 -6 q-4 3 -9 0 q-5 -3 -9 6 z" fill="#4A2E1A" />
+        {/* face */}
+        <circle cx="35.5" cy="41" r="1.9" fill="#22303F" />
+        <circle cx="45" cy="41" r="1.9" fill="#22303F" />
+        <path d="M36 47 q4 3 8 0" stroke="#8A4B32" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+        {/* raised fists */}
+        <circle cx="57" cy="64" r="7.5" fill="#F2C6A0" />
+        <circle cx="52" cy="79" r="7" fill="#F2C6A0" />
       </g>
 
-      {/* ── Right: red, hood up, face in shadow ───────────────────── */}
+      {/* ── RIGHT — maroon hoodie, hood UP, face still lit ────────── */}
       <g>
-        <path d="M110 104 q-2 -36 8 -44 q12 -9 24 0 q10 8 8 44 z" fill="url(#vaRed)" />
-        {/* the hood itself, pulled over */}
-        <path d="M106 50 q4 -26 22 -26 q18 0 22 26 q-10 6 -22 6 q-12 0 -22 -6 z" fill="url(#vaRed)" />
-        {/* the shadow inside it */}
-        <ellipse cx="128" cy="44" rx="10" ry="10" fill="#2B0808" />
-        {/* two lit eyes in the dark */}
-        <circle cx="124" cy="44" r="1.7" fill="#FCA5A5" />
-        <circle cx="133" cy="44" r="1.7" fill="#FCA5A5" />
-        {/* leading fist */}
-        <path d="M116 66 q-10 -1 -14 6 l8 9 q9 -2 10 -9 z" fill="url(#vaRed)" />
-        <circle cx="99" cy="73" r="8" fill="#C98B6B" />
+        <path d="M104 106 q-3 -38 9 -47 q14 -10 28 0 q12 9 9 47 z" fill="url(#vaHoodR)" />
+        {/* the hood, pulled over the head */}
+        <path d="M107 46 q3 -26 20 -26 q17 0 20 26 q0 12 -20 12 q-20 0 -20 -12 z" fill="url(#vaHoodR)" />
+        {/* the face inside it — lit, not blacked out */}
+        <circle cx="127" cy="42" r="11.5" fill="#E8B894" />
+        {/* hair fringe under the hood */}
+        <path d="M116 37 q3 -9 11 -9 q8 0 11 9 q-5 -4 -11 -3 q-6 1 -11 3 z" fill="#3E2415" />
+        {/* the hood's forward rim, casting only a soft edge */}
+        <path d="M107 46 q3 -26 20 -26 q17 0 20 26 q-6 -12 -20 -12 q-14 0 -20 12 z" fill="#4E0D1B" opacity="0.85" />
+        <circle cx="122.5" cy="43" r="1.9" fill="#22303F" />
+        <circle cx="132" cy="43" r="1.9" fill="#22303F" />
+        <path d="M123 49 q4 3 8 0" stroke="#8A4B32" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+        {/* drawstrings */}
+        <path d="M120 57 L119 66 M135 57 L136 66" stroke="#E8C39A" strokeWidth="1.6" strokeLinecap="round" />
+        <circle cx="110" cy="64" r="7.5" fill="#E8B894" />
+        <circle cx="115" cy="79" r="7" fill="#E8B894" />
       </g>
 
-      {/* ── The clash in the middle ───────────────────────────────── */}
+      {/* ── The clash ─────────────────────────────────────────────── */}
       <g>
-        <ellipse cx="80" cy="58" rx="20" ry="26" fill="#60A5FA" opacity="0.35" filter="url(#vaSoft)" />
-        <path d="M84 22 L70 56 L79 56 L73 92 L92 52 L82 52 Z" fill="#FDE68A" opacity="0.85" />
+        <ellipse cx="80" cy="56" rx="24" ry="30" fill="url(#vaGlowM)" />
+        <path d="M85 12 L67 54 L78 54 L71 100 L95 50 L83 50 Z" fill="url(#vaBolt)" opacity="0.9" />
         <text
           x="80" y="70"
           textAnchor="middle"
-          fontSize="34"
+          fontSize="36"
           fontWeight="900"
           fontStyle="italic"
           fontFamily="system-ui, -apple-system, Segoe UI, sans-serif"
           fill="url(#vaVs)"
           stroke="#0a1733"
-          strokeWidth="2"
+          strokeWidth="2.5"
           paintOrder="stroke"
         >
           VS
