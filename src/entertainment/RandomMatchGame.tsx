@@ -12,6 +12,7 @@ import { User as UserType } from '../types';
 import { xpToNext, xpProgressPct } from './progress';
 import { findOrCreateRandomRoom } from './multiplayer';
 import { buildQuestions } from './multiplayer/matchQuestions';
+import VersusArt from './multiplayer/VersusArt';
 import { SmartAssistBar } from './SmartAssistBar';
 import { ChatComponent } from './ChatComponent';
 import { FriendChat } from './FriendChat';
@@ -1387,19 +1388,13 @@ export default function RandomMatchGame({
                     it: drop a real asset into the <img> slot below and the
                     composition does not move. */}
                 <div className="w-[150px] shrink-0 flex flex-col gap-3">
-                  <div className="relative h-[104px] rounded-2xl overflow-hidden border border-blue-400/25 bg-[#0a1733]">
-                    <div className="absolute inset-0 flex">
-                      <div className="flex-1 bg-gradient-to-br from-[#1e3a8a] to-[#0f1f45]" />
-                      <div className="flex-1 bg-gradient-to-bl from-[#7f1d1d] to-[#2a0e1f]" />
-                    </div>
-                    {/* the seam */}
-                    <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[3px] bg-gradient-to-b from-transparent via-[#F5C542] to-transparent shadow-[0_0_12px_2px_rgba(245,197,66,0.6)]" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[34px] font-black italic text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] tracking-tighter">
+                  <div className="relative h-[104px] rounded-2xl overflow-hidden border border-blue-400/25">
+                    <VersusArt className="w-full h-full" />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="text-[30px] font-black italic text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)] tracking-tighter">
                         VS
                       </span>
                     </div>
-                    <Zap className="absolute top-2 left-2 w-4 h-4 text-[#F5C542] drop-shadow-[0_0_6px_rgba(245,197,66,0.8)]" />
                   </div>
 
                   <motion.button
