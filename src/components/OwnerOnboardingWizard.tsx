@@ -113,6 +113,10 @@ export default function OwnerOnboardingWizard({
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState('');
   const [pricePerNight, setPricePerNight] = useState(200);
+  // null, not 0, and matching the dashboard's field: a house that does not
+  // take «يوم روحي» has no day rate at all, and 0 would read as free rather
+  // than not offered — offersDayUse() requires a number above zero.
+  const [dayUsePrice, setDayUsePrice] = useState<number | null>(null);
   const [monthlyRent, setMonthlyRent] = useState(1500);
   // Only a floor for the case where no rooms are entered at all. Nothing sets
   // these any more: the rooms step is what decides the house's totals, and it
@@ -279,6 +283,10 @@ export default function OwnerOnboardingWizard({
           // owner writes their own description or the screen shows none.
           roomsDescription: '',
           pricePerNightPerPerson: isMonthly ? 0 : pricePerNight,
+          // undefined, not 0 — the column is nullable and offersDayUse()
+          // reads "no day bookings" from its absence. Monthly lets never
+          // take day guests, so the field is not offered to them either.
+          dayUsePricePerPerson: (!isMonthly && dayUsePrice) ? dayUsePrice : undefined,
           propertyType,
           monthlyRent: isMonthly ? monthlyRent : undefined,
           services: selectedServices,
@@ -495,10 +503,29 @@ export default function OwnerOnboardingWizard({
                     className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
                 </div>
               ) : (
-                <div>
-                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">السعر لليلة للفرد (جنيه)</label>
-                  <input type="number" min={0} value={pricePerNight} onChange={(e) => setPricePerNight(Number(e.target.value))}
-                    className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">السعر لليلة للفرد (جنيه)</label>
+                    <input id="onboarding-price-night" type="number" min={1} value={pricePerNight} onChange={(e) => setPricePerNight(Number(e.target.value))}
+                      className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
+                  </div>
+                  {/* «يوم روحي» — arrive and leave the same day. Asked here
+                      beside the nightly rate, as on the dashboard, because a
+                      house registered without it simply cannot take day
+                      bookings: offersDayUse() needs a rate above zero, and
+                      the guest's filter and booking form both key off that.
+                      Left blank means the house does not offer them. */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">سعر اليوم بدون مبيت (اختياري)</label>
+                    <input
+                      id="onboarding-price-dayuse"
+                      type="number"
+                      min={0}
+                      placeholder="اتركه فارغاً"
+                      value={dayUsePrice === null ? '' : dayUsePrice}
+                      onChange={(e) => setDayUsePrice(e.target.value === '' ? null : (parseInt(e.target.value, 10) || 0))}
+                      className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
+                  </div>
                 </div>
               )}
             </div>
@@ -850,6 +877,12 @@ export default function OwnerOnboardingWizard({
                         <span className="text-[#8A8A70] font-bold">{isMonthly ? 'الإيجار الشهري: ' : 'السعر لليلة للفرد: '}</span>
                         <span className="font-black">{(isMonthly ? monthlyRent : pricePerNight).toLocaleString()} ج.م</span>
                       </span>
+                      {!isMonthly && (
+                        <span>
+                          <span className="text-[#8A8A70] font-bold">اليوم بدون مبيت: </span>
+                          <span className="font-black">{dayUsePrice ? `${dayUsePrice.toLocaleString()} ج.م` : 'غير متاح'}</span>
+                        </span>
+                      )}
                     </p>
                   )}
 
