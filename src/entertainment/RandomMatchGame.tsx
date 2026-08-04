@@ -6,9 +6,10 @@ import {
   Clock, ArrowRight, Check, HelpCircle, Award, Sparkles, 
   Compass, BookOpen, Star, RefreshCw, X, ArrowUp, ArrowDown, LogIn,
   Copy, Plus, Users, Share2, LogOut, MessageSquare, UserPlus, UserCheck, Send,
-  Shield, Timer, TrendingUp, Zap, Lightbulb
+  Shield, Timer, TrendingUp, Zap, Lightbulb, Coins, Gift, ChevronLeft
 } from 'lucide-react';
 import { User as UserType } from '../types';
+import { xpToNext, xpProgressPct } from './progress';
 import { SmartAssistBar } from './SmartAssistBar';
 import { ChatComponent } from './ChatComponent';
 import { FriendChat } from './FriendChat';
@@ -37,6 +38,9 @@ interface RandomMatchGameProps {
   onClose: () => void;
   isSoundEnabled?: boolean;
   isMusicEnabled?: boolean;
+  /** Opens the rewards screen. The daily-rewards card is only rendered when
+   *  this is provided, since there is nowhere for it to go otherwise. */
+  onOpenRewards?: () => void;
 }
 
 const AssetWithFallback = ({ src, alt, className, fallbackSvg }: { src: string; alt: string; className: string; fallbackSvg: React.ReactNode }) => {
@@ -257,7 +261,8 @@ export default function RandomMatchGame({
   onUpdateUser, 
   onClose,
   isSoundEnabled = true,
-  isMusicEnabled = true
+  isMusicEnabled = true,
+  onOpenRewards
 }: RandomMatchGameProps) {
   // Sync background music with prop
   useEffect(() => {
@@ -269,10 +274,17 @@ export default function RandomMatchGame({
   useEffect(() => {
     localStorage.setItem('entertainment_sound_enabled', isSoundEnabled ? 'true' : 'false');
   }, [isSoundEnabled]);
-  // Persistence of competitive rating in localStorage
+  // Competitive rating. Seeded from the account's own rating rather than a
+  // bare 75, so the league chip on this screen agrees with the one
+  // EntertainmentHome and LiveMatchGame draw from users.rating — they all
+  // call getLeague on it, and a user the rest of the app calls «معلم» was
+  // being shown «مبتدئ» here. Still kept in localStorage afterwards: this
+  // screen's matches never reach finalize_match, so it has nothing else to
+  // write to.
   const [rating, setRating] = useState<number>(() => {
     const saved = localStorage.getItem('coptic_random_match_rating');
-    return saved ? parseInt(saved, 10) : 75;
+    if (saved !== null) return parseInt(saved, 10);
+    return currentUser.rating ?? 100;
   });
 
   const [streak, setStreak] = useState<number>(() => {
@@ -281,6 +293,13 @@ export default function RandomMatchGame({
   });
 
   // Game States
+  // Real progression, read rather than decorated. The header used to print
+  // `Lv. {currentUser.level || 23}` — and the 23 in the approved design is
+  // that very fallback, photographed and handed back. `||` also fires on a
+  // legitimate 0, so a placeholder behind it can never be told from data.
+  const userLevel = currentUser.level ?? 1;
+  const userXp = currentUser.xp ?? 0;
+
   const [screen, setScreen] = useState<'menu' | 'league_info' | 'searching' | 'opponent_found' | 'playing' | 'results' | 'friend_menu' | 'create_friend_room' | 'waiting_friend_room' | 'playing_friend' | 'results_friend'>('league_info');
   const [selectedMode, setSelectedMode] = useState<string>('all_mixed');
   
@@ -1138,20 +1157,24 @@ export default function RandomMatchGame({
           <p className="text-[9px] text-slate-400 font-bold tracking-tight">بدون إعلانات | تجربة نقية</p>
         </div>
 
-        {/* Right: User Level & Avatar */}
-        <div className="flex items-center gap-2.5 bg-[#122244]/80 border border-blue-500/20 rounded-2xl px-3 py-1.5 shadow-inner">
+        {/* The level chip and avatar that used to sit here are the profile
+            card below now — one copy, and one that reads real values. This
+            one printed `Lv. {currentUser.level || 23}` over a bar hardcoded
+            to 75%, and stood a few pixels from the card that shows the
+            truth. Shown on the inner screens only, where there is no card. */}
+        <div className={`items-center gap-2.5 bg-[#122244]/80 border border-blue-500/20 rounded-2xl px-3 py-1.5 shadow-inner ${screen === 'league_info' ? 'hidden' : 'flex'}`}>
           <div className="text-left">
             <div className="flex items-center gap-1 justify-end">
-              <span className="text-[9px] font-black text-[#F5C542]">Lv. {currentUser.level || 23}</span>
+              <span className="text-[9px] font-black text-[#F5C542]">Lv. {userLevel}</span>
             </div>
             <div className="bg-slate-900 rounded-full h-1.5 w-12 overflow-hidden border border-blue-900/30 mt-0.5">
-              <div className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full" style={{ width: '75%' }} />
+              <div className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full" style={{ width: `${xpProgressPct(userXp, userLevel)}%` }} />
             </div>
           </div>
           <div className="relative">
-            <img 
-              src={currentUser.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"} 
-              alt="avatar" 
+            <img
+              src={currentUser.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"}
+              alt="avatar"
               className="w-8 h-8 rounded-full border-2 border-[#F5C542] object-cover"
               referrerPolicy="no-referrer"
             />
@@ -1160,22 +1183,75 @@ export default function RandomMatchGame({
         </div>
       </div>
 
-      {/* Floating Church Selection Card */}
-      <div className="relative z-10 bg-gradient-to-l from-[#0b1b36] to-[#071329] border border-blue-500/15 rounded-2xl p-3.5 flex items-center justify-between shadow-lg mb-5 max-w-md mx-auto w-full">
-        <button className="flex items-center gap-1 text-[10px] font-black text-[#F5C542] bg-yellow-500/10 border border-yellow-500/20 px-3 py-1.5 rounded-xl transition-all hover:bg-yellow-500/20">
-          <Trophy className="w-3 h-3 text-[#F5C542]" />
-          <span>تغيير</span>
-        </button>
-        <div className="text-right">
-          <p className="text-[9px] text-[#F5C542] font-bold">الحساب الحالي</p>
-          <p className="text-xs font-black text-slate-200 leading-relaxed truncate max-w-[200px]">
-            {currentUser.name} ({currentUser.churchName || 'كنيسة مار مرقس'})
-          </p>
+      {/* Profile card — replaces the old «الحساب الحالي» strip, whose only
+          control was a «تغيير» button with no onClick. Every number here is
+          read, not decorated: level and xp are real columns, and the bar is
+          computed by progress.ts, which is the one file guaranteed to agree
+          with the server's level*200 rule. */}
+      {screen === 'league_info' && (
+        <div className="relative z-10 bg-gradient-to-l from-[#0b1b36] to-[#071329] border border-blue-500/15 rounded-2xl p-3.5 shadow-lg mb-4 max-w-md mx-auto w-full">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative shrink-0">
+                {currentUser.avatar ? (
+                  <img src={currentUser.avatar} alt="" referrerPolicy="no-referrer"
+                    className="w-12 h-12 rounded-full border-2 border-[#F5C542] object-cover" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full border-2 border-[#F5C542] bg-[#122244] flex items-center justify-center">
+                    <User className="w-5 h-5 text-[#F5C542]" />
+                  </div>
+                )}
+                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-[#0b1b36]" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[9px] text-slate-400 font-bold">مرحباً بك</p>
+                <p className="text-sm font-black text-white truncate">{currentUser.name} 👋</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0">
+              <div className="text-left">
+                <p className="text-[9px] text-slate-400 font-bold">المستوى</p>
+                <p className="text-[10px] font-black text-slate-200 font-mono" dir="ltr">
+                  XP {userXp.toLocaleString()} / {xpToNext(userLevel).toLocaleString()}
+                </p>
+                <div className="bg-slate-900 rounded-full h-1.5 w-24 overflow-hidden border border-blue-900/30 mt-1">
+                  <div className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full transition-all"
+                    style={{ width: `${xpProgressPct(userXp, userLevel)}%` }} />
+                </div>
+              </div>
+              <div className="w-12 h-12 shrink-0 flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-[#F5C542] to-amber-600 border-2 border-amber-300/40 shadow-lg">
+                <span className="text-base font-black text-[#0d1b3e] leading-none">{userLevel}</span>
+                <span className="text-[7px] font-black text-[#0d1b3e]/80">Lv.</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Two balances. The design's second tile was a diamond «gem»
+              currency — there is no such column, no way to earn one and
+              nothing to spend it on, so it shows نقاط المجد instead, which
+              is the balance EntertainmentHome already displays. Neither tile
+              carries the design's «+» button: no top-up or purchase flow
+              exists anywhere in the app, and a + that dead-ends reads as a
+              shop that isn't there. */}
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            <div className="flex items-center gap-2 bg-[#122244]/80 border border-blue-500/20 rounded-xl px-3 py-2">
+              <Coins className="w-5 h-5 text-[#F5C542] shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-black text-white leading-none">{(currentUser.gameCoins ?? 0).toLocaleString()}</p>
+                <p className="text-[8px] text-slate-400 font-bold mt-0.5">عملات الألعاب</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-[#122244]/80 border border-blue-500/20 rounded-xl px-3 py-2">
+              <Sparkles className="w-5 h-5 text-cyan-400 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-black text-white leading-none">{(currentUser.points ?? 0).toLocaleString()}</p>
+                <p className="text-[8px] text-slate-400 font-bold mt-0.5">نقاط المجد</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="w-7 h-7 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-          <User className="w-3.5 h-3.5 text-blue-400" />
-        </div>
-      </div>
+      )}
 
       <AnimatePresence mode="wait">
         
@@ -1188,77 +1264,105 @@ export default function RandomMatchGame({
             exit={{ opacity: 0, scale: 0.95 }}
             className="space-y-6 p-2 relative z-10"
           >
-            {/* League Badge Display */}
-            <div className="flex flex-col items-center justify-center pt-4">
-              <motion.div 
-                animate={{ 
-                  y: [0, -10, 0],
-                  filter: ['drop-shadow(0 0 0px transparent)', `drop-shadow(0 0 20px ${userLeague.textColor.replace('text-', '')})`, 'drop-shadow(0 0 0px transparent)']
-                }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className={`w-40 h-40 rounded-full bg-gradient-to-br ${userLeague.color} flex items-center justify-center border-4 border-white/20 shadow-2xl relative group`}
-              >
-                <div className={`absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity`} />
-                <span className="text-7xl filter drop-shadow-2xl">{userLeague.badge}</span>
-              </motion.div>
-              <h2 className={`mt-6 text-3xl font-black ${userLeague.textColor} tracking-tight drop-shadow-lg`}>
-                {userLeague.name}
-              </h2>
-            </div>
+            {/* The match banner. The league chip carries the real tier from
+                leagues.ts — the design's «الدوري الماسي II» names a league
+                that does not exist, and a numbered division the ladder has no
+                concept of; every other screen calling getLeague on the same
+                rating would have contradicted it on sight.
 
-            {/* Rating & Stats Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-4 text-center">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">التقييم الحالي</span>
-                <div className="flex items-center justify-center gap-2">
-                  <Trophy className="w-4 h-4 text-amber-500" />
-                  <span className="text-2xl font-black text-white font-mono">{rating}</span>
+                The subtitle is not the design's «تحدَّ لاعبين من نفس مستواك»
+                either: the opponents this button finds are seven constants in
+                this file, so that line would promise a live person and hand
+                over a script. It describes the format instead, which is true
+                whoever is on the other side. */}
+            <div className="relative overflow-hidden rounded-[26px] border-2 border-[#F5C542]/60 bg-gradient-to-br from-[#13285a] via-[#0f1f45] to-[#0a1733] p-4 shadow-2xl shadow-blue-950/50">
+              <div className="absolute -top-10 -left-10 w-40 h-40 bg-[#F5C542]/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-2xl font-black text-white leading-tight">
+                    مباراة <span className="text-[#F5C542]">عشوائية</span>
+                  </h2>
+                  <p className="text-[10px] text-slate-300 font-bold mt-1 leading-relaxed">
+                    ٥ أسئلة سريعة — الأصح والأسرع يكسب
+                  </p>
+
+                  {/* name only — this file's LEAGUES copy already ends each
+                      name with its badge («معلم 💎»), unlike the shared
+                      leagues.ts where the two are separate fields. Rendering
+                      both printed the emoji twice. */}
+                  <div className={`inline-flex items-center gap-1.5 mt-2.5 bg-gradient-to-r ${userLeague.color} border border-white/20 rounded-xl px-2.5 py-1`}>
+                    <span className="text-[10px] font-black text-white">{userLeague.name}</span>
+                  </div>
+
+                  {/* +25 is the one number in the design backed end to end —
+                      but it is a RATING delta. «نقاط» is the loyalty balance
+                      redeemable against bookings, so the word would promise
+                      money. */}
+                  <div className="flex items-center gap-1.5 mt-2.5">
+                    <Trophy className="w-4 h-4 text-[#F5C542] shrink-0" />
+                    <span className="text-sm font-black text-[#F5C542]">+25</span>
+                    <span className="text-[9px] text-slate-400 font-bold">نقطة تقييم عند الفوز</span>
+                  </div>
+                </div>
+
+                <div className="shrink-0 w-20 h-20 rounded-2xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
+                  <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-cyan-300 to-blue-500">VS</span>
                 </div>
               </div>
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-4 text-center">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">المكافآت المتوقعة</span>
-                <div className="flex items-center justify-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <span className="text-emerald-400 font-black">+50</span>
-                    <span className="text-[10px] text-slate-400">XP</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-amber-400 font-black">+20</span>
-                    <span className="text-[10px] text-slate-400">🪙</span>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-3 pt-4">
               <motion.button
-                whileHover={{ scale: 1.02, y: -2 }}
+                whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={startSearching}
-                className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white rounded-[24px] shadow-2xl shadow-blue-900/40 border border-blue-400/30 flex items-center justify-center gap-3 transition-all cursor-pointer group"
+                className="relative w-full mt-3.5 py-3.5 bg-gradient-to-r from-[#F5C542] to-amber-500 hover:from-amber-300 hover:to-amber-400 text-[#0d1b3e] rounded-2xl shadow-xl shadow-amber-900/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <Zap className="w-6 h-6 text-yellow-400 group-hover:scale-125 transition-transform" />
-                <span className="text-lg font-black tracking-tight">بدء البحث عن خصم</span>
+                <span className="text-base font-black">ابدأ البحث</span>
+                <Zap className="w-5 h-5" />
               </motion.button>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setScreen('friend_menu')}
-                  className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-[11px] font-black border border-white/10 transition-all flex items-center justify-center gap-2"
-                >
-                  <Users className="w-4 h-4" />
-                  <span>تحدي صديق</span>
-                </button>
-                <button
-                  onClick={onClose}
-                  className="flex-1 py-3.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-2xl text-[11px] font-black border border-rose-500/20 transition-all flex items-center justify-center gap-2"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>رجوع</span>
-                </button>
-              </div>
             </div>
+
+            {/* Two half cards. The design's second was «المكافآت اليومية —
+                صندوق يومي جاهز للفتح» with a red «1». There is no chest, no
+                cooldown and nothing anywhere that counts unclaimed rewards,
+                so the badge had no source and the word «صندوق» no referent.
+                It points at the rewards screen that does exist, named for
+                what is actually on it, and only when there is somewhere to
+                send the tap. */}
+            <div className={`grid ${onOpenRewards ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
+              <button
+                onClick={() => setScreen('friend_menu')}
+                className="bg-gradient-to-br from-[#2a1a4a] to-[#1a1030] border border-purple-500/25 rounded-2xl p-3.5 text-right hover:border-purple-400/50 transition-all cursor-pointer"
+              >
+                <div className="flex items-center justify-between">
+                  <Users className="w-7 h-7 text-purple-400 shrink-0" />
+                  <ChevronLeft className="w-4 h-4 text-slate-500" />
+                </div>
+                <p className="text-xs font-black text-white mt-2">اللعب مع صديق</p>
+                <p className="text-[9px] text-slate-400 font-bold mt-0.5">تحدَّ أصدقاءك الآن</p>
+              </button>
+
+              {onOpenRewards && (
+                <button
+                  onClick={onOpenRewards}
+                  className="bg-gradient-to-br from-[#1a2a4a] to-[#101a30] border border-cyan-500/25 rounded-2xl p-3.5 text-right hover:border-cyan-400/50 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center justify-between">
+                    <Gift className="w-7 h-7 text-cyan-400 shrink-0" />
+                    <ChevronLeft className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <p className="text-xs font-black text-white mt-2">الجوائز والتحدي اليومي</p>
+                  <p className="text-[9px] text-slate-400 font-bold mt-0.5">عجلة الحظ وتحدي اليوم</p>
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={onClose}
+              className="w-full py-3 bg-white/5 hover:bg-white/10 text-slate-400 rounded-2xl text-[11px] font-black border border-white/10 transition-all flex items-center justify-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>رجوع</span>
+            </button>
           </motion.div>
         )}
 

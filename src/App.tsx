@@ -2042,6 +2042,7 @@ export default function App() {
                 currentUser={currentUser}
                 onUpdateUser={(u) => setCurrentUser(u)}
                 onClose={() => setActiveScreen('entertainment')}
+                onOpenRewards={() => setActiveScreen('rewards')}
               />
             </div>
           )}
