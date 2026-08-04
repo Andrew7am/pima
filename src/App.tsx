@@ -66,6 +66,8 @@ const RandomMatchGame = lazy(() => import('./entertainment/RandomMatchGame'));
 const GamesCatalog = lazy(() => import('./entertainment/GamesCatalog'));
 const RewardsScreen = lazy(() => import('./entertainment/RewardsScreen'));
 import AchievementToast from './entertainment/AchievementToast';
+import WriteFailureBanner from './components/WriteFailureBanner';
+import { trackWrite } from './lib/writeFeedback';
 const FriendsScreen = lazy(() => import('./entertainment/FriendsScreen'));
 const ChatThreadScreen = lazy(() => import('./entertainment/ChatThreadScreen'));
 import ResetPasswordScreen from './components/ResetPasswordScreen';
@@ -974,7 +976,7 @@ export default function App() {
   // Owner assigns a set of rooms to a group; the servant then fills names in them.
   const handleAssignRooms = (bookingId: string, roomIds: string[]) => {
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, assignedRoomIds: roomIds } : b)));
-    updateBookingFields(bookingId, { assignedRoomIds: roomIds });
+    trackWrite(updateBookingFields(bookingId, { assignedRoomIds: roomIds }), 'تخصيص الغرف للحجز');
     // Tell the servant their rooms are ready so they can start distributing.
     const b = bookings.find((x) => x.id === bookingId);
     if (b) pushNotification({
@@ -1110,10 +1112,10 @@ export default function App() {
         adminNotes: 'أكد صاحب البيت استلام العربون نقداً',
       };
       setPayments((prev) => [cashPayment, ...prev]);
-      createPayment(cashPayment);
+      trackWrite(createPayment(cashPayment), 'تسجيل دفعة العربون نقداً');
     }
 
-    updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' })
+    trackWrite(updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' }), 'تأكيد استلام العربون')
       .then(() => { if (target && currentUser?.id === target.userId) refreshCurrentUserPoints(target.userId); });
   };
 
@@ -1124,7 +1126,7 @@ export default function App() {
     setBookings((prev) =>
       prev.map((b) => (b.id === bookingId ? { ...b, checkedInAt } : b))
     );
-    updateBookingFields(bookingId, { checkedInAt });
+    trackWrite(updateBookingFields(bookingId, { checkedInAt }), 'تسجيل وصول الضيف');
   };
 
   // Owner marks guest as checked out (booking completed). Notification
@@ -1134,13 +1136,13 @@ export default function App() {
     setBookings((prev) =>
       prev.map((b) => (b.id === bookingId ? { ...b, status: 'completed', checkedOutAt } : b))
     );
-    updateBookingFields(bookingId, { status: 'completed', checkedOutAt });
+    trackWrite(updateBookingFields(bookingId, { status: 'completed', checkedOutAt }), 'تسجيل مغادرة الضيف');
   };
 
   // --- Egyptian Payment System Operations ---
   const handleSubmitPayment = (payment: Payment) => {
     setPayments((prev) => [payment, ...prev]);
-    createPayment(payment);
+    trackWrite(createPayment(payment), 'إرسال إيصال التحويل');
 
     // Update booking's paymentStatus
     setBookings((prevBookings) =>
@@ -1154,7 +1156,7 @@ export default function App() {
         return b;
       })
     );
-    updateBookingFields(payment.bookingId, { paymentStatus: 'pending_verification' });
+    trackWrite(updateBookingFields(payment.bookingId, { paymentStatus: 'pending_verification' }), 'إرسال إيصال التحويل');
 
     // The guest "proof received" and per-admin "new payment to review"
     // notifications are created server-side by the payments-insert trigger
@@ -1170,7 +1172,7 @@ export default function App() {
     const payment = payments.find((p) => p.id === paymentId);
     if (!payment) return;
     // Persist updated payment to Supabase
-    updatePaymentStatus(paymentId, status, adminNotes);
+    trackWrite(updatePaymentStatus(paymentId, status, adminNotes), status === 'approved' ? 'اعتماد الإيصال' : 'رفض الإيصال');
     const b = bookings.find((bk) => bk.id === payment.bookingId);
     if (!b) return;
 
@@ -2180,6 +2182,9 @@ export default function App() {
       )}
       </Suspense>
     </WebLayout>
+    {/* A save that did not reach the server says so here, once, above
+        everything. */}
+    <WriteFailureBanner />
     <AchievementToast
       queue={unlockedAchievementQueue}
       onShown={() => setUnlockedAchievementQueue((prev) => prev.slice(1))}
