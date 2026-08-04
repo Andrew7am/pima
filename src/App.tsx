@@ -67,7 +67,7 @@ const GamesCatalog = lazy(() => import('./entertainment/GamesCatalog'));
 const RewardsScreen = lazy(() => import('./entertainment/RewardsScreen'));
 import AchievementToast from './entertainment/AchievementToast';
 import WriteFailureBanner from './components/WriteFailureBanner';
-import { trackWrite } from './lib/writeFeedback';
+import { trackWrite, trackQuery } from './lib/writeFeedback';
 const FriendsScreen = lazy(() => import('./entertainment/FriendsScreen'));
 const ChatThreadScreen = lazy(() => import('./entertainment/ChatThreadScreen'));
 import ResetPasswordScreen from './components/ResetPasswordScreen';
@@ -635,7 +635,7 @@ export default function App() {
 
   const handleUpdatePayoutStatus = (id: string, status: Payout['status']) => {
     setPayouts((prev) => prev.map((p) => (p.id === id ? { ...p, status, completedAt: status === 'completed' ? new Date().toISOString() : undefined } : p)));
-    updatePayoutStatusDb(id, status);
+    trackWrite(updatePayoutStatusDb(id, status), 'تحديث حالة التحويل');
   };
 
   // Admin transfers a house's owner share for one booking or several at once:
@@ -875,7 +875,7 @@ export default function App() {
 
   const handleJoinWaitlist = (entry: WaitlistEntry): boolean => {
     setWaitlist((prev) => [...prev, entry]);
-    createWaitlistEntry(entry);
+    trackWrite(createWaitlistEntry(entry), 'التسجيل في قائمة الانتظار');
     return true;
   };
 
@@ -893,12 +893,12 @@ export default function App() {
 
   const handleAddExpense = (expense: Expense) => {
     setExpenses((prev) => [expense, ...prev]);
-    createExpenseDb(expense);
+    trackWrite(createExpenseDb(expense), 'إضافة مصروف');
   };
 
   const handleDeleteExpense = (expenseId: string) => {
     setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
-    deleteExpenseDb(expenseId);
+    trackWrite(deleteExpenseDb(expenseId), 'حذف مصروف');
   };
 
   const handleRequestPayout = async (payout: Payout): Promise<boolean> => {
@@ -964,12 +964,12 @@ export default function App() {
   // itself, unlike the old fire-and-forget client RPC call.
   const handleApproveBooking = (bookingId: string) => {
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'approved' } : b)));
-    updateBookingStatus(bookingId, 'approved');
+    trackWrite(updateBookingStatus(bookingId, 'approved'), 'قبول الحجز');
   };
 
   const handleRejectBooking = (bookingId: string) => {
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'rejected' } : b)));
-    updateBookingStatus(bookingId, 'rejected');
+    trackWrite(updateBookingStatus(bookingId, 'rejected'), 'رفض الحجز');
     freeBookingAllocations(bookingId);
   };
 
@@ -1182,7 +1182,7 @@ export default function App() {
     if (!change) return;
 
     setBookings((prev) => prev.map((bk) => (bk.id === b.id ? { ...bk, ...change } : bk)));
-    updateBookingFields(b.id, change)
+    trackWrite(updateBookingFields(b.id, change), 'تحديث الحجز بعد مراجعة الإيصال')
       .then(() => { if (currentUser?.id === b.userId) refreshCurrentUserPoints(b.userId); });
 
     // Notification (payment confirmed/rejected, and booking
@@ -1194,16 +1194,12 @@ export default function App() {
   // --- Admin Operations ---
   const handleApproveHouse = (houseId: string) => {
     setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, status: 'approved' } : h)));
-    supabase.from('houses').update({ status: 'approved' }).eq('id', houseId).then(({ error }) => {
-      if (error) console.error('approveHouse:', error);
-    });
+    trackQuery(supabase.from('houses').update({ status: 'approved' }).eq('id', houseId), 'اعتماد البيت');
   };
 
   const handleRejectHouse = (houseId: string) => {
     setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, status: 'rejected' } : h)));
-    supabase.from('houses').update({ status: 'rejected' }).eq('id', houseId).then(({ error }) => {
-      if (error) console.error('rejectHouse:', error);
-    });
+    trackQuery(supabase.from('houses').update({ status: 'rejected' }).eq('id', houseId), 'رفض البيت');
   };
 
   const handleToggleUserRole = (userId: string, newRole: UserRole) => {
@@ -1222,7 +1218,7 @@ export default function App() {
       setCurrentUser(updatedUser);
     }
     // Persist to Supabase
-    supabase.from('users').update({
+    trackQuery(supabase.from('users').update({
       name: updatedUser.name, email: updatedUser.email, phone: updatedUser.phone,
       organization_name: updatedUser.organizationName ?? null,
       points: updatedUser.points ?? 0,
@@ -1233,9 +1229,7 @@ export default function App() {
       governorate: updatedUser.governorate ?? null,
       church_name: updatedUser.churchName ?? null,
       priest_name: updatedUser.priestName ?? null,
-    }).eq('id', updatedUser.id).then(({ error }) => {
-      if (error) console.error('updateUserProfile:', error);
-    });
+    }).eq('id', updatedUser.id), 'حفظ بيانات الحساب');
   };
 
   // Admin-only: approve or reject a pending servant/owner account. Requires
@@ -1244,16 +1238,14 @@ export default function App() {
   // Notification fires server-side (migration 047, trg_notify_user_on_approval_update).
   const handleSetUserApproval = (userId: string, status: 'approved' | 'rejected') => {
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, approvalStatus: status } : u)));
-    supabase.from('users').update({ approval_status: status }).eq('id', userId).then(({ error }) => {
-      if (error) console.error('setUserApproval:', error);
-    });
+    trackQuery(supabase.from('users').update({ approval_status: status }).eq('id', userId), 'تحديث حالة اعتماد المستخدم');
   };
 
   // Admin edits the platform economics (migration 024). Optimistic; the
   // update RLS-fails silently for non-admins, so only admins persist.
   const handleUpdateSettings = (next: PlatformSettings) => {
     setSettings(next);
-    updatePlatformSettings(next);
+    trackWrite(updatePlatformSettings(next), 'حفظ إعدادات المنصة');
   };
 
   // --- Admin control powers (migration 023) ---
@@ -1264,16 +1256,14 @@ export default function App() {
     const newStatus: RetreatHouse['status'] = suspend ? 'suspended' : 'approved';
     setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, status: newStatus } : h)));
     if (selectedHouse?.id === houseId) setSelectedHouse((prev) => (prev ? { ...prev, status: newStatus } : prev));
-    supabase.from('houses').update({ status: newStatus }).eq('id', houseId)
-      .then(({ error }) => { if (error) console.error('suspendHouse:', error); });
+    trackQuery(supabase.from('houses').update({ status: newStatus }).eq('id', houseId), 'تغيير حالة البيت');
   };
 
   // Ban / unban any account. is_banned is admin-only (locked by the
   // migration-023 protection trigger for everyone else).
   const handleBanUser = (userId: string, banned: boolean) => {
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, isBanned: banned } : u)));
-    supabase.from('users').update({ is_banned: banned }).eq('id', userId)
-      .then(({ error }) => { if (error) console.error('banUser:', error); });
+    trackQuery(supabase.from('users').update({ is_banned: banned }).eq('id', userId), 'حظر / رفع الحظر عن المستخدم');
   };
 
   // Self-service avatar update (any role) — used by ProfileScreen and, once
@@ -1282,14 +1272,13 @@ export default function App() {
     if (!currentUser) return;
     setCurrentUser((prev) => (prev ? { ...prev, avatarUrl } : prev));
     setUsers((prev) => prev.map((u) => (u.id === currentUser.id ? { ...u, avatarUrl } : u)));
-    supabase.from('users').update({ avatar_url: avatarUrl }).eq('id', currentUser.id)
-      .then(({ error }) => { if (error) console.error('updateAvatar:', error); });
+    trackQuery(supabase.from('users').update({ avatar_url: avatarUrl }).eq('id', currentUser.id), 'تغيير الصورة الشخصية');
   };
 
   // Cancel any booking (fraud / dispute). Admin-only via bookings_update_admin.
   const handleAdminCancelBooking = (bookingId: string) => {
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'rejected' } : b)));
-    updateBookingStatus(bookingId, 'rejected');
+    trackWrite(updateBookingStatus(bookingId, 'rejected'), 'إلغاء الحجز');
     const b = bookings.find((bk) => bk.id === bookingId);
     if (b) {
       pushNotification({
@@ -1343,8 +1332,7 @@ export default function App() {
         return h;
       })
     );
-    supabase.from('houses').update({ menu: updatedMenu }).eq('id', houseId)
-      .then(({ error }) => { if (error) console.error('updateHouseMenu:', error); });
+    trackQuery(supabase.from('houses').update({ menu: updatedMenu }).eq('id', houseId), 'حفظ قائمة الطعام');
   };
 
   const handleUpdateHouse = (updatedHouse: RetreatHouse) => {
@@ -1352,16 +1340,14 @@ export default function App() {
       prevHouses.map((h) => (h.id === updatedHouse.id ? updatedHouse : h))
     );
     if (selectedHouse && selectedHouse.id === updatedHouse.id) setSelectedHouse(updatedHouse);
-    updateHouseDb(updatedHouse);
+    trackWrite(updateHouseDb(updatedHouse), 'حفظ بيانات البيت');
   };
 
   // Owner-submitted edits to an already-approved house are staged here
   // instead of applying immediately — the admin approves or rejects them.
   const handleRequestHouseEdit = (houseId: string, changes: Partial<RetreatHouse>) => {
     setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, pendingEdit: changes } : h)));
-    supabase.from('houses').update({ pending_edit: changes }).eq('id', houseId).then(({ error }) => {
-      if (error) console.error('requestHouseEdit:', error);
-    });
+    trackQuery(supabase.from('houses').update({ pending_edit: changes }).eq('id', houseId), 'إرسال طلب تعديل البيت');
   };
 
   const handleApproveHouseEdit = (houseId: string) => {
@@ -1370,22 +1356,18 @@ export default function App() {
     const merged: RetreatHouse = { ...house, ...house.pendingEdit, pendingEdit: undefined };
     setHouses((prev) => prev.map((h) => (h.id === houseId ? merged : h)));
     if (selectedHouse && selectedHouse.id === houseId) setSelectedHouse(merged);
-    supabase.from('houses').update({ ...houseUpdatePayloadDb(merged), pending_edit: null }).eq('id', houseId).then(({ error }) => {
-      if (error) console.error('approveHouseEdit:', error);
-    });
+    trackQuery(supabase.from('houses').update({ ...houseUpdatePayloadDb(merged), pending_edit: null }).eq('id', houseId), 'اعتماد تعديل البيت');
   };
 
   const handleRejectHouseEdit = (houseId: string) => {
     setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, pendingEdit: undefined } : h)));
-    supabase.from('houses').update({ pending_edit: null }).eq('id', houseId).then(({ error }) => {
-      if (error) console.error('rejectHouseEdit:', error);
-    });
+    trackQuery(supabase.from('houses').update({ pending_edit: null }).eq('id', houseId), 'رفض تعديل البيت');
   };
 
   const handleDeleteHouse = (houseId: string) => {
     setHouses((prev) => prev.filter((h) => h.id !== houseId));
     if (selectedHouse && selectedHouse.id === houseId) setSelectedHouse(null);
-    deleteHouse(houseId);
+    trackWrite(deleteHouse(houseId), 'حذف البيت');
   };
 
   const handleAddRoom = (newRoom: Room) => {
@@ -1395,32 +1377,32 @@ export default function App() {
 
   const handleUpdateRoom = (updatedRoom: Room) => {
     setRooms((prev) => prev.map((r) => (r.id === updatedRoom.id ? updatedRoom : r)));
-    updateRoomDb(updatedRoom);
+    trackWrite(updateRoomDb(updatedRoom), 'حفظ بيانات الغرفة');
   };
 
   const handleDeleteRoom = (roomId: string) => {
     setRooms((prev) => prev.filter((r) => r.id !== roomId));
-    deleteRoomDb(roomId);
+    trackWrite(deleteRoomDb(roomId), 'حذف الغرفة');
   };
 
   const handleAddRoomType = (t: RoomType) => {
     setRoomTypes((prev) => [...prev, t]);
-    createRoomTypeDb(t);
+    trackWrite(createRoomTypeDb(t), 'إضافة نوع غرفة');
   };
   const handleUpdateRoomType = (t: RoomType) => {
     setRoomTypes((prev) => prev.map((x) => (x.id === t.id ? t : x)));
-    updateRoomTypeDb(t);
+    trackWrite(updateRoomTypeDb(t), 'تعديل نوع الغرفة');
   };
   const handleDeleteRoomType = (id: string) => {
     setRoomTypes((prev) => prev.filter((x) => x.id !== id));
     // Detach the type from any rooms that referenced it (mirrors ON DELETE SET NULL).
     setRooms((prev) => prev.map((r) => (r.typeId === id ? { ...r, typeId: undefined } : r)));
-    deleteRoomTypeDb(id);
+    trackWrite(deleteRoomTypeDb(id), 'حذف نوع الغرفة');
   };
 
   const handleAddPromoBanner = (b: PromoBanner) => {
     setPromoBanners((prev) => [...prev, b]);
-    createPromoBanner(b);
+    trackWrite(createPromoBanner(b), 'إضافة بانر');
   };
 
   const handleTogglePromoBanner = (id: string, isActive: boolean) => {
@@ -1430,20 +1412,20 @@ export default function App() {
 
   const handleDeletePromoBanner = (id: string) => {
     setPromoBanners((prev) => prev.filter((b) => b.id !== id));
-    deletePromoBanner(id);
+    trackWrite(deletePromoBanner(id), 'حذف البانر');
   };
 
   // Edit an existing banner, or reorder it (both are a plain row update).
   const handleUpdatePromoBanner = (b: PromoBanner) => {
     setPromoBanners((prev) => prev.map((x) => (x.id === b.id ? b : x)));
-    updatePromoBanner(b);
+    trackWrite(updatePromoBanner(b), 'تعديل البانر');
   };
 
   const handleUpdateReview = (updatedReview: Review) => {
     setReviews((prev) =>
       prev.map((r) => (r.id === updatedReview.id ? updatedReview : r))
     );
-    updateReviewDb(updatedReview);
+    trackWrite(updateReviewDb(updatedReview), 'حفظ التقييم');
   };
 
   // Attendees/allocations aren't part of loadAppData (see loadAttendeesForBooking

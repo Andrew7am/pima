@@ -76,6 +76,32 @@ export function clearWriteFailures() {
  * returns false, but a network layer that throws would otherwise produce an
  * unhandled rejection and, again, a screen claiming success.
  */
+/**
+ * The same, for a query sent straight to Supabase rather than through db.ts.
+ *
+ * Those resolve to `{ error }` and are written all over App.tsx as
+ * `.then(({ error }) => { if (error) console.error(...) })`. Typed
+ * structurally so this file keeps no dependency on the client.
+ */
+export async function trackQuery(
+  query: PromiseLike<{ error: { message?: string } | null }>,
+  what: string,
+): Promise<boolean> {
+  try {
+    const { error } = await query;
+    if (error) {
+      console.error(`write failed (${what}):`, error);
+      reportWriteFailure(what);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(`write failed (${what}):`, err);
+    reportWriteFailure(what);
+    return false;
+  }
+}
+
 export async function trackWrite(
   write: Promise<WriteResult> | WriteResult,
   what: string,

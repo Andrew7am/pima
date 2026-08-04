@@ -1,10 +1,33 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
-  trackWrite, reportWriteFailure, dismissWriteFailure, clearWriteFailures,
+  trackWrite, trackQuery, reportWriteFailure, dismissWriteFailure, clearWriteFailures,
   subscribeToWriteFailures, type WriteFailure,
 } from './writeFeedback';
 
 beforeEach(() => clearWriteFailures());
+
+describe('trackQuery', () => {
+  const current = () => { let c: WriteFailure[] = []; subscribeToWriteFailures((f) => { c = f; }); return c; };
+
+  it('says nothing when supabase returns no error', async () => {
+    expect(await trackQuery(Promise.resolve({ error: null }), 'اعتماد البيت')).toBe(true);
+    expect(current()).toEqual([]);
+  });
+
+  it('reports the failure when supabase returns an error', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(await trackQuery(Promise.resolve({ error: { message: 'permission denied' } }), 'اعتماد البيت')).toBe(false);
+    expect(current().map((f) => f.what)).toEqual(['اعتماد البيت']);
+    spy.mockRestore();
+  });
+
+  it('catches a rejection rather than leaving it unhandled', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(await trackQuery(Promise.reject(new Error('offline')), 'حظر مستخدم')).toBe(false);
+    expect(current()).toHaveLength(1);
+    spy.mockRestore();
+  });
+});
 
 describe('trackWrite', () => {
   it('says nothing when the write succeeded', async () => {
