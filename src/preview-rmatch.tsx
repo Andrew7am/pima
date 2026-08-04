@@ -32,5 +32,8 @@ createRoot(document.getElementById('root')!).render(
     onUpdateUser={() => undefined}
     onClose={() => undefined}
     onOpenRewards={() => undefined}
+    // Real matchmaking runs for real here — there is no session in this
+    // harness, so the RPC is rejected and the error path is what shows.
+    onEnterMatch={(roomId) => { (window as unknown as Record<string, unknown>).__roomId = roomId; }}
   />,
 );

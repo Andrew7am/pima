@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { User as UserType } from '../types';
 import { xpToNext, xpProgressPct } from './progress';
+import { findOrCreateRandomRoom } from './multiplayer';
+import { buildQuestions } from './multiplayer/matchQuestions';
 import { SmartAssistBar } from './SmartAssistBar';
 import { ChatComponent } from './ChatComponent';
 import { FriendChat } from './FriendChat';
@@ -41,6 +43,10 @@ interface RandomMatchGameProps {
   /** Opens the rewards screen. The daily-rewards card is only rendered when
    *  this is provided, since there is nowhere for it to go otherwise. */
   onOpenRewards?: () => void;
+  /** Hands a real matchmade room to the live match screen. Without it the
+   *  button falls back to the old scripted opponent, so the screen still
+   *  works anywhere it has not been wired yet. */
+  onEnterMatch?: (roomId: string) => void;
 }
 
 const AssetWithFallback = ({ src, alt, className, fallbackSvg }: { src: string; alt: string; className: string; fallbackSvg: React.ReactNode }) => {
@@ -262,7 +268,8 @@ export default function RandomMatchGame({
   onClose,
   isSoundEnabled = true,
   isMusicEnabled = true,
-  onOpenRewards
+  onOpenRewards,
+  onEnterMatch
 }: RandomMatchGameProps) {
   // Sync background music with prop
   useEffect(() => {
@@ -297,6 +304,9 @@ export default function RandomMatchGame({
   // `Lv. {currentUser.level || 23}` — and the 23 in the approved design is
   // that very fallback, photographed and handed back. `||` also fires on a
   // legitimate 0, so a placeholder behind it can never be told from data.
+  // Real matchmaking state, separate from the scripted flow below.
+  const [findingMatch, setFindingMatch] = useState(false);
+  const [matchError, setMatchError] = useState('');
   const userLevel = currentUser.level ?? 1;
   const userXp = currentUser.xp ?? 0;
 
@@ -868,7 +878,43 @@ export default function RandomMatchGame({
     }
   }, [screen, liveRoom, hasRewardedFriend, isCreator, rating, currentUser, onUpdateUser]);
 
-  // START MATCHMAKING (Competitive Flow)
+  /**
+   * Find a real opponent.
+   *
+   * find_or_create_random_room either drops the player into someone else's
+   * waiting room — matched on rating, closest first, within ±500 — or opens
+   * one and leaves it waiting. Either way the live match screen takes it from
+   * there: it renders the waiting state, flips to VS the moment a second
+   * player arrives, and settles rating, XP and coins server-side through
+   * finalize_match. Nothing about the opponent is decided on this device.
+   *
+   * What this replaces: a timer where `Math.random() > 0.7` decided a match
+   * had been "found", the opponent was one of seven names written into this
+   * file, and their answers were `Math.random() < 0.75`.
+   */
+  const startRealMatch = async () => {
+    if (!onEnterMatch) return;
+    triggerHaptic('light');
+    playSound('click');
+    setMatchError('');
+    setFindingMatch(true);
+    try {
+      const result = await findOrCreateRandomRoom('trivia', buildQuestions('trivia'));
+      if (!result) {
+        setMatchError('تعذّر البحث عن خصم دلوقتي. تأكد من اتصالك وحاول تاني.');
+        return;
+      }
+      onEnterMatch(result.roomId);
+    } catch (err) {
+      console.error('startRealMatch:', err);
+      setMatchError('تعذّر البحث عن خصم دلوقتي. تأكد من اتصالك وحاول تاني.');
+    } finally {
+      setFindingMatch(false);
+    }
+  };
+
+  // START MATCHMAKING (Competitive Flow) — the scripted fallback, used only
+  // where onEnterMatch has not been provided.
   const startSearching = () => {
     triggerHaptic('light');
     playSound('click');
@@ -1311,14 +1357,23 @@ export default function RandomMatchGame({
               </div>
 
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={startSearching}
-                className="relative w-full mt-3.5 py-3.5 bg-gradient-to-r from-[#F5C542] to-amber-500 hover:from-amber-300 hover:to-amber-400 text-[#0d1b3e] rounded-2xl shadow-xl shadow-amber-900/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                whileHover={{ scale: findingMatch ? 1 : 1.02 }}
+                whileTap={{ scale: findingMatch ? 1 : 0.98 }}
+                disabled={findingMatch}
+                onClick={onEnterMatch ? startRealMatch : startSearching}
+                className="relative w-full mt-3.5 py-3.5 bg-gradient-to-r from-[#F5C542] to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:opacity-70 text-[#0d1b3e] rounded-2xl shadow-xl shadow-amber-900/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <span className="text-base font-black">ابدأ البحث</span>
-                <Zap className="w-5 h-5" />
+                <span className="text-base font-black">{findingMatch ? 'جارٍ البحث عن خصم...' : 'ابدأ البحث'}</span>
+                {findingMatch
+                  ? <RefreshCw className="w-5 h-5 animate-spin" />
+                  : <Zap className="w-5 h-5" />}
               </motion.button>
+
+              {matchError && (
+                <p className="mt-2 text-[10px] font-bold text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-xl px-3 py-2 text-center">
+                  {matchError}
+                </p>
+              )}
             </div>
 
             {/* Two half cards. The design's second was «المكافآت اليومية —

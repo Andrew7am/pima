@@ -241,6 +241,10 @@ export default function App() {
   // Conference Hub state — seeded from the sample conference; the opener acts as its host.
   const [conference, setConference] = useState<ConferenceRoom | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  // Where a finished live match returns to. Matchmaking can start from the
+  // lobby or from the random-match home, and sending everyone back to the
+  // lobby would drop half of them on a screen they never opened.
+  const [matchReturnScreen, setMatchReturnScreen] = useState<'multiplayer_lobby' | 'random_match'>('multiplayer_lobby');
   // Newly-unlocked achievement ids awaiting their celebration toast — lives
   // here (not inside a game screen) so an unlock survives navigating away
   // from the game that triggered it. See AchievementToast.tsx.
@@ -2043,6 +2047,7 @@ export default function App() {
                 onUpdateUser={(u) => setCurrentUser(u)}
                 onClose={() => setActiveScreen('entertainment')}
                 onOpenRewards={() => setActiveScreen('rewards')}
+                onEnterMatch={(roomId) => { setActiveRoomId(roomId); setMatchReturnScreen('random_match'); setActiveScreen('live_match'); }}
               />
             </div>
           )}
@@ -2126,7 +2131,7 @@ export default function App() {
             <MultiplayerLobby
               currentUser={currentUser}
               onBack={() => setActiveScreen('entertainment')}
-              onEnterMatch={(roomId) => { setActiveRoomId(roomId); setActiveScreen('live_match'); }}
+              onEnterMatch={(roomId) => { setActiveRoomId(roomId); setMatchReturnScreen('multiplayer_lobby'); setActiveScreen('live_match'); }}
             />
           )}
 
@@ -2134,7 +2139,7 @@ export default function App() {
             <LiveMatchGame
               currentUser={currentUser}
               roomId={activeRoomId}
-              onBack={() => { setActiveRoomId(null); setActiveScreen('multiplayer_lobby'); }}
+              onBack={() => { setActiveRoomId(null); setActiveScreen(matchReturnScreen); }}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
               onAchievementsUnlocked={handleAchievementsUnlocked}
             />
