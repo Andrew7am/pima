@@ -10,6 +10,7 @@ import { User as UserType } from '../types';
 import { xpToNext, xpProgressPct } from './progress';
 import { getLeague } from './leagues';
 import { awardGameReward } from '../lib/db';
+import { openExternal, whatsAppShareUrl, SITE_URL } from '../lib/openExternal';
 import { findOrCreateRandomRoom } from './multiplayer';
 import { buildRandomMatchQuestions } from './multiplayer/matchQuestions';
 import MatchBannerScene from './multiplayer/MatchBannerScene';
@@ -323,10 +324,26 @@ export default function RandomMatchGame({
 
 
 
+  /**
+   * Share the room code.
+   *
+   * Two things were wrong with this and both made the button useless. It
+   * called window.open(url, '_blank'), which is a silent no-op inside the
+   * Capacitor Android WebView — the tap did nothing at all. And the message
+   * ended in `https://yourapp.com/download`, a placeholder nobody ever
+   * replaced, so anyone who did receive it got a dead link.
+   */
   const shareViaWhatsApp = (code: string) => {
-    const message = `🎮 مرحباً! لقد أنشأت غرفة خاصة للعب معك.\n\n🔑 كود الغرفة: ${code}\n\n📲 افتح اللعبة ثم اختر "العب مع صديق" وأدخل الكود.\n\n🚀 هيا نبدأ التحدي!\n\n🔗 https://yourapp.com/download`;
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+    const message = [
+      '🎮 تعالى نلعب مع بعض على بيما!',
+      '',
+      `🔑 كود الغرفة: ${code}`,
+      '',
+      '📲 افتح اللعبة، اختار «العب مع صاحبك» واكتب الكود.',
+      '',
+      SITE_URL,
+    ].join('\n');
+    void openExternal(whatsAppShareUrl(message));
   };
 
   useEffect(() => {

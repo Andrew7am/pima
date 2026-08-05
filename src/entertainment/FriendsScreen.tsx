@@ -80,7 +80,13 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
     const result = await sendFriendRequest(id);
     setBusyId(null);
     if (result.ok === false) {
-      setSearchNote(ERROR_MESSAGES[result.error] ?? 'حدث خطأ، حاول مرة أخرى.');
+      // Matched by substring, not by key. `result.error` is the Postgres
+      // error MESSAGE, which carries the raised code inside a longer string —
+      // so an exact lookup missed every time and every outcome, including
+      // «you are already friends», surfaced as the same unhelpful «حدث خطأ».
+      // Same matching the live match screen already uses for submit_answer.
+      const known = Object.entries(ERROR_MESSAGES).find(([code]) => result.error.includes(code));
+      setSearchNote(known?.[1] ?? 'حدث خطأ، حاول مرة أخرى.');
       return;
     }
     setSearchResults((prev) => prev.filter((u) => u.id !== id));
