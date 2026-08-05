@@ -1098,6 +1098,7 @@ export default function AdminDashboard({
               { key: 'freeCancelDays', label: 'إلغاء مجاني قبل الوصول بـ', suffix: 'يوم', factor: 1, hint: 'الإلغاء قبل الوصول بهذه المدة أو أكثر = استرداد كامل.' },
               { key: 'partialRefundDays', label: 'استرداد جزئي قبل الوصول بـ', suffix: 'يوم', factor: 1, hint: 'الإلغاء قبل الوصول بهذه المدة أو أكثر = استرداد جزئي. أقل منها = لا استرداد.' },
               { key: 'partialRefundPct', label: 'نسبة الاسترداد الجزئي', suffix: '%', factor: 100, hint: 'النسبة المستردة من المبلغ المدفوع في نافذة الاسترداد الجزئي.' },
+              { key: 'maxBookingsPerDay', label: 'أقصى عدد حجوزات للحساب الواحد', suffix: 'حجز / ٢٤ ساعة', factor: 1, hint: 'يمنع حساب واحد من إغراق البيوت بحجوزات وهمية. صاحب البيت والأدمن مستثنيين، فالمالك يقدر يسجّل حجوزات التليفون براحته.' },
             ] as const).map((f) => (
               <div key={f.key} className="space-y-1">
                 <label className="block text-[11px] font-bold text-[#4A4A3A]">{f.label}</label>
@@ -1119,6 +1120,34 @@ export default function AdminDashboard({
                 <p className="text-[9px] text-[#8A8A70]">{f.hint}</p>
               </div>
             ))}
+
+            {/* Support line (migration 103). Six screens link to this, two of
+                them shown to people locked out of everything else — a banned
+                user and an owner waiting for approval. It used to be a
+                hardcoded placeholder that nobody answered. */}
+            <div className="border-t border-[#EBEBE0] pt-3 space-y-1">
+              <label className="block text-[11px] font-black text-[#4A4A3A]" htmlFor="setting-supportWhatsApp">
+                رقم واتساب الدعم
+              </label>
+              <input
+                id="setting-supportWhatsApp"
+                type="text"
+                inputMode="numeric"
+                dir="ltr"
+                value={settingsDraft.supportWhatsApp}
+                onChange={(e) => setSettingsDraft((prev) => ({ ...prev, supportWhatsApp: e.target.value.replace(/\D/g, '') }))}
+                placeholder="201096126259"
+                className="w-48 bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40] font-mono"
+              />
+              <p className="text-[9px] text-[#8A8A70]">
+                بكود الدولة وبدون + أو مسافات — كده بالظبط زي ما واتساب عايزه. مثال: 201096126259
+              </p>
+              {!/^\d{8,15}$/.test(settingsDraft.supportWhatsApp) && (
+                <p role="alert" className="text-[9px] font-bold text-rose-600">
+                  الرقم لازم يكون من ٨ لـ ١٥ رقم بكود الدولة، وإلا مش هيتحفظ.
+                </p>
+              )}
+            </div>
 
             {/* Platform collection accounts — where guests send the deposit (migration 069) */}
             <div className="border-t border-[#EBEBE0] pt-3 space-y-2">

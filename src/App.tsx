@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useLayoutEffect, useCallback, useRef, lazy, Suspense } from 'react';
-import { supportWhatsAppUrl } from './lib/support';
+import { supportWhatsAppUrl, setSupportWhatsApp } from './lib/support';
 import { pushTrail, popTrail } from './lib/screenTrail';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -152,6 +152,15 @@ export default function App() {
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [promoBanners, setPromoBanners] = useState<PromoBanner[]>([]);
   const [settings, setSettings] = useState<PlatformSettings>(DEFAULT_PLATFORM_SETTINGS);
+
+  // The support number is read from a module in lib/support, because the six
+  // screens that link to it are leaves that never see settings — including the
+  // banned and pending-approval screens, which render outside the normal shell.
+  // One effect on the value covers every path that sets it: the logged-in load,
+  // the guest load, and an admin saving a new number.
+  useEffect(() => {
+    setSupportWhatsApp(settings.supportWhatsApp);
+  }, [settings.supportWhatsApp]);
 
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {

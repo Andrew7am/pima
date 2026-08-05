@@ -6,6 +6,12 @@ import {
   Eye, EyeOff, ChevronLeft, Clock,
 } from 'lucide-react';
 import { authErrorMessage, retryInLabel } from '../lib/authErrors';
+import { arabicNumber } from '../lib/arabic';
+
+// Kept in step with Supabase Auth’s minimum_password_length. The server is
+// what actually enforces it — this only stops the form from accepting a
+// password the sign-up call is about to reject, which reads as a bug.
+const MIN_PASSWORD_LENGTH = 8;
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
 import Logo from './Logo';
@@ -296,8 +302,8 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
       setError('الرجاء كتابة اسم الكنيسة والأب الكاهن المسؤول.');
       return;
     }
-    if (password.length < 6) {
-      setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل.');
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`كلمة المرور يجب أن تكون ${arabicNumber(MIN_PASSWORD_LENGTH)} أحرف على الأقل.`);
       return;
     }
     setLoading(true);
@@ -834,7 +840,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
               <div>
                 <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">كلمة المرور:</label>
                 <div className="relative">
-                  <input type="password" required minLength={6} placeholder="6 أحرف على الأقل" value={password} onChange={(e) => setPassword(e.target.value)}
+                  <input type="password" required minLength={MIN_PASSWORD_LENGTH} placeholder={`${arabicNumber(MIN_PASSWORD_LENGTH)} أحرف على الأقل`} value={password} onChange={(e) => setPassword(e.target.value)}
                     className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none" />
                   <Lock className="absolute top-2.5 right-3 w-4 h-4 text-[#BCBC9D]" />
                 </div>

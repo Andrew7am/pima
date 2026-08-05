@@ -792,6 +792,10 @@ export async function loadPlatformSettings(): Promise<PlatformSettings> {
     partialRefundPct: data.partial_refund_pct != null ? Number(data.partial_refund_pct) : DEFAULT_PLATFORM_SETTINGS.partialRefundPct,
     // Pre-migration-069 rows have no column → undefined → fall back to [].
     paymentMethods: data.payment_methods != null ? (data.payment_methods as PlatformSettings['paymentMethods']) : [],
+    supportWhatsApp: data.support_whatsapp || DEFAULT_PLATFORM_SETTINGS.supportWhatsApp,
+    maxBookingsPerDay: data.max_bookings_per_day != null
+      ? Number(data.max_bookings_per_day)
+      : DEFAULT_PLATFORM_SETTINGS.maxBookingsPerDay,
   };
 }
 
@@ -806,6 +810,8 @@ export async function updatePlatformSettings(s: PlatformSettings): Promise<boole
     partial_refund_days: s.partialRefundDays,
     partial_refund_pct: s.partialRefundPct,
     payment_methods: s.paymentMethods ?? [],
+    support_whatsapp: s.supportWhatsApp,
+    max_bookings_per_day: s.maxBookingsPerDay,
     updated_at: new Date().toISOString(),
   }).eq('id', 1);
   if (error) console.error('updatePlatformSettings:', error);

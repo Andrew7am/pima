@@ -455,6 +455,14 @@ export interface PlatformSettings {
   // Central platform payment accounts guests send the deposit to (manual
   // collection model — migration 069). Empty = fall back to owner-direct.
   paymentMethods: OwnerPaymentMethod[];
+  // Support line every "contact us" link resolves to (migration 103). Bare
+  // wa.me format: country code + number, digits only, no '+'.
+  supportWhatsApp: string;
+  // How many bookings one account may create in a rolling 24 hours. Enforced
+  // by a DB trigger, not just here — the owner of the house and admins are
+  // exempt, because an owner entering bookings taken by phone is not the thing
+  // being rate limited.
+  maxBookingsPerDay: number;
 }
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
@@ -472,6 +480,8 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   partialRefundDays: 3,
   partialRefundPct: 0.5,
   paymentMethods: [],
+  supportWhatsApp: '201096126259',
+  maxBookingsPerDay: 20,
 };
 
 export interface AppNotification {
