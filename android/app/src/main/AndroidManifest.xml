@@ -39,6 +39,32 @@
         </provider>
     </application>
 
+    <!-- Which other apps this one is allowed to see.
+
+         Android 11 made package visibility opt-in, and this app targets SDK
+         36 — so without this block WhatsApp is simply invisible to us.
+         startActivity on a whatsapp:// intent throws ActivityNotFoundException,
+         Capacitor catches it, and «دعوة عبر واتساب» does nothing at all. No
+         amount of JavaScript can fix that: the app is not permitted to know
+         WhatsApp is installed, so every attempt to hand off to it fails the
+         same silent way.
+
+         The two packages are consumer WhatsApp and WhatsApp Business. The
+         intent entries keep the generic cases working too — opening a link in
+         whichever browser the user has, and a plain-text share sheet. -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="text/plain" />
+        </intent>
+    </queries>
+
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
