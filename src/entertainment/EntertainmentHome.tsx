@@ -26,9 +26,19 @@ interface EntertainmentHomeProps {
   onOpenGamesCatalog: () => void;
   onOpenRewards: () => void;
   onUserUpdated?: (patch: Partial<User>) => void;
+  /**
+   * Which category is open, owned by App.
+   *
+   * Lifted out of this component because App unmounts it whenever a game
+   * opens — so local state meant every return from a game landed on the
+   * root menu instead of the list the player left. They tapped الألعاب,
+   * played, came back, and had to tap الألعاب again, every time.
+   */
+  section: Section;
+  onSectionChange: (section: Section) => void;
 }
 
-type Section = 'menu' | 'games' | 'seasons' | 'community' | 'stats' | 'settings';
+export type Section = 'menu' | 'games' | 'seasons' | 'community' | 'stats' | 'settings';
 
 // A compact stat tile used by the الإحصائيات section.
 function StatTile({ icon, value, label, tint }: { icon: React.ReactNode; value: React.ReactNode; label: string; tint: string }) {
@@ -80,9 +90,9 @@ function HubCard({ icon, title, badge, badgeCls, desc, onClick, borderHover, che
 export default function EntertainmentHome({
   currentUser, onBack, onOpenTrivia, onOpenWhoAmI, onOpenHymns, onOpenFillVerse, onOpenMultiplayer,
   onOpenAchievements, onOpenFriends, onOpenLeaderboard, onOpenRooms, onOpenConference, onOpenRandomMatch,
-  onOpenGamesCatalog, onOpenRewards, onUserUpdated,
+  onOpenGamesCatalog, onOpenRewards, onUserUpdated, section, onSectionChange,
 }: EntertainmentHomeProps) {
-  const [section, setSection] = useState<Section>('menu');
+  const setSection = onSectionChange;
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
 

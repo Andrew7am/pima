@@ -53,6 +53,19 @@ const ContactSupport = lazy(() => import('./components/ContactSupport'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 import PrivacyPolicy from './components/PrivacyPolicy';
 const EntertainmentHome = lazy(() => import('./entertainment/EntertainmentHome'));
+import type { Section as EntertainmentSection } from './entertainment/EntertainmentHome';
+
+/**
+ * Screens that live inside the entertainment tree.
+ *
+ * Used to tell a RETURN from a game apart from a fresh visit to the hub, so
+ * the category the player was in survives the first and resets on the second.
+ */
+const ENTERTAINMENT_SCREENS = new Set<Screen>([
+  'entertainment', 'trivia', 'whoami', 'hymns', 'fillverse', 'multiplayer_lobby',
+  'live_match', 'achievements', 'friends', 'chat_thread', 'leaderboard',
+  'interactive_room', 'conference_hub', 'random_match', 'games_catalog', 'rewards',
+]);
 const TriviaGame = lazy(() => import('./entertainment/games/TriviaGame'));
 const WhoAmIGame = lazy(() => import('./entertainment/games/WhoAmIGame'));
 const HymnsGame = lazy(() => import('./entertainment/games/HymnsGame'));
@@ -266,6 +279,10 @@ export default function App() {
   // lobby or from the random-match home, and sending everyone back to the
   // lobby would drop half of them on a screen they never opened.
   const [matchReturnScreen, setMatchReturnScreen] = useState<'multiplayer_lobby' | 'random_match'>('multiplayer_lobby');
+  // Which category the entertainment hub is showing. Owned here because the
+  // hub unmounts every time a game opens, and a player who came back from a
+  // game should land where they left rather than at the root menu.
+  const [entertainmentSection, setEntertainmentSection] = useState<EntertainmentSection>('menu');
 
   // --- Back navigation ---
   //
@@ -287,6 +304,14 @@ export default function App() {
     if (currentScreenRef.current === activeScreen) return;
     if (poppingRef.current) poppingRef.current = false;
     else screenTrail.current = pushTrail(screenTrail.current, currentScreenRef.current, activeScreen);
+
+    // Arriving at the hub from OUTSIDE the entertainment tree is a fresh
+    // visit, so it opens on the root menu. Coming back from a game is not —
+    // that keeps the category the player was in, which is the whole reason
+    // the section is owned here rather than inside the hub.
+    if (activeScreen === 'entertainment' && !ENTERTAINMENT_SCREENS.has(currentScreenRef.current)) {
+      setEntertainmentSection('menu');
+    }
     currentScreenRef.current = activeScreen;
   }, [activeScreen]);
 
@@ -2065,6 +2090,8 @@ export default function App() {
           {activeScreen === 'entertainment' && (
             <EntertainmentHome
               currentUser={currentUser}
+              section={entertainmentSection}
+              onSectionChange={setEntertainmentSection}
               onBack={() => setActiveScreen('explore')}
               onOpenTrivia={() => setActiveScreen('trivia')}
               onOpenWhoAmI={() => setActiveScreen('whoami')}
