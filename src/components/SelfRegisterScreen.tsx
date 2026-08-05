@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { arabicDateRange } from '../lib/arabic';
 import { Loader2, UserPlus, CheckCircle2, CalendarDays, Users, PartyPopper } from 'lucide-react';
 import Logo from './Logo';
 import { getBookingInviteInfo, selfRegisterAttendee, BookingInviteInfo } from '../lib/selfRegister';
@@ -95,7 +96,7 @@ export default function SelfRegisterScreen({ bookingId }: { bookingId: string })
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#C5A059]"><UserPlus className="w-3.5 h-3.5" /> دعوة انضمام لخلوة</div>
           <h1 className="text-base font-black leading-snug">{info.houseName}</h1>
           <div className="flex flex-wrap gap-3 text-[10.5px] text-slate-200 font-bold">
-            <span className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5 text-[#C5A059]" /> {info.checkIn} → {info.checkOut}</span>
+            <span className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5 text-[#C5A059]" /> {arabicDateRange(info.checkIn, info.checkOut)}</span>
             <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-[#C5A059]" /> سُجِّل {info.registeredCount}/{info.guestsCount}</span>
           </div>
         </div>

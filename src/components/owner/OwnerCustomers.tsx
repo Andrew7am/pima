@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { arabicNumber, arabicPlural, arabicDate, arabicDateRange, arabicDecimal, GUEST_FORMS, BOOKING_FORMS } from '../../lib/arabic';
 import { Booking, Review, User } from '../../types';
 import { Search, Users, Phone, MessageCircle, Star, Calendar, Wallet, Crown, ChevronDown } from 'lucide-react';
 import BottomSheet from './BottomSheet';
@@ -65,7 +66,7 @@ export default function OwnerCustomers({ bookings, reviews = [], users = [], onO
     <div className="space-y-3" dir="rtl">
       <div>
         <h2 className="text-base font-black text-[var(--color-owner-text)] flex items-center gap-1.5">
-          <Users className="w-4.5 h-4.5 text-[var(--color-owner-primary)]" /> العملاء ({customers.length})
+          <Users className="w-4.5 h-4.5 text-[var(--color-owner-primary)]" /> العملاء ({arabicNumber(customers.length)})
         </h2>
         <p className="text-[11px] text-[var(--color-owner-secondary)] mt-0.5">سجل ضيوفك وتاريخ إقامتهم — اضغط لعرض الملف الكامل.</p>
       </div>
@@ -103,10 +104,10 @@ export default function OwnerCustomers({ bookings, reviews = [], users = [], onO
                     <span className="text-xs font-black text-[var(--color-owner-text)] truncate">{c.name}</span>
                     {c.userId === topSpenderId && <Crown className="w-3.5 h-3.5 text-[#D4AF37] fill-[#D4AF37] shrink-0" />}
                   </div>
-                  <div className="text-[10px] text-[var(--color-owner-secondary)] font-bold">{c.totalBookings} حجز · آخر إقامة {c.lastStay || '—'}</div>
+                  <div className="text-[10px] text-[var(--color-owner-secondary)] font-bold">{arabicPlural(c.totalBookings, BOOKING_FORMS)} · آخر إقامة {c.lastStay ? arabicDate(c.lastStay) : '—'}</div>
                 </div>
                 <div className="text-left shrink-0">
-                  <div className="text-[11px] font-black text-[var(--color-owner-primary)]">{c.totalSpent.toLocaleString()} ج.م</div>
+                  <div className="text-[11px] font-black text-[var(--color-owner-primary)]">{arabicNumber(c.totalSpent)} ج.م</div>
                   <ChevronDown className="w-3.5 h-3.5 text-[var(--color-owner-secondary)] -rotate-90 mr-auto" />
                 </div>
               </button>
@@ -147,9 +148,9 @@ export default function OwnerCustomers({ bookings, reviews = [], users = [], onO
 
               {/* Stats */}
               <div className="grid grid-cols-3 gap-2">
-                <div className="bg-[var(--color-owner-bg)] rounded-2xl p-2.5 text-center"><Wallet className="w-4 h-4 text-[var(--color-owner-primary)] mx-auto" /><div className="text-[13px] font-black text-[var(--color-owner-text)] mt-0.5">{openCustomer.totalSpent.toLocaleString()}</div><div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">إجمالي الإنفاق</div></div>
+                <div className="bg-[var(--color-owner-bg)] rounded-2xl p-2.5 text-center"><Wallet className="w-4 h-4 text-[var(--color-owner-primary)] mx-auto" /><div className="text-[13px] font-black text-[var(--color-owner-text)] mt-0.5">{arabicNumber(openCustomer.totalSpent)}</div><div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">إجمالي الإنفاق</div></div>
                 <div className="bg-[var(--color-owner-bg)] rounded-2xl p-2.5 text-center"><Calendar className="w-4 h-4 text-[var(--color-owner-primary)] mx-auto" /><div className="text-[13px] font-black text-[var(--color-owner-text)] mt-0.5">{openCustomer.totalBookings}</div><div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">عدد الحجوزات</div></div>
-                <div className="bg-[var(--color-owner-bg)] rounded-2xl p-2.5 text-center"><Star className="w-4 h-4 text-amber-400 fill-amber-400 mx-auto" /><div className="text-[13px] font-black text-[var(--color-owner-text)] mt-0.5">{avg > 0 ? avg.toFixed(1) : '—'}</div><div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">متوسط تقييمه</div></div>
+                <div className="bg-[var(--color-owner-bg)] rounded-2xl p-2.5 text-center"><Star className="w-4 h-4 text-amber-400 fill-amber-400 mx-auto" /><div className="text-[13px] font-black text-[var(--color-owner-text)] mt-0.5">{avg > 0 ? arabicDecimal(avg) : '—'}</div><div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">متوسط تقييمه</div></div>
               </div>
 
               {/* Bookings history */}
@@ -158,10 +159,10 @@ export default function OwnerCustomers({ bookings, reviews = [], users = [], onO
                 {openBookings.map((b) => (
                   <div key={b.id} className="flex items-center justify-between bg-[var(--color-owner-bg)] rounded-xl px-3 py-2">
                     <div className="min-w-0">
-                      <div className="text-[10px] font-bold text-[var(--color-owner-text)]">{b.checkIn} ← {b.checkOut}</div>
-                      <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{b.guestsCount} فرد · {STATUS_LABEL[b.status] || b.status}</div>
+                      <div className="text-[10px] font-bold text-[var(--color-owner-text)]">{arabicDateRange(b.checkIn, b.checkOut)}</div>
+                      <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(b.guestsCount, GUEST_FORMS)} · {STATUS_LABEL[b.status] || b.status}</div>
                     </div>
-                    <span className="text-[10px] font-black text-[var(--color-owner-primary)] shrink-0">{b.totalPrice.toLocaleString()} ج.م</span>
+                    <span className="text-[10px] font-black text-[var(--color-owner-primary)] shrink-0">{arabicNumber(b.totalPrice)} ج.م</span>
                   </div>
                 ))}
               </div>

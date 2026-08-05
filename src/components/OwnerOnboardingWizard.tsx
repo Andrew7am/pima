@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { arabicNumber } from '../lib/arabic';
 import { RetreatHouse, Room, RoomType, RoomFacility, ConferenceHall, OwnerPaymentMethod, User } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import PhotoPickerButtons from './PhotoPickerButtons';
@@ -514,7 +515,7 @@ export default function OwnerOnboardingWizard({
           </div>
           <h2 className="text-lg font-black text-[#2D2D24]">إعداد بيت المؤتمرات</h2>
           <p className="text-[11px] text-[#8A8A70] mt-1 leading-relaxed">
-            خطوة {stepIdx + 1} من {steps.length}: {STEP_LABELS[step] ?? ''} — مش هتقدر توصل للوحة التحكم لحد ما تخلّص كل الخطوات.
+            خطوة {arabicNumber(stepIdx + 1)} من {arabicNumber(steps.length)}: {STEP_LABELS[step] ?? ''} — مش هتقدر توصل للوحة التحكم لحد ما تخلّص كل الخطوات.
           </p>
 
           {/* Numbered step circles, connected by a line — filled/checked
@@ -628,7 +629,7 @@ export default function OwnerOnboardingWizard({
                 <div className="grid grid-cols-3 gap-2">
                   {images.map((url, i) => (
                     <div key={url} className="relative group">
-                      <img src={url} alt={`صورة ${i + 1}`} className="w-full h-24 object-cover rounded-xl border border-[#D6D6C2]" />
+                      <img src={url} alt={`صورة ${arabicNumber(i + 1)}`} className="w-full h-24 object-cover rounded-xl border border-[#D6D6C2]" />
                       {i === 0 && (
                         <span className="absolute bottom-1 right-1 bg-[#5A5A40] text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
                           الغلاف
@@ -637,7 +638,7 @@ export default function OwnerOnboardingWizard({
                       <button
                         type="button"
                         onClick={() => removeImage(url)}
-                        aria-label={`حذف صورة ${i + 1}`}
+                        aria-label={`حذف صورة ${arabicNumber(i + 1)}`}
                         className="absolute top-1 left-1 bg-white/90 hover:bg-white text-red-600 rounded-full p-1 shadow"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -1038,12 +1039,12 @@ export default function OwnerOnboardingWizard({
                       <span><span className="text-[#8A8A70] font-bold">الأسرّة: </span><span className="font-black">{effectiveBedsCount}</span></span>
                       <span>
                         <span className="text-[#8A8A70] font-bold">{isMonthly ? 'الإيجار الشهري: ' : 'السعر لليلة للفرد: '}</span>
-                        <span className="font-black">{(isMonthly ? monthlyRent : pricePerNight).toLocaleString()} ج.م</span>
+                        <span className="font-black">{arabicNumber(isMonthly ? monthlyRent : pricePerNight)} ج.م</span>
                       </span>
                       {!isMonthly && (
                         <span>
                           <span className="text-[#8A8A70] font-bold">اليوم بدون مبيت: </span>
-                          <span className="font-black">{dayUsePrice ? `${dayUsePrice.toLocaleString()} ج.م` : 'غير متاح'}</span>
+                          <span className="font-black">{dayUsePrice ? `${arabicNumber(dayUsePrice)} ج.م` : 'غير متاح'}</span>
                         </span>
                       )}
                     </p>
@@ -1115,7 +1116,7 @@ export default function OwnerOnboardingWizard({
             className="flex items-center gap-1 text-xs font-bold text-[#8A8A70] disabled:opacity-30">
             <ChevronRight className="w-4 h-4" /> السابق
           </button>
-          <span className="text-[10px] text-[#8A8A70] font-bold">{stepIdx + 1} / {steps.length}</span>
+          <span className="text-[10px] text-[#8A8A70] font-bold">{arabicNumber(stepIdx + 1)} / {arabicNumber(steps.length)}</span>
           {step === 'review' ? (
             <button type="button" onClick={handleSubmit} disabled={submitting}
               className="flex items-center gap-1.5 bg-[#5A5A40] hover:bg-[#4A4A34] disabled:opacity-60 text-white text-xs font-black px-5 py-2.5 rounded-xl">

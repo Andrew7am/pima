@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { arabicNumber, arabicPlural, arabicDate, arabicPercent, EXPENSE_FORMS } from '../../lib/arabic';
 import { motion } from 'motion/react';
 import { Booking, Expense, Payout, User } from '../../types';
 import {
@@ -65,7 +66,7 @@ function useCountUp(target: number, duration = 700) {
 
 function Money({ value, className = '' }: { value: number; className?: string }) {
   const animated = useCountUp(Math.round(value));
-  return <span className={className}>{animated.toLocaleString()}</span>;
+  return <span className={className}>{arabicNumber(animated)}</span>;
 }
 
 function TrendBadge({ pct }: { pct: number | null }) {
@@ -74,7 +75,7 @@ function TrendBadge({ pct }: { pct: number | null }) {
   return (
     <span className={`inline-flex items-center gap-0.5 text-[9px] font-black ${up ? 'text-emerald-600' : 'text-rose-600'}`}>
       {up ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
-      {Math.abs(pct)}%
+      {arabicPercent(Math.abs(pct))}
     </span>
   );
 }
@@ -343,7 +344,7 @@ export default function OwnerFinancialCenter({
                   <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{e.expenseDate}</div>
                 </div>
               </div>
-              <span className="text-[11px] font-black text-rose-600 shrink-0">− {e.amount.toLocaleString()} ج.م</span>
+              <span className="text-[11px] font-black text-rose-600 shrink-0">− {arabicNumber(e.amount)} ج.م</span>
             </motion.div>
           </div>
         );
@@ -395,7 +396,7 @@ export default function OwnerFinancialCenter({
           <h2 className="text-base font-black text-[var(--color-owner-text)] flex items-center gap-1.5">
             <Receipt className="w-4 h-4 text-[var(--color-owner-primary)]" /> المصروفات
           </h2>
-          <span className="text-[10px] font-bold text-[var(--color-owner-secondary)]">الإجمالي: {totalExpenses.toLocaleString()} ج.م</span>
+          <span className="text-[10px] font-bold text-[var(--color-owner-secondary)]">الإجمالي: {arabicNumber(totalExpenses)} ج.م</span>
         </div>
 
         {expenseListJsx}
@@ -444,12 +445,12 @@ export default function OwnerFinancialCenter({
         <div className="relative grid grid-cols-2 gap-2 mt-4">
           <div className="bg-white/5 border border-white/10 rounded-2xl p-2.5">
             <div className="text-[9px] text-white/60 font-bold">الرصيد المتاح للتحويل عبر Pima</div>
-            <div className="text-sm font-black mt-0.5">{availableForTransfer.toLocaleString()} ج.م</div>
+            <div className="text-sm font-black mt-0.5">{arabicNumber(availableForTransfer)} ج.م</div>
             <div className="text-[9px] text-white/45 font-bold mt-0.5">الباقي يُحصَّل نقدًا عند الوصول</div>
           </div>
           <div className="bg-white/5 border border-white/10 rounded-2xl p-2.5">
             <div className="text-[9px] text-white/60 font-bold">إجمالي الحجوزات</div>
-            <div className="text-sm font-black mt-0.5">{confirmedRevenue.toLocaleString()} ج.م</div>
+            <div className="text-sm font-black mt-0.5">{arabicNumber(confirmedRevenue)} ج.م</div>
           </div>
         </div>
 
@@ -468,11 +469,11 @@ export default function OwnerFinancialCenter({
         </div>
 
         <div className="relative flex items-center justify-center gap-2 mt-4 pt-4 border-t border-white/10 text-[11px] font-bold">
-          <span>{confirmedRevenue.toLocaleString()}</span>
+          <span>{arabicNumber(confirmedRevenue)}</span>
           <span className="text-white/40">−</span>
-          <span className="text-[#D4AF37]">{platformCommissionAmount.toLocaleString()}</span>
+          <span className="text-[#D4AF37]">{arabicNumber(platformCommissionAmount)}</span>
           <span className="text-white/40">=</span>
-          <span className="text-emerald-400">{netOwnerPayout.toLocaleString()}</span>
+          <span className="text-emerald-400">{arabicNumber(netOwnerPayout)}</span>
         </div>
         <div className="relative flex items-center justify-center gap-4 mt-1 text-[9px] text-white/50 font-bold">
           <span>إجمالي الحجوزات</span><span>عمولة Pima</span><span>صافي مستحقاتك</span>
@@ -502,7 +503,7 @@ export default function OwnerFinancialCenter({
         <div className="flex items-start justify-between" dir="ltr">
           {[
             { icon: CreditCard, label: 'دفع العربون عبر Pima', color: '#1F2E4E' },
-            { icon: Receipt, label: `احتساب عمولة Pima (${Math.round(commissionRate * 100)}%)`, color: '#D4AF37' },
+            { icon: Receipt, label: `احتساب عمولة Pima (${arabicPercent(Math.round(commissionRate * 100))})`, color: '#D4AF37' },
             { icon: Banknote, label: 'المبلغ المتبقي يُدفع لصاحب البيت عند الوصول', color: '#22C55E' },
             { icon: CheckCircle2, label: 'صافي مستحقات صاحب البيت', color: '#22C55E' },
           ].map((step, i, arr) => (
@@ -574,7 +575,7 @@ export default function OwnerFinancialCenter({
           </div>
           <div className="bg-white/60 rounded-2xl p-3 flex items-center justify-between">
             <span className="text-[10px] font-bold text-amber-800">المبلغ المتوقع تحصيله نقدًا</span>
-            <span className="text-sm font-black text-amber-900">{cashExpectedToday.toLocaleString()} ج.م</span>
+            <span className="text-sm font-black text-amber-900">{arabicNumber(cashExpectedToday)} ج.م</span>
           </div>
           <button type="button" onClick={() => setPeriod('today')}
             className="w-full text-[10px] font-black text-amber-900 bg-amber-100 rounded-xl py-2">عرض التفاصيل</button>
@@ -585,7 +586,7 @@ export default function OwnerFinancialCenter({
       <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-3">
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-[var(--color-owner-primary)]" />
-          <span className="text-xs font-black text-[var(--color-owner-text)]">الإيرادات خلال آخر 6 أشهر</span>
+          <span className="text-xs font-black text-[var(--color-owner-text)]">الإيرادات خلال آخر ٦ أشهر</span>
         </div>
         <svg viewBox="0 0 300 90" className="w-full h-24" preserveAspectRatio="none">
           {(() => {
@@ -642,7 +643,7 @@ export default function OwnerFinancialCenter({
                 <span className="flex items-center gap-1.5 text-[var(--color-owner-text)]">
                   <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: seg.color }} /> {seg.label}
                 </span>
-                <span className="text-[var(--color-owner-secondary)]">{Math.round(seg.share * 100)}%</span>
+                <span className="text-[var(--color-owner-secondary)]">{arabicPercent(Math.round(seg.share * 100))}</span>
               </div>
             ))}
           </div>
@@ -692,7 +693,7 @@ export default function OwnerFinancialCenter({
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <div className="text-[11px] font-black text-[var(--color-owner-text)]">{bookingGuestName(b)}</div>
-                  <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold font-mono">{bookingRef(b)} · {b.checkIn}</div>
+                  <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold font-mono">{bookingRef(b)} · {arabicDate(b.checkIn)}</div>
                 </div>
                 <span className={`text-[9px] font-black px-2 py-1 rounded-full border ${badge.className}`}>{badge.label}</span>
               </div>
@@ -705,7 +706,7 @@ export default function OwnerFinancialCenter({
                 ].map((c) => (
                   <div key={c.label} className="bg-[var(--color-owner-bg)] rounded-xl py-1.5">
                     <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{c.label}</div>
-                    <div className="text-[10px] font-black text-[var(--color-owner-text)]">{c.value.toLocaleString()}</div>
+                    <div className="text-[10px] font-black text-[var(--color-owner-text)]">{arabicNumber(c.value)}</div>
                   </div>
                 ))}
               </div>
@@ -729,7 +730,7 @@ export default function OwnerFinancialCenter({
           <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-rose-50 text-rose-600"><Receipt className="w-4.5 h-4.5" /></span>
           <div className="flex-1 min-w-0">
             <div className="text-[11px] font-black text-[var(--color-owner-text)]">إدارة المصروفات</div>
-            <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{ownerExpenses.length} مصروف · إجمالي {totalExpenses.toLocaleString()} ج.م</div>
+            <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(ownerExpenses.length, EXPENSE_FORMS)} · إجمالي {arabicNumber(totalExpenses)} ج.م</div>
           </div>
           <ChevronDown className="w-4 h-4 text-[var(--color-owner-secondary)] -rotate-90 shrink-0" />
         </button>
@@ -750,7 +751,7 @@ export default function OwnerFinancialCenter({
             <div className="flex items-center gap-2.5 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl p-3">
               <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center shrink-0"><ArrowUpRight className="w-4 h-4 text-amber-600" /></div>
               <p className="text-[10px] font-bold text-[var(--color-owner-text)]">
-                حجز {bookingGuestName(topBookingThisMonth)} حقق أعلى إيراد هذا الشهر ({topBookingThisMonth.totalPrice.toLocaleString()} ج.م).
+                حجز {bookingGuestName(topBookingThisMonth)} حقق أعلى إيراد هذا الشهر ({arabicNumber(topBookingThisMonth.totalPrice)} ج.م).
               </p>
             </div>
           )}
@@ -768,7 +769,7 @@ export default function OwnerFinancialCenter({
             <div className="flex items-center gap-2.5 bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl p-3">
               <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center shrink-0"><Banknote className="w-4 h-4 text-sky-600" /></div>
               <p className="text-[10px] font-bold text-[var(--color-owner-text)]">
-                التحصيل النقدي المتوقع اليوم {cashExpectedToday.toLocaleString()} ج.م.
+                التحصيل النقدي المتوقع اليوم {arabicNumber(cashExpectedToday)} ج.م.
               </p>
             </div>
           )}
@@ -790,10 +791,10 @@ export default function OwnerFinancialCenter({
           const net = openBooking.totalPrice - comm;
           const remaining = Math.max(0, openBooking.totalPrice - openBooking.depositAmount);
           const steps = [
-            { label: 'تم إنشاء الحجز', done: true, date: openBooking.createdAt.split('T')[0] },
+            { label: 'تم إنشاء الحجز', done: true, date: arabicDate(openBooking.createdAt) },
             { label: 'تم دفع العربون', done: openBooking.depositPaid, date: null },
-            { label: 'وصول الضيف', done: !!openBooking.checkedInAt, date: openBooking.checkedInAt?.split('T')[0] ?? null },
-            { label: 'المغادرة وتحصيل المتبقي', done: !!openBooking.checkedOutAt, date: openBooking.checkedOutAt?.split('T')[0] ?? null },
+            { label: 'وصول الضيف', done: !!openBooking.checkedInAt, date: openBooking.checkedInAt ? arabicDate(openBooking.checkedInAt) : null },
+            { label: 'المغادرة وتحصيل المتبقي', done: !!openBooking.checkedOutAt, date: openBooking.checkedOutAt ? arabicDate(openBooking.checkedOutAt) : null },
           ];
           return (
             <div className="space-y-4">
@@ -808,7 +809,7 @@ export default function OwnerFinancialCenter({
                   <div key={row.label} className={`flex items-center justify-between ${row.bold ? 'pt-2 border-t border-[var(--color-owner-border)]' : ''}`}>
                     <span className={row.bold ? 'text-[var(--color-owner-text)] font-black' : 'text-[var(--color-owner-secondary)]'}>{row.label}</span>
                     <span className={row.bold ? 'text-emerald-700 font-black text-sm' : 'text-[var(--color-owner-text)]'}>
-                      {row.value < 0 ? '− ' : ''}{Math.abs(row.value).toLocaleString()} ج.م
+                      {row.value < 0 ? '− ' : ''}{arabicNumber(Math.abs(row.value))} ج.م
                     </span>
                   </div>
                 ))}
@@ -856,7 +857,7 @@ export default function OwnerFinancialCenter({
                       {p.status === 'completed' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <Clock className="w-4 h-4 text-[var(--color-owner-secondary)]" />}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[11px] font-black text-[var(--color-owner-text)]">{p.amount.toLocaleString()} ج.م</div>
+                      <div className="text-[11px] font-black text-[var(--color-owner-text)]">{arabicNumber(p.amount)} ج.م</div>
                       <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{(p.completedAt ?? p.requestedAt).split('T')[0]}</div>
                     </div>
                   </div>
@@ -882,17 +883,17 @@ export default function OwnerFinancialCenter({
           <div className="space-y-3">
             <div className="bg-[var(--color-owner-bg)] rounded-2xl p-3.5 text-center">
               <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">الرصيد المتاح للتحويل عبر Pima</div>
-              <div className="text-2xl font-black text-[var(--color-owner-text)] mt-1">{availableForTransfer.toLocaleString()} <span className="text-sm">ج.م</span></div>
-              <div className="text-[9px] font-bold text-[var(--color-owner-secondary)] mt-0.5">من العربون المحصّل ({depositReceived.toLocaleString()} ج.م) بعد خصم عمولة Pima</div>
+              <div className="text-2xl font-black text-[var(--color-owner-text)] mt-1">{arabicNumber(availableForTransfer)} <span className="text-sm">ج.م</span></div>
+              <div className="text-[9px] font-bold text-[var(--color-owner-secondary)] mt-0.5">من العربون المحصّل ({arabicNumber(depositReceived)} ج.م) بعد خصم عمولة Pima</div>
             </div>
             {pendingPayoutTotal > 0 && (
-              <p className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">لديك طلبات تحويل قيد المراجعة بقيمة {pendingPayoutTotal.toLocaleString()} ج.م، تم خصمها من الرصيد المتاح.</p>
+              <p className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">لديك طلبات تحويل قيد المراجعة بقيمة {arabicNumber(pendingPayoutTotal)} ج.م، تم خصمها من الرصيد المتاح.</p>
             )}
             <textarea placeholder="ملاحظة للفريق (اختياري) — مثلاً وسيلة الاستلام المفضّلة" value={transferNote} onChange={(e) => setTransferNote(e.target.value)} rows={2}
               className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[11px] px-3 py-2.5 rounded-xl text-[var(--color-owner-text)] outline-none resize-none" />
             <button type="button" onClick={submitTransfer} disabled={availableForTransfer <= 0 || transferSubmitting || !onRequestPayout}
               className="w-full bg-[var(--color-owner-primary)] disabled:opacity-40 text-white text-[11px] font-black py-3 rounded-2xl">
-              {transferSubmitting ? 'جارٍ الإرسال…' : availableForTransfer <= 0 ? 'لا يوجد رصيد متاح للتحويل' : `طلب تحويل ${availableForTransfer.toLocaleString()} ج.م`}
+              {transferSubmitting ? 'جارٍ الإرسال…' : availableForTransfer <= 0 ? 'لا يوجد رصيد متاح للتحويل' : `طلب تحويل ${arabicNumber(availableForTransfer)} ج.م`}
             </button>
             <p className="text-[9px] font-bold text-[var(--color-owner-secondary)] text-center leading-relaxed">المبلغ المتبقي من الحجوزات يُحصَّل نقدًا منك عند وصول الضيوف، وليس جزءًا من التحويل.</p>
           </div>

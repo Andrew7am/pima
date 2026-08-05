@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { arabicPlural, BOOKING_FORMS } from '../../lib/arabic';
 import { Booking, User, BookingMessage } from '../../types';
 import { ChevronRight, Search, MessageCircle, Check, CheckCheck } from 'lucide-react';
 import BookingChatPanel from '../BookingChatPanel';
@@ -85,7 +86,7 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
         bookingIds={guestBookingIds}
         currentUserId={owner.id}
         title={selectedBooking.userName}
-        subtitle={guestBookings.length > 1 ? `${guestBookings.length} حجوزات` : selectedBooking.houseName}
+        subtitle={guestBookings.length > 1 ? arabicPlural(guestBookings.length, BOOKING_FORMS) : selectedBooking.houseName}
         onBack={() => setSelectedBooking(null)}
         variant="owner"
         heightClass="h-[calc(100dvh-180px)]"

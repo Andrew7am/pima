@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { arabicNumber } from '../lib/arabic';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import {
@@ -850,7 +851,7 @@ export default function RandomMatchGame({
               <div className="text-left">
                 <p className="text-[9px] text-slate-400 font-bold">المستوى</p>
                 <p className="text-[10px] font-black text-slate-200 font-mono" dir="ltr">
-                  XP {userXp.toLocaleString()} / {xpToNext(userLevel).toLocaleString()}
+                  XP {arabicNumber(userXp)} / {arabicNumber(xpToNext(userLevel))}
                 </p>
                 <div className="bg-slate-900 rounded-full h-1.5 w-24 overflow-hidden border border-blue-900/30 mt-1">
                   <div className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full transition-all"
@@ -889,7 +890,7 @@ export default function RandomMatchGame({
                     <Icon className={`w-4 h-4 ${tint}`} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-sm font-black text-white leading-none">{value.toLocaleString()}</p>
+                    <p className="text-sm font-black text-white leading-none">{arabicNumber(value)}</p>
                     <p className="text-[8px] text-slate-400 font-bold mt-0.5 truncate">{label}</p>
                   </div>
                 </div>

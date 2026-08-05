@@ -1,4 +1,5 @@
 ﻿import React, { useState, useMemo, useEffect } from 'react';
+import { arabicNumber } from '../lib/arabic';
 import { RetreatHouse, Booking, Review, User, Room, RoomType, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import HouseHero from './house/HouseHero';
 import HouseLocationTrust from './house/HouseLocationTrust';
@@ -6,7 +7,6 @@ import HouseReviews from './house/HouseReviews';
 import PimaSheet from './PimaSheet';
 import { ExploreSection, ExploreCard } from './house/HouseExplore';
 import BookingFlow, { ApplicantDetails } from './house/BookingFlow';
-import { arabicNumber } from '../lib/arabic';
 import { tapFeedback } from '../lib/haptics';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice, offersDayUse, computeMealPlan } from '../lib/pricing';
@@ -2399,25 +2399,25 @@ export default function HouseDetail({
                   <div className="bg-[#FAF8F5] rounded-2xl p-3 border border-[#E7E5DB] space-y-2 mt-2">
                     <div className="flex justify-between text-[#8A8A70]">
                       <span>إجمالي حجز البيت:</span>
-                      <span className="text-[#4A4A3A] font-extrabold">{originalTotalPrice.toLocaleString()} ج.م</span>
+                      <span className="text-[#4A4A3A] font-extrabold">{arabicNumber(originalTotalPrice)} ج.م</span>
                     </div>
                     <div className="flex justify-between text-[#8A8A70]">
                       <span>إجمالي تكلفة الانتقالات:</span>
-                      <span className="text-[#4A4A3A] font-extrabold">{totalBusCost.toLocaleString()}  ج.م</span>
+                      <span className="text-[#4A4A3A] font-extrabold">{arabicNumber(totalBusCost)}  ج.م</span>
                     </div>
                     <div className="flex justify-between text-[#8A8A70]">
                       <span>إجمالي التكلفة الكلية للرحلة:</span>
-                      <span className="text-[#4A4A3A] font-extrabold">{totalTripCost.toLocaleString()} ج.م</span>
+                      <span className="text-[#4A4A3A] font-extrabold">{arabicNumber(totalTripCost)} ج.م</span>
                     </div>
 
                     <div className="pt-2 border-t border-[#E7E5DB] flex justify-between font-black text-xs text-[#2D2D24]">
                       <span>التكلفة الفعلية للفرد الواحد:</span>
-                      <span className="text-[#5A5A40] text-sm underline decoration-[#BCBC9D] decoration-2">{actualCostPerPerson.toLocaleString()} ج.م</span>
+                      <span className="text-[#5A5A40] text-sm underline decoration-[#BCBC9D] decoration-2">{arabicNumber(actualCostPerPerson)} ج.م</span>
                     </div>
 
                     <div className="flex justify-between text-[#8A8A70] pt-1">
                       <span>الاشتراكات المجمعة ({guestsCount} فرد):</span>
-                      <span className="text-[#4A4A3A] font-black">{totalRevenue.toLocaleString()} ج.م</span>
+                      <span className="text-[#4A4A3A] font-black">{arabicNumber(totalRevenue)} ج.م</span>
                     </div>
 
                     {/* Budget Profit/Loss Status */}
@@ -2425,12 +2425,12 @@ export default function HouseDetail({
                       {balance >= 0 ? (
                         <div className="bg-emerald-50 text-emerald-800 text-[10px] font-extrabold p-2 rounded-xl text-center border border-emerald-150 flex items-center justify-center gap-1">
                           <Coins className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>ميزانية رابحة: فائض قدره +{balance.toLocaleString()} ج.م ✅</span>
+                          <span>ميزانية رابحة: فائض قدره +{arabicNumber(balance)} ج.م ✅</span>
                         </div>
                       ) : (
                         <div className="bg-rose-50 text-rose-800 text-[10px] font-extrabold p-2 rounded-xl text-center border border-rose-150 flex items-center justify-center gap-1">
                           <TrendingDown className="w-3.5 h-3.5 text-rose-600 shrink-0 animate-bounce" />
-                          <span>عجز في الميزانية: قدره {Math.abs(balance).toLocaleString()} ج.م ⚠️</span>
+                          <span>عجز في الميزانية: قدره {arabicNumber(Math.abs(balance))} ج.م ⚠️</span>
                         </div>
                       )}
                     </div>

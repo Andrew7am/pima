@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { arabicPlural, arabicDate, BED_FORMS } from '../../lib/arabic';
 import { motion, AnimatePresence } from 'motion/react';
 import { Booking, Room } from '../../types';
 import { Search, X, ClipboardList, BedDouble, Phone } from 'lucide-react';
@@ -68,7 +69,7 @@ export default function OwnerSpotlight({ open, onClose, bookings, rooms, onOpenB
                           <div className="flex-1 min-w-0">
                             <div className="text-[11px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
                             <div className="text-[9px] font-bold text-[var(--color-owner-secondary)] flex items-center gap-1.5">
-                              <span className="font-mono">{bookingRef(b)}</span><span>· {b.checkIn}</span>
+                              <span className="font-mono">{bookingRef(b)}</span><span>· {arabicDate(b.checkIn)}</span>
                               {b.userPhone && <span className="flex items-center gap-0.5"><Phone className="w-2.5 h-2.5" />{b.userPhone}</span>}
                             </div>
                           </div>
@@ -85,7 +86,7 @@ export default function OwnerSpotlight({ open, onClose, bookings, rooms, onOpenB
                           <span className="w-8 h-8 rounded-xl bg-[var(--color-owner-hover)] flex items-center justify-center shrink-0"><BedDouble className="w-4 h-4 text-[var(--color-owner-primary)]" /></span>
                           <div className="flex-1 min-w-0">
                             <div className="text-[11px] font-black text-[var(--color-owner-text)]">غرفة {r.name}</div>
-                            <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{r.bedsCount} سرير</div>
+                            <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(r.bedsCount, BED_FORMS)}</div>
                           </div>
                         </button>
                       ))}

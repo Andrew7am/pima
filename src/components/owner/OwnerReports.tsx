@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { arabicNumber, arabicPlural, arabicPercent, arabicDecimal, GUEST_FORMS } from '../../lib/arabic';
 import { motion } from 'motion/react';
 import { Booking, Review } from '../../types';
 import { BarChart3, Home, Star, Users, CalendarCheck, Sun, Phone, Globe, Clock } from 'lucide-react';
@@ -62,10 +63,10 @@ export default function OwnerReports({ ownerBookings, ownerReviews, occupancyRat
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-2.5">
         {[
-          { icon: Home, label: 'نسبة الإشغال (هذا الشهر)', value: `${occupancyRate}%`, color: 'text-[var(--color-owner-primary)]' },
-          { icon: Star, label: 'متوسط التقييم', value: avgRating > 0 ? `${avgRating.toFixed(1)} ★` : '—', color: 'text-amber-500' },
-          { icon: CalendarCheck, label: 'حجوزات مؤكدة', value: confirmed.length, color: 'text-emerald-600' },
-          { icon: Users, label: 'متوسط حجم المجموعة', value: `${avgGroup} فرد`, color: 'text-[var(--color-owner-text)]' },
+          { icon: Home, label: 'نسبة الإشغال (هذا الشهر)', value: arabicPercent(occupancyRate), color: 'text-[var(--color-owner-primary)]' },
+          { icon: Star, label: 'متوسط التقييم', value: avgRating > 0 ? `${arabicDecimal(avgRating)} ★` : '—', color: 'text-amber-500' },
+          { icon: CalendarCheck, label: 'حجوزات مؤكدة', value: arabicNumber(confirmed.length), color: 'text-emerald-600' },
+          { icon: Users, label: 'متوسط حجم المجموعة', value: arabicPlural(avgGroup, GUEST_FORMS), color: 'text-[var(--color-owner-text)]' },
         ].map((k) => (
           <div key={k.label} className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1">
             <k.icon className="w-4 h-4 text-[var(--color-owner-primary)]" />
@@ -77,11 +78,11 @@ export default function OwnerReports({ ownerBookings, ownerReviews, occupancyRat
 
       {/* Bookings — last 6 months */}
       <div className="bg-[var(--color-owner-surface)] rounded-[24px] border border-[var(--color-owner-border)] p-4 space-y-3 shadow-sm">
-        <span className="text-xs font-black text-[var(--color-owner-text)]">الحجوزات خلال آخر 6 أشهر</span>
+        <span className="text-xs font-black text-[var(--color-owner-text)]">الحجوزات خلال آخر ٦ أشهر</span>
         <div className="flex items-end justify-between gap-2 h-32">
           {months.map((m, i) => (
             <div key={`${m.year}-${m.month}`} className="flex-1 flex flex-col items-center gap-1.5">
-              <span className="text-[9px] font-bold text-[var(--color-owner-text)]">{monthCounts[i] || ''}</span>
+              <span className="text-[9px] font-bold text-[var(--color-owner-text)]">{monthCounts[i] ? arabicNumber(monthCounts[i]) : ''}</span>
               <motion.div initial={{ height: 0 }} animate={{ height: `${Math.max(4, (monthCounts[i] / maxCount) * 100)}%` }}
                 transition={{ duration: 0.6, delay: i * 0.06, ease: 'easeOut' }}
                 className="w-full max-w-[28px] rounded-t-lg bg-[var(--color-owner-primary)]" style={{ minHeight: 4 }} />
@@ -104,7 +105,7 @@ export default function OwnerReports({ ownerBookings, ownerReviews, occupancyRat
                 <span className="flex-1 h-2.5 rounded-full bg-[var(--color-owner-bg)] overflow-hidden">
                   <motion.span className="block h-full rounded-full" style={{ background: meta.color }} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6 }} />
                 </span>
-                <span className="text-[9px] font-black text-[var(--color-owner-secondary)] w-12 shrink-0 text-left">{pct}% ({n})</span>
+                <span className="text-[9px] font-black text-[var(--color-owner-secondary)] w-12 shrink-0 text-left">{arabicPercent(pct)} ({arabicNumber(n)})</span>
               </div>
             );
           })}
@@ -117,7 +118,7 @@ export default function OwnerReports({ ownerBookings, ownerReviews, occupancyRat
         <div className="flex items-end justify-between gap-2 h-28">
           {SEASONS.map((s, i) => (
             <div key={s.key} className="flex-1 flex flex-col items-center gap-1.5">
-              <span className="text-[9px] font-bold text-[var(--color-owner-text)]">{seasonCounts[i] || ''}</span>
+              <span className="text-[9px] font-bold text-[var(--color-owner-text)]">{seasonCounts[i] ? arabicNumber(seasonCounts[i]) : ''}</span>
               <motion.div initial={{ height: 0 }} animate={{ height: `${Math.max(4, (seasonCounts[i] / maxSeason) * 100)}%` }}
                 transition={{ duration: 0.6, delay: i * 0.08, ease: 'easeOut' }}
                 className="w-full max-w-[36px] rounded-t-lg bg-amber-400" style={{ minHeight: 4 }} />

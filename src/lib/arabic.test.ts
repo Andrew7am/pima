@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { arabicNumber, arabicPlural, arabicDate, arabicDateRange } from './arabic';
+import {
+  arabicNumber, arabicPlural, arabicDate, arabicDateRange,
+  BOOKING_FORMS, USER_FORMS, GUEST_FORMS, ROOM_FORMS, BED_FORMS,
+  REVIEW_FORMS, HOUSE_FORMS, EXPENSE_FORMS, TASK_FORMS, AMENITY_FORMS, NIGHT_FORMS, DAY_FORMS, MEMBER_FORMS, POINT_FORMS,
+} from './arabic';
 
 const DAYS = { one: 'يوم', two: 'يومين', few: 'أيام', many: 'يوم' };
 
@@ -50,6 +54,38 @@ describe('arabicPlural', () => {
       expect(arabicPlural(n, DAYS)).not.toMatch(/[0-9]/);
     }
   });
+});
+
+// The shared noun tables. A table is just data, so the only way it goes wrong
+// is a typo — a `few` that is really a singular, or a dual that quietly
+// duplicates the singular. Both read as broken Arabic on the dashboards, and
+// both are invisible in a diff.
+describe('the shared counted nouns', () => {
+  const TABLES = {
+    BOOKING_FORMS, USER_FORMS, GUEST_FORMS, ROOM_FORMS, BED_FORMS,
+    REVIEW_FORMS, HOUSE_FORMS, EXPENSE_FORMS, TASK_FORMS, AMENITY_FORMS, NIGHT_FORMS, DAY_FORMS, MEMBER_FORMS, POINT_FORMS,
+  };
+
+  for (const [name, forms] of Object.entries(TABLES)) {
+    it(`${name} agrees at 1, 2, 3 and 11`, () => {
+      // One and two carry the count in the noun, so no numeral is printed.
+      expect(arabicPlural(1, forms)).toBe(forms.one);
+      expect(arabicPlural(2, forms)).toBe(forms.two);
+      // Three takes the plural of paucity, eleven goes back to the singular.
+      expect(arabicPlural(3, forms)).toBe(`٣ ${forms.few}`);
+      expect(arabicPlural(11, forms)).toBe(`١١ ${forms.many}`);
+
+      // A dual that equals the singular means the table was filled in by
+      // copy-paste, and a `few` that equals `many` means the paucity plural
+      // was never written.
+      expect(forms.two).not.toBe(forms.one);
+      expect(forms.few).not.toBe(forms.many);
+
+      for (const n of [1, 2, 3, 11, 47]) {
+        expect(arabicPlural(n, forms)).not.toMatch(/[0-9]/);
+      }
+    });
+  }
 });
 
 describe('arabicDate', () => {

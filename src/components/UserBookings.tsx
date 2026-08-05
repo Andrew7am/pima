@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
+import { arabicNumber, arabicPlural, arabicDate, arabicDateRange, arabicPercent, DAY_FORMS, BOOKING_FORMS } from '../lib/arabic';
 import { Booking, User, RetreatHouse, Attendee, RoomAllocation, Room, Payment, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { 
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
@@ -17,7 +18,6 @@ import { depositDue } from '../lib/paymentLedger';
 import DepositPayment from './booking/DepositPayment';
 import { downloadBookingIcs } from '../lib/ics';
 import { setAttendeeSharePaid } from '../lib/db';
-import { arabicPlural, arabicDate, arabicDateRange } from '../lib/arabic';
 import { bookingTypeLabel } from '../lib/bookingGroups';
 
 interface UserBookingsProps {
@@ -739,7 +739,7 @@ export default function UserBookings({
                   <span className={`min-w-[17px] h-[17px] px-1 rounded-full text-[9px] font-black flex items-center justify-center ${
                     active ? 'bg-white/20 text-white' : t.key === 'action' && t.count > 0 ? 'bg-rose-500 text-white' : 'bg-[#EBEBE0] text-[#5A5A40]'
                   }`}>
-                    {t.count}
+                    {arabicNumber(t.count)}
                   </span>
                 </button>
               );
@@ -755,7 +755,7 @@ export default function UserBookings({
               <div className="flex-1 space-y-1">
                 <h4 className="font-extrabold text-amber-950">تذكير هام بسداد العربون!</h4>
                 <p className="text-[11px] text-amber-900/90 leading-relaxed">
-                  لديك {unpaidApprovedCount === 1 ? 'حجز مقبول ومؤكد' : `${unpaidApprovedCount} حجوزات مقبولة ومؤكدة`} بانتظار سداد عربون الجدية ({Math.round(settings.depositRate * 100)}%) لتثبيت المواعيد والغرف نهائياً وتجنب إلغاء الطلب تلقائياً من بيت المؤتمرات.
+                  لديك {unpaidApprovedCount === 1 ? 'حجز مقبول ومؤكد' : `${arabicPlural(unpaidApprovedCount, BOOKING_FORMS)} مقبولة ومؤكدة`} بانتظار سداد عربون الجدية ({arabicPercent(Math.round(settings.depositRate * 100))}) لتثبيت المواعيد والغرف نهائياً وتجنب إلغاء الطلب تلقائياً من بيت المؤتمرات.
                 </p>
               </div>
             </div>
@@ -1244,7 +1244,7 @@ export default function UserBookings({
                       {canPayDeposit && (
                         <div className="flex items-start gap-2 bg-amber-50/70 border border-amber-200/80 rounded-2xl p-2.5 text-amber-950">
                           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                          <span className="font-bold leading-relaxed">ثبّت حجزك بسداد عربون الجدية <strong className="text-amber-900">{depositAmt.toLocaleString('ar-EG')} ج.م</strong> ({Math.round(settings.depositRate * 100)}%) — استخدم زر السداد بالأسفل.</span>
+                          <span className="font-bold leading-relaxed">ثبّت حجزك بسداد عربون الجدية <strong className="text-amber-900">{depositAmt.toLocaleString('ar-EG')} ج.م</strong> ({arabicPercent(Math.round(settings.depositRate * 100))}) — استخدم زر السداد بالأسفل.</span>
                         </div>
                       )}
 
@@ -1347,7 +1347,7 @@ export default function UserBookings({
                         return (
                           <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-emerald-50 text-emerald-950 border border-emerald-200 px-2.5 py-1 rounded-full shadow-sm">
                             <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                            <span>تم تأكيد دفع العربون ({Math.round(settings.depositRate * 100)}%) 🎉</span>
+                            <span>تم تأكيد دفع العربون ({arabicPercent(Math.round(settings.depositRate * 100))}) 🎉</span>
                           </span>
                         );
                       } else if (payStatus === 'paid_full') {
@@ -1507,7 +1507,7 @@ export default function UserBookings({
                             : tier === 'full'
                               ? `باقي ${daysLeft} يوم على الوصول — يحق لك استرداد كامل المبلغ المدفوع (${paid.toLocaleString('ar-EG')} ج.م).`
                               : tier === 'partial'
-                                ? `باقي ${daysLeft} يوم على الوصول — يحق لك استرداد ${Math.round(pct * 100)}% من المدفوع (${refund.toLocaleString('ar-EG')} ج.م من أصل ${paid.toLocaleString('ar-EG')} ج.م).`
+                                ? `باقي ${arabicPlural(daysLeft, DAY_FORMS)} على الوصول — يحق لك استرداد ${arabicPercent(Math.round(pct * 100))} من المدفوع (${refund.toLocaleString('ar-EG')} ج.م من أصل ${paid.toLocaleString('ar-EG')} ج.م).`
                                 : `باقي ${daysLeft} يوم فقط على الوصول — وفقاً لسياسة الإلغاء لا يوجد استرداد للمبلغ المدفوع (${paid.toLocaleString('ar-EG')} ج.م).`;
                           if (confirm(`هل أنت متأكد من إلغاء هذا الحجز؟\n\n🛡️ سياسة الإلغاء: ${policyLine}`)) onCancelBooking?.(booking.id);
                         }}
@@ -1673,11 +1673,11 @@ export default function UserBookings({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#8A8A70]">تاريخ الوصول:</span>
-                    <span className="font-semibold text-[#4A4A3A]">{activeReceipt.checkIn}</span>
+                    <span className="font-semibold text-[#4A4A3A]">{arabicDate(activeReceipt.checkIn)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#8A8A70]">تاريخ المغادرة:</span>
-                    <span className="font-semibold text-[#4A4A3A]">{activeReceipt.checkOut}</span>
+                    <span className="font-semibold text-[#4A4A3A]">{arabicDate(activeReceipt.checkOut)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#8A8A70]">عدد الأفراد المحجوز لهم:</span>
@@ -1685,7 +1685,7 @@ export default function UserBookings({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#8A8A70]">قيمة الدفع الكلية:</span>
-                    <span className="font-extrabold text-[#4A4A3A]">{activeReceipt.totalPrice.toLocaleString()} ج.م</span>
+                    <span className="font-extrabold text-[#4A4A3A]">{arabicNumber(activeReceipt.totalPrice)} ج.م</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-[#D6D6C2]">
                     <span className="text-[#8A8A70]">العربون المدفوع:</span>

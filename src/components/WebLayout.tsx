@@ -1,4 +1,5 @@
 ﻿import React, { useState } from 'react';
+import { arabicBadge } from '../lib/arabic';
 import {
   Compass, BookOpen, CalendarDays, ShieldAlert, Coffee, Bell,
   Check, X, LogOut, UserCircle, Home, Map as MapIcon, Sparkles, MessageCircle
@@ -168,7 +169,7 @@ export default function WebLayout({
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
                   <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[9px] flex items-center justify-center font-bold">
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                    {arabicBadge(unreadCount)}
                   </span>
                 )}
               </button>
@@ -351,7 +352,7 @@ export default function WebLayout({
                 {item.icon}
                 {badge > 0 && (
                   <span className="absolute -top-1.5 -left-2 min-w-[15px] h-[15px] px-0.5 bg-red-500 text-white text-[8.5px] font-black rounded-full flex items-center justify-center">
-                    {badge > 9 ? '9+' : badge}
+                    {arabicBadge(badge)}
                   </span>
                 )}
               </span>

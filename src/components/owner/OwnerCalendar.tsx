@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { arabicNumber, arabicPlural, arabicDateRange, arabicPercent, BOOKING_FORMS } from '../../lib/arabic';
 import { RetreatHouse, Booking } from '../../types';
 import { ChevronLeft, ChevronRight, Lock, Unlock, CalendarDays, Users, Ban } from 'lucide-react';
 import BottomSheet from './BottomSheet';
@@ -84,7 +85,7 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
       {/* Month stats */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { label: 'إشغال الشهر', value: `${occupancyPct}%`, color: 'text-[var(--color-owner-primary)]' },
+          { label: 'إشغال الشهر', value: arabicPercent(occupancyPct), color: 'text-[var(--color-owner-primary)]' },
           { label: 'أيام محجوزة', value: bookedDays, color: 'text-amber-600' },
           { label: 'أيام مغلقة', value: blockedDays, color: 'text-rose-600' },
         ].map((s) => (
@@ -147,14 +148,14 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
               </div>
             ) : openBookings.length > 0 ? (
               <div className="space-y-2">
-                <div className="text-[11px] font-black text-[var(--color-owner-text)]">{openBookings.length} حجز في هذا اليوم</div>
+                <div className="text-[11px] font-black text-[var(--color-owner-text)]">{arabicPlural(openBookings.length, BOOKING_FORMS)} في هذا اليوم</div>
                 {openBookings.map((b) => (
                   <div key={b.id} className="bg-[var(--color-owner-bg)] rounded-2xl p-3 space-y-1">
                     <div className="text-[11px] font-black text-[var(--color-owner-text)]">{b.organizationName || b.userName}</div>
                     <div className="text-[10px] font-bold text-[var(--color-owner-secondary)] flex items-center gap-2 flex-wrap">
-                      <span>{b.checkIn} ← {b.checkOut}</span>
+                      <span>{arabicDateRange(b.checkIn, b.checkOut)}</span>
                       <span className="flex items-center gap-0.5"><Users className="w-3 h-3" /> {b.guestsCount}</span>
-                      <span>{b.totalPrice.toLocaleString()} ج.م</span>
+                      <span>{arabicNumber(b.totalPrice)} ج.م</span>
                     </div>
                   </div>
                 ))}

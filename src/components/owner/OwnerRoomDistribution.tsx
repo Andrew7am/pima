@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { arabicNumber, arabicDateRange } from '../../lib/arabic';
 import { Booking, Room, RoomAllocation } from '../../types';
 import { BedDouble, Shuffle, RefreshCw } from 'lucide-react';
 import { getRoomBedState } from '../../lib/roomOccupancy';
@@ -84,7 +85,7 @@ export default function OwnerRoomDistribution({ rooms, allocations, bookings, on
               <div key={booking.id} className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl p-3">
                 <div className="min-w-0">
                   <div className="text-[11px] font-bold text-[var(--color-owner-text)] truncate">{booking.userName}</div>
-                  <div className="text-[10px] text-[var(--color-owner-secondary)]">{booking.checkIn} → {booking.checkOut} • مُوزَّع {allocatedCount} / {booking.guestsCount}</div>
+                  <div className="text-[10px] text-[var(--color-owner-secondary)]">{arabicDateRange(booking.checkIn, booking.checkOut)} • مُوزَّع {arabicNumber(allocatedCount)} / {arabicNumber(booking.guestsCount)}</div>
                 </div>
                 <button type="button" onClick={() => onOpenBooking(booking)}
                   className="flex items-center gap-1 shrink-0 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer">

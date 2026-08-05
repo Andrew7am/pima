@@ -1,4 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS } from '../lib/arabic';
+// Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
+// to the singular. The counted nouns live in lib/arabic alongside the rule
+// itself, so the owner screens and this one cannot drift into two different
+// spellings of the same plural.
 import { RetreatHouse, User, Booking, Payment, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Payout, OwnerPaymentMethod, PromoBanner, PromoBannerLink, PromoLinkPlatform } from '../types';
 
 // Payment-method type options for the platform collection accounts editor.
@@ -11,14 +16,7 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
   { value: 'bank_transfer', label: 'تحويل بنكي' },
 ];
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft } from 'lucide-react';
-import { arabicNumber, arabicPlural, arabicDateTime } from '../lib/arabic';
 import { timeAgo } from '../lib/timeAgo';
-
-// Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
-// to the singular. Shared so this file does not grow a second, differently
-// wrong set.
-const BOOKING_FORMS = { one: 'حجز واحد', two: 'حجزان', few: 'حجوزات', many: 'حجز', zero: 'لا حجوزات' };
-const USER_FORMS = { one: 'مستخدم واحد', two: 'مستخدمان', few: 'مستخدمين', many: 'مستخدم', zero: 'لا مستخدمين' };
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
 import BannerStudio from './banner/BannerStudio';
@@ -630,7 +628,7 @@ export default function AdminDashboard({
                 {g.label}
                 {groupPending > 0 && !isOn && (
                   <span className="absolute top-1.5 left-2 min-w-[15px] h-[15px] px-1 bg-rose-500 text-white text-[8.5px] font-black rounded-full flex items-center justify-center">
-                    {groupPending > 9 ? '9+' : groupPending}
+                    {arabicBadge(groupPending)}
                   </span>
                 )}
               </button>
@@ -648,7 +646,7 @@ export default function AdminDashboard({
               {(t.badge ?? 0) > 0 && (
                 <span className={`min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-black flex items-center justify-center ${
                   activeTab === t.key ? 'bg-white/25 text-white' : 'bg-rose-500 text-white'
-                }`}>{t.badge}</span>
+                }`}>{arabicBadge(t.badge ?? 0)}</span>
               )}
             </button>
           ))}
@@ -826,14 +824,14 @@ export default function AdminDashboard({
                 <div className="space-y-1.5">
                   {topHouses.map((row, i) => (
                     <div key={row.house!.id} className="flex items-center gap-2 bg-[#FAF8F5] border border-[#D6D6C2] rounded-2xl p-2.5">
-                      <span className="w-6 h-6 rounded-full bg-[#5A5A40] text-white text-[10px] font-black flex items-center justify-center shrink-0">{i + 1}</span>
+                      <span className="w-6 h-6 rounded-full bg-[#5A5A40] text-white text-[10px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-[11px] font-bold text-[#4A4A3A] truncate">{row.house!.name}</div>
                         <div className="text-[9.5px] text-[#8A8A70]">{row.house!.governorate}</div>
                       </div>
                       <div className="text-left shrink-0">
-                        <div className="text-[11px] font-black text-[#4A4A3A]">{row.count} <span className="text-[9px] text-[#8A8A70]">حجز</span></div>
-                        <div className="text-[9px] text-[#8A8A70]">{row.revenue.toLocaleString()} ج.م</div>
+                        <div className="text-[11px] font-black text-[#4A4A3A]">{arabicPlural(row.count, BOOKING_FORMS)}</div>
+                        <div className="text-[9px] text-[#8A8A70]">{arabicNumber(row.revenue)} ج.م</div>
                       </div>
                     </div>
                   ))}
@@ -1186,7 +1184,7 @@ export default function AdminDashboard({
       {activeTab === 'audit' && (
         <div className="space-y-3">
           <div className="text-xs font-bold text-[#8A8A70] px-1">
-            سجل قرارات الإدارة (آخر {auditLog.length} إجراء) — مين وافق أو رفض أو حظر إيه وإمتى:
+            سجل قرارات الإدارة (آخر {arabicNumber(auditLog.length)} إجراء) — مين وافق أو رفض أو حظر إيه وإمتى:
           </div>
           {auditLog.length === 0 ? (
             <div className="bg-white rounded-3xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70]">
@@ -1298,14 +1296,14 @@ export default function AdminDashboard({
               <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-2">
                 <div className="text-[10px] text-[#8A8A70] font-bold">متوسط تقييم المنصة</div>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl font-black text-[#4A4A3A]">{avgRating.toFixed(1)}</span>
+                  <span className="text-2xl font-black text-[#4A4A3A]">{arabicDecimal(avgRating)}</span>
                   <div className="flex gap-0.5">
                     {[1,2,3,4,5].map((s) => (
                       <Star key={s} className={`w-4 h-4 ${s <= Math.round(avgRating) ? 'fill-amber-500 text-amber-500' : 'text-[#D6D6C2]'}`} />
                     ))}
                   </div>
                 </div>
-                <div className="text-[9px] text-[#8A8A70]">{reviews.length} تقييم</div>
+                <div className="text-[9px] text-[#8A8A70]">{arabicPlural(reviews.length, REVIEW_FORMS)}</div>
               </div>
               <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-1.5">
                 <div className="text-[10px] text-[#8A8A70] font-bold">توزيع النجوم</div>
@@ -1342,7 +1340,7 @@ export default function AdminDashboard({
                       </div>
                       <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-600 shrink-0">
                         <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                        {(rev.overall_rating ?? rev.rating).toFixed(1)}
+                        {arabicDecimal(rev.overall_rating ?? rev.rating)}
                       </span>
                     </div>
                     {rev.comment && <p className="text-[10.5px] text-[#4A4A3A] leading-relaxed bg-[#FAF8F5] rounded-xl p-2 border border-[#E7E5DB]">{rev.comment}</p>}
@@ -1391,7 +1389,7 @@ export default function AdminDashboard({
 
             <div className="flex gap-1.5 border-t border-[#EFEBE0] pt-3">
               {([
-                ['list', `البانرات (${promoBanners.length})`],
+                ['list', `البانرات (${arabicNumber(promoBanners.length)})`],
                 ['form', pbEditingId ? 'تعديل البانر' : 'إنشاء بانر'],
                 ['stats', 'الإحصائيات'],
               ] as const).map(([key, label]) => (
@@ -1539,7 +1537,7 @@ export default function AdminDashboard({
               {/* Icon links shown inside the banner (social accounts, site, phone…) */}
               <div className="col-span-2 space-y-1.5 pt-1 border-t border-[#E7E5DB]">
                 <div className="flex items-center justify-between gap-2 pt-1.5">
-                  <span className="text-[10px] font-black text-[#4A4A3A]">أيقونات داخل البانر ({pbLinks.length})</span>
+                  <span className="text-[10px] font-black text-[#4A4A3A]">أيقونات داخل البانر ({arabicNumber(pbLinks.length)})</span>
                   <button
                     type="button"
                     onClick={() => setPbLinks((p) => [...p, { id: `pl_${Date.now()}`, platform: 'instagram', url: '' }])}
@@ -1805,7 +1803,7 @@ export default function AdminDashboard({
             </div>
             <div className="flex gap-1 overflow-x-auto">
               {([
-                { key: 'all' as const, label: `الكل (${users.length})` },
+                { key: 'all' as const, label: `الكل (${arabicNumber(users.length)})` },
                 { key: 'individual' as const, label: 'أفراد' },
                 { key: 'servant' as const, label: 'خدام' },
                 { key: 'owner' as const, label: 'ملّاك' },
@@ -1835,7 +1833,7 @@ export default function AdminDashboard({
                     {usr.organizationName && <div className="text-[9px] text-[#5A5A40] font-black mt-0.5">{usr.organizationName}</div>}
                     <div className="text-[9px] text-[#BCBC9D] mt-0.5">
                       تسجيل: {new Date(usr.createdAt).toLocaleDateString('ar-EG')}
-                      {usr.points ? ` · ${usr.points} نقطة` : ''}
+                      {usr.points ? ` · ${arabicPlural(usr.points, POINT_FORMS)}` : ''}
                     </div>
                   </div>
 
@@ -1912,13 +1910,13 @@ export default function AdminDashboard({
             <div className="bg-gradient-to-br from-emerald-50 to-white p-4 rounded-3xl border border-emerald-200 space-y-1">
               <CheckCircle2 className="w-5 h-5 text-emerald-700" />
               <div className="text-[10px] text-emerald-900 font-bold">المحصّل فعلاً</div>
-              <div className="text-lg font-black text-emerald-900">{collectedRevenue.toLocaleString()} ج.م</div>
+              <div className="text-lg font-black text-emerald-900">{arabicNumber(collectedRevenue)} ج.م</div>
               <div className="text-[9px] text-emerald-800/70">من دفعات معتمدة</div>
             </div>
             <div className="bg-gradient-to-br from-[#EBEBE0]/40 to-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
               <TrendingUp className="w-5 h-5 text-[#5A5A40]" />
               <div className="text-[10px] text-[#8A8A70] font-bold">المتوقع الكلي</div>
-              <div className="text-lg font-black text-[#4A4A3A]">{expectedRevenue.toLocaleString()} ج.م</div>
+              <div className="text-lg font-black text-[#4A4A3A]">{arabicNumber(expectedRevenue)} ج.م</div>
               <div className="text-[9px] text-[#8A8A70]">قيمة الحجوزات المؤكدة</div>
             </div>
           </div>
@@ -1932,11 +1930,11 @@ export default function AdminDashboard({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="text-[9px] text-white/60 font-bold">من المحصّل فعلاً</div>
-                <div className="text-xl font-black text-white">{collectedCommission.toLocaleString()} ج.م</div>
+                <div className="text-xl font-black text-white">{arabicNumber(collectedCommission)} ج.م</div>
               </div>
               <div>
                 <div className="text-[9px] text-white/60 font-bold">المتوقعة (كل الحجوزات)</div>
-                <div className="text-xl font-black text-white/80">{expectedCommission.toLocaleString()} ج.م</div>
+                <div className="text-xl font-black text-white/80">{arabicNumber(expectedCommission)} ج.م</div>
               </div>
             </div>
           </div>
@@ -1946,13 +1944,13 @@ export default function AdminDashboard({
             <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
               <DollarSign className="w-5 h-5 text-emerald-700" />
               <div className="text-[10px] text-[#8A8A70] font-bold">مستحقات الملّاك (صافي المحصّل)</div>
-              <div className="text-lg font-black text-emerald-800">{ownersNetFromCollected.toLocaleString()} ج.م</div>
+              <div className="text-lg font-black text-emerald-800">{arabicNumber(ownersNetFromCollected)} ج.م</div>
               <div className="text-[9px] text-[#8A8A70]">بعد خصم عمولتك</div>
             </div>
             <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
               <AlertTriangle className="w-5 h-5 text-amber-600" />
               <div className="text-[10px] text-[#8A8A70] font-bold">متبقٍ لم يُحصّل بعد</div>
-              <div className="text-lg font-black text-amber-700">{outstanding.toLocaleString()} ج.م</div>
+              <div className="text-lg font-black text-amber-700">{arabicNumber(outstanding)} ج.م</div>
               <div className="text-[9px] text-[#8A8A70]">المتوقع − المحصّل</div>
             </div>
           </div>
@@ -1973,9 +1971,9 @@ export default function AdminDashboard({
                 {ownerRows.map((o) => (
                   <div key={o.id} className="grid grid-cols-4 gap-1 text-[10px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0 items-center">
                     <span className="font-bold text-[#4A4A3A] truncate">{o.name}</span>
-                    <span className="text-center text-emerald-800 font-bold">{o.collected.toLocaleString()}</span>
-                    <span className="text-center text-[#C5A059] font-bold">{Math.round(o.collected * PLATFORM_COMMISSION).toLocaleString()}</span>
-                    <span className="text-center text-[#0A2342] font-black">{o.net.toLocaleString()}</span>
+                    <span className="text-center text-emerald-800 font-bold">{arabicNumber(o.collected)}</span>
+                    <span className="text-center text-[#C5A059] font-bold">{arabicNumber(Math.round(o.collected * PLATFORM_COMMISSION))}</span>
+                    <span className="text-center text-[#0A2342] font-black">{arabicNumber(o.net)}</span>
                   </div>
                 ))}
               </>
@@ -1989,10 +1987,10 @@ export default function AdminDashboard({
               {topHouses.map((h, i) => (
                 <div key={h.id} className="flex items-center justify-between text-[10.5px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0">
                   <span className="font-bold text-[#4A4A3A] truncate flex items-center gap-1.5">
-                    <span className="w-4 h-4 rounded-full bg-[#EBEBE0] text-[#5A5A40] text-[8px] font-black flex items-center justify-center shrink-0">{i + 1}</span>
+                    <span className="w-4 h-4 rounded-full bg-[#EBEBE0] text-[#5A5A40] text-[8px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
                     {h.name}
                   </span>
-                  <span className="font-black text-emerald-800 shrink-0">{h.amount.toLocaleString()} ج.م</span>
+                  <span className="font-black text-emerald-800 shrink-0">{arabicNumber(h.amount)} ج.م</span>
                 </div>
               ))}
             </div>
@@ -2003,12 +2001,12 @@ export default function AdminDashboard({
             <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
               <BarChart3 className="w-5 h-5 text-[#5A5A40]" />
               <div className="text-[10px] text-[#8A8A70] font-bold">حجوزات مؤكدة (الفترة):</div>
-              <div className="text-lg font-black text-[#4A4A3A]">{periodConfirmed.length}</div>
+              <div className="text-lg font-black text-[#4A4A3A]">{arabicNumber(periodConfirmed.length)}</div>
             </div>
             <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
               <Users className="w-5 h-5 text-[#8A8A70]" />
               <div className="text-[10px] text-[#8A8A70] font-bold">متوسط الحضور بالرحلة:</div>
-              <div className="text-lg font-black text-[#4A4A3A]">{averageBookingSize} فرد</div>
+              <div className="text-lg font-black text-[#4A4A3A]">{arabicPlural(averageBookingSize, GUEST_FORMS)}</div>
             </div>
           </div>
 
@@ -2018,19 +2016,19 @@ export default function AdminDashboard({
             <div className="space-y-2 text-xs">
               <div className="flex justify-between items-center py-1.5 border-b border-[#D6D6C2]/60">
                 <span className="text-[#8A8A70]">إجمالي الحسابات المسجلة بالمنصة:</span>
-                <span className="font-bold text-[#4A4A3A]">{totalRegisteredUsers} عضو</span>
+                <span className="font-bold text-[#4A4A3A]">{arabicPlural(totalRegisteredUsers, MEMBER_FORMS)}</span>
               </div>
               <div className="flex justify-between items-center py-1.5 border-b border-[#D6D6C2]/60">
                 <span className="text-[#8A8A70]">البيوت المؤكدة والنشطة للجمهور:</span>
-                <span className="font-bold text-[#4A4A3A]">{totalHousesApproved} بيت مؤتمرات</span>
+                <span className="font-bold text-[#4A4A3A]">{arabicPlural(totalHousesApproved, HOUSE_FORMS)}</span>
               </div>
               <div className="flex justify-between items-center py-1.5 border-b border-[#D6D6C2]/60">
                 <span className="text-[#8A8A70]">إجمالي الزوار المسكنين تلقائياً بالمنصة:</span>
-                <span className="font-bold text-[#5A5A40]">{allocationsCount} فرد</span>
+                <span className="font-bold text-[#5A5A40]">{arabicPlural(allocationsCount, GUEST_FORMS)}</span>
               </div>
               <div className="flex justify-between items-center py-1.5">
                 <span className="text-[#8A8A70]">الطلبات قيد المراجعة حاليًا:</span>
-                <span className="font-bold text-amber-700">{pendingHouses.length} بيت معلق</span>
+                <span className="font-bold text-amber-700">{arabicPlural(pendingHouses.length, HOUSE_FORMS)} معلق</span>
               </div>
             </div>
           </div>
@@ -2061,7 +2059,7 @@ export default function AdminDashboard({
           <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
             <h3 className="text-xs font-bold text-[#4A4A3A]">قائمة الحوالات والدفعيات لإثباتات الحجز:</h3>
             <div className="text-[10px] text-[#8A8A70]">
-              بانتظار التحقق: <strong className="text-amber-800">{payments.filter(p => p.paymentStatus === 'pending').length}</strong> / إجمالي المعاملات بالمنصة: {payments.length}
+              بانتظار التحقق: <strong className="text-amber-800">{arabicNumber(payments.filter(p => p.paymentStatus === 'pending').length)}</strong> / إجمالي المعاملات بالمنصة: {arabicNumber(payments.length)}
             </div>
           </div>
 
@@ -2325,7 +2323,7 @@ export default function AdminDashboard({
               <div className="space-y-2">
                 <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
                   <h3 className="text-xs font-bold text-[#4A4A3A]">مستحقات جاهزة للتحويل (لكل حجز):</h3>
-                  <div className="text-[10px] text-[#8A8A70]">{owedBookings.length} حجز</div>
+                  <div className="text-[10px] text-[#8A8A70]">{arabicPlural(owedBookings.length, BOOKING_FORMS)}</div>
                 </div>
                 {owedHouseIds.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70]">لا توجد مستحقات غير محوّلة حالياً.</div>
@@ -2340,7 +2338,7 @@ export default function AdminDashboard({
                     <div key={hid} className="bg-white rounded-2xl border border-[#D6D6C2] p-3.5 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="text-xs font-black text-[#4A4A3A] min-w-0">{ownerName} · <span className="font-bold text-[#8A8A70]">{house?.name || '—'}</span></div>
-                        <div className="text-xs font-black text-[#5A5A40] shrink-0">{total.toLocaleString()} ج.م</div>
+                        <div className="text-xs font-black text-[#5A5A40] shrink-0">{arabicNumber(total)} ج.م</div>
                       </div>
                       {methods.length > 0 ? (
                         <div className="bg-[#FBFBFA] border border-[#EBEBE0] rounded-xl p-2 space-y-1">
@@ -2360,12 +2358,12 @@ export default function AdminDashboard({
                           <div key={b.id} className="flex items-center justify-between gap-2 bg-[#FBFBFA] rounded-xl px-2.5 py-1.5">
                             <div className="min-w-0">
                               <div className="text-[11px] font-bold text-[#4A4A3A] truncate">{b.userName}</div>
-                              <div className="text-[9px] text-[#8A8A70] font-bold">{b.checkIn} → {b.checkOut}</div>
+                              <div className="text-[9px] text-[#8A8A70] font-bold">{arabicDateRange(b.checkIn, b.checkOut)}</div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[11px] font-black text-[#5A5A40]">{ownerShare(b).toLocaleString()} ج.م</span>
+                              <span className="text-[11px] font-black text-[#5A5A40]">{arabicNumber(ownerShare(b))} ج.م</span>
                               <button type="button"
-                                onClick={() => { if (confirm(`تأكيد تحويل ${ownerShare(b).toLocaleString()} ج.م لـ${ownerName} عن حجز ${b.userName}؟`)) onSettleBookings({ houseId: hid, ownerId, amount: ownerShare(b), bookingIds: [b.id], note: `حجز ${b.userName}` }); }}
+                                onClick={() => { if (confirm(`تأكيد تحويل ${arabicNumber(ownerShare(b))} ج.م لـ${ownerName} عن حجز ${b.userName}؟`)) onSettleBookings({ houseId: hid, ownerId, amount: ownerShare(b), bookingIds: [b.id], note: `حجز ${b.userName}` }); }}
                                 className="text-[10px] font-bold bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg cursor-pointer">حوّل ✓</button>
                             </div>
                           </div>
@@ -2373,8 +2371,8 @@ export default function AdminDashboard({
                       </div>
                       {list.length > 1 && (
                         <button type="button"
-                          onClick={() => { if (confirm(`تأكيد تحويل الإجمالي ${total.toLocaleString()} ج.م لـ${ownerName} (${list.length} حجوزات) دفعة واحدة؟`)) onSettleBookings({ houseId: hid, ownerId, amount: total, bookingIds: list.map((b) => b.id), note: `${list.length} حجوزات دفعة واحدة` }); }}
-                          className="w-full text-[11px] font-black bg-[#3A6B4C] hover:bg-[#2D5A3F] text-white py-2 rounded-xl cursor-pointer transition-colors">حوّل الكل دفعة واحدة ({total.toLocaleString()} ج.م) ✓</button>
+                          onClick={() => { if (confirm(`تأكيد تحويل الإجمالي ${arabicNumber(total)} ج.م لـ${ownerName} (${arabicPlural(list.length, BOOKING_FORMS)}) دفعة واحدة؟`)) onSettleBookings({ houseId: hid, ownerId, amount: total, bookingIds: list.map((b) => b.id), note: `${arabicPlural(list.length, BOOKING_FORMS)} دفعة واحدة` }); }}
+                          className="w-full text-[11px] font-black bg-[#3A6B4C] hover:bg-[#2D5A3F] text-white py-2 rounded-xl cursor-pointer transition-colors">حوّل الكل دفعة واحدة ({arabicNumber(total)} ج.م) ✓</button>
                       )}
                     </div>
                   );
@@ -2383,7 +2381,7 @@ export default function AdminDashboard({
             )}
             <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
               <h3 className="text-xs font-bold text-[#4A4A3A]">طلبات تحويل أصحاب البيوت + السجل:</h3>
-              <div className="text-[10px] text-[#8A8A70]">قيد التنفيذ: <strong className="text-amber-800">{pendingTotal.toLocaleString()} ج.م</strong></div>
+              <div className="text-[10px] text-[#8A8A70]">قيد التنفيذ: <strong className="text-amber-800">{arabicNumber(pendingTotal)} ج.م</strong></div>
             </div>
             {payouts.length === 0 ? (
               <div className="bg-white rounded-2xl border border-[#D6D6C2] p-8 text-center text-xs text-[#8A8A70]">لا توجد طلبات تحويل بعد.</div>
@@ -2420,14 +2418,14 @@ export default function AdminDashboard({
                         );
                       })()}
                       <div className="flex items-center justify-between gap-2">
-                        <div className="text-base font-black text-[#5A5A40]">{p.amount.toLocaleString()} ج.م</div>
+                        <div className="text-base font-black text-[#5A5A40]">{arabicNumber(p.amount)} ج.م</div>
                         {open && onUpdatePayoutStatus && (
                           <div className="flex gap-1.5">
                             {p.status === 'pending' && (
                               <button type="button" onClick={() => onUpdatePayoutStatus(p.id, 'processing')}
                                 className="text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-2.5 py-1.5 rounded-lg cursor-pointer">بدء التحويل</button>
                             )}
-                            <button type="button" onClick={() => { if (confirm(`تأكيد تحويل ${p.amount.toLocaleString()} ج.م لـ${ownerName}؟`)) onUpdatePayoutStatus(p.id, 'completed'); }}
+                            <button type="button" onClick={() => { if (confirm(`تأكيد تحويل ${arabicNumber(p.amount)} ج.م لـ${ownerName}؟`)) onUpdatePayoutStatus(p.id, 'completed'); }}
                               className="text-[10px] font-bold bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg cursor-pointer">تم التحويل ✓</button>
                             <button type="button" onClick={() => { if (confirm('رفض طلب التحويل؟')) onUpdatePayoutStatus(p.id, 'rejected'); }}
                               className="text-[10px] font-bold bg-white text-rose-700 border border-rose-200 px-2.5 py-1.5 rounded-lg cursor-pointer">رفض</button>
@@ -2449,7 +2447,7 @@ export default function AdminDashboard({
           <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
             <h3 className="text-xs font-bold text-[#4A4A3A]">إدارة حجوزات المنصة والتحصيل:</h3>
             <div className="text-[10px] text-[#8A8A70]">
-              المعلقة أو غير مكتملة السداد: <strong className="text-amber-800">{pendingOrUnpaidBookingsCount}</strong> / إجمالي الحجوزات: {bookings.length}
+              المعلقة أو غير مكتملة السداد: <strong className="text-amber-800">{arabicNumber(pendingOrUnpaidBookingsCount)}</strong> / إجمالي الحجوزات: {arabicNumber(bookings.length)}
             </div>
           </div>
 
@@ -2496,7 +2494,7 @@ export default function AdminDashboard({
                 const totalPaid = bPayments.reduce((sum, p) => sum + p.amount, 0);
                 const remaining = booking.totalPrice - totalPaid;
 
-                const msgText = `سلام ونعمة يا أستاذ/أستاذة ${booking.userName}، نود تذكيركم بحجزكم في بيت "${booking.houseName}" المقرّر بدئه يوم ${booking.checkIn} (عدد ${booking.guestsCount} أفراد).
+                const msgText = `سلام ونعمة يا أستاذ/أستاذة ${booking.userName}، نود تذكيركم بحجزكم في بيت "${booking.houseName}" المقرّر بدئه يوم ${arabicDate(booking.checkIn)} (عدد ${arabicPlural(booking.guestsCount, GUEST_FORMS)}).
 إجمالي تكلفة الحجز: ${booking.totalPrice.toLocaleString('ar-EG')} ج.م.
 المسدد حتى الآن: ${totalPaid.toLocaleString('ar-EG')} ج.م.
 المتبقي المستحق: ${remaining.toLocaleString('ar-EG')} ج.م.
@@ -2563,7 +2561,7 @@ export default function AdminDashboard({
                           <div className="text-[10px] text-[#8A8A70] font-bold">تاريخ الدخول والمدة:</div>
                           <div className="text-xs font-black text-[#4A4A3A] flex items-center gap-1 justify-end">
                             <Calendar className="w-3.5 h-3.5 text-[#8A8A70]" />
-                            <span>{booking.checkIn} إلى {booking.checkOut}</span>
+                            <span>{arabicDateRange(booking.checkIn, booking.checkOut)}</span>
                           </div>
                         </div>
                       </div>
@@ -2628,7 +2626,7 @@ export default function AdminDashboard({
                 <button key={b.id} onClick={() => setChatBookingId(isOpen ? null : b.id)}
                   className={`text-right p-3 rounded-2xl border transition-all cursor-pointer ${isOpen ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white border-[#D6D6C2] hover:bg-[#FAF8F5]'}`}>
                   <div className="text-[11px] font-bold truncate">{b.userName}</div>
-                  <div className={`text-[9px] truncate ${isOpen ? 'text-white/70' : 'text-[#8A8A70]'}`}>{b.houseName} · {b.checkIn}</div>
+                  <div className={`text-[9px] truncate ${isOpen ? 'text-white/70' : 'text-[#8A8A70]'}`}>{b.houseName} · {arabicDate(b.checkIn)}</div>
                 </button>
               );
             })}
@@ -2697,7 +2695,7 @@ export default function AdminDashboard({
                 ) : detailUserBookings.map((b) => (
                   <div key={b.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[10px] space-y-0.5">
                     <div className="flex justify-between font-bold"><span>{b.houseName}</span><span className={b.status === 'approved' || b.status === 'completed' ? 'text-emerald-700' : b.status === 'pending' ? 'text-amber-700' : 'text-rose-700'}>{b.status === 'approved' ? 'مقبول' : b.status === 'completed' ? 'مكتمل' : b.status === 'pending' ? 'معلّق' : b.status === 'cancelled' ? 'ملغى' : 'مرفوض'}</span></div>
-                    <div className="text-[#8A8A70]">{b.checkIn} → {b.checkOut} · {b.guestsCount} فرد · {b.totalPrice.toLocaleString()} ج.م</div>
+                    <div className="text-[#8A8A70]">{arabicDateRange(b.checkIn, b.checkOut)} · {arabicPlural(b.guestsCount, GUEST_FORMS)} · {arabicNumber(b.totalPrice)} ج.م</div>
                   </div>
                 ))}
               </div>
@@ -2709,7 +2707,7 @@ export default function AdminDashboard({
                   <div className="text-[10px] text-[#8A8A70] bg-white rounded-xl border border-[#D6D6C2] p-3 text-center">لا توجد مدفوعات</div>
                 ) : detailUserPayments.map((p) => (
                   <div key={p.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[10px] flex justify-between items-center">
-                    <div><span className="font-bold">{p.amount.toLocaleString()} ج.م</span> <span className="text-[#8A8A70]">({p.paymentMethod})</span></div>
+                    <div><span className="font-bold">{arabicNumber(p.amount)} ج.م</span> <span className="text-[#8A8A70]">({p.paymentMethod})</span></div>
                     <span className={`font-bold ${p.paymentStatus === 'approved' ? 'text-emerald-700' : p.paymentStatus === 'pending' ? 'text-amber-700' : 'text-rose-700'}`}>
                       {p.paymentStatus === 'approved' ? 'معتمد' : p.paymentStatus === 'pending' ? 'معلّق' : 'مرفوض'}
                     </span>
@@ -2726,7 +2724,7 @@ export default function AdminDashboard({
                   <div key={r.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[10px] space-y-0.5">
                     <div className="flex justify-between items-center">
                       <span className="font-bold">{houses.find((h) => h.id === r.houseId)?.name || r.houseId}</span>
-                      <span className="flex items-center gap-0.5 text-amber-600 font-bold"><Star className="w-3 h-3 fill-amber-500 text-amber-500" />{(r.overall_rating ?? r.rating).toFixed(1)}</span>
+                      <span className="flex items-center gap-0.5 text-amber-600 font-bold"><Star className="w-3 h-3 fill-amber-500 text-amber-500" />{arabicDecimal(r.overall_rating ?? r.rating)}</span>
                     </div>
                     {r.comment && <div className="text-[#8A8A70] truncate">{r.comment}</div>}
                   </div>

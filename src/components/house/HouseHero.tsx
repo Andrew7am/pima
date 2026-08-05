@@ -1,4 +1,5 @@
 ﻿import React, { useCallback, useRef, useState } from 'react';
+import { arabicDecimal } from '../../lib/arabic';
 import { RetreatHouse } from '../../types';
 import { ArrowRight, ChevronLeft, ChevronRight, Heart, MapPin, Share2, Star, MoveHorizontal } from 'lucide-react';
 import { tapFeedback } from '../../lib/haptics';
@@ -221,7 +222,7 @@ export default function HouseHero({
                 {house.name}
               </h1>
               <div className="mt-1.5 flex items-center gap-2">
-                <span className="text-[15px] font-black text-white">{house.rating.toFixed(1)}</span>
+                <span className="text-[15px] font-black text-white">{arabicDecimal(house.rating)}</span>
                 <span className="flex items-center gap-0.5" aria-hidden="true">
                   {[0, 1, 2, 3, 4].map((i) => (
                     // Lighter than the brand gold but still saturated — going

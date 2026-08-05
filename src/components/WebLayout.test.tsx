@@ -126,10 +126,20 @@ describe('WebLayout notification actions', () => {
 });
 
 describe('WebLayout notifications', () => {
+  // The count is Arabic-Indic: a Latin "2" on an otherwise Arabic screen is
+  // the defect, not the expectation.
   it('badges the unread count on the bell', async () => {
     renderLayout([notif({ id: 'a' }), notif({ id: 'b' }), notif({ id: 'c', isRead: true })]);
     const bell = screen.getByRole('button', { name: 'الإشعارات' });
-    expect(within(bell).getByText('2')).toBeInTheDocument();
+    expect(within(bell).getByText('٢')).toBeInTheDocument();
+  });
+
+  // Past nine the badge stops counting rather than growing — and the cap has
+  // to be Arabic too.
+  it('caps the badge at ٩+ instead of printing a long number', async () => {
+    renderLayout(Array.from({ length: 12 }, (_, i) => notif({ id: `n${i}` })));
+    const bell = screen.getByRole('button', { name: 'الإشعارات' });
+    expect(within(bell).getByText('٩+')).toBeInTheDocument();
   });
 
   // Regression: notifications are scoped per user — another account's rows

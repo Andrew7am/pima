@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { arabicDecimal } from '../../lib/arabic';
 import { Eye, MousePointerClick, TrendingUp, TrendingDown, Minus, BarChart3, Loader2, Smartphone, Monitor, Apple, Trophy } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { PromoBanner } from '../../types';
@@ -46,7 +47,7 @@ function Delta({ now, before }: { now: number; before: number }) {
   return (
     <span className={`text-[9px] font-black flex items-center gap-0.5 ${cls}`}>
       <Icon className="w-3 h-3" />
-      {flat ? 'بدون تغيير' : `${change > 0 ? '+' : ''}${change.toFixed(1)}% عن الفترة السابقة`}
+      {flat ? 'بدون تغيير' : `${change > 0 ? '+' : ''}${arabicDecimal(change)}٪ عن الفترة السابقة`}
     </span>
   );
 }
@@ -147,7 +148,7 @@ export default function BannerAnalytics({ banners = [] }: { banners?: PromoBanne
             <Kpi icon={MousePointerClick} label="النقرات" value={ar(totals.clicks)} tint="#5A5A40">
               <Delta now={totals.clicks} before={prev.clicks} />
             </Kpi>
-            <Kpi icon={TrendingUp} label="نسبة النقر (CTR)" value={`${ctr.toFixed(2)}%`} tint="#C5A059">
+            <Kpi icon={TrendingUp} label="نسبة النقر (CTR)" value={`${arabicDecimal(ctr, 2)}٪`} tint="#C5A059">
               <Delta now={+ctr.toFixed(2)} before={+prevCtr.toFixed(2)} />
             </Kpi>
           </div>
@@ -210,13 +211,13 @@ export default function BannerAnalytics({ banners = [] }: { banners?: PromoBanne
                             <div className="h-full bg-[#0A2342] rounded-full" style={{ width: `${Math.min(100, s.ctr * 8)}%` }} />
                           </div>
                           <span className="text-[9.5px] font-black text-[#0A2342] w-20 text-left shrink-0">
-                            {s.ctr.toFixed(2)}% · {ar(s.row.impressions)}
+                            {arabicDecimal(s.ctr, 2)}٪ · {ar(s.row.impressions)}
                           </span>
                         </div>
                       ))}
                       <p className="text-[9px] font-bold text-[#8A8A70]">
                         {enough
-                          ? `النسخة «${best.variant}» أعلى بـ ${lift.toFixed(0)}٪ في نسبة النقر.`
+                          ? `النسخة «${best.variant}» أعلى بـ ${arabicDecimal(lift, 0)}٪ في نسبة النقر.`
                           : 'لسه البيانات قليلة للحكم — استنى ٣٠ مشاهدة على الأقل لكل نسخة.'}
                       </p>
                     </div>
@@ -248,7 +249,7 @@ export default function BannerAnalytics({ banners = [] }: { banners?: PromoBanne
                         <p className="text-[9px] font-bold text-[#8A8A70]">{b.placement === 'carousel' ? 'كاروسيل' : 'عدّاد'}</p>
                       </div>
                       <div className="text-left shrink-0">
-                        <div className="text-[10px] font-black text-[#0A2342]">{rate.toFixed(2)}%</div>
+                        <div className="text-[10px] font-black text-[#0A2342]">{arabicDecimal(rate, 2)}٪</div>
                         <div className="text-[8.5px] font-bold text-[#8A8A70]">{ar(b.impressions)} مشاهدة · {ar(b.clicks)} نقرة</div>
                       </div>
                     </div>

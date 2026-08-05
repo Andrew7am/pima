@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
+import { arabicNumber, arabicPlural, arabicDate, arabicDateRange, ROOM_FORMS, BED_FORMS, AMENITY_FORMS, NIGHT_FORMS } from '../../lib/arabic';
 import { Room, RoomType, RoomFacility, Booking, RoomAllocation } from '../../types';
 import {
   BedDouble, Snowflake, Crown, Users, Bath, Tv, Wifi, Box, Trees,
@@ -304,7 +305,7 @@ export default function OwnerRoomsManager({
                 </div>
                 <div className="mt-2 inline-flex items-center gap-1 bg-white/70 rounded-xl px-1.5 py-0.5">
                   <TypeIcon className="w-3 h-3 text-[var(--color-owner-primary)]" />
-                  <span className="text-[9px] font-black text-[var(--color-owner-text)]">{type?.name ?? `${room.bedsCount} سرير`}</span>
+                  <span className="text-[9px] font-black text-[var(--color-owner-text)]">{type?.name ?? arabicPlural(room.bedsCount, BED_FORMS)}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-1.5">
                   <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
@@ -355,17 +356,16 @@ export default function OwnerRoomsManager({
                   <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} /> {meta.label}
                 </span>
                 {type && <span className="text-[10px] font-black text-[var(--color-owner-secondary)]">{type.name}</span>}
-                {price !== undefined && <span className="text-[10px] font-black text-[var(--color-owner-primary)] mr-auto">{price.toLocaleString()} ج.م / الليلة</span>}
+                {price !== undefined && <span className="text-[10px] font-black text-[var(--color-owner-primary)] mr-auto">{arabicNumber(price)} ج.م / الليلة</span>}
               </div>
 
               {occupied && booking ? (
                 <>
                   <div className="bg-[var(--color-owner-bg)] rounded-2xl p-3.5 space-y-2 text-[11px]">
                     <Row label="الضيف" value={booking.organizationName || booking.userName} />
-                    <Row label="من" value={booking.checkIn} />
-                    <Row label="إلى" value={booking.checkOut} />
-                    <Row label="مدة الإقامة" value={`${nightsBetween(booking.checkIn, booking.checkOut)} ليالٍ`} />
-                    <Row label="الإجمالي" value={`${booking.totalPrice.toLocaleString()} ج.م`} bold />
+                    <Row label="الإقامة" value={arabicDateRange(booking.checkIn, booking.checkOut)} />
+                    <Row label="مدة الإقامة" value={arabicPlural(nightsBetween(booking.checkIn, booking.checkOut), NIGHT_FORMS)} />
+                    <Row label="الإجمالي" value={`${arabicNumber(booking.totalPrice)} ج.م`} bold />
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <SheetAction icon={Calendar} label="عرض الحجز" onClick={() => { setOpenRoomId(null); onViewBooking?.(booking.id); }} />
@@ -443,7 +443,7 @@ export default function OwnerRoomsManager({
             {roomTypes.map((t) => (
               <button key={t.id} type="button" onClick={() => bulkApply((r) => onUpdateRoom?.({ ...r, typeId: t.id, bedsCount: t.bedsCount, pricePerNight: t.price }))}
                 className="w-full flex items-center justify-between bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-3 py-2.5 text-[11px] font-black text-[var(--color-owner-text)]">
-                <span>{t.name}</span><span className="text-[var(--color-owner-secondary)]">{t.price.toLocaleString()} ج.م</span>
+                <span>{t.name}</span><span className="text-[var(--color-owner-secondary)]">{arabicNumber(t.price)} ج.م</span>
               </button>
             ))}
           </div>
@@ -548,7 +548,7 @@ function ExtendForm({ booking, onSubmit }: { booking: Booking; onSubmit: (date: 
   const [date, setDate] = useState(booking.checkOut);
   return (
     <div className="space-y-3">
-      <p className="text-[11px] font-bold text-[var(--color-owner-secondary)]">المغادرة الحالية: {booking.checkOut}</p>
+      <p className="text-[11px] font-bold text-[var(--color-owner-secondary)]">المغادرة الحالية: {arabicDate(booking.checkOut)}</p>
       <Field label="تاريخ المغادرة الجديد"><input type="date" min={booking.checkOut} value={date} onChange={(e) => setDate(e.target.value)} className={INPUT} /></Field>
       <button type="button" onClick={() => onSubmit(date)} disabled={date <= booking.checkOut}
         className="w-full bg-[var(--color-owner-primary)] disabled:opacity-40 text-white text-[11px] font-black py-3 rounded-2xl">تأكيد التمديد</button>
@@ -612,9 +612,9 @@ function RoomTypesPage({ houseId, roomTypes, rooms, onBack, onAddRoomType, onUpd
                 <span className="w-10 h-10 rounded-2xl bg-[var(--color-owner-hover)] flex items-center justify-center shrink-0"><TypeIcon className="w-5 h-5 text-[var(--color-owner-primary)]" /></span>
                 <div className="flex-1 min-w-0">
                   <div className="text-[12px] font-black text-[var(--color-owner-text)]">{t.name}</div>
-                  <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{countByType(t.id)} غرفة · {t.bedsCount} سرير · {t.facilities.length} مرافق</div>
+                  <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(countByType(t.id), ROOM_FORMS)} · {arabicPlural(t.bedsCount, BED_FORMS)} · {arabicPlural(t.facilities.length, AMENITY_FORMS)}</div>
                 </div>
-                <div className="text-[12px] font-black text-[var(--color-owner-primary)] shrink-0">{t.price.toLocaleString()} ج.م</div>
+                <div className="text-[12px] font-black text-[var(--color-owner-primary)] shrink-0">{arabicNumber(t.price)} ج.م</div>
               </button>
             );
           })}

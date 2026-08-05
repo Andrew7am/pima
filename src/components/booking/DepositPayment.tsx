@@ -1,11 +1,11 @@
 ﻿import React, { useEffect, useRef, useState } from 'react';
+import { arabicNumber, arabicDateRange, arabicDecimal } from '../../lib/arabic';
 import { Booking, RetreatHouse, Payment, User } from '../../types';
 import {
   ChevronRight, ChevronLeft, X, ShieldCheck, Copy, Check, UploadCloud, Trash2,
   FileText, Users, CalendarDays, Landmark, Wallet, Home, Clock, Lock, RotateCw, Gem,
 } from 'lucide-react';
 import { tapFeedback } from '../../lib/haptics';
-import { arabicNumber, arabicDateRange } from '../../lib/arabic';
 
 export type PayMethod = 'instapay' | 'vodafone' | 'bank';
 
@@ -372,7 +372,7 @@ export default function DepositPayment({
                     <div className="min-w-0 flex-1 leading-tight">
                       <span className="block text-[11px] font-black text-[#0A2342] truncate">{proofName}</span>
                       <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
-                        {(proofSize / (1024 * 1024)).toFixed(1)} ميجابايت
+                        {arabicDecimal(proofSize / (1024 * 1024))} ميجابايت
                       </span>
                     </div>
                     <Check className="w-5 h-5 text-emerald-600 shrink-0" />

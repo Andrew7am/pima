@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { arabicDecimal } from '../../lib/arabic';
 import { Review } from '../../types';
 import {
   Star, ChevronDown, Sparkles, UtensilsCrossed, ClipboardList,
@@ -287,7 +288,7 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
                     <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">{relativeDate(rev.createdAt)}</span>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[12.5px] font-black text-[#0A2342]">{overall.toFixed(1)}</span>
+                    <span className="text-[12.5px] font-black text-[#0A2342]">{arabicDecimal(overall)}</span>
                     <Stars value={overall} />
                   </div>
                 </div>

@@ -43,6 +43,79 @@ export function arabicPlural(n: number, forms: ArabicPluralForms): string {
   return `${arabicNumber(n)} ${form}`;
 }
 
+/**
+ * A number with a fraction: "٤٫٥".
+ *
+ * `toFixed` always answers in Latin ("4.5") — it has no locale. Ratings are
+ * the place this shows most: a gold ★ next to a Latin 4.5 on a screen whose
+ * every other number is Arabic-Indic. The separator here is ٫ (U+066B ARABIC
+ * DECIMAL SEPARATOR), which is what ar-EG uses, not a full stop.
+ */
+export function arabicDecimal(n: number, fractionDigits = 1): string {
+  return n.toLocaleString('ar-EG', {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  });
+}
+
+/**
+ * A percentage in Arabic: "٦٪".
+ *
+ * Note the sign — U+066A ARABIC PERCENT SIGN, not the Latin `%`. Mixing an
+ * Arabic-Indic numeral with a Latin percent sign is the same half-converted
+ * look the numerals themselves had.
+ */
+export function arabicPercent(n: number): string {
+  return `${arabicNumber(n)}٪`;
+}
+
+/**
+ * A notification badge: "٣", or "٩+" once it stops being worth counting.
+ *
+ * The four badges in the app each wrote `n > 9 ? '9+' : n` inline, which put a
+ * Latin 9 and a Latin count on an otherwise Arabic screen. The cap belongs
+ * with the formatting, not copy-pasted next to every bell icon.
+ */
+export function arabicBadge(n: number): string {
+  return n > 9 ? `${arabicNumber(9)}+` : arabicNumber(n);
+}
+
+/**
+ * The nouns the dashboards count over and over.
+ *
+ * They live here rather than next to each screen because the same noun shows
+ * up in the owner shell, the finance centre and the admin panel — three copies
+ * of "غرفة/غرفتان/غرف" drift apart the moment one of them is edited.
+ */
+export const BOOKING_FORMS: ArabicPluralForms = { one: 'حجز واحد', two: 'حجزان', few: 'حجوزات', many: 'حجز', zero: 'لا حجوزات' };
+export const USER_FORMS: ArabicPluralForms = { one: 'مستخدم واحد', two: 'مستخدمان', few: 'مستخدمين', many: 'مستخدم', zero: 'لا مستخدمين' };
+export const GUEST_FORMS: ArabicPluralForms = { one: 'فرد واحد', two: 'فردان', few: 'أفراد', many: 'فرد' };
+export const ROOM_FORMS: ArabicPluralForms = { one: 'غرفة واحدة', two: 'غرفتان', few: 'غرف', many: 'غرفة' };
+export const BED_FORMS: ArabicPluralForms = { one: 'سرير واحد', two: 'سريران', few: 'أسرّة', many: 'سرير' };
+export const REVIEW_FORMS: ArabicPluralForms = { one: 'تقييم واحد', two: 'تقييمان', few: 'تقييمات', many: 'تقييم' };
+export const HOUSE_FORMS: ArabicPluralForms = { one: 'بيت واحد', two: 'بيتان', few: 'بيوت', many: 'بيت' };
+export const EXPENSE_FORMS: ArabicPluralForms = { one: 'مصروف واحد', two: 'مصروفان', few: 'مصروفات', many: 'مصروف' };
+export const TASK_FORMS: ArabicPluralForms = { one: 'مهمة واحدة', two: 'مهمتان', few: 'مهام', many: 'مهمة' };
+export const AMENITY_FORMS: ArabicPluralForms = { one: 'مرفق واحد', two: 'مرفقان', few: 'مرافق', many: 'مرفق' };
+export const NIGHT_FORMS: ArabicPluralForms = { one: 'ليلة واحدة', two: 'ليلتان', few: 'ليالٍ', many: 'ليلة' };
+export const MEMBER_FORMS: ArabicPluralForms = { one: 'عضو واحد', two: 'عضوان', few: 'أعضاء', many: 'عضو' };
+export const POINT_FORMS: ArabicPluralForms = { one: 'نقطة واحدة', two: 'نقطتان', few: 'نقاط', many: 'نقطة' };
+export const DAY_FORMS: ArabicPluralForms = { one: 'يوم واحد', two: 'يومان', few: 'أيام', many: 'يوم' };
+
+/**
+ * Just the noun, for layouts that print the numeral themselves.
+ *
+ * A KPI tile shows the count big and the unit small underneath, so
+ * `arabicPlural` cannot be used — it would put a second numeral inside the
+ * unit line ("١٢" over "١٢ غرفة"). This returns the form that pairs with a
+ * numeral already on screen: the plural of paucity for 3–10 (٣ over غرف), the
+ * singular otherwise (١٢ over غرفة).
+ */
+export function arabicUnit(n: number, forms: ArabicPluralForms): string {
+  const mod = Math.abs(n) % 100;
+  return mod >= 3 && mod <= 10 ? forms.few : forms.many;
+}
+
 /** "١٨ يوليو ٢٠٢٦" */
 export function arabicDate(iso?: string): string {
   if (!iso) return '';

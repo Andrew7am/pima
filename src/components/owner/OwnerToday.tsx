@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { arabicNumber, arabicPlural, GUEST_FORMS } from '../../lib/arabic';
 import { motion } from 'motion/react';
 import { RetreatHouse, Booking, Room } from '../../types';
 import { Sun, LogIn, LogOut, Sparkles, Banknote, Users, TrendingUp, TrendingDown, CheckCircle2, Wrench, ScanLine } from 'lucide-react';
@@ -94,7 +95,7 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
         {[
           { icon: LogIn, label: 'وصول اليوم', value: arrivals.length, color: 'text-[var(--color-owner-primary)]' },
           { icon: Users, label: 'ضيوف متوقعون', value: guestsToday, color: 'text-emerald-600' },
-          { icon: Banknote, label: 'كاش متوقع', value: cashExpected.toLocaleString(), color: 'text-amber-600', small: true },
+          { icon: Banknote, label: 'كاش متوقع', value: arabicNumber(cashExpected), color: 'text-amber-600', small: true },
         ].map((s) => (
           <div key={s.label} className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 flex flex-col items-center gap-1 text-center">
             <s.icon className="w-4 h-4 text-[var(--color-owner-primary)]" />
@@ -123,7 +124,7 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
             className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] rounded-2xl p-2.5">
             <button type="button" onClick={() => onViewBooking?.(b.id)} className="min-w-0 text-right">
               <div className="text-[11px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
-              <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{b.guestsCount} فرد · متبقٍ {cashDueAtArrival(b).toLocaleString()} ج.م</div>
+              <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(b.guestsCount, GUEST_FORMS)} · متبقٍ {arabicNumber(cashDueAtArrival(b))} ج.م</div>
             </button>
             {b.checkedInAt ? (
               <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-1 shrink-0">وصل ✓</span>
@@ -145,7 +146,7 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
           <div key={b.id} className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] rounded-2xl p-2.5">
             <button type="button" onClick={() => onViewBooking?.(b.id)} className="min-w-0 text-right">
               <div className="text-[11px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
-              <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{b.guestsCount} فرد</div>
+              <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(b.guestsCount, GUEST_FORMS)}</div>
             </button>
             {b.checkedOutAt ? (
               <span className="text-[9px] font-black text-[var(--color-owner-secondary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-full px-2 py-1 shrink-0">غادر ✓</span>

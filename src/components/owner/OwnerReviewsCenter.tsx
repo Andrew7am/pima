@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { arabicNumber, arabicPercent } from '../../lib/arabic';
 import { motion } from 'motion/react';
 import { Review, User } from '../../types';
 import {
@@ -331,7 +332,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
                   <span className="flex-1 h-2 rounded-full bg-[var(--color-owner-bg)] overflow-hidden">
                     <span className="block h-full bg-amber-400 rounded-full transition-all duration-700" style={{ width: `${pct}%`, transitionDelay: `${i * 60}ms` }} />
                   </span>
-                  <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] w-14 shrink-0 text-left">{pct}% ({dist[star]})</span>
+                  <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] w-14 shrink-0 text-left">{arabicPercent(pct)} ({arabicNumber(dist[star])})</span>
                 </div>
               );
             })}
@@ -376,11 +377,11 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
               <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <div className="text-[10px] font-black text-[var(--color-owner-text)]">أكثر الشكاوى تكرارًا</div>
-                  <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{complaintList.length} نوع</div>
+                  <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{arabicNumber(complaintList.length)} نوع</div>
                 </div>
                 {complaintList.slice(0, 6).map((c, i) => (
                   <div key={c.tag} className="flex items-center gap-2">
-                    <span className="text-[9px] font-black text-[var(--color-owner-secondary)] w-4 shrink-0">{i + 1}</span>
+                    <span className="text-[9px] font-black text-[var(--color-owner-secondary)] w-4 shrink-0">{arabicNumber(i + 1)}</span>
                     <span className="text-[10px] font-bold text-[var(--color-owner-text)] w-24 shrink-0 truncate">{c.tag}</span>
                     <span className="flex-1 h-1.5 rounded-full bg-[var(--color-owner-bg)] overflow-hidden">
                       <span className="block h-full bg-rose-400 rounded-full" style={{ width: `${(c.count / complaintMax) * 100}%` }} />

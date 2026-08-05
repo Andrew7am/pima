@@ -1,4 +1,5 @@
 import React from 'react';
+import { arabicNumber } from '../../lib/arabic';
 import { AppNotification, User } from '../../types';
 import { CheckCircle2, XCircle, Info } from 'lucide-react';
 
@@ -21,7 +22,7 @@ export default function OwnerNotifications({ owner, notifications, onMarkNotific
   return (
     <div className="space-y-3">
       <div className="text-xs font-bold text-[var(--color-owner-secondary)] px-1">
-        كل الإشعارات ({ownerNotifications.length}):
+        كل الإشعارات ({arabicNumber(ownerNotifications.length)}):
       </div>
 
       {ownerNotifications.length === 0 ? (
