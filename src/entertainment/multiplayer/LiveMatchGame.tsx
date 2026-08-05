@@ -261,9 +261,22 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
-        <div className="flex items-center gap-3 text-slate-300">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
-          <span className="text-sm font-bold">جارٍ تحميل الغرفة...</span>
+        {/* Same fault as the «جارٍ حساب النتيجة» spinner below: a load that
+            does not come back — a dropped connection on the way in — left the
+            player on a spinner with nothing to press. */}
+        <div className="flex flex-col items-center gap-5">
+          <div className="flex items-center gap-3 text-slate-300">
+            <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+            <span className="text-sm font-bold">جارٍ تحميل الغرفة...</span>
+          </div>
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 text-xs font-bold py-2.5 px-6 rounded-2xl transition-colors"
+          >
+            <Home className="w-4 h-4" />
+            خروج
+          </button>
         </div>
       </div>
     );
@@ -351,12 +364,20 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" style={{ animationDelay: '150ms' }} />
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" style={{ animationDelay: '300ms' }} />
           </div>
+          {/* Was an 11px grey underline under three pulsing dots — the only
+              way off a screen that can wait indefinitely, and easy to miss
+              entirely. It also said «إلغاء الغرفة والخروج» while its whole
+              handler is onBack: nothing is cancelled, the room stays
+              `waiting` in the database, and the next player to search gets
+              matched into it. Renamed to what it actually does until
+              cancel_room exists. */}
           <button
             type="button"
             onClick={onBack}
-            className="text-[11px] text-slate-400 hover:text-slate-200 underline"
+            className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 text-xs font-bold py-3 rounded-2xl transition-colors"
           >
-            إلغاء الغرفة والخروج
+            <Home className="w-4 h-4" />
+            خروج
           </button>
         </div>
         <RoomChat currentUser={currentUser} roomId={roomId} opponentName={oppName} />
