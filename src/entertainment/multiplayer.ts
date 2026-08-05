@@ -169,7 +169,16 @@ export async function loadRoom(roomId: string): Promise<GameRoom | null> {
 
 // Opens a Realtime channel and calls `onChange` whenever the row updates.
 // Returns an unsubscribe function — caller MUST call it on unmount.
-export function subscribeToRoom(roomId: string, onChange: (room: GameRoom) => void): () => void {
+//
+// `onStatus` reports the channel's own state. The status callback used to be
+// dropped on the floor, which meant a socket that died — the normal outcome of
+// backgrounding the app on Android — was indistinguishable from an opponent
+// who simply had not answered yet. The screen sat there believing it was live.
+export function subscribeToRoom(
+  roomId: string,
+  onChange: (room: GameRoom) => void,
+  onStatus?: (status: string) => void,
+): () => void {
   const channel = supabase
     .channel(`game_room:${roomId}`)
     .on(
@@ -177,7 +186,7 @@ export function subscribeToRoom(roomId: string, onChange: (room: GameRoom) => vo
       { event: 'UPDATE', schema: 'public', table: 'game_rooms', filter: `id=eq.${roomId}` },
       (payload) => { onChange(payload.new as GameRoom); },
     )
-    .subscribe();
+    .subscribe((status) => { onStatus?.(String(status)); });
   return () => { supabase.removeChannel(channel); };
 }
 

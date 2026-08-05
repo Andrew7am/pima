@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { User } from '../../types';
-import { ChevronRight, Check, X as XIcon, Trophy, Users as UsersIcon, Loader2, Home, RotateCcw, Copy, Lightbulb } from 'lucide-react';
+import { ChevronRight, Check, X as XIcon, Trophy, Users as UsersIcon, Loader2, Home, RotateCcw, Copy, Lightbulb, UserPlus } from 'lucide-react';
 import {
   GameRoom, loadRoom, subscribeToRoom, submitAnswer, finalizeMatch, FinalizeResult,
   cancelRoom, claimAbandonedMatch,
@@ -13,6 +13,7 @@ import RoomChat from './RoomChat';
 import AssistBar, { AssistId } from './AssistBar';
 import { MATCH_STAGES, MatchStage, stageOf, startsStage } from './matchQuestions';
 import { markSeen } from '../questionHistory';
+import { sendFriendRequest } from '../social';
 
 interface LiveMatchGameProps {
   currentUser: User;
@@ -30,6 +31,10 @@ const MAX_FINALIZE_ATTEMPTS = 3;
 const FINALIZE_BACKOFF_MS = 1500;
 /** Mirrors _abandon_cutoff() in migration 099 — the server is authoritative. */
 const ABANDON_SECONDS = 45;
+/** How often to re-read the room while the realtime channel is down. */
+const RECONNECT_POLL_MS = 5000;
+/** How long the answered question stays up so the reveal can be read. */
+const REVEAL_MS = 2500;
 
 // Written out rather than interpolated — Tailwind only ships classes it can
 // see as literals, so `bg-${accent}-500/15` would compile to nothing.
@@ -73,6 +78,8 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   const [finalizeFailed, setFinalizeFailed] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
+  /** Realtime channel health — false means we are flying on polling alone. */
+  const [live, setLive] = useState(true);
 
   // Assists — ported from the original prototype's SmartAssistBar. Pure
   // client-side state (the original never persisted assist usage to its
@@ -102,7 +109,22 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   const oppScore = room ? (isHost ? room.guest_score : room.host_score) : 0;
   const myAnswers = room ? (isHost ? room.host_answers : room.guest_answers) : {};
   const oppAnswers = room ? (isHost ? room.guest_answers : room.host_answers) : {};
-  const qIdx = room?.current_question ?? 0;
+  // What the SERVER is on, versus what the player is looking at.
+  //
+  // submit_answer advances current_question inside the same call that records
+  // the second player's answer, and this screen used to render straight off
+  // that column — so the green tick, the red cross, the opponent's pick and
+  // the «تفسير» panel were all built, all correct, and all on screen for a
+  // few milliseconds before being replaced. In a scripture quiz that is the
+  // entire point of the exercise, never once seen.
+  //
+  // The display now lags the server by a deliberate beat. It can only ever
+  // trail, never lead, so a player still cannot see or answer a question the
+  // server has not reached.
+  const serverIdx = room?.current_question ?? 0;
+  const [displayIdx, setDisplayIdx] = useState(0);
+  const lastQuestionIdx = room ? Math.max(0, room.questions.length - 1) : 0;
+  const qIdx = Math.min(displayIdx, lastQuestionIdx);
   const q = room?.questions?.[qIdx];
   const myAnswer: number | undefined = myAnswers[String(qIdx)];
   const oppAnswer: number | undefined = oppAnswers[String(qIdx)];
@@ -193,10 +215,96 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
       const r = await loadRoom(roomId);
       if (r) setRoom(r);
       setLoading(false);
-      unsub = subscribeToRoom(roomId, (updated) => { setRoom(updated); });
+      unsub = subscribeToRoom(
+        roomId,
+        (updated) => { setRoom(updated); },
+        (status) => { setLive(status === 'SUBSCRIBED'); },
+      );
     })();
     return () => { if (unsub) unsub(); };
   }, [roomId]);
+
+  // Jump straight to wherever the server is the first time the room lands —
+  // rejoining a match in progress must not replay every reveal since question
+  // one. Only movement after that is paced.
+  const displayInitRef = useRef(false);
+  useEffect(() => {
+    if (!room || displayInitRef.current) return;
+    displayInitRef.current = true;
+    setDisplayIdx(Math.min(room.current_question, Math.max(0, room.questions.length - 1)));
+  }, [room]);
+
+  // Hold on the answered question, then move on.
+  const [holdingReveal, setHoldingReveal] = useState(false);
+  useEffect(() => {
+    if (!displayInitRef.current || !room) return;
+    if (serverIdx <= displayIdx) return;
+    setHoldingReveal(true);
+    const t = setTimeout(() => {
+      setDisplayIdx(Math.min(serverIdx, Math.max(0, room.questions.length - 1)));
+      setHoldingReveal(false);
+    }, REVEAL_MS);
+    return () => clearTimeout(t);
+  }, [serverIdx, displayIdx, room?.questions.length]);
+
+  /**
+   * Pull the room straight from the table, bypassing the socket.
+   *
+   * Answers are merged rather than replaced. handleSelect writes our own
+   * answer locally the moment the RPC returns, so a refetch already in flight
+   * when we submitted can come back without it and land afterwards — which
+   * would flip the question back to unanswered, restart nothing, and invite a
+   * second tap that the server rejects with ALREADY_ANSWERED. A union is
+   * always correct here because answer maps are append-only: submit_answer
+   * only ever adds a key, and nothing removes one.
+   */
+  const refreshRoom = useCallback(async () => {
+    const r = await loadRoom(roomId);
+    if (!r) return;
+    setRoom((prev) => (prev ? {
+      ...r,
+      host_answers: { ...r.host_answers, ...prev.host_answers },
+      guest_answers: { ...r.guest_answers, ...prev.guest_answers },
+      current_question: Math.max(r.current_question, prev.current_question),
+    } : r));
+  }, [roomId]);
+
+  // Coming back to the app.
+  //
+  // Liveness rested entirely on one socket opened once at mount, with nothing
+  // watching it and nothing polling. This ships as an Android app, where
+  // backgrounding reliably kills that socket — so answering a phone call
+  // meant returning to a screen frozen on whatever it last saw, with no path
+  // back to the truth. That matters more now that a match can END while you
+  // are away: the opponent may have claimed it, and this client would never
+  // have found out.
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') void refreshRoom(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onVisible);
+    };
+  }, [refreshRoom]);
+
+  // Belt and braces for a socket that dies without ever saying so — the
+  // status callback is not guaranteed to fire on an abrupt drop. Only while
+  // there is something left to learn, and only while the channel is down, so
+  // a healthy match still costs exactly one socket and no polling.
+  //
+  // Also polls while waiting on the opponent even when the channel *claims*
+  // to be up: a socket can die without the status callback ever firing, and
+  // that is exactly the moment it costs the most. The player has answered,
+  // the opponent may well have answered too, and the only thing standing
+  // between them and the rest of the match is an UPDATE that is never coming.
+  useEffect(() => {
+    if (!room || room.status === 'finished' || room.status === 'cancelled') return;
+    const waitingOnOpponent = iAnswered && !bothAnswered;
+    if (live && !waitingOnOpponent) return;
+    const t = setInterval(() => { void refreshRoom(); }, RECONNECT_POLL_MS);
+    return () => clearInterval(t);
+  }, [live, room?.status, iAnswered, bothAnswered, refreshRoom]);
 
   // Per-question resets — clears the previous question's transient UI
   // state whenever current_question moves.
@@ -205,7 +313,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     setRemovedOptions([]);
     setHintRevealed(false);
     setRetryFlash(false);
-  }, [room?.current_question]);
+  }, [qIdx]);
 
   // 20s countdown per question — the original prototype's whole pacing
   // mechanic (and the reason `extra_time` as an assist exists at all).
@@ -228,7 +336,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     }, 1000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [room?.current_question, room?.status, iAnswered]);
+  }, [qIdx, room?.status, iAnswered]);
 
   // Brief "VS" beat the instant a room flips waiting → active, mirroring
   // the original's fixed opponent-found screen before gameplay starts.
@@ -275,7 +383,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
       isTimerFrozenRef.current = false;
     }, STAGE_INTRO_MS);
     return () => clearTimeout(t);
-  }, [room?.current_question, room?.status]);
+  }, [qIdx, room?.status]);
 
   // Trigger finalize automatically when both players finished all questions.
   //
@@ -289,6 +397,8 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   // stayed on the screen.
   useEffect(() => {
     if (!room || outcome || finalizing || finalizeFailed) return;
+    // Let the last question's reveal finish before the summary replaces it.
+    if (holdingReveal) return;
 
     const total = room.questions.length;
     const bothDone =
@@ -327,7 +437,39 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
       setTimeout(() => { if (!cancelled) setFinalizing(false); }, wait);
     });
     return () => { cancelled = true; };
-  }, [room, outcome, finalizing, finalizeFailed, roomId, currentUser.id, onUserUpdated, onAchievementsUnlocked]);
+  }, [room, outcome, finalizing, finalizeFailed, holdingReveal, roomId, currentUser.id, onUserUpdated, onAchievementsUnlocked]);
+
+  // Friending the opponent. The RPC (migration 038) already resolves every
+  // case itself — a request each way becomes an instant friendship, a
+  // re-send after a decline reopens the same row — so this needs no
+  // relationship lookup first, only a readable name for what it reports back.
+  const opponentId = room ? (isHost ? room.guest_user_id : room.host_user_id) : null;
+  const [friendState, setFriendState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
+  const [friendMessage, setFriendMessage] = useState('');
+
+  const sendFriendReq = async () => {
+    if (!opponentId) return;
+    setFriendState('sending');
+    const res = await sendFriendRequest(opponentId);
+    if (res.ok === false) {
+      // ALREADY_FRIENDS and REQUEST_ALREADY_SENT come back as errors from the
+      // RPC, but from the player's side they are the thing they wanted and it
+      // is already true — so they read as settled, not as a failure. Only
+      // something they cannot get past is shown in red.
+      const known: Array<{ code: string; text: string; settled: boolean }> = [
+        { code: 'ALREADY_FRIENDS', text: 'انتوا أصحاب بالفعل 🤝', settled: true },
+        { code: 'REQUEST_ALREADY_SENT', text: 'الطلب مبعوت خلاص — مستني رده.', settled: true },
+        { code: 'USER_NOT_FOUND', text: 'مش هينفع تضيف الحساب ده.', settled: false },
+        { code: 'CANNOT_FRIEND_SELF', text: 'مش هينفع تضيف نفسك.', settled: false },
+      ];
+      const hit = known.find((k) => res.error.includes(k.code));
+      setFriendMessage(hit ? hit.text : 'تعذّر إرسال الطلب. جرّب تاني.');
+      setFriendState(hit?.settled ? 'done' : 'error');
+      return;
+    }
+    setFriendState('done');
+    setFriendMessage(res.status === 'accepted' ? 'بقيتوا أصحاب 🎉' : 'اتبعت طلب الصداقة ✓');
+  };
 
   /** Manual retry from the failure screen. */
   const retryFinalize = () => {
@@ -593,6 +735,37 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
               onBack: this screen is handed a roomId and no way to matchmake, so
               no replay exists to wire the first one to. Back lands on the lobby
               or the random-match home — which is where a new match is started. */}
+          {/* Add the person you just played.
+              This existed before only on the scripted results screen, where
+              the «opponent» was one of seven names written into the source —
+              so the one place it was offered was the one place it could not
+              mean anything. Here the opponent is a real account. */}
+          {opponentId && (
+            <div className="pt-4">
+              {friendState === 'idle' || friendState === 'sending' ? (
+                <button
+                  type="button"
+                  onClick={sendFriendReq}
+                  disabled={friendState === 'sending'}
+                  className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60 text-slate-200 text-xs font-black py-3 rounded-2xl transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  {friendState === 'sending' ? 'جارٍ الإرسال...' : `إضافة ${oppName ?? 'الخصم'} صاحب`}
+                </button>
+              ) : (
+                <p
+                  className={`text-center text-[11.5px] font-black py-3 rounded-2xl border ${
+                    friendState === 'error'
+                      ? 'text-rose-300 bg-rose-500/10 border-rose-500/30'
+                      : 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30'
+                  }`}
+                >
+                  {friendMessage}
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex flex-col gap-2 pt-4">
             <button
               type="button"
@@ -716,6 +889,15 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             </span>
           </div>
         </div>
+
+        {/* Say so when the channel is down, rather than showing a stale board
+            as though it were current. The poll above is already refetching. */}
+        {!live && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl px-3 py-2 text-[10.5px] font-bold text-amber-200 text-center flex items-center justify-center gap-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+            الاتصال ضعيف — بنحدّث النتيجة كل شوية
+          </div>
+        )}
 
         {/* Live scoreboard */}
         <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center bg-gradient-to-br from-[#132247] to-[#0A1732] border border-white/10 rounded-2xl p-3">
@@ -897,11 +1079,27 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
         )}
 
         {showFeedback && q && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-[11.5px] text-slate-300 leading-relaxed">
-            <span className="font-black text-amber-400">تفسير: </span>
-            {q.explanation}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-[11.5px] text-slate-300 leading-relaxed space-y-2">
+            <div>
+              <span className="font-black text-amber-400">تفسير: </span>
+              {q.explanation}
+            </div>
+            {/* Says the pause is on purpose. Without it a deliberate beat and
+                a stalled connection look exactly the same. */}
+            {holdingReveal && (
+              <div className="flex items-center gap-2 text-[10px] font-black text-slate-500 pt-0.5">
+                <span className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
+                  <span
+                    className="block h-full bg-amber-400/70 rounded-full"
+                    style={{ animation: `pimaRevealBar ${REVEAL_MS}ms linear forwards` }}
+                  />
+                </span>
+                <span>{qIdx >= lastQuestionIdx ? 'النتيجة...' : 'السؤال اللي بعده...'}</span>
+              </div>
+            )}
           </div>
         )}
+        <style>{'@keyframes pimaRevealBar { from { width: 100%; } to { width: 0%; } }'}</style>
 
       </div>
       <RoomChat currentUser={currentUser} roomId={roomId} opponentName={oppName} />
