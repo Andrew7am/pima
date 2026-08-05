@@ -12,6 +12,7 @@ import { checkAchievements } from '../../lib/db';
 import RoomChat from './RoomChat';
 import AssistBar, { AssistId } from './AssistBar';
 import { MATCH_STAGES, MatchStage, stageOf, startsStage } from './matchQuestions';
+import { markSeen } from '../questionHistory';
 
 interface LiveMatchGameProps {
   currentUser: User;
@@ -333,6 +334,19 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     finalizeAttemptsRef.current = 0;
     setFinalizeFailed(false);
   };
+
+  // Remember what this player was asked, so their next matches draw around
+  // it. Recorded once the room is live rather than when the questions are
+  // built, because the HOST builds them for both sides — recording here is
+  // what gives the guest a history too. Keyed on the question text, which is
+  // the only identity that survives the round trip through the room's JSONB.
+  const markedSeenRef = useRef(false);
+  useEffect(() => {
+    if (!room || markedSeenRef.current) return;
+    if (room.status !== 'active' && room.status !== 'finished') return;
+    markedSeenRef.current = true;
+    markSeen(room.questions.map((question) => question.question));
+  }, [room?.status, room?.questions]);
 
   // A ticking "now" so the stall countdown moves without waiting on a
   // realtime event — which, when the opponent has gone, is precisely what

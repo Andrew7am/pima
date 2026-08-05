@@ -5,6 +5,7 @@ import { RAW_VERSES } from '../data/versesData';
 import { RAW_CHARACTERS } from '../data/whoAmIData';
 import { RAW_CHARACTERS_NT } from '../data/whoAmIData_NT';
 import { initializeQuestionPool, getSmartQuestionRound } from '../questionPoolEngine';
+import { pickUnseen } from '../questionHistory';
 
 /**
  * The questions a live match is played on.
@@ -128,7 +129,9 @@ export function startsStage(questions: RoomQuestion[], idx: number): boolean {
 function whoAmIQuestions(n: number): RoomQuestion[] {
   const pool = [...RAW_CHARACTERS, ...RAW_CHARACTERS_NT];
   const names = pool.map((c) => c.name);
-  return shuffle(pool).slice(0, n).map((c) => {
+  // Keyed on the clue, because the clue is what becomes the question text —
+  // and the question text is the only identity a played match can report back.
+  return pickUnseen(pool, (c) => c.clues[0], n).map((c) => {
     const distractors = shuffle(names.filter((x) => x !== c.name)).slice(0, 3);
     const options = shuffle([c.name, ...distractors]);
     // First clue only — in a race, revealing more to one side is not fair.
@@ -138,7 +141,7 @@ function whoAmIQuestions(n: number): RoomQuestion[] {
 
 function fillVerseQuestions(n: number): RoomQuestion[] {
   const allWords = Array.from(new Set(RAW_VERSES.map((v) => v.word)));
-  return shuffle(RAW_VERSES).slice(0, n).map((v) => {
+  return pickUnseen(RAW_VERSES, (v) => v.verse, n).map((v) => {
     const distractors = shuffle(allWords.filter((w) => w !== v.word)).slice(0, 3);
     const options = shuffle([v.word, ...distractors]);
     return { question: v.verse, options, correctIdx: options.indexOf(v.word), explanation: v.explanation };
@@ -146,7 +149,7 @@ function fillVerseQuestions(n: number): RoomQuestion[] {
 }
 
 function biblePoolQuestions(n: number): RoomQuestion[] {
-  return shuffle(initializeQuestionPool()).slice(0, n).map(toRoomQuestion);
+  return pickUnseen(initializeQuestionPool(), (q) => q.question, n).map(toRoomQuestion);
 }
 
 /** SmartQuestion carries extra fields; a room only needs these four. */
