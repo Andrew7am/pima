@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { INITIAL_CONFERENCE_ROOMS } from './data/conferenceMocks';
 import { ConferenceRoom, ConferenceAnnouncement, ConferenceChecklistItem, ConferenceEvent, ConferenceLiveChatMessage, ConferenceScheduleItem } from '../types';
 import { QrCode, Search, LogIn, ArrowRight, Gamepad2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';

@@ -21,6 +21,8 @@ export default function CrosswordGame({ currentUser, onBack, onUserUpdated, onAc
   const [answers, setAnswers] = useState<string[]>(CROSSWORD_CLUES.map(() => ''));
   const [checked, setChecked] = useState(false);
   const [awarding, setAwarding] = useState(false);
+  /** Set only after check() has run and paid out — see the render below. */
+  const [solved, setSolved] = useState(false);
 
   const results = CROSSWORD_CLUES.map((c, i) => norm(answers[i]) === norm(c.answer));
   const allCorrect = results.every(Boolean);
@@ -28,6 +30,7 @@ export default function CrosswordGame({ currentUser, onBack, onUserUpdated, onAc
   const check = async () => {
     setChecked(true);
     if (results.every(Boolean)) {
+      setSolved(true);
       confetti({ particleCount: 130, spread: 80, origin: { y: 0.6 } });
       setAwarding(true);
       const result = await awardGameReward(60, 30, CROSSWORD_CLUES.length, 'الكلمات المتقاطعة الكنسية — حللت كل الألغاز');
@@ -41,6 +44,7 @@ export default function CrosswordGame({ currentUser, onBack, onUserUpdated, onAc
   const reset = () => {
     setAnswers(CROSSWORD_CLUES.map(() => ''));
     setChecked(false);
+    setSolved(false);
   };
 
   return (
@@ -81,8 +85,14 @@ export default function CrosswordGame({ currentUser, onBack, onUserUpdated, onAc
           })}
         </div>
 
+        {/* Gated on `solved`, which only check() sets — not on allCorrect,
+            which is derived from the inputs. Typing the last correct answer
+            flipped allCorrect immediately, swapped this button for the
+            victory panel, and check() — the only path that calls
+            awardGameReward — never ran. A player who got everything right
+            first time was the one player guaranteed to be paid nothing. */}
         <div className="mt-6">
-          {!allCorrect ? (
+          {!solved ? (
             <button type="button" onClick={check} className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-black rounded-2xl">تحقق من الإجابات</button>
           ) : (
             <div className="text-center space-y-3">

@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   Trophy, Award, Crown, Star, Medal, ArrowUp, 
-  ChevronRight, TrendingUp, TrendingDown, Flame, 
+  ChevronRight, TrendingUp, TrendingDown, 
   Zap, Users 
 } from 'lucide-react';
 import { User as UserType } from '../types';
-import { LEADERBOARD_MOCKS } from './data/leaderboardMocks';
 import { loadLeaderboard, loadMyRank } from './leaderboard';
 
 interface TopLeadersProps {
@@ -41,7 +40,7 @@ const NumberCounter = ({ value }: { value: number }) => {
 export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
   const [allLeaders, setAllLeaders] = useState<any[]>([]);
   const [nearbyPlayers, setNearbyPlayers] = useState<any[]>([]);
-  const [totalPlayers, setTotalPlayers] = useState<number>(1254);
+  const [totalPlayers, setTotalPlayers] = useState<number>(0);
   const [userRank, setUserRank] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -60,10 +59,13 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
         setIsLoading(true);
 
         // Real board via the leaderboard RPC (migration 072); map avatar_url →
-        // the `avatar` field the UI reads. Falls back to mocks when empty.
+        // the `avatar` field the UI reads.
         const rows = await loadLeaderboard(10);
-        let leaders: any[] = rows.map((r) => ({ id: r.id, name: r.name, points: r.points, avatar: r.avatar_url || undefined }));
-        if (leaders.length === 0) leaders = LEADERBOARD_MOCKS.weekly;
+        const leaders: any[] = rows.map((r) => ({ id: r.id, name: r.name, points: r.points, avatar: r.avatar_url || undefined }));
+        // No mock podium. An empty board used to be filled with five invented
+        // players — يوحنا 1250, مينا 1100, كيرلس 950 … — so that it "never
+        // looks broken"; what it actually did was tell a real person that
+        // five strangers were beating them. An empty board says it is empty.
         if (cancelled) return;
         setAllLeaders(leaders);
 
@@ -76,21 +78,17 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
         setUserRank(rank);
 
         // Nearby players (for the scrolling list) — same presentation as source.
-        if (rank <= 8) {
-          setNearbyPlayers(leaders.slice(0, 10).map((u, i) => ({ ...u, rank: i + 1 })));
-        } else {
-          const p = currentUser.points || 0;
-          setNearbyPlayers([
-            { id: 'n_m3', name: 'خادم متميز', points: p + 120, rank: rank - 3 },
-            { id: 'n1', name: 'أحمد', points: p + 50, rank: rank - 2 },
-            { id: 'n2', name: 'محمد', points: p + 20, rank: rank - 1 },
-            { ...currentUser, rank, isUser: true },
-            { id: 'n3', name: 'كريم', points: Math.max(0, p - 10), rank: rank + 1 },
-            { id: 'n4', name: 'يوسف', points: Math.max(0, p - 30), rank: rank + 2 },
-            { id: 'n5', name: 'سارة', points: Math.max(0, p - 45), rank: rank + 3 },
-            { id: 'n6', name: 'مريم', points: Math.max(0, p - 60), rank: rank + 4 },
-          ]);
-        }
+        // The real board, plus the viewer's own row when they are not on it.
+        //
+        // Below rank 8 this used to synthesise seven rivals — خادم متميز،
+        // أحمد، محمد، كريم، يوسف، سارة، مريم — with scores computed from the
+        // viewer's own total (p + 120, p + 50, p - 10 …) and the effect
+        // re-running on currentUser.points. So «أحمد» was 50 points ahead
+        // before you played and 50 ahead after: a race against people who do
+        // not exist and whom you can never catch.
+        const board = leaders.slice(0, 10).map((u, i) => ({ ...u, rank: i + 1 }));
+        const onBoard = board.some((u) => u.id === currentUser.id);
+        setNearbyPlayers(onBoard || !rank ? board : [...board, { ...currentUser, rank, isUser: true }]);
       } catch (err) {
         console.error('TopLeaders:', err);
       } finally {
@@ -108,11 +106,6 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
   const podiumData = podiumOrder.map(idx => top3[idx]).filter(Boolean);
   const userTier = getTier(currentUser.points || 0);
   const topPercent = Math.max(1, Math.min(100, Math.round((userRank || 1) / totalPlayers * 100)));
-  
-  // Logic for Average Performance Gauge
-  const communityAverage = 1850; // Mock average points for demonstration
-  const performanceRatio = Math.min(1.5, (currentUser.points || 0) / communityAverage);
-  const isAboveAverage = (currentUser.points || 0) >= communityAverage;
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-8">
@@ -143,8 +136,17 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
             نحتفي بالأبطال الأكثر نشاطاً في المسابقات والأنشطة الترفيهية.
           </p>
 
-          {/* Podium Visualization */}
-          <div className="flex items-end justify-center gap-4 sm:gap-8 w-full mb-16">
+          {/* Podium Visualization — or an honest empty state. Before, an
+              empty board was backfilled with mock winners, so this case
+              could never be seen. */}
+          {podiumData.length === 0 && (
+            <div className="w-full mb-16 py-10 px-6 rounded-3xl bg-white/5 border border-white/10 text-center">
+              <Trophy className="w-8 h-8 text-slate-500 mx-auto mb-3" />
+              <p className="text-sm font-black text-slate-300 mb-1">لسه محدش دخل الصدارة</p>
+              <p className="text-[11px] text-slate-500">إلعب أي لعبة واكسب نقط، وهتكون أول واحد هنا.</p>
+            </div>
+          )}
+          {podiumData.length > 0 && <div className="flex items-end justify-center gap-4 sm:gap-8 w-full mb-16">
             {podiumData.map((user, displayIdx) => {
               const actualRank = top3.indexOf(user) + 1;
               const isFirst = actualRank === 1;
@@ -227,7 +229,7 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
                 </motion.div>
               );
             })}
-          </div>
+          </div>}
 
           {/* 🚀 PLAYER RANKING CARD 🚀 */}
           <motion.div 
@@ -260,35 +262,12 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
                   </div>
                 </motion.div>
                 
-                {/* Visual Average Indicator */}
-                <div className="w-full space-y-3 bg-white/5 p-4 rounded-2xl border border-white/5">
-                  <div className="flex justify-between items-end mb-1 px-1">
-                    <span className="text-[10px] font-black text-slate-500">متوسط المجتمع</span>
-                    <span className={`text-xs font-black ${isAboveAverage ? 'text-emerald-400' : 'text-amber-400'}`}>
-                      {isAboveAverage ? 'أداء فوق المتوسط ✨' : 'اقتربت من المتوسط 🔥'}
-                    </span>
-                    <span className="text-[10px] font-black text-slate-500">مستواك الحالي</span>
-                  </div>
-                  
-                  <div className="relative h-2.5 w-full bg-[#081326] rounded-full overflow-hidden border border-white/5">
-                    {/* Average Line Indicator */}
-                    <div className="absolute top-0 left-[66%] h-full w-0.5 bg-white/20 z-10" />
-                    
-                    {/* User Progress Bar */}
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(100, performanceRatio * 66)}%` }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      className={`h-full rounded-full ${isAboveAverage ? 'bg-gradient-to-r from-blue-500 to-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.4)]' : 'bg-gradient-to-r from-blue-600 to-amber-500'}`}
-                    />
-                  </div>
-                  
-                  <div className="flex justify-between items-center text-[9px] font-black text-slate-600 px-1 pt-1">
-                    <span>{communityAverage} نقطة</span>
-                    <span>{(currentUser.points || 0)} نقطة</span>
-                  </div>
-                </div>
-
+                {/* The «متوسط المجتمع» gauge stood here, benchmarking the
+                    player against 1850 points — a number whose own comment
+                    read "Mock average points for demonstration". It told
+                    everyone below it they were behind the community and
+                    everyone above it they were ahead, on no data at all.
+                    The rank badge below is computed from the real board. */}
                 <div className="mt-6 inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
                    <TrendingUp className="w-4 h-4 text-emerald-400" />
                    <span className="text-emerald-400 text-xs font-black">أنت ضمن أفضل {topPercent}% من اللاعبين</span>
@@ -360,11 +339,19 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
 
               {/* Extra Statistics Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full mb-8">
+                 {/* Every tile reads a field that exists. The previous four
+                     were literals: '14' wins, '🔥 5' streak, '+3' rank change
+                     — so an account created a minute ago, that had never
+                     opened a game, was congratulated on its winning streak.
+                     There is no wins, streak or rank-delta column anywhere in
+                     the schema, so those tiles are gone rather than guessed. */}
                  {[
                    { label: 'مجموع النقاط', value: (currentUser.points || 0).toLocaleString('ar-EG'), icon: Star, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-                   { label: 'مرات الفوز', value: '14', icon: Trophy, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-                   { label: 'سلسلة انتصارات', value: '🔥 5', icon: Flame, color: 'text-orange-400', bg: 'bg-orange-500/10' },
-                   { label: 'تغير الترتيب', value: '+3', icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                   { label: 'مرات الفوز', value: (currentUser.totalMatchesWon ?? 0).toLocaleString('ar-EG'), icon: Zap, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+                   // `streak` counts consecutive days, not consecutive wins —
+                   // so it is labelled for what it actually counts.
+                   { label: 'أيام متتالية', value: (currentUser.streak ?? 0).toLocaleString('ar-EG'), icon: Medal, color: 'text-orange-400', bg: 'bg-orange-500/10' },
+                   { label: 'ترتيبك', value: userRank ? `#${userRank.toLocaleString('ar-EG')}` : '—', icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
                  ].map((stat, i) => (
                    <motion.div 
                      key={i} 

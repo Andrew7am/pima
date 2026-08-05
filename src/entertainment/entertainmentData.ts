@@ -373,7 +373,12 @@ export const WORD_SEARCH_ANSWERS = [
   { word: "مريم", color: "from-blue-500 to-indigo-500", found: false },
   { word: "موسى", color: "from-purple-500 to-pink-500", found: false },
   { word: "داود", color: "from-amber-500 to-orange-500", found: false },
-  { word: "إيليا", color: "from-rose-500 to-red-500", found: false },
+  // Bare alef, not «إيليا». The grid below has no hamza-under-alef anywhere,
+  // so the hamzated spelling could never be formed from it: players reached
+  // 5/6, hunted for a word whose first letter is not on the board, and the
+  // 60 XP / 30 coins for finishing were unreachable. The letters ا ي ل ي ا
+  // are all present — see the test that now asserts it for every word.
+  { word: "ايليا", color: "from-rose-500 to-red-500", found: false },
   { word: "بولس", color: "from-cyan-500 to-sky-500", found: false },
 ];
 

@@ -29,7 +29,7 @@ import {
 import { autoAllocate } from './lib/roomAllocation';
 import { resolvePaymentVerdict } from './lib/paymentLedger';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout, ConferenceRoom, PromoBanner } from './types';
-import { INITIAL_CONFERENCE_ROOMS } from './entertainment/data/conferenceMocks';
+import { createEmptyConference } from './entertainment/data/newConference';
 
 // Component Imports
 // Route-level code splitting: heavy, role- or navigation-gated screens load on
@@ -1992,7 +1992,7 @@ export default function App() {
               onOpenLeaderboard={() => setActiveScreen('leaderboard')}
               onOpenRooms={() => setActiveScreen('interactive_room')}
               onOpenConference={() => {
-                if (!conference) setConference({ ...INITIAL_CONFERENCE_ROOMS[0], hostUserId: currentUser.id });
+                if (!conference) setConference(createEmptyConference(currentUser));
                 setActiveScreen('conference_hub');
               }}
               onOpenRandomMatch={() => setActiveScreen('random_match')}
