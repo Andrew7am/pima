@@ -1,5 +1,6 @@
 import { TRIVIA_QUESTIONS, WHO_AM_I_QUESTIONS, HYMN_QUESTIONS } from "./entertainmentData";
 import { RAW_VERSES } from './data/versesData';
+import { buildDerivedQuestions } from './data/derivedQuestions';
 
 export interface SmartQuestion {
   id: string;
@@ -153,6 +154,19 @@ export const initializeQuestionPool = (): SmartQuestion[] => {
       category: "الكتاب المقدس",
       difficulty
     });
+  });
+
+  // Six curated sources under data/ that nothing was reading: the hymn
+  // seasons, the four hoses of the midnight praise, the liturgical books,
+  // the crossword clues, the ordered bible events, and three ready-made
+  // question sets. Every one is a pair the project already wrote down —
+  // nothing here is authored by the code. Skipped if the same question text
+  // is already in the pool.
+  const seenQuestions = new Set(pool.map((q) => q.question));
+  buildDerivedQuestions().forEach((d) => {
+    if (seenQuestions.has(d.question)) return;
+    seenQuestions.add(d.question);
+    pool.push({ id: generateHashId(d.question), ...d });
   });
 
   RUNTIME_QUESTION_POOL = pool;

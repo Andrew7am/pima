@@ -11,7 +11,7 @@ import {
 import { User as UserType } from '../types';
 import { xpToNext, xpProgressPct } from './progress';
 import { findOrCreateRandomRoom } from './multiplayer';
-import { buildQuestions } from './multiplayer/matchQuestions';
+import { buildRandomMatchQuestions } from './multiplayer/matchQuestions';
 import MatchBannerScene from './multiplayer/MatchBannerScene';
 import { SmartAssistBar } from './SmartAssistBar';
 import { ChatComponent } from './ChatComponent';
@@ -900,7 +900,7 @@ export default function RandomMatchGame({
     setMatchError('');
     setFindingMatch(true);
     try {
-      const result = await findOrCreateRandomRoom('trivia', buildQuestions('trivia'));
+      const result = await findOrCreateRandomRoom('trivia', buildRandomMatchQuestions());
       if (!result) {
         setMatchError('تعذّر البحث عن خصم دلوقتي. تأكد من اتصالك وحاول تاني.');
         return;

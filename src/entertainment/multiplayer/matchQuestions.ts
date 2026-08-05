@@ -27,6 +27,26 @@ export const MATCH_LENGTH = 5;
 /** The category the pool files hymn and Coptic-language questions under. */
 const HYMN_CATEGORY = 'الألحان والقبطي';
 
+/**
+ * Questions for a random match — every category, not one.
+ *
+ * The lobby's modes are a choice the player made, so those stay themed. A
+ * «مباراة عشوائية» is not a choice, and filtering it to the trivia subset was
+ * throwing away more than half the pool: verses, saints and hymns all sat out
+ * of a match that never promised to be about anything in particular.
+ *
+ * The room is still created under the 'trivia' game mode, because that string
+ * is the matchmaking queue key — splitting random searchers across four
+ * queues would leave people waiting alone.
+ */
+export function buildRandomMatchQuestions(): RoomQuestion[] {
+  const pool = initializeQuestionPool();
+  if (pool.length >= MATCH_LENGTH) {
+    return shuffle(pool).slice(0, MATCH_LENGTH).map(toRoomQuestion);
+  }
+  return buildQuestions('trivia');
+}
+
 /** SmartQuestion carries extra fields; a room only needs these four. */
 type PoolQuestion = { question: string; options: string[]; correctIdx: number; explanation?: string };
 const toRoomQuestion = (q: PoolQuestion): RoomQuestion => ({
