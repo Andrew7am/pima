@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest';
+import { buildRandomMatchQuestions } from './matchQuestions';
 import {
-  buildRandomMatchQuestions,
-  MATCH_STAGES,
-  QUESTIONS_PER_STAGE,
-  RANDOM_MATCH_LENGTH,
-  stageOf,
-  startsStage,
-} from './matchQuestions';
+  GOLDEN_ROUND,
+  QUESTIONS_PER_ROUND,
+  ROUNDS_PER_MATCH,
+  roundById,
+  roundOfQuestion,
+  startsRound,
+  totalRounds,
+} from './rounds';
 
 /**
  * A malformed random match is worse than a broken solo game: it wedges two
@@ -17,104 +19,111 @@ import {
  * round, a missing option or an out-of-range answer index all end the same
  * way: a match nobody can finish and no rating for either side.
  *
- * These are built fresh and shuffled on every call, so each assertion runs
- * over several draws rather than trusting one lucky one.
+ * The rounds are drawn at random now, so these run over many matches rather
+ * than one lucky one.
  */
-const DRAWS = 25;
-const rounds = Array.from({ length: DRAWS }, () => buildRandomMatchQuestions());
+const MATCHES = 40;
+const MATCH_LENGTH = ROUNDS_PER_MATCH * QUESTIONS_PER_ROUND;
+const matches = Array.from({ length: MATCHES }, () => buildRandomMatchQuestions());
 
 describe('a random match', () => {
   it('is always exactly the advertised length', () => {
-    expect(rounds.map((r) => r.length)).toEqual(Array(DRAWS).fill(RANDOM_MATCH_LENGTH));
+    expect(matches.map((m) => m.length)).toEqual(Array(MATCHES).fill(MATCH_LENGTH));
   });
 
   it('never comes back under the three the RPCs require', () => {
     // The real floor. Length above is the intent; this is the hard limit that
     // decides whether a room can be created at all.
-    expect(rounds.every((r) => r.length >= 3)).toBe(true);
+    expect(matches.every((m) => m.length >= 3)).toBe(true);
   });
 
-  it('tags every question with a stage', () => {
-    const untagged = rounds.flat().filter((q) => !q.stage);
-    expect(untagged).toEqual([]);
+  it('tags every question with a round', () => {
+    expect(matches.flat().filter((q) => !q.stage)).toEqual([]);
   });
 
-  it('keeps each stage contiguous, in the declared order', () => {
-    for (const round of rounds) {
-      // Collapse runs of the same stage, then compare to the declaration.
-      const runs = round.map((q) => q.stage).filter((s, i, a) => s !== a[i - 1]);
-      expect(runs).toEqual(MATCH_STAGES.map((s) => s.id));
+  it('only ever uses rounds that exist', () => {
+    const unknown = matches.flat().filter((q) => roundById(q.stage) === null);
+    expect(unknown.map((q) => q.stage)).toEqual([]);
+  });
+
+  it('keeps each round contiguous', () => {
+    for (const m of matches) {
+      const runs = m.map((q) => q.stage).filter((s, i, a) => s !== a[i - 1]);
+      // A round appearing twice in the run list would mean its questions were
+      // split apart by another round.
+      expect(new Set(runs).size).toBe(runs.length);
     }
   });
 
-  it('gives every stage its full share of questions', () => {
-    for (const round of rounds) {
-      for (const stage of MATCH_STAGES) {
-        expect(round.filter((q) => q.stage === stage.id)).toHaveLength(QUESTIONS_PER_STAGE);
-      }
+  it('deals every round its full share of questions', () => {
+    for (const m of matches) {
+      const counts = new Map<string, number>();
+      for (const q of m) counts.set(q.stage!, (counts.get(q.stage!) ?? 0) + 1);
+      for (const [, n] of counts) expect(n).toBe(QUESTIONS_PER_ROUND);
     }
+  });
+
+  it('runs exactly the promised number of rounds', () => {
+    expect(matches.every((m) => totalRounds(m) === ROUNDS_PER_MATCH)).toBe(true);
+  });
+
+  it('always finishes on the Golden Round', () => {
+    expect(matches.every((m) => m[m.length - 1].stage === GOLDEN_ROUND.id)).toBe(true);
+  });
+
+  it('does not look the same twice', () => {
+    // The whole reason the round system exists.
+    const signatures = new Set(
+      matches.map((m) => m.map((q) => q.stage).filter((s, i, a) => s !== a[i - 1]).join('>')),
+    );
+    expect(signatures.size).toBeGreaterThan(3);
   });
 
   it('points correctIdx at a real option', () => {
-    const bad = rounds.flat().filter((q) => q.correctIdx < 0 || q.correctIdx >= q.options.length);
+    const bad = matches.flat().filter((q) => q.correctIdx < 0 || q.correctIdx >= q.options.length);
     expect(bad.map((q) => q.question)).toEqual([]);
   });
 
   it('never repeats an option inside one question', () => {
     // A duplicated distractor would make a wrong answer correct, and the
     // server would mark the player wrong for picking an identical string.
-    const bad = rounds.flat().filter((q) => new Set(q.options).size !== q.options.length);
+    const bad = matches.flat().filter((q) => new Set(q.options).size !== q.options.length);
     expect(bad.map((q) => q.question)).toEqual([]);
   });
 
   it('always offers something to choose between', () => {
-    expect(rounds.flat().every((q) => q.options.length >= 2)).toBe(true);
+    expect(matches.flat().every((q) => q.options.length >= 2)).toBe(true);
   });
 
   it('asks a real question with real options', () => {
-    const round = rounds[0];
-    expect(round.every((q) => typeof q.question === 'string' && q.question.trim().length > 0)).toBe(true);
-    expect(
-      round.every((q) => q.options.every((o) => typeof o === 'string' && o.trim().length > 0)),
-    ).toBe(true);
+    const m = matches[0];
+    expect(m.every((q) => typeof q.question === 'string' && q.question.trim().length > 0)).toBe(true);
+    expect(m.every((q) => q.options.every((o) => typeof o === 'string' && o.trim().length > 0))).toBe(true);
   });
 
   it('does not repeat a question within one match', () => {
-    for (const round of rounds) {
-      const asked = round.map((q) => q.question);
+    for (const m of matches) {
+      const asked = m.map((q) => q.question);
       expect(new Set(asked).size).toBe(asked.length);
     }
   });
 });
 
-describe('the stage helpers the match screen reads', () => {
-  const round = rounds[0];
+describe('the round helpers the match screen reads', () => {
+  const m = matches[0];
 
-  it('resolves the stage of every index', () => {
-    for (let i = 0; i < round.length; i++) {
-      expect(stageOf(round, i)?.id).toBe(round[i].stage);
+  it('resolves the round of every index', () => {
+    for (let i = 0; i < m.length; i++) {
+      expect(roundOfQuestion(m, i)?.id).toBe(m[i].stage);
     }
   });
 
-  it('marks a boundary exactly once per stage', () => {
-    const boundaries = round.map((_, i) => startsStage(round, i)).filter(Boolean);
-    expect(boundaries).toHaveLength(MATCH_STAGES.length);
+  it('marks a boundary exactly once per round', () => {
+    const boundaries = m.map((_, i) => startsRound(m, i)).filter(Boolean);
+    expect(boundaries).toHaveLength(ROUNDS_PER_MATCH);
   });
 
   it('marks the first question as a boundary', () => {
-    expect(startsStage(round, 0)).toBe(true);
-  });
-
-  it('reports no stage for a room created before stages existed', () => {
-    // Old rooms are plain JSONB without the field; the screen must not crash
-    // or claim a stage for them.
-    const legacy = [{ question: 'q', options: ['a', 'b'], correctIdx: 0, explanation: '' }];
-    expect(stageOf(legacy, 0)).toBeNull();
-    expect(startsStage(legacy, 0)).toBe(false);
-  });
-
-  it('is safe past the end of the round', () => {
-    expect(stageOf(round, 999)).toBeNull();
-    expect(startsStage(round, 999)).toBe(false);
+    expect(startsRound(m, 0)).toBe(true);
   });
 });

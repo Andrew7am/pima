@@ -11,7 +11,7 @@ import { getLeague, leagueProgress } from '../leagues';
 import { checkAchievements } from '../../lib/db';
 import RoomChat from './RoomChat';
 import AssistBar, { AssistId } from './AssistBar';
-import { MATCH_STAGES, MatchStage, stageOf, startsStage } from './matchQuestions';
+import { type MatchRound, roundOfQuestion, startsRound, roundNumber, totalRounds } from './rounds';
 import { markSeen } from '../questionHistory';
 import { sendFriendRequest } from '../social';
 
@@ -23,6 +23,9 @@ interface LiveMatchGameProps {
   onAchievementsUnlocked?: (ids: string[]) => void;
 }
 
+/** Fallback clock. Each round carries its own — see rounds.ts — so Lightning
+ *  is genuinely seven seconds and Golden gets time to think. This is only
+ *  used before the room has loaded, and by rooms made before rounds existed. */
 const QUESTION_SECONDS = 20;
 /** How long a stage banner holds the screen, with the clock frozen. */
 const STAGE_INTRO_MS = 2000;
@@ -40,15 +43,21 @@ const REVEAL_MS = 2500;
 
 // Written out rather than interpolated — Tailwind only ships classes it can
 // see as literals, so `bg-${accent}-500/15` would compile to nothing.
-const STAGE_CHIP: Record<MatchStage['accent'], string> = {
+const STAGE_CHIP: Record<MatchRound['accent'], string> = {
   amber: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
   emerald: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
   sky: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
+  violet: 'bg-violet-500/15 text-violet-300 border-violet-500/30',
+  rose: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+  gold: 'bg-yellow-400/20 text-yellow-200 border-yellow-400/50',
 };
-const STAGE_PANEL: Record<MatchStage['accent'], string> = {
+const STAGE_PANEL: Record<MatchRound['accent'], string> = {
   amber: 'from-amber-500/20 to-amber-700/5 border-amber-500/40',
   emerald: 'from-emerald-500/20 to-emerald-700/5 border-emerald-500/40',
   sky: 'from-sky-500/20 to-sky-700/5 border-sky-500/40',
+  violet: 'from-violet-500/20 to-violet-700/5 border-violet-500/40',
+  rose: 'from-rose-500/20 to-rose-700/5 border-rose-500/40',
+  gold: 'from-yellow-400/25 to-amber-600/10 border-yellow-400/60',
 };
 
 // Web Vibration API only — no sound. See the port plan: the original
@@ -94,7 +103,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   const [retryFlash, setRetryFlash] = useState(false);
   const [playTimer, setPlayTimer] = useState(QUESTION_SECONDS);
   const [showVsIntro, setShowVsIntro] = useState(false);
-  const [stageIntro, setStageIntro] = useState<MatchStage | null>(null);
+  const [stageIntro, setStageIntro] = useState<MatchRound | null>(null);
 
   // A SET of active freezes, not a boolean. Two things can hold the clock
   // at once — the stage banner and the extra_time assist — and with a
@@ -143,6 +152,12 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   const bothAnswered = iAnswered && oppAnswer !== undefined;
   const showFeedback = bothAnswered;
 
+  // The round the DISPLAYED question belongs to, and therefore the clock,
+  // the colour and the stakes. Read off the questions both players already
+  // hold, so neither client has to be told and neither can disagree.
+  const currentRound = room ? roundOfQuestion(room.questions, qIdx) : null;
+  const questionSeconds = currentRound?.seconds ?? QUESTION_SECONDS;
+
   const copyRoomCode = async () => {
     try {
       await navigator.clipboard.writeText(roomId);
@@ -163,7 +178,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     if (isWrongPick && retryArmed) {
       setRetryArmed(false);
       if (i !== -1) setRemovedOptions((prev) => [...prev, i]);
-      setPlayTimer(QUESTION_SECONDS);
+      setPlayTimer(questionSeconds);
       setRetryFlash(true);
       triggerHaptic('warning');
       setTimeout(() => setRetryFlash(false), 2000);
@@ -417,7 +432,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   // correctIdx — submit_answer doesn't range-validate it) on timeout.
   useEffect(() => {
     if (!room || room.status !== 'active' || iAnswered) return;
-    setPlayTimer(QUESTION_SECONDS);
+    setPlayTimer(questionSeconds);
     freezesRef.current.clear();
     const interval = setInterval(() => {
       if (freezesRef.current.size > 0) return;
@@ -468,8 +483,8 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     if (!room || room.status !== 'active') return;
     // Index 0 is not announced — the VS splash already opens the match, and
     // the stage is named in the header chip from the first frame.
-    if (qIdx === 0 || !startsStage(room.questions, qIdx)) return;
-    const stage = stageOf(room.questions, qIdx);
+    if (qIdx === 0 || !startsRound(room.questions, qIdx)) return;
+    const stage = roundOfQuestion(room.questions, qIdx);
     if (!stage) return;
     setStageIntro(stage);
     triggerHaptic('light');
@@ -1069,9 +1084,8 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   }
 
   // ── ACTIVE GAMEPLAY ───────────────────────────────────────────
-  const timerPct = (playTimer / QUESTION_SECONDS) * 100;
+  const timerPct = (playTimer / questionSeconds) * 100;
   const timerLow = playTimer <= 5;
-  const currentStage = stageOf(room.questions, qIdx);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
@@ -1090,9 +1104,9 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             {/* Names the subject from the first frame, so stage one needs no
                 banner of its own on top of the VS splash. Absent on themed
                 lobby matches and on rooms made before stages existed. */}
-            {currentStage && (
-              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${STAGE_CHIP[currentStage.accent]}`}>
-                {currentStage.label}
+            {currentRound && (
+              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${STAGE_CHIP[currentRound.accent]}`}>
+                {currentRound.label}
               </span>
             )}
             {!iAnswered && (
@@ -1161,10 +1175,10 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             className={`bg-gradient-to-br border rounded-3xl p-6 text-center space-y-2 shadow-xl min-h-[110px] flex flex-col items-center justify-center ${STAGE_PANEL[stageIntro.accent]}`}
           >
             <p className="text-[10px] font-black text-slate-400 tracking-widest">
-              المرحلة {MATCH_STAGES.findIndex((s) => s.id === stageIntro.id) + 1} من {MATCH_STAGES.length}
+              الجولة {roundNumber(room.questions, qIdx)} من {totalRounds(room.questions)}
             </p>
             <h3 className="text-xl font-black text-white">{stageIntro.label}</h3>
-            <p className="text-[11px] text-slate-300 leading-relaxed">{stageIntro.hint}</p>
+            <p className="text-[11px] text-slate-300 leading-relaxed">{stageIntro.tagline}</p>
           </motion.div>
         )}
 

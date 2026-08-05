@@ -26,8 +26,18 @@ export interface RoomQuestion {
   stage?: MatchStageId;
 }
 
-/** The three subjects a random match walks through, in order. */
-export type MatchStageId = 'whoami' | 'fillverse' | 'bible';
+/**
+ * Which round a question belongs to — see multiplayer/rounds.ts.
+ *
+ * Named `stage` on the wire for one reason: rooms created before rounds
+ * existed already carry that field with the first three ids below, so keeping
+ * the name means a match in flight during a deploy keeps rendering instead of
+ * losing its labels mid-question. The field is opaque JSONB to the server,
+ * which reads only `correctIdx`, so widening the union costs no migration.
+ */
+export type MatchStageId =
+  | 'whoami' | 'fillverse' | 'bible'
+  | 'speed' | 'lightning' | 'survival' | 'memory' | 'golden';
 
 // Shape matches the migration-036 columns; snake_case straight from the row.
 export interface GameRoom {

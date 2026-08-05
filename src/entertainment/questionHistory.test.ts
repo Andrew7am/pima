@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { markSeen, seenKeys, clearSeen, pickUnseen } from './questionHistory';
-import { buildRandomMatchQuestions, RANDOM_MATCH_LENGTH } from './multiplayer/matchQuestions';
+import { buildRandomMatchQuestions } from './multiplayer/matchQuestions';
+import { QUESTIONS_PER_ROUND, ROUNDS_PER_MATCH } from './multiplayer/rounds';
 
 const id = (s: string) => s;
 
@@ -105,7 +106,7 @@ describe('consecutive random matches', () => {
     const asked: string[] = [];
     for (let i = 0; i < 10; i++) {
       const round = buildRandomMatchQuestions();
-      expect(round).toHaveLength(RANDOM_MATCH_LENGTH);
+      expect(round).toHaveLength(ROUNDS_PER_MATCH * QUESTIONS_PER_ROUND);
       const texts = round.map((q) => q.question);
       asked.push(...texts);
       markSeen(texts); // what LiveMatchGame does once the room goes live
@@ -118,7 +119,7 @@ describe('consecutive random matches', () => {
     // run dry. A match must still be exactly the advertised length.
     for (let i = 0; i < 60; i++) {
       const round = buildRandomMatchQuestions();
-      expect(round).toHaveLength(RANDOM_MATCH_LENGTH);
+      expect(round).toHaveLength(ROUNDS_PER_MATCH * QUESTIONS_PER_ROUND);
       markSeen(round.map((q) => q.question));
     }
   });

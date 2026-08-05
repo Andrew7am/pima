@@ -6,6 +6,7 @@ import { RAW_CHARACTERS } from '../data/whoAmIData';
 import { RAW_CHARACTERS_NT } from '../data/whoAmIData_NT';
 import { initializeQuestionPool, getSmartQuestionRound } from '../questionPoolEngine';
 import { pickUnseen } from '../questionHistory';
+import { drawMatchRounds, QUESTIONS_PER_ROUND, type MatchRound } from './rounds';
 
 /**
  * The questions a live match is played on.
@@ -46,88 +47,66 @@ const HYMN_CATEGORY = 'الألحان والقبطي';
  * queues would leave people waiting alone.
  */
 export function buildRandomMatchQuestions(): RoomQuestion[] {
+  const rounds = drawMatchRounds();
   const out: RoomQuestion[] = [];
-  for (const stage of MATCH_STAGES) {
-    const built = STAGE_BUILDERS[stage.id](QUESTIONS_PER_STAGE).map((q) => ({ ...q, stage: stage.id }));
+
+  // Questions already dealt THIS match. Most rounds draw from the same
+  // general pool — Speed, Lightning, Survival, Memory and Knowledge all do —
+  // and each round asks for its questions separately, so without this a match
+  // could ask the same question in two different rounds. The seen-history
+  // cannot cover it: that is only written once a match is played.
+  const dealt = new Set<string>();
+  for (const round of rounds) {
+    const built = questionsForRound(round, QUESTIONS_PER_ROUND, dealt).map((q) => ({ ...q, stage: round.id }));
+    for (const q of built) dealt.add(q.question);
     out.push(...built);
   }
+
   // A source that comes up short must not shorten the match: both players
   // have to answer every question before finalize_match will settle, and the
-  // RPCs reject anything under three. Top up from the general pool, which is
-  // the last stage, so the stages stay contiguous.
-  if (out.length < RANDOM_MATCH_LENGTH) {
-    const missing = RANDOM_MATCH_LENGTH - out.length;
-    out.push(...biblePoolQuestions(missing).map((q) => ({ ...q, stage: 'bible' as const })));
+  // RPCs reject anything under three. Top up from the general pool and tag it
+  // as part of the final round, so the rounds stay contiguous.
+  const wanted = rounds.length * QUESTIONS_PER_ROUND;
+  if (out.length < wanted) {
+    const last = rounds[rounds.length - 1];
+    out.push(...biblePoolQuestions(wanted - out.length, dealt).map((q) => ({ ...q, stage: last.id })));
   }
   return out;
 }
 
 /**
- * The stages a random match walks through, in order.
+ * Where a round's questions come from.
  *
- * A match used to be five questions drawn from every category at once. The
- * variety was real but invisible — a «من أنا؟» clue and a fill-in-the-verse
- * arrived looking identical, one after another, so the whole thing read as
- * one flat quiz. Grouping them into named stages is the same content with
- * somewhere to stand.
+ * Most rounds are a RULE rather than a source — Speed, Lightning, Survival,
+ * Memory and Golden all ask general questions and differ in the clock, the
+ * scoring and the presentation. Only three rounds have a source of their own,
+ * and each of those is data the project already had.
  *
- * Order is deliberate: the clue-based stage opens because it is the easiest
- * to grasp cold, and the general pool closes because it is the widest.
+ * Golden asks for the hardest questions the pool can offer, which is a real
+ * property of the pool (`difficulty`) rather than a label invented here.
  */
-export const MATCH_STAGES: MatchStage[] = [
-  {
-    id: 'whoami',
-    label: 'من أنا؟',
-    hint: 'تلميح عن شخصية من الكتاب — اختار مين',
-    accent: 'amber',
-  },
-  {
-    id: 'fillverse',
-    label: 'كمل الآية',
-    hint: 'آية ناقصة كلمة — اختار الكلمة الصح',
-    accent: 'emerald',
-  },
-  {
-    id: 'bible',
-    label: 'معلومات كتابية',
-    hint: 'أسئلة عامة من الكتاب والقديسين والطقس',
-    accent: 'sky',
-  },
-];
-
-export interface MatchStage {
-  id: MatchStageId;
-  label: string;
-  hint: string;
-  /** Tailwind colour family; the match screen builds its classes from this. */
-  accent: 'amber' | 'emerald' | 'sky';
+function questionsForRound(round: MatchRound, n: number, exclude: Set<string>): RoomQuestion[] {
+  if (round.id === 'whoami') return whoAmIQuestions(n, exclude);
+  if (round.id === 'fillverse') return fillVerseQuestions(n, exclude);
+  if (round.id === 'golden') return hardestPoolQuestions(n, exclude);
+  return biblePoolQuestions(n, exclude);
 }
 
-export const QUESTIONS_PER_STAGE = 2;
-export const RANDOM_MATCH_LENGTH = MATCH_STAGES.length * QUESTIONS_PER_STAGE;
-
-/** Where a stage's questions come from. */
-const STAGE_BUILDERS: Record<MatchStageId, (n: number) => RoomQuestion[]> = {
-  whoami: whoAmIQuestions,
-  fillverse: fillVerseQuestions,
-  bible: biblePoolQuestions,
-};
-
-/** Look up the stage a question index sits in, for the match screen. */
-export function stageOf(questions: RoomQuestion[], idx: number): MatchStage | null {
-  const id = questions[idx]?.stage;
-  return id ? MATCH_STAGES.find((s) => s.id === id) ?? null : null;
+/**
+ * The pool grades its own questions, so «أصعب الأسئلة» is a filter and not a
+ * claim. Falls back to the whole pool if the hard slice ever runs dry against
+ * this player's history, because a short round cannot be finalised.
+ */
+function hardestPoolQuestions(n: number, exclude: Set<string> = new Set()): RoomQuestion[] {
+  const hard = initializeQuestionPool().filter((q) => q.difficulty === 'صعب' && !exclude.has(q.question));
+  const picked = pickUnseen(hard, (q) => q.question, n);
+  if (picked.length >= n) return picked.map(toRoomQuestion);
+  const taken = new Set([...exclude, ...picked.map((q) => q.question)]);
+  return [...picked.map(toRoomQuestion), ...biblePoolQuestions(n - picked.length, taken)];
 }
 
-/** True when `idx` is the first question of its stage — where a banner goes. */
-export function startsStage(questions: RoomQuestion[], idx: number): boolean {
-  const here = questions[idx]?.stage;
-  if (!here) return false;
-  return idx === 0 || questions[idx - 1]?.stage !== here;
-}
-
-function whoAmIQuestions(n: number): RoomQuestion[] {
-  const pool = [...RAW_CHARACTERS, ...RAW_CHARACTERS_NT];
+function whoAmIQuestions(n: number, exclude: Set<string> = new Set()): RoomQuestion[] {
+  const pool = [...RAW_CHARACTERS, ...RAW_CHARACTERS_NT].filter((c) => !exclude.has(c.clues[0]));
   const names = pool.map((c) => c.name);
   // Keyed on the clue, because the clue is what becomes the question text —
   // and the question text is the only identity a played match can report back.
@@ -139,17 +118,19 @@ function whoAmIQuestions(n: number): RoomQuestion[] {
   });
 }
 
-function fillVerseQuestions(n: number): RoomQuestion[] {
+function fillVerseQuestions(n: number, exclude: Set<string> = new Set()): RoomQuestion[] {
   const allWords = Array.from(new Set(RAW_VERSES.map((v) => v.word)));
-  return pickUnseen(RAW_VERSES, (v) => v.verse, n).map((v) => {
+  const verses = RAW_VERSES.filter((v) => !exclude.has(v.verse));
+  return pickUnseen(verses, (v) => v.verse, n).map((v) => {
     const distractors = shuffle(allWords.filter((w) => w !== v.word)).slice(0, 3);
     const options = shuffle([v.word, ...distractors]);
     return { question: v.verse, options, correctIdx: options.indexOf(v.word), explanation: v.explanation };
   });
 }
 
-function biblePoolQuestions(n: number): RoomQuestion[] {
-  return pickUnseen(initializeQuestionPool(), (q) => q.question, n).map(toRoomQuestion);
+function biblePoolQuestions(n: number, exclude: Set<string> = new Set()): RoomQuestion[] {
+  const pool = initializeQuestionPool().filter((q) => !exclude.has(q.question));
+  return pickUnseen(pool, (q) => q.question, n).map(toRoomQuestion);
 }
 
 /** SmartQuestion carries extra fields; a room only needs these four. */
