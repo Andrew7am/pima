@@ -2,12 +2,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { User } from '../../types';
-import { ChevronRight, Check, X as XIcon, Trophy, Users as UsersIcon, Loader2, Home, RotateCcw, Copy, Lightbulb, UserPlus } from 'lucide-react';
+import { ChevronRight, Check, X as XIcon, Trophy, Users as UsersIcon, Loader2, Home, RotateCcw, Copy, Lightbulb, UserPlus, Zap, Coins } from 'lucide-react';
 import {
   GameRoom, loadRoom, subscribeToRoom, submitAnswer, finalizeMatch, FinalizeResult,
   cancelRoom, claimAbandonedMatch,
 } from '../multiplayer';
-import { getLeague } from '../leagues';
+import { getLeague, leagueProgress } from '../leagues';
 import { checkAchievements } from '../../lib/db';
 import RoomChat from './RoomChat';
 import AssistBar, { AssistId } from './AssistBar';
@@ -493,8 +493,19 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
         setFinalizing(false);
         // Push the fresh rating to the parent so the hub reflects it without
         // a reload.
+        // Rating AND the rest. Only the rating used to be pushed, so the hub
+        // showed pre-match XP, coins and level until a reload — the awards
+        // were real, the screen just never heard about them.
         const finishedHost = currentUser.id === room.host_user_id;
-        onUserUpdated({ rating: finishedHost ? result.hostNewRating : result.guestNewRating });
+        const newLevel = finishedHost ? result.hostNewLevel : result.guestNewLevel;
+        onUserUpdated({
+          rating: finishedHost ? result.hostNewRating : result.guestNewRating,
+          // Taken from the row, not added to what we hold — the level-up sweep
+          // resets xp to the overflow, so the arithmetic would drift.
+          xp: finishedHost ? result.hostNewXp : result.guestNewXp,
+          gameCoins: finishedHost ? result.hostNewCoins : result.guestNewCoins,
+          ...(newLevel > 0 ? { level: newLevel } : {}),
+        });
         const newlyUnlocked = await checkAchievements();
         if (newlyUnlocked.length > 0) onAchievementsUnlocked?.(newlyUnlocked);
         return;
@@ -783,6 +794,13 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     const myChange = isHost ? outcome.hostRatingChange : outcome.guestRatingChange;
     const myNew = isHost ? outcome.hostNewRating : outcome.guestNewRating;
     const league = getLeague(myNew);
+    const myXpGain = isHost ? outcome.hostXpGain : outcome.guestXpGain;
+    const myCoinsGain = isHost ? outcome.hostCoinsGain : outcome.guestCoinsGain;
+    const myNewLevel = isHost ? outcome.hostNewLevel : outcome.guestNewLevel;
+    // The level BEFORE the match is the one this screen was mounted with —
+    // onUserUpdated has not been applied to the prop yet at this point.
+    const leveledUp = myNewLevel > 0 && myNewLevel > (currentUser.level ?? 1);
+    const progress = leagueProgress(myNew);
 
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
@@ -809,6 +827,35 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             <span className="text-slate-500">{oppName}</span>
           </p>
 
+          {/* What the match actually paid.
+              finalize_match has always awarded XP and coins and swept
+              level-ups — 100/20 to the winner, 40/10 on a draw, 20/5 to the
+              loser — and none of it was in the RPC's return, so the player
+              was paid and told nothing while the hub kept showing pre-match
+              numbers until a reload. Migration 100 returns it. */}
+          {(myXpGain > 0 || myCoinsGain > 0) && (
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="bg-white/5 border border-emerald-500/30 rounded-2xl p-4 flex flex-col items-center gap-1">
+                <Zap className="w-6 h-6 text-emerald-400" />
+                <span className="text-[10px] text-slate-400 font-bold">خبرة مكتسبة</span>
+                <span className="text-xl font-black text-white">+{myXpGain}</span>
+              </div>
+              <div className="bg-white/5 border border-amber-500/30 rounded-2xl p-4 flex flex-col items-center gap-1">
+                <Coins className="w-6 h-6 text-amber-400" />
+                <span className="text-[10px] text-slate-400 font-bold">عملات لعب</span>
+                <span className="text-xl font-black text-white">+{myCoinsGain}</span>
+              </div>
+            </div>
+          )}
+
+          {leveledUp && (
+            <div className="bg-gradient-to-l from-purple-500/20 to-indigo-500/10 border border-purple-500/40 rounded-2xl p-3 text-center">
+              <p className="text-[11px] font-black text-purple-200">
+                🎉 وصلت للمستوى {myNewLevel}
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3 pt-2">
             <div className={`bg-white/5 border rounded-2xl p-4 flex flex-col items-center gap-1 ${
               myChange > 0 ? 'border-emerald-500/30' : myChange < 0 ? 'border-rose-500/30' : 'border-slate-500/30'
@@ -825,6 +872,24 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             <div className={`bg-gradient-to-br ${league.gradient} rounded-2xl p-4 flex flex-col items-center gap-1`}>
               <span className="text-3xl">{league.badge}</span>
               <span className="text-[10px] text-white/80 font-bold">الدورية</span>
+              {/* Evidence the rating moved. A +25 win inside a 200-point band
+                  produced a summary identical to the last one: the number
+                  changed, the badge did not, nothing showed progress. */}
+              {progress.next && (
+                <div className="w-full pt-1 space-y-1">
+                  <div className="h-1.5 w-full bg-black/25 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress.pct}%` }}
+                      transition={{ duration: 0.9, ease: 'easeOut' }}
+                      className="h-full bg-white/80 rounded-full"
+                    />
+                  </div>
+                  <p className="text-[8.5px] text-white/70 font-bold text-center">
+                    فاضل {progress.toNext} لـ{progress.next.name}
+                  </p>
+                </div>
+              )}
               <span className="text-sm font-black text-white">{league.name}</span>
             </div>
           </div>

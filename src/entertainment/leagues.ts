@@ -25,3 +25,33 @@ export const LEAGUES: League[] = [
 export function getLeague(rating: number): League {
   return LEAGUES.find((l) => rating >= l.min && rating <= l.max) ?? LEAGUES[0];
 }
+
+/**
+ * How far through the current league a rating sits.
+ *
+ * Pure arithmetic on the bands above — no new data, nothing invented. It
+ * exists because a +25 win inside a 200-point band produced a summary screen
+ * identical to the last one: the number moved, the badge did not, and there
+ * was no evidence anything had happened. `next` is null in the top league,
+ * where there is nothing left to climb to and a progress bar would be a lie.
+ */
+export function leagueProgress(rating: number): {
+  league: League;
+  next: League | null;
+  pct: number;
+  toNext: number;
+} {
+  const league = getLeague(rating);
+  const idx = LEAGUES.indexOf(league);
+  const next = idx >= 0 && idx < LEAGUES.length - 1 ? LEAGUES[idx + 1] : null;
+  if (!next) return { league, next: null, pct: 100, toNext: 0 };
+
+  const span = next.min - league.min;
+  const into = Math.max(0, Math.min(span, rating - league.min));
+  return {
+    league,
+    next,
+    pct: span > 0 ? Math.round((into / span) * 100) : 100,
+    toNext: Math.max(0, next.min - rating),
+  };
+}

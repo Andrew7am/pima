@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { User as UserType } from '../types';
 import { xpToNext, xpProgressPct } from './progress';
+import { getLeague } from './leagues';
+import { awardGameReward } from '../lib/db';
 import { findOrCreateRandomRoom } from './multiplayer';
 import { buildRandomMatchQuestions } from './multiplayer/matchQuestions';
 import MatchBannerScene from './multiplayer/MatchBannerScene';
@@ -44,18 +46,9 @@ interface RandomMatchGameProps {
 }
 
 
-// League structure
-const LEAGUES = [
-  { id: 'beginner', min: 0, max: 199, name: 'مبتدئ 🥉', badge: '🥉', color: 'from-amber-700 to-amber-900', textColor: 'text-amber-500', glow: 'shadow-amber-500/20' },
-  { id: 'student', min: 200, max: 499, name: 'دارس 🥈', badge: '🥈', color: 'from-slate-400 to-slate-600', textColor: 'text-slate-300', glow: 'shadow-slate-400/20' },
-  { id: 'disciple', min: 500, max: 999, name: 'تلميذ 🥇', badge: '🥇', color: 'from-yellow-400 to-amber-600', textColor: 'text-amber-400', glow: 'shadow-yellow-500/20' },
-  { id: 'teacher', min: 1000, max: 1999, name: 'معلم 💎', badge: '💎', color: 'from-cyan-400 to-blue-600', textColor: 'text-cyan-400', glow: 'shadow-cyan-500/20' },
-  { id: 'master', min: 2000, max: Infinity, name: 'حكيم الكتاب 👑', badge: '👑', color: 'from-purple-600 to-indigo-900', textColor: 'text-purple-400', glow: 'shadow-purple-500/20' }
-];
-
-const getLeague = (rating: number) => {
-  return LEAGUES.find(l => rating >= l.min && rating <= l.max) || LEAGUES[0];
-};
+// The league table lives in leagues.ts. This file used to carry a second
+// copy whose names had emoji baked in — «مبتدئ 🥉» against the shared
+// «مبتدئ» — so the same tier was spelled two ways depending on the screen.
 
 
 const GAME_MODES_QUESTIONS: Record<string, any[]> = {
@@ -251,11 +244,11 @@ export default function RandomMatchGame({
   // being shown «مبتدئ» here. Still kept in localStorage afterwards: this
   // screen's matches never reach finalize_match, so it has nothing else to
   // write to.
-  const [rating, setRating] = useState<number>(() => {
-    const saved = localStorage.getItem('coptic_random_match_rating');
-    if (saved !== null) return parseInt(saved, 10);
-    return currentUser.rating ?? 100;
-  });
+  // Read straight off the account, every render. This was state seeded from
+  // localStorage, so once written it never looked at users.rating again — and
+  // the friend match kept writing to it. Two ratings, drifting apart, with
+  // this screen the only one reading the local copy.
+  const rating = currentUser.rating ?? 100;
 
   const [streak, setStreak] = useState<number>(() => {
     const saved = localStorage.getItem('coptic_random_match_streak');
@@ -335,11 +328,6 @@ export default function RandomMatchGame({
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
   };
-
-  // Load state or update when rating changes
-  useEffect(() => {
-    localStorage.setItem('coptic_random_match_rating', rating.toString());
-  }, [rating]);
 
   useEffect(() => {
     localStorage.setItem('coptic_random_match_streak', streak.toString());
@@ -670,38 +658,32 @@ export default function RandomMatchGame({
 
   // Award rewards on results_friend
   useEffect(() => {
-    if (screen === 'results_friend' && liveRoom && !hasRewardedFriend) {
-      setHasRewardedFriend(true);
-
+    if (screen !== 'results_friend' || !liveRoom || hasRewardedFriend) return;
+    setHasRewardedFriend(true);
+    void (async () => {
       const myScore = isCreator ? liveRoom.player1Score : liveRoom.player2Score;
       const oppScore = isCreator ? liveRoom.player2Score : liveRoom.player1Score;
 
       let matchOutcome: 'win' | 'loss' | 'draw' = 'win';
-      let ratingChange = 0;
       let xpGain = 15;
-      let pointsGain = 5;
+      let coinsGain = 5;
 
       if (myScore > oppScore) {
         matchOutcome = 'win';
-        ratingChange = 25;
         xpGain = 50;
-        pointsGain = 20;
+        coinsGain = 20;
         setStreak(s => s + 1);
       } else if (myScore < oppScore) {
         matchOutcome = 'loss';
-        ratingChange = -15;
         xpGain = 15;
-        pointsGain = 5;
+        coinsGain = 5;
         setStreak(0);
       } else {
         matchOutcome = 'draw';
-        ratingChange = 0;
         xpGain = 20;
-        pointsGain = 10;
+        coinsGain = 10;
       }
 
-      const nextRating = Math.max(0, rating + ratingChange);
-      setRating(nextRating);
       setOutcome(matchOutcome);
       if (matchOutcome === 'win') {
         confetti({
@@ -710,26 +692,33 @@ export default function RandomMatchGame({
           origin: { y: 0.6 }
         });
       }
-      const nextXP = (currentUser.xp || 0) + xpGain;
-      const nextPoints = (currentUser.points || 0) + pointsGain;
-      const currentLevel = currentUser.level || 1;
-      const xpNeeded = currentLevel * 200;
-      let nextLevel = currentLevel;
-      let finalXP = nextXP;
 
-      if (nextXP >= xpNeeded) {
-        nextLevel = currentLevel + 1;
-        finalXP = nextXP - xpNeeded;
+      // Awarded by the server, like every other game in the app.
+      //
+      // This used to compute the reward here and write xp/points/level
+      // straight onto the user — which migration 036's
+      // protect_user_privileged_columns() silently reverts. The screen showed
+      // the numbers going up and the database threw them away; the next load
+      // had none of it. It also paid into `points`, the BOOKING loyalty
+      // balance where 100 points is one EGP, rather than into game coins.
+      //
+      // The rating line is gone too. A friend match is a casual game against
+      // someone you chose; it has no matchmaking and no server settlement, and
+      // it was moving a SECOND rating kept in localStorage that nothing else
+      // in the app can see — so this screen's league badge drifted further
+      // from every other screen's with each game played. One rating,
+      // server-owned, moved only by competitive matches.
+      const result = await awardGameReward(
+        xpGain,
+        coinsGain,
+        myScore,
+        `مباراة مع صاحب — ${myScore} مقابل ${oppScore}`,
+      );
+      if (result) {
+        onUpdateUser({ ...currentUser, xp: result.xp, level: result.level, gameCoins: result.gameCoins });
       }
-
-      onUpdateUser({
-        ...currentUser,
-        xp: finalXP,
-        points: nextPoints,
-        level: nextLevel
-      });
-    }
-  }, [screen, liveRoom, hasRewardedFriend, isCreator, rating, currentUser, onUpdateUser]);
+    })();
+  }, [screen, liveRoom, hasRewardedFriend, isCreator, currentUser, onUpdateUser]);
 
   /**
    * Find a real opponent.

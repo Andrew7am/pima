@@ -105,6 +105,19 @@ export interface FinalizeResult {
   hostNewRating: number;
   guestNewRating: number;
   winnerUserId: string | null;
+  /** Migration 100. The server has always awarded these; it just never said so. */
+  hostXpGain: number;
+  guestXpGain: number;
+  hostCoinsGain: number;
+  guestCoinsGain: number;
+  /** Read after the level-up sweep, so a level-up can be announced. */
+  hostNewLevel: number;
+  guestNewLevel: number;
+  /** Post-sweep balances, because a level-up resets xp to the overflow. */
+  hostNewXp: number;
+  guestNewXp: number;
+  hostNewCoins: number;
+  guestNewCoins: number;
 }
 
 export async function finalizeMatch(roomId: string): Promise<FinalizeResult | null> {
@@ -118,6 +131,16 @@ export async function finalizeMatch(roomId: string): Promise<FinalizeResult | nu
     hostNewRating: row.host_new_rating,
     guestNewRating: row.guest_new_rating,
     winnerUserId: row.winner_user_id,
+    hostXpGain: row.host_xp_gain ?? 0,
+    guestXpGain: row.guest_xp_gain ?? 0,
+    hostCoinsGain: row.host_coins_gain ?? 0,
+    guestCoinsGain: row.guest_coins_gain ?? 0,
+    hostNewLevel: row.host_new_level ?? 0,
+    guestNewLevel: row.guest_new_level ?? 0,
+    hostNewXp: row.host_new_xp ?? 0,
+    guestNewXp: row.guest_new_xp ?? 0,
+    hostNewCoins: row.host_new_coins ?? 0,
+    guestNewCoins: row.guest_new_coins ?? 0,
   };
 }
 
@@ -157,6 +180,16 @@ export async function claimAbandonedMatch(
       hostNewRating: row.host_new_rating,
       guestNewRating: row.guest_new_rating,
       winnerUserId: row.winner_user_id,
+      hostXpGain: row.host_xp_gain ?? 0,
+      guestXpGain: row.guest_xp_gain ?? 0,
+      hostCoinsGain: row.host_coins_gain ?? 0,
+      guestCoinsGain: row.guest_coins_gain ?? 0,
+      hostNewLevel: row.host_new_level ?? 0,
+      hostNewXp: row.host_new_xp ?? 0,
+      guestNewXp: row.guest_new_xp ?? 0,
+      hostNewCoins: row.host_new_coins ?? 0,
+      guestNewCoins: row.guest_new_coins ?? 0,
+      guestNewLevel: row.guest_new_level ?? 0,
     },
   };
 }
