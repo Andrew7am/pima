@@ -42,3 +42,58 @@ export function whatsAppShareUrl(text: string, to?: string): string {
   const base = to ? `https://wa.me/${to.replace(/[^0-9]/g, '')}` : 'https://wa.me/';
   return `${base}?text=${encodeURIComponent(text)}`;
 }
+
+/** How long to wait for the WhatsApp app to take over before falling back. */
+const APP_HANDOFF_MS = 1200;
+
+/**
+ * Share text through WhatsApp.
+ *
+ * Two wrong answers came before this one, and the difference matters:
+ *
+ *   window.open(waMe, '_blank')  — a silent no-op in the Android WebView.
+ *                                  Nothing happened at all.
+ *   Browser.open({ url: waMe })  — opens a Chrome Custom Tab INSIDE the app,
+ *                                  which loads wa.me: a web page that then
+ *                                  asks to open WhatsApp. Better than
+ *                                  nothing, still not sharing.
+ *
+ * The scheme URL is what actually reaches the app. Capacitor's WebViewClient
+ * hands any scheme it does not recognise to an Android Intent, and
+ * `whatsapp://send` is registered by WhatsApp itself — so the compose screen
+ * opens directly with the text already in it.
+ *
+ * If WhatsApp is not installed the intent goes nowhere and the page simply
+ * stays put, which is why the wa.me fallback is armed on a timer: if we are
+ * still on screen after a moment, the hand-off did not happen. Leaving the
+ * app cancels it, because the page is hidden by then.
+ */
+export async function shareToWhatsApp(text: string, to?: string): Promise<void> {
+  const waMe = whatsAppShareUrl(text, to);
+
+  if (!Capacitor.isNativePlatform()) {
+    window.open(waMe, '_blank', 'noopener,noreferrer');
+    return;
+  }
+
+  const digits = to ? to.replace(/[^0-9]/g, '') : '';
+  const scheme = digits
+    ? `whatsapp://send?phone=${digits}&text=${encodeURIComponent(text)}`
+    : `whatsapp://send?text=${encodeURIComponent(text)}`;
+
+  let handedOff = false;
+  const markHandedOff = () => { handedOff = true; };
+  document.addEventListener('visibilitychange', markHandedOff, { once: true });
+  window.addEventListener('pagehide', markHandedOff, { once: true });
+
+  window.location.href = scheme;
+
+  setTimeout(() => {
+    document.removeEventListener('visibilitychange', markHandedOff);
+    window.removeEventListener('pagehide', markHandedOff);
+    if (handedOff || document.visibilityState === 'hidden') return;
+    // WhatsApp did not take it. A Custom Tab on wa.me at least gives the
+    // sender somewhere to go, rather than a button that did nothing.
+    void openExternal(waMe);
+  }, APP_HANDOFF_MS);
+}

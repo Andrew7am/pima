@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { arabicNumber, arabicPlural, arabicDate, arabicDateRange, arabicPercent, DAY_FORMS, BOOKING_FORMS } from '../lib/arabic';
-import { openExternal, whatsAppShareUrl } from '../lib/openExternal';
+import { shareToWhatsApp } from '../lib/openExternal';
 import { Booking, User, RetreatHouse, Attendee, RoomAllocation, Room, Payment, Review, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import { 
   Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, FileText, 
@@ -1473,7 +1473,7 @@ export default function UserBookings({
                         onClick={() => {
                           const link = `${window.location.origin}/?join=${booking.id}`;
                           const msg = `سلام ونعمة 🙏\nانضم لقائمة مشاركين خلوة «${booking.houseName}» (${arabicDateRange(booking.checkIn, booking.checkOut)}) واكتب اسمك من هنا:\n${link}`;
-                          void openExternal(whatsAppShareUrl(msg));
+                          void shareToWhatsApp(msg);
                         }}
                         className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
                       >

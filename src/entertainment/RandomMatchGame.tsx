@@ -10,7 +10,7 @@ import { User as UserType } from '../types';
 import { xpToNext, xpProgressPct } from './progress';
 import { getLeague } from './leagues';
 import { awardGameReward } from '../lib/db';
-import { openExternal, whatsAppShareUrl, SITE_URL } from '../lib/openExternal';
+import { shareToWhatsApp, SITE_URL } from '../lib/openExternal';
 import { findOrCreateRandomRoom } from './multiplayer';
 import { buildRandomMatchQuestions } from './multiplayer/matchQuestions';
 import MatchBannerScene from './multiplayer/MatchBannerScene';
@@ -346,7 +346,7 @@ export default function RandomMatchGame({
       '',
       SITE_URL,
     ].join('\n');
-    void openExternal(whatsAppShareUrl(message));
+    void shareToWhatsApp(message);
   };
 
   useEffect(() => {
