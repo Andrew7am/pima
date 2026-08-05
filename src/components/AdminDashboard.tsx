@@ -11,7 +11,7 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
   { value: 'bank_transfer', label: 'تحويل بنكي' },
 ];
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft } from 'lucide-react';
-import { arabicNumber, arabicPlural } from '../lib/arabic';
+import { arabicNumber, arabicPlural, arabicDateTime } from '../lib/arabic';
 import { timeAgo } from '../lib/timeAgo';
 
 // Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
@@ -2121,7 +2121,7 @@ export default function AdminDashboard({
                         {/* Amount */}
                         <div className="flex items-center justify-between py-1 border-b border-dashed border-[#E7E5DB]">
                           <span className="text-[10px] text-[#867E65] font-bold">المبلغ المحول:</span>
-                          <span className="text-sm font-black text-emerald-800">{pay.amount.toLocaleString()} ج.م</span>
+                          <span className="text-sm font-black text-emerald-800">{arabicNumber(pay.amount)} ج.م</span>
                         </div>
 
                         {/* Method with custom local Egyptian descriptors */}
@@ -2195,7 +2195,9 @@ export default function AdminDashboard({
                               <div>رقم البطاقة (مقنع): <strong className="font-mono">**** **** **** 9012</strong></div>
                             </>
                           )}
-                          <div className="text-[10px] text-[#867E65] pt-1">تاريخ تقديم الإيصال: {pay.paymentDate}</div>
+                          {/* Was printing the raw column — "2026-08-05T18:06:42.612+00:00"
+                              — on the screen where money gets approved. */}
+                          <div className="text-[10px] text-[#867E65] pt-1">تاريخ تقديم الإيصال: {arabicDateTime(pay.paymentDate)}</div>
                         </div>
 
                         {/* Admin Notes form */}

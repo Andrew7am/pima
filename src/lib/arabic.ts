@@ -52,6 +52,23 @@ export function arabicDate(iso?: string): string {
 }
 
 /**
+ * "٥ أغسطس ٢٠٢٦، ٦:٠٦ م" — a moment, not just a day.
+ *
+ * For the places that record when something happened rather than when a stay
+ * falls: a payment filed, a proof reviewed. Those were printing the raw
+ * column ("2026-08-05T18:06:42.612+00:00") straight onto the screen.
+ */
+export function arabicDateTime(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString('ar-EG', {
+    day: 'numeric', month: 'long', year: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  });
+}
+
+/**
  * A stay's dates as one phrase: "١٥ – ١٨ أغسطس ٢٠٢٦".
  *
  * Replaces `{checkIn} → {checkOut}`, which printed two raw ISO dates in Latin
