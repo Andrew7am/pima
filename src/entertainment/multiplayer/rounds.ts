@@ -95,7 +95,12 @@ export const ROUND_POOL: MatchRound[] = [
   {
     id: 'speed',
     label: 'تحدي السرعة',
-    tagline: 'أسرع عقل هو اللي يكسب',
+    // NOT «the fastest wins». submit_answer records no per-answer timestamp,
+    // and updated_at is row-level so the second answer overwrites the first —
+    // who answered first is not knowable, let alone scorable. Both correct
+    // answers score the same. What this round actually is, is a short clock
+    // worth double, so that is what it says.
+    tagline: 'عشر ثواني بس — والنقط بالضعف',
     accent: 'violet',
     seconds: 10,
     multiplier: 2,

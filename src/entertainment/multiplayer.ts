@@ -14,16 +14,23 @@ export interface RoomQuestion {
   correctIdx: number;
   explanation: string;
   /**
-   * Which stage of a random match this question belongs to — see
-   * MATCH_STAGES in multiplayer/matchQuestions.ts.
+   * Which round this question belongs to — see ROUND_POOL in
+   * multiplayer/rounds.ts.
    *
    * Optional because the column is plain JSONB that the server stores
    * verbatim and only ever reads `correctIdx` out of, so rooms created
-   * before stages existed are still perfectly playable; they simply have no
-   * stage to show. Themed lobby modes do not set it either — the whole room
+   * before rounds existed are still perfectly playable; they simply have no
+   * round to show. Themed lobby modes do not set it either — the whole room
    * is one subject there, so a stage label would say nothing.
    */
   stage?: MatchStageId;
+  /**
+   * What a correct answer is worth. Read and CLAMPED to [1,3] server-side in
+   * submit_answer (migration 104) — it has to be scored there, because
+   * host_score is what finalize_match compares to pick the winner. Absent
+   * means 1, so rooms made before 102 score exactly as they always did.
+   */
+  multiplier?: number;
 }
 
 /**

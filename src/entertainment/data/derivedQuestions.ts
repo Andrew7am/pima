@@ -110,7 +110,11 @@ export function buildDerivedQuestions(): DerivedQuestion[] {
           ? [earlier.name, later.name]
           : [later.name, earlier.name];
         out.push({
-          question: 'أي الحدثين حدث أولاً في ترتيب الكتاب المقدس؟',
+          // The pair is IN the text on purpose. questionPoolEngine dedupes
+          // derived questions by question text, and every one of these used to
+          // read the same bare sentence — so eleven of the twelve were built
+          // and then silently thrown away, and the app only ever asked one.
+          question: `أي الحدثين حدث أولاً؟ — ${options[0]} أم ${options[1]}؟`,
           options,
           correctIdx: options.indexOf(earlier.name),
           explanation: `${earlier.name} — ثم ${later.name}.`,

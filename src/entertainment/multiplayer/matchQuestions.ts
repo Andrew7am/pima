@@ -57,7 +57,8 @@ export function buildRandomMatchQuestions(): RoomQuestion[] {
   // cannot cover it: that is only written once a match is played.
   const dealt = new Set<string>();
   for (const round of rounds) {
-    const built = questionsForRound(round, QUESTIONS_PER_ROUND, dealt).map((q) => ({ ...q, stage: round.id }));
+    const built = questionsForRound(round, QUESTIONS_PER_ROUND, dealt)
+      .map((q) => ({ ...q, stage: round.id, multiplier: round.multiplier }));
     for (const q of built) dealt.add(q.question);
     out.push(...built);
   }
@@ -69,7 +70,8 @@ export function buildRandomMatchQuestions(): RoomQuestion[] {
   const wanted = rounds.length * QUESTIONS_PER_ROUND;
   if (out.length < wanted) {
     const last = rounds[rounds.length - 1];
-    out.push(...biblePoolQuestions(wanted - out.length, dealt).map((q) => ({ ...q, stage: last.id })));
+    out.push(...biblePoolQuestions(wanted - out.length, dealt)
+      .map((q) => ({ ...q, stage: last.id, multiplier: last.multiplier })));
   }
   return out;
 }
