@@ -1,0 +1,5 @@
+# PowerShell 5.1 reads a .ps1 without a BOM as ANSI, not UTF-8. An em dash in a
+# comment then decodes as a stray curly quote that opens a string and never
+# closes it — the script fails to parse with an error pointing somewhere else
+# entirely. Keep them CRLF and BOM'd; here-strings need the CRLF too.
+*.ps1 text eol=crlf working-tree-encoding=UTF-8

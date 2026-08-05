@@ -234,16 +234,50 @@ otp_length = 6
 otp_expiry = 3600
 
 # Use a production-ready SMTP server
+# Resend, the same account the send-email Edge Function already uses for
+# notification mail — one sender domain to verify, one key to rotate.
+#
+# Local only. Production SMTP is a dashboard setting; this file is not read
+# there. Uncomment and export RESEND_API_KEY to send real mail from a local
+# stack; leave it commented and `supabase start` keeps everything in Inbucket
+# at http://127.0.0.1:54324, which is what you want while developing.
+#
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
+# host = "smtp.resend.com"
 # port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# user = "resend"
+# pass = "env(RESEND_API_KEY)"
+# admin_email = "no-reply@pimastay.com"
+# sender_name = "بيما"
 
 # Uncomment to customize email template
+# ── Pima: Arabic RTL auth emails ──────────────────────────────────────────
+# Supabase ships English one-liners with no branding. The first email anyone
+# who signs up ever receives is the confirmation, so it is the first
+# impression of the platform. Templates live in supabase/templates — see the
+# _README there for how to paste them into the production dashboard, which
+# does not read this file.
+[auth.email.template.confirmation]
+subject = "أكّد بريدك وابدأ مع بيما"
+content_path = "./supabase/templates/confirm-signup.html"
+
+[auth.email.template.recovery]
+subject = "إعادة تعيين كلمة السر — بيما"
+content_path = "./supabase/templates/reset-password.html"
+
+[auth.email.template.magic_link]
+subject = "لينك الدخول لبيما"
+content_path = "./supabase/templates/magic-link.html"
+
+[auth.email.template.email_change]
+subject = "أكّد تغيير بريدك في بيما"
+content_path = "./supabase/templates/email-change.html"
+
+[auth.email.template.reauthentication]
+subject = "كود التأكيد — بيما"
+content_path = "./supabase/templates/reauthentication.html"
+
 # [auth.email.template.invite]
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"

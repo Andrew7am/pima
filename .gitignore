@@ -35,3 +35,7 @@ playwright-report/
 test-results/
 blob-report/
 .playwright/
+
+# Database backups — a full dump of production, including every user row.
+# Never in git.
+backups/

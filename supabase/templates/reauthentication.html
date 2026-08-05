@@ -1,0 +1,90 @@
+<!-- subject: كود التأكيد — بيما -->
+<!--
+  Tables and inline styles on purpose: Gmail strips <style> in the web client
+  and Outlook renders with Word's engine, so no flexbox, no grid, no classes.
+  No web font either — Gmail blocks @import — so this leans on the Arabic
+  faces every system already has.
+-->
+<div dir="rtl" lang="ar" style="margin:0;padding:0;background-color:#FBF9F4;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FBF9F4;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background-color:#ffffff;border:1px solid #EDE7DA;border-radius:20px;overflow:hidden;font-family:Tahoma,'Segoe UI',Arial,sans-serif;">
+
+          <tr>
+            <td style="background-color:#0A2342;padding:26px 24px;text-align:center;">
+              <div style="font-size:24px;font-weight:bold;color:#ffffff;letter-spacing:1px;">بيما</div>
+              <div style="font-size:12px;color:#C5A059;margin-top:4px;">بيوت المؤتمرات والخلوات</div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:28px 24px 8px;text-align:right;">
+              <h1 style="margin:0 0 12px;font-size:19px;color:#0A2342;font-weight:bold;">كود التأكيد 🔐</h1>
+              <p style="margin:0 0 16px;font-size:14px;line-height:1.9;color:#4A4A3A;">
+                قبل ما نكمّل العملية دي، محتاجين نتأكد إنك إنت. استخدم الكود ده في التطبيق:
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:8px 24px 4px;text-align:center;">
+              <!-- Navy on gold, not white on gold: white measures 2.5:1 against
+                   this gold and is unreadable for a lot of people. -->
+              <a href="{{ .ConfirmationURL }}"
+                 style="display:inline-block;background-color:#C5A059;color:#0A2342;font-size:15px;font-weight:bold;text-decoration:none;padding:13px 40px;border-radius:14px;">
+                فتح بيما
+              </a>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:16px 24px 4px;text-align:right;">
+              <p style="margin:0;font-size:12px;line-height:1.8;color:#8A8A70;">
+                الزر مش شغال؟ انسخ اللينك ده وحطه في المتصفح:
+              </p>
+              <p style="margin:6px 0 0;font-size:11px;line-height:1.6;word-break:break-all;">
+                <a href="{{ .ConfirmationURL }}" style="color:#3A6B4C;" dir="ltr">{{ .ConfirmationURL }}</a>
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:18px 24px 8px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FBF9F4;border:1px solid #EDE7DA;border-radius:14px;">
+                <tr>
+                  <td style="padding:12px 14px;text-align:right;">
+                    <p style="margin:0;font-size:12px;line-height:1.8;color:#4A4A3A;">
+                      الكود:
+                      <span dir="ltr" style="display:inline-block;font-family:Consolas,monospace;font-size:17px;font-weight:bold;letter-spacing:3px;color:#0A2342;">{{ .Token }}</span>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:14px 24px 26px;text-align:right;">
+              <p style="margin:0;font-size:11.5px;line-height:1.8;color:#8A8A70;">
+                الكود صالح لدقايق معدودة. متبعتوش لأي حد — فريق بيما عمره ما هيطلبه منك.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background-color:#FBF9F4;border-top:1px solid #EDE7DA;padding:16px 24px;text-align:center;">
+              <p style="margin:0;font-size:11px;color:#8A8A70;">
+                بيما — حجز بيوت المؤتمرات والخلوات في مصر
+              </p>
+              <p style="margin:5px 0 0;font-size:11px;">
+                <a href="{{ .SiteURL }}" style="color:#3A6B4C;text-decoration:none;">pimastay.com</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</div>
