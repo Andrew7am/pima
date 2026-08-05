@@ -417,6 +417,11 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             </div>
           </div>
 
+          {/* One button, because there was only ever one action. «مباراة جديدة»
+              and «العودة لمركز الترفيه» sat on top of each other both calling
+              onBack: this screen is handed a roomId and no way to matchmake, so
+              no replay exists to wire the first one to. Back lands on the lobby
+              or the random-match home — which is where a new match is started. */}
           <div className="flex flex-col gap-2 pt-4">
             <button
               type="button"
@@ -424,15 +429,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
               className="w-full flex items-center justify-center gap-2 bg-gradient-to-l from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 text-white text-sm font-black py-3 rounded-2xl shadow-lg"
             >
               <RotateCcw className="w-4 h-4" />
-              مباراة جديدة
-            </button>
-            <button
-              type="button"
-              onClick={onBack}
-              className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 text-xs font-bold py-2.5 rounded-2xl"
-            >
-              <Home className="w-4 h-4" />
-              العودة لمركز الترفيه
+              رجوع — العب مباراة تانية
             </button>
           </div>
         </motion.div>
@@ -449,9 +446,23 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   if (room.status === 'finished' && !outcome) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
-        <div className="flex items-center gap-3 text-slate-300">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
-          <span className="text-sm font-bold">جارٍ حساب النتيجة...</span>
+        {/* The spinner needs a way out. finalizeMatch() has no catch, so a
+            failed finalize leaves `outcome` null forever and this branch keeps
+            rendering — and with nothing to tap, the player was stuck on a
+            spinner with no exit at all. */}
+        <div className="flex flex-col items-center gap-5">
+          <div className="flex items-center gap-3 text-slate-300">
+            <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+            <span className="text-sm font-bold">جارٍ حساب النتيجة...</span>
+          </div>
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 text-xs font-bold py-2.5 px-6 rounded-2xl transition-colors"
+          >
+            <Home className="w-4 h-4" />
+            خروج
+          </button>
         </div>
       </div>
     );

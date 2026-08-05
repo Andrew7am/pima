@@ -53,7 +53,11 @@ export default function MCQGame({
   coinsPerCorrect = 3,
   xpPerWrong = 2,
 }: MCQGameProps) {
-  const questions = useMemo(() => shuffle(pool).slice(0, questionsPerRound), [pool, questionsPerRound]);
+  // Bumped by «جولة جديدة» so the round is re-drawn; without it the memo would
+  // hand back the same five questions in the same order.
+  const [round, setRound] = useState(0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const questions = useMemo(() => shuffle(pool).slice(0, questionsPerRound), [pool, questionsPerRound, round]);
 
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -61,6 +65,20 @@ export default function MCQGame({
   const [finished, setFinished] = useState(false);
   const [awarding, setAwarding] = useState(false);
   const [rewardApplied, setRewardApplied] = useState(false);
+
+  /**
+   * «جولة جديدة» used to be wired to onBack — the same handler as the exit
+   * button directly beneath it. The big amber button with the replay icon
+   * threw the player out of the game instead of dealing a new round.
+   */
+  const playAgain = () => {
+    setRound((r) => r + 1);
+    setIdx(0);
+    setSelected(null);
+    setScore(0);
+    setFinished(false);
+    setRewardApplied(false);
+  };
 
   const q = questions[idx];
   const answered = selected !== null;
@@ -135,7 +153,7 @@ export default function MCQGame({
           <div className="flex flex-col gap-2 pt-4">
             <button
               type="button"
-              onClick={onBack}
+              onClick={playAgain}
               disabled={awarding}
               className="w-full flex items-center justify-center gap-2 bg-gradient-to-l from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 disabled:opacity-60 text-white text-sm font-black py-3 rounded-2xl shadow-lg transition-colors"
             >
@@ -149,7 +167,7 @@ export default function MCQGame({
               className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-60 text-slate-200 text-xs font-bold py-2.5 rounded-2xl transition-colors"
             >
               <Home className="w-4 h-4" />
-              العودة لمركز الترفيه
+              خروج من اللعبة
             </button>
           </div>
         </div>

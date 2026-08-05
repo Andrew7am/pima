@@ -54,7 +54,11 @@ function buildRound(): RoundQuestion[] {
 }
 
 export default function WhoAmIGame({ currentUser, onBack, onUserUpdated, onAchievementsUnlocked }: WhoAmIGameProps) {
-  const round = useMemo(buildRound, []);
+  // Bumped by «جولة جديدة» so a replay draws new characters instead of
+  // repeating the round just played.
+  const [roundNo, setRoundNo] = useState(0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const round = useMemo(buildRound, [roundNo]);
 
   const [idx, setIdx] = useState(0);
   const [cluesShown, setCluesShown] = useState(1);
@@ -67,6 +71,22 @@ export default function WhoAmIGame({ currentUser, onBack, onUserUpdated, onAchie
   const [finished, setFinished] = useState(false);
   const [awarding, setAwarding] = useState(false);
   const [rewardApplied, setRewardApplied] = useState(false);
+
+  /**
+   * «جولة جديدة» was wired to onBack, the same handler as the exit button
+   * below it — the replay button left the game instead of restarting it.
+   */
+  const playAgain = () => {
+    setRoundNo((r) => r + 1);
+    setIdx(0);
+    setCluesShown(1);
+    setSelected(null);
+    setTotalXp(0);
+    setTotalCoins(0);
+    setCorrectCount(0);
+    setFinished(false);
+    setRewardApplied(false);
+  };
 
   const q = round[idx];
   const answered = selected !== null;
@@ -152,7 +172,7 @@ export default function WhoAmIGame({ currentUser, onBack, onUserUpdated, onAchie
           <div className="flex flex-col gap-2 pt-4">
             <button
               type="button"
-              onClick={onBack}
+              onClick={playAgain}
               disabled={awarding}
               className="w-full flex items-center justify-center gap-2 bg-gradient-to-l from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 disabled:opacity-60 text-white text-sm font-black py-3 rounded-2xl shadow-lg transition-colors"
             >
@@ -166,7 +186,7 @@ export default function WhoAmIGame({ currentUser, onBack, onUserUpdated, onAchie
               className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-60 text-slate-200 text-xs font-bold py-2.5 rounded-2xl transition-colors"
             >
               <Home className="w-4 h-4" />
-              العودة لمركز الترفيه
+              خروج من اللعبة
             </button>
           </div>
         </div>

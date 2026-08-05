@@ -311,7 +311,7 @@ export default function RandomMatchGame({
   const userLevel = currentUser.level ?? 1;
   const userXp = currentUser.xp ?? 0;
 
-  const [screen, setScreen] = useState<'menu' | 'league_info' | 'searching' | 'opponent_found' | 'playing' | 'results' | 'friend_menu' | 'create_friend_room' | 'waiting_friend_room' | 'playing_friend' | 'results_friend'>('league_info');
+  const [screen, setScreen] = useState<'league_info' | 'searching' | 'opponent_found' | 'playing' | 'results' | 'friend_menu' | 'create_friend_room' | 'waiting_friend_room' | 'playing_friend' | 'results_friend'>('league_info');
   const [selectedMode, setSelectedMode] = useState<string>('all_mixed');
   
   // Search state
@@ -756,7 +756,7 @@ export default function RandomMatchGame({
       } else {
         // Room deleted, notify or go back
         if (screen === 'playing_friend' || screen === 'waiting_friend_room') {
-          setScreen('menu');
+          setScreen('league_info');
           alert("تم إنهاء الغرفة أو لم تعد متاحة.");
         }
       }
@@ -795,7 +795,7 @@ export default function RandomMatchGame({
       setFriendCountdown(remaining);
       if (remaining <= 0) {
         clearInterval(interval);
-        setScreen('menu');
+        setScreen('league_info');
         alert("انتهت صلاحية الغرفة المحددة بخمس دقائق.");
       }
     }, 1000);
@@ -1716,7 +1716,7 @@ export default function RandomMatchGame({
             </div>
 
             <button 
-              onClick={() => { setJoinError(''); setScreen('menu'); }}
+              onClick={() => { setJoinError(''); setScreen('league_info'); }}
               className="relative z-10 text-[10px] font-black text-slate-500 hover:text-white transition-all py-2 px-6 rounded-full border border-white/5 hover:bg-white/5"
             >
               العودة للقائمة الرئيسية
@@ -2615,7 +2615,7 @@ export default function RandomMatchGame({
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
-                    setScreen('menu');
+                    setScreen('league_info');
                   }}
                   className="bg-white/5 hover:bg-white/10 text-slate-300 h-14 rounded-2xl font-black text-[11px] transition-all cursor-pointer border border-white/10 shadow-xl"
                 >

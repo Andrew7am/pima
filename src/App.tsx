@@ -612,12 +612,20 @@ export default function App() {
 
   // Android hardware back.
   //
-  // Nothing listened for it. Capacitor's default with no 'backButton' listener
-  // is to go back in the WebView's history and, when there is none, close the
-  // app — and both history effects here bail out on native, so on the phone
-  // there was never any history to go back to. Pressing back inside a game
-  // therefore did not leave the game: it quit بيما. This walks the same trail
-  // the on-screen back arrow uses, and only exits from a root tab.
+  // Nothing listened for it, which made it a dead button — not, as is usually
+  // assumed, an app-quit. @capacitor/app registers an OnBackPressedCallback
+  // that is enabled unless disableBackButtonHandler is set (it is not, see
+  // capacitor.config.ts). With no JS listener its handler only runs
+  // `if (webView.canGoBack()) webView.goBack()` — and both history effects
+  // below return early on native, so nothing is ever pushed and canGoBack() is
+  // always false. The branch is skipped, the enabled callback reports the
+  // press handled, and it stops there. AppPlugin's finish() lives in exitApp()
+  // alone and is never reached from a back press.
+  //
+  // So a player inside a game pressed back and nothing happened at all; the
+  // on-screen رجوع arrow was the only way out. Registering a listener flips
+  // hasListeners() and routes the press here, walking the same trail the arrow
+  // uses. Exiting is now explicit, and only from a root tab.
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     let detach: (() => void) | undefined;
