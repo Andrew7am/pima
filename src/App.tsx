@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useLayoutEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { supportWhatsAppUrl } from './lib/support';
+import { pushTrail, popTrail } from './lib/screenTrail';
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
@@ -104,6 +105,17 @@ function ScreenFallback() {
     </div>
   );
 }
+
+type Screen =
+  | 'explore' | 'bookings' | 'messages' | 'map' | 'owner_panel' | 'admin_panel'
+  | 'meals' | 'support' | 'profile' | 'privacy'
+  | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse'
+  | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends'
+  | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub'
+  | 'random_match' | 'games_catalog' | 'rewards';
+
+/** The tabs of the app proper. Back from one of these is an exit, not a step. */
+const ROOT_SCREENS: Screen[] = ['explore', 'bookings', 'messages', 'map', 'profile', 'owner_panel', 'admin_panel'];
 
 export default function App() {
   const [users, setUsers] = useState<User[]>([]);
@@ -232,7 +244,7 @@ export default function App() {
   const prevHouseRef = useRef<string | null>(null);
 
   // --- UI Navigation States ---
-  const [activeScreen, setActiveScreen] = useState<'explore' | 'bookings' | 'messages' | 'map' | 'owner_panel' | 'admin_panel' | 'meals' | 'support' | 'profile' | 'privacy' | 'entertainment' | 'trivia' | 'whoami' | 'hymns' | 'fillverse' | 'multiplayer_lobby' | 'live_match' | 'achievements' | 'friends' | 'chat_thread' | 'leaderboard' | 'interactive_room' | 'conference_hub' | 'random_match' | 'games_catalog' | 'rewards'>('explore');
+  const [activeScreen, setActiveScreen] = useState<Screen>('explore');
   // Which sub-view the profile screen should open on. The home screen's
   // loyalty card sets 'rewards' so it lands on the programme instead of the
   // account hub; ProfileScreen clears it on mount, so every other route in
@@ -245,6 +257,37 @@ export default function App() {
   // lobby or from the random-match home, and sending everyone back to the
   // lobby would drop half of them on a screen they never opened.
   const [matchReturnScreen, setMatchReturnScreen] = useState<'multiplayer_lobby' | 'random_match'>('multiplayer_lobby');
+
+  // --- Back navigation ---
+  //
+  // Every game screen used to exit with a hardcoded setActiveScreen('entertainment'),
+  // so leaving one always dumped the player on the entertainment hub even when
+  // they had come from the games catalogue, the random-match home, or their
+  // profile. `matchReturnScreen` above was a one-off patch for the single case
+  // where that hurt most; this replaces the guesswork for all of them.
+  //
+  // The trail is recorded by watching activeScreen rather than by rewriting the
+  // ~50 setActiveScreen call sites, so no navigation can forget to register
+  // itself. goBack() walks it; the fallback is only used when there is no trail
+  // (deep link, reload, or the very first screen).
+  const screenTrail = useRef<Screen[]>([]);
+  const currentScreenRef = useRef<Screen>(activeScreen);
+  const poppingRef = useRef(false);
+
+  useEffect(() => {
+    if (currentScreenRef.current === activeScreen) return;
+    if (poppingRef.current) poppingRef.current = false;
+    else screenTrail.current = pushTrail(screenTrail.current, currentScreenRef.current, activeScreen);
+    currentScreenRef.current = activeScreen;
+  }, [activeScreen]);
+
+  const goBack = useCallback((fallback: Screen = 'entertainment') => {
+    const { next, trail } = popTrail(screenTrail.current, currentScreenRef.current, fallback);
+    screenTrail.current = trail;
+    if (next === currentScreenRef.current) return;
+    poppingRef.current = true;
+    setActiveScreen(next);
+  }, []);
   // Newly-unlocked achievement ids awaiting their celebration toast — lives
   // here (not inside a game screen) so an unlock survives navigating away
   // from the game that triggered it. See AchievementToast.tsx.
@@ -566,6 +609,30 @@ export default function App() {
     const main = document.querySelector('main');
     if (main) main.scrollTop = 0;
   }, [activeScreen]);
+
+  // Android hardware back.
+  //
+  // Nothing listened for it. Capacitor's default with no 'backButton' listener
+  // is to go back in the WebView's history and, when there is none, close the
+  // app — and both history effects here bail out on native, so on the phone
+  // there was never any history to go back to. Pressing back inside a game
+  // therefore did not leave the game: it quit بيما. This walks the same trail
+  // the on-screen back arrow uses, and only exits from a root tab.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let detach: (() => void) | undefined;
+    let dead = false;
+    CapacitorApp.addListener('backButton', () => {
+      if (selectedHouse) { setSelectedHouse(null); return; }
+      if (screenTrail.current.length) { goBack(); return; }
+      if (!ROOT_SCREENS.includes(currentScreenRef.current)) { setActiveScreen('explore'); return; }
+      CapacitorApp.exitApp();
+    }).then((handle) => {
+      if (dead) handle.remove();
+      else detach = () => handle.remove();
+    });
+    return () => { dead = true; detach?.(); };
+  }, [selectedHouse, goBack]);
 
   // Browser back/forward: resolve the house from the URL and open/close the
   // detail view to match, so history navigation feels native.
@@ -2007,7 +2074,7 @@ export default function App() {
               <div className="max-w-4xl mx-auto px-4 pt-5">
                 <button
                   type="button"
-                  onClick={() => setActiveScreen('entertainment')}
+                  onClick={() => goBack('entertainment')}
                   className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
@@ -2030,7 +2097,7 @@ export default function App() {
                   points: currentUser.points,
                   churchName: currentUser.churchName,
                 }}
-                onBack={() => setActiveScreen('entertainment')}
+                onBack={() => goBack('entertainment')}
                 onUpdateUser={(u: { xp?: number; points?: number }) =>
                   setCurrentUser((prev) =>
                     prev ? { ...prev, xp: u.xp ?? prev.xp, points: u.points ?? prev.points } : prev
@@ -2045,7 +2112,7 @@ export default function App() {
               <RandomMatchGame
                 currentUser={currentUser}
                 onUpdateUser={(u) => setCurrentUser(u)}
-                onClose={() => setActiveScreen('entertainment')}
+                onClose={() => goBack('entertainment')}
                 onOpenRewards={() => setActiveScreen('rewards')}
                 onEnterMatch={(roomId) => { setActiveRoomId(roomId); setMatchReturnScreen('random_match'); setActiveScreen('live_match'); }}
               />
@@ -2055,7 +2122,7 @@ export default function App() {
           {activeScreen === 'games_catalog' && (
             <GamesCatalog
               currentUser={currentUser}
-              onBack={() => setActiveScreen('entertainment')}
+              onBack={() => goBack('entertainment')}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
               onAchievementsUnlocked={handleAchievementsUnlocked}
             />
@@ -2064,7 +2131,7 @@ export default function App() {
           {activeScreen === 'rewards' && (
             <RewardsScreen
               currentUser={currentUser}
-              onBack={() => setActiveScreen('entertainment')}
+              onBack={() => goBack('entertainment')}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
               onAchievementsUnlocked={handleAchievementsUnlocked}
             />
@@ -2081,7 +2148,7 @@ export default function App() {
                 }}
                 conference={conference}
                 onUpdateConference={(updated) => setConference(updated)}
-                onBack={() => setActiveScreen('entertainment')}
+                onBack={() => goBack('entertainment')}
                 onUpdateUser={(u: { xp?: number; points?: number }) =>
                   setCurrentUser((prev) =>
                     prev ? { ...prev, xp: u.xp ?? prev.xp, points: u.points ?? prev.points } : prev
@@ -2094,7 +2161,7 @@ export default function App() {
           {activeScreen === 'trivia' && (
             <TriviaGame
               currentUser={currentUser}
-              onBack={() => setActiveScreen('entertainment')}
+              onBack={() => goBack('entertainment')}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
               onAchievementsUnlocked={handleAchievementsUnlocked}
             />
@@ -2103,7 +2170,7 @@ export default function App() {
           {activeScreen === 'whoami' && (
             <WhoAmIGame
               currentUser={currentUser}
-              onBack={() => setActiveScreen('entertainment')}
+              onBack={() => goBack('entertainment')}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
               onAchievementsUnlocked={handleAchievementsUnlocked}
             />
@@ -2112,7 +2179,7 @@ export default function App() {
           {activeScreen === 'hymns' && (
             <HymnsGame
               currentUser={currentUser}
-              onBack={() => setActiveScreen('entertainment')}
+              onBack={() => goBack('entertainment')}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
               onAchievementsUnlocked={handleAchievementsUnlocked}
             />
@@ -2121,7 +2188,7 @@ export default function App() {
           {activeScreen === 'fillverse' && (
             <FillVerseGame
               currentUser={currentUser}
-              onBack={() => setActiveScreen('entertainment')}
+              onBack={() => goBack('entertainment')}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
               onAchievementsUnlocked={handleAchievementsUnlocked}
             />
@@ -2130,7 +2197,7 @@ export default function App() {
           {activeScreen === 'multiplayer_lobby' && (
             <MultiplayerLobby
               currentUser={currentUser}
-              onBack={() => setActiveScreen('entertainment')}
+              onBack={() => goBack('entertainment')}
               onEnterMatch={(roomId) => { setActiveRoomId(roomId); setMatchReturnScreen('multiplayer_lobby'); setActiveScreen('live_match'); }}
             />
           )}
@@ -2139,7 +2206,7 @@ export default function App() {
             <LiveMatchGame
               currentUser={currentUser}
               roomId={activeRoomId}
-              onBack={() => { setActiveRoomId(null); setActiveScreen(matchReturnScreen); }}
+              onBack={() => { setActiveRoomId(null); goBack(matchReturnScreen); }}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
               onAchievementsUnlocked={handleAchievementsUnlocked}
             />
@@ -2148,14 +2215,14 @@ export default function App() {
           {activeScreen === 'achievements' && (
             <AchievementsScreen
               currentUser={currentUser}
-              onBack={() => setActiveScreen('entertainment')}
+              onBack={() => goBack('entertainment')}
             />
           )}
 
           {activeScreen === 'friends' && (
             <FriendsScreen
               currentUser={currentUser}
-              onBack={() => setActiveScreen('entertainment')}
+              onBack={() => goBack('entertainment')}
               onOpenChat={(friendId, friendName) => {
                 setActiveChatFriend({ id: friendId, name: friendName });
                 setActiveScreen('chat_thread');
@@ -2168,7 +2235,7 @@ export default function App() {
               currentUser={currentUser}
               friendId={activeChatFriend.id}
               friendName={activeChatFriend.name}
-              onBack={() => { setActiveChatFriend(null); setActiveScreen('friends'); }}
+              onBack={() => { setActiveChatFriend(null); goBack('friends'); }}
             />
           )}
         </>
