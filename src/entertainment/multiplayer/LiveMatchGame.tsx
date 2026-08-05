@@ -3,10 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { User } from '../../types';
 import { ChevronRight, Check, X as XIcon, Trophy, Users as UsersIcon, Loader2, Home, RotateCcw, Copy, Lightbulb, UserPlus, Zap, Coins } from 'lucide-react';
-import {
-  GameRoom, loadRoom, subscribeToRoom, submitAnswer, finalizeMatch, FinalizeResult,
-  cancelRoom, claimAbandonedMatch, touchWaitingRoom,
-} from '../multiplayer';
+import { type GameRoom, type FinalizeResult } from '../multiplayer';
+import { practiceDriver, supabaseDriver, type MatchDriver } from './matchDriver';
 import { getLeague, leagueProgress } from '../leagues';
 import { checkAchievements } from '../../lib/db';
 import RoomChat from './RoomChat';
@@ -19,6 +17,8 @@ import { sendFriendRequest } from '../social';
 interface LiveMatchGameProps {
   currentUser: User;
   roomId: string;
+  /** Play a bot locally instead of a real room. Nothing is at stake. */
+  practice?: boolean;
   onBack: () => void;
   onUserUpdated: (patch: Partial<User>) => void;
   onAchievementsUnlocked?: (ids: string[]) => void;
@@ -89,7 +89,14 @@ function triggerHaptic(type: 'light' | 'medium' | 'success' | 'error' | 'warning
 // Runs a 1v1 realtime match. Subscribes to the room row via
 // Supabase Realtime; every state change (opponent joining, opponent
 // answering, both answered → advance) flows through as an UPDATE.
-export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdated, onAchievementsUnlocked }: LiveMatchGameProps) {
+export default function LiveMatchGame({ currentUser, roomId, practice = false, onBack, onUserUpdated, onAchievementsUnlocked }: LiveMatchGameProps) {
+  // Memoised because the practice driver HOLDS the match — rebuilding it
+  // mid-game would reset the board and the bot's timers.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const driver: MatchDriver = React.useMemo(
+    () => (practice ? practiceDriver(currentUser) : supabaseDriver(roomId)),
+    [practice, roomId],
+  );
   const [room, setRoom] = useState<GameRoom | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -211,7 +218,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
 
     setSubmitting(true);
     setAnswerError(null);
-    const result = await submitAnswer(roomId, qIdx, i);
+    const result = await driver.submitAnswer(qIdx, i);
     setSubmitting(false);
     if (result.ok === false) {
       const map: Record<string, string> = {
@@ -301,12 +308,11 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     let cancelled = false;
     let unsub: (() => void) | null = null;
     (async () => {
-      const r = await loadRoom(roomId);
+      const r = await driver.loadRoom();
       if (cancelled) return;
       if (r) setRoom(r);
       setLoading(false);
-      const handle = subscribeToRoom(
-        roomId,
+      const handle = driver.subscribe(
         (updated) => { setRoom(updated); },
         (status) => { setLive(status === 'SUBSCRIBED'); },
       );
@@ -314,7 +320,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
       unsub = handle;
     })();
     return () => { cancelled = true; if (unsub) unsub(); };
-  }, [roomId]);
+  }, [driver]);
 
   // Jump straight to wherever the server is the first time the room lands —
   // rejoining a match in progress must not replay every reveal since question
@@ -373,7 +379,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
    * only ever adds a key, and nothing removes one.
    */
   const refreshRoom = useCallback(async () => {
-    const r = await loadRoom(roomId);
+    const r = await driver.loadRoom();
     if (!r) return;
     setRoom((prev) => {
       if (!prev) return r;
@@ -398,7 +404,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             : prev.updated_at,
       };
     });
-  }, [roomId]);
+  }, [driver]);
 
   // Coming back to the app.
   //
@@ -452,8 +458,8 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   // in a two-person queue, who could never meet.
   useEffect(() => {
     if (!room || room.status !== 'waiting' || !isHost) return;
-    void touchWaitingRoom(roomId);
-    const t = setInterval(() => { void touchWaitingRoom(roomId); }, WAITING_HEARTBEAT_MS);
+    void driver.touchWaiting();
+    const t = setInterval(() => { void driver.touchWaiting(); }, WAITING_HEARTBEAT_MS);
     return () => clearInterval(t);
   }, [room?.status, isHost, roomId]);
 
@@ -571,7 +577,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
 
     let cancelled = false;
     setFinalizing(true);
-    finalizeMatch(roomId).then(async (result) => {
+    driver.finalize().then(async (result) => {
       if (cancelled) return;
       if (result) {
         finalizeAttemptsRef.current = 0;
@@ -592,8 +598,12 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
           gameCoins: finishedHost ? result.hostNewCoins : result.guestNewCoins,
           ...(newLevel > 0 ? { level: newLevel } : {}),
         });
-        const newlyUnlocked = await checkAchievements();
-        if (newlyUnlocked.length > 0) onAchievementsUnlocked?.(newlyUnlocked);
+        // Not in practice: nothing was earned, so nothing can be unlocked,
+        // and asking the server would be a claim that a bot match counted.
+        if (!driver.isPractice) {
+          const newlyUnlocked = await checkAchievements();
+          if (newlyUnlocked.length > 0) onAchievementsUnlocked?.(newlyUnlocked);
+        }
         return;
       }
       // Failed. Back off, and give up rather than spin — the player gets a
@@ -698,7 +708,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   const handleClaim = async () => {
     setClaiming(true);
     setClaimError(null);
-    const res = await claimAbandonedMatch(roomId);
+    const res = await driver.claimAbandoned();
     setClaiming(false);
     // `=== false`, matching submitAnswer's call site above: this project does
     // not set `strict`, and without it truthiness alone does not narrow the
@@ -734,8 +744,8 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   useEffect(() => { roomStatusRef.current = room?.status ?? null; }, [room?.status]);
   useEffect(() => { isHostRef.current = isHost; }, [isHost]);
   useEffect(() => () => {
-    if (roomStatusRef.current === 'waiting' && isHostRef.current) void cancelRoom(roomId);
-  }, [roomId]);
+    if (roomStatusRef.current === 'waiting' && isHostRef.current) void driver.cancel();
+  }, [driver]);
 
   // Confetti fires once, only for the winner, the moment the outcome lands.
   useEffect(() => {
@@ -912,6 +922,17 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             {' — '}
             <span className="text-slate-500">{oppName}</span>
           </p>
+
+          {/* A practice match pays nothing, and says so.
+              Without this the summary would show a rating that did not move
+              and no reward tiles, which reads as a bug rather than as the
+              rule. Saying it plainly is also what keeps the bot honest. */}
+          {driver.isPractice && (
+            <div className="bg-white/5 border border-white/15 rounded-2xl p-3 text-center">
+              <p className="text-[11px] font-black text-slate-300">🤖 تدريب مع بوت</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">مفيش تقييم ولا خبرة ولا عملات — دي للتجربة بس.</p>
+            </div>
+          )}
 
           {/* What the match actually paid.
               finalize_match has always awarded XP and coins and swept

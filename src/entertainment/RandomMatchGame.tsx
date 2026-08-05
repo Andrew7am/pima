@@ -44,6 +44,8 @@ interface RandomMatchGameProps {
   /** Hands a real matchmade room to the live match screen. Required — there
    *  is no longer a scripted fallback to degrade to. */
   onEnterMatch: (roomId: string) => void;
+  /** Start a local match against a bot. Nothing is at stake. */
+  onOpenPractice?: () => void;
 }
 
 
@@ -226,7 +228,8 @@ export default function RandomMatchGame({
   isSoundEnabled = true,
   isMusicEnabled = true,
   onOpenRewards,
-  onEnterMatch
+  onEnterMatch,
+  onOpenPractice
 }: RandomMatchGameProps) {
   // Sync background music with prop
   useEffect(() => {
@@ -1142,6 +1145,23 @@ export default function RandomMatchGame({
                   </div>
                 ))}
               </div>
+
+              {/* Practice.
+                  Says what it is on the button, so it can never be taken for
+                  matchmaking — which is exactly what the seven scripted
+                  «opponents» removed from this file did wrong. Nothing is at
+                  stake and the button says that too. */}
+              {onOpenPractice && (
+                <button
+                  type="button"
+                  onClick={onOpenPractice}
+                  className="mx-auto mb-4 flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 rounded-2xl px-5 py-2.5 transition-colors"
+                >
+                  <span className="text-base">🤖</span>
+                  <span className="text-[11px] font-black">تدريب مع بوت</span>
+                  <span className="text-[9px] font-bold text-slate-500">— من غير نقط ولا تقييم</span>
+                </button>
+              )}
 
               {joinError && (
                 <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="bg-rose-950/40 border border-rose-500/30 text-rose-300 text-[10px] font-bold p-2.5 rounded-xl max-w-sm mx-auto text-center mb-4">

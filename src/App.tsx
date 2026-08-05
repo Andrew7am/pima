@@ -54,6 +54,7 @@ const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
 import PrivacyPolicy from './components/PrivacyPolicy';
 const EntertainmentHome = lazy(() => import('./entertainment/EntertainmentHome'));
 import type { Section as EntertainmentSection } from './entertainment/EntertainmentHome';
+import { PRACTICE_ROOM_ID } from './entertainment/multiplayer/matchDriver';
 
 /**
  * Screens that live inside the entertainment tree.
@@ -2159,6 +2160,7 @@ export default function App() {
                 onClose={() => goBack('entertainment')}
                 onOpenRewards={() => setActiveScreen('rewards')}
                 onEnterMatch={(roomId) => { setActiveRoomId(roomId); setMatchReturnScreen('random_match'); setActiveScreen('live_match'); }}
+                onOpenPractice={() => { setActiveRoomId(PRACTICE_ROOM_ID); setMatchReturnScreen('random_match'); setActiveScreen('live_match'); }}
               />
             </div>
           )}
@@ -2250,6 +2252,7 @@ export default function App() {
             <LiveMatchGame
               currentUser={currentUser}
               roomId={activeRoomId}
+              practice={activeRoomId === PRACTICE_ROOM_ID}
               onBack={() => { setActiveRoomId(null); goBack(matchReturnScreen); }}
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
               onAchievementsUnlocked={handleAchievementsUnlocked}
