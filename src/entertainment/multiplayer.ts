@@ -158,6 +158,20 @@ export async function cancelRoom(roomId: string): Promise<boolean> {
 }
 
 /**
+ * Say the host is still on the waiting screen (migration 101).
+ *
+ * 099's sweep decides a room is abandoned from updated_at, and nothing bumps
+ * that while a room waits — so without this a patient host gets their own
+ * room cancelled by the next person to search. Quiet on failure: it runs on a
+ * timer and a missed beat is harmless.
+ */
+export async function touchWaitingRoom(roomId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('touch_waiting_room', { p_room_id: roomId });
+  if (error) { console.warn('touchWaitingRoom:', error); return false; }
+  return data === true;
+}
+
+/**
  * Settle a match whose opponent has gone silent (migration 099).
  *
  * Returns the same shape as finalizeMatch so the summary screen can render

@@ -5,7 +5,7 @@ import { User } from '../../types';
 import { ChevronRight, Check, X as XIcon, Trophy, Users as UsersIcon, Loader2, Home, RotateCcw, Copy, Lightbulb, UserPlus, Zap, Coins } from 'lucide-react';
 import {
   GameRoom, loadRoom, subscribeToRoom, submitAnswer, finalizeMatch, FinalizeResult,
-  cancelRoom, claimAbandonedMatch,
+  cancelRoom, claimAbandonedMatch, touchWaitingRoom,
 } from '../multiplayer';
 import { getLeague, leagueProgress } from '../leagues';
 import { checkAchievements } from '../../lib/db';
@@ -33,6 +33,8 @@ const FINALIZE_BACKOFF_MS = 1500;
 const ABANDON_SECONDS = 45;
 /** How often to re-read the room while the realtime channel is down. */
 const RECONNECT_POLL_MS = 5000;
+/** Well inside 099's two-minute stale cutoff, so a beat can be missed. */
+const WAITING_HEARTBEAT_MS = 30000;
 /** How long the answered question stays up so the reveal can be read. */
 const REVEAL_MS = 2500;
 
@@ -372,13 +374,33 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   // that is exactly the moment it costs the most. The player has answered,
   // the opponent may well have answered too, and the only thing standing
   // between them and the rest of the match is an UPDATE that is never coming.
+  // Also polls while the room is still WAITING, channel up or not. That
+  // moment depends on a single UPDATE — the one that says a guest arrived —
+  // and if it is missed the host sits on «في انتظار الخصم» while their
+  // opponent is already playing. Which is precisely the symptom that was
+  // reported.
   useEffect(() => {
     if (!room || room.status === 'finished' || room.status === 'cancelled') return;
     const waitingOnOpponent = iAnswered && !bothAnswered;
-    if (live && !waitingOnOpponent) return;
+    const waitingToStart = room.status === 'waiting';
+    if (live && !waitingOnOpponent && !waitingToStart) return;
     const t = setInterval(() => { void refreshRoom(); }, RECONNECT_POLL_MS);
     return () => clearInterval(t);
   }, [live, room?.status, iAnswered, bothAnswered, refreshRoom]);
+
+  // Tell the server the host is still here (migration 101).
+  //
+  // 099's sweep decides a room is abandoned from updated_at, and nothing
+  // bumps that while a room waits — so a host patient enough to sit past the
+  // cutoff had their own room cancelled by the next person to search, who
+  // then found nothing and opened a room of their own. Two people searching,
+  // in a two-person queue, who could never meet.
+  useEffect(() => {
+    if (!room || room.status !== 'waiting' || !isHost) return;
+    void touchWaitingRoom(roomId);
+    const t = setInterval(() => { void touchWaitingRoom(roomId); }, WAITING_HEARTBEAT_MS);
+    return () => clearInterval(t);
+  }, [room?.status, isHost, roomId]);
 
   // Per-question resets — clears the previous question's transient UI
   // state whenever current_question moves.
@@ -970,6 +992,36 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
           >
             <Home className="w-4 h-4" />
             خروج
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── CANCELLED ─────────────────────────────────────────────────
+  // 'cancelled' has been a legal status since 036 and nothing rendered it, so
+  // it fell through to ACTIVE GAMEPLAY and showed a live-looking board for a
+  // room that no longer exists. Reachable since 099 started actually setting
+  // it — by the other player leaving a room that never filled, or by the
+  // stale sweep.
+  if (room.status === 'cancelled' && !outcome) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
+        <div className="max-w-sm mx-auto px-6 text-center space-y-4" dir="rtl">
+          <div className="mx-auto w-16 h-16 rounded-full bg-slate-500/10 border border-slate-500/30 flex items-center justify-center">
+            <UsersIcon className="w-7 h-7 text-slate-400" />
+          </div>
+          <h2 className="text-lg font-black text-white">الغرفة اتقفلت</h2>
+          <p className="text-[11.5px] text-slate-400 leading-relaxed">
+            المباراة دي مبقتش متاحة. ارجع ودوّر على خصم تاني.
+          </p>
+          <button
+            type="button"
+            onClick={onBack}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-l from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 text-white text-sm font-black py-3 rounded-2xl shadow-lg transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" />
+            رجوع — دوّر من جديد
           </button>
         </div>
       </div>
