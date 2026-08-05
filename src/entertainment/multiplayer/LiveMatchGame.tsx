@@ -10,6 +10,7 @@ import { getLeague } from '../leagues';
 import { checkAchievements } from '../../lib/db';
 import RoomChat from './RoomChat';
 import AssistBar, { AssistId } from './AssistBar';
+import { MATCH_STAGES, MatchStage, stageOf, startsStage } from './matchQuestions';
 
 interface LiveMatchGameProps {
   currentUser: User;
@@ -20,6 +21,21 @@ interface LiveMatchGameProps {
 }
 
 const QUESTION_SECONDS = 20;
+/** How long a stage banner holds the screen, with the clock frozen. */
+const STAGE_INTRO_MS = 2000;
+
+// Written out rather than interpolated — Tailwind only ships classes it can
+// see as literals, so `bg-${accent}-500/15` would compile to nothing.
+const STAGE_CHIP: Record<MatchStage['accent'], string> = {
+  amber: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+  emerald: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+  sky: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
+};
+const STAGE_PANEL: Record<MatchStage['accent'], string> = {
+  amber: 'from-amber-500/20 to-amber-700/5 border-amber-500/40',
+  emerald: 'from-emerald-500/20 to-emerald-700/5 border-emerald-500/40',
+  sky: 'from-sky-500/20 to-sky-700/5 border-sky-500/40',
+};
 
 // Web Vibration API only — no sound. See the port plan: the original
 // prototype's sound effects were unlicensed third-party demo URLs, not
@@ -59,6 +75,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   const [retryFlash, setRetryFlash] = useState(false);
   const [playTimer, setPlayTimer] = useState(QUESTION_SECONDS);
   const [showVsIntro, setShowVsIntro] = useState(false);
+  const [stageIntro, setStageIntro] = useState<MatchStage | null>(null);
 
   const isTimerFrozenRef = useRef(false);
   const prevStatusRef = useRef<string | null>(null);
@@ -211,10 +228,43 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     if (prevStatus === 'waiting' && room.status === 'active') {
       setShowVsIntro(true);
       triggerHaptic('medium');
-      const t = setTimeout(() => setShowVsIntro(false), 2500);
+      // Hold the clock. The countdown effect above starts the moment status
+      // flips to 'active', and this splash covers the screen for 2.5s — but
+      // only for the host, who is the one who sat on 'waiting'. The guest
+      // arrives with the room already 'active', so prevStatusRef is still
+      // null for them and they never see it. The host was quietly losing
+      // 2.5 seconds of question one, every single match.
+      isTimerFrozenRef.current = true;
+      const t = setTimeout(() => {
+        setShowVsIntro(false);
+        isTimerFrozenRef.current = false;
+      }, 2500);
       return () => clearTimeout(t);
     }
   }, [room?.status]);
+
+  // A stage begins. Both clients read the same questions array off the room,
+  // so the boundary lands on the same index for both without any syncing.
+  //
+  // Declared after the countdown effect on purpose: that one resets
+  // isTimerFrozenRef to false whenever current_question changes, which is the
+  // same render this fires on. Running second is what makes the freeze stick.
+  useEffect(() => {
+    if (!room || room.status !== 'active') return;
+    // Index 0 is not announced — the VS splash already opens the match, and
+    // the stage is named in the header chip from the first frame.
+    if (qIdx === 0 || !startsStage(room.questions, qIdx)) return;
+    const stage = stageOf(room.questions, qIdx);
+    if (!stage) return;
+    setStageIntro(stage);
+    triggerHaptic('light');
+    isTimerFrozenRef.current = true;
+    const t = setTimeout(() => {
+      setStageIntro(null);
+      isTimerFrozenRef.current = false;
+    }, STAGE_INTRO_MS);
+    return () => clearTimeout(t);
+  }, [room?.current_question, room?.status]);
 
   // Trigger finalize automatically when both players finished all questions
   useEffect(() => {
@@ -492,6 +542,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   // ── ACTIVE GAMEPLAY ───────────────────────────────────────────
   const timerPct = (playTimer / QUESTION_SECONDS) * 100;
   const timerLow = playTimer <= 5;
+  const currentStage = stageOf(room.questions, qIdx);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
@@ -507,6 +558,14 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             <span>خروج</span>
           </button>
           <div className="flex items-center gap-2">
+            {/* Names the subject from the first frame, so stage one needs no
+                banner of its own on top of the VS splash. Absent on themed
+                lobby matches and on rooms made before stages existed. */}
+            {currentStage && (
+              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${STAGE_CHIP[currentStage.accent]}`}>
+                {currentStage.label}
+              </span>
+            )}
             {!iAnswered && (
               <span className={`text-[11px] font-black tabular-nums px-2 py-0.5 rounded-full ${timerLow ? 'bg-rose-500/20 text-rose-300 animate-pulse' : 'bg-white/5 text-slate-400'}`}>
                 {playTimer}s
@@ -551,8 +610,28 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
           </div>
         )}
 
-        <AnimatePresence mode="wait">
+        {/* A stage begins. This takes the question card's place rather than
+            covering the screen, so the exit, the scores and the counter all
+            stay put — and the clock is frozen underneath it (see the effect
+            that sets stageIntro), so the banner costs nobody any time. */}
+        {stageIntro && (
           <motion.div
+            key={`stage-${stageIntro.id}`}
+            initial={{ opacity: 0, scale: 0.94 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', damping: 18 }}
+            className={`bg-gradient-to-br border rounded-3xl p-6 text-center space-y-2 shadow-xl min-h-[110px] flex flex-col items-center justify-center ${STAGE_PANEL[stageIntro.accent]}`}
+          >
+            <p className="text-[10px] font-black text-slate-400 tracking-widest">
+              المرحلة {MATCH_STAGES.findIndex((s) => s.id === stageIntro.id) + 1} من {MATCH_STAGES.length}
+            </p>
+            <h3 className="text-xl font-black text-white">{stageIntro.label}</h3>
+            <p className="text-[11px] text-slate-300 leading-relaxed">{stageIntro.hint}</p>
+          </motion.div>
+        )}
+
+        <AnimatePresence mode="wait">
+          {!stageIntro && <motion.div
             key={qIdx}
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
@@ -610,10 +689,12 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
                 );
               })}
             </div>
-          </motion.div>
+          </motion.div>}
         </AnimatePresence>
 
-        {!showFeedback && (
+        {/* Not during a stage banner — there is no question on screen to
+            spend a 50/50 or a hint on, and spending one would be wasted. */}
+        {!showFeedback && !stageIntro && (
           <AssistBar usedAssists={usedAssists} onUseAssist={handleUseAssist} userLevel={currentUser.level ?? 1} />
         )}
 

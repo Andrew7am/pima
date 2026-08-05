@@ -13,7 +13,21 @@ export interface RoomQuestion {
   options: string[];
   correctIdx: number;
   explanation: string;
+  /**
+   * Which stage of a random match this question belongs to — see
+   * MATCH_STAGES in multiplayer/matchQuestions.ts.
+   *
+   * Optional because the column is plain JSONB that the server stores
+   * verbatim and only ever reads `correctIdx` out of, so rooms created
+   * before stages existed are still perfectly playable; they simply have no
+   * stage to show. Themed lobby modes do not set it either — the whole room
+   * is one subject there, so a stage label would say nothing.
+   */
+  stage?: MatchStageId;
 }
+
+/** The three subjects a random match walks through, in order. */
+export type MatchStageId = 'whoami' | 'fillverse' | 'bible';
 
 // Shape matches the migration-036 columns; snake_case straight from the row.
 export interface GameRoom {

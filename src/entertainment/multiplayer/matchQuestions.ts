@@ -1,4 +1,4 @@
-import type { GameMode, RoomQuestion } from '../multiplayer';
+import type { GameMode, RoomQuestion, MatchStageId } from '../multiplayer';
 import { BASE_TRIVIA_QUESTIONS } from '../data/triviaData';
 import { BASE_HYMN_QUESTIONS } from '../data/hymnsData';
 import { RAW_VERSES } from '../data/versesData';
@@ -28,23 +28,125 @@ export const MATCH_LENGTH = 5;
 const HYMN_CATEGORY = 'الألحان والقبطي';
 
 /**
- * Questions for a random match — every category, not one.
+ * Questions for a random match — three stages of two, in a fixed order.
  *
- * The lobby's modes are a choice the player made, so those stay themed. A
- * «مباراة عشوائية» is not a choice, and filtering it to the trivia subset was
- * throwing away more than half the pool: verses, saints and hymns all sat out
- * of a match that never promised to be about anything in particular.
+ * The lobby's modes are a choice the player made, so those stay themed and
+ * unstaged. A «مباراة عشوائية» is not a choice: it used to be five questions
+ * shuffled out of the whole pool, which meant the variety was real but the
+ * player had no way to see it — a «من أنا؟» clue and a fill-in-the-verse
+ * looked the same and arrived back to back.
+ *
+ * Both players read the same `questions` array off the room, so the stage
+ * boundaries land on the same index for both of them without any extra
+ * syncing.
  *
  * The room is still created under the 'trivia' game mode, because that string
  * is the matchmaking queue key — splitting random searchers across four
  * queues would leave people waiting alone.
  */
 export function buildRandomMatchQuestions(): RoomQuestion[] {
-  const pool = initializeQuestionPool();
-  if (pool.length >= MATCH_LENGTH) {
-    return shuffle(pool).slice(0, MATCH_LENGTH).map(toRoomQuestion);
+  const out: RoomQuestion[] = [];
+  for (const stage of MATCH_STAGES) {
+    const built = STAGE_BUILDERS[stage.id](QUESTIONS_PER_STAGE).map((q) => ({ ...q, stage: stage.id }));
+    out.push(...built);
   }
-  return buildQuestions('trivia');
+  // A source that comes up short must not shorten the match: both players
+  // have to answer every question before finalize_match will settle, and the
+  // RPCs reject anything under three. Top up from the general pool, which is
+  // the last stage, so the stages stay contiguous.
+  if (out.length < RANDOM_MATCH_LENGTH) {
+    const missing = RANDOM_MATCH_LENGTH - out.length;
+    out.push(...biblePoolQuestions(missing).map((q) => ({ ...q, stage: 'bible' as const })));
+  }
+  return out;
+}
+
+/**
+ * The stages a random match walks through, in order.
+ *
+ * A match used to be five questions drawn from every category at once. The
+ * variety was real but invisible — a «من أنا؟» clue and a fill-in-the-verse
+ * arrived looking identical, one after another, so the whole thing read as
+ * one flat quiz. Grouping them into named stages is the same content with
+ * somewhere to stand.
+ *
+ * Order is deliberate: the clue-based stage opens because it is the easiest
+ * to grasp cold, and the general pool closes because it is the widest.
+ */
+export const MATCH_STAGES: MatchStage[] = [
+  {
+    id: 'whoami',
+    label: 'من أنا؟',
+    hint: 'تلميح عن شخصية من الكتاب — اختار مين',
+    accent: 'amber',
+  },
+  {
+    id: 'fillverse',
+    label: 'كمل الآية',
+    hint: 'آية ناقصة كلمة — اختار الكلمة الصح',
+    accent: 'emerald',
+  },
+  {
+    id: 'bible',
+    label: 'معلومات كتابية',
+    hint: 'أسئلة عامة من الكتاب والقديسين والطقس',
+    accent: 'sky',
+  },
+];
+
+export interface MatchStage {
+  id: MatchStageId;
+  label: string;
+  hint: string;
+  /** Tailwind colour family; the match screen builds its classes from this. */
+  accent: 'amber' | 'emerald' | 'sky';
+}
+
+export const QUESTIONS_PER_STAGE = 2;
+export const RANDOM_MATCH_LENGTH = MATCH_STAGES.length * QUESTIONS_PER_STAGE;
+
+/** Where a stage's questions come from. */
+const STAGE_BUILDERS: Record<MatchStageId, (n: number) => RoomQuestion[]> = {
+  whoami: whoAmIQuestions,
+  fillverse: fillVerseQuestions,
+  bible: biblePoolQuestions,
+};
+
+/** Look up the stage a question index sits in, for the match screen. */
+export function stageOf(questions: RoomQuestion[], idx: number): MatchStage | null {
+  const id = questions[idx]?.stage;
+  return id ? MATCH_STAGES.find((s) => s.id === id) ?? null : null;
+}
+
+/** True when `idx` is the first question of its stage — where a banner goes. */
+export function startsStage(questions: RoomQuestion[], idx: number): boolean {
+  const here = questions[idx]?.stage;
+  if (!here) return false;
+  return idx === 0 || questions[idx - 1]?.stage !== here;
+}
+
+function whoAmIQuestions(n: number): RoomQuestion[] {
+  const pool = [...RAW_CHARACTERS, ...RAW_CHARACTERS_NT];
+  const names = pool.map((c) => c.name);
+  return shuffle(pool).slice(0, n).map((c) => {
+    const distractors = shuffle(names.filter((x) => x !== c.name)).slice(0, 3);
+    const options = shuffle([c.name, ...distractors]);
+    // First clue only — in a race, revealing more to one side is not fair.
+    return { question: c.clues[0], options, correctIdx: options.indexOf(c.name), explanation: c.explanation };
+  });
+}
+
+function fillVerseQuestions(n: number): RoomQuestion[] {
+  const allWords = Array.from(new Set(RAW_VERSES.map((v) => v.word)));
+  return shuffle(RAW_VERSES).slice(0, n).map((v) => {
+    const distractors = shuffle(allWords.filter((w) => w !== v.word)).slice(0, 3);
+    const options = shuffle([v.word, ...distractors]);
+    return { question: v.verse, options, correctIdx: options.indexOf(v.word), explanation: v.explanation };
+  });
+}
+
+function biblePoolQuestions(n: number): RoomQuestion[] {
+  return shuffle(initializeQuestionPool()).slice(0, n).map(toRoomQuestion);
 }
 
 /** SmartQuestion carries extra fields; a room only needs these four. */
