@@ -130,9 +130,17 @@ export const initializeQuestionPool = (): SmartQuestion[] => {
   RAW_VERSES.forEach((v) => {
     const id = generateHashId(v.verse);
 
-    // Dynamic choice generation for verses
-    const wrongWords = RAW_VERSES.filter((rv) => rv.word !== v.word)
-      .map((rv) => rv.word)
+    // Dynamic choice generation for verses.
+    //
+    // Deduplicated first. This drew from the VERSES rather than from the
+    // distinct words, and 105 verses carry only 102 distinct words — so a
+    // word appearing in two verses could be picked twice and the question
+    // would offer the same option twice. When the repeated word happened to
+    // be the answer's twin, a player reading the right text off the button
+    // could still be marked wrong, because submit_answer compares the index
+    // and not the string.
+    const wrongWords = Array.from(new Set(RAW_VERSES.map((rv) => rv.word)))
+      .filter((w) => w !== v.word)
       .sort(() => Math.random() - 0.5)
       .slice(0, 3);
     const options = [v.word, ...wrongWords].sort(() => Math.random() - 0.5);

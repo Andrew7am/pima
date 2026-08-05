@@ -94,7 +94,16 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   const [showVsIntro, setShowVsIntro] = useState(false);
   const [stageIntro, setStageIntro] = useState<MatchStage | null>(null);
 
-  const isTimerFrozenRef = useRef(false);
+  // A SET of active freezes, not a boolean. Two things can hold the clock
+  // at once — the stage banner and the extra_time assist — and with a
+  // boolean whichever timeout fired first released it for both, so the
+  // 20s clock ran underneath a banner that had removed the question, the
+  // options and the assist bar from the screen. Each holder keeps its own
+  // token and only ever releases that.
+  const freezesRef = useRef<Set<number>>(new Set());
+  const freezeSeqRef = useRef(0);
+  const freezeClock = () => { const id = ++freezeSeqRef.current; freezesRef.current.add(id); return id; };
+  const releaseClock = (id: number) => { freezesRef.current.delete(id); };
   const prevStatusRef = useRef<string | null>(null);
   const confettiFiredRef = useRef(false);
   const finalizeAttemptsRef = useRef(0);
@@ -179,12 +188,29 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     // realtime round-trip — the opponent's side still updates via
     // subscribeToRoom, but a delayed/dropped realtime event shouldn't
     // make our own click look like it did nothing.
+    //
+    // The advance is applied locally too, and that is load-bearing.
+    // submit_answer writes the answer and bumps current_question in two
+    // SEPARATE statements (036), so they arrive as two realtime frames. If the
+    // second one is lost — a silently dead socket, which is the normal result
+    // of backgrounding on Android — the player who answered SECOND had
+    // bothAnswered flip true locally, which is precisely the state where
+    // nothing rescues them: the countdown is off because they answered, the
+    // claim button is hidden because the opponent answered, the poll is
+    // disarmed because it only runs while waiting on the opponent, and the
+    // "connection lost" banner never shows because the channel never reported
+    // dying. A frozen reveal panel with no sign anything is wrong. The RPC
+    // already tells us both have answered; using it removes the dependency on
+    // that second frame entirely.
     setRoom((prev) => {
       if (!prev) return prev;
       const key = String(qIdx);
+      const advanced = result.bothAnswered
+        ? Math.max(prev.current_question, qIdx + 1)
+        : prev.current_question;
       return isHost
-        ? { ...prev, host_answers: { ...prev.host_answers, [key]: i }, host_score: result.hostScore }
-        : { ...prev, guest_answers: { ...prev.guest_answers, [key]: i }, guest_score: result.guestScore };
+        ? { ...prev, host_answers: { ...prev.host_answers, [key]: i }, host_score: result.hostScore, current_question: advanced }
+        : { ...prev, guest_answers: { ...prev.guest_answers, [key]: i }, guest_score: result.guestScore, current_question: advanced };
     });
   };
 
@@ -199,8 +225,8 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
       const shuffled = [...wrongIdx].sort(() => Math.random() - 0.5);
       setRemovedOptions((prev) => [...prev, ...shuffled.slice(0, 2)]);
     } else if (id === 'extra_time') {
-      isTimerFrozenRef.current = true;
-      setTimeout(() => { isTimerFrozenRef.current = false; }, 10000);
+      const timeFreeze = freezeClock();
+      setTimeout(() => releaseClock(timeFreeze), 10000);
     } else if (id === 'hint') {
       setHintRevealed(true);
     } else if (id === 'retry') {
@@ -209,19 +235,28 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   };
 
   // Initial fetch + realtime subscription
+  // The cleanup used to run while the load was still in flight and find
+  // `unsub` still null, so leaving the screen during that window subscribed a
+  // channel nobody would ever close: it kept pushing setState into an
+  // unmounted tree, and re-entering the room opened another on the same
+  // topic. `cancelled` closes the window.
   useEffect(() => {
+    let cancelled = false;
     let unsub: (() => void) | null = null;
     (async () => {
       const r = await loadRoom(roomId);
+      if (cancelled) return;
       if (r) setRoom(r);
       setLoading(false);
-      unsub = subscribeToRoom(
+      const handle = subscribeToRoom(
         roomId,
         (updated) => { setRoom(updated); },
         (status) => { setLive(status === 'SUBSCRIBED'); },
       );
+      if (cancelled) { handle(); return; }
+      unsub = handle;
     })();
-    return () => { if (unsub) unsub(); };
+    return () => { cancelled = true; if (unsub) unsub(); };
   }, [roomId]);
 
   // Jump straight to wherever the server is the first time the room lands —
@@ -235,17 +270,39 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   }, [room]);
 
   // Hold on the answered question, then move on.
-  const [holdingReveal, setHoldingReveal] = useState(false);
+  //
+  // Keyed on bothAnswered — which is local and true the moment our own
+  // optimistic write lands — and NOT on the server index moving. Keying it on
+  // the server index meant the reveal was skipped in exactly the cases it was
+  // added for. Whoever answers SECOND completes both answer maps locally
+  // while current_question is still on this question, so there was no
+  // "advance" to react to and the hold never started; on the last question
+  // the server never advances past it at all, so the final explanation — the
+  // one most worth reading — was the one guaranteed to be cut. And because
+  // holdingReveal was state rather than derived, the finalize effect in the
+  // same flush still saw its old `false` and fired regardless.
+  //
+  // `revealedIdx` is the highest question whose reveal has finished playing.
+  const [revealedIdx, setRevealedIdx] = useState(-1);
+  const holdingReveal = bothAnswered && revealedIdx < qIdx;
+
+  useEffect(() => {
+    if (!displayInitRef.current) return;
+    if (!bothAnswered || revealedIdx >= qIdx) return;
+    const t = setTimeout(() => setRevealedIdx(qIdx), REVEAL_MS);
+    return () => clearTimeout(t);
+  }, [bothAnswered, qIdx, revealedIdx]);
+
+  // Catch up to the server once nothing is being revealed. Gated on
+  // holdingReveal rather than on revealedIdx, so a player rejoining a match
+  // mid-flight — who has revealed nothing yet — is not frozen out of ever
+  // advancing.
   useEffect(() => {
     if (!displayInitRef.current || !room) return;
+    if (holdingReveal) return;
     if (serverIdx <= displayIdx) return;
-    setHoldingReveal(true);
-    const t = setTimeout(() => {
-      setDisplayIdx(Math.min(serverIdx, Math.max(0, room.questions.length - 1)));
-      setHoldingReveal(false);
-    }, REVEAL_MS);
-    return () => clearTimeout(t);
-  }, [serverIdx, displayIdx, room?.questions.length]);
+    setDisplayIdx(Math.min(serverIdx, Math.max(0, room.questions.length - 1)));
+  }, [holdingReveal, serverIdx, displayIdx, room?.questions.length]);
 
   /**
    * Pull the room straight from the table, bypassing the socket.
@@ -261,12 +318,29 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   const refreshRoom = useCallback(async () => {
     const r = await loadRoom(roomId);
     if (!r) return;
-    setRoom((prev) => (prev ? {
-      ...r,
-      host_answers: { ...r.host_answers, ...prev.host_answers },
-      guest_answers: { ...r.guest_answers, ...prev.guest_answers },
-      current_question: Math.max(r.current_question, prev.current_question),
-    } : r));
+    setRoom((prev) => {
+      if (!prev) return r;
+      // Every field that can move forward locally is merged forward, not
+      // overwritten. Spreading the fetched row wholesale rolled back the
+      // score the RPC had just returned, un-finished a room settled by a
+      // claim, and regressed updated_at — which inflates the stall countdown
+      // and offers the claim button before the server's cutoff, so the tap
+      // comes back OPPONENT_STILL_ACTIVE.
+      const settled = prev.status === 'finished' || r.status === 'finished';
+      return {
+        ...r,
+        host_answers: { ...r.host_answers, ...prev.host_answers },
+        guest_answers: { ...r.guest_answers, ...prev.guest_answers },
+        current_question: Math.max(r.current_question, prev.current_question),
+        host_score: Math.max(r.host_score, prev.host_score),
+        guest_score: Math.max(r.guest_score, prev.guest_score),
+        status: settled ? 'finished' : r.status,
+        updated_at:
+          new Date(r.updated_at).getTime() >= new Date(prev.updated_at).getTime()
+            ? r.updated_at
+            : prev.updated_at,
+      };
+    });
   }, [roomId]);
 
   // Coming back to the app.
@@ -322,9 +396,9 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   useEffect(() => {
     if (!room || room.status !== 'active' || iAnswered) return;
     setPlayTimer(QUESTION_SECONDS);
-    isTimerFrozenRef.current = false;
+    freezesRef.current.clear();
     const interval = setInterval(() => {
-      if (isTimerFrozenRef.current) return;
+      if (freezesRef.current.size > 0) return;
       setPlayTimer((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
@@ -353,10 +427,10 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
       // arrives with the room already 'active', so prevStatusRef is still
       // null for them and they never see it. The host was quietly losing
       // 2.5 seconds of question one, every single match.
-      isTimerFrozenRef.current = true;
+      const vsFreeze = freezeClock();
       const t = setTimeout(() => {
         setShowVsIntro(false);
-        isTimerFrozenRef.current = false;
+        releaseClock(vsFreeze);
       }, 2500);
       return () => clearTimeout(t);
     }
@@ -366,8 +440,8 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   // so the boundary lands on the same index for both without any syncing.
   //
   // Declared after the countdown effect on purpose: that one resets
-  // isTimerFrozenRef to false whenever current_question changes, which is the
-  // same render this fires on. Running second is what makes the freeze stick.
+  // clears every freeze token whenever the displayed question changes, which
+  // is the same render this fires on. Running second is what makes it stick.
   useEffect(() => {
     if (!room || room.status !== 'active') return;
     // Index 0 is not announced — the VS splash already opens the match, and
@@ -377,10 +451,10 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     if (!stage) return;
     setStageIntro(stage);
     triggerHaptic('light');
-    isTimerFrozenRef.current = true;
+    const stageFreeze = freezeClock();
     const t = setTimeout(() => {
       setStageIntro(null);
-      isTimerFrozenRef.current = false;
+      releaseClock(stageFreeze);
     }, STAGE_INTRO_MS);
     return () => clearTimeout(t);
   }, [qIdx, room?.status]);
@@ -499,8 +573,26 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     return () => clearInterval(t);
   }, []);
 
-  const stalledFor = room?.updated_at
-    ? Math.max(0, Math.floor((now - new Date(room.updated_at).getTime()) / 1000))
+  // Counted from when WE started waiting, not from room.updated_at.
+  //
+  // updated_at is a server timestamp that our own optimistic write does not
+  // touch, so after answering it still held the moment BEFORE our answer:
+  // the countdown ran fast, offered the claim early — the tap then coming
+  // back OPPONENT_STILL_ACTIVE from a server measuring the real thing — and
+  // visibly jumped backwards the moment a realtime frame or a poll landed
+  // with the true value. The server remains the authority on whether a claim
+  // is allowed; this only decides when to show the button.
+  const waitingSinceRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (iAnswered && !bothAnswered) {
+      if (waitingSinceRef.current === null) waitingSinceRef.current = Date.now();
+    } else {
+      waitingSinceRef.current = null;
+    }
+  }, [iAnswered, bothAnswered, qIdx]);
+
+  const stalledFor = waitingSinceRef.current
+    ? Math.max(0, Math.floor((now - waitingSinceRef.current) / 1000))
     : 0;
   // The server enforces the real cutoff; this only decides when to offer the
   // button, so client clock skew costs a few seconds either way at worst.
@@ -524,6 +616,13 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
       );
       return;
     }
+    // Mark the room finished locally as well as taking the outcome. The
+    // summary branch needs BOTH, and the row that says so would otherwise
+    // have to arrive over the realtime channel — the same channel whose
+    // failure is the reason this button exists. Without it the winner gets
+    // confetti over a still-live question board, and if loadRoom keeps
+    // failing, never sees the summary at all.
+    setRoom((prev) => (prev ? { ...prev, status: 'finished' } : prev));
     setOutcome(res.result);
     onUserUpdated({ rating: isHost ? res.result.hostNewRating : res.result.guestNewRating });
   };
