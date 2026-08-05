@@ -1,25 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { 
-  Gamepad2, Trophy, User, Play, CheckCircle2, XCircle, 
-  Clock, ArrowRight, Check, HelpCircle, Award, Sparkles, 
-  Compass, BookOpen, Star, RefreshCw, X, ArrowUp, ArrowDown, LogIn,
-  Copy, Plus, Users, Share2, LogOut, MessageSquare, UserPlus, UserCheck, Send,
-  Shield, Timer, TrendingUp, Zap, Lightbulb, Coins, Gift, ChevronLeft
+import {
+  Trophy, User, CheckCircle2, XCircle, Clock, ArrowRight, Sparkles, BookOpen,
+  Star, RefreshCw, LogIn, Copy, Plus, Users, LogOut, MessageSquare, Shield,
+  Timer, TrendingUp, Zap, Coins, Gift, ChevronLeft
 } from 'lucide-react';
 import { User as UserType } from '../types';
 import { xpToNext, xpProgressPct } from './progress';
 import { findOrCreateRandomRoom } from './multiplayer';
 import { buildRandomMatchQuestions } from './multiplayer/matchQuestions';
 import MatchBannerScene from './multiplayer/MatchBannerScene';
-import { SmartAssistBar } from './SmartAssistBar';
-import { ChatComponent } from './ChatComponent';
 import { FriendChat } from './FriendChat';
 import { triggerHaptic } from '../lib/haptic';
 import { playSound, toggleBackgroundMusic } from '../lib/sounds';
-import { socialService } from './socialService';
-import { gameService, GameRoom } from './gameService';
 import { auth, db } from './rmatchFirebase';
 import { signInAnonymously } from './rmatchFirebase';
 import { 
@@ -44,26 +38,11 @@ interface RandomMatchGameProps {
   /** Opens the rewards screen. The daily-rewards card is only rendered when
    *  this is provided, since there is nowhere for it to go otherwise. */
   onOpenRewards?: () => void;
-  /** Hands a real matchmade room to the live match screen. Without it the
-   *  button falls back to the old scripted opponent, so the screen still
-   *  works anywhere it has not been wired yet. */
-  onEnterMatch?: (roomId: string) => void;
+  /** Hands a real matchmade room to the live match screen. Required — there
+   *  is no longer a scripted fallback to degrade to. */
+  onEnterMatch: (roomId: string) => void;
 }
 
-const AssetWithFallback = ({ src, alt, className, fallbackSvg }: { src: string; alt: string; className: string; fallbackSvg: React.ReactNode }) => {
-  const [hasError, setHasError] = useState(false);
-  return hasError ? (
-    <div className={className}>{fallbackSvg}</div>
-  ) : (
-    <img 
-      src={src} 
-      alt={alt} 
-      className={`${className} object-cover`}
-      onError={() => setHasError(true)} 
-      referrerPolicy="no-referrer"
-    />
-  );
-};
 
 // League structure
 const LEAGUES = [
@@ -78,15 +57,6 @@ const getLeague = (rating: number) => {
   return LEAGUES.find(l => rating >= l.min && rating <= l.max) || LEAGUES[0];
 };
 
-const SIMULATED_OPPONENTS = [
-  { uid: 'sim_mina', name: 'مينا العجايبي', level: 6, rating: 110, avatarBg: 'bg-emerald-500' },
-  { uid: 'sim_kyrillos', name: 'كيرلس البطل', level: 4, rating: 85, avatarBg: 'bg-indigo-500' },
-  { uid: 'sim_demiana', name: 'دميانة القديسة', level: 7, rating: 145, avatarBg: 'bg-pink-500' },
-  { uid: 'sim_tony', name: 'توني فايز', level: 5, rating: 95, avatarBg: 'bg-amber-500' },
-  { uid: 'sim_sandra', name: 'ساندرا عادل', level: 6, rating: 120, avatarBg: 'bg-cyan-500' },
-  { uid: 'sim_marina', name: 'مارينا كمال', level: 5, rating: 98, avatarBg: 'bg-rose-500' },
-  { uid: 'sim_yohanna', name: 'يوحنا رمزي', level: 8, rating: 320, avatarBg: 'bg-purple-500' }
-];
 
 const GAME_MODES_QUESTIONS: Record<string, any[]> = {
   // 1. مسابقة كتابية 1 ضد 1
@@ -254,14 +224,6 @@ const GAME_MODES_QUESTIONS: Record<string, any[]> = {
   ]
 };
 
-const ASSISTS_DATA = [
-  { id: 'hint', icon: '💡', level: 1 },
-  { id: '5050', icon: '✂️', level: 3 },
-  { id: 'extra_time', icon: '⏳', level: 5 },
-  { id: 'retry', icon: '🔄', level: 8 },
-  { id: 'skip', icon: '⏭', level: 12 },
-  { id: 'double', icon: '🎯', level: 15 },
-];
 
 export default function RandomMatchGame({ 
   currentUser, 
@@ -311,62 +273,22 @@ export default function RandomMatchGame({
   const userLevel = currentUser.level ?? 1;
   const userXp = currentUser.xp ?? 0;
 
-  const [screen, setScreen] = useState<'league_info' | 'searching' | 'opponent_found' | 'playing' | 'results' | 'friend_menu' | 'create_friend_room' | 'waiting_friend_room' | 'playing_friend' | 'results_friend'>('league_info');
+  const [screen, setScreen] = useState<'league_info' | 'friend_menu' | 'create_friend_room' | 'waiting_friend_room' | 'playing_friend' | 'results_friend'>('league_info');
   const [selectedMode, setSelectedMode] = useState<string>('all_mixed');
   
   // Search state
-  const [searchTimer, setSearchTimer] = useState(0);
-  const [searchRange, setSearchRange] = useState(50);
-  const [opponent, setOpponent] = useState<any>(null);
   const searchIntervalRef = useRef<any>(null);
 
   // Assists state
-  const [equippedAssists, setEquippedAssists] = useState<string[]>(() => {
-    return currentUser.equippedAssists || ['hint', '5050'];
-  });
-  const [usedAssists, setUsedAssists] = useState<string[]>([]);
-  const [removedAnswers, setRemovedAnswers] = useState<string[]>([]);
   const [isTimerFrozen, setIsTimerFrozen] = useState(false);
   const isTimerFrozenRef = useRef(false);
-  const [canRetry, setCanRetry] = useState(true);
-  const [hasUsedRetry, setHasUsedRetry] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false);
 
   // ... existing code ...
 
-  const useAssist = (assistId: string) => {
-    if (usedAssists.includes(assistId)) return;
-    
-    setUsedAssists(prev => [...prev, assistId]);
 
-    switch (assistId) {
-      case '5050':
-        const currentQ = questions[currentQuestionIndex];
-        const incorrect = currentQ.options.filter((o: string) => o !== currentQ.answer);
-        const toRemove = incorrect.sort(() => 0.5 - Math.random()).slice(0, 2);
-        setRemovedAnswers(toRemove);
-        break;
-      case 'extra_time':
-        setIsTimerFrozen(true);
-        isTimerFrozenRef.current = true;
-        setTimeout(() => {
-          setIsTimerFrozen(false);
-          isTimerFrozenRef.current = false;
-        }, 10000);
-        break;
-      case 'retry':
-        setHasUsedRetry(true);
-        break;
-    }
-  };
-
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userScore, setUserScore] = useState(0);
-  const [opponentScore, setOpponentScore] = useState(0);
   const [userSelectedAnswer, setUserSelectedAnswer] = useState<string | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [showRetryMessage, setShowRetryMessage] = useState(false);
   const [playTimer, setPlayTimer] = useState(20);
   const playIntervalRef = useRef<any>(null);
   const [outcome, setOutcome] = useState<'win' | 'loss' | 'draw'>('win');
@@ -383,100 +305,30 @@ export default function RandomMatchGame({
   const [hasRewardedFriend, setHasRewardedFriend] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [localCurrentIndex, setLocalCurrentIndex] = useState<number>(0);
-  const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
 
-  // Social System States
-  const [friendStatus, setFriendStatus] = useState<'none' | 'pending' | 'accepted' | 'rejected'>('none');
-  const [isSendingRequest, setIsSendingRequest] = useState<boolean>(false);
-  const [friends, setFriends] = useState<any[]>([]);
-  const [incomingRequests, setIncomingRequests] = useState<any[]>([]);
-
-  // Auth listener & Subscribe to friends and requests
-  useEffect(() => {
-    const tutorialShown = localStorage.getItem('assistTutorialShown');
-    if (!tutorialShown) {
-      setShowTutorial(true);
-      localStorage.setItem('assistTutorialShown', 'true');
-    }
-  }, []);
-
+  // Anonymous Firebase sign-in, needed by the friend-room (Firestore) path.
+  //
+  // The friends/requests subscriptions that used to live here fed the
+  // «طلب صداقة» button on the scripted results screen — where the opponent
+  // was one of seven names in this file. With that screen gone the state had
+  // no reader. The real match has no add-friend control of its own yet.
   useEffect(() => {
     const initAuth = async () => {
       try {
         if (!auth.currentUser) {
-          // Only attempt if not already in an error state
-          await signInAnonymously(auth).catch(err => {
-            console.warn("Anonymous auth disabled or restricted:", err.message);
+          await signInAnonymously(auth).catch((err) => {
+            console.warn('Anonymous auth disabled or restricted:', err.message);
           });
         }
-      } catch (err) {
-        console.warn("Auth initialization skipped");
+      } catch {
+        console.warn('Auth initialization skipped');
       }
     };
-
     initAuth();
-
-    const unsubAuth = auth.onAuthStateChanged((user) => {
-      if (user) {
-        // Subscribe to friends
-        const unsubFriends = socialService.subscribeToFriends(user.uid, (data) => {
-          setFriends(data);
-        });
-
-        // Subscribe to requests
-        const unsubRequests = socialService.subscribeToIncomingRequests(user.uid, (data) => {
-          setIncomingRequests(data);
-        });
-
-        return () => {
-          unsubFriends();
-          unsubRequests();
-        };
-      }
-    });
-
-    return () => unsubAuth();
   }, []);
 
-  // Check friend status when opponent is found
-  useEffect(() => {
-    if (opponent && opponent.uid) {
-      socialService.getFriendRequestStatus(opponent.uid).then(status => {
-        setFriendStatus(status as any);
-      });
-    } else {
-      setFriendStatus('none');
-    }
-  }, [opponent]);
 
-  const handleSendFriendRequest = async () => {
-    if (!opponent || !opponent.uid || isSendingRequest) return;
-    setIsSendingRequest(true);
-    try {
-      await socialService.sendFriendRequest(opponent.uid, currentUser.name);
-      setFriendStatus('pending');
-    } catch (err) {
-      console.error("Error sending friend request:", err);
-    } finally {
-      setIsSendingRequest(false);
-    }
-  };
 
-  const handleAcceptRequest = async (request: any) => {
-    try {
-      await socialService.acceptFriendRequest(request.id, request.senderId, request.senderName, currentUser.name);
-    } catch (err) {
-      console.error("Error accepting friend request:", err);
-    }
-  };
-
-  const handleRejectRequest = async (request: any) => {
-    try {
-      await socialService.rejectFriendRequest(request.id);
-    } catch (err) {
-      console.error("Error rejecting friend request:", err);
-    }
-  };
 
   const shareViaWhatsApp = (code: string) => {
     const message = `🎮 مرحباً! لقد أنشأت غرفة خاصة للعب معك.\n\n🔑 كود الغرفة: ${code}\n\n📲 افتح اللعبة ثم اختر "العب مع صديق" وأدخل الكود.\n\n🚀 هيا نبدأ التحدي!\n\n🔗 https://yourapp.com/download`;
@@ -894,7 +746,6 @@ export default function RandomMatchGame({
    * file, and their answers were `Math.random() < 0.75`.
    */
   const startRealMatch = async () => {
-    if (!onEnterMatch) return;
     triggerHaptic('light');
     playSound('click');
     setMatchError('');
@@ -912,256 +763,6 @@ export default function RandomMatchGame({
     } finally {
       setFindingMatch(false);
     }
-  };
-
-  // START MATCHMAKING (Competitive Flow) — the scripted fallback, used only
-  // where onEnterMatch has not been provided.
-  const startSearching = () => {
-    triggerHaptic('light');
-    playSound('click');
-    setScreen('searching');
-    setSearchTimer(0);
-    setSearchRange(50);
-    setOpponent(null);
-
-    if (searchIntervalRef.current) clearInterval(searchIntervalRef.current);
-    
-    searchIntervalRef.current = setInterval(() => {
-      setSearchTimer(prev => {
-        const nextTime = prev + 1;
-        
-        // Expand search range every 3 seconds
-        if (nextTime % 3 === 0) {
-          setSearchRange(r => r + 50);
-        }
-
-        // Simulate finding opponent after 5-10 seconds
-        if (nextTime >= 5 && Math.random() > 0.7) {
-          const suitableOpponents = SIMULATED_OPPONENTS.filter(o => 
-            Math.abs(o.rating - rating) <= searchRange + 100
-          );
-          const found = suitableOpponents[Math.floor(Math.random() * suitableOpponents.length)] || SIMULATED_OPPONENTS[0];
-          
-          clearInterval(searchIntervalRef.current);
-          handleOpponentFound(found);
-          return nextTime;
-        }
-        
-        // Timeout/Fallback after 15 seconds
-        if (nextTime >= 15) {
-          clearInterval(searchIntervalRef.current);
-          handleOpponentFound(SIMULATED_OPPONENTS[0]);
-          return nextTime;
-        }
-
-        return nextTime;
-      });
-    }, 1000);
-  };
-
-  const handleOpponentFound = (foundOpponent: any) => {
-    setOpponent(foundOpponent);
-    setScreen('opponent_found');
-    playSound('success');
-    triggerHaptic('medium');
-    
-    // Auto start game after 3 seconds
-    setTimeout(() => {
-      startCompetitiveGame();
-    }, 3000);
-  };
-
-  const startCompetitiveGame = () => {
-    // Mix all categories
-    const allQuestions: any[] = [];
-    Object.keys(GAME_MODES_QUESTIONS).forEach(mode => {
-      allQuestions.push(...GAME_MODES_QUESTIONS[mode].map(q => ({ ...q, category: mode })));
-    });
-    
-    // Shuffle and pick 5
-    const shuffled = allQuestions.sort(() => 0.5 - Math.random()).slice(0, 5);
-    
-    setQuestions(shuffled);
-    setCurrentQuestionIndex(0);
-    setUserScore(0);
-    setOpponentScore(0);
-    setUserSelectedAnswer(null);
-    setShowExplanation(false);
-    setUsedAssists([]);
-    setRemovedAnswers([]);
-    setScreen('playing');
-    startQuestionTimer();
-  };
-
-  // CANCEL SEARCHING
-  const cancelSearching = () => {
-    triggerHaptic('light');
-    if (searchIntervalRef.current) clearInterval(searchIntervalRef.current);
-    setScreen('league_info');
-  };
-
-  // QUESTION TIMER CONTROL
-  const startQuestionTimer = () => {
-    setPlayTimer(20);
-    if (playIntervalRef.current) clearInterval(playIntervalRef.current);
-
-    // Opponent answering logic: simulated latency
-    let opponentAnswered = false;
-    const opponentAnswerDelay = 3000 + Math.random() * 8000; // Opponent takes 3-11s to answer
-
-    playIntervalRef.current = setInterval(() => {
-      setPlayTimer((prev) => {
-        if (isTimerFrozenRef.current) return prev;
-        // Simulate opponent answering
-        if (!opponentAnswered && (20 - prev) * 1000 >= opponentAnswerDelay) {
-          opponentAnswered = true;
-          // Determine if opponent got it right (e.g. 70% chance)
-          const isCorrect = Math.random() < 0.75;
-          if (isCorrect) {
-            setOpponentScore(score => score + 10);
-          }
-        }
-
-        if (prev <= 1) {
-          // Time's up! Force next or select incorrect automatically
-          clearInterval(playIntervalRef.current);
-          handleAnswerSelection(''); // Timeout answer
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  // HANDLE USER SELECTION
-  const handleAnswerSelection = (option: string) => {
-    if (userSelectedAnswer !== null) return; // Prevent double answer
-
-    clearInterval(playIntervalRef.current);
-    setUserSelectedAnswer(option);
-
-    const currentQuestion = questions[currentQuestionIndex];
-    const isCorrect = option === currentQuestion.answer;
-
-    if (isCorrect) {
-      setShowExplanation(true);
-      setUserScore(score => score + 10);
-      triggerHaptic('success');
-      playSound('success');
-    } else {
-      // Retry Assist check
-      if (hasUsedRetry) {
-        setHasUsedRetry(false); // Consume the retry
-        triggerHaptic('warning');
-        
-        setShowRetryMessage(true);
-        // Remove the selected wrong answer so they can't click it again
-        setRemovedAnswers(prev => [...prev, option]);
-        
-        // Let them try again after a brief pause
-        setTimeout(() => {
-          setShowRetryMessage(false);
-          setUserSelectedAnswer(null);
-          startQuestionTimer();
-        }, 2000);
-        
-        return; // Early return to avoid advancing question
-      }
-      
-      setShowExplanation(true);
-      triggerHaptic('error');
-      playSound('wrong');
-    }
-
-    // Reset assists for next question
-    setRemovedAnswers([]);
-
-    // Advance to next question after 2.5 seconds
-    setTimeout(() => {
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(prev => prev + 1);
-        setUserSelectedAnswer(null);
-        setShowExplanation(false);
-        startQuestionTimer();
-      } else {
-        // End game! Determine outcomes
-        calculateFinalResults(userScore + (isCorrect ? 10 : 0));
-      }
-    }, 2500);
-  };
-
-  // ... existing code ...
-
-
-  // CALCULATE RESULTS AND SAVE REWARDS
-  const calculateFinalResults = (finalUserScore: number) => {
-    let matchOutcome: 'win' | 'loss' | 'draw' = 'win';
-    let ratingChange = 0;
-    let xpGain = 50;
-    let coinsGain = 20;
-
-    if (finalUserScore > opponentScore) {
-      matchOutcome = 'win';
-      ratingChange = 25;
-      xpGain = 100;
-      coinsGain = 50;
-      setStreak(s => s + 1);
-    } else if (finalUserScore < opponentScore) {
-      matchOutcome = 'loss';
-      ratingChange = -15;
-      xpGain = 20;
-      coinsGain = 5;
-      setStreak(0); // break streak
-    } else {
-      matchOutcome = 'draw';
-      ratingChange = 0;
-      xpGain = 40;
-      coinsGain = 15;
-    }
-
-    // Apply rating safeguards (rating can't go below 0)
-    const nextRating = Math.max(0, rating + ratingChange);
-    setRating(nextRating);
-    setOutcome(matchOutcome);
-    
-    if (matchOutcome === 'win') {
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-      playSound('win');
-    } else {
-      playSound('levelUp');
-    }
-
-    // Apply Real User Profile Update
-    const currentXP = currentUser.xp || 0;
-    const currentPoints = currentUser.points || 0;
-    const currentLevel = currentUser.level || 1;
-
-    const nextXP = currentXP + xpGain;
-    const nextPoints = currentPoints + coinsGain;
-    
-    // Simple level up calculation (200 XP per level scale)
-    const xpNeededForNextLevel = currentLevel * 200;
-    let nextLevel = currentLevel;
-    let finalXP = nextXP;
-
-    if (nextXP >= xpNeededForNextLevel) {
-      nextLevel = currentLevel + 1;
-      finalXP = nextXP - xpNeededForNextLevel;
-      playSound('levelUp');
-    }
-
-    onUpdateUser({
-      ...currentUser,
-      xp: finalXP,
-      points: nextPoints,
-      level: nextLevel
-    });
-
-    setScreen('results');
   };
 
   const userLeague = getLeague(rating);
@@ -1391,7 +992,7 @@ export default function RandomMatchGame({
                 whileHover={{ scale: findingMatch ? 1 : 1.03 }}
                 whileTap={{ scale: findingMatch ? 1 : 0.97 }}
                 disabled={findingMatch}
-                onClick={onEnterMatch ? startRealMatch : startSearching}
+                onClick={startRealMatch}
                 className="absolute bottom-3 left-1/2 -translate-x-1/2 w-[55%] py-2.5 bg-gradient-to-b from-[#FFD65C] to-[#F0A93B] hover:from-[#FFE082] hover:to-[#F5B94A] disabled:opacity-75 text-[#2A1B02] rounded-full shadow-[0_6px_22px_-4px_rgba(245,197,66,0.75)] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 {findingMatch
@@ -1455,134 +1056,8 @@ export default function RandomMatchGame({
         )}
 
         {/* SCREEN: SEARCHING (Competitive) */}
-        {screen === 'searching' && (
-          <motion.div 
-            key="searching"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center py-20 space-y-12 relative z-10"
-          >
-            {/* Animated Radar Search */}
-            <div className="relative">
-              {[0.5, 1, 1.5].map((delay, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ scale: 0.5, opacity: 0.5 }}
-                  animate={{ scale: 2.5, opacity: 0 }}
-                  transition={{ duration: 3, repeat: Infinity, delay }}
-                  className="absolute inset-0 rounded-full border-2 border-blue-500/30"
-                />
-              ))}
-              
-              <div className="relative w-32 h-32 bg-slate-900 rounded-full border-2 border-blue-500/50 flex items-center justify-center shadow-[0_0_50px_rgba(59,130,246,0.3)]">
-                <img 
-                  src={currentUser.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"} 
-                  className="w-24 h-24 rounded-full border-4 border-blue-500/30 object-cover"
-                  alt="My Avatar"
-                  referrerPolicy="no-referrer"
-                />
-                <motion.div 
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                  className="absolute inset-[-10px] border-t-4 border-blue-500 rounded-full"
-                />
-              </div>
-            </div>
-
-            <div className="text-center space-y-4">
-              <h3 className="text-2xl font-black text-white tracking-tight animate-pulse">جاري البحث عن منافس...</h3>
-              <div className="flex flex-col items-center gap-2">
-                <div className="flex items-center gap-2 bg-blue-500/10 px-4 py-2 rounded-full border border-blue-500/20">
-                  <TrendingUp className="w-4 h-4 text-blue-400" />
-                  <span className="text-xs font-black text-blue-300">نطاق البحث: {rating - searchRange} - {rating + searchRange}</span>
-                </div>
-                <span className="text-[10px] font-black text-slate-500 font-mono">مدة البحث: {searchTimer} ثانية</span>
-              </div>
-            </div>
-
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={cancelSearching}
-              className="bg-white/5 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 px-8 py-3 rounded-2xl border border-white/10 hover:border-rose-500/20 text-xs font-black transition-all"
-            >
-              إلغاء البحث
-            </motion.button>
-          </motion.div>
-        )}
 
         {/* SCREEN: OPPONENT FOUND */}
-        {screen === 'opponent_found' && opponent && (
-          <motion.div 
-            key="opponent_found"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col items-center justify-center py-10 space-y-8 relative z-10"
-          >
-            <div className="w-full flex items-center justify-around gap-4 px-4">
-              {/* Me */}
-              <motion.div 
-                initial={{ x: 50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                className="text-center space-y-4"
-              >
-                <div className="w-24 h-24 rounded-2xl bg-blue-500/20 border-2 border-blue-500/50 p-1">
-                  <img src={currentUser.avatar} className="w-full h-full rounded-xl object-cover" alt="My Avatar" referrerPolicy="no-referrer" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-xs font-black text-white">{currentUser.name}</h4>
-                  <span className="text-[10px] font-black text-blue-400">{rating} 🏆</span>
-                </div>
-              </motion.div>
-
-              <motion.div 
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center border border-white/20"
-              >
-                <span className="text-2xl font-black text-amber-500">VS</span>
-              </motion.div>
-
-              {/* Opponent */}
-              <motion.div 
-                initial={{ x: -50, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                className="text-center space-y-4"
-              >
-                <div className="w-24 h-24 rounded-2xl bg-rose-500/20 border-2 border-rose-500/50 p-1">
-                  <div className={`w-full h-full rounded-xl ${opponent.avatarBg || 'bg-slate-700'} flex items-center justify-center`}>
-                    <User className="w-10 h-10 text-white/50" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-xs font-black text-white">{opponent.name}</h4>
-                  <span className="text-[10px] font-black text-rose-400">{opponent.rating} 🏆</span>
-                </div>
-              </motion.div>
-            </div>
-
-            <motion.div 
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              className="bg-amber-500/10 border border-amber-500/20 px-8 py-4 rounded-3xl text-center"
-            >
-              <h3 className="text-xl font-black text-amber-500 mb-1">تم العثور على منافس!</h3>
-              <p className="text-[10px] text-amber-200/60 font-bold uppercase tracking-widest">تبدأ المباراة خلال ثوانٍ...</p>
-            </motion.div>
-
-            {/* Mixing Categories Hint */}
-            <div className="text-center opacity-60">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">نوع التحدي</span>
-              <div className="flex gap-2">
-                {['📖 مسابقة', '👤 من أنا', '⚡ سرعة'].map(t => (
-                  <span key={t} className="text-[10px] font-black text-white bg-white/5 px-3 py-1 rounded-full border border-white/10">{t}</span>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
 
         {/* SCREEN: FRIEND MENU */}
         {screen === 'friend_menu' && (
@@ -2186,445 +1661,8 @@ export default function RandomMatchGame({
         )}
 
         {/* SCREEN 4: PLAYING THE MATCH */}
-        {screen === 'playing' && questions.length > 0 && (
-          <motion.div 
-            key="playing"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="space-y-6 p-2 max-w-lg mx-auto relative z-10 animate-fade-in"
-          >
-            {/* Premium Live HUD */}
-            <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-transparent to-rose-500/20 rounded-[32px] blur-sm pointer-events-none" />
-              <div className="grid grid-cols-3 gap-2 bg-[#0d1b3e]/90 backdrop-blur-xl text-white rounded-[32px] p-5 border border-white/5 items-center shadow-2xl relative z-10">
-                {/* You */}
-                <div className="text-center space-y-1">
-                  <span className="text-[9px] font-black text-slate-400 block tracking-widest uppercase">محارب</span>
-                  <div className="text-2xl font-black text-emerald-400 font-mono tracking-tighter">{userScore}</div>
-                </div>
-
-                {/* Match Info */}
-                <div className="text-center border-x border-white/5 flex flex-col items-center px-2 space-y-2">
-                  <div className="bg-white/5 border border-white/10 px-3 py-1 rounded-full">
-                    <span className="text-[10px] font-black text-blue-300 tracking-tighter">جولة {currentQuestionIndex + 1} / {questions.length}</span>
-                  </div>
-                  <div className={`flex items-center gap-1.5 font-black justify-center ${isTimerFrozen ? 'text-cyan-400' : 'text-[#F5C542]'}`}>
-                    <Clock className={`w-4 h-4 ${isTimerFrozen ? '' : 'animate-pulse'}`} />
-                    <span className="text-base font-mono leading-none">{playTimer}s</span>
-                  </div>
-                </div>
-
-              {/* Opponent */}
-                <div className="text-center space-y-1 relative">
-                  <span className="text-[9px] font-black text-slate-400 block tracking-widest uppercase truncate max-w-[80px] mx-auto">{opponent?.name || 'الخصم'}</span>
-                  <div className="text-2xl font-black text-rose-400 font-mono tracking-tighter">{opponentScore}</div>
-                </div>
-              </div>
-            </div>
-
-            <ChatComponent roomId={roomCode || 'random_match_global'} senderName={currentUser.name || 'لاعب'} />
-
-            {/* Dynamic Tug-of-War Progress */}
-            <div className="relative px-2">
-              <div className="w-full bg-black/40 h-4 rounded-full flex overflow-hidden border border-white/5 p-1 shadow-inner relative">
-                <motion.div 
-                  initial={{ width: "50%" }}
-                  animate={{ width: `${(userScore / (userScore + opponentScore || 1)) * 100}%` }}
-                  transition={{ duration: 0.8, ease: "circOut" }}
-                  className="bg-gradient-to-r from-emerald-600 to-teal-400 h-full rounded-l-full relative"
-                >
-                  <div className="absolute inset-0 bg-white/20 opacity-30 animate-pulse" />
-                </motion.div>
-                <motion.div 
-                  initial={{ width: "50%" }}
-                  animate={{ width: `${(opponentScore / (userScore + opponentScore || 1)) * 100}%` }}
-                  transition={{ duration: 0.8, ease: "circOut" }}
-                  className="bg-gradient-to-l from-rose-600 to-red-500 h-full rounded-r-full relative"
-                >
-                  <div className="absolute inset-0 bg-white/20 opacity-30 animate-pulse" />
-                </motion.div>
-                {/* Center marker */}
-                <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-white/20 -translate-x-1/2 z-20" />
-              </div>
-            </div>
-
-            {/* Active Question Box - Premium Editorial Card */}
-            {showTutorial && (
-              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
-                <motion.div 
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="bg-[#0A1128] border border-emerald-500/50 p-6 rounded-[32px] text-center text-white max-w-sm w-full shadow-[0_0_40px_rgba(16,185,129,0.3)] relative overflow-hidden"
-                >
-                  <div className="absolute top-0 inset-x-0 h-32 bg-emerald-500/10 blur-3xl" />
-                  
-                  <div className="relative z-10">
-                    <span className="text-4xl mb-4 block">🧰</span>
-                    <h2 className="text-2xl font-black mb-2 text-emerald-400">أدوات التحدي</h2>
-                    <p className="text-sm text-slate-300 mb-6 font-bold leading-relaxed">
-                      استخدم هذه الأدوات بذكاء لتجاوز الأسئلة الصعبة
-                    </p>
-
-                    <div className="space-y-4 mb-8 text-right">
-                      <div className="flex items-center gap-4 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50">
-                        <span className="text-3xl">✂️</span>
-                        <div>
-                          <h4 className="font-black text-amber-400 text-sm">حذف إجابتين</h4>
-                          <p className="text-xs text-slate-300 font-bold mt-1">يزيل إجابتين غير صحيحتين.</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-4 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50">
-                        <span className="text-3xl">⏸️</span>
-                        <div>
-                          <h4 className="font-black text-sky-400 text-sm">تجميد الوقت</h4>
-                          <p className="text-xs text-slate-300 font-bold mt-1">يوقف المؤقت لمدة 10 ثوانٍ.</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50">
-                        <span className="text-3xl">❤️</span>
-                        <div>
-                          <h4 className="font-black text-rose-400 text-sm">فرصة إضافية</h4>
-                          <p className="text-xs text-slate-300 font-bold mt-1">يمنحك محاولة ثانية إذا أخطأت.</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={() => setShowTutorial(false)} 
-                      className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-6 py-4 rounded-2xl font-black text-lg shadow-[0_4px_15px_rgba(16,185,129,0.4)] active:scale-95 transition-transform"
-                    >
-                      ابدأ التحدي
-                    </button>
-                  </div>
-                </motion.div>
-              </div>
-            )}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentQuestionIndex}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-                className="bg-gradient-to-b from-[#122244] to-[#0a152b] border border-white/10 rounded-[36px] p-8 shadow-[0_30px_60px_rgba(0,0,0,0.5)] relative text-center overflow-hidden min-h-[160px] flex flex-col items-center justify-center group"
-              >
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-30" />
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors" />
-                
-                <div className="mb-4 inline-flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-1.5 rounded-full">
-                  <HelpCircle className="w-4 h-4 text-[#F5C542]" />
-                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">سؤال التحدي</span>
-                </div>
-
-                <h3 className="text-lg md:text-xl font-black text-white leading-tight mb-2 tracking-tight">
-                  {questions[currentQuestionIndex]?.question || 'جاري التحميل...'}
-                </h3>
-                
-                <div className="mt-4 flex gap-1">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-blue-500/20" />
-                  ))}
-                </div>
-              </motion.div>
-            </AnimatePresence>
-
-            {/* Premium Multiple Choice Options */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {questions[currentQuestionIndex].options.filter(o => !removedAnswers.includes(o)).map((option: string) => {
-                const isSelected = userSelectedAnswer === option;
-                const isCorrect = option === questions[currentQuestionIndex].answer;
-                
-                let optClass = 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-200';
-                if (userSelectedAnswer !== null) {
-                  if (isCorrect) {
-                    optClass = 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)] z-10 scale-105';
-                  } else if (isSelected) {
-                    optClass = 'bg-gradient-to-br from-rose-600 to-red-700 text-white border-rose-400 shadow-[0_0_30px_rgba(244,63,94,0.3)] z-10 scale-105';
-                  } else {
-                    optClass = 'bg-black/40 text-slate-600 border-white/5 opacity-40 grayscale';
-                  }
-                }
-
-                return (
-                  <motion.button
-                    key={option}
-                    disabled={userSelectedAnswer !== null}
-                    onClick={() => handleAnswerSelection(option)}
-                    className={`group w-full text-right p-5 rounded-[24px] border-2 transition-all font-black text-sm flex items-center justify-between cursor-pointer relative overflow-hidden ${optClass}`}
-                    whileHover={userSelectedAnswer === null ? { y: -2, scale: 1.02 } : {}}
-                    whileTap={userSelectedAnswer === null ? { scale: 0.98 } : {}}
-                  >
-                    <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <span className="relative z-10">{option}</span>
-                    <div className="relative z-10">
-                      {userSelectedAnswer !== null && isCorrect && (
-                        <CheckCircle2 className="w-5 h-5 text-white filter drop-shadow-md" />
-                      )}
-                      {userSelectedAnswer !== null && isSelected && !isCorrect && (
-                        <XCircle className="w-5 h-5 text-white filter drop-shadow-md" />
-                      )}
-                      {userSelectedAnswer === null && (
-                        <div className="w-6 h-6 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                          <ArrowRight className="w-3 h-3 text-white" />
-                        </div>
-                      )}
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </div>
-
-            {/* Retry Feedback Animation */}
-            <AnimatePresence>
-              {showRetryMessage && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8, y: -20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: 20 }}
-                  className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none"
-                >
-                  <div className="bg-red-500/20 backdrop-blur-xl border border-red-500/50 p-6 rounded-[32px] text-center shadow-[0_0_40px_rgba(239,68,68,0.4)] relative overflow-hidden flex flex-col items-center gap-4">
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1], opacity: [0.8, 1, 0.8] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                      className="absolute inset-0 bg-red-500/20 blur-xl"
-                    />
-                    <div className="relative z-10 text-4xl">❤️</div>
-                    <h3 className="relative z-10 text-xl font-black text-red-100">لديك فرصة إضافية!</h3>
-                    <p className="relative z-10 text-sm text-red-200/80 font-bold">لا تستسلم، حاول مرة أخرى</p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <SmartAssistBar 
-              usedAssists={usedAssists}
-              onUseAssist={useAssist}
-              canUseRetry={canRetry}
-              questionIndex={currentQuestionIndex}
-            />
-
-            {/* Immersive Explanation Box */}
-            <AnimatePresence>
-              {showExplanation && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className="bg-amber-500/5 backdrop-blur-xl border border-amber-500/20 rounded-[28px] p-6 text-right relative overflow-hidden shadow-2xl"
-                >
-                  <div className="absolute -top-10 -left-10 w-32 h-32 bg-amber-500/5 rounded-full blur-3xl" />
-                  <div className="flex items-start gap-4 justify-end relative z-10">
-                    <div className="flex-1 space-y-1.5">
-                      <div className="flex items-center justify-end gap-2 text-amber-400 font-black text-[10px] uppercase tracking-widest">
-                        <span>نور من المعرفة</span>
-                        <Lightbulb className="w-3.5 h-3.5" />
-                      </div>
-                      <p className="text-xs text-slate-200 leading-relaxed font-bold">
-                        {questions[currentQuestionIndex].hint || 'استعد للسؤال القادم، السرعة هي مفتاح الغلبة في هذا الميدان!'}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        )}
 
         {/* SCREEN 5: GAME OVER / POST-MATCH RESULTS */}
-        {screen === 'results' && (
-          <motion.div 
-            key="results"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="p-4 space-y-6 text-center flex flex-col items-center bg-[#0b1b36]/40 backdrop-blur-md rounded-3xl border border-blue-500/10 max-w-md mx-auto shadow-2xl relative"
-          >
-            {/* Glowing backgrounds */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            {/* Immersive Outcome Header */}
-            <div className="relative w-full py-8 overflow-visible">
-              {outcome === 'win' && (
-                <motion.div 
-                  initial={{ scale: 0, rotate: -15 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: 'spring', damping: 12, stiffness: 100 }}
-                  className="space-y-4 flex flex-col items-center relative z-10"
-                >
-                  <div className="relative">
-                    <motion.div 
-                      animate={{ scale: [1, 1.2, 1], rotate: 360 }}
-                      transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                      className="absolute -inset-12 bg-[radial-gradient(circle_at_center,rgba(245,197,66,0.3),transparent_70%)] rounded-full blur-2xl"
-                    />
-                    <div className="w-32 h-32 bg-gradient-to-br from-[#F5C542] via-amber-400 to-yellow-600 rounded-full flex items-center justify-center text-6xl shadow-[0_20px_50px_rgba(245,197,66,0.4)] border-4 border-white/20 relative z-10">
-                      🏆
-                    </div>
-                    <motion.div 
-                      animate={{ y: [-10, 10, -10], opacity: [0.5, 1, 0.5] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="absolute -top-6 -right-6 text-4xl"
-                    >
-                      ✨
-                    </motion.div>
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-3xl font-black text-white tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 via-amber-400 to-yellow-500">نصرٌ مـؤزر!</h3>
-                    <p className="text-[11px] text-emerald-400 font-black uppercase tracking-[0.2em]">تمت السيطرة على الميدان بنجاح</p>
-                  </div>
-                </motion.div>
-              )}
-              
-              {outcome === 'loss' && (
-                <motion.div 
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="space-y-4 flex flex-col items-center relative z-10"
-                >
-                  <div className="w-28 h-28 bg-[#122244] rounded-[40px] flex items-center justify-center text-5xl shadow-2xl border-2 border-rose-500/30 opacity-90 relative">
-                    <div className="absolute inset-0 bg-rose-500/10 rounded-[40px] blur-xl" />
-                    ⚔️
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-2xl font-black text-white tracking-tight">كبوة جـواد..</h3>
-                    <p className="text-[11px] text-rose-400 font-black uppercase tracking-[0.2em]">تراجع مؤقت لإعادة رص الصفوف</p>
-                  </div>
-                </motion.div>
-              )}
-
-              {outcome === 'draw' && (
-                <motion.div 
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  className="space-y-4 flex flex-col items-center relative z-10"
-                >
-                  <div className="w-28 h-28 bg-[#122244] rounded-full flex items-center justify-center text-5xl shadow-2xl border-2 border-slate-500/30">
-                    🤝
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-2xl font-black text-white tracking-tight">تـعادل الـكبار</h3>
-                    <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.2em]">مواجهة متكافئة حتى الرمق الأخير</p>
-                  </div>
-                </motion.div>
-              )}
-            </div>
-
-            {/* Premium Match Statistics */}
-            <div className="w-full max-w-sm space-y-4 relative z-10">
-              <div className="grid grid-cols-3 gap-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[32px] p-6 items-center shadow-2xl">
-                <div className="text-center">
-                  <span className="text-[9px] font-black text-slate-500 block uppercase mb-1">أنت</span>
-                  <span className="text-3xl font-black text-emerald-400 font-mono tracking-tighter">{userScore}</span>
-                </div>
-                <div className="flex flex-col items-center justify-center gap-1">
-                  <div className="h-px w-8 bg-white/20" />
-                  <span className="text-[10px] font-black text-slate-600">ضد</span>
-                  <div className="h-px w-8 bg-white/20" />
-                </div>
-                <div className="text-center">
-                  <span className="text-[9px] font-black text-slate-500 block uppercase mb-1">{opponent?.name || 'الخصم'}</span>
-                  <span className="text-3xl font-black text-rose-400 font-mono tracking-tighter">{opponentScore}</span>
-                </div>
-              </div>
-
-              {/* Rewards Panel - Glass Card */}
-              <motion.div 
-                initial={{ y: 30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                className="bg-gradient-to-b from-white/10 to-transparent backdrop-blur-2xl border border-white/10 rounded-[40px] p-8 shadow-3xl text-right relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-                
-                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-white/5 pb-4 mb-6 flex items-center gap-2 justify-end">
-                  <span>غنـائم الـمواجهة</span>
-                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                </h4>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Rating Delta */}
-                  <div className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center space-y-1">
-                    <span className="text-[9px] font-black text-amber-500/80 uppercase">الرتبة</span>
-                    <div className="flex items-center gap-1.5 font-black text-xl font-mono">
-                      {outcome === 'win' ? (
-                        <span className="text-emerald-400">+{25}</span>
-                      ) : outcome === 'loss' ? (
-                        <span className="text-rose-400">-{15}</span>
-                      ) : (
-                        <span className="text-slate-400">0</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* XP Gain */}
-                  <div className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center space-y-1">
-                    <span className="text-[9px] font-black text-blue-500/80 uppercase">الخبرة</span>
-                    <span className="text-blue-300 font-mono text-xl font-black">+{outcome === 'win' ? 50 : outcome === 'loss' ? 15 : 20}</span>
-                  </div>
-
-                  {/* Points Gain */}
-                  <div className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center space-y-1 col-span-2">
-                    <span className="text-[9px] font-black text-purple-500/80 uppercase">نقاط المكافأة</span>
-                    <div className="flex items-center gap-2 text-purple-300 font-mono text-xl font-black">
-                      <span>+{outcome === 'win' ? 20 : outcome === 'loss' ? 5 : 10}</span>
-                      <span className="text-sm">🪙</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-8 bg-black/40 rounded-2xl p-4 border border-white/5">
-                  <p className="text-[10px] text-slate-400 font-medium text-center leading-relaxed">
-                    رصيدك الحالي: <span className="text-white font-black">{rating}</span> نقطة • الرتبة: <span className="text-blue-400 font-black tracking-tight">{userLeague.name}</span>
-                  </p>
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Premium Post-Game Actions */}
-            <div className="flex flex-col gap-4 w-full max-w-sm pt-4 relative z-10">
-              <motion.button
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={startSearching}
-                className="w-full h-16 bg-gradient-to-r from-[#F5C542] via-amber-500 to-amber-600 text-slate-950 rounded-2xl font-black text-sm shadow-[0_15px_35px_rgba(245,197,66,0.25)] flex items-center justify-center gap-3 cursor-pointer border-t border-white/40"
-              >
-                <RefreshCw className="w-5 h-5" />
-                <span>خوض تحدي جديد فوراً</span>
-              </motion.button>
-
-              <div className="grid grid-cols-2 gap-4">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleSendFriendRequest}
-                  disabled={friendStatus !== 'none' || isSendingRequest}
-                  className={`h-14 rounded-2xl font-black text-[11px] shadow-xl transition-all flex items-center justify-center gap-2 border ${
-                    friendStatus === 'accepted' 
-                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20' 
-                      : friendStatus === 'pending'
-                      ? 'bg-amber-500/15 text-amber-400 border-amber-500/20'
-                      : 'bg-white/5 text-slate-300 border-white/10'
-                  }`}
-                >
-                  {friendStatus === 'accepted' ? 'رفيق متصل' : friendStatus === 'pending' ? 'الطلب معلق' : 'طلب صداقة'}
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    setScreen('league_info');
-                  }}
-                  className="bg-white/5 hover:bg-white/10 text-slate-300 h-14 rounded-2xl font-black text-[11px] transition-all cursor-pointer border border-white/10 shadow-xl"
-                >
-                  الخروج للمنصة
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-        )}
 
       </AnimatePresence>
 
