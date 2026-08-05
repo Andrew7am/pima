@@ -5,6 +5,7 @@ import { User } from '../../types';
 import { ChevronRight, Check, X as XIcon, Trophy, Users as UsersIcon, Loader2, Home, RotateCcw, Copy, Lightbulb } from 'lucide-react';
 import {
   GameRoom, loadRoom, subscribeToRoom, submitAnswer, finalizeMatch, FinalizeResult,
+  cancelRoom, claimAbandonedMatch,
 } from '../multiplayer';
 import { getLeague } from '../leagues';
 import { checkAchievements } from '../../lib/db';
@@ -23,6 +24,11 @@ interface LiveMatchGameProps {
 const QUESTION_SECONDS = 20;
 /** How long a stage banner holds the screen, with the clock frozen. */
 const STAGE_INTRO_MS = 2000;
+/** finalizeMatch returns null on any failure; stop rather than spin. */
+const MAX_FINALIZE_ATTEMPTS = 3;
+const FINALIZE_BACKOFF_MS = 1500;
+/** Mirrors _abandon_cutoff() in migration 099 — the server is authoritative. */
+const ABANDON_SECONDS = 45;
 
 // Written out rather than interpolated — Tailwind only ships classes it can
 // see as literals, so `bg-${accent}-500/15` would compile to nothing.
@@ -63,6 +69,9 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   const [outcome, setOutcome] = useState<FinalizeResult | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
+  const [finalizeFailed, setFinalizeFailed] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
 
   // Assists — ported from the original prototype's SmartAssistBar. Pure
   // client-side state (the original never persisted assist usage to its
@@ -80,6 +89,7 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   const isTimerFrozenRef = useRef(false);
   const prevStatusRef = useRef<string | null>(null);
   const confettiFiredRef = useRef(false);
+  const finalizeAttemptsRef = useRef(0);
   const handleSelectRef = useRef<(i: number) => void>(() => {});
 
   const isHost = room ? currentUser.id === room.host_user_id : false;
@@ -266,38 +276,114 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     return () => clearTimeout(t);
   }, [room?.current_question, room?.status]);
 
-  // Trigger finalize automatically when both players finished all questions
+  // Trigger finalize automatically when both players finished all questions.
+  //
+  // Every exit from this has to either set `outcome` or stop trying.
+  // finalizeMatch swallows its errors and returns null (multiplayer.ts), and
+  // `finalizing` is a dependency here — so the old version's
+  // `setFinalizing(false)` on a null result cleared both guards and re-ran
+  // the effect on the very next render, with nothing in between. One dropped
+  // connection at the end of a match turned into an unthrottled loop firing
+  // the RPC as fast as the network would allow, for as long as the player
+  // stayed on the screen.
   useEffect(() => {
-    if (!room || outcome || finalizing) return;
+    if (!room || outcome || finalizing || finalizeFailed) return;
+
     const total = room.questions.length;
-    const hostDone = Object.keys(room.host_answers).length >= total;
-    const guestDone = Object.keys(room.guest_answers).length >= total;
-    if (hostDone && guestDone && room.status === 'active') {
-      setFinalizing(true);
-      finalizeMatch(roomId).then(async (result) => {
+    const bothDone =
+      Object.keys(room.host_answers).length >= total &&
+      Object.keys(room.guest_answers).length >= total;
+    // 'finished' is the idempotent case: finalize returns the settled result.
+    const shouldFinalize =
+      (bothDone && room.status === 'active') || room.status === 'finished';
+    if (!shouldFinalize) return;
+
+    let cancelled = false;
+    setFinalizing(true);
+    finalizeMatch(roomId).then(async (result) => {
+      if (cancelled) return;
+      if (result) {
+        finalizeAttemptsRef.current = 0;
+        setOutcome(result);
         setFinalizing(false);
-        if (result) {
-          setOutcome(result);
-          // Push the fresh rating (+ level potentially) to parent so the
-          // Entertainment hub reflects it without a page reload
-          const finishedHost = currentUser.id === room.host_user_id;
-          onUserUpdated({
-            rating: finishedHost ? result.hostNewRating : result.guestNewRating,
-          });
-          const newlyUnlocked = await checkAchievements();
-          if (newlyUnlocked.length > 0) onAchievementsUnlocked?.(newlyUnlocked);
-        }
-      });
-    }
-    // Also handle already-finished (idempotent finalize returns existing)
-    if (room.status === 'finished' && !outcome) {
-      setFinalizing(true);
-      finalizeMatch(roomId).then((result) => {
+        // Push the fresh rating to the parent so the hub reflects it without
+        // a reload.
+        const finishedHost = currentUser.id === room.host_user_id;
+        onUserUpdated({ rating: finishedHost ? result.hostNewRating : result.guestNewRating });
+        const newlyUnlocked = await checkAchievements();
+        if (newlyUnlocked.length > 0) onAchievementsUnlocked?.(newlyUnlocked);
+        return;
+      }
+      // Failed. Back off, and give up rather than spin — the player gets a
+      // retry button and an exit instead of a spinner that never resolves.
+      finalizeAttemptsRef.current += 1;
+      if (finalizeAttemptsRef.current >= MAX_FINALIZE_ATTEMPTS) {
+        setFinalizeFailed(true);
         setFinalizing(false);
-        if (result) setOutcome(result);
-      });
+        return;
+      }
+      const wait = FINALIZE_BACKOFF_MS * finalizeAttemptsRef.current;
+      setTimeout(() => { if (!cancelled) setFinalizing(false); }, wait);
+    });
+    return () => { cancelled = true; };
+  }, [room, outcome, finalizing, finalizeFailed, roomId, currentUser.id, onUserUpdated, onAchievementsUnlocked]);
+
+  /** Manual retry from the failure screen. */
+  const retryFinalize = () => {
+    finalizeAttemptsRef.current = 0;
+    setFinalizeFailed(false);
+  };
+
+  // A ticking "now" so the stall countdown moves without waiting on a
+  // realtime event — which, when the opponent has gone, is precisely what
+  // will never arrive.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const stalledFor = room?.updated_at
+    ? Math.max(0, Math.floor((now - new Date(room.updated_at).getTime()) / 1000))
+    : 0;
+  // The server enforces the real cutoff; this only decides when to offer the
+  // button, so client clock skew costs a few seconds either way at worst.
+  const canClaim = iAnswered && !bothAnswered && stalledFor >= ABANDON_SECONDS;
+
+  const handleClaim = async () => {
+    setClaiming(true);
+    setClaimError(null);
+    const res = await claimAbandonedMatch(roomId);
+    setClaiming(false);
+    // `=== false`, matching submitAnswer's call site above: this project does
+    // not set `strict`, and without it truthiness alone does not narrow the
+    // union reliably.
+    if (res.ok === false) {
+      setClaimError(
+        res.error.includes('OPPONENT_STILL_ACTIVE')
+          ? 'الخصم لسه موجود — استنى شوية كمان.'
+          : res.error.includes('NOT_WAITING_ON_OPPONENT')
+            ? 'مش ممكن تنهي المباراة دلوقتي.'
+            : 'تعذّر إنهاء المباراة. جرّب تاني.',
+      );
+      return;
     }
-  }, [room, outcome, finalizing, roomId, currentUser.id, onUserUpdated, onAchievementsUnlocked]);
+    setOutcome(res.result);
+    onUserUpdated({ rating: isHost ? res.result.hostNewRating : res.result.guestNewRating });
+  };
+
+  // Cancelling has to survive every way off this screen — the exit button,
+  // the hardware back button, the bottom nav. So it hangs off unmount rather
+  // than off any one control. Only the host of a room that never filled: once
+  // a guest has joined there is someone else with a stake in it, and leaving
+  // is an abandonment for them to claim, not a cancellation.
+  const roomStatusRef = useRef<string | null>(null);
+  const isHostRef = useRef(false);
+  useEffect(() => { roomStatusRef.current = room?.status ?? null; }, [room?.status]);
+  useEffect(() => { isHostRef.current = isHost; }, [isHost]);
+  useEffect(() => () => {
+    if (roomStatusRef.current === 'waiting' && isHostRef.current) void cancelRoom(roomId);
+  }, [roomId]);
 
   // Confetti fires once, only for the winner, the moment the outcome lands.
   useEffect(() => {
@@ -539,6 +625,46 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     );
   }
 
+  // ── FINALIZE GAVE UP ──────────────────────────────────────────
+  // Without this the fall-through was ugly: status is still 'active' while
+  // every question has been answered, so ACTIVE GAMEPLAY below rendered with
+  // qIdx === questions.length and q === undefined — an empty question card,
+  // no options, and a countdown auto-submitting an out-of-range index.
+  if (finalizeFailed && !outcome) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
+        <div className="max-w-sm mx-auto px-6 text-center space-y-4" dir="rtl">
+          <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+            <XIcon className="w-7 h-7 text-amber-400" />
+          </div>
+          <h2 className="text-lg font-black text-white">تعذّر حساب النتيجة</h2>
+          <p className="text-[11.5px] text-slate-400 leading-relaxed">
+            المباراة خلصت بس النتيجة مقدرتش توصل للسيرفر. تقدر تجرّب تاني —
+            إجاباتك محفوظة، ومش هتضيع.
+          </p>
+          <div className="flex flex-col gap-2 pt-1">
+            <button
+              type="button"
+              onClick={retryFinalize}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-l from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 text-white text-sm font-black py-3 rounded-2xl shadow-lg transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              حاول تاني
+            </button>
+            <button
+              type="button"
+              onClick={onBack}
+              className="w-full flex items-center justify-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 text-xs font-bold py-2.5 rounded-2xl transition-colors"
+            >
+              <Home className="w-4 h-4" />
+              خروج
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── ACTIVE GAMEPLAY ───────────────────────────────────────────
   const timerPct = (playTimer / QUESTION_SECONDS) * 100;
   const timerLow = playTimer <= 5;
@@ -718,10 +844,41 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
           </div>
         )}
 
+        {/* Waiting on the opponent — with a way out of it.
+            current_question only advances when both have answered, so an
+            opponent who closed their tab used to leave this spinner up
+            forever and neither side ever got rating, XP or coins. After the
+            cutoff the player can settle it themselves (migration 099): a
+            reduced win for them, and nothing taken from the absent player. */}
         {iAnswered && !bothAnswered && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-3 text-[11px] font-bold text-slate-400 text-center flex items-center justify-center gap-2">
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
-            في انتظار إجابة الخصم...
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2.5">
+            <div className="text-[11px] font-bold text-slate-400 text-center flex items-center justify-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+              في انتظار إجابة الخصم...
+            </div>
+            {canClaim ? (
+              <>
+                <p className="text-[10.5px] text-slate-400 text-center leading-relaxed">
+                  الخصم مردش من {stalledFor} ثانية. تقدر تنهي المباراة وتاخد
+                  الفوز — وهو مش هيخسر تقييم.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleClaim}
+                  disabled={claiming}
+                  className="w-full bg-amber-500/15 border border-amber-500/40 hover:bg-amber-500/25 disabled:opacity-60 text-amber-200 text-[11px] font-black py-2.5 rounded-xl transition-colors"
+                >
+                  {claiming ? 'جارٍ الإنهاء...' : 'أنهِ المباراة واحسب النتيجة'}
+                </button>
+              </>
+            ) : (
+              <p className="text-[10px] text-slate-500 text-center">
+                لو الخصم مردش خلال {Math.max(0, ABANDON_SECONDS - stalledFor)} ثانية هتقدر تنهي المباراة.
+              </p>
+            )}
+            {claimError && (
+              <p className="text-[10.5px] text-rose-300 text-center">{claimError}</p>
+            )}
           </div>
         )}
 

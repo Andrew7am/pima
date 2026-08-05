@@ -51,6 +51,10 @@ export interface GameRoom {
   host_rating_change: number | null;
   guest_rating_change: number | null;
   created_at: string;
+  /** Bumped by submit_answer for either player — so "how long since anyone
+   *  moved" is exactly NOW() minus this. The claim RPC reads the same value
+   *  server-side; the client's copy only drives the countdown. */
+  updated_at: string;
   finished_at: string | null;
 }
 
@@ -114,6 +118,46 @@ export async function finalizeMatch(roomId: string): Promise<FinalizeResult | nu
     hostNewRating: row.host_new_rating,
     guestNewRating: row.guest_new_rating,
     winnerUserId: row.winner_user_id,
+  };
+}
+
+/**
+ * Cancel a room that never filled (migration 099).
+ *
+ * Called on the way out of the waiting screen, where an error the player
+ * cannot act on is worse than none — so this reports success and otherwise
+ * stays quiet. The room being already gone is not a failure worth a dialog.
+ */
+export async function cancelRoom(roomId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('cancel_room', { p_room_id: roomId });
+  if (error) { console.warn('cancelRoom:', error); return false; }
+  return data === true;
+}
+
+/**
+ * Settle a match whose opponent has gone silent (migration 099).
+ *
+ * Returns the same shape as finalizeMatch so the summary screen can render
+ * either without caring which one settled it. `error` is surfaced rather than
+ * swallowed: OPPONENT_STILL_ACTIVE means «not yet», which the screen has to
+ * be able to tell apart from a real failure.
+ */
+export async function claimAbandonedMatch(
+  roomId: string,
+): Promise<{ ok: true; result: FinalizeResult } | { ok: false; error: string }> {
+  const { data, error } = await supabase.rpc('claim_abandoned_match', { p_room_id: roomId });
+  if (error) return { ok: false, error: error.message };
+  const row = data?.[0];
+  if (!row) return { ok: false, error: 'NO_RESULT' };
+  return {
+    ok: true,
+    result: {
+      hostRatingChange: row.host_rating_change,
+      guestRatingChange: row.guest_rating_change,
+      hostNewRating: row.host_new_rating,
+      guestNewRating: row.guest_new_rating,
+      winnerUserId: row.winner_user_id,
+    },
   };
 }
 
