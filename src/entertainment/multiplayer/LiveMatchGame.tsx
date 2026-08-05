@@ -13,6 +13,7 @@ import RoomChat from './RoomChat';
 import AssistBar, { AssistId } from './AssistBar';
 import { type MatchRound, roundOfQuestion, startsRound, roundNumber, totalRounds } from './rounds';
 import { markSeen } from '../questionHistory';
+import { formatSeconds, statsForMatch, statsForRound, type AnswerRecord } from './matchStats';
 import { sendFriendRequest } from '../social';
 
 interface LiveMatchGameProps {
@@ -59,6 +60,16 @@ const STAGE_PANEL: Record<MatchRound['accent'], string> = {
   rose: 'from-rose-500/20 to-rose-700/5 border-rose-500/40',
   gold: 'from-yellow-400/25 to-amber-600/10 border-yellow-400/60',
 };
+
+/** One number with its name under it, as used by the round summary. */
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="bg-black/20 rounded-xl py-2 px-1 text-center">
+      <p className="text-sm font-black text-white tabular-nums leading-none">{value}</p>
+      <p className="text-[8.5px] font-bold text-slate-400 mt-1">{label}</p>
+    </div>
+  );
+}
 
 // Web Vibration API only — no sound. See the port plan: the original
 // prototype's sound effects were unlicensed third-party demo URLs, not
@@ -118,6 +129,10 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   const prevStatusRef = useRef<string | null>(null);
   const confettiFiredRef = useRef(false);
   const finalizeAttemptsRef = useRef(0);
+  /** Every answer this player gave, for the between-round summary. */
+  const answersRef = useRef<AnswerRecord[]>([]);
+  /** When the displayed question appeared, so an answer can be timed. */
+  const questionShownAtRef = useRef<number | null>(null);
   const handleSelectRef = useRef<(i: number) => void>(() => {});
 
   const isHost = room ? currentUser.id === room.host_user_id : false;
@@ -157,6 +172,15 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
   // hold, so neither client has to be told and neither can disagree.
   const currentRound = room ? roundOfQuestion(room.questions, qIdx) : null;
   const questionSeconds = currentRound?.seconds ?? QUESTION_SECONDS;
+
+  // The round that just ended, summarised for the transition banner. The
+  // banner names the round ABOUT to start, so the stats have to come from
+  // the question before the boundary, not from the current one.
+  const lastRoundStats = React.useMemo(() => {
+    if (!stageIntro || !room || qIdx === 0) return null;
+    return statsForRound(answersRef.current, room.questions[qIdx - 1]?.stage);
+  }, [stageIntro, room, qIdx]);
+  const matchCombo = stageIntro ? statsForMatch(answersRef.current).combo : 0;
 
   const copyRoomCode = async () => {
     try {
@@ -200,6 +224,22 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
       setAnswerError(readable ?? `تعذر إرسال إجابتك: ${result.error}`);
       return;
     }
+    // Record what happened, for the between-round summary. Correctness is
+    // known here without asking anyone — correctIdx is in the questions array
+    // this client already holds — and the time is measured from the question
+    // appearing. i === -1 is the sentinel the countdown submits on timeout.
+    const shownAt = questionShownAtRef.current;
+    answersRef.current = [
+      ...answersRef.current.filter((a) => a.qIdx !== qIdx),
+      {
+        qIdx,
+        round: q?.stage,
+        correct: !!q && i === q.correctIdx,
+        ms: shownAt ? Math.max(0, Date.now() - shownAt) : 0,
+        timedOut: i === -1,
+      },
+    ];
+
     triggerHaptic(q && i === q.correctIdx ? 'success' : 'error');
     // Reflect our own answer immediately instead of waiting on the
     // realtime round-trip — the opponent's side still updates via
@@ -416,6 +456,15 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
     const t = setInterval(() => { void touchWaitingRoom(roomId); }, WAITING_HEARTBEAT_MS);
     return () => clearInterval(t);
   }, [room?.status, isHost, roomId]);
+
+  // When the displayed question actually became answerable, which is what an
+  // answer time should be measured from. Not when the index changed: a round
+  // banner can be covering the screen at that point, and counting the banner
+  // against the player would make every first-question-of-a-round look slow.
+  useEffect(() => {
+    if (stageIntro || iAnswered) return;
+    questionShownAtRef.current = Date.now();
+  }, [qIdx, stageIntro, iAnswered]);
 
   // Per-question resets — clears the previous question's transient UI
   // state whenever current_question moves.
@@ -1179,6 +1228,27 @@ export default function LiveMatchGame({ currentUser, roomId, onBack, onUserUpdat
             </p>
             <h3 className="text-xl font-black text-white">{stageIntro.label}</h3>
             <p className="text-[11px] text-slate-300 leading-relaxed">{stageIntro.tagline}</p>
+
+            {/* How the round that just ended went.
+                The banner is where this belongs: it is already a pause with
+                the clock frozen, so the summary costs the player nothing and
+                does not need a screen of its own. Only shown when there IS a
+                previous round — the opening banner has nothing to report. */}
+            {lastRoundStats && lastRoundStats.total > 0 && (
+              <div className="w-full pt-3 mt-1 border-t border-white/10">
+                <p className="text-[9px] font-black text-slate-400 mb-2">الجولة اللي فاتت</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <Stat value={`${lastRoundStats.correct}/${lastRoundStats.total}`} label="صح" />
+                  <Stat value={`${lastRoundStats.accuracyPct}%`} label="دقة" />
+                  <Stat value={formatSeconds(lastRoundStats.bestMs)} label="أسرع إجابة" />
+                </div>
+                {matchCombo >= 2 && (
+                  <p className="text-[10px] font-black text-amber-300 pt-2">
+                    🔥 {matchCombo} إجابات صح ورا بعض
+                  </p>
+                )}
+              </div>
+            )}
           </motion.div>
         )}
 
