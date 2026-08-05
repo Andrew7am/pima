@@ -298,7 +298,7 @@ export default function OwnerRoomsManager({
                       {isSel && <Check className="w-3 h-3 text-white" />}
                     </span>
                   ) : (
-                    <button type="button" onClick={(e) => { e.stopPropagation(); setOpenRoomId(room.id); }} className="text-[var(--color-owner-secondary)] p-0.5">
+                    <button aria-label={`تفاصيل ${room.name}`} type="button" onClick={(e) => { e.stopPropagation(); setOpenRoomId(room.id); }} className="text-[var(--color-owner-secondary)] p-0.5">
                       <MoreVertical className="w-4 h-4" />
                     </button>
                   )}
@@ -319,7 +319,7 @@ export default function OwnerRoomsManager({
 
       {/* FAB */}
       {!selectMode && (
-        <button type="button" onClick={() => setShowAdd(true)}
+        <button aria-label="إضافة غرفة" type="button" onClick={() => setShowAdd(true)}
           className="fixed bottom-24 left-4 z-30 w-12 h-12 rounded-full bg-[var(--color-owner-primary)] text-white flex items-center justify-center shadow-lg shadow-black/25 active:scale-95 transition-transform">
           <Plus className="w-5 h-5" />
         </button>
@@ -336,7 +336,7 @@ export default function OwnerRoomsManager({
             <BulkBtn icon={ArrowRightLeft} label="الدور" onClick={() => setBulkSheet('floor')} />
             <BulkBtn icon={Trash2} label="حذف" danger onClick={() => { if (confirm(`حذف ${selected.size} غرفة؟`)) bulkApply((r) => onDeleteRoom?.(r.id)); }} />
           </div>
-          <button type="button" onClick={exitSelect} className="text-white p-1.5 shrink-0"><X className="w-4 h-4" /></button>
+          <button aria-label="إلغاء تحديد الغرف" type="button" onClick={exitSelect} className="text-white p-1.5 shrink-0"><X className="w-4 h-4" /></button>
         </div>
       )}
 

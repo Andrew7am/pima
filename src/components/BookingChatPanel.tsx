@@ -412,7 +412,7 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
                   </div>
                 )}
                 {m.attachmentUrl && m.attachmentType === 'image' && (
-                  <button type="button" onClick={() => setLightbox(m.attachmentUrl!)} className="block">
+                  <button aria-label={`عرض ${m.attachmentName || 'الصورة'} بالحجم الكامل`} type="button" onClick={() => setLightbox(m.attachmentUrl!)} className="block">
                     <img src={m.attachmentUrl} alt={m.attachmentName || 'صورة'} className="rounded-2xl max-w-full max-h-56 object-cover border border-black/5 shadow-sm cursor-zoom-in" />
                   </button>
                 )}
@@ -500,7 +500,7 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
               {replyTo.deletedAt ? 'رسالة محذوفة' : (replyTo.content || (replyTo.attachmentType === 'image' ? '📷 صورة' : replyTo.attachmentType === 'file' ? '📎 ملف' : ''))}
             </div>
           </div>
-          <button type="button" onClick={() => setReplyTo(null)} className={`${t.secondary} p-1 shrink-0`}><X className="w-4 h-4" /></button>
+          <button aria-label="إلغاء الرد على الرسالة" type="button" onClick={() => setReplyTo(null)} className={`${t.secondary} p-1 shrink-0`}><X className="w-4 h-4" /></button>
         </div>
       )}
 
@@ -513,7 +513,7 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
                 ? <img src={att.url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
                 : <div className={`w-10 h-10 rounded-lg ${t.primary} flex items-center justify-center shrink-0`}>{att.type === 'audio' ? <Mic className="w-5 h-5 text-white" /> : <FileText className="w-5 h-5 text-white" />}</div>}
               <span className={`text-[10.5px] font-bold ${t.text} truncate max-w-[100px]`}>{att.name || (att.type === 'image' ? 'صورة' : att.type === 'audio' ? 'رسالة صوتية' : 'ملف')}</span>
-              <button type="button" onClick={() => setAttachments((prev) => prev.filter((_, idx) => idx !== i))} className={`${t.secondary} p-1 shrink-0`}><X className="w-3.5 h-3.5" /></button>
+              <button aria-label="إزالة المرفق" type="button" onClick={() => setAttachments((prev) => prev.filter((_, idx) => idx !== i))} className={`${t.secondary} p-1 shrink-0`}><X className="w-3.5 h-3.5" /></button>
             </div>
           ))}
           {attaching && (
@@ -559,7 +559,7 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
             className={`flex-1 ${t.bg} border ${t.border} rounded-2xl px-4 py-2.5 text-xs ${t.text} outline-none ${t.focusBorder} transition-colors min-w-0`}
           />
           {input.trim() || attachments.length > 0 ? (
-            <button
+            <button aria-label="إرسال الرسالة"
               id="booking-chat-send-btn"
               type="button"
               onClick={handleSend}
@@ -584,7 +584,7 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
       {/* Fullscreen image lightbox */}
       {lightbox && (
         <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
-          <button type="button" onClick={() => setLightbox(null)} className="absolute top-4 left-4 text-white/90 p-2"><X className="w-6 h-6" /></button>
+          <button aria-label="إغلاق الصورة" type="button" onClick={() => setLightbox(null)} className="absolute top-4 left-4 text-white/90 p-2"><X className="w-6 h-6" /></button>
           <img src={lightbox} alt="" className="max-w-full max-h-full rounded-lg object-contain" />
         </div>
       )}

@@ -1347,7 +1347,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   onChange={(e) => setNewChatMessage(e.target.value)}
                   className="bg-purple-950/80 border border-purple-500/30 text-purple-100 text-[10.5px] rounded-xl px-2.5 py-1.5 flex-1 focus:outline-none focus:ring-1 focus:ring-amber-500"
                 />
-                <button
+                <button aria-label="إرسال الرسالة"
                   type="submit"
                   className="bg-amber-500 text-purple-950 p-1.5 rounded-xl hover:bg-amber-600 transition-colors"
                 >
@@ -1799,7 +1799,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                           >
                             {s.id === activeSlideId ? '📡 معروض' : 'بث'}
                           </button>
-                          <button
+                          <button aria-label="حذف الشريحة"
                             onClick={() => handleDeleteSlide(s.id)}
                             className="p-1.5 bg-rose-500/10 text-rose-500 rounded-lg hover:bg-rose-500/20 cursor-pointer"
                           >
@@ -2045,7 +2045,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-[9px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold font-mono">+{ev.points} XP</span>
                     {isServantMode && (
-                      <button
+                      <button aria-label="حذف الحدث"
                         onClick={() => handleDeleteEvent(ev.id)}
                         className="p-1 bg-red-50 text-red-600 rounded-lg border border-red-100 hover:bg-red-100"
                       >
@@ -2143,7 +2143,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                 onChange={(e) => setNewChecklistItem(e.target.value)}
                 className="bg-[#FAF8F5]/80 border border-slate-200 rounded-xl px-3 py-2 text-xs flex-1 focus:outline-none focus:ring-1 focus:ring-[#0A2342]"
               />
-              <button
+              <button aria-label="إضافة عنصر للقائمة"
                 type="submit"
                 className="bg-[#0A2342] text-white p-2 rounded-xl hover:bg-[#0D315C] shrink-0"
               >

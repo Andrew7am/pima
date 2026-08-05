@@ -145,7 +145,7 @@ export default function ChatThreadScreen({ currentUser, friendId, friendName, on
             maxLength={2000}
             className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-500/40 transition-colors min-w-0"
           />
-          <button
+          <button aria-label="إرسال الرسالة"
             type="button"
             onClick={handleSend}
             disabled={sending || !input.trim()}

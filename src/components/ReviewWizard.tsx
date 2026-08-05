@@ -66,7 +66,7 @@ function StarPicker({ value, onChange, size = 'w-6 h-6' }: { value: number; onCh
   return (
     <div className="flex gap-1 justify-center">
       {[1, 2, 3, 4, 5].map((s) => (
-        <button key={s} type="button" onClick={() => onChange(s)} className="cursor-pointer p-0.5 focus:outline-none">
+        <button aria-label={`تقييم ${s} من ٥`} key={s} type="button" onClick={() => onChange(s)} className="cursor-pointer p-0.5 focus:outline-none">
           <Star className={`${size} transition-colors ${s <= value ? 'text-amber-500 fill-amber-500' : 'text-[#D6D6C2] hover:text-amber-300'}`} />
         </button>
       ))}

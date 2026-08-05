@@ -4,6 +4,7 @@ import {
   Search, Check, RotateCcw, Sun,
 } from 'lucide-react';
 import { GOVERNORATES, AMENITIES_LIST } from '../mockData';
+import { useDialogFocus } from '../lib/useDialogFocus';
 import { tapFeedback } from '../lib/haptics';
 
 export type SeaProximity = 'all' | 'near' | 'view' | 'beach' | 'far';
@@ -60,6 +61,7 @@ const prettyDate = (s: string) => {
 };
 
 export default function FilterSheet({ open, value, matchCount, onPreview, onApply, onClose }: FilterSheetProps) {
+  const panelRef = useDialogFocus<HTMLDivElement>(open, onClose);
   const [step, setStep] = useState<Step>('menu');
   const [draft, setDraft] = useState<FilterDraft>(value);
   const [month, setMonth] = useState(() => new Date());
@@ -156,7 +158,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label="فلتر البحث">
       <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px] animate-in fade-in duration-200" onClick={onClose} />
 
-      <div className="relative w-full sm:max-w-md bg-[#FBF9F4] rounded-t-[28px] sm:rounded-[28px] sm:mb-6 max-h-[92dvh] flex flex-col shadow-[0_-8px_40px_rgba(0,0,0,0.18)] animate-in slide-in-from-bottom duration-300 ease-[cubic-bezier(0.33,1,0.68,1)]"
+      <div ref={panelRef} className="relative w-full sm:max-w-md bg-[#FBF9F4] rounded-t-[28px] sm:rounded-[28px] sm:mb-6 max-h-[92dvh] flex flex-col shadow-[0_-8px_40px_rgba(0,0,0,0.18)] outline-none animate-in slide-in-from-bottom duration-300 ease-[cubic-bezier(0.33,1,0.68,1)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
 
         {/* Grab handle + header */}
@@ -386,7 +388,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                     <button key={a} onClick={() => { tapFeedback(); patch({ amenities: on ? draft.amenities.filter((x) => x !== a) : [...draft.amenities, a] }); }}
                       className={`relative rounded-2xl border px-2 py-3 text-[9.5px] font-bold leading-tight transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press ${
                         on ? 'bg-[#F6F0E2] border-[#C9A96A] text-[#2D2D24]' : 'bg-white border-[#EDE7DA] text-[#4A4A3A]'}`}>
-                      {on && <Check aria-hidden="true" className="absolute top-1.5 left-1.5 w-3.5 h-3.5 text-white bg-[#B8944E] rounded-full p-0.5" />}
+                      {on && <Check aria-hidden="true" className="absolute top-1.5 left-1.5 w-3.5 h-3.5 text-[#0A2342] bg-[#B8944E] rounded-full p-0.5" />}
                       {a}
                     </button>
                   );

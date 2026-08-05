@@ -84,7 +84,7 @@ export default function OwnerScanner({ open, onClose, bookings, onCheckIn }: Own
     <div className="fixed inset-0 z-[60] bg-black/90 flex flex-col" dir="rtl">
       <div className="flex items-center justify-between p-4 text-white">
         <span className="text-sm font-black flex items-center gap-1.5"><ScanLine className="w-4 h-4" /> مسح رمز الوصول</span>
-        <button type="button" onClick={onClose} className="p-1.5 rounded-full bg-white/15"><X className="w-4 h-4" /></button>
+        <button aria-label="إغلاق الماسح" type="button" onClick={onClose} className="p-1.5 rounded-full bg-white/15"><X className="w-4 h-4" /></button>
       </div>
 
       {done ? (

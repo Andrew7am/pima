@@ -227,7 +227,7 @@ export default function ProfileScreen({
       <div className="space-y-4 text-right animate-in fade-in slide-in-from-left-2 duration-200 pb-10">
         {/* Header */}
         <div className="flex items-center gap-2 pb-1">
-          <button
+          <button aria-label="رجوع"
             onClick={() => { setView('hub'); setIsConfirmingDelete(false); }}
             className="p-1.5 rounded-xl border border-[#D6D6C2] bg-white hover:bg-[#EBEBE0]/50 text-[#4A4A3A] transition-all cursor-pointer"
           >

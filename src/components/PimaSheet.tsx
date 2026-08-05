@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { tapFeedback } from '../lib/haptics';
+import { useDialogFocus } from '../lib/useDialogFocus';
 
 interface PimaSheetProps {
   open: boolean;
@@ -22,14 +23,16 @@ interface PimaSheetProps {
  * form never pushes the sheet off the screen.
  */
 export default function PimaSheet({ open, onClose, title, subtitle, icon, children }: PimaSheetProps) {
+  // Escape now lives in the hook alongside the focus trap — a sheet that traps
+  // Tab must not be able to ship without a keyboard way out.
+  const panelRef = useDialogFocus<HTMLDivElement>(open, onClose);
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
-  }, [open, onClose]);
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
 
   if (!open) return null;
 
@@ -40,7 +43,10 @@ export default function PimaSheet({ open, onClose, title, subtitle, icon, childr
         onClick={onClose}
       />
 
-      <div className="relative w-full sm:max-w-md bg-[#FBF9F4] rounded-t-[28px] sm:rounded-[28px] sm:mb-6 max-h-[92dvh] flex flex-col shadow-[0_-8px_40px_rgba(0,0,0,0.18)] animate-in slide-in-from-bottom duration-300 ease-[cubic-bezier(0.33,1,0.68,1)]">
+      <div
+        ref={panelRef}
+        className="relative w-full sm:max-w-md bg-[#FBF9F4] rounded-t-[28px] sm:rounded-[28px] sm:mb-6 max-h-[92dvh] flex flex-col shadow-[0_-8px_40px_rgba(0,0,0,0.18)] outline-none animate-in slide-in-from-bottom duration-300 ease-[cubic-bezier(0.33,1,0.68,1)]"
+      >
         <span aria-hidden="true" className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-[#DED6C4]" />
 
         <div className="shrink-0 flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-[#EDE7DA] text-right">

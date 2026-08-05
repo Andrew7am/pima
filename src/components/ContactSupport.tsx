@@ -247,7 +247,7 @@ export default function ContactSupport({ currentUser, onBack }: ContactSupportPr
 
       {/* Success Submission Notification Toast */}
       {showSuccessToast && (
-        <div className="bg-emerald-50 border-2 border-emerald-300 text-emerald-950 p-4 rounded-3xl shadow-lg flex items-start gap-3 animate-bounce">
+        <div role="status" aria-live="polite" className="bg-emerald-50 border-2 border-emerald-300 text-emerald-950 p-4 rounded-3xl shadow-lg flex items-start gap-3 animate-bounce">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
           <div className="space-y-1 flex-1">
             <h4 className="text-xs font-black text-emerald-800">تم إرسال بلاغكم بنجاح!</h4>
@@ -255,7 +255,7 @@ export default function ContactSupport({ currentUser, onBack }: ContactSupportPr
               نشكر محبتكم واهتمامكم بتطوير الخدمة! تم تسجيل البلاغ/الاقتراح برقم تذكرة <strong className="text-emerald-900 underline font-black" dir="ltr">#{newTicketId}</strong> بنجاح. سيقوم مهندسو الدعم بمراجعة طلبكم والتواصل معكم عبر التليفون المسجل خلال ٢٤ ساعة كحد أقصى.
             </p>
           </div>
-          <button 
+          <button aria-label="إغلاق رسالة التأكيد" 
             type="button" 
             onClick={() => setShowSuccessToast(false)} 
             className="text-xs font-bold text-emerald-700 hover:text-emerald-900 cursor-pointer"

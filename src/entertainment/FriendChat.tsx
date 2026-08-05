@@ -143,7 +143,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
                   <span className="text-[#F5C542]">دردشة التحدي ⚔️</span>
                 </h4>
               </div>
-              <button
+              <button aria-label="إغلاق المحادثة"
                 onClick={() => setIsOpen(false)}
                 className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
               >
@@ -229,7 +229,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
                 placeholder="اكتب رسالتك هنا..."
                 className="flex-1 bg-[#081326] border border-blue-500/10 rounded-xl px-3.5 py-2 text-xs font-bold outline-hidden focus:border-blue-400 text-white text-right placeholder-slate-500"
               />
-              <button
+              <button aria-label="إرسال الرسالة"
                 onClick={() => handleSendMessage(messageText)}
                 className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 p-2 rounded-xl active:scale-95 transition-transform cursor-pointer border border-[#F5C542]/30"
               >

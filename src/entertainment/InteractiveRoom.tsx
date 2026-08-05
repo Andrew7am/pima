@@ -1240,12 +1240,12 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
       
       {/* Toast Alert */}
       {toastMsg && (
-        <div className="fixed top-20 left-4 right-4 bg-slate-900/95 text-white py-3.5 px-5 rounded-2xl text-xs font-black shadow-2xl z-[9999] flex items-center gap-2 border border-slate-700/50 justify-between animate-bounce">
+        <div role="status" aria-live="polite" className="fixed top-20 left-4 right-4 bg-slate-900/95 text-white py-3.5 px-5 rounded-2xl text-xs font-black shadow-2xl z-[9999] flex items-center gap-2 border border-slate-700/50 justify-between animate-bounce">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 bg-amber-400 rounded-full animate-ping" />
             <p>{toastMsg}</p>
           </div>
-          <button onClick={() => setToastMsg(null)} className="text-slate-400 hover:text-white">
+          <button aria-label="إغلاق التنبيه" onClick={() => setToastMsg(null)} className="text-slate-400 hover:text-white">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>

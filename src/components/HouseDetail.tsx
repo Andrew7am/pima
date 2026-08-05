@@ -459,7 +459,7 @@ const DateRangePicker = ({
             </div>
 
             <div className="flex items-center justify-between px-1">
-              <button
+              <button aria-label="الشهر السابق"
                 type="button"
                 onClick={prevMonth}
                 className="w-8 h-8 rounded-full border border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#EBEBE0] flex items-center justify-center text-xs font-bold cursor-pointer transition-all"
@@ -469,7 +469,7 @@ const DateRangePicker = ({
               <span className="text-xs font-extrabold text-[#0A2342]">
                 {MONTH_NAMES_AR[month]} {year}
               </span>
-              <button
+              <button aria-label="الشهر التالي"
                 type="button"
                 onClick={nextMonth}
                 className="w-8 h-8 rounded-full border border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#EBEBE0] flex items-center justify-center text-xs font-bold cursor-pointer transition-all"

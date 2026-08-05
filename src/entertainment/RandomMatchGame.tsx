@@ -779,7 +779,7 @@ export default function RandomMatchGame({
           >
             <span>خروج</span>
           </button>
-          <button className="bg-[#122244] hover:bg-[#1b3266] text-slate-300 hover:text-white border border-blue-500/20 p-2.5 rounded-xl transition-all cursor-pointer relative">
+          <button aria-label="مفاجآت ومكافآت" className="bg-[#122244] hover:bg-[#1b3266] text-slate-300 hover:text-white border border-blue-500/20 p-2.5 rounded-xl transition-all cursor-pointer relative">
             <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border border-[#0d1b3e] animate-pulse" />
             <Sparkles className="w-4 h-4 text-[#F5C542]" />
           </button>
@@ -1153,7 +1153,7 @@ export default function RandomMatchGame({
                       onChange={(e) => setJoinCode(e.target.value)}
                       className="flex-1 text-center font-mono font-black text-xs bg-black/60 border border-slate-800 rounded-xl px-3 py-2.5 text-amber-400 placeholder:text-slate-700 focus:outline-none focus:border-blue-500 transition-all uppercase"
                     />
-                    <button
+                    <button aria-label="انضمام لغرفة صديق"
                       onClick={() => handleJoinFriendRoom(joinCode)}
                       disabled={isJoining}
                       className="bg-blue-600 hover:bg-blue-500 text-white px-5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center shadow-lg active:scale-95 disabled:opacity-50"

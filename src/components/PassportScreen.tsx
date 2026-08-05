@@ -97,7 +97,7 @@ export default function PassportScreen({ stamps, target, tierName, completedBook
 
       {/* New-stamp toast — plays once per newly earned stamp. */}
       {toast && (
-        <div className="flex items-center justify-center gap-1.5 bg-[#0A2342] text-white rounded-2xl px-4 py-2.5 shadow-[0_8px_24px_rgba(10,35,66,0.35)] animate-in fade-in slide-in-from-top-2 duration-300">
+        <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 bg-[#0A2342] text-white rounded-2xl px-4 py-2.5 shadow-[0_8px_24px_rgba(10,35,66,0.35)] animate-in fade-in slide-in-from-top-2 duration-300">
           <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
           <span className="text-[11px] font-black">تمت إضافة ختم جديد إلى جواز بيما</span>
         </div>

@@ -594,14 +594,14 @@ export default function RoomDistribution({
         
         {/* Floating Top Toast Banner */}
         {toastMessage && (
-          <div className="absolute top-16 left-4 right-4 z-50 p-3.5 rounded-2xl border text-xs font-bold flex items-center gap-2 shadow-lg animate-in slide-in-from-top-4 duration-300 bg-white">
+          <div role="status" aria-live="polite" className="absolute top-16 left-4 right-4 z-50 p-3.5 rounded-2xl border text-xs font-bold flex items-center gap-2 shadow-lg animate-in slide-in-from-top-4 duration-300 bg-white">
             <span className="text-sm">
               {toastMessage.type === 'success' && '✅'}
               {toastMessage.type === 'warning' && '⚠️'}
               {toastMessage.type === 'info' && '💡'}
             </span>
             <div className="flex-1 text-[#4A4A3A]">{toastMessage.text}</div>
-            <button onClick={() => setToastMessage(null)} className="text-[#8A8A70] hover:text-[#4A4A3A]">
+            <button aria-label="إغلاق التنبيه" onClick={() => setToastMessage(null)} className="text-[#8A8A70] hover:text-[#4A4A3A]">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -618,7 +618,7 @@ export default function RoomDistribution({
               <p className="text-[10px] text-white/80 font-medium">مؤتمر: {booking.houseName} | {booking.guestsCount} فرد</p>
             </div>
           </div>
-          <button 
+          <button aria-label="إغلاق توزيع الغرف" 
             onClick={onClose} 
             className="p-1 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
             id="close-allocation-modal"
@@ -922,12 +922,12 @@ export default function RoomDistribution({
                     <div key={room.id} className={`bg-white rounded-2xl border p-3 space-y-2 ${used >= cap ? 'border-[#5A5A40]/40 bg-[#EBEBE0]/10' : 'border-[#D6D6C2]'}`}>
                       <div className="text-xs font-extrabold text-[#4A4A3A]">{room.name}</div>
                       <div className="flex items-center justify-between">
-                        <button type="button" onClick={() => handleQuickAdjust(room, -1)} disabled={used <= 0}
+                        <button aria-label={`تقليل عدد النزلاء في ${room.name}`} type="button" onClick={() => handleQuickAdjust(room, -1)} disabled={used <= 0}
                           className="w-7 h-7 rounded-lg bg-[#FBFBFA] border border-[#D6D6C2] flex items-center justify-center disabled:opacity-30 cursor-pointer">
                           <Minus className="w-3.5 h-3.5 text-[#4A4A3A]" />
                         </button>
                         <span className="text-sm font-black text-[#4A4A3A]">{used} / {cap}</span>
-                        <button type="button" onClick={() => handleQuickAdjust(room, 1)} disabled={used >= cap}
+                        <button aria-label={`زيادة عدد النزلاء في ${room.name}`} type="button" onClick={() => handleQuickAdjust(room, 1)} disabled={used >= cap}
                           className="w-7 h-7 rounded-lg bg-[#5A5A40] flex items-center justify-center disabled:opacity-30 cursor-pointer">
                           <Plus className="w-3.5 h-3.5 text-white" />
                         </button>

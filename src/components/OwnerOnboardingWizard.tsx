@@ -795,12 +795,12 @@ export default function OwnerOnboardingWizard({
                       <BedDouble className="w-3 h-3" /> عدد الأسرة لكل غرفة
                     </div>
                     <div className="flex items-center justify-center gap-3">
-                      <button type="button" onClick={() => setRangeBeds((b) => Math.max(1, b - 1))}
+                      <button aria-label="تقليل عدد الأسرّة" type="button" onClick={() => setRangeBeds((b) => Math.max(1, b - 1))}
                         className="w-6 h-6 rounded-lg bg-white border border-[#D6D6C2] flex items-center justify-center text-[#5A5A40]">
                         <Minus className="w-3 h-3" />
                       </button>
                       <span className="text-sm font-black text-[#2D2D24] w-4 text-center">{rangeBeds}</span>
-                      <button type="button" onClick={() => setRangeBeds((b) => b + 1)}
+                      <button aria-label="زيادة عدد الأسرّة" type="button" onClick={() => setRangeBeds((b) => b + 1)}
                         className="w-6 h-6 rounded-lg bg-white border border-[#D6D6C2] flex items-center justify-center text-[#5A5A40]">
                         <Plus className="w-3 h-3" />
                       </button>
@@ -899,7 +899,7 @@ export default function OwnerOnboardingWizard({
                     {draftRooms.slice(0, 30).map((r, i) => (
                       <span key={i} className="group relative bg-white border border-[#D6D6C2] rounded-lg px-2.5 py-1.5 text-[11px] font-black text-[#2D2D24] flex items-center gap-1">
                         {r.name}
-                        <button type="button" onClick={() => setDraftRooms((prev) => prev.filter((_, idx) => idx !== i))}
+                        <button aria-label={`حذف ${r.name}`} type="button" onClick={() => setDraftRooms((prev) => prev.filter((_, idx) => idx !== i))}
                           className="text-[#BCBC9D] hover:text-red-500">
                           <Trash2 className="w-2.5 h-2.5" />
                         </button>
@@ -926,7 +926,7 @@ export default function OwnerOnboardingWizard({
                   {draftHalls.map((h, i) => (
                     <div key={i} className="flex items-center justify-between bg-[#F7F4EB] border border-[#D6D6C2] rounded-xl px-3 py-2 text-[11px]">
                       <span className="font-bold">{h.name} — تسع {h.capacity} — {h.price || 0} ج</span>
-                      <button type="button" onClick={() => setDraftHalls((prev) => prev.filter((_, idx) => idx !== i))} className="text-red-500">
+                      <button aria-label={`حذف قاعة ${h.name}`} type="button" onClick={() => setDraftHalls((prev) => prev.filter((_, idx) => idx !== i))} className="text-red-500">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -971,7 +971,7 @@ export default function OwnerOnboardingWizard({
                   {draftPayments.map((p, i) => (
                     <div key={i} className="flex items-center justify-between bg-[#F7F4EB] border border-[#D6D6C2] rounded-xl px-3 py-2 text-[11px]">
                       <span className="font-bold">{PAYMENT_TYPE_LABELS[p.type]} — {p.value}</span>
-                      <button type="button" onClick={() => setDraftPayments((prev) => prev.filter((_, idx) => idx !== i))} className="text-red-500">
+                      <button aria-label="حذف طريقة الدفع" type="button" onClick={() => setDraftPayments((prev) => prev.filter((_, idx) => idx !== i))} className="text-red-500">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>

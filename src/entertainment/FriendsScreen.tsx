@@ -201,7 +201,7 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
                   <div key={r.id} className="flex items-center gap-3 bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-amber-500/30 rounded-2xl p-3">
                     <Avatar name={r.requesterName} url={avatars[r.requesterId]} />
                     <span className="flex-1 min-w-0 text-sm font-bold text-white truncate">{r.requesterName}</span>
-                    <button
+                    <button aria-label={`قبول طلب صداقة ${r.requesterName}`}
                       type="button"
                       onClick={() => handleRespond(r.id, true)}
                       disabled={busyId === r.id}
@@ -209,7 +209,7 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
                     >
                       <Check className="w-4 h-4" />
                     </button>
-                    <button
+                    <button aria-label={`رفض طلب صداقة ${r.requesterName}`}
                       type="button"
                       onClick={() => handleRespond(r.id, false)}
                       disabled={busyId === r.id}
@@ -234,7 +234,7 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
                       <Clock className="w-3 h-3" />
                       في الانتظار
                     </span>
-                    <button
+                    <button aria-label="إلغاء طلب الصداقة"
                       type="button"
                       onClick={() => handleCancel(r.id)}
                       disabled={busyId === r.id}

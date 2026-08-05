@@ -6,6 +6,7 @@ import {
   FileText, Users, CalendarDays, Landmark, Wallet, Home, Clock, Lock, RotateCw, Gem,
 } from 'lucide-react';
 import { tapFeedback } from '../../lib/haptics';
+import { useDialogFocus } from '../../lib/useDialogFocus';
 
 export type PayMethod = 'instapay' | 'vodafone' | 'bank';
 
@@ -72,6 +73,7 @@ const METHODS: { key: PayMethod; label: string; hint: string; glyph: React.React
 export default function DepositPayment({
   open, booking, house, currentUser, amount, payees, onClose, onSubmit, onGoHome,
 }: DepositPaymentProps) {
+  const panelRef = useDialogFocus<HTMLDivElement>(open, onClose);
   const available = METHODS.filter((m) => payees[m.key]);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [method, setMethod] = useState<PayMethod | null>(available[0]?.key ?? null);
@@ -194,7 +196,7 @@ export default function DepositPayment({
     <div className="fixed inset-0 z-[60] flex items-end justify-center" role="dialog" aria-modal="true" aria-label="دفع العربون">
       <div className="absolute inset-0 bg-black/45 backdrop-blur-[3px] animate-in fade-in duration-200" onClick={onClose} />
 
-      <div className="relative w-full sm:max-w-md h-[96dvh] sm:h-auto sm:max-h-[94dvh] bg-[#FBF9F4] rounded-t-[28px] sm:rounded-[28px] sm:mb-6 flex flex-col shadow-[0_-8px_40px_rgba(0,0,0,0.2)] animate-in slide-in-from-bottom duration-300 ease-[cubic-bezier(0.33,1,0.68,1)]">
+      <div ref={panelRef} className="relative w-full sm:max-w-md h-[96dvh] sm:h-auto sm:max-h-[94dvh] bg-[#FBF9F4] rounded-t-[28px] sm:rounded-[28px] sm:mb-6 flex flex-col shadow-[0_-8px_40px_rgba(0,0,0,0.2)] outline-none animate-in slide-in-from-bottom duration-300 ease-[cubic-bezier(0.33,1,0.68,1)]">
         <span aria-hidden="true" className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-[#DED6C4]" />
         {renderHeader(step !== 3)}
 

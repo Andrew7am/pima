@@ -206,7 +206,7 @@ export default function WebLayout({
                       >
                         <Check className="w-3 h-3" /> تمييز الكل كمقروء
                       </button>
-                      <button onClick={() => setShowNotif(false)} className="p-1 rounded-md hover:bg-[var(--color-natural-hover)]">
+                      <button aria-label="إغلاق الإشعارات" onClick={() => setShowNotif(false)} className="p-1 rounded-md hover:bg-[var(--color-natural-hover)]">
                         <X className="w-4 h-4 text-[var(--color-natural-secondary)]" />
                       </button>
                     </div>

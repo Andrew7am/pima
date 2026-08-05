@@ -862,7 +862,7 @@ export default function OwnerDashboardShell({
                         </span>
                       )}
                     </button>
-                    <button type="button" id="hero-menu-btn" onClick={() => setShowOverflow((v) => !v)}
+                    <button aria-label="قائمة أقسام إضافية" type="button" id="hero-menu-btn" onClick={() => setShowOverflow((v) => !v)}
                       className="p-2 rounded-xl bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[var(--color-owner-text)] cursor-pointer lg:hidden">
                       <Menu className="w-4 h-4" />
                     </button>
@@ -1504,7 +1504,7 @@ export default function OwnerDashboardShell({
               <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-[var(--color-owner-text)]">إضافة حجز يدوي / مؤقت</span>
-                  <button type="button" onClick={() => setShowAddBooking(false)} className="text-[var(--color-owner-secondary)] cursor-pointer"><X className="w-4 h-4" /></button>
+                  <button aria-label="إغلاق نموذج الحجز اليدوي" type="button" onClick={() => setShowAddBooking(false)} className="text-[var(--color-owner-secondary)] cursor-pointer"><X className="w-4 h-4" /></button>
                 </div>
                 <p className="text-[10px] text-[var(--color-owner-secondary)]">للحجوزات اللي بتوصلك بالتليفون أو الحضور المباشر. الحجز المؤقت بيحجز السعة لحد ما المجموعة تأكد، وتقدر ترفضه في أي وقت لإلغائه.</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -2142,7 +2142,7 @@ export default function OwnerDashboardShell({
                             <span className="font-extrabold text-[var(--color-owner-text)]">{r.label}</span>
                             <span className="text-[var(--color-owner-secondary)] font-bold">{r.startDate} ← {r.endDate}</span>
                             <span className="font-black text-amber-800">{r.pricePerNight} ج.م/ليلة</span>
-                            <button type="button" onClick={() => onUpdateHouse?.({ ...srHouse, seasonalRates: currentRates.filter((x) => x.id !== r.id) })}
+                            <button aria-label={`حذف سعر موسم ${r.label}`} type="button" onClick={() => onUpdateHouse?.({ ...srHouse, seasonalRates: currentRates.filter((x) => x.id !== r.id) })}
                               className="text-rose-600 hover:text-rose-800 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
                           </div>
                         ))}
@@ -2246,7 +2246,7 @@ export default function OwnerDashboardShell({
                       {halls.map((h) => (
                         <div key={h.id} className="flex justify-between items-center bg-[var(--color-owner-surface)] px-2.5 py-1.5 rounded-xl text-[10px] border border-[var(--color-owner-border)]">
                           <div><span className="font-bold text-[var(--color-owner-text)]">{h.name}</span><span className="text-[var(--color-owner-secondary)] font-medium"> (سعة {arabicPlural(h.capacity, GUEST_FORMS)})</span></div>
-                          <button type="button" onClick={() => handleRemoveHall(h.id)} className="text-rose-600 hover:text-rose-800 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+                          <button aria-label={`حذف قاعة ${h.name}`} type="button" onClick={() => handleRemoveHall(h.id)} className="text-rose-600 hover:text-rose-800 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       ))}
                     </div>
@@ -2356,7 +2356,7 @@ export default function OwnerDashboardShell({
                               <img referrerPolicy="no-referrer" src={img} alt="بيت خلوة" className="w-full h-14 object-cover" />
                               <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] p-0.5 text-center truncate font-bold">{desc}</div>
                               {base.images.length > 1 && (
-                                <button type="button" onClick={() => { if (confirm('حذف هذه الصورة؟')) requestHouseEdit(house, { images: base.images.filter((_, i) => i !== idx) }); }}
+                                <button aria-label="حذف هذه الصورة" type="button" onClick={() => { if (confirm('حذف هذه الصورة؟')) requestHouseEdit(house, { images: base.images.filter((_, i) => i !== idx) }); }}
                                   className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold hover:bg-red-700 cursor-pointer">✕</button>
                               )}
                             </div>
@@ -2442,7 +2442,7 @@ export default function OwnerDashboardShell({
                     {(activeHouseForPayments.paymentMethods || []).map((pm) => (
                       <div key={pm.id} className="flex items-center justify-between bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-3 py-2 text-[11px]">
                         <div><span className="font-bold text-[var(--color-owner-text)]">{pm.label}</span><span className="text-[var(--color-owner-secondary)] font-mono mr-2">{pm.value}</span></div>
-                        <button type="button" onClick={() => handleRemovePaymentMethod(pm.id)} className="text-rose-600 hover:text-rose-800 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button aria-label={`حذف طريقة الدفع ${pm.label}`} type="button" onClick={() => handleRemovePaymentMethod(pm.id)} className="text-rose-600 hover:text-rose-800 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     ))}
                   </div>

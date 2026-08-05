@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { Instagram, Facebook, Youtube, Twitter, Send, Globe, Music2, MessageCircle, Phone, Mail, Sparkles, ArrowLeft, Check } from 'lucide-react';
 import { PromoBanner, PromoBannerLink, PromoLinkPlatform } from '../types';
+import { arabicNumber } from '../lib/arabic';
 import { safeUrl } from '../lib/safeUrl';
 import BannerCanvas from './banner/BannerCanvas';
 import type { BannerLiveData } from './banner/BannerCanvas';
@@ -359,17 +360,17 @@ export function CountdownOfferBanner({ banner, onCta, onOpenHouse, live }: { ban
         <div className="flex items-center justify-between mt-1">
           <div className="flex items-center gap-1" dir="ltr">
             <div className="flex flex-col items-center">
-              <div className="bg-black/60 border border-white/20 rounded-lg w-7 h-7 flex items-center justify-center text-xs font-black text-white">{timeLeft.seconds.toString().padStart(2, '0')}</div>
+              <div className="bg-black/60 border border-white/20 rounded-lg w-7 h-7 flex items-center justify-center text-xs font-black text-white">{arabicNumber(timeLeft.seconds).padStart(2, '٠')}</div>
               <span className="text-[6.5px] text-gray-300 font-bold mt-0.5">ثانية</span>
             </div>
             <span className="text-xs font-black text-white -mt-3">:</span>
             <div className="flex flex-col items-center">
-              <div className="bg-black/60 border border-white/20 rounded-lg w-7 h-7 flex items-center justify-center text-xs font-black text-white">{timeLeft.minutes.toString().padStart(2, '0')}</div>
+              <div className="bg-black/60 border border-white/20 rounded-lg w-7 h-7 flex items-center justify-center text-xs font-black text-white">{arabicNumber(timeLeft.minutes).padStart(2, '٠')}</div>
               <span className="text-[6.5px] text-gray-300 font-bold mt-0.5">دقيقة</span>
             </div>
             <span className="text-xs font-black text-white -mt-3">:</span>
             <div className="flex flex-col items-center">
-              <div className="bg-black/60 border border-white/20 rounded-lg w-7 h-7 flex items-center justify-center text-xs font-black text-white">{timeLeft.hours.toString().padStart(2, '0')}</div>
+              <div className="bg-black/60 border border-white/20 rounded-lg w-7 h-7 flex items-center justify-center text-xs font-black text-white">{arabicNumber(timeLeft.hours).padStart(2, '٠')}</div>
               <span className="text-[6.5px] text-gray-300 font-bold mt-0.5">ساعة</span>
             </div>
           </div>

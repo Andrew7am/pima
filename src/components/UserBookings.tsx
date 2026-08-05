@@ -1620,7 +1620,7 @@ export default function UserBookings({
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setReviewingBooking(null)} />
             <div className="relative z-10 w-full max-w-md max-h-[90dvh] overflow-y-auto animate-in zoom-in-95 duration-200">
-              <button
+              <button aria-label="إغلاق التقييم"
                 onClick={() => setReviewingBooking(null)}
                 className="absolute top-2 left-2 z-20 p-1.5 bg-white/90 hover:bg-white rounded-full border border-[#D6D6C2] cursor-pointer shadow-sm"
               >
@@ -1814,7 +1814,7 @@ export default function UserBookings({
                     <p className="text-[9px] text-amber-100 font-medium">بيت {activePlannerBooking.houseName} • {activePlannerBooking.guestsCount} فرد</p>
                   </div>
                 </div>
-                <button
+                <button aria-label="إغلاق مخطط الرحلة"
                   onClick={() => setActivePlannerBooking(null)}
                   className="p-1 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-all cursor-pointer"
                 >

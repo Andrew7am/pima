@@ -108,7 +108,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({ roomId, senderName
           >
             <div className="bg-[#122244]/80 p-4 flex items-center justify-between border-b border-blue-500/10">
               <h4 className="text-xs font-black text-[#F5C542]">دردشة اللعب العشوائي ⚔️</h4>
-              <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
+              <button aria-label="إغلاق المحادثة" onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#081326]/40">
@@ -151,7 +151,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({ roomId, senderName
                 className="flex-1 bg-[#081326] border border-blue-500/10 rounded-xl px-3.5 py-2 text-xs font-bold text-white placeholder-slate-500"
                 placeholder="اكتب رسالة..."
               />
-              <button onClick={() => sendMessage(newMessage)} className="bg-amber-500 text-slate-950 p-2 rounded-xl">
+              <button aria-label="إرسال الرسالة" onClick={() => sendMessage(newMessage)} className="bg-amber-500 text-slate-950 p-2 rounded-xl">
                 <Send className="w-4 h-4 rotate-180" />
               </button>
             </div>

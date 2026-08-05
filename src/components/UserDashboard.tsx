@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { RetreatHouse, User, PromoBanner, Booking, Review } from '../types';
+import { arabicNumber, arabicDecimal, arabicPlural, arabicUnit, HOUSE_FORMS, GUEST_FORMS } from '../lib/arabic';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import { Search, MapPin, Map as MapIcon, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking, Flame, Sun } from 'lucide-react';
 import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
@@ -44,7 +45,7 @@ function PriceBox({ icon: Icon, label, value }: {
           of white is not a reliable 70% of anything. */}
       <span className="block text-[9.5px] font-black text-white mt-0.5">{label}</span>
       <span className="flex items-baseline justify-center gap-0.5 mt-1">
-        <span className="text-[15px] font-black text-[#E8C88A] leading-none [font-variant-numeric:tabular-nums]">{value}</span>
+        <span className="text-[15px] font-black text-[#E8C88A] leading-none [font-variant-numeric:tabular-nums]">{arabicNumber(value)}</span>
         <span className="text-[8px] font-bold text-white/70">ج.م</span>
       </span>
     </div>
@@ -667,16 +668,16 @@ export default function UserDashboard({
               {from !== null && (
                 <div className="flex flex-col items-center gap-0.5 px-2.5">
                   <span className="text-[8.5px] font-bold text-[#8A8A70] leading-none">ابتداءً من</span>
-                  <span className="text-[13px] font-black text-[#C5A059] leading-none">{from} <span className="text-[8.5px] text-[#8A8A70]">ج.م</span></span>
+                  <span className="text-[13px] font-black text-[#C5A059] leading-none">{arabicNumber(from)} <span className="text-[8.5px] text-[#8A8A70]">ج.م</span></span>
                   <span className="text-[8.5px] font-bold text-[#8A8A70]">لليلة للفرد</span>
                 </div>
               )}
               <div className="flex flex-col items-center justify-center gap-0.5 px-2.5">
                 <span className="flex items-center gap-1 text-[13px] font-black text-[#2D2D24] leading-none">
                   <Home className="w-3.5 h-3.5 text-[#5A5A40]" />
-                  {filteredHouses.length}
+                  {arabicNumber(filteredHouses.length)}
                 </span>
-                <span className="text-[8.5px] font-bold text-[#8A8A70]">بيت متاح</span>
+                <span className="text-[8.5px] font-bold text-[#8A8A70]">{arabicUnit(filteredHouses.length, HOUSE_FORMS)} متاح</span>
               </div>
               {avg && (
                 <div className="flex flex-col items-center justify-center gap-0.5 px-2.5">
@@ -801,7 +802,7 @@ export default function UserDashboard({
                 <div className="absolute top-3 left-3 flex items-center gap-1.5">
                   <span className="bg-white/95 backdrop-blur-sm text-[#4A4A3A] text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                    <span>{house.rating.toFixed(1)}</span>
+                    <span>{arabicDecimal(house.rating)}</span>
                   </span>
                   {mostBookedIds.has(house.id) && (
                     <span className="bg-rose-700/90 backdrop-blur-sm text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
@@ -924,7 +925,7 @@ export default function UserDashboard({
                           <Users className="w-4 h-4" />
                         </span>
                         <span className="text-[9.5px] font-black text-white leading-none">
-                          {house.propertyType === 'student' || house.propertyType === 'staff' ? house.roomCapacity : house.bedsCount}
+                          {arabicNumber(house.propertyType === 'student' || house.propertyType === 'staff' ? house.roomCapacity : house.bedsCount)}
                         </span>
                         <span className="text-[8px] font-bold text-white/70">
                           {house.propertyType === 'student' || house.propertyType === 'staff' ? 'بالغرفة' : 'فرد'}
@@ -935,7 +936,7 @@ export default function UserDashboard({
                         <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
                           <BedDouble className="w-4 h-4" />
                         </span>
-                        <span className="text-[9.5px] font-black text-white leading-none">{house.roomsCount}</span>
+                        <span className="text-[9.5px] font-black text-white leading-none">{arabicNumber(house.roomsCount)}</span>
                         <span className="text-[8px] font-bold text-white/70">غرف</span>
                       </div>
 
@@ -1011,12 +1012,12 @@ export default function UserDashboard({
                               <div className="flex items-baseline gap-1">
                                 <span className="text-[8.5px] font-bold text-white/70">الإجمالي</span>
                                 <span className="text-[13px] font-black text-white leading-none">
-                                  {total.toLocaleString('en-US')}
+                                  {arabicNumber(total)}
                                 </span>
                                 <span className="text-[8.5px] font-bold text-white/70">ج.م</span>
                               </div>
                               <span className="text-[8px] font-bold text-white/60">
-                                {partySize} فرد × {stayNights} {stayNights === 1 ? 'ليلة' : stayNights === 2 ? 'ليلتين' : 'ليالي'}
+                                {arabicPlural(partySize, GUEST_FORMS)} × {stayNights === 1 ? 'ليلة' : stayNights === 2 ? 'ليلتين' : `${arabicNumber(stayNights)} ليالي`}
                               </span>
                             </div>
                           )}
@@ -1134,7 +1135,7 @@ export default function UserDashboard({
                 <Scale className="w-4 h-4 text-amber-200" />
                 <h3 className="text-xs font-extrabold">مقارنة بيوت الخلوة والمؤتمرات 📊</h3>
               </div>
-              <button
+              <button aria-label="إغلاق المقارنة"
                 onClick={() => setShowComparisonModal(false)}
                 className="p-1 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-all cursor-pointer"
               >
@@ -1225,7 +1226,7 @@ export default function UserDashboard({
                       <div key={h.id} className="flex flex-col items-center gap-0.5">
                         <span className="font-black text-amber-400 flex items-center gap-0.5">
                           <Star className="w-3 h-3 fill-amber-500 text-amber-500 shrink-0" />
-                          {h.rating.toFixed(1)}
+                          {arabicDecimal(h.rating)}
                         </span>
                         {topRated !== null && h.rating === topRated && <Win />}
                       </div>

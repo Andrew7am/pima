@@ -545,7 +545,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                     <div className="space-y-1">
                       <label className="block text-[11px] font-black text-slate-700">الحد الأقصى للمشاركين المتصلين 👥</label>
                       <div className="flex items-center gap-2">
-                        <button
+                        <button aria-label="تقليل الحد الأقصى للمشاركين"
                           type="button"
                           onClick={() => setMaxParticipants(Math.max(5, maxParticipants - 5))}
                           className="w-10 h-10 bg-white border rounded-xl flex items-center justify-center font-black hover:bg-slate-50 cursor-pointer text-slate-600"
@@ -555,7 +555,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                         <span className="text-xs font-mono font-black text-slate-800 bg-white border rounded-xl px-4 py-2 text-center flex-1">
                           {maxParticipants} فرداً
                         </span>
-                        <button
+                        <button aria-label="زيادة الحد الأقصى للمشاركين"
                           type="button"
                           onClick={() => setMaxParticipants(Math.min(250, maxParticipants + 5))}
                           className="w-10 h-10 bg-white border rounded-xl flex items-center justify-center font-black hover:bg-slate-50 cursor-pointer text-slate-600"
@@ -671,7 +671,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                               <div className="flex items-center gap-1">
                                 <span className="text-[10px] text-slate-400 font-bold ml-1">اللون:</span>
                                 {["#EF4444", "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899"].map((color) => (
-                                  <button
+                                  <button aria-label="اختيار لون الفريق"
                                     key={color}
                                     type="button"
                                     onClick={() => updateTeamConfig(team.id, { color })}

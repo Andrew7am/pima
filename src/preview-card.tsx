@@ -113,14 +113,14 @@ function Preview() {
             </div>
 
             <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
-              <button
+              <button aria-label={currentUser?.favorites?.includes(house.id) ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة'}
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onToggleFavorite(house.id); }}
                 className="bg-white/95 hover:bg-white text-rose-500 hover:text-rose-600 p-1.5 rounded-full flex items-center justify-center shadow transition-all duration-200 cursor-pointer"
               >
                 <Heart className={`w-3.5 h-3.5 ${currentUser?.favorites?.includes(house.id) ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
               </button>
-              <button
+              <button aria-label="إضافة إلى المقارنة"
                 type="button"
                 onClick={(e) => handleToggleCompare(house.id, e)}
                 className={`p-1.5 rounded-full flex items-center justify-center shadow transition-all duration-200 cursor-pointer ${
@@ -331,7 +331,7 @@ function Preview() {
                 <Scale className="w-4 h-4 text-amber-200" />
                 <h3 className="text-xs font-extrabold">مقارنة بيوت الخلوة والمؤتمرات</h3>
               </div>
-              <button onClick={() => setShowComparisonModal(false)} className="p-1 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-all cursor-pointer">
+              <button aria-label="إغلاق المقارنة" onClick={() => setShowComparisonModal(false)} className="p-1 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-all cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>

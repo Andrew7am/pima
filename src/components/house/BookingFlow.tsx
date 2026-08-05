@@ -409,8 +409,8 @@ export default function BookingFlow({
                 )}
                 <span className="flex flex-col items-center gap-0.5 shrink-0">
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-colors duration-[250ms] ${
-                    done ? 'bg-[#C9A24A] text-white'
-                      : current ? 'bg-[#C9A24A] text-white ring-[3px] ring-[#C9A24A]/15'
+                    done ? 'bg-[#C9A24A] text-[#0A2342]'
+                      : current ? 'bg-[#C9A24A] text-[#0A2342] ring-[3px] ring-[#C9A24A]/15'
                       : 'bg-[#F4EFE3] text-[#B5AF98]'
                   }`}>
                     {done ? <Check className="w-3 h-3" strokeWidth={3} /> : egp(i + 1)}

@@ -99,9 +99,9 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
       {/* Calendar */}
       <div className="bg-[var(--color-owner-surface)] rounded-[24px] border border-[var(--color-owner-border)] p-4 space-y-3 shadow-sm">
         <div className="flex items-center justify-between">
-          <button type="button" onClick={() => shift(-1)} className="p-1.5 rounded-xl hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-secondary)]"><ChevronRight className="w-4 h-4" /></button>
+          <button aria-label="الشهر السابق" type="button" onClick={() => shift(-1)} className="p-1.5 rounded-xl hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-secondary)]"><ChevronRight className="w-4 h-4" /></button>
           <div className="text-sm font-black text-[var(--color-owner-text)]">{monthLabel}</div>
-          <button type="button" onClick={() => shift(1)} className="p-1.5 rounded-xl hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-secondary)]"><ChevronLeft className="w-4 h-4" /></button>
+          <button aria-label="الشهر التالي" type="button" onClick={() => shift(1)} className="p-1.5 rounded-xl hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-secondary)]"><ChevronLeft className="w-4 h-4" /></button>
         </div>
 
         <div className="grid grid-cols-7 gap-1 text-[9px] font-black text-[var(--color-owner-secondary)] text-center">

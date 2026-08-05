@@ -72,7 +72,7 @@ export default function AssistBar({ usedAssists, onUseAssist, userLevel }: Assis
             </motion.div>
           )}
         </AnimatePresence>
-        <button
+        <button aria-label="أدوات المساعدة"
           type="button"
           onClick={() => setExpanded((v) => !v)}
           className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center bg-gradient-to-br from-amber-500 to-amber-700 text-white"

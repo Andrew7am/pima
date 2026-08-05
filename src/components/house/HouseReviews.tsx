@@ -253,7 +253,7 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
                 aria-pressed={sort === t.key}
                 className={`shrink-0 px-4 h-9 rounded-full text-[11px] font-black transition-colors duration-[250ms] cursor-pointer pima-press ${
                   sort === t.key
-                    ? 'bg-[#C9A24A] text-white border border-[#C9A24A]'
+                    ? 'bg-[#C9A24A] text-[#0A2342] border border-[#C9A24A]'
                     : 'bg-white text-[#4A4A3A] border border-[#EDE7DA] hover:border-[#E3CD9F]'
                 }`}
               >

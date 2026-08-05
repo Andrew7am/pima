@@ -192,6 +192,8 @@ export default function ParticipantCard({ currentUser }: ParticipantCardProps) {
       <AnimatePresence>
         {toastMessage && (
           <motion.div
+            role="status"
+            aria-live="polite"
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -296,7 +298,7 @@ export default function ParticipantCard({ currentUser }: ParticipantCardProps) {
             <span className="text-[10px] text-amber-400/80 font-black hidden sm:inline">
               {isCollapsed ? 'عرض التفاصيل والـ QR' : 'إخفاء التفاصيل'}
             </span>
-            <button 
+            <button aria-label={isCollapsed ? 'عرض التفاصيل ورمز الدخول' : 'إخفاء التفاصيل'} 
               className="w-8 h-8 rounded-xl bg-purple-900/60 border border-purple-500/20 flex items-center justify-center text-amber-200 hover:bg-purple-900 transition-colors"
             >
               {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
@@ -502,7 +504,7 @@ export default function ParticipantCard({ currentUser }: ParticipantCardProps) {
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-gradient-to-br from-[#1E1B4B] to-purple-950 border-2 border-amber-500 p-6 sm:p-8 rounded-[36px] max-w-sm w-full text-center relative space-y-6"
             >
-              <button 
+              <button aria-label="إغلاق رمز الدخول" 
                 onClick={() => setShowFullQR(false)}
                 className="absolute top-4 right-4 w-8 h-8 rounded-full bg-purple-900/80 text-amber-200 border border-purple-500/30 flex items-center justify-center hover:bg-purple-800 cursor-pointer text-sm font-bold"
               >

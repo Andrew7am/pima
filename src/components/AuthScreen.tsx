@@ -451,7 +451,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
             )}
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-3 py-2 text-center">
+              <div role="alert" aria-live="assertive" className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-3 py-2 text-center">
                 {error}
               </div>
             )}
@@ -509,7 +509,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3.5">
                   <Lock className="w-4 h-4 text-[#BCBC9D]" />
                 </div>
-                <button
+                <button aria-label={showPass ? 'إخفاء كلمة السر' : 'إظهار كلمة السر'}
                   type="button" onClick={() => setShowPass((s) => !s)}
                   className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#BCBC9D] hover:text-[#4A4A3A]"
                 >
@@ -537,7 +537,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
 
               <button
                 type="submit" disabled={loading || cooldown > 0}
-                className="w-full flex items-center justify-center gap-2 bg-[#C5A059] hover:bg-[#B28F4D] disabled:opacity-60 text-white text-sm font-black py-3 rounded-2xl shadow-lg transition-colors"
+                className="w-full flex items-center justify-center gap-2 bg-[#C5A059] hover:bg-[#B28F4D] disabled:opacity-60 text-[#0A2342] text-sm font-black py-3 rounded-2xl shadow-lg transition-colors"
               >
                 {cooldown > 0 ? <Clock className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
                 <span>{cooldown > 0 ? retryInLabel(cooldown) : loading ? 'جارٍ تسجيل الدخول...' : 'تسجيل الدخول ومتابعة الحجز'}</span>
@@ -600,7 +600,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-3 py-2 text-center">
+          <div role="alert" aria-live="assertive" className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-3 py-2 text-center">
             {error}
           </div>
         )}

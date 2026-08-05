@@ -100,8 +100,8 @@ export default function OrderingGame({ currentUser, onBack, onUserUpdated, onAch
                   rightSpot ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <X className="w-4 h-4 text-red-400 shrink-0" />
                 ) : (
                   <div className="flex flex-col gap-1 shrink-0">
-                    <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 flex items-center justify-center"><ArrowUp className="w-3.5 h-3.5" /></button>
-                    <button type="button" onClick={() => move(i, 1)} disabled={i === items.length - 1} className="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 flex items-center justify-center"><ArrowDown className="w-3.5 h-3.5" /></button>
+                    <button aria-label="تحريك لأعلى" type="button" onClick={() => move(i, -1)} disabled={i === 0} className="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 flex items-center justify-center"><ArrowUp className="w-3.5 h-3.5" /></button>
+                    <button aria-label="تحريك لأسفل" type="button" onClick={() => move(i, 1)} disabled={i === items.length - 1} className="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 flex items-center justify-center"><ArrowDown className="w-3.5 h-3.5" /></button>
                   </div>
                 )}
               </div>

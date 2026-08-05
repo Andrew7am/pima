@@ -49,7 +49,7 @@ export default function OwnerSpotlight({ open, onClose, bookings, rooms, onOpenB
               <input ref={inputRef} type="text" value={q} onChange={(e) => setQ(e.target.value)}
                 placeholder="ابحث عن حجز، ضيف، رقم هاتف، أو غرفة…"
                 className="flex-1 bg-transparent text-[12px] text-[var(--color-owner-text)] outline-none" />
-              <button type="button" onClick={onClose} className="p-1 rounded-full bg-[var(--color-owner-hover)] text-[var(--color-owner-secondary)]"><X className="w-3.5 h-3.5" /></button>
+              <button aria-label="إغلاق البحث" type="button" onClick={onClose} className="p-1 rounded-full bg-[var(--color-owner-hover)] text-[var(--color-owner-secondary)]"><X className="w-3.5 h-3.5" /></button>
             </div>
 
             <div className="max-h-[60vh] overflow-y-auto p-2">
