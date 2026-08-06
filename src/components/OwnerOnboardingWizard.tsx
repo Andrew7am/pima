@@ -113,6 +113,17 @@ interface DraftPayment {
 // in App.tsx for the exact gate condition. Reuses the same field
 // components (PhotoPickerButtons, AMENITIES_LIST/SUITABILITY_MAP
 // checklists) as the older flat OwnerDashboard form.
+/**
+ * One place for field styling, so a fix lands on every step at once.
+ *
+ * py-3 and text-sm are not decoration: measured on a 375px viewport the
+ * inputs came out 38px tall and the price boxes 34px, under the 44px a
+ * finger reliably hits. text-xs at 12px is also small for a form someone
+ * fills once, carefully, on a phone.
+ */
+const FIELD_CLS = 'w-full bg-white border border-[#D6D6C2] text-sm px-3 py-3 rounded-xl focus:outline-none focus:border-[#5A5A40] focus:ring-2 focus:ring-[#5A5A40]/20';
+const LABEL_CLS = 'block text-[11px] font-bold text-[#6A6A55] mb-1.5';
+
 const STEP_LABELS: Record<string, string> = {
   basics: 'معلومات أساسية',
   photos: 'الصور',
@@ -292,6 +303,24 @@ export default function OwnerOnboardingWizard({
   const effectiveBedsCount = draftRooms.length > 0
     ? draftRooms.reduce((sum, r) => sum + (Number(r.bedsCount) || 0), 0)
     : bedsCount;
+
+  /** Which requirement is holding the step back, in the owner's words. */
+  const missingHint = (): string => {
+    if (step === 'basics') {
+      if (!houseName.trim()) return 'اكتب اسم البيت عشان تكمل.';
+      if (!houseDesc.trim()) return 'اكتب وصف مختصر للبيت.';
+      if (!houseAddress.trim()) return 'اكتب العنوان التفصيلي.';
+      return isMonthly ? 'اكتب الإيجار الشهري.' : 'اكتب السعر لليلة للفرد.';
+    }
+    if (step === 'photos') return 'ارفع صورة واحدة على الأقل.';
+    if (step === 'services') {
+      if (selectedServices.length === 0) return 'اختار الخدمات المتاحة في البيت.';
+      return 'اختار البيت مناسب لمين.';
+    }
+    if (step === 'rooms') return 'ضيف غرفة واحدة على الأقل.';
+    if (step === 'payment') return 'ضيف طريقة دفع واحدة على الأقل.';
+    return '';
+  };
 
   const canAdvance = (): boolean => {
     if (step === 'basics') {
@@ -508,7 +537,7 @@ export default function OwnerOnboardingWizard({
         <div className="px-6 pt-6 pb-4 border-b border-[#D6D6C2] bg-[#F7F4EB]">
           <div className="flex items-center justify-between mb-3">
             <Logo variant="icon" size={36} />
-            <button type="button" onClick={onLogout} className="flex items-center gap-1 text-[11px] font-bold text-red-500 hover:text-red-600">
+            <button type="button" onClick={onLogout} className="flex items-center gap-1 min-h-11 px-2 -mx-2 rounded-lg text-[11px] font-bold text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors">
               <LogOut className="w-3.5 h-3.5" />
               تسجيل الخروج
             </button>
@@ -520,7 +549,11 @@ export default function OwnerOnboardingWizard({
 
           {/* Numbered step circles, connected by a line — filled/checked
               for completed steps, highlighted for the current one. */}
-          <div className="flex items-center mt-4" dir="ltr">
+          {/* No dir="ltr". It forced the progress row to run left-to-right
+                          inside a right-to-left page, so step ١ sat on the left while
+                          every other thing on screen starts from the right — the bar
+                          filled away from the direction the owner reads. */}
+                    <div className="flex items-center mt-4">
             {steps.map((s, i) => (
               <React.Fragment key={s}>
                 <div className="flex flex-col items-center gap-1 shrink-0">
@@ -548,21 +581,40 @@ export default function OwnerOnboardingWizard({
               <div className="grid grid-cols-3 gap-2">
                 {(['conference', 'student', 'staff'] as const).map((t) => (
                   <button key={t} type="button" onClick={() => setPropertyType(t)}
-                    className={`text-[11px] font-bold py-2 rounded-xl border ${propertyType === t ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white border-[#D6D6C2] text-[#4A4A3A]'}`}>
+                    className={`text-[11px] font-bold min-h-11 px-1 rounded-xl border transition-colors ${propertyType === t ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white border-[#D6D6C2] text-[#4A4A3A]'}`}>
                     {t === 'conference' ? 'بيت مؤتمرات' : t === 'student' ? 'سكن طلابي' : 'سكن عاملين'}
                   </button>
                 ))}
               </div>
-              <input type="text" placeholder="اسم البيت" value={houseName} onChange={(e) => setHouseName(e.target.value)}
-                className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2.5 rounded-xl focus:outline-none focus:border-[#5A5A40]" />
-              <textarea placeholder="وصف مختصر للبيت" value={houseDesc} onChange={(e) => setHouseDesc(e.target.value)} rows={3}
-                className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2.5 rounded-xl focus:outline-none focus:border-[#5A5A40] resize-none" />
-              <select value={houseGov} onChange={(e) => setHouseGov(e.target.value)}
-                className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2.5 rounded-xl">
-                {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
-              </select>
-              <input type="text" placeholder="العنوان التفصيلي" value={houseAddress} onChange={(e) => setHouseAddress(e.target.value)}
-                className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2.5 rounded-xl focus:outline-none focus:border-[#5A5A40]" />
+              {/* Every field is labelled, and the label stays put.
+                  These four carried their name in the placeholder alone,
+                  which disappears the moment the owner types — so anyone who
+                  paused mid-form, or came back to check, was looking at four
+                  identical boxes with no way to tell which was which. The
+                  governorate select had nothing at all: no label, no
+                  placeholder, just a list of governorates. */}
+              <div>
+                <label htmlFor="ob-house-name" className={LABEL_CLS}>اسم البيت</label>
+                <input id="ob-house-name" type="text" placeholder="مثال: بيت مارمرقس للمؤتمرات" value={houseName} onChange={(e) => setHouseName(e.target.value)}
+                  className={FIELD_CLS} />
+              </div>
+              <div>
+                <label htmlFor="ob-house-desc" className={LABEL_CLS}>وصف مختصر للبيت</label>
+                <textarea id="ob-house-desc" placeholder="إيه اللي يميّز البيت؟" value={houseDesc} onChange={(e) => setHouseDesc(e.target.value)} rows={3}
+                  className={`${FIELD_CLS} resize-none`} />
+              </div>
+              <div>
+                <label htmlFor="ob-house-gov" className={LABEL_CLS}>المحافظة</label>
+                <select id="ob-house-gov" value={houseGov} onChange={(e) => setHouseGov(e.target.value)}
+                  className={FIELD_CLS}>
+                  {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="ob-house-address" className={LABEL_CLS}>العنوان التفصيلي</label>
+                <input id="ob-house-address" type="text" placeholder="القرية أو المدينة والشارع" value={houseAddress} onChange={(e) => setHouseAddress(e.target.value)}
+                  className={FIELD_CLS} />
+              </div>
               <button type="button" onClick={() => {
                 if (!navigator.geolocation) { setGeoError('المتصفح لا يدعم تحديد الموقع.'); return; }
                 setGeoLoading(true); setGeoError('');
@@ -570,7 +622,7 @@ export default function OwnerOnboardingWizard({
                   (pos) => { setHouseLat(pos.coords.latitude); setHouseLng(pos.coords.longitude); setGeoLoading(false); },
                   () => { setGeoError('تعذر تحديد الموقع.'); setGeoLoading(false); },
                 );
-              }} className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-xl border border-[#5A5A40] text-[#5A5A40] bg-white">
+              }} className="flex items-center gap-2 text-sm font-semibold px-4 min-h-11 rounded-xl border border-[#5A5A40] text-[#5A5A40] bg-white hover:bg-[#F7F4EB] transition-colors">
                 <MapPin className="w-3.5 h-3.5" />
                 {geoLoading ? 'جاري تحديد الموقع...' : houseLat ? 'تم تحديد الموقع ✓' : 'استخدم موقعي الحالي'}
               </button>
@@ -585,16 +637,16 @@ export default function OwnerOnboardingWizard({
                   the totals it arrived at. */}
               {isMonthly ? (
                 <div>
-                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">الإيجار الشهري (جنيه)</label>
-                  <input type="number" min={0} value={monthlyRent} onChange={(e) => setMonthlyRent(Number(e.target.value))}
-                    className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
+                  <label htmlFor="ob-monthly-rent" className={LABEL_CLS}>الإيجار الشهري (جنيه)</label>
+                  <input id="ob-monthly-rent" type="number" min={0} value={monthlyRent} onChange={(e) => setMonthlyRent(Number(e.target.value))}
+                    className={FIELD_CLS} />
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">السعر لليلة للفرد (جنيه)</label>
+                    <label htmlFor="onboarding-price-night" className={LABEL_CLS}>السعر لليلة للفرد (جنيه)</label>
                     <input id="onboarding-price-night" type="number" min={1} value={pricePerNight} onChange={(e) => setPricePerNight(Number(e.target.value))}
-                      className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
+                      className={FIELD_CLS} />
                   </div>
                   {/* «يوم روحي» — arrive and leave the same day. Asked here
                       beside the nightly rate, as on the dashboard, because a
@@ -603,7 +655,7 @@ export default function OwnerOnboardingWizard({
                       the guest's filter and booking form both key off that.
                       Left blank means the house does not offer them. */}
                   <div>
-                    <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">سعر اليوم بدون مبيت (اختياري)</label>
+                    <label htmlFor="onboarding-price-dayuse" className={LABEL_CLS}>سعر اليوم بدون مبيت (اختياري)</label>
                     <input
                       id="onboarding-price-dayuse"
                       type="number"
@@ -611,7 +663,7 @@ export default function OwnerOnboardingWizard({
                       placeholder="اتركه فارغاً"
                       value={dayUsePrice === null ? '' : dayUsePrice}
                       onChange={(e) => setDayUsePrice(e.target.value === '' ? null : (parseInt(e.target.value, 10) || 0))}
-                      className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
+                      className={FIELD_CLS} />
                   </div>
                 </div>
               )}
@@ -1111,20 +1163,33 @@ export default function OwnerOnboardingWizard({
 
         </div>
 
-        <div className="px-6 py-4 border-t border-[#D6D6C2] flex items-center justify-between bg-[#F7F4EB]">
+        {/* Why «التالي» is disabled, said out loud.
+            It sat greyed out at 30% opacity with nothing explaining which
+            field was missing — on a step with six inputs that is a puzzle,
+            not a form. */}
+        {step !== 'review' && !canAdvance() && (
+          <p className="px-6 pt-3 text-[11px] font-bold text-[#8A8A70] text-center leading-relaxed">
+            {missingHint()}
+          </p>
+        )}
+
+        <div className="px-6 py-4 border-t border-[#D6D6C2] flex items-center justify-between gap-2 bg-[#F7F4EB]">
+          {/* min-h-11 is 44px. Measured on a 375px viewport this button was
+              16px tall — a bare text link with no padding, next to a «التالي»
+              of 36px. It is the control an owner reaches for most. */}
           <button type="button" onClick={goBack} disabled={stepIdx === 0}
-            className="flex items-center gap-1 text-xs font-bold text-[#8A8A70] disabled:opacity-30">
+            className="flex items-center justify-center gap-1 min-h-11 px-4 rounded-xl text-sm font-bold text-[#6A6A55] hover:bg-[#EDE9DC] disabled:opacity-30 disabled:hover:bg-transparent transition-colors">
             <ChevronRight className="w-4 h-4" /> السابق
           </button>
-          <span className="text-[10px] text-[#8A8A70] font-bold">{arabicNumber(stepIdx + 1)} / {arabicNumber(steps.length)}</span>
+          <span className="text-[11px] text-[#8A8A70] font-bold shrink-0">{arabicNumber(stepIdx + 1)} / {arabicNumber(steps.length)}</span>
           {step === 'review' ? (
             <button type="button" onClick={handleSubmit} disabled={submitting}
-              className="flex items-center gap-1.5 bg-[#5A5A40] hover:bg-[#4A4A34] disabled:opacity-60 text-white text-xs font-black px-5 py-2.5 rounded-xl">
+              className="flex items-center justify-center gap-1.5 min-h-11 bg-[#5A5A40] hover:bg-[#4A4A34] disabled:opacity-60 text-white text-sm font-black px-5 rounded-xl transition-colors">
               {submitting ? 'جارٍ الإرسال...' : 'إرسال للمراجعة'}
             </button>
           ) : (
             <button type="button" onClick={goNext} disabled={!canAdvance()}
-              className="flex items-center gap-1 bg-[#5A5A40] hover:bg-[#4A4A34] disabled:opacity-30 text-white text-xs font-black px-5 py-2.5 rounded-xl">
+              className="flex items-center justify-center gap-1 min-h-11 bg-[#5A5A40] hover:bg-[#4A4A34] disabled:opacity-30 text-white text-sm font-black px-5 rounded-xl transition-colors">
               التالي <ChevronLeft className="w-4 h-4" />
             </button>
           )}
