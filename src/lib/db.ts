@@ -440,12 +440,24 @@ export async function recordHouseView(houseId: string): Promise<void> {
   const key = `pima_viewed_${houseId}`;
   try {
     if (sessionStorage.getItem(key)) return;
-    sessionStorage.setItem(key, '1');
   } catch {
-    /* private mode — fall through and let the server dedup what it can */
+    /* private mode — no guard available, the server dedups what it can */
   }
+
   const { error } = await supabase.rpc('record_house_view', { p_house_id: houseId });
-  if (error) console.warn('recordHouseView:', error);
+  if (error) {
+    // Deliberately NOT marking it seen. The guard used to be set before the
+    // call and never cleared, so a failed call poisoned the house for the
+    // rest of the session — which is exactly what happened while migration
+    // 106 was still unapplied: every house opened in that window was marked
+    // viewed, the RPC failed silently, and applying the migration afterwards
+    // changed nothing until the tab was closed. A failure now leaves the
+    // house un-marked so the next open tries again.
+    console.warn('recordHouseView:', error);
+    return;
+  }
+
+  try { sessionStorage.setItem(key, '1'); } catch { /* nothing to guard with */ }
 }
 
 /** View totals per house (migration 106) — admin, or an owner's own houses. */
