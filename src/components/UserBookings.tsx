@@ -866,21 +866,29 @@ export default function UserBookings({
             // three screens, and lib/bookingStage holds us to it.
             const { stage, canPay: canPayDeposit } = getBookingStage(booking, payments);
             const bookingHouse = houses.find((h) => h.id === booking.houseId);
-            // Manual-collection model (migration 069): if the platform has its own
-            // payment numbers, the guest pays THOSE (Pima collects the deposit,
-            // then forwards the owner's share). Empty → fall back to owner-direct.
-            const platformMethods = settings.paymentMethods ?? [];
-            const payToPlatform = platformMethods.length > 0;
-            const payMethods = payToPlatform ? platformMethods : (bookingHouse?.paymentMethods ?? []);
-            const payeeLabel = payToPlatform ? 'منصة بيما' : 'صاحب البيت';
+            // Manual-collection model (migration 069): the guest always transfers
+            // to PIMA, and Pima forwards the owner's share afterwards. The owner's
+            // own numbers are for receiving that payout — they are never shown to
+            // a guest, and the onboarding wizard says so in as many words.
+            //
+            // This used to fall back to the owner's numbers whenever the platform
+            // had none configured. That fallback was silent and it inverted the
+            // whole model: clearing the numbers in admin settings — or a settings
+            // load failing back to DEFAULT_PLATFORM_SETTINGS, which ships with an
+            // empty list — would quietly start routing every deposit straight to
+            // owners, with no commission and no record. Better to show nothing
+            // and say so than to send money to the wrong person quietly.
+            const payMethods = settings.paymentMethods ?? [];
+            const platformPayeeMissing = payMethods.length === 0;
+            const payeeLabel = 'منصة بيما';
             const ownerPaymentFor = (type: string) => payMethods.find((p) => p.type === type);
-            // No configured recipient for the picked method → block submit so a
-            // guest can't record a "paid" deposit to a nonexistent payee.
             const walletPayee = ownerPaymentFor('vodafone_cash') ?? ownerPaymentFor('etisalat_cash') ?? ownerPaymentFor('orange_cash') ?? ownerPaymentFor('we_cash');
-            const selectedPayeeMissing =
-              (selectedMethod === 'instapay' && !ownerPaymentFor('instapay')) ||
-              (selectedMethod === 'bank' && !ownerPaymentFor('bank_transfer')) ||
-              (selectedMethod === 'vodafone' && !walletPayee);
+            // There was a `selectedPayeeMissing` here whose comment promised it
+            // blocked submitting a deposit to a payee that does not exist. It was
+            // computed and never read — the protection it described did not
+            // exist. platformPayeeMissing above now does it, one level up: with
+            // no platform account configured the payment entry points are
+            // replaced by an explanation instead of opening an empty dialog.
 
             // Action affordances for this booking — used to give the footer a
             // clear hierarchy (one prominent primary CTA + secondary pills).
@@ -1091,6 +1099,13 @@ export default function UserBookings({
                           <p className="text-[11px] font-black text-[#8A6A28]">الدفع مقفول لحد ما نوثّق حسابك</p>
                           <p className="text-[10px] font-medium text-[#6B6552] mt-0.5 leading-relaxed">
                             حجزك محفوظ ومكانك متحجوز. ابعت صورة بطاقتك على واتساب الدعم وهنفتحلك الدفع.
+                          </p>
+                        </div>
+                      ) : platformPayeeMissing ? (
+                        <div role="status" className="w-full rounded-2xl border border-[#E3CD9F] bg-[#FBF6E9] px-3 py-2.5 text-center">
+                          <p className="text-[11px] font-black text-[#8A6A28]">الدفع مش متاح دلوقتي</p>
+                          <p className="text-[10px] font-medium text-[#6B6552] mt-0.5 leading-relaxed">
+                            حجزك محفوظ. كلّم دعم بيما على واتساب وهنكمّل معاك الدفع.
                           </p>
                         </div>
                       ) : (
@@ -1603,7 +1618,7 @@ export default function UserBookings({
                 {/* The sticky bar is a second door to the same payment. It has
                     to carry the same lock, or the block above is decoration —
                     which is exactly what the test caught. */}
-                {stage === 'awaiting_deposit' && isPaying !== booking.id && !awaitingVerification && (
+                {stage === 'awaiting_deposit' && isPaying !== booking.id && !awaitingVerification && !platformPayeeMissing && (
                   <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm border-t border-[#EDE7DA] px-4 py-3 flex items-center gap-3">
                     <div className="shrink-0 leading-tight">
                       <span className="block text-[9px] font-bold text-[#8A8A70]">المتبقي للدفع</span>

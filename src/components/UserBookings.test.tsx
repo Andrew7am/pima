@@ -164,3 +164,43 @@ describe('an account still being verified', () => {
   });
 });
 
+// The manual-collection model only works if the guest pays PIMA. The code
+// used to fall back to the owner's own numbers whenever the platform had
+// none configured — silently, so a cleared settings row (or a settings load
+// falling back to DEFAULT_PLATFORM_SETTINGS, which ships with an empty list)
+// would route every deposit straight to owners, commission-free.
+describe('the deposit always goes to Pima', () => {
+  const openCard = async () => {
+    await userEvent.click(screen.getAllByText(/بيت تجريبي/)[0]);
+  };
+
+  const noPlatformAccounts = { ...settings, paymentMethods: [] } as PlatformSettings;
+
+  it('never offers the owner as the payee', async () => {
+    renderBookings({ bookings: [approved()], settings: noPlatformAccounts });
+    await openCard();
+    expect(screen.queryByText(/حوّل العربون الآن إلى صاحب البيت/)).not.toBeInTheDocument();
+  });
+
+  it('stops instead, and says so', async () => {
+    renderBookings({ bookings: [approved()], settings: noPlatformAccounts });
+    await openCard();
+    expect(screen.getByText(/الدفع مش متاح دلوقتي/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ادفع العربون/ })).not.toBeInTheDocument();
+  });
+
+  // The owner's own account is for receiving their payout from Pima. A guest
+  // must never see it — that is the whole anti-disintermediation position, and
+  // it has to hold even when the house has numbers of its own on file.
+  it(`never shows the owner's account, even when the house has one`, async () => {
+    const houseWithNumbers = {
+      ...house,
+      paymentMethods: [{ id: 'opm1', type: 'instapay', label: 'إنستاباي المالك', value: '01111111111' }],
+    } as unknown as RetreatHouse;
+    renderBookings({ bookings: [approved()], houses: [houseWithNumbers], autoPayBookingId: 'b1' });
+    const dialog = await screen.findByRole('dialog', { name: 'دفع العربون' });
+    await userEvent.click(within(dialog).getByText('متابعة'));
+    expect(await within(dialog).findByText('01096126259')).toBeInTheDocument();
+    expect(within(dialog).queryByText('01111111111')).not.toBeInTheDocument();
+  });
+});
