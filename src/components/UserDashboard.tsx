@@ -534,8 +534,8 @@ export default function UserDashboard({
               <Award className="w-4 h-4 text-[#C5A059]" />
             </span>
             <span className="min-w-0">
-              <span className="block text-[11px] font-black text-[#2D2D24] leading-tight whitespace-nowrap">برنامج الولاء والنقاط</span>
-              <span className="block text-[11px] font-bold text-[#8A8A70] whitespace-nowrap">
+              <span className="block text-[11px] font-black text-[#2D2D24] leading-tight">برنامج الولاء والنقاط</span>
+              <span className="block text-[11px] font-bold text-[#8A8A70]">
                 رصيدك: <span className="text-[#C5A059] font-black">{(currentUser.points || 0).toLocaleString('ar-EG')}</span> نقطة
               </span>
             </span>
@@ -547,8 +547,8 @@ export default function UserDashboard({
               <Award className="w-4 h-4 text-[#C5A059]" />
             </span>
             <span className="min-w-0">
-              <span className="block text-[11px] font-black text-[#2D2D24] leading-tight whitespace-nowrap">برنامج الولاء والنقاط</span>
-              <span className="block text-[11px] font-bold text-[#8A8A70] whitespace-nowrap">سجّل واكسب نقاط</span>
+              <span className="block text-[11px] font-black text-[#2D2D24] leading-tight">برنامج الولاء والنقاط</span>
+              <span className="block text-[11px] font-bold text-[#8A8A70]">سجّل واكسب نقاط</span>
             </span>
           </div>
         )}
@@ -561,8 +561,8 @@ export default function UserDashboard({
             <BookOpen className="w-4 h-4 text-[#C5A059]" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-[11px] font-black text-[#2D2D24] leading-tight whitespace-nowrap">دليل المستخدم</span>
-            <span className="block text-[11px] font-bold text-[#8A8A70] whitespace-nowrap">تعرف على كل المزايا</span>
+            <span className="block text-[11px] font-black text-[#2D2D24] leading-tight">دليل المستخدم</span>
+            <span className="block text-[11px] font-bold text-[#8A8A70]">تعرف على كل المزايا</span>
           </span>
           <ChevronLeft aria-hidden="true" className="w-3.5 h-3.5 text-[#B5AF98] shrink-0 mr-auto group-hover:text-[#C5A059] transition-colors" />
         </a>
@@ -846,7 +846,7 @@ export default function UserDashboard({
                       tapFeedback();
                       onToggleFavorite(house.id);
                     }}
-                    className="bg-white/95 hover:bg-white text-rose-500 hover:text-rose-600 p-1.5 rounded-full flex items-center justify-center shadow transition-all duration-200 cursor-pointer"
+                    className="bg-white/95 hover:bg-white text-rose-500 hover:text-rose-600 w-11 h-11 rounded-full grid place-items-center shadow transition-all duration-200 cursor-pointer"
                     title={currentUser?.favorites?.includes(house.id) ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
                     aria-label={currentUser?.favorites?.includes(house.id) ? `إزالة ${house.name} من المفضلة` : `إضافة ${house.name} للمفضلة`}
                   >
@@ -857,7 +857,7 @@ export default function UserDashboard({
                     id={`toggle-compare-card-${house.id}`}
                     type="button"
                     onClick={(e) => handleToggleCompare(house.id, e)}
-                    className={`p-1.5 rounded-full flex items-center justify-center shadow transition-all duration-200 cursor-pointer ${
+                    className={`w-11 h-11 rounded-full grid place-items-center shadow transition-all duration-200 cursor-pointer ${
                       comparedHouseIds.includes(house.id)
                         ? 'bg-amber-600 text-white hover:bg-amber-700'
                         : 'bg-white/95 text-slate-400 hover:text-[#5A5A40] hover:bg-white'

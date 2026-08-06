@@ -102,12 +102,12 @@ const nightsWord = (n: number) => (n === 1 ? 'ليلة' : n === 2 ? 'ليلتا�
 function Field({ icon, label, hint, children }: { icon: React.ReactNode; label: string; hint?: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="flex items-center gap-1.5 text-[11.5px] font-black text-[#2D2D24] mb-1.5">
+      <span className="flex items-center gap-1.5 text-[12px] font-black text-[#2D2D24] mb-1.5">
         <span className="text-[#C9A24A]">{icon}</span>
         {label}
       </span>
       {children}
-      {hint && <span className="block text-[9px] font-medium text-[#8A8A70] mt-1">{hint}</span>}
+      {hint && <span className="block text-[11px] font-medium text-[#8A8A70] mt-1">{hint}</span>}
     </label>
   );
 }
@@ -271,7 +271,7 @@ export default function BookingFlow({
               <span className="w-10 h-10 rounded-full bg-[#F6F0E2] flex items-center justify-center">
                 <s.icon className="w-[18px] h-[18px] text-[#C9A24A]" />
               </span>
-              <span className="text-[9.5px] font-black text-[#2D2D24] leading-tight">{s.label}</span>
+              <span className="text-[11px] font-black text-[#2D2D24] leading-tight">{s.label}</span>
             </div>
           ))}
         </div>
@@ -283,19 +283,19 @@ export default function BookingFlow({
               <img src={house.images[0]} alt="" referrerPolicy="no-referrer" className="w-[86px] h-[86px] rounded-2xl object-cover shrink-0" />
             )}
             <div className="min-w-0 flex-1 space-y-1.5">
-              <span className="flex items-center gap-1.5 text-[12.5px] font-black text-[#0A2342]">
+              <span className="flex items-center gap-1.5 text-[12px] font-black text-[#0A2342]">
                 <Building2 className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
                 <span className="truncate">{house.name}</span>
               </span>
-              <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#4A4A3A]">
+              <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#4A4A3A]">
                 <CalendarDays className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
                 {shortDate(checkIn)} — {shortDate(checkOut)}
               </span>
-              <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#4A4A3A]">
+              <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#4A4A3A]">
                 <Users className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
                 {egp(guestsCount)} فرد
               </span>
-              <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#4A4A3A]">
+              <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#4A4A3A]">
                 <BedDouble className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
                 {egp(house.roomsCount)} غرفة
               </span>
@@ -303,7 +303,7 @@ export default function BookingFlow({
           </div>
 
           <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[#EDE7DA]">
-            <span className="text-[9.5px] font-bold text-[#8A8A70]">رقم الطلب</span>
+            <span className="text-[11px] font-bold text-[#8A8A70]">رقم الطلب</span>
             <button
               type="button"
               onClick={() => { tapFeedback(); navigator.clipboard?.writeText(requestId).then(() => setCopiedId(true)); }}
@@ -318,15 +318,15 @@ export default function BookingFlow({
         {/* Where it stands, and how long the wait usually is */}
         <div className={`${CARD} p-3 flex items-stretch gap-3 pima-rise pima-rise-3`}>
           <div className="flex-1 text-center">
-            <span className="block text-[9.5px] font-bold text-[#8A8A70] mb-1.5">متوسط وقت الرد</span>
-            <span className="flex items-center justify-center gap-1.5 text-[12.5px] font-black text-[#0A2342]">
+            <span className="block text-[11px] font-bold text-[#8A8A70] mb-1.5">متوسط وقت الرد</span>
+            <span className="flex items-center justify-center gap-1.5 text-[12px] font-black text-[#0A2342]">
               <Clock className="w-3.5 h-3.5 text-[#C9A24A]" />
               من يوم إلى {egp(3)} أيام
             </span>
           </div>
           <span aria-hidden="true" className="w-px bg-[#EDE7DA]" />
           <div className="flex-1 text-center">
-            <span className="block text-[9.5px] font-bold text-[#8A8A70] mb-1.5">الحالة الحالية</span>
+            <span className="block text-[11px] font-bold text-[#8A8A70] mb-1.5">الحالة الحالية</span>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[11px] font-black text-[#B8944E]">
               <span aria-hidden="true" className="pima-status-dot w-1.5 h-1.5 rounded-full bg-[#C9A24A]" />
               قيد المراجعة
@@ -337,7 +337,7 @@ export default function BookingFlow({
         <button
           type="button"
           onClick={() => { tapFeedback(); (onTrackBooking ?? onExit)(); }}
-          className="pima-pop-once w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[13px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
+          className="pima-pop-once w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
         >
           <ChevronLeft className="w-4 h-4" />
           متابعة الطلب
@@ -346,7 +346,7 @@ export default function BookingFlow({
         <button
           type="button"
           onClick={() => { tapFeedback(); (onGoHome ?? onExit)(); }}
-          className="w-full flex items-center justify-center gap-2 bg-white border border-[#EDE7DA] hover:border-[#E3CD9F] text-[#4A4A3A] font-black text-[12.5px] py-3.5 rounded-2xl transition-colors cursor-pointer pima-press"
+          className="w-full flex items-center justify-center gap-2 bg-white border border-[#EDE7DA] hover:border-[#E3CD9F] text-[#4A4A3A] font-black text-[12px] py-3.5 rounded-2xl transition-colors cursor-pointer pima-press"
         >
           <Home className="w-4 h-4 text-[#C9A24A]" />
           العودة للرئيسية
@@ -356,7 +356,7 @@ export default function BookingFlow({
           <span className="w-10 h-10 rounded-full bg-white border border-[#EBD9B4] flex items-center justify-center shrink-0">
             <Bell className="w-[18px] h-[18px] text-[#C9A24A]" />
           </span>
-          <p className="text-[10.5px] font-medium text-[#4A4A3A] leading-relaxed">
+          <p className="text-[11px] font-medium text-[#4A4A3A] leading-relaxed">
             يمكنك متابعة حالة طلبك من قائمة «حجوزاتي» في أي وقت.
           </p>
         </div>
@@ -386,8 +386,8 @@ export default function BookingFlow({
           <ChevronRight className="w-4 h-4" />
         </button>
         <div className="min-w-0 leading-tight">
-          <h2 className="text-[13px] font-black text-[#0A2342]">طلب حجز جديد</h2>
-          <p className="text-[10px] text-[#8A8A70] truncate">{house.name}</p>
+          <h2 className="text-[12px] font-black text-[#0A2342]">طلب حجز جديد</h2>
+          <p className="text-[11px] text-[#8A8A70] truncate">{house.name}</p>
         </div>
       </div>
 
@@ -408,14 +408,14 @@ export default function BookingFlow({
                   </span>
                 )}
                 <span className="flex flex-col items-center gap-0.5 shrink-0">
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-colors duration-[250ms] ${
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black transition-colors duration-[250ms] ${
                     done ? 'bg-[#C9A24A] text-[#0A2342]'
                       : current ? 'bg-[#C9A24A] text-[#0A2342] ring-[3px] ring-[#C9A24A]/15'
                       : 'bg-[#F4EFE3] text-[#B5AF98]'
                   }`}>
                     {done ? <Check className="w-3 h-3" strokeWidth={3} /> : egp(i + 1)}
                   </span>
-                  <span className={`text-[8.5px] font-black leading-none ${current ? 'text-[#B8944E]' : 'text-[#B5AF98]'}`}>{label}</span>
+                  <span className={`text-[11px] font-black leading-none ${current ? 'text-[#B8944E]' : 'text-[#B5AF98]'}`}>{label}</span>
                 </span>
               </React.Fragment>
             );
@@ -428,7 +428,7 @@ export default function BookingFlow({
         <div className="space-y-4 pima-rise">
           <div className="px-1 leading-tight">
             <h3 className="text-[14px] font-black text-[#0A2342]">مراجعة تفاصيل الحجز</h3>
-            <p className="text-[10px] font-medium text-[#8A8A70]">راجع التفاصيل قبل إدخال بياناتك</p>
+            <p className="text-[11px] font-medium text-[#8A8A70]">راجع التفاصيل قبل إدخال بياناتك</p>
           </div>
 
           {/* House — the badge sits with the name rather than a line below it. */}
@@ -438,13 +438,13 @@ export default function BookingFlow({
             )}
             <div className="min-w-0 flex-1 leading-tight">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[13px] font-black text-[#0A2342]">{house.name}</span>
-                <span className="inline-flex items-center gap-1 text-[9px] font-black text-[#B8944E] bg-[#FDF9EF] border border-[#EBD9B4] rounded-full px-1.5 py-0.5">
+                <span className="text-[12px] font-black text-[#0A2342]">{house.name}</span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-black text-[#B8944E] bg-[#FDF9EF] border border-[#EBD9B4] rounded-full px-1.5 py-0.5">
                   <ShieldCheck className="w-2.5 h-2.5" />
                   حجز آمن
                 </span>
               </div>
-              <span className="block text-[10px] font-medium text-[#8A8A70] mt-1">{house.governorate}</span>
+              <span className="block text-[11px] font-medium text-[#8A8A70] mt-1">{house.governorate}</span>
             </div>
           </div>
 
@@ -473,9 +473,9 @@ export default function BookingFlow({
                   >
                     <span className="flex items-center gap-1.5">
                       <o.Icon className={`w-3.5 h-3.5 shrink-0 ${o.on ? 'text-[#B8944E]' : 'text-[#8A8A70]'}`} />
-                      <span className={`text-[10.5px] font-black truncate ${o.on ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>{o.label}</span>
+                      <span className={`text-[11px] font-black truncate ${o.on ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>{o.label}</span>
                     </span>
-                    <span className="block text-[9px] font-bold text-[#8A8A70] mt-1">
+                    <span className="block text-[11px] font-bold text-[#8A8A70] mt-1">
                       {egp(o.rate ?? 0)} ج.م {o.unit} للفرد
                     </span>
                   </button>
@@ -491,7 +491,7 @@ export default function BookingFlow({
               <button
                 type="button"
                 onClick={() => { tapFeedback(); setDatesOpen(true); }}
-                className="text-[10px] font-black text-[#B8944E] border border-[#EBD9B4] rounded-full px-3 py-0.5 hover:bg-[#FDF9EF] transition-colors cursor-pointer pima-press"
+                className="text-[11px] font-black text-[#B8944E] border border-[#EBD9B4] rounded-full px-3 py-0.5 hover:bg-[#FDF9EF] transition-colors cursor-pointer pima-press"
               >
                 تغيير
               </button>
@@ -505,21 +505,21 @@ export default function BookingFlow({
                 </span>
                 <div className="flex-1 min-w-0 leading-tight">
                   <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkIn)}</span>
-                  <span className="block text-[8.5px] font-bold text-[#8A8A70] mt-0.5">{weekday(checkIn)} · وصول ومغادرة في نفس اليوم</span>
+                  <span className="block text-[11px] font-bold text-[#8A8A70] mt-0.5">{weekday(checkIn)} · وصول ومغادرة في نفس اليوم</span>
                 </div>
               </div>
             ) : (
               <div className="flex items-center gap-2 rounded-2xl bg-[#FBF9F4] border border-[#EDE7DA] px-3 py-2">
                 <div className="flex-1 min-w-0 leading-tight">
-                  <span className="block text-[8.5px] font-bold text-[#8A8A70]">من</span>
+                  <span className="block text-[11px] font-bold text-[#8A8A70]">من</span>
                   <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkIn)}</span>
                 </div>
                 <div className="shrink-0 text-center px-2 border-x border-[#EDE7DA] leading-tight">
-                  <span className="block text-[13px] font-black text-[#B8944E]">{egp(nights)}</span>
-                  <span className="block text-[8px] font-bold text-[#8A8A70]">{nightsWord(nights)}</span>
+                  <span className="block text-[12px] font-black text-[#B8944E]">{egp(nights)}</span>
+                  <span className="block text-[11px] font-bold text-[#8A8A70]">{nightsWord(nights)}</span>
                 </div>
                 <div className="flex-1 min-w-0 leading-tight text-left">
-                  <span className="block text-[8.5px] font-bold text-[#8A8A70]">إلى</span>
+                  <span className="block text-[11px] font-bold text-[#8A8A70]">إلى</span>
                   <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkOut)}</span>
                 </div>
               </div>
@@ -534,7 +534,7 @@ export default function BookingFlow({
                   <Users className="w-4 h-4 text-[#C9A24A]" />
                   عدد الأفراد
                 </span>
-                <span className="block text-[9px] font-medium text-[#8A8A70] mt-0.5">الحد الأقصى {egp(maxGuests)} فرد</span>
+                <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">الحد الأقصى {egp(maxGuests)} فرد</span>
               </span>
               <div className="flex items-center gap-3 shrink-0">
                 <button
@@ -597,10 +597,10 @@ export default function BookingFlow({
               <GroupIcon className="w-4 h-4 text-[#C9A24A]" />
             </span>
             <span className="min-w-0 flex-1 leading-tight">
-              <span className="block text-[10.5px] font-bold text-[#8A8A70]">نوع الحجز</span>
-              <span className="block text-[12.5px] font-black text-[#0A2342] mt-0.5">{group.label}</span>
+              <span className="block text-[11px] font-bold text-[#8A8A70]">نوع الحجز</span>
+              <span className="block text-[12px] font-black text-[#0A2342] mt-0.5">{group.label}</span>
             </span>
-            <span className="flex items-center gap-1 text-[10px] font-black text-[#B8944E] shrink-0">
+            <span className="flex items-center gap-1 text-[11px] font-black text-[#B8944E] shrink-0">
               تغيير
               <ChevronLeft className="w-3.5 h-3.5" />
             </span>
@@ -616,8 +616,8 @@ export default function BookingFlow({
                     <Utensils className="w-4 h-4 text-emerald-700" />
                   </span>
                   <span className="min-w-0 leading-tight">
-                    <span className="block text-[11.5px] font-black text-[#2D2D24]">الوجبات مشمولة في السعر</span>
-                    <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
+                    <span className="block text-[12px] font-black text-[#2D2D24]">الوجبات مشمولة في السعر</span>
+                    <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">
                       ٣ وجبات يوميًا داخل قيمة الإقامة — لا يُضاف شيء على الإجمالي.
                     </span>
                   </span>
@@ -628,10 +628,10 @@ export default function BookingFlow({
                     <Utensils className="w-4 h-4 text-[#C9A24A]" />
                   </span>
                   <span className="min-w-0 leading-tight">
-                    <span className="block text-[11.5px] font-black text-[#2D2D24]">الوجبات غير مشمولة</span>
+                    <span className="block text-[12px] font-black text-[#2D2D24]">الوجبات غير مشمولة</span>
                     {/* Reported, not multiplied: how many meals a group eats in
                         a day is theirs to say, not ours to assume. */}
-                    <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
+                    <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">
                       سعر الوجبة {egp(mealPlan.perMealPrice ?? 0)} ج.م للفرد — تُتفق تفاصيلها مع إدارة المكان.
                     </span>
                   </span>
@@ -652,10 +652,10 @@ export default function BookingFlow({
                     <Utensils className={`w-4 h-4 ${withMeals ? 'text-[#B8944E]' : 'text-[#8A8A70]'}`} />
                   </span>
                   <span className="min-w-0 flex-1 leading-tight">
-                    <span className={`block text-[11.5px] font-black ${withMeals ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>
+                    <span className={`block text-[12px] font-black ${withMeals ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>
                       أضف الإعاشة الكاملة
                     </span>
-                    <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
+                    <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">
                       ٣ وجبات يوميًا · {egp(mealPlan.total)} ج.م لكل المجموعة
                     </span>
                   </span>
@@ -673,7 +673,7 @@ export default function BookingFlow({
           <div className={`${CARD} p-3`}>
             <div className="flex items-start justify-between">
               <div className="leading-tight">
-                <span className="flex items-center gap-1.5 text-[10.5px] font-bold text-[#8A8A70]">
+                <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#8A8A70]">
                   <Wallet className="w-4 h-4 text-[#C9A24A]" />
                   التكلفة التقديرية
                 </span>
@@ -681,7 +681,7 @@ export default function BookingFlow({
                   {egp(shownTotal)} <span className="text-[12px]">ج.م</span>
                 </span>
                 {!isMonthlyHousing && perPerson > 0 && (
-                  <span className="block text-[9.5px] font-medium text-[#8A8A70]">
+                  <span className="block text-[11px] font-medium text-[#8A8A70]">
                     {stayLabel} · {egp(guestsCount)} فرد × {egp(perPerson)} ج.م
                   </span>
                 )}
@@ -690,7 +690,7 @@ export default function BookingFlow({
                 <button
                   type="button"
                   onClick={() => { tapFeedback(); setCostOpen(true); }}
-                  className="flex items-center gap-1 text-[10px] font-black text-[#B8944E] hover:underline cursor-pointer shrink-0"
+                  className="flex items-center gap-1 text-[11px] font-black text-[#B8944E] hover:underline cursor-pointer shrink-0"
                 >
                   عرض التفاصيل
                   <ChevronLeft className="w-3.5 h-3.5" />
@@ -709,7 +709,7 @@ export default function BookingFlow({
                 <span className="block text-[11px] font-black text-[#2D2D24]">
                   ستحصل على <span className="text-[#B8944E]">{egp(shownPoints)} نقطة</span> بيما
                 </span>
-                <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">تُضاف لحسابك بعد إتمام الإقامة</span>
+                <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">تُضاف لحسابك بعد إتمام الإقامة</span>
               </div>
             </div>
           )}
@@ -731,7 +731,7 @@ export default function BookingFlow({
                 'حماية كاملة لبياناتك',
                 'دعم بيما طوال رحلة الحجز',
               ].map((line) => (
-                <li key={line} className="flex items-start gap-1.5 text-[9.5px] font-medium text-[#4A4A3A] leading-snug">
+                <li key={line} className="flex items-start gap-1.5 text-[11px] font-medium text-[#4A4A3A] leading-snug">
                   <Check className="w-3 h-3 text-emerald-600 shrink-0 mt-0.5" strokeWidth={3} />
                   {line}
                 </li>
@@ -743,13 +743,13 @@ export default function BookingFlow({
             type="button"
             disabled={!canContinue}
             onClick={() => (currentUser ? go(1) : onRequireLogin?.())}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[13px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
           >
             متابعة
             <ChevronLeft className="w-4 h-4" />
           </button>
           {!canContinue && (
-            <p className="text-[10px] font-medium text-[#8A8A70] text-center -mt-2">اختر التواريخ وعدد الأفراد أولًا.</p>
+            <p className="text-[11px] font-medium text-[#8A8A70] text-center -mt-2">اختر التواريخ وعدد الأفراد أولًا.</p>
           )}
         </div>
       )}
@@ -759,7 +759,7 @@ export default function BookingFlow({
         <div className="space-y-4 pima-rise">
           <div className="px-1">
             <h3 className="text-[15px] font-black text-[#0A2342]">بيانات مقدم الطلب</h3>
-            <p className="text-[10.5px] font-medium text-[#8A8A70] mt-0.5">يرجى إدخال بياناتك للتواصل معك بخصوص الطلب</p>
+            <p className="text-[11px] font-medium text-[#8A8A70] mt-0.5">يرجى إدخال بياناتك للتواصل معك بخصوص الطلب</p>
           </div>
 
           {/* Pinned summary */}
@@ -769,15 +769,15 @@ export default function BookingFlow({
             )}
             <div className="min-w-0 flex-1">
               <span className="block text-[12px] font-black text-[#0A2342] truncate">{house.name}</span>
-              <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
+              <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">
                 {shortDate(checkIn)} — {shortDate(checkOut)} · {egp(guestsCount)} فرد
               </span>
-              <span className="block text-[11.5px] font-black text-[#B8944E] mt-0.5">{egp(totalPrice)} ج.م</span>
+              <span className="block text-[12px] font-black text-[#B8944E] mt-0.5">{egp(totalPrice)} ج.م</span>
             </div>
             <button
               type="button"
               onClick={() => go(0)}
-              className="flex items-center gap-1 text-[10px] font-black text-[#B8944E] border border-[#EBD9B4] rounded-full px-3 py-1.5 hover:bg-[#FDF9EF] transition-colors cursor-pointer shrink-0 pima-press"
+              className="flex items-center gap-1 text-[11px] font-black text-[#B8944E] border border-[#EBD9B4] rounded-full px-3 py-1.5 hover:bg-[#FDF9EF] transition-colors cursor-pointer shrink-0 pima-press"
             >
               <Pencil className="w-3 h-3" />
               تعديل
@@ -809,7 +809,7 @@ export default function BookingFlow({
             type="button"
             disabled={!detailsValid}
             onClick={() => go(2)}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[13px] py-4 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[12px] py-4 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
           >
             مراجعة الطلب
             <ChevronLeft className="w-4 h-4" />
@@ -826,7 +826,7 @@ export default function BookingFlow({
         <div className="space-y-4 pima-rise">
           <div className="px-1">
             <h3 className="text-[15px] font-black text-[#0A2342]">مراجعة وتأكيد الطلب</h3>
-            <p className="text-[10.5px] font-medium text-[#8A8A70] mt-0.5">يرجى مراجعة طلبك قبل الإرسال</p>
+            <p className="text-[11px] font-medium text-[#8A8A70] mt-0.5">يرجى مراجعة طلبك قبل الإرسال</p>
           </div>
 
           <div className={`${CARD} divide-y divide-[#EDE7DA]`}>
@@ -834,26 +834,26 @@ export default function BookingFlow({
               <div key={r.label} className="flex items-center gap-3 p-3.5">
                 <span className="w-9 h-9 rounded-full bg-[#F6F0E2] text-[#C9A24A] flex items-center justify-center shrink-0">{r.icon}</span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[9.5px] font-bold text-[#8A8A70]">{r.label}</span>
-                  <span className="block text-[11.5px] font-black text-[#0A2342] mt-0.5">{r.value}</span>
-                  {r.sub && <span className="block text-[9px] font-medium text-[#B5AF98]">{r.sub}</span>}
+                  <span className="block text-[11px] font-bold text-[#8A8A70]">{r.label}</span>
+                  <span className="block text-[12px] font-black text-[#0A2342] mt-0.5">{r.value}</span>
+                  {r.sub && <span className="block text-[11px] font-medium text-[#B5AF98]">{r.sub}</span>}
                 </span>
               </div>
             ))}
             <div className="flex items-center gap-3 p-3.5">
               <span className="w-9 h-9 rounded-full bg-[#F6F0E2] text-[#C9A24A] flex items-center justify-center shrink-0"><Receipt className="w-4 h-4" /></span>
               <span className="flex-1 min-w-0">
-                <span className="block text-[9.5px] font-bold text-[#8A8A70]">التكلفة التقديرية</span>
-                <span className="block text-[13px] font-black text-[#B8944E] mt-0.5">{egp(totalPrice)} ج.م</span>
+                <span className="block text-[11px] font-bold text-[#8A8A70]">التكلفة التقديرية</span>
+                <span className="block text-[12px] font-black text-[#B8944E] mt-0.5">{egp(totalPrice)} ج.م</span>
               </span>
             </div>
             {pointsToEarn > 0 && (
               <div className="flex items-center gap-3 p-3.5">
                 <span className="w-9 h-9 rounded-full bg-[#F6F0E2] flex items-center justify-center shrink-0"><Star className="w-4 h-4 fill-[#E0A82E] text-[#E0A82E]" /></span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[9.5px] font-bold text-[#8A8A70]">النقاط التي ستحصل عليها</span>
-                  <span className="block text-[11.5px] font-black text-[#0A2342] mt-0.5">{egp(pointsToEarn)} نقطة بيما</span>
-                  <span className="block text-[9px] font-medium text-[#B5AF98]">تُضاف بعد إتمام الإقامة</span>
+                  <span className="block text-[11px] font-bold text-[#8A8A70]">النقاط التي ستحصل عليها</span>
+                  <span className="block text-[12px] font-black text-[#0A2342] mt-0.5">{egp(pointsToEarn)} نقطة بيما</span>
+                  <span className="block text-[11px] font-medium text-[#B5AF98]">تُضاف بعد إتمام الإقامة</span>
                 </span>
               </div>
             )}
@@ -863,7 +863,7 @@ export default function BookingFlow({
             <Info className="w-4 h-4 text-[#C9A24A] shrink-0 mt-0.5" />
             <div className="space-y-1">
               <span className="block text-[12px] font-black text-[#B8944E]">لن يتم خصم أي مبلغ الآن</span>
-              <p className="text-[10px] font-medium text-[#4A4A3A] leading-relaxed">
+              <p className="text-[11px] font-medium text-[#4A4A3A] leading-relaxed">
                 سيتم مراجعة طلبك أولًا من قبل إدارة المكان. بعد الموافقة ستتلقى إشعارًا لدفع العربون
                 {depositAmount > 0 && <> ({egp(depositAmount)} ج.م)</>}، ويُدفع باقي المبلغ وفقًا للاتفاق مع إدارة المكان.
               </p>
@@ -873,10 +873,10 @@ export default function BookingFlow({
           <div className={`${CARD} p-3.5 flex items-center gap-3`}>
             <span className="w-9 h-9 rounded-full bg-[#F1F5FB] text-[#4A6FA5] flex items-center justify-center shrink-0"><Clock className="w-4 h-4" /></span>
             <span className="flex-1">
-              <span className="block text-[9.5px] font-bold text-[#8A8A70]">متوسط وقت الرد</span>
-              <span className="block text-[11.5px] font-black text-[#0A2342] mt-0.5">خلال ٦ ساعات</span>
+              <span className="block text-[11px] font-bold text-[#8A8A70]">متوسط وقت الرد</span>
+              <span className="block text-[12px] font-black text-[#0A2342] mt-0.5">خلال ٦ ساعات</span>
             </span>
-            <span className="text-[9px] font-medium text-[#B5AF98]">آخر ٣٠ يوم</span>
+            <span className="text-[11px] font-medium text-[#B5AF98]">آخر ٣٠ يوم</span>
           </div>
 
           <label className="flex items-start gap-2.5 px-1 cursor-pointer">
@@ -886,7 +886,7 @@ export default function BookingFlow({
               onChange={(e) => setAgreed(e.target.checked)}
               className="mt-0.5 w-4 h-4 accent-[#C9A24A] shrink-0 cursor-pointer"
             />
-            <span className="text-[10.5px] font-medium text-[#4A4A3A] leading-relaxed">
+            <span className="text-[11px] font-medium text-[#4A4A3A] leading-relaxed">
               أوافق على سياسة الحجز والإلغاء والشروط والأحكام
             </span>
           </label>
@@ -895,12 +895,12 @@ export default function BookingFlow({
             type="button"
             disabled={!agreed || submitting}
             onClick={handleSubmit}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[13px] py-4 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[12px] py-4 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             {submitting ? 'جارٍ الإرسال...' : 'إرسال طلب الحجز'}
           </button>
-          <p className="flex items-center justify-center gap-1.5 text-[10px] font-medium text-[#8A8A70] -mt-2">
+          <p className="flex items-center justify-center gap-1.5 text-[11px] font-medium text-[#8A8A70] -mt-2">
             <CreditCard className="w-3.5 h-3.5" />
             لن يتم تحصيل أي مبلغ الآن
           </p>
@@ -942,8 +942,8 @@ export default function BookingFlow({
                   <Glyph className={`w-3.5 h-3.5 ${on ? 'text-[#B8944E]' : 'text-[#8A8A70]'}`} />
                 </span>
                 <span className="min-w-0 flex-1 leading-tight">
-                  <span className={`block text-[11.5px] font-black ${on ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>{g.label}</span>
-                  {g.hint && <span className="block text-[9px] font-medium text-[#8A8A70] mt-0.5">{g.hint}</span>}
+                  <span className={`block text-[12px] font-black ${on ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>{g.label}</span>
+                  {g.hint && <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">{g.hint}</span>}
                 </span>
                 <span className={`w-4.5 h-4.5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
                   on ? 'bg-[#C9A24A] border-[#C9A24A]' : 'border-[#DED6C4]'
@@ -970,21 +970,21 @@ export default function BookingFlow({
         <div className="space-y-1.5">
           {breakdown.map((row, i) => (
             <div key={`${row.label ?? 'base'}-${i}`} className="flex items-center justify-between bg-white border border-[#EDE7DA] rounded-xl px-3 py-2.5">
-              <span className="text-[10.5px] font-bold text-[#4A4A3A]">
+              <span className="text-[11px] font-bold text-[#4A4A3A]">
                 {row.label ?? 'السعر الأساسي'}
-                <span className="text-[9px] font-medium text-[#8A8A70] mr-1.5">
+                <span className="text-[11px] font-medium text-[#8A8A70] mr-1.5">
                   {row.nights === 0 ? 'يوم واحد' : `${egp(row.nights)} ${nightsWord(row.nights)}`} × {egp(guestsCount)} فرد × {egp(row.rate)} ج.م
                 </span>
               </span>
-              <span className="text-[10.5px] font-black text-[#0A2342] shrink-0">{egp(row.rate * row.nights * guestsCount)} ج.م</span>
+              <span className="text-[11px] font-black text-[#0A2342] shrink-0">{egp(row.rate * row.nights * guestsCount)} ج.م</span>
             </div>
           ))}
           <div className="flex items-center justify-between pt-2 mt-1 border-t border-[#EDE7DA]">
-            <span className="text-[11.5px] font-black text-[#2D2D24]">الإجمالي التقديري</span>
+            <span className="text-[12px] font-black text-[#2D2D24]">الإجمالي التقديري</span>
             <span className="text-[14px] font-black text-[#B8944E]">{egp(totalPrice)} ج.م</span>
           </div>
           {totalPrice !== originalTotalPrice && (
-            <p className="text-[9.5px] font-medium text-emerald-700 text-left">
+            <p className="text-[11px] font-medium text-emerald-700 text-left">
               بعد خصم {egp(originalTotalPrice - totalPrice)} ج.م من نقاطك
             </p>
           )}

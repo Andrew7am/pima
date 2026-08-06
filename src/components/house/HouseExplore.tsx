@@ -23,7 +23,7 @@ export function ExploreSection({ children }: { children: React.ReactNode }) {
           <span aria-hidden="true" className="w-1 h-1 rounded-full bg-[#C9A24A]" />
           <span aria-hidden="true" className="w-8 h-px bg-[#C9A24A]/50" />
         </h3>
-        <p className="text-[10.5px] font-medium text-[#8A8A70]">اكتشف كل ما يقدمه هذا المكان</p>
+        <p className="text-[11px] font-medium text-[#8A8A70]">اكتشف كل ما يقدمه هذا المكان</p>
       </div>
 
       {/* Two columns, placed explicitly rather than left to flow: the menu
@@ -136,9 +136,9 @@ export function ExploreCard({
               </span>
               <span className="flex-1 min-w-0 leading-tight">
                 <span className="block text-[14px] font-black text-[#0A2342]">{title}</span>
-                {showSubtitle && <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5 leading-snug truncate">{subtitle}</span>}
+                {showSubtitle && <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5 leading-snug truncate">{subtitle}</span>}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-[#D9BC85] bg-white text-[#B8944E] px-3.5 py-2 text-[10.5px] font-black shadow-[0_2px_8px_rgba(184,148,78,0.15)] shrink-0">
+              <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-[#D9BC85] bg-white text-[#B8944E] px-3.5 py-2 text-[11px] font-black shadow-[0_2px_8px_rgba(184,148,78,0.15)] shrink-0">
                 <ChevronLeft className="w-3.5 h-3.5" />
                 {cta}
               </span>
@@ -159,7 +159,7 @@ export function ExploreCard({
           </span>
           )}
           <span className={`block font-black text-[#0A2342] leading-tight ${big ? 'text-[17px]' : 'text-[15px]'}`}>{title}</span>
-          {showSubtitle && <span className="block text-[10.5px] font-medium text-[#8A8A70] mt-1 leading-snug">{subtitle}</span>}
+          {showSubtitle && <span className="block text-[11px] font-medium text-[#8A8A70] mt-1 leading-snug">{subtitle}</span>}
           {preview && <div className={`mt-2.5 ${image && imageMode === 'side' ? 'max-w-[62%] me-auto' : ''}`}>{preview}</div>}
         </div>
         )}

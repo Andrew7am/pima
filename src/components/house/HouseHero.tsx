@@ -121,7 +121,7 @@ export default function HouseHero({
   // photograph — no wash, no badge, no text — so the gallery reads as a gallery.
   const showOverlay = index === 0;
   const roundStars = Math.round(house.rating);
-  const glassBtn = 'w-9 h-9 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center transition-colors hover:bg-white/30 cursor-pointer pima-press';
+  const glassBtn = 'w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center transition-colors hover:bg-white/30 cursor-pointer pima-press';
 
   return (
     // Full bleed: the app's main element pads its children by 16px (24px from
@@ -196,13 +196,13 @@ export default function HouseHero({
           <>
             <button
               type="button" onClick={() => step(1)} aria-label="الصورة التالية"
-              className="absolute top-[38%] right-3 w-9 h-9 rounded-full bg-black/30 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/50 transition-colors cursor-pointer pima-press"
+              className="absolute top-[38%] right-3 w-11 h-11 rounded-full bg-black/30 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/50 transition-colors cursor-pointer pima-press"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
             <button
               type="button" onClick={() => step(-1)} aria-label="الصورة السابقة"
-              className="absolute top-[38%] left-3 w-9 h-9 rounded-full bg-black/30 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/50 transition-colors cursor-pointer pima-press"
+              className="absolute top-[38%] left-3 w-11 h-11 rounded-full bg-black/30 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/50 transition-colors cursor-pointer pima-press"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -231,7 +231,7 @@ export default function HouseHero({
                     <Star key={i} className={`w-4 h-4 ${i < roundStars ? 'fill-[#F0C560] text-[#F0C560]' : 'text-white/35'}`} />
                   ))}
                 </span>
-                <span className="text-[11.5px] font-bold text-white/85">({reviewsCount} تقييم)</span>
+                <span className="text-[12px] font-bold text-white/85">({reviewsCount} تقييم)</span>
               </div>
 
               {/* Amenities: dividers only, no panel. The wash below already
@@ -246,7 +246,7 @@ export default function HouseHero({
                         {/* Shadows do the work the panel used to: the strip has
                             to stay readable straight over a photograph. */}
                         <span className="text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">{a.icon}</span>
-                        <span className="text-[9.5px] font-bold text-white whitespace-nowrap drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">{a.label}</span>
+                        <span className="text-[11px] font-bold text-white whitespace-nowrap drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">{a.label}</span>
                       </span>
                     </React.Fragment>
                   ))}
@@ -259,17 +259,23 @@ export default function HouseHero({
             <>
               <div className="mt-3 flex items-center justify-center gap-1.5">
                 {!interacted && (
-                  <span className="flex items-center gap-1 text-[9.5px] font-bold text-white/75 ml-2 drop-shadow-[0_1px_3px_rgba(0,0,0,0.65)]">
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-white/75 ml-2 drop-shadow-[0_1px_3px_rgba(0,0,0,0.65)]">
                     <MoveHorizontal className="w-3 h-3" />
                     اسحب للتنقل بين الصور
                   </span>
                 )}
+                {/* Position indicators, not controls. They were buttons 6px
+                    across — a target no thumb can hit, and inflating them to
+                    44 would put a row of lozenges over the photo. The gallery
+                    already offers three ways to move: the arrows (44px), a
+                    swipe, and the thumbnail strip below. A dot that announces
+                    itself as a button and cannot be pressed is worse than one
+                    that honestly says where you are. */}
                 {images.map((_, i) => (
-                  <button
-                    key={i} type="button" aria-label={`الصورة ${i + 1}`}
-                    onClick={() => { tapFeedback(); setInteracted(true); go(i); }}
-                    className={`rounded-full transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] cursor-pointer drop-shadow-[0_1px_3px_rgba(0,0,0,0.55)] ${
-                      i === index ? 'w-6 h-1.5 bg-[#E3CD9F]' : 'w-1.5 h-1.5 bg-white/75 hover:bg-white'
+                  <span
+                    key={i} aria-hidden="true"
+                    className={`rounded-full transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] drop-shadow-[0_1px_3px_rgba(0,0,0,0.55)] ${
+                      i === index ? 'w-6 h-1.5 bg-[#E3CD9F]' : 'w-1.5 h-1.5 bg-white/75'
                     }`}
                   />
                 ))}

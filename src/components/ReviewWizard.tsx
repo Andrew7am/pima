@@ -85,12 +85,12 @@ function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
       {steps.map((s, i) => (
         <React.Fragment key={s.n}>
           <div className="flex flex-col items-center gap-1">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-colors ${
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black transition-colors ${
               step === s.n ? 'bg-[#5A5A40] text-white' : step > s.n ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EBEBE0] text-[#8A8A70]'
             }`}>
               {step > s.n ? <Check className="w-3.5 h-3.5" /> : s.n}
             </div>
-            <span className="text-[9px] font-bold text-[#8A8A70]">{s.label}</span>
+            <span className="text-[11px] font-bold text-[#8A8A70]">{s.label}</span>
           </div>
           {i < steps.length - 1 && <div className={`w-8 h-0.5 mb-4 transition-colors ${step > s.n ? 'bg-emerald-300' : 'bg-[#EBEBE0]'}`} />}
         </React.Fragment>
@@ -179,7 +179,7 @@ export default function ReviewWizard({ house, currentUser, onSubmitReview, onDon
     <div className="bg-[#FAF8F5] border border-[#D6D6C2] rounded-3xl p-4 sm:p-5 space-y-4 animate-in fade-in duration-200">
       <div>
         <h3 className="text-sm font-black text-[#4A4A3A] text-center">تقييم تجربتك</h3>
-        <p className="text-[10px] text-[#8A8A70] font-medium text-center mt-0.5">شارك رأيك لمساعدة الآخرين</p>
+        <p className="text-[11px] text-[#8A8A70] font-medium text-center mt-0.5">شارك رأيك لمساعدة الآخرين</p>
       </div>
 
       <StepIndicator step={step} />
@@ -189,7 +189,7 @@ export default function ReviewWizard({ house, currentUser, onSubmitReview, onDon
           <div className="bg-white rounded-2xl p-4 border border-[#D6D6C2] space-y-2 text-center">
             <h4 className="text-xs font-black text-[#4A4A3A]">كيف كانت تجربتك بشكل عام؟</h4>
             <StarPicker value={displayedOverall} onChange={(v) => { setOverall(v); setOverallTouched(true); }} size="w-7 h-7" />
-            <span className="inline-block text-[10px] font-extrabold text-amber-800 bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 rounded-lg">
+            <span className="inline-block text-[11px] font-extrabold text-amber-800 bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 rounded-lg">
               {ratingLabel(displayedOverall)}
             </span>
           </div>
@@ -198,7 +198,7 @@ export default function ReviewWizard({ house, currentUser, onSubmitReview, onDon
             <h4 className="text-xs font-black text-[#4A4A3A]">قيّم الجوانب التالية</h4>
             {DETAIL_DIMENSIONS.map((d) => (
               <div key={d.key} className="flex items-center justify-between bg-[#FBFBFA] px-3 py-2 rounded-xl border border-[#D6D6C2]/50">
-                <span className="text-[10.5px] font-bold text-[#4A4A3A]">{d.emoji} {d.label}</span>
+                <span className="text-[11px] font-bold text-[#4A4A3A]">{d.emoji} {d.label}</span>
                 <StarPicker value={detail[d.key]} onChange={(v) => setDetail((prev) => ({ ...prev, [d.key]: v }))} size="w-4 h-4" />
               </div>
             ))}
@@ -212,7 +212,7 @@ export default function ReviewWizard({ house, currentUser, onSubmitReview, onDon
                   key={p.key}
                   type="button"
                   onClick={() => setPurpose(purpose === p.key ? undefined : p.key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-extrabold transition-all cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-extrabold transition-all cursor-pointer ${
                     purpose === p.key ? 'bg-[#5A5A40] border-[#5A5A40] text-white scale-105' : 'bg-[#FBFBFA] border-[#D6D6C2] text-[#4A4A3A] hover:border-[#8A8A70]'
                   }`}
                 >
@@ -238,7 +238,7 @@ export default function ReviewWizard({ house, currentUser, onSubmitReview, onDon
         <div className="space-y-4 animate-in fade-in duration-200">
           <div>
             <h4 className="text-xs font-black text-[#4A4A3A] text-center">شاركنا تفاصيل تجربتك</h4>
-            <p className="text-[9.5px] text-[#8A8A70] font-medium text-center mt-0.5">ساعدنا في تحسين تجربة الضيوف</p>
+            <p className="text-[11px] text-[#8A8A70] font-medium text-center mt-0.5">ساعدنا في تحسين تجربة الضيوف</p>
           </div>
 
           <div className="bg-white rounded-2xl p-4 border border-[#D6D6C2] space-y-2.5">
@@ -251,7 +251,7 @@ export default function ReviewWizard({ house, currentUser, onSubmitReview, onDon
                     key={t.key}
                     type="button"
                     onClick={() => toggleTag(likedTags, setLikedTags, t.key)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-extrabold transition-all cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-extrabold transition-all cursor-pointer ${
                       active ? 'bg-amber-50 border-amber-400 text-amber-900' : 'bg-[#FBFBFA] border-[#D6D6C2] text-[#4A4A3A] hover:border-[#8A8A70]'
                     }`}
                   >
@@ -273,7 +273,7 @@ export default function ReviewWizard({ house, currentUser, onSubmitReview, onDon
                     key={t.key}
                     type="button"
                     onClick={() => toggleTag(problemTags, setProblemTags, t.key)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-extrabold transition-all cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-extrabold transition-all cursor-pointer ${
                       active ? 'bg-rose-50 border-rose-300 text-rose-900' : 'bg-[#FBFBFA] border-[#D6D6C2] text-[#4A4A3A] hover:border-[#8A8A70]'
                     }`}
                   >
@@ -304,7 +304,7 @@ export default function ReviewWizard({ house, currentUser, onSubmitReview, onDon
               placeholder="اكتب تعليقك هنا..."
               className="w-full bg-[#FBFBFA] border border-[#D6D6C2] text-[11px] px-3 py-2.5 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40] font-medium resize-none"
             />
-            <div className="text-left text-[9px] text-[#8A8A70] font-bold">{comment.length}/500</div>
+            <div className="text-left text-[11px] text-[#8A8A70] font-bold">{comment.length}/500</div>
           </div>
 
           <div className="flex gap-2">
@@ -331,7 +331,7 @@ export default function ReviewWizard({ house, currentUser, onSubmitReview, onDon
         <div className="space-y-3 animate-in fade-in duration-200">
           <div>
             <h4 className="text-xs font-black text-[#4A4A3A] text-center">راجع تقييمك قبل الإرسال</h4>
-            <p className="text-[9.5px] text-[#8A8A70] font-medium text-center mt-0.5">تأكد أن جميع البيانات صحيحة</p>
+            <p className="text-[11px] text-[#8A8A70] font-medium text-center mt-0.5">تأكد أن جميع البيانات صحيحة</p>
           </div>
 
           {/* Card 1: overall */}
@@ -343,14 +343,14 @@ export default function ReviewWizard({ house, currentUser, onSubmitReview, onDon
             </div>
             <div className="text-left">
               <span className="text-sm font-black text-[#4A4A3A]">{displayedOverall.toFixed(1)}</span>
-              <span className="text-[10px] font-extrabold text-amber-800 mr-1">{ratingLabel(displayedOverall)}</span>
+              <span className="text-[11px] font-extrabold text-amber-800 mr-1">{ratingLabel(displayedOverall)}</span>
             </div>
           </div>
 
           {/* Card 2: detail summary */}
           <div className="bg-white rounded-2xl p-3.5 border border-[#D6D6C2] space-y-1.5">
             {DETAIL_DIMENSIONS.map((d) => (
-              <div key={d.key} className="flex items-center justify-between text-[10.5px] font-bold text-[#4A4A3A]">
+              <div key={d.key} className="flex items-center justify-between text-[11px] font-bold text-[#4A4A3A]">
                 <span>{d.emoji} {d.label}</span>
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((s) => (
@@ -364,18 +364,18 @@ export default function ReviewWizard({ house, currentUser, onSubmitReview, onDon
           {/* Card 3: visit purpose */}
           {purpose && (
             <div className="bg-white rounded-2xl p-3.5 border border-[#D6D6C2] flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#8A8A70]">سبب الزيارة</span>
-              <span className="text-[10.5px] font-extrabold text-[#4A4A3A] bg-[#EBEBE0] px-2.5 py-1 rounded-lg">{PURPOSE_LABEL[purpose]}</span>
+              <span className="text-[11px] font-bold text-[#8A8A70]">سبب الزيارة</span>
+              <span className="text-[11px] font-extrabold text-[#4A4A3A] bg-[#EBEBE0] px-2.5 py-1 rounded-lg">{PURPOSE_LABEL[purpose]}</span>
             </div>
           )}
 
           {/* Card 4: liked */}
           {likedTags.length > 0 && (
             <div className="bg-white rounded-2xl p-3.5 border border-[#D6D6C2] space-y-2">
-              <span className="text-[10px] font-bold text-[#8A8A70]">ما أعجبك</span>
+              <span className="text-[11px] font-bold text-[#8A8A70]">ما أعجبك</span>
               <div className="flex flex-wrap gap-1.5">
                 {likedTags.map((k) => (
-                  <span key={k} className="text-[9.5px] font-bold bg-amber-50 border border-amber-200/60 text-amber-900 px-2 py-1 rounded-lg">{TAG_LABEL[k]}</span>
+                  <span key={k} className="text-[11px] font-bold bg-amber-50 border border-amber-200/60 text-amber-900 px-2 py-1 rounded-lg">{TAG_LABEL[k]}</span>
                 ))}
               </div>
             </div>
@@ -383,13 +383,13 @@ export default function ReviewWizard({ house, currentUser, onSubmitReview, onDon
 
           {/* Card 5: problems */}
           <div className="bg-white rounded-2xl p-3.5 border border-[#D6D6C2] space-y-2">
-            <span className="text-[10px] font-bold text-[#8A8A70]">المشكلات</span>
+            <span className="text-[11px] font-bold text-[#8A8A70]">المشكلات</span>
             {problemTags.length === 0 ? (
-              <p className="text-[10.5px] font-bold text-emerald-700 flex items-center gap-1">✅ لم يتم الإبلاغ عن أي مشكلة</p>
+              <p className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">✅ لم يتم الإبلاغ عن أي مشكلة</p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {problemTags.map((k) => (
-                  <span key={k} className="text-[9.5px] font-bold bg-rose-50 border border-rose-200/60 text-rose-900 px-2 py-1 rounded-lg">
+                  <span key={k} className="text-[11px] font-bold bg-rose-50 border border-rose-200/60 text-rose-900 px-2 py-1 rounded-lg">
                     {k === 'other' && problemOtherText.trim() ? problemOtherText.trim() : TAG_LABEL[k]}
                   </span>
                 ))}
@@ -401,28 +401,28 @@ export default function ReviewWizard({ house, currentUser, onSubmitReview, onDon
           {comment.trim() && (
             <div className="bg-[#FBFBFA] rounded-2xl p-3.5 border border-[#D6D6C2] flex gap-2">
               <MessageSquareQuote className="w-4 h-4 text-[#8A8A70] shrink-0 mt-0.5" />
-              <p className="text-[10.5px] text-[#4A4A3A] leading-relaxed">{comment.trim()}</p>
+              <p className="text-[11px] text-[#4A4A3A] leading-relaxed">{comment.trim()}</p>
             </div>
           )}
 
           {/* Card 7: display name */}
           <div className="bg-white rounded-2xl p-3.5 border border-[#D6D6C2] space-y-2">
-            <span className="text-[10px] font-bold text-[#8A8A70]">كيف ترغب في إظهار اسمك؟</span>
+            <span className="text-[11px] font-bold text-[#8A8A70]">كيف ترغب في إظهار اسمك؟</span>
             <div className="space-y-1.5">
               <label className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${!anonymous ? 'border-[#5A5A40] bg-[#5A5A40]/5' : 'border-[#D6D6C2]'}`}>
                 <input type="radio" checked={!anonymous} onChange={() => setAnonymous(false)} className="accent-[#5A5A40] cursor-pointer" />
                 <UserCheck className="w-3.5 h-3.5 text-[#5A5A40]" />
                 <div>
-                  <div className="text-[10.5px] font-extrabold text-[#4A4A3A]">باسمي الحقيقي</div>
-                  <div className="text-[9px] text-[#8A8A70]">سيظهر اسمك مع التقييم</div>
+                  <div className="text-[11px] font-extrabold text-[#4A4A3A]">باسمي الحقيقي</div>
+                  <div className="text-[11px] text-[#8A8A70]">سيظهر اسمك مع التقييم</div>
                 </div>
               </label>
               <label className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${anonymous ? 'border-[#5A5A40] bg-[#5A5A40]/5' : 'border-[#D6D6C2]'}`}>
                 <input type="radio" checked={anonymous} onChange={() => setAnonymous(true)} className="accent-[#5A5A40] cursor-pointer" />
                 <span className="w-3.5 h-3.5 text-[#8A8A70] text-center text-xs">👤</span>
                 <div>
-                  <div className="text-[10.5px] font-extrabold text-[#4A4A3A]">زائر موثق</div>
-                  <div className="text-[9px] text-[#8A8A70]">سيظهر "زائر موثق" فقط بدون اسمك</div>
+                  <div className="text-[11px] font-extrabold text-[#4A4A3A]">زائر موثق</div>
+                  <div className="text-[11px] text-[#8A8A70]">سيظهر "زائر موثق" فقط بدون اسمك</div>
                 </div>
               </label>
             </div>

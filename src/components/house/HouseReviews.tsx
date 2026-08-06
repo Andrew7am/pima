@@ -134,7 +134,7 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
     <div className="space-y-4 text-right">
       <div className="px-1">
         <h3 className="text-[15px] font-black text-[#0A2342]">التقييمات</h3>
-        <p className="text-[10.5px] text-[#8A8A70] font-medium mt-0.5">آراء الضيوف عن المكان</p>
+        <p className="text-[11px] text-[#8A8A70] font-medium mt-0.5">آراء الضيوف عن المكان</p>
       </div>
 
       {stats && (
@@ -142,10 +142,10 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
           {/* ── Overall ── */}
           <div className={`${CARD} p-5 flex items-center gap-4`}>
             <div className="text-center shrink-0">
-              <span className="text-[9.5px] font-bold text-[#8A8A70] block">تقييم عام</span>
+              <span className="text-[11px] font-bold text-[#8A8A70] block">تقييم عام</span>
               <span className="text-[34px] leading-none font-black text-[#B8944E] block my-1">{stats.avg}</span>
               <Stars value={stats.avg} size="w-4 h-4" />
-              <span className="text-[9.5px] font-medium text-[#8A8A70] block mt-1">({count} تقييم)</span>
+              <span className="text-[11px] font-medium text-[#8A8A70] block mt-1">({count} تقييم)</span>
             </div>
 
             <span aria-hidden="true" className="w-px self-stretch bg-[#EDE7DA]" />
@@ -155,7 +155,7 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
                 <Award className="w-4 h-4 text-[#C9A24A]" />
                 {scoreWord(stats.avg)}
               </span>
-              <p className="text-[10.5px] font-medium text-[#8A8A70] leading-relaxed mt-1">
+              <p className="text-[11px] font-medium text-[#8A8A70] leading-relaxed mt-1">
                 أكثر من {stats.recommends}٪ من الضيوف يوصون بهذا المكان
               </p>
             </div>
@@ -171,7 +171,7 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
               </svg>
               <span className="absolute inset-0 flex flex-col items-center justify-center leading-none">
                 <span className="text-[16px] font-black text-[#B8944E]">{stats.recommends}%</span>
-                <span className="text-[8px] font-bold text-[#8A8A70] mt-0.5">يوصي به</span>
+                <span className="text-[11px] font-bold text-[#8A8A70] mt-0.5">يوصي به</span>
               </span>
             </span>
           </div>
@@ -188,13 +188,13 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
                 <Star className="w-5 h-5 fill-[#E0A82E] text-[#E0A82E]" />
               </span>
               <span className="flex-1 min-w-0">
-                <span className="block text-[13px] font-black text-[#0A2342]">تقييم حسب الفئة</span>
-                <span className="block text-[10px] font-medium text-[#8A8A70] leading-snug mt-0.5">اطّلع على تقييم كل جانب من تجربة الضيوف</span>
+                <span className="block text-[12px] font-black text-[#0A2342]">تقييم حسب الفئة</span>
+                <span className="block text-[11px] font-medium text-[#8A8A70] leading-snug mt-0.5">اطّلع على تقييم كل جانب من تجربة الضيوف</span>
               </span>
               <span aria-hidden="true" className="w-px self-stretch bg-[#EDE7DA]" />
               <span className="text-center shrink-0">
                 <span className="block text-[20px] font-black text-[#0A2342] leading-none">{stats.avg}</span>
-                <span className="block text-[9.5px] font-bold text-[#B8944E] mt-0.5">{scoreWord(stats.avg)}</span>
+                <span className="block text-[11px] font-bold text-[#B8944E] mt-0.5">{scoreWord(stats.avg)}</span>
                 <span className="block mt-1"><Stars value={stats.avg} /></span>
               </span>
               <ChevronDown
@@ -226,13 +226,13 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
                         <span className="block mt-0.5"><Stars value={c.value} size="w-3 h-3" /></span>
                         <span className="flex items-baseline gap-1.5 mt-1">
                           <span className="text-[14px] font-black text-[#0A2342]">{c.value}</span>
-                          <span className="text-[8.5px] font-medium text-[#8A8A70]">{scoreWord(c.value)}</span>
+                          <span className="text-[11px] font-medium text-[#8A8A70]">{scoreWord(c.value)}</span>
                         </span>
                       </span>
                     </div>
                   ))}
                 </div>
-                <p className="pb-4 flex items-center justify-center gap-1 text-[9px] font-medium text-[#8A8A70]">
+                <p className="pb-4 flex items-center justify-center gap-1 text-[11px] font-medium text-[#8A8A70]">
                   <Info className="w-3 h-3" />
                   تقييمات الضيوف حقيقية ومحدّثة باستمرار
                 </p>
@@ -251,7 +251,7 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
                 type="button"
                 onClick={() => { tapFeedback(); setSort(t.key); setVisible(5); }}
                 aria-pressed={sort === t.key}
-                className={`shrink-0 px-4 h-9 rounded-full text-[11px] font-black transition-colors duration-[250ms] cursor-pointer pima-press ${
+                className={`shrink-0 px-4 h-11 rounded-full text-[11px] font-black transition-colors duration-[250ms] cursor-pointer pima-press ${
                   sort === t.key
                     ? 'bg-[#C9A24A] text-[#0A2342] border border-[#C9A24A]'
                     : 'bg-white text-[#4A4A3A] border border-[#EDE7DA] hover:border-[#E3CD9F]'
@@ -271,7 +271,7 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
             <Star className="w-5 h-5 text-[#C9A24A]" />
           </span>
           <p className="text-[12px] font-black text-[#0A2342]">لا توجد تقييمات بعد</p>
-          <p className="text-[10px] font-medium text-[#8A8A70]">كن أول من يشارك تجربته ويساعد غيره على الاختيار.</p>
+          <p className="text-[11px] font-medium text-[#8A8A70]">كن أول من يشارك تجربته ويساعد غيره على الاختيار.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -284,17 +284,17 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
                 <div className="flex items-start gap-3">
                   <Avatar name={name} />
                   <div className="min-w-0 flex-1">
-                    <span className="block text-[12.5px] font-black text-[#0A2342] truncate">{name}</span>
-                    <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">{relativeDate(rev.createdAt)}</span>
+                    <span className="block text-[12px] font-black text-[#0A2342] truncate">{name}</span>
+                    <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">{relativeDate(rev.createdAt)}</span>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[12.5px] font-black text-[#0A2342]">{arabicDecimal(overall)}</span>
+                    <span className="text-[12px] font-black text-[#0A2342]">{arabicDecimal(overall)}</span>
                     <Stars value={overall} />
                   </div>
                 </div>
 
                 {rev.comment && (
-                  <p className="text-[11.5px] text-[#4A4A3A] leading-relaxed font-medium">{rev.comment}</p>
+                  <p className="text-[12px] text-[#4A4A3A] leading-relaxed font-medium">{rev.comment}</p>
                 )}
 
                 {/* The owner's reply is offered, not forced — most readers want
@@ -306,20 +306,20 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
                       type="button"
                       onClick={() => { tapFeedback(); setOpenReply(isReplyOpen ? null : rev.id); }}
                       aria-expanded={isReplyOpen}
-                      className="flex items-center gap-1.5 text-[10px] font-bold text-[#8A8A70] hover:text-[#B8944E] transition-colors cursor-pointer"
+                      className="flex items-center gap-1.5 text-[11px] font-bold text-[#8A8A70] hover:text-[#B8944E] transition-colors cursor-pointer"
                     >
                       <CornerDownLeft className="w-3.5 h-3.5" />
                       {isReplyOpen ? 'إخفاء رد المكان' : 'رد من المكان'}
                     </button>
                     {isReplyOpen && (
                       <div className="bg-[#FBF9F4] border-r-2 border-[#C9A24A] rounded-l-2xl p-3 space-y-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                        <div className="flex items-center justify-between text-[10px] font-black text-[#B8944E]">
+                        <div className="flex items-center justify-between text-[11px] font-black text-[#B8944E]">
                           <span>رد إدارة المكان</span>
                           {rev.ownerReplyCreatedAt && (
-                            <span className="text-[8.5px] font-medium text-[#8A8A70]">{relativeDate(rev.ownerReplyCreatedAt)}</span>
+                            <span className="text-[11px] font-medium text-[#8A8A70]">{relativeDate(rev.ownerReplyCreatedAt)}</span>
                           )}
                         </div>
-                        <p className="text-[10.5px] text-[#4A4A3A] leading-relaxed font-medium">{rev.ownerReply}</p>
+                        <p className="text-[11px] text-[#4A4A3A] leading-relaxed font-medium">{rev.ownerReply}</p>
                       </div>
                     )}
                   </>
@@ -347,11 +347,11 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
         onClick={() => { tapFeedback(); setSheetOpen(true); }}
         className={`${CARD} w-full p-5 text-center cursor-pointer pima-press hover:border-[#E3CD9F] transition-colors`}
       >
-        <span className="inline-flex items-center gap-1.5 text-[13px] font-black text-[#B8944E]">
+        <span className="inline-flex items-center gap-1.5 text-[12px] font-black text-[#B8944E]">
           <PencilLine className="w-4 h-4" />
           أضف تقييمك
         </span>
-        <span className="block text-[10px] font-medium text-[#8A8A70] mt-1">شارك تجربتك لمساعدة الآخرين</span>
+        <span className="block text-[11px] font-medium text-[#8A8A70] mt-1">شارك تجربتك لمساعدة الآخرين</span>
       </button>
 
       {/* The form lives in a sheet rather than at the foot of the page: it is

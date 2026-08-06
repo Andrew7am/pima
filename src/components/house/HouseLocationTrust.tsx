@@ -66,7 +66,7 @@ export default function HouseLocationTrust({ house, announcements }: HouseLocati
       {/* Anything the owner has posted stays at the top of this stack — a
           notice about the pool being closed is no use below the guarantees. */}
       {liveAnnouncements.map((a) => (
-        <div key={a.id} className="p-3 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-2 text-[10.5px] text-amber-900 font-bold">
+        <div key={a.id} className="p-3 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-2 text-[11px] text-amber-900 font-bold">
           <span className="text-sm">📢</span>
           <span>{a.message}</span>
         </div>
@@ -121,8 +121,8 @@ export default function HouseLocationTrust({ house, announcements }: HouseLocati
               <span className="w-11 h-11 rounded-full bg-[#F6F0E2] flex items-center justify-center">
                 <g.icon className="w-5 h-5 text-[#C5A059]" />
               </span>
-              <span className="text-[10px] font-black text-[#2D2D24] leading-tight">{g.title}</span>
-              <span className="text-[8.5px] font-medium text-[#8A8A70] leading-snug">{g.body}</span>
+              <span className="text-[11px] font-black text-[#2D2D24] leading-tight">{g.title}</span>
+              <span className="text-[11px] font-medium text-[#8A8A70] leading-snug">{g.body}</span>
             </div>
           ))}
         </div>

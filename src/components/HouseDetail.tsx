@@ -447,7 +447,7 @@ const DateRangePicker = ({
   // straight into the sheet; the standalone mode wraps it in the modal below.
   const calendar = (
     <>
-            <div className="grid grid-cols-2 gap-2 bg-[#FDFBF7] p-2.5 rounded-2xl border border-[#D6D6C2]/50 text-[10px]">
+            <div className="grid grid-cols-2 gap-2 bg-[#FDFBF7] p-2.5 rounded-2xl border border-[#D6D6C2]/50 text-[11px]">
               <div>
                 <span className="text-[#8A8A70] block font-bold mb-0.5">من تاريخ (الوصول):</span>
                 <span className="text-[#0A2342] font-black">{checkIn ? formatDateToShow(checkIn) : 'لم يحدد'}</span>
@@ -478,7 +478,7 @@ const DateRangePicker = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black text-[#8A8A70] border-b border-[#D6D6C2]/20 pb-1.5">
+            <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-black text-[#8A8A70] border-b border-[#D6D6C2]/20 pb-1.5">
               {WEEKDAYS_AR.map((day) => (
                 <div key={day} className="py-1">{day}</div>
               ))}
@@ -530,7 +530,7 @@ const DateRangePicker = ({
             </div>
 
             {/* Legend */}
-            <div className="flex flex-wrap gap-3 text-[10px] border-t border-[#D6D6C2]/20 pt-2">
+            <div className="flex flex-wrap gap-3 text-[11px] border-t border-[#D6D6C2]/20 pt-2">
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-100 inline-block" />محجوز</span>
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-100 inline-block" />قيد المراجعة</span>
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[#C5A059]/20 inline-block" />الفترة المختارة</span>
@@ -1004,7 +1004,7 @@ export default function HouseDetail({
       {namedFacilities.map(({ label, Glyph }, i) => (
         <span
           key={label}
-          className="pima-rise shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full border border-[#EDE7DA] bg-white px-3 py-1.5 text-[10.5px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]"
+          className="pima-rise shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full border border-[#EDE7DA] bg-white px-3 py-1.5 text-[11px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]"
           style={{ animationDelay: `${240 + i * 80}ms` }}
         >
           <Glyph className="w-3.5 h-3.5 text-[#C9A24A]" />
@@ -1013,7 +1013,7 @@ export default function HouseDetail({
       ))}
       {facilitiesTotal > namedFacilities.length && (
         <span
-          className="pima-rise shrink-0 whitespace-nowrap inline-flex items-center rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[10.5px] font-black text-[#B8944E]"
+          className="pima-rise shrink-0 whitespace-nowrap inline-flex items-center rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[11px] font-black text-[#B8944E]"
           style={{ animationDelay: `${240 + namedFacilities.length * 80}ms` }}
         >
           <Sparkles className="w-3 h-3 ml-1 pima-twinkle" />
@@ -1042,7 +1042,7 @@ export default function HouseDetail({
         <span key={unit} className="flex-1 min-w-0 flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-[#EDE7DA] bg-white px-1.5 py-1.5 shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
           <Glyph className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
           <span className="text-[14px] font-black text-[#0A2342] leading-none [font-variant-numeric:tabular-nums]">{arabicNumber(n)}</span>
-          <span className="text-[9px] font-bold text-[#8A8A70]">{unit}</span>
+          <span className="text-[11px] font-bold text-[#8A8A70]">{unit}</span>
         </span>
       ))}
     </div>
@@ -1056,10 +1056,10 @@ export default function HouseDetail({
   };
   const aboutPreview = (
     <div className="space-y-2">
-      <p className="text-[10.5px] font-bold text-[#4A4A3A] leading-relaxed line-clamp-2">{house.description}</p>
+      <p className="text-[11px] font-bold text-[#4A4A3A] leading-relaxed line-clamp-2">{house.description}</p>
       <div className="flex flex-wrap gap-1.5">
         {house.suitability.slice(0, 2).map((s) => (
-          <span key={s} className="inline-flex items-center whitespace-nowrap rounded-full border border-[#EBD9B4] bg-white px-2.5 py-1 text-[9.5px] font-black text-[#B8944E]">
+          <span key={s} className="inline-flex items-center whitespace-nowrap rounded-full border border-[#EBD9B4] bg-white px-2.5 py-1 text-[11px] font-black text-[#B8944E]">
             {SUITABILITY_SHORT[s]}
           </span>
         ))}
@@ -1077,7 +1077,7 @@ export default function HouseDetail({
             {arabicNumber(cardWeather.currentTemp)}°
           </span>
           <span className="block text-[11px] font-black text-[#2D2D24] mt-1.5">{house.governorate}</span>
-          <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">{cardWeather.conditionText}</span>
+          <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">{cardWeather.conditionText}</span>
         </span>
       </div>
       <span aria-hidden="true" className="w-px self-stretch bg-[#EBD9B4]/60" />
@@ -1087,7 +1087,7 @@ export default function HouseDetail({
           { label: 'توقعات الأيام القادمة', Glyph: CalendarDays },
           { label: 'نصائح للرحلة', Glyph: Lightbulb },
         ].map(({ label, Glyph }) => (
-          <span key={label} className="flex items-center gap-2 rounded-xl bg-white border border-[#EDE7DA] px-3 py-2 text-[10.5px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
+          <span key={label} className="flex items-center gap-2 rounded-xl bg-white border border-[#EDE7DA] px-3 py-2 text-[11px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
             <Glyph className="w-4 h-4 text-[#C9A24A] shrink-0" />
             {label}
           </span>
@@ -1252,8 +1252,8 @@ export default function HouseDetail({
                       className="w-4 h-4 accent-[#C9A24A] shrink-0 cursor-pointer"
                     />
                     <span className="flex-1 min-w-0">
-                      <span className="block text-[11.5px] font-black text-[#2D2D24]">استخدم نقاطي في هذا الحجز</span>
-                      <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
+                      <span className="block text-[12px] font-black text-[#2D2D24]">استخدم نقاطي في هذا الحجز</span>
+                      <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">
                         {usePoints && redemptionDiscount > 0
                           ? `خصم ${redemptionDiscount.toLocaleString('ar-EG')} ج.م من ${maxRedeemablePoints.toLocaleString('ar-EG')} نقطة`
                           : `لديك ${maxRedeemablePoints.toLocaleString('ar-EG')} نقطة قابلة للاستخدام`}
@@ -1266,13 +1266,13 @@ export default function HouseDetail({
                     house can never be waitlisted, a full week can. */}
                 {exceedsHouseCapacity && (
                   <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-3 space-y-2">
-                    <p className="text-[10.5px] font-bold text-amber-900 leading-relaxed text-center">
+                    <p className="text-[11px] font-bold text-amber-900 leading-relaxed text-center">
                       هذا البيت يتسع لـ <strong>{arabicNumber(house.bedsCount)}</strong> فرد كحد أقصى، وأنت طلبت <strong>{arabicNumber(guestsCount)}</strong>.
                     </p>
                     <button
                       type="button"
                       onClick={() => { tapFeedback(); setGuestsCount(house.bedsCount || 1); }}
-                      className="w-full bg-amber-600 hover:bg-amber-700 text-white text-[11.5px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
+                      className="w-full bg-amber-600 hover:bg-amber-700 text-white text-[12px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
                     >
                       اضبط العدد على {arabicNumber(house.bedsCount)} فرد
                     </button>
@@ -1280,7 +1280,7 @@ export default function HouseDetail({
                 )}
                 {isFullOnDates && (
                   <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-3 space-y-2">
-                    <p className="text-[10.5px] font-bold text-amber-900 text-center">
+                    <p className="text-[11px] font-bold text-amber-900 text-center">
                       البيت مكتمل الإشغال في هذه التواريخ لعدد الأفراد المطلوب.
                     </p>
                     <button
@@ -1288,7 +1288,7 @@ export default function HouseDetail({
                       type="button"
                       disabled={alreadyOnWaitlist}
                       onClick={handleJoinWaitlistClick}
-                      className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-[11.5px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
+                      className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-[12px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
                     >
                       {alreadyOnWaitlist ? 'أنت مسجل بالفعل في قائمة الانتظار ⏳' : 'انضم لقائمة الانتظار ⏳'}
                     </button>
@@ -1297,11 +1297,11 @@ export default function HouseDetail({
 
                 {/* Cancellation terms, stated before anything is committed. */}
                 <div className="rounded-[28px] border border-[#EDE7DA] bg-white p-3 space-y-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
-                  <span className="flex items-center gap-1.5 text-[11.5px] font-black text-[#0A2342]">
+                  <span className="flex items-center gap-1.5 text-[12px] font-black text-[#0A2342]">
                     <ShieldCheck className="w-4 h-4 text-[#C9A24A]" />
                     سياسة الإلغاء والاسترداد
                   </span>
-                  <ul className="space-y-1 text-[10px] font-medium text-[#4A4A3A] pr-4 list-disc marker:text-[#C9A24A]">
+                  <ul className="space-y-1 text-[11px] font-medium text-[#4A4A3A] pr-4 list-disc marker:text-[#C9A24A]">
                     <li>قبل الوصول بـ<strong> {arabicNumber(settings.freeCancelDays)} أيام</strong> أو أكثر: استرداد <strong>كامل</strong>.</li>
                     <li>قبل الوصول بـ<strong> {arabicNumber(settings.partialRefundDays)} أيام</strong> أو أكثر: استرداد <strong>{arabicNumber(Math.round(settings.partialRefundPct * 100))}٪</strong>.</li>
                     <li>أقل من ذلك: لا يوجد استرداد.</li>
@@ -1358,7 +1358,7 @@ export default function HouseDetail({
               <span className="block text-[11px] font-extrabold text-[#0A2342]">يناسب:</span>
               <div className="flex flex-wrap gap-2">
                 {house.suitability.map((s) => (
-                  <span key={s} className="inline-flex items-center rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[10.5px] font-bold text-[#B8944E]">
+                  <span key={s} className="inline-flex items-center rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[11px] font-bold text-[#B8944E]">
                     {SUITABILITY_MAP[s]}
                   </span>
                 ))}
@@ -1407,7 +1407,7 @@ export default function HouseDetail({
                       id="toggle-menu-view"
                       type="button"
                       onClick={() => setShowFullMenu(!showFullMenu)}
-                      className="text-[9px] font-bold bg-[#5A5A40]/10 text-[#5A5A40] hover:bg-[#5A5A40]/20 px-2.5 py-1 rounded-xl transition-all cursor-pointer"
+                      className="text-[11px] font-bold bg-[#5A5A40]/10 text-[#5A5A40] hover:bg-[#5A5A40]/20 px-2.5 py-1 rounded-xl transition-all cursor-pointer"
                     >
                       {showFullMenu ? 'عرض يومي تفاعلي' : 'عرض الأسبوع كاملاً'}
                     </button>
@@ -1417,7 +1417,7 @@ export default function HouseDetail({
                       id="edit-menu-btn"
                       type="button"
                       onClick={isEditingMenu ? handleSaveMenuChanges : handleStartEditing}
-                      className={`text-[9px] font-extrabold px-2.5 py-1 rounded-xl transition-all cursor-pointer flex items-center gap-1 ${
+                      className={`text-[11px] font-extrabold px-2.5 py-1 rounded-xl transition-all cursor-pointer flex items-center gap-1 ${
                         isEditingMenu 
                           ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
                           : 'bg-[#5A5A40] text-white hover:bg-[#4A4A32]'
@@ -1431,7 +1431,7 @@ export default function HouseDetail({
                       id="cancel-edit-menu-btn"
                       type="button"
                       onClick={() => setIsEditingMenu(false)}
-                      className="text-[9px] font-extrabold bg-slate-100 text-slate-700 hover:bg-slate-200 px-2.5 py-1 rounded-xl transition-all cursor-pointer"
+                      className="text-[11px] font-extrabold bg-slate-100 text-slate-700 hover:bg-slate-200 px-2.5 py-1 rounded-xl transition-all cursor-pointer"
                     >
                       إلغاء
                     </button>
@@ -1444,12 +1444,12 @@ export default function HouseDetail({
                 <div className="space-y-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-200 text-right animate-fade-in" dir="rtl">
                   <div className="text-xs font-extrabold text-slate-800 mb-2 border-b border-slate-200 pb-1.5 flex justify-between items-center">
                     <span>⚙️ إعدادات المنيو والأسعار لبيت {house.name}</span>
-                    <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded">لوحة التحكم</span>
+                    <span className="text-[11px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded">لوحة التحكم</span>
                   </div>
 
                   {/* General settings */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <label className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200 cursor-pointer text-[10.5px] font-bold select-none">
+                    <label className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200 cursor-pointer text-[11px] font-bold select-none">
                       <input 
                         type="checkbox" 
                         checked={editIsIncluded} 
@@ -1460,7 +1460,7 @@ export default function HouseDetail({
                     </label>
 
                     <div className="bg-white p-2 rounded-xl border border-slate-200 flex flex-col justify-between">
-                      <span className="text-[9px] text-slate-500 font-bold block mb-1">تكلفة الوجبة الإضافية (ج.م):</span>
+                      <span className="text-[11px] text-slate-500 font-bold block mb-1">تكلفة الوجبة الإضافية (ج.م):</span>
                       <input 
                         type="number" 
                         value={editExtraMealPrice} 
@@ -1470,7 +1470,7 @@ export default function HouseDetail({
                       />
                     </div>
 
-                    <label className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200 cursor-pointer text-[10.5px] font-bold select-none">
+                    <label className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200 cursor-pointer text-[11px] font-bold select-none">
                       <input 
                         type="checkbox" 
                         checked={editAllowsSpecial} 
@@ -1489,7 +1489,7 @@ export default function HouseDetail({
                         setEditorIsFasting(false);
                         setEditorSelectedDay('السبت');
                       }}
-                      className={`flex-1 py-1.5 text-center text-[10px] font-extrabold rounded-lg transition-all cursor-pointer ${
+                      className={`flex-1 py-1.5 text-center text-[11px] font-extrabold rounded-lg transition-all cursor-pointer ${
                         !editorIsFasting
                           ? 'bg-[#5A5A40] text-white shadow-sm'
                           : 'text-slate-700 hover:bg-slate-300'
@@ -1503,7 +1503,7 @@ export default function HouseDetail({
                         setEditorIsFasting(true);
                         setEditorSelectedDay('السبت');
                       }}
-                      className={`flex-1 py-1.5 text-center text-[10px] font-extrabold rounded-lg transition-all cursor-pointer ${
+                      className={`flex-1 py-1.5 text-center text-[11px] font-extrabold rounded-lg transition-all cursor-pointer ${
                         editorIsFasting
                           ? 'bg-emerald-700 text-white shadow-sm'
                           : 'text-slate-700 hover:bg-slate-300'
@@ -1522,7 +1522,7 @@ export default function HouseDetail({
                           key={day}
                           type="button"
                           onClick={() => setEditorSelectedDay(day)}
-                          className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all shrink-0 cursor-pointer border ${
+                          className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 cursor-pointer border ${
                             isSelected
                               ? editorIsFasting
                                 ? 'bg-emerald-700 text-white border-emerald-700'
@@ -1545,15 +1545,15 @@ export default function HouseDetail({
 
                     return (
                       <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3 animate-fade-in text-right">
-                        <div className="text-[10.5px] font-extrabold text-[#5A5A40] border-b pb-1 flex justify-between items-center">
+                        <div className="text-[11px] font-extrabold text-[#5A5A40] border-b pb-1 flex justify-between items-center">
                           <span>📝 وجبات وأسعار يوم ({editorSelectedDay}) - {editorIsFasting ? 'النظام الصيامي' : 'النظام الفطاري'}</span>
-                          <span className="text-[10px] text-amber-600">يرجى كتابة الوجبة بدقة بالتفصيل</span>
+                          <span className="text-[11px] text-amber-600">يرجى كتابة الوجبة بدقة بالتفصيل</span>
                         </div>
 
                         <div className="space-y-2.5">
                           {/* Breakfast */}
                           <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-extrabold text-slate-600">🍳 وجبة الإفطار:</span>
+                            <span className="text-[11px] font-extrabold text-slate-600">🍳 وجبة الإفطار:</span>
                             <textarea
                               rows={2}
                               value={activeDayData.breakfast || ''}
@@ -1565,7 +1565,7 @@ export default function HouseDetail({
 
                           {/* Lunch */}
                           <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-extrabold text-slate-600">🍖 وجبة الغداء:</span>
+                            <span className="text-[11px] font-extrabold text-slate-600">🍖 وجبة الغداء:</span>
                             <textarea
                               rows={2}
                               value={activeDayData.lunch || ''}
@@ -1577,7 +1577,7 @@ export default function HouseDetail({
 
                           {/* Dinner */}
                           <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-extrabold text-slate-600">🍲 وجبة العشاء:</span>
+                            <span className="text-[11px] font-extrabold text-slate-600">🍲 وجبة العشاء:</span>
                             <textarea
                               rows={2}
                               value={activeDayData.dinner || ''}
@@ -1590,8 +1590,8 @@ export default function HouseDetail({
                           {/* Day Price - This is exactly what the user wanted: "اضافة الاسعار الخاصه بكل يوم" */}
                           <div className="bg-amber-50/50 p-3 rounded-lg border border-amber-200/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                             <div className="space-y-0.5">
-                              <span className="text-[10.5px] font-extrabold text-amber-950 block">💰 سعر طعام اليوم ({editorSelectedDay}):</span>
-                              <span className="text-[9px] text-amber-800 font-semibold block">سعر الوجبات الثلاث الإجمالي لهذا اليوم تحديداً للفرد</span>
+                              <span className="text-[11px] font-extrabold text-amber-950 block">💰 سعر طعام اليوم ({editorSelectedDay}):</span>
+                              <span className="text-[11px] text-amber-800 font-semibold block">سعر الوجبات الثلاث الإجمالي لهذا اليوم تحديداً للفرد</span>
                             </div>
                             <div className="flex items-center gap-1 shrink-0 w-full sm:w-auto">
                               <input
@@ -1602,7 +1602,7 @@ export default function HouseDetail({
                                 className="w-24 text-xs font-bold rounded-lg border-amber-200 focus:border-[#5A5A40] focus:ring-1 focus:ring-[#5A5A40] p-1 text-center text-[#5A5A40]"
                                 placeholder="مثال: 120"
                               />
-                              <span className="text-[10px] font-extrabold text-amber-900">ج.م / فرد</span>
+                              <span className="text-[11px] font-extrabold text-amber-900">ج.م / فرد</span>
                             </div>
                           </div>
                         </div>
@@ -1634,26 +1634,26 @@ export default function HouseDetail({
                   {/* Diet preferences & pricing cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div className="bg-[#FBFBFA] p-2.5 rounded-2xl border border-[#D6D6C2]/40 flex flex-col justify-between text-right">
-                      <span className="text-[9px] text-[#8A8A70] font-bold block mb-0.5">توفير الطعام والوجبات:</span>
-                      <span className="text-[10px] font-extrabold text-[#4A4A3A]">
+                      <span className="text-[11px] text-[#8A8A70] font-bold block mb-0.5">توفير الطعام والوجبات:</span>
+                      <span className="text-[11px] font-extrabold text-[#4A4A3A]">
                         {house.menu?.isIncluded ? 'مشمول في قيمة الحجز الأساسي' : 'غير مشمول (اختياري)'}
                       </span>
                     </div>
 
                     <div className="bg-[#FBFBFA] p-2.5 rounded-2xl border border-[#D6D6C2]/40 flex flex-col justify-between text-right">
-                      <span className="text-[9px] text-[#8A8A70] font-bold block mb-0.5">تكلفة الوجبة الإضافية:</span>
-                      <span className="text-[10px] font-extrabold text-[#4A4A3A]">
+                      <span className="text-[11px] text-[#8A8A70] font-bold block mb-0.5">تكلفة الوجبة الإضافية:</span>
+                      <span className="text-[11px] font-extrabold text-[#4A4A3A]">
                         {house.menu?.extraMealPrice ? `${house.menu.extraMealPrice} ج.م / فرد` : 'غير متوفر'}
                       </span>
                     </div>
 
                     <div className="bg-[#FBFBFA] p-2.5 rounded-2xl border border-[#D6D6C2]/40 flex flex-col justify-between text-right">
-                      <span className="text-[9px] text-[#8A8A70] font-bold block mb-0.5">أنظمة غذائية خاصة:</span>
+                      <span className="text-[11px] text-[#8A8A70] font-bold block mb-0.5">أنظمة غذائية خاصة:</span>
                       <div className="flex gap-1 mt-0.5">
-                        <span className="text-[8.5px] font-extrabold bg-emerald-100/70 text-emerald-800 px-1.5 py-0.5 rounded-md">
+                        <span className="text-[11px] font-extrabold bg-emerald-100/70 text-emerald-800 px-1.5 py-0.5 rounded-md">
                           🌿 صيامي
                         </span>
-                        <span className="text-[8.5px] font-extrabold bg-teal-100/70 text-teal-800 px-1.5 py-0.5 rounded-md">
+                        <span className="text-[11px] font-extrabold bg-teal-100/70 text-teal-800 px-1.5 py-0.5 rounded-md">
                           🌱 نباتي
                         </span>
                       </div>
@@ -1669,7 +1669,7 @@ export default function HouseDetail({
                         const firstDay = house.menu?.weeklyMenu?.[0]?.day || 'السبت';
                         setSelectedMenuDay(firstDay);
                       }}
-                      className={`flex-1 py-2 text-center text-[10px] font-extrabold rounded-xl transition-all cursor-pointer ${
+                      className={`flex-1 py-2 text-center text-[11px] font-extrabold rounded-xl transition-all cursor-pointer ${
                         !isFastingMenu
                           ? 'bg-[#5A5A40] text-white shadow-sm'
                           : 'text-[#5A5A40] hover:bg-[#EBEBE0]'
@@ -1685,7 +1685,7 @@ export default function HouseDetail({
                         const firstDay = fastMenu?.[0]?.day || 'السبت';
                         setSelectedMenuDay(firstDay);
                       }}
-                      className={`flex-1 py-2 text-center text-[10px] font-extrabold rounded-xl transition-all cursor-pointer ${
+                      className={`flex-1 py-2 text-center text-[11px] font-extrabold rounded-xl transition-all cursor-pointer ${
                         isFastingMenu
                           ? 'bg-emerald-700 text-white shadow-sm'
                           : 'text-emerald-800 hover:bg-emerald-50'
@@ -1722,7 +1722,7 @@ export default function HouseDetail({
                                   id={`menu-tab-${menuDay.day}`}
                                   type="button"
                                   onClick={() => setSelectedMenuDay(menuDay.day)}
-                                  className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold transition-all shrink-0 cursor-pointer border flex flex-col items-center ${
+                                  className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all shrink-0 cursor-pointer border flex flex-col items-center ${
                                     isSelected
                                       ? isFastingMenu 
                                         ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm'
@@ -1732,7 +1732,7 @@ export default function HouseDetail({
                                 >
                                   <span>{menuDay.day}</span>
                                   {menuDay.price && (
-                                    <span className={`text-[8px] font-bold mt-0.5 ${isSelected ? 'text-white/90' : 'text-slate-500'}`}>
+                                    <span className={`text-[11px] font-bold mt-0.5 ${isSelected ? 'text-white/90' : 'text-slate-500'}`}>
                                       {menuDay.price} ج.م
                                     </span>
                                   )}
@@ -1751,33 +1751,33 @@ export default function HouseDetail({
                                   {/* Breakfast */}
                                   <div className="bg-amber-50/40 border border-amber-200/50 rounded-2xl p-3 space-y-1.5">
                                     <div className="flex items-center gap-1.5">
-                                      <span className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center text-[10px]">🍳</span>
-                                      <span className="text-[10px] font-extrabold text-amber-950">وجبة الإفطار {isFastingMenu && ' (صيامي)'}</span>
+                                      <span className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center text-[11px]">🍳</span>
+                                      <span className="text-[11px] font-extrabold text-amber-950">وجبة الإفطار {isFastingMenu && ' (صيامي)'}</span>
                                     </div>
-                                    <p className="text-[10.5px] font-bold text-amber-900 leading-relaxed min-h-[36px]">{currentDay.breakfast || 'لم تحدد'}</p>
+                                    <p className="text-[11px] font-bold text-amber-900 leading-relaxed min-h-[36px]">{currentDay.breakfast || 'لم تحدد'}</p>
                                   </div>
 
                                   {/* Lunch */}
                                   <div className={`${isFastingMenu ? 'bg-emerald-50/40 border-emerald-200/50' : 'bg-[#5A5A40]/5 border-[#5A5A40]/10'} border rounded-2xl p-3 space-y-1.5`}>
                                     <div className="flex items-center gap-1.5">
-                                      <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-[10px]">{isFastingMenu ? '🐟' : '🍖'}</span>
-                                      <span className="text-[10px] font-extrabold text-emerald-950">وجبة الغداء {isFastingMenu && ' (صيامي)'}</span>
+                                      <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-[11px]">{isFastingMenu ? '🐟' : '🍖'}</span>
+                                      <span className="text-[11px] font-extrabold text-emerald-950">وجبة الغداء {isFastingMenu && ' (صيامي)'}</span>
                                     </div>
-                                    <p className="text-[10.5px] font-bold text-emerald-900 leading-relaxed min-h-[36px]">{currentDay.lunch || 'لم تحدد'}</p>
+                                    <p className="text-[11px] font-bold text-emerald-900 leading-relaxed min-h-[36px]">{currentDay.lunch || 'لم تحدد'}</p>
                                   </div>
 
                                   {/* Dinner */}
                                   <div className="bg-purple-50/40 border border-purple-200/50 rounded-2xl p-3 space-y-1.5">
                                     <div className="flex items-center gap-1.5">
-                                      <span className="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center text-[10px]">🍲</span>
-                                      <span className="text-[10px] font-extrabold text-purple-950">وجبة العشاء {isFastingMenu && ' (صيامي)'}</span>
+                                      <span className="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center text-[11px]">🍲</span>
+                                      <span className="text-[11px] font-extrabold text-purple-950">وجبة العشاء {isFastingMenu && ' (صيامي)'}</span>
                                     </div>
-                                    <p className="text-[10.5px] font-bold text-purple-900 leading-relaxed min-h-[36px]">{currentDay.dinner || 'لم تحدد'}</p>
+                                    <p className="text-[11px] font-bold text-purple-900 leading-relaxed min-h-[36px]">{currentDay.dinner || 'لم تحدد'}</p>
                                   </div>
                                 </div>
 
                                 {currentDay.price && (
-                                  <div className="bg-[#FBFBFA] border border-[#D6D6C2]/60 p-2.5 rounded-2xl flex justify-between items-center text-[10.5px] font-bold text-[#4A4A3A]">
+                                  <div className="bg-[#FBFBFA] border border-[#D6D6C2]/60 p-2.5 rounded-2xl flex justify-between items-center text-[11px] font-bold text-[#4A4A3A]">
                                     <span className="text-[#8A8A70]">💰 سعر الوجبات المخصصة لهذا اليوم ({currentDay.day}):</span>
                                     <span className="text-[#5A5A40] text-xs font-extrabold bg-[#5A5A40]/5 px-3 py-1 rounded-lg">
                                       {currentDay.price} ج.م / للفرد
@@ -1795,29 +1795,29 @@ export default function HouseDetail({
                         <div className="space-y-2 max-h-80 overflow-y-auto pr-1 border border-[#D6D6C2]/50 p-2.5 rounded-2xl bg-[#FBFBFA] divide-y divide-[#D6D6C2]/30">
                           {activeMenu.map((menuDay) => (
                             <div key={menuDay.day} className="py-2.5 first:pt-0 last:pb-0 text-right">
-                              <div className="font-extrabold text-[#5A5A40] text-[10.5px] mb-1.5 flex items-center justify-between">
+                              <div className="font-extrabold text-[#5A5A40] text-[11px] mb-1.5 flex items-center justify-between">
                                 <div className="flex items-center gap-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-[#5A5A40]" />
                                   {menuDay.day}
                                 </div>
                                 {menuDay.price && (
-                                  <span className="text-[9px] bg-[#5A5A40]/10 text-[#5A5A40] px-2 py-0.5 rounded-lg font-black">
+                                  <span className="text-[11px] bg-[#5A5A40]/10 text-[#5A5A40] px-2 py-0.5 rounded-lg font-black">
                                     سعر اليوم: {menuDay.price} ج.م / فرد
                                   </span>
                                 )}
                               </div>
                               <div className="grid grid-cols-3 gap-2 text-right">
                                 <div className="bg-white p-2 rounded-xl border border-[#D6D6C2]/30">
-                                  <span className="text-[8px] text-amber-800 font-bold block mb-0.5">🍳 إفطار {isFastingMenu && 'صيامي'}</span>
-                                  <p className="text-[10px] text-[#4A4A3A] font-semibold leading-relaxed">{menuDay.breakfast || 'غير محدد'}</p>
+                                  <span className="text-[11px] text-amber-800 font-bold block mb-0.5">🍳 إفطار {isFastingMenu && 'صيامي'}</span>
+                                  <p className="text-[11px] text-[#4A4A3A] font-semibold leading-relaxed">{menuDay.breakfast || 'غير محدد'}</p>
                                 </div>
                                 <div className="bg-white p-2 rounded-xl border border-[#D6D6C2]/30">
-                                  <span className="text-[8px] text-emerald-800 font-bold block mb-0.5">{isFastingMenu ? '🐟' : '🍖'} غداء {isFastingMenu && 'صيامي'}</span>
-                                  <p className="text-[10px] text-[#4A4A3A] font-semibold leading-relaxed">{menuDay.lunch || 'غير محدد'}</p>
+                                  <span className="text-[11px] text-emerald-800 font-bold block mb-0.5">{isFastingMenu ? '🐟' : '🍖'} غداء {isFastingMenu && 'صيامي'}</span>
+                                  <p className="text-[11px] text-[#4A4A3A] font-semibold leading-relaxed">{menuDay.lunch || 'غير محدد'}</p>
                                 </div>
                                 <div className="bg-white p-2 rounded-xl border border-[#D6D6C2]/30">
-                                  <span className="text-[8px] text-purple-800 font-bold block mb-0.5">🍲 عشاء {isFastingMenu && 'صيامي'}</span>
-                                  <p className="text-[10px] text-[#4A4A3A] font-semibold leading-relaxed">{menuDay.dinner || 'غير محدد'}</p>
+                                  <span className="text-[11px] text-purple-800 font-bold block mb-0.5">🍲 عشاء {isFastingMenu && 'صيامي'}</span>
+                                  <p className="text-[11px] text-[#4A4A3A] font-semibold leading-relaxed">{menuDay.dinner || 'غير محدد'}</p>
                                 </div>
                               </div>
                             </div>
@@ -1828,7 +1828,7 @@ export default function HouseDetail({
                   })()}
 
                   {/* Special Note */}
-                  <div className="bg-amber-50/50 border border-amber-200/50 p-2.5 rounded-xl flex items-start gap-2 text-[9.5px] text-amber-900 leading-relaxed text-right" dir="rtl">
+                  <div className="bg-amber-50/50 border border-amber-200/50 p-2.5 rounded-xl flex items-start gap-2 text-[11px] text-amber-900 leading-relaxed text-right" dir="rtl">
                     <span className="text-xs shrink-0">💡</span>
                     <p className="font-bold">
                       ملحوظة: يمكنك طلب تعديل النظام الغذائي للجروب بالكامل بالتنسيق مع مالك البيت مسبقاً قبل التسكين، لضمان تلبية خيارات الوجبات الصيامي والأطعمة النباتية والصحية للمخدومين.
@@ -1855,10 +1855,10 @@ export default function HouseDetail({
           >
             {/* One totals line, not the two identical ones that were here. */}
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black bg-[#F6F0E2] text-[#B8944E] px-3 py-1 rounded-full">
+              <span className="text-[11px] font-black bg-[#F6F0E2] text-[#B8944E] px-3 py-1 rounded-full">
                 {arabicNumber(house.roomsCount)} غرفة
               </span>
-              <span className="text-[10px] font-black bg-[#F6F0E2] text-[#B8944E] px-3 py-1 rounded-full">
+              <span className="text-[11px] font-black bg-[#F6F0E2] text-[#B8944E] px-3 py-1 rounded-full">
                 {arabicNumber(house.bedsCount)} سرير
               </span>
             </div>
@@ -1868,17 +1868,17 @@ export default function HouseDetail({
             {/* Actual rooms added by the owner (real availability, not the illustrative grid below) */}
             {rooms.length > 0 && (
               <div className="space-y-2 pt-1">
-                <span className="text-[10px] font-extrabold text-[#4A4A3A]">حالة الغرف المتاحة فعلياً:</span>
+                <span className="text-[11px] font-extrabold text-[#4A4A3A]">حالة الغرف المتاحة فعلياً:</span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {rooms.map((room) => (
                     <div key={room.id} className="flex items-center justify-between bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl px-3 py-2">
                       <div>
                         <span className="text-[11px] font-bold text-[#4A4A3A] block">{room.name}</span>
-                        <span className="text-[9.5px] text-[#8A8A70]">
+                        <span className="text-[11px] text-[#8A8A70]">
                           {arabicNumber(room.bedsCount)} سرير{room.pricePerNight ? ` · ${arabicNumber(room.pricePerNight)} ج.م/ليلة` : ''}
                         </span>
                       </div>
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
                         room.status === 'available' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
                         room.status === 'booked' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
                         'bg-rose-50 text-rose-800 border border-rose-200'
@@ -1941,7 +1941,7 @@ export default function HouseDetail({
                             <BedDouble className="w-7 h-7 text-[#BCBC9D]" />
                           </div>
                         )}
-                        <div className="absolute top-2 right-2 bg-[#5A5A40] text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                        <div className="absolute top-2 right-2 bg-[#5A5A40] text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow-sm">
                           👤 {room.capacityLabel}
                         </div>
                       </div>
@@ -1952,13 +1952,13 @@ export default function HouseDetail({
                             {room.name}
                           </h4>
                           {/* Real counts instead of a written-in blurb. */}
-                          <p className="text-[9.5px] text-[#8A8A70] leading-relaxed font-semibold mt-1">
+                          <p className="text-[11px] text-[#8A8A70] leading-relaxed font-semibold mt-1">
                             {room.count > 0
                               ? <>{arabicNumber(room.count)} غرفة من النوع ده{room.availableCount > 0 ? ` · ${arabicNumber(room.availableCount)} متاحة الآن` : ''}</>
                               : 'غرفة متاحة للحجز'}
                           </p>
                           {room.description && (
-                            <p className="text-[9.5px] text-[#8A8A70] leading-relaxed font-semibold mt-1 line-clamp-2">
+                            <p className="text-[11px] text-[#8A8A70] leading-relaxed font-semibold mt-1 line-clamp-2">
                               {room.description}
                             </p>
                           )}
@@ -1966,9 +1966,9 @@ export default function HouseDetail({
 
                         <div className="pt-2 border-t border-[#D6D6C2]/40 mt-2 space-y-2">
                           <div className="flex justify-between items-baseline">
-                            <span className="text-[9px] text-[#8A8A70] font-bold">السعر:</span>
+                            <span className="text-[11px] text-[#8A8A70] font-bold">السعر:</span>
                             <span className="text-xs font-black text-[#5A5A40]">
-                              {arabicNumber(room.price)} ج.م <span className="text-[8px] text-[#8A8A70] font-bold">/ {room.priceUnit}</span>
+                              {arabicNumber(room.price)} ج.م <span className="text-[11px] text-[#8A8A70] font-bold">/ {room.priceUnit}</span>
                             </span>
                           </div>
 
@@ -1977,7 +1977,7 @@ export default function HouseDetail({
                               id={`room-detail-btn-${room.id}`}
                               type="button"
                               onClick={() => setSelectedRoomId(isSelected ? null : room.id)}
-                              className={`w-full py-1.5 rounded-xl text-[9px] font-black transition-all cursor-pointer text-center ${
+                              className={`w-full py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer text-center ${
                                 isSelected ? 'bg-[#5A5A40] text-white' : 'bg-[#EBEBE0]/40 text-[#5A5A40] hover:bg-[#EBEBE0]'
                               }`}
                             >
@@ -1988,11 +1988,11 @@ export default function HouseDetail({
                       </div>
 
                       {isSelected && room.features.length > 0 && (
-                        <div className="bg-[#FBFBFA] border-t border-[#D6D6C2] p-3.5 text-right space-y-1.5 animate-fade-in text-[10px]">
-                          <span className="font-extrabold text-[#5A5A40] text-[10.5px]">التجهيزات:</span>
+                        <div className="bg-[#FBFBFA] border-t border-[#D6D6C2] p-3.5 text-right space-y-1.5 animate-fade-in text-[11px]">
+                          <span className="font-extrabold text-[#5A5A40] text-[11px]">التجهيزات:</span>
                           <div className="grid grid-cols-2 gap-1.5 text-right">
                             {room.features.map((feature, idx) => (
-                              <div key={idx} className="flex items-center gap-1 text-[9.5px] text-[#4A4A3A] font-bold">
+                              <div key={idx} className="flex items-center gap-1 text-[11px] text-[#4A4A3A] font-bold">
                                 <span className="text-emerald-600 text-xs shrink-0">✓</span>
                                 <span>{feature}</span>
                               </div>
@@ -2032,9 +2032,9 @@ export default function HouseDetail({
                       <div key={hall.id} className="bg-[#EBEBE0]/30 border border-[#D6D6C2] p-3 rounded-2xl flex justify-between items-center text-xs">
                         <div>
                           <div className="font-bold text-[#4A4A3A]">{hall.name}</div>
-                          <div className="text-[10px] text-[#8A8A70] font-semibold mt-0.5">تتسع لـ: {arabicNumber(hall.capacity)} فرد</div>
+                          <div className="text-[11px] text-[#8A8A70] font-semibold mt-0.5">تتسع لـ: {arabicNumber(hall.capacity)} فرد</div>
                           {hall.price !== undefined && (
-                            <div className="text-[10px] text-[#5A5A40] font-bold mt-0.5">{arabicNumber(hall.price)} جنيه / اليوم</div>
+                            <div className="text-[11px] text-[#5A5A40] font-bold mt-0.5">{arabicNumber(hall.price)} جنيه / اليوم</div>
                           )}
                         </div>
                         <div className="flex gap-2">
@@ -2095,7 +2095,7 @@ export default function HouseDetail({
                   {/* The section header already names the place and the
                       purpose; all that is left to say here is how fresh it is. */}
                   <div className="flex items-center justify-end">
-                    <span className="text-[9px] bg-emerald-50 text-emerald-800 border border-emerald-200/50 px-2 py-0.5 rounded-full font-bold">
+                    <span className="text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200/50 px-2 py-0.5 rounded-full font-bold">
                       مباشر ومحدث
                     </span>
                   </div>
@@ -2104,9 +2104,9 @@ export default function HouseDetail({
                     {/* Current conditions */}
                     <div className="bg-[#EBEBE0]/20 border border-[#D6D6C2] p-3 rounded-2xl flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <span className="text-[10px] font-bold text-[#8A8A70]">الطقس الحالي</span>
+                        <span className="text-[11px] font-bold text-[#8A8A70]">الطقس الحالي</span>
                         <div className="text-xs font-black text-[#4A4A3A]">{weather.conditionText}</div>
-                        <div className="flex gap-2 text-[9px] text-[#8A8A70] pt-1">
+                        <div className="flex gap-2 text-[11px] text-[#8A8A70] pt-1">
                           <span className="flex items-center gap-0.5">
                             <Droplets className="w-3 h-3 text-blue-400" />
                             رطوبة: {arabicNumber(weather.humidity)}٪
@@ -2125,15 +2125,15 @@ export default function HouseDetail({
 
                     {/* 3-day short forecast */}
                     <div className="space-y-1.5">
-                      <span className="block text-[10px] font-extrabold text-[#8A8A70]">توقعات الأيام الثلاثة القادمة:</span>
+                      <span className="block text-[11px] font-extrabold text-[#8A8A70]">توقعات الأيام الثلاثة القادمة:</span>
                       <div className="grid grid-cols-3 gap-1.5 text-center">
                         {weather.forecast.map((day, idx) => (
                           <div key={idx} className="bg-[#FBFBFA] border border-[#D6D6C2]/60 p-2 rounded-xl space-y-1">
-                            <div className="text-[9px] font-extrabold text-[#8A8A70]">{day.dayName}</div>
+                            <div className="text-[11px] font-extrabold text-[#8A8A70]">{day.dayName}</div>
                             <div className="flex justify-center py-0.5">
                               {getWeatherIcon(day.icon)}
                             </div>
-                            <div className="text-[9.5px] font-black text-[#4A4A3A]">{arabicNumber(day.tempHigh)}° / {arabicNumber(day.tempLow)}°</div>
+                            <div className="text-[11px] font-black text-[#4A4A3A]">{arabicNumber(day.tempHigh)}° / {arabicNumber(day.tempLow)}°</div>
                           </div>
                         ))}
                       </div>
@@ -2142,11 +2142,11 @@ export default function HouseDetail({
 
                   {/* Recommendation and Planning tip */}
                   <div className="bg-amber-50/50 border border-amber-200/60 rounded-2xl p-3.5 space-y-1.5">
-                    <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-950">
+                    <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-amber-950">
                       <span className="text-xs">💡</span>
                       <span>توصية التخطيط للرحلة والأنشطة:</span>
                     </div>
-                    <p className="text-[10px] font-medium text-amber-900 leading-relaxed">
+                    <p className="text-[11px] font-medium text-amber-900 leading-relaxed">
                       {weather.recommendation}
                     </p>
                   </div>
@@ -2178,16 +2178,16 @@ export default function HouseDetail({
                   <span className="text-[40px] font-black text-[#0A2342] [font-variant-numeric:tabular-nums]">
                     {arabicNumber(isMonthlyHousing ? (house.monthlyRent || 0) : house.pricePerNightPerPerson)}
                   </span>
-                  <span className="text-[13px] font-black text-[#0A2342]">ج.م</span>
+                  <span className="text-[12px] font-black text-[#0A2342]">ج.م</span>
                 </span>
-                <span className="block text-[10.5px] font-medium text-[#8A8A70]">
+                <span className="block text-[11px] font-medium text-[#8A8A70]">
                   {isMonthlyHousing ? 'لكل فرد / شهر' : 'لكل فرد / ليلة'}
                 </span>
                 {/* The other rate this house sells, where it sells one. Under
                     the nightly figure rather than beside it: it is the second
                     answer to the same question, not a competing headline. */}
                 {offersDayUse(house) && (
-                  <span className="block text-[10px] font-bold text-[#B8944E] mt-2 leading-snug">
+                  <span className="block text-[11px] font-bold text-[#B8944E] mt-2 leading-snug">
                     أو {arabicNumber(house.dayUsePricePerPerson as number)} ج.م
                     <br />
                     <span className="font-medium text-[#8A8A70]">لليوم بدون مبيت</span>
@@ -2205,8 +2205,8 @@ export default function HouseDetail({
                   <ShieldCheck className="w-5 h-5 text-[#C9A24A]" />
                 </span>
                 <span className="min-w-0 leading-snug">
-                  <span className="block text-[12.5px] font-black text-[#0A2342]">لن يتم خصم أي مبلغ الآن</span>
-                  <span className="block text-[10px] font-medium text-[#8A8A70] mt-1">
+                  <span className="block text-[12px] font-black text-[#0A2342]">لن يتم خصم أي مبلغ الآن</span>
+                  <span className="block text-[11px] font-medium text-[#8A8A70] mt-1">
                     سيتم مراجعة طلبك من إدارة المكان أولاً قبل تأكيد الحجز.
                   </span>
                 </span>
@@ -2235,8 +2235,8 @@ export default function HouseDetail({
           <Calendar className="w-5 h-5 text-[#C9A24A]" />
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block text-[13px] font-black text-[#0A2342]">جدول الإشغال</span>
-          <span className="block text-[10px] font-medium text-[#8A8A70] leading-snug mt-0.5">
+          <span className="block text-[12px] font-black text-[#0A2342]">جدول الإشغال</span>
+          <span className="block text-[11px] font-medium text-[#8A8A70] leading-snug mt-0.5">
             {freeCalendarDays > 0
               ? <>{arabicNumber(freeCalendarDays)} من {arabicNumber(CALENDAR_DAYS.length)} يوم متاحة في {calendarMonthLabel}</>
               : <>لا توجد أيام متاحة في {calendarMonthLabel}</>}
@@ -2254,7 +2254,7 @@ export default function HouseDetail({
       >
           <div className="space-y-3">
             {/* Visual Calendar Grid */}
-            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold">
+            <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold">
               {/* The old row here was ['أ','ث','خ','ج','ج','س','ح'] — ج twice,
                   الأربعاء missing entirely, and no offset before the 1st, so
                   every date sat under the wrong weekday. */}
@@ -2285,7 +2285,7 @@ export default function HouseDetail({
               })}
             </div>
 
-            <div className="flex items-center justify-between text-[10px] text-[#8A8A70] pt-2 border-t border-[#EDE7DA]">
+            <div className="flex items-center justify-between text-[11px] text-[#8A8A70] pt-2 border-t border-[#EDE7DA]">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-rose-500" />
                 <span>محجوز لمؤتمرات أخرى</span>
@@ -2314,8 +2314,8 @@ export default function HouseDetail({
           <Calculator className="w-5 h-5 text-[#C9A24A]" />
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block text-[13px] font-black text-[#0A2342]">مساعد ميزانية الخلوة</span>
-          <span className="block text-[10px] font-medium text-[#8A8A70] leading-snug mt-0.5">احسب تكلفة الفرد وميزانية الرحلة بالكامل</span>
+          <span className="block text-[12px] font-black text-[#0A2342]">مساعد ميزانية الخلوة</span>
+          <span className="block text-[11px] font-medium text-[#8A8A70] leading-snug mt-0.5">احسب تكلفة الفرد وميزانية الرحلة بالكامل</span>
         </span>
         <ChevronLeft className="w-4 h-4 text-[#B5AF98] shrink-0" />
       </button>
@@ -2333,7 +2333,7 @@ export default function HouseDetail({
               {/* Bus Costs */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[9px] text-[#8A8A70] mb-1">تكلفة إيجار الأتوبيس:</label>
+                  <label className="block text-[11px] text-[#8A8A70] mb-1">تكلفة إيجار الأتوبيس:</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -2342,11 +2342,11 @@ export default function HouseDetail({
                       onChange={(e) => setCalcBusPrice(Number(e.target.value) || 0)}
                       className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-lg px-2 py-1 text-center font-bold text-[#4A4A3A]"
                     />
-                    <span className="absolute left-1.5 top-1 text-[8.5px] text-[#8A8A70]">ج.م</span>
+                    <span className="absolute left-1.5 top-1 text-[11px] text-[#8A8A70]">ج.م</span>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[9px] text-[#8A8A70] mb-1">عدد الأتوبيسات:</label>
+                  <label className="block text-[11px] text-[#8A8A70] mb-1">عدد الأتوبيسات:</label>
                   <input
                     type="number"
                     min={0}
@@ -2360,7 +2360,7 @@ export default function HouseDetail({
               {/* Misc Expenses & Registration Target */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[9px] text-[#8A8A70] mb-1">مصاريف أخرى وأنشطة:</label>
+                  <label className="block text-[11px] text-[#8A8A70] mb-1">مصاريف أخرى وأنشطة:</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -2369,11 +2369,11 @@ export default function HouseDetail({
                       onChange={(e) => setCalcMiscExpenses(Number(e.target.value) || 0)}
                       className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-lg px-2 py-1 text-center font-bold text-[#4A4A3A]"
                     />
-                    <span className="absolute left-1.5 top-1 text-[8.5px] text-[#8A8A70]">ج.م</span>
+                    <span className="absolute left-1.5 top-1 text-[11px] text-[#8A8A70]">ج.م</span>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[9px] text-[#8A8A70] mb-1">قيمة اشتراك الفرد المقترح:</label>
+                  <label className="block text-[11px] text-[#8A8A70] mb-1">قيمة اشتراك الفرد المقترح:</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -2382,7 +2382,7 @@ export default function HouseDetail({
                       onChange={(e) => setCalcTargetSubscription(Number(e.target.value) || 0)}
                       className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-lg px-2 py-1 text-center font-bold text-[#4A4A3A] border-amber-300 focus:border-amber-500"
                     />
-                    <span className="absolute left-1.5 top-1 text-[8.5px] text-amber-700">ج.م</span>
+                    <span className="absolute left-1.5 top-1 text-[11px] text-amber-700">ج.م</span>
                   </div>
                 </div>
               </div>
@@ -2423,12 +2423,12 @@ export default function HouseDetail({
                     {/* Budget Profit/Loss Status */}
                     <div className="pt-2">
                       {balance >= 0 ? (
-                        <div className="bg-emerald-50 text-emerald-800 text-[10px] font-extrabold p-2 rounded-xl text-center border border-emerald-150 flex items-center justify-center gap-1">
+                        <div className="bg-emerald-50 text-emerald-800 text-[11px] font-extrabold p-2 rounded-xl text-center border border-emerald-150 flex items-center justify-center gap-1">
                           <Coins className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                           <span>ميزانية رابحة: فائض قدره +{arabicNumber(balance)} ج.م ✅</span>
                         </div>
                       ) : (
-                        <div className="bg-rose-50 text-rose-800 text-[10px] font-extrabold p-2 rounded-xl text-center border border-rose-150 flex items-center justify-center gap-1">
+                        <div className="bg-rose-50 text-rose-800 text-[11px] font-extrabold p-2 rounded-xl text-center border border-rose-150 flex items-center justify-center gap-1">
                           <TrendingDown className="w-3.5 h-3.5 text-rose-600 shrink-0 animate-bounce" />
                           <span>عجز في الميزانية: قدره {arabicNumber(Math.abs(balance))} ج.م ⚠️</span>
                         </div>
@@ -2452,11 +2452,11 @@ export default function HouseDetail({
           // Logged-out visitor: reviews require an account (and a real
           // booking — enforced server-side), so prompt login instead.
           <div className="text-center space-y-2">
-            <p className="text-[10.5px] font-medium text-[#8A8A70]">سجّل دخولك لكتابة تقييم بعد إقامتك.</p>
+            <p className="text-[11px] font-medium text-[#8A8A70]">سجّل دخولك لكتابة تقييم بعد إقامتك.</p>
             <button
               type="button"
               onClick={() => onRequireLogin?.()}
-              className="bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[11.5px] px-6 py-2.5 rounded-2xl shadow-[0_2px_8px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
+              className="bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12px] px-6 py-2.5 rounded-2xl shadow-[0_2px_8px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
             >
               تسجيل الدخول
             </button>
