@@ -16,7 +16,7 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
   { value: 'we_cash', label: 'وي كاش' },
   { value: 'bank_transfer', label: 'تحويل بنكي' },
 ];
-import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft } from 'lucide-react';
+import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft, ChevronRight, XCircle, MoreHorizontal, MapPin, CalendarDays } from 'lucide-react';
 import { timeAgo } from '../lib/timeAgo';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
@@ -611,6 +611,50 @@ export default function AdminDashboard({
     median: medianAge(users),
     coverage: coverage(users),
   }), [users]);
+
+  // ── Properties management: search, filter, sort, paging ──────────────
+  const [houseQuery, setHouseQuery] = useState('');
+  const [houseStatusFilter, setHouseStatusFilter] = useState<'all' | 'approved' | 'pending' | 'suspended'>('all');
+  const [houseSort, setHouseSort] = useState<'name' | 'rating' | 'bookings'>('name');
+  const [housePage, setHousePage] = useState(1);
+  const [housePerPage, setHousePerPage] = useState(10);
+  const [openHouseMenu, setOpenHouseMenu] = useState<string | null>(null);
+
+  const houseStats = React.useMemo(() => ({
+    total: houses.length,
+    active: houses.filter((h) => h.status === 'approved').length,
+    pending: houses.filter((h) => h.status === 'pending').length,
+    suspended: houses.filter((h) => h.status === 'suspended').length,
+  }), [houses]);
+
+  /** Real bookings per house. There is no view counter anywhere in the app,
+   *  so the card shows what can actually be counted rather than inventing a
+   *  «مشاهدات» figure to fill the row. */
+  const bookingsPerHouse = React.useMemo(() => {
+    const m = new Map<string, number>();
+    for (const b of bookings) m.set(b.houseId, (m.get(b.houseId) ?? 0) + 1);
+    return m;
+  }, [bookings]);
+
+  const filteredHouses = React.useMemo(() => {
+    const q = houseQuery.trim().toLowerCase();
+    const rows = houses.filter((h) => {
+      if (houseStatusFilter !== 'all' && h.status !== houseStatusFilter) return false;
+      if (!q) return true;
+      return [h.name, h.governorate, h.ownerName].some((v) => (v ?? '').toLowerCase().includes(q));
+    });
+    const sorted = [...rows];
+    if (houseSort === 'rating') sorted.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+    else if (houseSort === 'bookings') sorted.sort((a, b) => (bookingsPerHouse.get(b.id) ?? 0) - (bookingsPerHouse.get(a.id) ?? 0));
+    else sorted.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+    return sorted;
+  }, [houses, houseQuery, houseStatusFilter, houseSort, bookingsPerHouse]);
+
+  const housePageCount = Math.max(1, Math.ceil(filteredHouses.length / housePerPage));
+  // Clamped, so narrowing the filter while on page 9 does not strand the
+  // admin on an empty page with no way back.
+  const houseSafePage = Math.min(housePage, housePageCount);
+  const pagedHouses = filteredHouses.slice((houseSafePage - 1) * housePerPage, houseSafePage * housePerPage);
 
   const goTo = (section: typeof navSection, tab: typeof activeTab) => {
     setNavSection(section);
@@ -1262,69 +1306,286 @@ export default function AdminDashboard({
 
       {/* Houses control — suspend / reactivate any house */}
       {activeTab === 'houses' && (
-        <div className="space-y-3">
-          <div className="text-xs font-bold text-[#8A8A70] px-1">التحكم في كل بيوت المنصة (إيقاف / إعادة تفعيل):</div>
-          {houses.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center">
+        <div className="space-y-4">
+
+          {/* Title and what this screen is for. */}
+          <div className="px-1">
+            <h3 className="text-[16px] font-black text-[#4A4A3A]">إدارة البيوت</h3>
+            <p className="text-[12px] text-[#8A8A70] mt-0.5">عرض وإدارة كل بيوت المؤتمرات المسجّلة على بيما.</p>
+          </div>
+
+          {/* Four figures, each counted from the houses themselves. */}
+          <div className="grid grid-cols-2 gap-2.5">
+            {([
+              { label: 'إجمالي البيوت', value: houseStats.total, Icon: Home, tint: 'text-[#0A2342]' },
+              { label: 'نشطة', value: houseStats.active, Icon: CheckCircle2, tint: 'text-emerald-700' },
+              { label: 'قيد المراجعة', value: houseStats.pending, Icon: Clock, tint: 'text-amber-700' },
+              { label: 'موقوفة', value: houseStats.suspended, Icon: XCircle, tint: 'text-rose-700' },
+            ] as const).map((k) => (
+              <div key={k.label} className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                <k.Icon className={`w-4 h-4 ${k.tint}`} />
+                <div className="text-[22px] font-black text-[#4A4A3A] leading-tight mt-1.5 tabular-nums">
+                  {arabicNumber(k.value)}
+                </div>
+                <div className="text-[11px] font-bold text-[#8A8A70]">{k.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Search takes the width; sort and export stay quiet beside it. */}
+          <div className="flex items-stretch gap-2">
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-4 h-4 text-[#BCBC9D] absolute top-1/2 -translate-y-1/2 right-3 pointer-events-none" />
+              <input
+                id="admin-house-search"
+                value={houseQuery}
+                onChange={(e) => { setHouseQuery(e.target.value); setHousePage(1); }}
+                placeholder="ابحث باسم البيت أو المحافظة أو المالك…"
+                aria-label="ابحث في البيوت"
+                className="w-full bg-white border border-[#EBEBE0] rounded-[20px] text-[12px] min-h-11 pr-9 pl-3 text-[#4A4A3A] placeholder-[#BCBC9D] focus:outline-none focus:border-[#756B42] transition-colors"
+              />
+            </div>
+            <select
+              value={houseSort}
+              onChange={(e) => setHouseSort(e.target.value as typeof houseSort)}
+              aria-label="ترتيب البيوت"
+              className="shrink-0 bg-white border border-[#EBEBE0] rounded-[20px] text-[12px] font-bold min-h-11 px-3 text-[#4A4A3A] focus:outline-none focus:border-[#756B42] cursor-pointer"
+            >
+              <option value="name">الاسم</option>
+              <option value="rating">التقييم</option>
+              <option value="bookings">الحجوزات</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => downloadCsv('houses.csv',
+                              ['الاسم', 'المحافظة', 'النوع', 'الحالة', 'التقييم', 'عدد التقييمات', 'الحجوزات', 'المالك'],
+                              filteredHouses.map((h) => [
+                                h.name, h.governorate,
+                                h.propertyType === 'student' ? 'سكن طلابي' : h.propertyType === 'staff' ? 'سكن عاملين' : 'بيت مؤتمرات',
+                                h.status === 'approved' ? 'نشط' : h.status === 'pending' ? 'قيد المراجعة' : h.status === 'suspended' ? 'موقوف' : 'مرفوض',
+                                String(h.rating ?? 0), String(h.reviewsCount ?? 0),
+                                String(bookingsPerHouse.get(h.id) ?? 0), h.ownerName ?? '',
+                              ]),
+                            )}
+              aria-label="تصدير البيوت"
+              className="shrink-0 flex items-center gap-1.5 bg-white border border-[#EBEBE0] rounded-[20px] text-[12px] font-bold min-h-11 px-3 text-[#4A4A3A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              تصدير
+            </button>
+          </div>
+
+          {/* Status filter — the counts double as the reason to tap. */}
+          <div className="flex gap-1.5 overflow-x-auto">
+            {([
+              { key: 'all', label: 'الكل', n: houseStats.total },
+              { key: 'approved', label: 'نشطة', n: houseStats.active },
+              { key: 'pending', label: 'قيد المراجعة', n: houseStats.pending },
+              { key: 'suspended', label: 'موقوفة', n: houseStats.suspended },
+            ] as const).map((f) => {
+              const on = houseStatusFilter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => { setHouseStatusFilter(f.key); setHousePage(1); }}
+                  className={`shrink-0 flex items-center gap-1.5 min-h-11 px-3.5 rounded-full text-[12px] font-bold border transition-all duration-200 cursor-pointer ${
+                    on
+                      ? 'bg-[#756B42] border-[#756B42] text-white'
+                      : 'bg-white border-[#EBEBE0] text-[#8A8A70] hover:border-[#D6D6C2]'
+                  }`}
+                >
+                  {f.label}
+                  <span className={`text-[11px] font-black tabular-nums ${on ? 'text-white/70' : 'text-[#BCBC9D]'}`}>
+                    {arabicNumber(f.n)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {filteredHouses.length === 0 ? (
+            <div className="bg-white rounded-[24px] p-10 border border-[#EBEBE0] text-center">
               <Home className="w-8 h-8 text-[#BCBC9D] mx-auto mb-2" />
-              <p className="text-sm font-bold text-[#4A4A3A]">لا توجد بيوت مسجلة بعد</p>
+              <p className="text-[12px] font-bold text-[#4A4A3A]">
+                {houses.length === 0 ? 'لا توجد بيوت مسجلة بعد' : 'مفيش بيوت مطابقة للبحث'}
+              </p>
+              {houses.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setHouseQuery(''); setHouseStatusFilter('all'); }}
+                  className="mt-3 text-[12px] font-bold text-[#756B42] underline cursor-pointer"
+                >
+                  امسح البحث والفلتر
+                </button>
+              )}
             </div>
           ) : (
-            <div className="space-y-2">
-              {houses.map((house) => {
-                const statusLabel = house.status === 'approved' ? 'نشط' : house.status === 'pending' ? 'قيد المراجعة' : house.status === 'suspended' ? 'موقوف من الإدارة' : 'مرفوض';
-                const statusClass = house.status === 'approved' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : house.status === 'pending' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-rose-50 text-rose-800 border-rose-200';
-                const owner = users.find((u) => u.id === house.ownerId);
+            <div className="space-y-2.5">
+              {pagedHouses.map((house) => {
+                const statusLabel = house.status === 'approved' ? 'نشط'
+                  : house.status === 'pending' ? 'قيد المراجعة'
+                    : house.status === 'suspended' ? 'موقوف' : 'مرفوض';
+                const statusClass = house.status === 'approved' ? 'bg-emerald-50 text-emerald-800'
+                  : house.status === 'pending' ? 'bg-amber-50 text-amber-800'
+                    : 'bg-rose-50 text-rose-800';
+                const dotClass = house.status === 'approved' ? 'bg-emerald-600'
+                  : house.status === 'pending' ? 'bg-amber-500' : 'bg-rose-600';
+                const typeLabel = house.propertyType === 'student' ? 'سكن طلابي'
+                  : house.propertyType === 'staff' ? 'سكن عاملين' : 'بيت مؤتمرات';
+                const bookingCount = bookingsPerHouse.get(house.id) ?? 0;
+                const menuOpen = openHouseMenu === house.id;
+
                 return (
-                  <div key={house.id} className="bg-white p-3 rounded-2xl border border-[#D6D6C2] flex items-center gap-3 text-right">
-                    {house.images[0] ? <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-14 h-14 rounded-xl object-cover shrink-0" /> : <div className="w-14 h-14 rounded-xl bg-[#EBEBE0] shrink-0" />}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-[#4A4A3A] truncate">{house.name}</div>
-                      <div className="text-[11px] text-[#8A8A70] mt-0.5">{house.governorate} · {owner?.name || house.ownerName}</div>
-                      <span className={`inline-block mt-1 text-[11px] font-bold px-2 py-0.5 rounded border ${statusClass}`}>{statusLabel}</span>
+                  <div key={house.id} className="bg-white rounded-[24px] border border-[#EBEBE0] p-3 shadow-[0_1px_3px_rgba(16,43,92,0.04)]">
+                    <div className="flex items-start gap-3">
+
+                      {/* Actions first in the DOM, which in RTL puts them on
+                          the right — where the eye lands last, after the
+                          house has been identified. */}
+                      <div className="shrink-0 flex flex-col gap-1.5 w-[86px]">
+                        <span className={`flex items-center justify-center gap-1.5 text-[11px] font-bold py-1.5 rounded-full ${statusClass}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
+                          {statusLabel}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewHouseId(house.id)}
+                          className="flex items-center justify-center gap-1.5 min-h-11 rounded-[14px] border border-[#EBEBE0] text-[12px] font-bold text-[#4A4A3A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          عرض
+                        </button>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setOpenHouseMenu(menuOpen ? null : house.id)}
+                            aria-expanded={menuOpen}
+                            aria-label={`إجراءات ${house.name}`}
+                            className="w-full flex items-center justify-center gap-1.5 min-h-11 rounded-[14px] border border-[#EBEBE0] text-[12px] font-bold text-[#4A4A3A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                            المزيد
+                          </button>
+                          {menuOpen && (
+                            <div className="absolute left-0 top-full mt-1 z-20 w-40 bg-white border border-[#EBEBE0] rounded-[16px] shadow-[0_8px_24px_rgba(16,43,92,0.12)] overflow-hidden">
+                              {(house.status === 'approved' || house.status === 'suspended') && onSuspendHouse && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const suspend = house.status === 'approved';
+                                    if (!suspend || confirm(`إيقاف بيت "${house.name}"؟ هيختفي من المنصة فوراً لحد ما تعيد تفعيله.`)) {
+                                      onSuspendHouse(house.id, suspend);
+                                    }
+                                    setOpenHouseMenu(null);
+                                  }}
+                                  className="w-full text-right px-3 min-h-11 text-[12px] font-bold text-[#4A4A3A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                                >
+                                  {house.status === 'approved' ? 'إيقاف البيت' : 'إعادة التفعيل'}
+                                </button>
+                              )}
+                              {onDeleteHouse && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (confirm(`حذف بيت "${house.name}" نهائيًا؟ ده هيمسح كل حجوزاته وغرفه ومش هترجع تاني.`)) {
+                                      onDeleteHouse(house.id);
+                                    }
+                                    setOpenHouseMenu(null);
+                                  }}
+                                  className="w-full text-right px-3 min-h-11 text-[12px] font-bold text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer border-t border-[#EBEBE0]"
+                                >
+                                  حذف نهائي
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Name, where it is, what it is, and the three numbers
+                          the platform can actually count. */}
+                      <div className="flex-1 min-w-0 py-0.5">
+                        <div className="text-[13px] font-black text-[#4A4A3A] truncate">{house.name}</div>
+                        <div className="text-[11px] text-[#8A8A70] mt-1 flex items-center gap-1.5 flex-wrap">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            {house.governorate}
+                          </span>
+                          <span className="text-[#D6D6C2]">·</span>
+                          <span>{typeLabel}</span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-2.5">
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-[#4A4A3A]">
+                            <Star className="w-3.5 h-3.5 text-[#C5A059]" />
+                            <span className="tabular-nums">{house.rating ? house.rating.toFixed(1) : '—'}</span>
+                            <span className="text-[#BCBC9D] font-normal">({arabicNumber(house.reviewsCount ?? 0)})</span>
+                          </span>
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-[#4A4A3A]">
+                            <CalendarDays className="w-3.5 h-3.5 text-[#8A8A70]" />
+                            <span className="tabular-nums">{arabicNumber(bookingCount)}</span>
+                            <span className="text-[#BCBC9D] font-normal">حجز</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Image last in the DOM, so RTL places it on the left. */}
+                      {house.images[0] ? (
+                        <img
+                          referrerPolicy="no-referrer"
+                          src={house.images[0]}
+                          alt={house.name}
+                          className="w-[88px] h-[88px] rounded-[18px] object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-[88px] h-[88px] rounded-[18px] bg-[#F4F2EC] shrink-0 flex items-center justify-center">
+                          <Home className="w-6 h-6 text-[#D6D6C2]" />
+                        </div>
+                      )}
                     </div>
-                    <button
-                      onClick={() => setPreviewHouseId(house.id)}
-                      className="shrink-0 flex items-center gap-1 min-h-11 text-[12px] font-bold px-3 rounded-xl border border-[#D6D6C2] bg-white text-[#4A4A3A] hover:bg-[#F0EDE6] cursor-pointer"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>معاينة</span>
-                    </button>
-                    {(house.status === 'approved' || house.status === 'suspended') && (
-                      <button
-                        id={`toggle-house-suspend-${house.id}`}
-                        onClick={() => {
-                          const suspend = house.status === 'approved';
-                          if (!suspend || confirm(`إيقاف بيت "${house.name}"؟ هيختفي من المنصة فوراً لحد ما تعيد تفعيله.`)) {
-                            onSuspendHouse && onSuspendHouse(house.id, suspend);
-                          }
-                        }}
-                        className={`shrink-0 flex items-center gap-1 min-h-11 text-[12px] font-bold px-3 rounded-xl border transition-all cursor-pointer ${
-                          house.status === 'approved'
-                            ? 'bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100'
-                            : 'bg-emerald-700 border-emerald-700 text-white hover:bg-emerald-800'
-                        }`}
-                      >
-                        <Power className="w-3.5 h-3.5" />
-                        <span>{house.status === 'approved' ? 'إيقاف' : 'إعادة تفعيل'}</span>
-                      </button>
-                    )}
-                    {onDeleteHouse && (
-                      <button
-                        onClick={() => {
-                          if (confirm(`حذف بيت "${house.name}" نهائيًا؟ ده هيمسح كل حجوزاته وغرفه ومش هترجع تاني.`)) {
-                            onDeleteHouse(house.id);
-                          }
-                        }}
-                        className="shrink-0 flex items-center gap-1 min-h-11 text-[12px] font-bold px-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>حذف نهائي</span>
-                      </button>
-                    )}
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Paging. Rows-per-page sits opposite the numbers. */}
+          {filteredHouses.length > 0 && (
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <select
+                value={housePerPage}
+                onChange={(e) => { setHousePerPage(Number(e.target.value)); setHousePage(1); }}
+                aria-label="عدد البيوت في الصفحة"
+                className="bg-white border border-[#EBEBE0] rounded-[16px] text-[12px] font-bold min-h-11 px-2.5 text-[#4A4A3A] focus:outline-none focus:border-[#756B42] cursor-pointer"
+              >
+                {[10, 25, 50].map((n) => (
+                  <option key={n} value={n}>{arabicNumber(n)} لكل صفحة</option>
+                ))}
+              </select>
+
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setHousePage((p) => Math.max(1, p - 1))}
+                  disabled={houseSafePage === 1}
+                  aria-label="الصفحة السابقة"
+                  className="w-11 h-11 flex items-center justify-center rounded-[14px] border border-[#EBEBE0] text-[#4A4A3A] disabled:opacity-30 hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <span className="text-[12px] font-bold text-[#8A8A70] px-2 tabular-nums">
+                  {arabicNumber(houseSafePage)} / {arabicNumber(housePageCount)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setHousePage((p) => Math.min(housePageCount, p + 1))}
+                  disabled={houseSafePage === housePageCount}
+                  aria-label="الصفحة التالية"
+                  className="w-11 h-11 flex items-center justify-center rounded-[14px] border border-[#EBEBE0] text-[#4A4A3A] disabled:opacity-30 hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>
