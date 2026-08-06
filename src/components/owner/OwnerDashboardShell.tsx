@@ -13,6 +13,7 @@ import { categorizeBooking as categorize, sortForOwner } from '../../lib/ownerBo
 import { bookingRef, bookingAge } from '../../lib/bookingRef';
 import { bookingMoney } from '../../lib/bookingMoney';
 import { availableForTransfer, cashDueAtArrival } from '../../lib/paymentLedger';
+import { passwordProblem } from '../../lib/password';
 import { ownerBookingBadge } from '../../lib/ownerBookingBadge';
 import { arabicDay, arabicDayYear, nightsBetween, nightsLabel } from '../../lib/bookingDates';
 import OwnerDisclosure from './OwnerDisclosure';
@@ -240,8 +241,8 @@ export default function OwnerDashboardShell({
   const [unreadMessagesTotal, setUnreadMessagesTotal] = useState(0);
 
   const handleChangePassword = async () => {
-    if (newPassword.length < 6) { setPasswordMsg({ text: 'كلمة السر يجب أن تكون 6 أحرف على الأقل.', ok: false }); return; }
-    if (newPassword !== confirmPassword) { setPasswordMsg({ text: 'كلمتا السر غير متطابقتين.', ok: false }); return; }
+    const problem = passwordProblem(newPassword, confirmPassword);
+    if (problem) { setPasswordMsg({ text: problem, ok: false }); return; }
     setPasswordSaving(true);
     setPasswordMsg(null);
     const { error } = await supabase.auth.updateUser({ password: newPassword });

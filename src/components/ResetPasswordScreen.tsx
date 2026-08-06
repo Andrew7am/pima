@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { MIN_PASSWORD_LENGTH, minPasswordLabel, passwordProblem } from '../lib/password';
 import { Lock } from 'lucide-react';
 import Logo from './Logo';
 import { supabase } from '../lib/supabase';
@@ -17,12 +18,9 @@ export default function ResetPasswordScreen({ onDone }: ResetPasswordScreenProps
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (password.length < 6) {
-      setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('كلمتا المرور غير متطابقتين.');
+    const problem = passwordProblem(password, confirmPassword);
+    if (problem) {
+      setError(problem);
       return;
     }
     setLoading(true);
@@ -75,7 +73,7 @@ export default function ResetPasswordScreen({ onDone }: ResetPasswordScreenProps
               <div>
                 <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">كلمة المرور الجديدة:</label>
                 <div className="relative">
-                  <input type="password" required minLength={6} placeholder="6 أحرف على الأقل" value={password} onChange={(e) => setPassword(e.target.value)}
+                  <input type="password" required minLength={MIN_PASSWORD_LENGTH} placeholder={minPasswordLabel} value={password} onChange={(e) => setPassword(e.target.value)}
                     className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2.5 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none" />
                   <Lock className="absolute top-3 right-3 w-4 h-4 text-[#BCBC9D]" />
                 </div>
@@ -84,7 +82,7 @@ export default function ResetPasswordScreen({ onDone }: ResetPasswordScreenProps
               <div>
                 <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">تأكيد كلمة المرور:</label>
                 <div className="relative">
-                  <input type="password" required minLength={6} placeholder="أعد كتابة كلمة المرور" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                  <input type="password" required minLength={MIN_PASSWORD_LENGTH} placeholder="أعد كتابة كلمة المرور" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2.5 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none" />
                   <Lock className="absolute top-3 right-3 w-4 h-4 text-[#BCBC9D]" />
                 </div>

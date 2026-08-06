@@ -1,3 +1,4 @@
+import { minPasswordLabel } from './password';
 import { arabicNumber } from './arabic';
 
 /**
@@ -58,7 +59,7 @@ const RULES: { when: (m: string, e: RawAuthError) => boolean; say: string }[] = 
   },
   {
     when: (m) => m.includes('password should be at least'),
-    say: 'كلمة المرور يجب أن تكون ٦ أحرف على الأقل.',
+    say: `كلمة المرور يجب أن تكون ${minPasswordLabel}.`,
   },
   {
     when: (m) => m.includes('weak password') || m.includes('password is too weak'),
