@@ -630,7 +630,7 @@ export default function AdminDashboard({
         <button
           type="button"
           onClick={() => goTo('home', 'growth')}
-          className={`text-right shrink-0 rounded-2xl px-3 py-2 border transition-all cursor-pointer ${
+          className={`text-right shrink-0 rounded-2xl px-3 min-h-11 border transition-all cursor-pointer ${
             totalPending > 0 ? 'bg-rose-500/20 border-rose-300/40 hover:bg-rose-500/30' : 'bg-white/10 border-white/20'
           }`}
         >
@@ -649,7 +649,7 @@ export default function AdminDashboard({
             const isOn = navSection === g.key;
             return (
               <button key={g.key} onClick={() => goTo(g.key, g.tabs[0].key)}
-                className={`flex-1 min-w-[86px] flex flex-col items-center gap-1 py-2.5 text-[12px] font-black transition-all cursor-pointer relative ${
+                className={`flex-1 min-w-[86px] flex flex-col items-center gap-1 min-h-11.5 text-[12px] font-black transition-all cursor-pointer relative ${
                   isOn ? 'bg-[#0A2342] text-white' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
                 }`}>
                 <Icon className="w-4 h-4" />
@@ -692,7 +692,7 @@ export default function AdminDashboard({
           <div className="divide-y divide-[#D6D6C2]/50">
             {actionQueue.map((a) => (
               <button key={a.key} type="button" onClick={() => goTo(a.section, a.key)}
-                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-[#FAF8F5] transition-colors cursor-pointer text-right">
+                className="w-full flex items-center gap-2.5 px-3.5 min-h-11.5 hover:bg-[#FAF8F5] transition-colors cursor-pointer text-right">
                 <span className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
                   <a.Icon className="w-4 h-4 text-rose-600" />
                 </span>
@@ -936,7 +936,7 @@ export default function AdminDashboard({
                           <button
                             id={`preview-house-${house.id}`}
                             onClick={() => setPreviewHouseId(house.id)}
-                            className="flex items-center gap-1 bg-white border border-[#D6D6C2] hover:bg-[#F0EDE6] text-[#4A4A3A] px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                            className="flex items-center gap-1 bg-white border border-[#D6D6C2] hover:bg-[#F0EDE6] text-[#4A4A3A] px-3 min-h-11.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             <span>معاينة كاملة</span>
@@ -947,7 +947,7 @@ export default function AdminDashboard({
                               onRejectHouse(house.id);
                               alert('تم رفض البيت وسيظل غير مرئي للمستخدمين.');
                             }}
-                            className="flex items-center gap-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                            className="flex items-center gap-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 px-3 min-h-11.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                             <span>رفض البيت</span>
@@ -958,7 +958,7 @@ export default function AdminDashboard({
                               onApproveHouse(house.id);
                               alert('تم اعتماد البيت ونشره بنجاح للجمهور ببيوت المؤتمرات!');
                             }}
-                            className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer"
+                            className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white px-4 min-h-11.5 rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer"
                           >
                             <Check className="w-3.5 h-3.5" />
                             <span>اعتماد وموافقة للظهور</span>
@@ -1021,7 +1021,7 @@ export default function AdminDashboard({
                               onRejectHouseEdit && onRejectHouseEdit(house.id);
                               alert('تم رفض طلب التعديل، ستبقى بيانات البيت كما كانت.');
                             }}
-                            className="flex items-center gap-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                            className="flex items-center gap-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 px-3 min-h-11.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                             <span>رفض التعديل</span>
@@ -1032,7 +1032,7 @@ export default function AdminDashboard({
                               onApproveHouseEdit && onApproveHouseEdit(house.id);
                               alert('تم اعتماد التعديل وتطبيقه على بيانات البيت.');
                             }}
-                            className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer"
+                            className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white px-4 min-h-11.5 rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer"
                           >
                             <Check className="w-3.5 h-3.5" />
                             <span>اعتماد التعديل</span>
@@ -1081,7 +1081,7 @@ export default function AdminDashboard({
                     href={`https://wa.me/2${acc.phone.replace(/^0/, '')}?text=${encodeURIComponent('سلام ونعمة، برجاء إرسال صورة بطاقتك الشخصية (وش وضهر) لاستكمال مراجعة حسابك على بيما.')}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-[12px] font-bold py-2.5 hover:bg-emerald-100 transition-colors"
+                    className="flex items-center justify-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-[12px] font-bold min-h-11 hover:bg-emerald-100 transition-colors"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
                     <span>تواصل واتساب لمراجعة البطاقة الشخصية</span>
@@ -1091,7 +1091,7 @@ export default function AdminDashboard({
                     <button
                       id={`reject-account-${acc.id}`}
                       onClick={() => onSetUserApproval && onSetUserApproval(acc.id, 'rejected')}
-                      className="flex items-center gap-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                      className="flex items-center gap-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 px-3 min-h-11.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
                     >
                       <X className="w-3.5 h-3.5" />
                       <span>رفض الحساب</span>
@@ -1099,7 +1099,7 @@ export default function AdminDashboard({
                     <button
                       id={`approve-account-${acc.id}`}
                       onClick={() => onSetUserApproval && onSetUserApproval(acc.id, 'approved')}
-                      className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-1.5 rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer"
+                      className="flex items-center gap-1 bg-emerald-700 hover:bg-emerald-800 text-white px-4 min-h-11.5 rounded-xl text-xs font-extrabold shadow-sm transition-all cursor-pointer"
                     >
                       <Check className="w-3.5 h-3.5" />
                       <span>اعتماد الحساب</span>
@@ -1197,7 +1197,7 @@ export default function AdminDashboard({
                     onChange={(e) => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)) }))}
                     className="flex-1 min-w-[110px] bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg text-[#4A4A3A] font-mono" />
                   <button type="button" onClick={() => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.filter((_, j) => j !== i) }))}
-                    className="text-rose-600 text-[12px] font-bold px-2 py-1.5 cursor-pointer">حذف</button>
+                    className="text-rose-600 text-[12px] font-bold px-2 min-h-11.5 cursor-pointer">حذف</button>
                 </div>
               ))}
               <button type="button"
@@ -1219,13 +1219,13 @@ export default function AdminDashboard({
                   setSettingsSaved(true);
                   setTimeout(() => setSettingsSaved(false), 3000);
                 }}
-                className="flex-1 bg-[#0A2342] hover:bg-[#071930] text-white text-xs font-bold py-2.5 rounded-xl transition-colors cursor-pointer"
+                className="flex-1 bg-[#0A2342] hover:bg-[#071930] text-white text-xs font-bold min-h-11.5 rounded-xl transition-colors cursor-pointer"
               >
                 💾 حفظ وتطبيق
               </button>
               <button
                 onClick={() => setSettingsDraft(settings)}
-                className="bg-[#EBEBE0] text-[#4A4A3A] text-xs font-bold py-2.5 px-4 rounded-xl cursor-pointer"
+                className="bg-[#EBEBE0] text-[#4A4A3A] text-xs font-bold min-h-11.5 px-4 rounded-xl cursor-pointer"
               >
                 تراجع
               </button>
@@ -1290,13 +1290,21 @@ export default function AdminDashboard({
                 const statusClass = house.status === 'approved' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : house.status === 'pending' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-rose-50 text-rose-800 border-rose-200';
                 const owner = users.find((u) => u.id === house.ownerId);
                 return (
-                  <div key={house.id} className="bg-white p-3 rounded-2xl border border-[#D6D6C2] flex items-center gap-3 text-right">
-                    {house.images[0] ? <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-14 h-14 rounded-xl object-cover shrink-0" /> : <div className="w-14 h-14 rounded-xl bg-[#EBEBE0] shrink-0" />}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-[#4A4A3A] truncate">{house.name}</div>
-                      <div className="text-[11px] text-[#8A8A70] mt-0.5">{house.governorate} · {owner?.name || house.ownerName}</div>
-                      <span className={`inline-block mt-1 text-[11px] font-bold px-2 py-0.5 rounded border ${statusClass}`}>{statusLabel}</span>
+                  // Identity on one line, actions on the next until there is
+                  // room for both. On one line at 375px the three buttons and
+                  // the thumbnail left the name 49px — not enough to read
+                  // which house the row is about — and pushed the whole page
+                  // 14px wider than the screen.
+                  <div key={house.id} className="bg-white p-3 rounded-2xl border border-[#D6D6C2] flex flex-col md:flex-row md:items-center gap-3 text-right">
+                    <div className="flex items-center gap-3 min-w-0 md:flex-1">
+                      {house.images[0] ? <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-14 h-14 rounded-xl object-cover shrink-0" /> : <div className="w-14 h-14 rounded-xl bg-[#EBEBE0] shrink-0" />}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold text-[#4A4A3A] truncate">{house.name}</div>
+                        <div className="text-[11px] text-[#8A8A70] mt-0.5 truncate">{house.governorate} · {owner?.name || house.ownerName}</div>
+                        <span className={`inline-block mt-1 text-[11px] font-bold px-2 py-0.5 rounded border ${statusClass}`}>{statusLabel}</span>
+                      </div>
                     </div>
+                    <div className="flex items-center gap-2 flex-wrap md:flex-nowrap md:shrink-0">
                     <button
                       onClick={() => setPreviewHouseId(house.id)}
                       className="shrink-0 flex items-center gap-1 min-h-11 text-[12px] font-bold px-3 rounded-xl border border-[#D6D6C2] bg-white text-[#4A4A3A] hover:bg-[#F0EDE6] cursor-pointer"
@@ -1336,6 +1344,7 @@ export default function AdminDashboard({
                         <span>حذف نهائي</span>
                       </button>
                     )}
+                    </div>
                   </div>
                 );
               })}
@@ -1406,7 +1415,7 @@ export default function AdminDashboard({
                       <button
                         id={`delete-review-${rev.id}`}
                         onClick={() => { if (confirm('حذف هذه المراجعة نهائياً؟ سيُعاد حساب تقييم البيت تلقائياً.')) onDeleteReview && onDeleteReview(rev.id); }}
-                        className="flex items-center gap-1 text-[12px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer"
+                        className="flex items-center gap-1 text-[12px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 px-2.5 min-h-11.5 rounded-xl transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-3 h-3" />
                         <span>حذف</span>
@@ -1438,7 +1447,7 @@ export default function AdminDashboard({
               <button
                 type="button"
                 onClick={() => { pbResetForm(); setPbView('form'); }}
-                className="flex items-center gap-1.5 bg-[#0A2342] hover:bg-[#123E75] text-white text-[12px] font-black px-3.5 py-2 rounded-xl shadow-sm transition-all cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 bg-[#0A2342] hover:bg-[#123E75] text-white text-[12px] font-black px-3.5 min-h-11 rounded-xl shadow-sm transition-all cursor-pointer shrink-0"
               >
                 + إنشاء بانر جديد
               </button>
@@ -1454,7 +1463,7 @@ export default function AdminDashboard({
                   key={key}
                   type="button"
                   onClick={() => setPbView(key)}
-                  className={`px-3.5 py-2 rounded-xl text-[12px] font-black border transition-all cursor-pointer ${
+                  className={`px-3.5 min-h-11 rounded-xl text-[12px] font-black border transition-all cursor-pointer ${
                     pbView === key
                       ? 'bg-[#5A5A40] text-white border-[#5A5A40] shadow-sm'
                       : 'bg-[#FAF8F5] text-[#5A5A40] border-[#E7E5DB] hover:bg-white'
@@ -1476,18 +1485,18 @@ export default function AdminDashboard({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <select value={pbPlacement} onChange={(e) => setPbPlacement(e.target.value as 'carousel' | 'countdown')} disabled={!!pbEditingId} className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-[#2D2D24] focus:outline-none text-right disabled:opacity-60">
+              <select value={pbPlacement} onChange={(e) => setPbPlacement(e.target.value as 'carousel' | 'countdown')} disabled={!!pbEditingId} className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-[#2D2D24] focus:outline-none text-right disabled:opacity-60">
                 <option value="carousel">شريحة في الكاروسيل العلوي 🖼️</option>
                 <option value="countdown">بانر العدّاد السفلي ⏳</option>
               </select>
-              <input value={pbBadge} onChange={(e) => setPbBadge(e.target.value)} placeholder="الشارة (مثال: عرض خاص)" className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
-              <input value={pbCta} onChange={(e) => setPbCta(e.target.value)} placeholder="نص الزر (مثال: احجز الآن)" className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
-              <input value={pbTitle} onChange={(e) => setPbTitle(e.target.value)} placeholder={pbPlacement === 'countdown' ? 'نص الخصم (مثال: خصم ٢٠٪)' : 'العنوان (مثال: عرض الصيف)'} className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
+              <input value={pbBadge} onChange={(e) => setPbBadge(e.target.value)} placeholder="الشارة (مثال: عرض خاص)" className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
+              <input value={pbCta} onChange={(e) => setPbCta(e.target.value)} placeholder="نص الزر (مثال: احجز الآن)" className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
+              <input value={pbTitle} onChange={(e) => setPbTitle(e.target.value)} placeholder={pbPlacement === 'countdown' ? 'نص الخصم (مثال: خصم ٢٠٪)' : 'العنوان (مثال: عرض الصيف)'} className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
               {pbPlacement === 'carousel' && (
-                <input value={pbSubtitle} onChange={(e) => setPbSubtitle(e.target.value)} placeholder="الوصف (مثال: خصومات تصل ٣٠٪ على الساحل)" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
+                <input value={pbSubtitle} onChange={(e) => setPbSubtitle(e.target.value)} placeholder="الوصف (مثال: خصومات تصل ٣٠٪ على الساحل)" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
               )}
               <div className="col-span-2 space-y-1.5">
-                <input value={pbImage} onChange={(e) => setPbImage(e.target.value)} placeholder="رابط الصورة (https://...)" className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" dir="ltr" />
+                <input value={pbImage} onChange={(e) => setPbImage(e.target.value)} placeholder="رابط الصورة (https://...)" className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" dir="ltr" />
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-bold text-[#8A8A70] shrink-0">أو ارفع صورة:</span>
                   <PhotoPickerButtons idPrefix="promo-banner" folder="banners" onSelect={(url) => setPbImage(url)} className="flex-1" />
@@ -1495,7 +1504,7 @@ export default function AdminDashboard({
               </div>
               {pbPlacement === 'countdown' && (
                 <label className="col-span-2 text-[12px] font-bold text-[#8A8A70]">ينتهي العرض في:
-                  <input type="datetime-local" value={pbEndsAt} onChange={(e) => setPbEndsAt(e.target.value)} className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
+                  <input type="datetime-local" value={pbEndsAt} onChange={(e) => setPbEndsAt(e.target.value)} className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
                 </label>
               )}
 
@@ -1503,7 +1512,7 @@ export default function AdminDashboard({
               <div className="col-span-2 space-y-1.5 border-t border-[#E7E5DB] pt-2.5">
                 <span className="text-[12px] font-black text-[#4A4A3A]">وجهة الزر</span>
                 <select value={pbHouseId} onChange={(e) => setPbHouseId(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right cursor-pointer">
+                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right cursor-pointer">
                   <option value="">بدون — استخدم رابط خارجي</option>
                   {houses.filter((h) => h.status === 'approved').map((h) => (
                     <option key={h.id} value={h.id}>🏠 {h.name}</option>
@@ -1512,7 +1521,7 @@ export default function AdminDashboard({
                 {pbHouseId ? (
                   <p className="text-[11px] font-bold text-emerald-700">الضغط على الزر هيفتح صفحة البيت جوّه التطبيق.</p>
                 ) : (
-                  <input value={pbLinkUrl} onChange={(e) => setPbLinkUrl(e.target.value)} placeholder="رابط خارجي (اختياري — مثال: instagram.com/pima_app)" className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" dir="ltr" />
+                  <input value={pbLinkUrl} onChange={(e) => setPbLinkUrl(e.target.value)} placeholder="رابط خارجي (اختياري — مثال: instagram.com/pima_app)" className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" dir="ltr" />
                 )}
               </div>
 
@@ -1522,7 +1531,7 @@ export default function AdminDashboard({
                 <div className="flex gap-1.5">
                   {([['draft', 'مسودة'], ['published', 'نشر الآن'], ['scheduled', 'جدولة']] as const).map(([v, label]) => (
                     <button key={v} type="button" onClick={() => setPbStatus(v)}
-                      className={`flex-1 py-2 rounded-xl text-[12px] font-black border transition-all cursor-pointer ${
+                      className={`flex-1 min-h-11 rounded-xl text-[12px] font-black border transition-all cursor-pointer ${
                         pbStatus === v ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white text-[#5A5A40] border-[#D6D6C2]'
                       }`}>{label}</button>
                   ))}
@@ -1531,11 +1540,11 @@ export default function AdminDashboard({
                   <div className="grid grid-cols-2 gap-2">
                     <label className="text-[11px] font-bold text-[#8A8A70]">يبدأ في:
                       <input type="datetime-local" value={pbStartsAt} onChange={(e) => setPbStartsAt(e.target.value)}
-                        className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-2 py-2 text-right" />
+                        className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-2 min-h-11 text-right" />
                     </label>
                     <label className="text-[11px] font-bold text-[#8A8A70]">ينتهي في:
                       <input type="datetime-local" value={pbEndsAt} onChange={(e) => setPbEndsAt(e.target.value)}
-                        className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-2 py-2 text-right" />
+                        className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-2 min-h-11 text-right" />
                     </label>
                   </div>
                 )}
@@ -1550,7 +1559,7 @@ export default function AdminDashboard({
                   {([['individual', 'أفراد'], ['servant', 'خدام'], ['owner', 'أصحاب بيوت']] as const).map(([r, label]) => (
                     <button key={r} type="button"
                       onClick={() => setPbRoles((p) => p.includes(r) ? p.filter((x) => x !== r) : [...p, r])}
-                      className={`px-2.5 py-1.5 rounded-xl text-[12px] font-bold border cursor-pointer transition-all ${
+                      className={`px-2.5 min-h-11.5 rounded-xl text-[12px] font-bold border cursor-pointer transition-all ${
                         pbRoles.includes(r) ? 'bg-[#0A2342] text-white border-[#0A2342]' : 'bg-white text-[#5A5A40] border-[#D6D6C2]'
                       }`}>{label}</button>
                   ))}
@@ -1558,13 +1567,13 @@ export default function AdminDashboard({
                 <div className="flex gap-1.5">
                   {([['any', 'حجز أو لا'], ['yes', 'حجز قبل كده'], ['no', 'لسه ما حجزش']] as const).map(([v, label]) => (
                     <button key={v} type="button" onClick={() => setPbBooked(v)}
-                      className={`flex-1 py-1.5 rounded-xl text-[11px] font-bold border cursor-pointer transition-all ${
+                      className={`flex-1 min-h-11.5 rounded-xl text-[11px] font-bold border cursor-pointer transition-all ${
                         pbBooked === v ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white text-[#5A5A40] border-[#D6D6C2]'
                       }`}>{label}</button>
                   ))}
                 </div>
                 <select value="" onChange={(e) => { if (e.target.value) setPbGovs((p) => p.includes(e.target.value) ? p : [...p, e.target.value]); }}
-                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[12px] px-3 py-2 text-right cursor-pointer">
+                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[12px] px-3 min-h-11 text-right cursor-pointer">
                   <option value="">+ أضف محافظة (اختياري)</option>
                   {GOVERNORATES.filter((g) => !pbGovs.includes(g)).map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
@@ -1572,7 +1581,7 @@ export default function AdminDashboard({
                   <div className="flex gap-1 flex-wrap">
                     {pbGovs.map((g) => (
                       <button key={g} type="button" onClick={() => setPbGovs((p) => p.filter((x) => x !== g))}
-                        className="text-[11px] font-bold bg-[#EBEBE0] text-[#4A4A3A] px-2 py-1 rounded-lg cursor-pointer">{g} ✕</button>
+                        className="text-[11px] font-bold bg-[#EBEBE0] text-[#4A4A3A] px-2 min-h-11 rounded-lg cursor-pointer">{g} ✕</button>
                     ))}
                   </div>
                 )}
@@ -1586,8 +1595,8 @@ export default function AdminDashboard({
                 <span className="text-[12px] font-black text-[#4A4A3A]">تجربة A/B (اختياري)</span>
                 <p className="text-[11px] font-bold text-[#8A8A70]">اكتب نفس اسم التجربة في بانرين، والنظام يوزّعهم على الزوار ويقارن نتايجهم.</p>
                 <div className="grid grid-cols-3 gap-2">
-                  <input value={pbExperiment} onChange={(e) => setPbExperiment(e.target.value)} placeholder="اسم التجربة" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
-                  <input value={pbVariant} onChange={(e) => setPbVariant(e.target.value)} placeholder="أ / ب" className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-center" />
+                  <input value={pbExperiment} onChange={(e) => setPbExperiment(e.target.value)} placeholder="اسم التجربة" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
+                  <input value={pbVariant} onChange={(e) => setPbVariant(e.target.value)} placeholder="أ / ب" className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-center" />
                 </div>
               </div>
 
@@ -1598,7 +1607,7 @@ export default function AdminDashboard({
                   <button
                     type="button"
                     onClick={() => setPbLinks((p) => [...p, { id: `pl_${Date.now()}`, platform: 'instagram', url: '' }])}
-                    className="text-[11px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer shrink-0"
+                    className="text-[11px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 min-h-11 rounded-lg cursor-pointer shrink-0"
                   >
                     + إضافة أيقونة
                   </button>
@@ -1611,7 +1620,7 @@ export default function AdminDashboard({
                       <select
                         value={l.platform}
                         onChange={(e) => setPbLinks((p) => p.map((x, j) => (j === i ? { ...x, platform: e.target.value as PromoLinkPlatform } : x)))}
-                        className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[12px] px-2 py-2 text-[#2D2D24] focus:outline-none shrink-0"
+                        className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[12px] px-2 min-h-11 text-[#2D2D24] focus:outline-none shrink-0"
                       >
                         {PROMO_PLATFORMS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                       </select>
@@ -1619,7 +1628,7 @@ export default function AdminDashboard({
                         value={l.url}
                         onChange={(e) => setPbLinks((p) => p.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))}
                         placeholder="الرابط (أو الرقم لواتساب/الاتصال)"
-                        className="flex-1 min-w-0 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[12px] px-2 py-2 text-right"
+                        className="flex-1 min-w-0 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[12px] px-2 min-h-11 text-right"
                         dir="ltr"
                       />
                       <button
@@ -1718,7 +1727,7 @@ export default function AdminDashboard({
                 pbResetForm();
                 setPbView('list');
               }}
-              className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-black py-2 rounded-xl transition-all cursor-pointer"
+              className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-black min-h-11 rounded-xl transition-all cursor-pointer"
             >
               {pbEditingId ? 'حفظ التعديل' : 'إضافة البانر'}
             </button>
@@ -1766,11 +1775,11 @@ export default function AdminDashboard({
                   {/* Reorder (carousel order matters; harmless for countdown) */}
                   <div className="flex flex-col gap-0.5 shrink-0">
                     <button type="button" disabled={isFirst} onClick={() => pbMove(b, -1)} title="لأعلى"
-                      className="p-0.5 rounded border border-[#E7E5DB] text-[#5A5A40] hover:bg-[#FAF8F5] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+                      className="grid place-items-center w-11 h-11 shrink-0 rounded border border-[#E7E5DB] text-[#5A5A40] hover:bg-[#FAF8F5] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
                       <ChevronUp className="w-3 h-3" />
                     </button>
                     <button type="button" disabled={isLast} onClick={() => pbMove(b, 1)} title="لأسفل"
-                      className="p-0.5 rounded border border-[#E7E5DB] text-[#5A5A40] hover:bg-[#FAF8F5] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+                      className="grid place-items-center w-11 h-11 shrink-0 rounded border border-[#E7E5DB] text-[#5A5A40] hover:bg-[#FAF8F5] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
                       <ChevronDown className="w-3 h-3" />
                     </button>
                   </div>
@@ -1809,16 +1818,16 @@ export default function AdminDashboard({
                   </div>
 
                   <div className="flex flex-col items-stretch gap-1 shrink-0">
-                    <button type="button" onClick={() => { pbStartEdit(b); setPbView('form'); }} className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer">
+                    <button type="button" onClick={() => { pbStartEdit(b); setPbView('form'); }} className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 min-h-11 rounded-lg cursor-pointer">
                       <Pencil className="w-3 h-3" /> تعديل
                     </button>
                     <button type="button" onClick={() => setPbDesigningId(pbDesigningId === b.id ? null : b.id)}
-                      className={`flex items-center justify-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg cursor-pointer border ${
+                      className={`flex items-center justify-center gap-1 text-[11px] font-bold px-2 min-h-11 rounded-lg cursor-pointer border ${
                         pbDesigningId === b.id ? 'bg-[#0A2342] text-white border-[#0A2342]' : 'text-[#0A2342] border-[#0A2342]/30 hover:bg-[#FAF8F5]'
                       }`}>
                       <Wand2 className="w-3 h-3" /> تصميم
                     </button>
-                    <button type="button" onClick={() => onTogglePromoBanner?.(b.id, !b.isActive)} className={`text-[11px] font-bold px-2 py-1 rounded-lg cursor-pointer ${b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>{b.isActive ? 'مفعّل' : 'متوقف'}</button>
+                    <button type="button" onClick={() => onTogglePromoBanner?.(b.id, !b.isActive)} className={`text-[11px] font-bold px-2 min-h-11 rounded-lg cursor-pointer ${b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>{b.isActive ? 'مفعّل' : 'متوقف'}</button>
                     <button type="button"
                       onClick={() => onAddPromoBanner?.({
                         ...b,
@@ -1829,10 +1838,10 @@ export default function AdminDashboard({
                         sort: promoBanners.filter((x) => x.placement === b.placement).length,
                         createdAt: new Date().toISOString(),
                       })}
-                      className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer">
+                      className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 min-h-11 rounded-lg cursor-pointer">
                       <Copy className="w-3 h-3" /> نسخة
                     </button>
-                    <button type="button" onClick={() => { if (confirm('حذف هذا البانر نهائياً؟')) { if (pbEditingId === b.id) pbResetForm(); onDeletePromoBanner?.(b.id); } }} className="text-[11px] font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg cursor-pointer">حذف</button>
+                    <button type="button" onClick={() => { if (confirm('حذف هذا البانر نهائياً؟')) { if (pbEditingId === b.id) pbResetForm(); onDeletePromoBanner?.(b.id); } }} className="text-[11px] font-bold text-rose-600 hover:bg-rose-50 px-2 min-h-11 rounded-lg cursor-pointer">حذف</button>
                   </div>
                 </div>
                 );
@@ -1854,7 +1863,7 @@ export default function AdminDashboard({
                 <input type="text" placeholder="ابحث بالاسم أو الإيميل أو الهاتف أو الكنيسة..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)}
                   className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs min-h-11 pr-9 pl-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D] text-right" />
               </div>
-              <button onClick={exportUsers} className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold px-3 py-2 rounded-xl cursor-pointer shrink-0">
+              <button onClick={exportUsers} className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold px-3 min-h-11 rounded-xl cursor-pointer shrink-0">
                 <Download className="w-3.5 h-3.5" /> تصدير CSV
               </button>
             </div>
@@ -1945,7 +1954,7 @@ export default function AdminDashboard({
                   key={p.key}
                   type="button"
                   onClick={() => setFinPeriod(p.key)}
-                  className={`text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  className={`text-[11px] font-bold px-2.5 min-h-11.5 rounded-lg transition-all cursor-pointer ${
                     finPeriod === p.key ? 'bg-[#5A5A40] text-white' : 'bg-[#EBEBE0]/50 text-[#4A4A3A] hover:bg-[#DEDECB]'
                   }`}
                 >
@@ -2164,10 +2173,10 @@ export default function AdminDashboard({
 
           {/* Export buttons */}
           <div className="flex gap-2">
-            <button onClick={exportFinancials} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold py-2.5 rounded-xl cursor-pointer">
+            <button onClick={exportFinancials} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11.5 rounded-xl cursor-pointer">
               <Download className="w-3.5 h-3.5" /> تصدير المالية CSV
             </button>
-            <button onClick={exportBookings} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold py-2.5 rounded-xl cursor-pointer">
+            <button onClick={exportBookings} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11.5 rounded-xl cursor-pointer">
               <Download className="w-3.5 h-3.5" /> تصدير الحجوزات CSV
             </button>
           </div>
@@ -2365,7 +2374,7 @@ export default function AdminDashboard({
                                   alert('تمت الموافقة على الدفعة وبدء تأكيد الغرف!');
                                 }
                               }}
-                              className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-extrabold py-2 px-3 rounded-xl transition-all cursor-pointer text-center shadow-sm"
+                              className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-extrabold min-h-11 px-3 rounded-xl transition-all cursor-pointer text-center shadow-sm"
                             >
                               اعتماد الدفعة والموافقة تلقائياً ✓
                             </button>
@@ -2493,7 +2502,7 @@ export default function AdminDashboard({
                               <span className="text-[11px] font-black text-[#5A5A40]">{arabicNumber(ownerShare(b))} ج.م</span>
                               <button type="button"
                                 onClick={() => { if (confirm(`تأكيد تحويل ${arabicNumber(ownerShare(b))} ج.م لـ${ownerName} عن حجز ${b.userName}؟`)) onSettleBookings({ houseId: hid, ownerId, amount: ownerShare(b), bookingIds: [b.id], note: `حجز ${b.userName}` }); }}
-                                className="text-[12px] font-bold bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg cursor-pointer">حوّل ✓</button>
+                                className="text-[12px] font-bold bg-emerald-600 text-white px-2.5 min-h-11.5 rounded-lg cursor-pointer">حوّل ✓</button>
                             </div>
                           </div>
                         ))}
@@ -2501,7 +2510,7 @@ export default function AdminDashboard({
                       {list.length > 1 && (
                         <button type="button"
                           onClick={() => { if (confirm(`تأكيد تحويل الإجمالي ${arabicNumber(total)} ج.م لـ${ownerName} (${arabicPlural(list.length, BOOKING_FORMS)}) دفعة واحدة؟`)) onSettleBookings({ houseId: hid, ownerId, amount: total, bookingIds: list.map((b) => b.id), note: `${arabicPlural(list.length, BOOKING_FORMS)} دفعة واحدة` }); }}
-                          className="w-full text-[11px] font-black bg-[#3A6B4C] hover:bg-[#2D5A3F] text-white py-2 rounded-xl cursor-pointer transition-colors">حوّل الكل دفعة واحدة ({arabicNumber(total)} ج.م) ✓</button>
+                          className="w-full text-[11px] font-black bg-[#3A6B4C] hover:bg-[#2D5A3F] text-white min-h-11 rounded-xl cursor-pointer transition-colors">حوّل الكل دفعة واحدة ({arabicNumber(total)} ج.م) ✓</button>
                       )}
                     </div>
                   );
@@ -2552,12 +2561,12 @@ export default function AdminDashboard({
                           <div className="flex gap-1.5">
                             {p.status === 'pending' && (
                               <button type="button" onClick={() => onUpdatePayoutStatus(p.id, 'processing')}
-                                className="text-[12px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-2.5 py-1.5 rounded-lg cursor-pointer">بدء التحويل</button>
+                                className="text-[12px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-2.5 min-h-11.5 rounded-lg cursor-pointer">بدء التحويل</button>
                             )}
                             <button type="button" onClick={() => { if (confirm(`تأكيد تحويل ${arabicNumber(p.amount)} ج.م لـ${ownerName}؟`)) onUpdatePayoutStatus(p.id, 'completed'); }}
-                              className="text-[12px] font-bold bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg cursor-pointer">تم التحويل ✓</button>
+                              className="text-[12px] font-bold bg-emerald-600 text-white px-2.5 min-h-11.5 rounded-lg cursor-pointer">تم التحويل ✓</button>
                             <button type="button" onClick={() => { if (confirm('رفض طلب التحويل؟')) onUpdatePayoutStatus(p.id, 'rejected'); }}
-                              className="text-[12px] font-bold bg-white text-rose-700 border border-rose-200 px-2.5 py-1.5 rounded-lg cursor-pointer">رفض</button>
+                              className="text-[12px] font-bold bg-white text-rose-700 border border-rose-200 px-2.5 min-h-11.5 rounded-lg cursor-pointer">رفض</button>
                           </div>
                         )}
                       </div>
@@ -2802,7 +2811,7 @@ export default function AdminDashboard({
           <div className="bg-[#FAF8F5] max-w-lg w-full max-h-[90vh] overflow-y-auto rounded-3xl relative z-10 text-right">
             <div className="sticky top-0 bg-[#FAF8F5] border-b border-[#D6D6C2] px-5 py-3.5 flex items-center justify-between z-10">
               <h4 className="text-sm font-black text-[#2D2D24]">{detailUser.name}</h4>
-              <button onClick={() => setDetailUserId(null)} className="bg-white border border-[#D6D6C2] text-[#2D2D24] text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer">إغلاق ✕</button>
+              <button onClick={() => setDetailUserId(null)} className="bg-white border border-[#D6D6C2] text-[#2D2D24] text-xs font-bold px-3 min-h-11.5 rounded-xl cursor-pointer">إغلاق ✕</button>
             </div>
             <div className="p-5 space-y-4">
               {/* User info */}
@@ -2874,7 +2883,7 @@ export default function AdminDashboard({
               <button
                 id="lightbox-close-btn"
                 onClick={() => setSelectedProofImage(null)}
-                className="bg-white hover:bg-[#FAF8F5] border border-[#E7E5DB] text-[#2D2D24] text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer"
+                className="bg-white hover:bg-[#FAF8F5] border border-[#E7E5DB] text-[#2D2D24] text-xs font-bold px-3 min-h-11.5 rounded-xl cursor-pointer"
               >
                 إغلاق ✕
               </button>
@@ -2906,14 +2915,14 @@ export default function AdminDashboard({
                 {onUpdateHouse && editingHouseId !== previewHouse.id && (
                   <button
                     onClick={() => startEdit(previewHouse)}
-                    className="flex items-center gap-1 bg-white border border-[#D6D6C2] hover:bg-[#F0EDE6] text-[#4A4A3A] text-[11px] font-bold px-3 py-1.5 rounded-xl"
+                    className="flex items-center gap-1 bg-white border border-[#D6D6C2] hover:bg-[#F0EDE6] text-[#4A4A3A] text-[11px] font-bold px-3 min-h-11.5 rounded-xl"
                   >
                     <Pencil className="w-3.5 h-3.5" /> تعديل
                   </button>
                 )}
                 <button
                   onClick={() => { setPreviewHouseId(null); setEditingHouseId(null); }}
-                  className="bg-white hover:bg-[#F0EDE6] border border-[#D6D6C2] text-[#2D2D24] text-xs font-bold px-3 py-1.5 rounded-xl"
+                  className="bg-white hover:bg-[#F0EDE6] border border-[#D6D6C2] text-[#2D2D24] text-xs font-bold px-3 min-h-11.5 rounded-xl"
                 >
                   إغلاق ✕
                 </button>
@@ -2943,7 +2952,7 @@ export default function AdminDashboard({
                       return (
                         <button key={s} type="button"
                           onClick={() => setEditDraft((d) => ({ ...d, services: active ? list.filter((x) => x !== s) : [...list, s] }))}
-                          className={`text-[12px] font-bold py-1.5 px-2 rounded-lg border ${active ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white border-[#D6D6C2] text-[#4A4A3A]'}`}>
+                          className={`text-[12px] font-bold min-h-11.5 px-2 rounded-lg border ${active ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white border-[#D6D6C2] text-[#4A4A3A]'}`}>
                           {s}
                         </button>
                       );
@@ -2951,8 +2960,8 @@ export default function AdminDashboard({
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end pt-1">
-                  <button onClick={() => setEditingHouseId(null)} className="text-xs font-bold text-[#8A8A70] px-3 py-2">إلغاء</button>
-                  <button onClick={() => saveEdit(previewHouse)} className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 py-2 rounded-xl">
+                  <button onClick={() => setEditingHouseId(null)} className="text-xs font-bold text-[#8A8A70] px-3 min-h-11">إلغاء</button>
+                  <button onClick={() => saveEdit(previewHouse)} className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 min-h-11 rounded-xl">
                     حفظ التعديلات
                   </button>
                 </div>
