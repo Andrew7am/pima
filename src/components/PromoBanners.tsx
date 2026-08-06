@@ -199,7 +199,7 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live, edgeToEd
             {/* One left-aligned column: badge → headline → discount → line →
                 CTA. Vertically centred so the block never crowds either edge. */}
             <div className="absolute inset-y-0 left-0 z-10 flex flex-col justify-center items-start gap-3 pl-6 pr-10 pb-8 text-white text-right">
-              <span className="pima-rise inline-flex items-center gap-1.5 rounded-full bg-[#0A2342]/85 px-3 py-1.5 text-[10px] font-extrabold tracking-wide text-[#C5A059]">
+              <span className="pima-rise inline-flex items-center gap-1.5 rounded-full bg-[#0A2342]/85 px-3 py-1.5 text-[11px] font-extrabold tracking-wide text-[#C5A059]">
                 <Sparkles className="w-3 h-3" />
                 {s.badge}
               </span>
@@ -209,7 +209,7 @@ export function SummerOfferCarousel({ slides, onCta, onOpenHouse, live, edgeToEd
               </h2>
 
               {s.sub && (
-                <p className="pima-rise pima-rise-2 text-[12.5px] font-bold leading-relaxed text-white/90 max-w-[62%] drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
+                <p className="pima-rise pima-rise-2 text-[12px] font-bold leading-relaxed text-white/90 max-w-[62%] drop-shadow-[0_1px_4px_rgba(0,0,0,0.4)]">
                   {s.sub}
                 </p>
               )}
@@ -353,25 +353,25 @@ export function CountdownOfferBanner({ banner, onCta, onOpenHouse, live }: { ban
         : <div className="absolute inset-0" style={{ background: DEFAULT_COUNTDOWN.gradient }} />}
       <div className="absolute inset-0 p-4 flex flex-col justify-between text-right">
         <div className="flex justify-between items-center">
-          <span className="text-[8px] font-black bg-rose-600 text-white px-2 py-0.5 rounded-full animate-pulse">{badge}</span>
-          <span className="text-[10px] font-black text-amber-300">{discount}</span>
+          <span className="text-[11px] font-black bg-rose-600 text-white px-2 py-0.5 rounded-full animate-pulse">{badge}</span>
+          <span className="text-[11px] font-black text-amber-300">{discount}</span>
         </div>
 
         <div className="flex items-center justify-between mt-1">
           <div className="flex items-center gap-1" dir="ltr">
             <div className="flex flex-col items-center">
               <div className="bg-black/60 border border-white/20 rounded-lg w-7 h-7 flex items-center justify-center text-xs font-black text-white">{arabicNumber(timeLeft.seconds).padStart(2, '٠')}</div>
-              <span className="text-[6.5px] text-gray-300 font-bold mt-0.5">ثانية</span>
+              <span className="text-[11px] text-gray-300 font-bold mt-0.5">ثانية</span>
             </div>
             <span className="text-xs font-black text-white -mt-3">:</span>
             <div className="flex flex-col items-center">
               <div className="bg-black/60 border border-white/20 rounded-lg w-7 h-7 flex items-center justify-center text-xs font-black text-white">{arabicNumber(timeLeft.minutes).padStart(2, '٠')}</div>
-              <span className="text-[6.5px] text-gray-300 font-bold mt-0.5">دقيقة</span>
+              <span className="text-[11px] text-gray-300 font-bold mt-0.5">دقيقة</span>
             </div>
             <span className="text-xs font-black text-white -mt-3">:</span>
             <div className="flex flex-col items-center">
               <div className="bg-black/60 border border-white/20 rounded-lg w-7 h-7 flex items-center justify-center text-xs font-black text-white">{arabicNumber(timeLeft.hours).padStart(2, '٠')}</div>
-              <span className="text-[6.5px] text-gray-300 font-bold mt-0.5">ساعة</span>
+              <span className="text-[11px] text-gray-300 font-bold mt-0.5">ساعة</span>
             </div>
           </div>
 
@@ -379,7 +379,7 @@ export function CountdownOfferBanner({ banner, onCta, onOpenHouse, live }: { ban
             <BannerLinkIcons links={banner?.links} size="w-6 h-6" />
             {banner?.linkedHouseId && onOpenHouse ? (
               <button data-el="button" onClick={() => onOpenHouse(banner.linkedHouseId!)}
-                className="bg-[#C5A059] hover:bg-amber-600 text-[#0A2342] text-[10px] font-black px-4 py-2 rounded-xl shadow transition-all active:scale-95">
+                className="bg-[#C5A059] hover:bg-amber-600 text-[#0A2342] text-[11px] font-black px-4 min-h-11 rounded-xl shadow transition-all active:scale-95">
                 {cta}
               </button>
             ) : safeUrl(banner?.linkUrl) ? (
@@ -388,12 +388,12 @@ export function CountdownOfferBanner({ banner, onCta, onOpenHouse, live }: { ban
                 href={safeUrl(banner?.linkUrl)!}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
-                className="bg-[#C5A059] hover:bg-amber-600 text-[#0A2342] text-[10px] font-black px-4 py-2 rounded-xl shadow transition-all active:scale-95"
+                className="bg-[#C5A059] hover:bg-amber-600 text-[#0A2342] text-[11px] font-black px-4 min-h-11 rounded-xl shadow transition-all active:scale-95"
               >
                 {cta}
               </a>
             ) : (
-              <button data-el="button" onClick={onCta} className="bg-[#C5A059] hover:bg-amber-600 text-[#0A2342] text-[10px] font-black px-4 py-2 rounded-xl shadow transition-all active:scale-95">{cta}</button>
+              <button data-el="button" onClick={onCta} className="bg-[#C5A059] hover:bg-amber-600 text-[#0A2342] text-[11px] font-black px-4 min-h-11 rounded-xl shadow transition-all active:scale-95">{cta}</button>
             )}
           </div>
         </div>

@@ -136,7 +136,7 @@ export default function WebLayout({
             <span className="flex items-center gap-1.5 mt-1">
               <span aria-hidden="true" className="w-5 h-px bg-gradient-to-l from-[#C5A059]/55 to-transparent" />
               <span aria-hidden="true" className="w-[3px] h-[3px] rotate-45 bg-[#C5A059]/70" />
-              <span className="text-[9px] font-bold text-[#C5A059] tracking-[0.03em]">بيوت المؤتمرات والخلوات</span>
+              <span className="text-[11px] font-bold text-[#C5A059] tracking-[0.03em]">بيوت المؤتمرات والخلوات</span>
               <span aria-hidden="true" className="w-[3px] h-[3px] rotate-45 bg-[#C5A059]/70" />
               <span aria-hidden="true" className="w-5 h-px bg-gradient-to-r from-[#C5A059]/55 to-transparent" />
             </span>
@@ -152,7 +152,7 @@ export default function WebLayout({
               onClick={onRequireLogin}
               title="تسجيل الدخول / إنشاء حساب"
               aria-label="تسجيل الدخول أو إنشاء حساب"
-              className="relative z-10 flex items-center gap-1.5 bg-[var(--color-natural-primary)] hover:opacity-90 text-white text-[11px] font-bold px-3 py-2 rounded-full transition-all cursor-pointer shrink-0"
+              className="relative z-10 flex items-center gap-1.5 bg-[var(--color-natural-primary)] hover:opacity-90 text-white text-[11px] font-bold px-3 min-h-11 rounded-full transition-all cursor-pointer shrink-0"
             >
               <UserCircle className="w-4 h-4 shrink-0" />
               <span>دخول</span>
@@ -168,7 +168,7 @@ export default function WebLayout({
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[9px] flex items-center justify-center font-bold">
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[11px] flex items-center justify-center font-bold">
                     {arabicBadge(unreadCount)}
                   </span>
                 )}
@@ -191,14 +191,14 @@ export default function WebLayout({
                     <span className="font-bold text-sm text-[var(--color-natural-text)] flex items-center gap-1.5">
                       الإشعارات
                       {unreadCount > 0 && (
-                        <span className="text-[9px] font-black text-white bg-blue-500 rounded-full px-1.5 py-0.5">{unreadCount} جديد</span>
+                        <span className="text-[11px] font-black text-white bg-blue-500 rounded-full px-1.5 py-0.5">{unreadCount} جديد</span>
                       )}
                     </span>
                     <div className="flex gap-1">
                       <button
                         onClick={onMarkAllRead}
                         disabled={unreadCount === 0}
-                        className={`text-[10px] flex items-center gap-0.5 px-2 py-1 rounded-md transition-colors ${
+                        className={`text-[11px] flex items-center gap-0.5 px-2 py-1 rounded-md transition-colors ${
                           unreadCount === 0
                             ? 'text-[var(--color-natural-secondary)]/40 cursor-default'
                             : 'text-[var(--color-natural-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-natural-hover)]'
@@ -242,11 +242,11 @@ export default function WebLayout({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 mb-1">
                               <p className={`text-xs truncate ${!n.isRead ? 'font-black text-[var(--color-natural-text)]' : 'font-semibold text-[var(--color-natural-secondary)]'}`}>{n.title}</p>
-                              {!n.isRead && <span className="shrink-0 text-[8px] font-black text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full">جديد</span>}
+                              {!n.isRead && <span className="shrink-0 text-[11px] font-black text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full">جديد</span>}
                             </div>
                             {/* Arabic needs the looser leading to stay readable at this size. */}
                             <p className={`text-[11px] leading-[1.75] line-clamp-3 ${n.isRead ? 'text-[var(--color-natural-secondary)]/60' : 'text-[var(--color-natural-secondary)]'}`}>{n.message}</p>
-                            <span className="block mt-1 text-[9px] font-bold text-[var(--color-natural-secondary)]/60">{timeAgo(n.createdAt)}</span>
+                            <span className="block mt-1 text-[11px] font-bold text-[var(--color-natural-secondary)]/60">{timeAgo(n.createdAt)}</span>
                           </div>
                           {!n.isRead && (
                             <button
@@ -329,7 +329,7 @@ export default function WebLayout({
                 >
                   <Home className="w-6 h-6" />
                 </span>
-                <span className={`text-[9.5px] leading-tight whitespace-nowrap ${isActive ? 'font-black text-[var(--color-natural-text)]' : 'font-bold text-[var(--color-natural-secondary)]'}`}>
+                <span className={`text-[11px] leading-tight whitespace-nowrap ${isActive ? 'font-black text-[var(--color-natural-text)]' : 'font-bold text-[var(--color-natural-secondary)]'}`}>
                   {item.label}
                 </span>
               </button>
@@ -351,14 +351,14 @@ export default function WebLayout({
               <span className="relative">
                 {item.icon}
                 {badge > 0 && (
-                  <span className="absolute -top-1.5 -left-2 min-w-[15px] h-[15px] px-0.5 bg-red-500 text-white text-[8.5px] font-black rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1.5 -left-2 min-w-[15px] h-[15px] px-0.5 bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center">
                     {arabicBadge(badge)}
                   </span>
                 )}
               </span>
               {/* Never wrap: one tall tab among four short ones is what made
                   the bar look uneven. */}
-              <span className={`text-[9.5px] leading-tight whitespace-nowrap ${isActive ? 'font-black' : 'font-bold'}`}>
+              <span className={`text-[11px] leading-tight whitespace-nowrap ${isActive ? 'font-black' : 'font-bold'}`}>
                 {item.label}
               </span>
             </button>

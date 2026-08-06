@@ -61,7 +61,7 @@ export default function AnnouncementCarousel({ currentUser, announcements, house
       <div className={`relative h-full flex flex-col justify-end p-4 gap-1.5 ${slideCount > 1 ? 'pr-9 pl-9' : ''}`}>
         {activeAnnouncement ? (
           <>
-            <span className="text-[10px] text-[#EBEBE0] font-bold tracking-wider">📢 إعلان</span>
+            <span className="text-[11px] text-[#EBEBE0] font-bold tracking-wider">📢 إعلان</span>
             <h2 className="text-base font-black text-white leading-snug line-clamp-2">{activeAnnouncement.message}</h2>
             {linkedHouse && (
               <button
@@ -75,7 +75,7 @@ export default function AnnouncementCarousel({ currentUser, announcements, house
           </>
         ) : (
           <>
-            <span className="text-[10px] text-[#EBEBE0] font-bold tracking-wider">{currentUser ? `أهلاً بك يا ${currentUser.name} 🌾` : 'أهلاً بك في بيما 🌾'}</span>
+            <span className="text-[11px] text-[#EBEBE0] font-bold tracking-wider">{currentUser ? `أهلاً بك يا ${currentUser.name} 🌾` : 'أهلاً بك في بيما 🌾'}</span>
             <h2 className="text-base font-black text-white leading-snug">ابحث عن مكان خلوتك ومؤتمراتك القبطية بمصر</h2>
             <p className="text-[11px] text-[#DEDECB] font-medium leading-relaxed">مئات بيوت المؤتمرات والفنادق المسيحية المناسبة لكنائسنا وخدماتنا.</p>
           </>
