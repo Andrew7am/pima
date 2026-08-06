@@ -155,12 +155,19 @@ export default function OwnerOnboardingWizard({
   const [houseLng, setHouseLng] = useState<number | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState('');
-  const [pricePerNight, setPricePerNight] = useState(200);
+  // Empty, not a number the owner never chose.
+  //
+  // These opened at 200 and 1500, and canAdvance() only asks for "greater
+  // than zero" — which the default already satisfied. So an owner could tap
+  // through the first step without touching either field and publish a house
+  // priced at 200 a night as though they had said so. Same mistake as the
+  // random Cairo pin removed earlier, pointed at money.
+  const [pricePerNight, setPricePerNight] = useState<number | null>(null);
   // null, not 0, and matching the dashboard's field: a house that does not
   // take «يوم روحي» has no day rate at all, and 0 would read as free rather
   // than not offered — offersDayUse() requires a number above zero.
   const [dayUsePrice, setDayUsePrice] = useState<number | null>(null);
-  const [monthlyRent, setMonthlyRent] = useState(1500);
+  const [monthlyRent, setMonthlyRent] = useState<number | null>(null);
   // Only a floor for the case where no rooms are entered at all. Nothing sets
   // these any more: the rooms step is what decides the house's totals, and it
   // cannot be skipped on a house being created here.
@@ -186,7 +193,9 @@ export default function OwnerOnboardingWizard({
   const [rangeTo, setRangeTo] = useState(120);
   const [rangeBeds, setRangeBeds] = useState(2);
   const [rangeFloorIdx, setRangeFloorIdx] = useState(1);
-  const [rangePrice, setRangePrice] = useState('500');
+  // Blank too — this is the per-night price stamped onto every room the
+  // range generator creates, so a default here prices a whole floor.
+  const [rangePrice, setRangePrice] = useState('');
   const [rangeStatus, setRangeStatus] = useState<Room['status']>('available');
   const [showManualRoomForm, setShowManualRoomForm] = useState(false);
   // The name and facilities that turn a generated batch into a room type.
@@ -324,7 +333,7 @@ export default function OwnerOnboardingWizard({
 
   const canAdvance = (): boolean => {
     if (step === 'basics') {
-      const priceOk = isMonthly ? monthlyRent > 0 : pricePerNight > 0;
+      const priceOk = isMonthly ? (monthlyRent ?? 0) > 0 : (pricePerNight ?? 0) > 0;
       return !!(houseName.trim() && houseDesc.trim() && houseAddress.trim()) && priceOk;
     }
     if (step === 'photos') return images.length > 0;
@@ -373,13 +382,13 @@ export default function OwnerOnboardingWizard({
           // Left empty rather than filled with «غرف مجهزة ومريحة.» — the
           // owner writes their own description or the screen shows none.
           roomsDescription: '',
-          pricePerNightPerPerson: isMonthly ? 0 : pricePerNight,
+          pricePerNightPerPerson: isMonthly ? 0 : (pricePerNight ?? 0),
           // undefined, not 0 — the column is nullable and offersDayUse()
           // reads "no day bookings" from its absence. Monthly lets never
           // take day guests, so the field is not offered to them either.
           dayUsePricePerPerson: (!isMonthly && dayUsePrice) ? dayUsePrice : undefined,
           propertyType,
-          monthlyRent: isMonthly ? monthlyRent : undefined,
+          monthlyRent: isMonthly ? (monthlyRent ?? 0) : undefined,
           services: selectedServices,
           // No fallback. «مناسب للأسر» used to be written for an owner who
           // ticked nothing, which both put student and staff housing into the
@@ -638,14 +647,14 @@ export default function OwnerOnboardingWizard({
               {isMonthly ? (
                 <div>
                   <label htmlFor="ob-monthly-rent" className={LABEL_CLS}>الإيجار الشهري (جنيه)</label>
-                  <input id="ob-monthly-rent" type="number" min={0} value={monthlyRent} onChange={(e) => setMonthlyRent(Number(e.target.value))}
+                  <input id="ob-monthly-rent" type="number" min={1} placeholder="اكتب الإيجار" value={monthlyRent ?? ''} onChange={(e) => setMonthlyRent(e.target.value === '' ? null : Number(e.target.value))}
                     className={FIELD_CLS} />
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label htmlFor="onboarding-price-night" className={LABEL_CLS}>السعر لليلة للفرد (جنيه)</label>
-                    <input id="onboarding-price-night" type="number" min={1} value={pricePerNight} onChange={(e) => setPricePerNight(Number(e.target.value))}
+                    <input id="onboarding-price-night" type="number" min={1} placeholder="اكتب السعر" value={pricePerNight ?? ''} onChange={(e) => setPricePerNight(e.target.value === '' ? null : Number(e.target.value))}
                       className={FIELD_CLS} />
                   </div>
                   {/* «يوم روحي» — arrive and leave the same day. Asked here
@@ -1015,8 +1024,17 @@ export default function OwnerOnboardingWizard({
 
           {step === 'payment' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#5A5A40] font-black text-sm"><Wallet className="w-4 h-4" /> طريقة استلام الدفع</div>
-              <p className="text-[11px] text-[#8A8A70]">هتظهر للحجاز عشان يحوّلوا لك الفلوس مباشرة. أضف وسيلة واحدة على الأقل.</p>
+              {/* Said the opposite of what actually happens.
+                  It read «هتظهر للحجاز عشان يحوّلوا لك الفلوس مباشرة» — but
+                  under the collection model (migration 069) the guest pays
+                  PIMA, and these numbers are how Pima pays the owner out.
+                  They are never shown to a guest. An owner reading the old
+                  line would expect transfers that are never going to arrive. */}
+              <div className="flex items-center gap-2 text-[#5A5A40] font-black text-sm"><Wallet className="w-4 h-4" /> إزاي نحوّللك فلوسك</div>
+              <p className="text-[11px] text-[#8A8A70] leading-relaxed">
+                الحجاز بيدفعوا لبيما، وإحنا بنحوّللك نصيبك على الوسيلة اللي تختارها هنا.
+                الأرقام دي بتوصلنا إحنا بس — الحجاز مش بيشوفوها. أضف وسيلة واحدة على الأقل.
+              </p>
 
               {draftPayments.length > 0 && (
                 <div className="space-y-1.5">
@@ -1091,7 +1109,7 @@ export default function OwnerOnboardingWizard({
                       <span><span className="text-[#8A8A70] font-bold">الأسرّة: </span><span className="font-black">{effectiveBedsCount}</span></span>
                       <span>
                         <span className="text-[#8A8A70] font-bold">{isMonthly ? 'الإيجار الشهري: ' : 'السعر لليلة للفرد: '}</span>
-                        <span className="font-black">{arabicNumber(isMonthly ? monthlyRent : pricePerNight)} ج.م</span>
+                        <span className="font-black">{arabicNumber((isMonthly ? monthlyRent : pricePerNight) ?? 0)} ج.م</span>
                       </span>
                       {!isMonthly && (
                         <span>
