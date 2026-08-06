@@ -26,6 +26,9 @@ interface UserBookingsProps {
   houses: RetreatHouse[];
   currentUser: User;
   onCancelBooking?: (bookingId: string) => void;
+  // Set while a servant/owner account is still being verified. Browsing and
+  // requesting a booking stay open; paying is what verification protects.
+  awaitingVerification?: boolean;
   attendees: Attendee[];
   allocations: RoomAllocation[];
   rooms?: Room[];
@@ -171,6 +174,7 @@ export default function UserBookings({
   houses,
   currentUser,
   onCancelBooking,
+  awaitingVerification = false,
   attendees,
   allocations,
   rooms = [],
@@ -1079,14 +1083,26 @@ export default function UserBookings({
                           </span>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => { setIsPaying(booking.id); setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString()); }}
-                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12.5px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
-                      >
-                        <Wallet className="w-4 h-4" />
-                        ادفع العربون الآن · {Math.round(booking.totalPrice * settings.depositRate).toLocaleString('ar-EG')} ج.م
-                      </button>
+                      {/* Verification guards the till, not the front door. An
+                          unverified account can browse and request; the moment
+                          money is involved it waits for a human. */}
+                      {awaitingVerification ? (
+                        <div role="status" className="w-full rounded-2xl border border-[#E3CD9F] bg-[#FBF6E9] px-3 py-2.5 text-center">
+                          <p className="text-[11px] font-black text-[#8A6A28]">الدفع مقفول لحد ما نوثّق حسابك</p>
+                          <p className="text-[10px] font-medium text-[#6B6552] mt-0.5 leading-relaxed">
+                            حجزك محفوظ ومكانك متحجوز. ابعت صورة بطاقتك على واتساب الدعم وهنفتحلك الدفع.
+                          </p>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setIsPaying(booking.id); setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString()); }}
+                          className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12.5px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
+                        >
+                          <Wallet className="w-4 h-4" />
+                          ادفع العربون الآن · {arabicNumber(Math.round(booking.totalPrice * settings.depositRate))} ج.م
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -1584,7 +1600,10 @@ export default function UserBookings({
                        sheet, so the one thing they owe is never scrolled past.
                        Hidden while the transfer form itself is open — the form
                        has its own submit and two pay buttons would compete. ── */}
-                {stage === 'awaiting_deposit' && isPaying !== booking.id && (
+                {/* The sticky bar is a second door to the same payment. It has
+                    to carry the same lock, or the block above is decoration —
+                    which is exactly what the test caught. */}
+                {stage === 'awaiting_deposit' && isPaying !== booking.id && !awaitingVerification && (
                   <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm border-t border-[#EDE7DA] px-4 py-3 flex items-center gap-3">
                     <div className="shrink-0 leading-tight">
                       <span className="block text-[9px] font-bold text-[#8A8A70]">المتبقي للدفع</span>

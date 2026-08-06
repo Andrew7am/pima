@@ -119,3 +119,48 @@ describe('the deposit screen opens only where a deposit is actually owed', () =>
     });
   });
 });
+
+// Verification used to be a wall on the way in: a registered servant awaiting
+// review saw no houses and no prices, while a logged-out visitor saw both.
+// It now guards the one thing it actually protects — money leaving the guest.
+describe('an account still being verified', () => {
+  // The pay CTA lives inside an expanded card. Asserting on a collapsed one
+  // passes for the wrong reason: it finds nothing because nothing rendered.
+  const openCard = async () => {
+    const card = screen.getAllByText(/بيت تجريبي/)[0];
+    await userEvent.click(card);
+  };
+
+  it('cannot reach the deposit payment', async () => {
+    renderBookings({ bookings: [approved()], awaitingVerification: true });
+    await openCard();
+    expect(screen.queryByRole('button', { name: /ادفع العربون/ })).not.toBeInTheDocument();
+  });
+
+  it('is told why, and that the booking is still held', async () => {
+    renderBookings({ bookings: [approved()], awaitingVerification: true });
+    await openCard();
+    expect(screen.getByText(/الدفع مقفول لحد ما نوثّق حسابك/)).toBeInTheDocument();
+    expect(screen.getByText(/حجزك محفوظ/)).toBeInTheDocument();
+  });
+
+  // The whole point of the change: everything short of paying still works.
+  it('still sees its bookings rather than a dead end', async () => {
+    renderBookings({ bookings: [approved()], awaitingVerification: true });
+    expect(screen.getAllByText(/بيت تجريبي/).length).toBeGreaterThan(0);
+  });
+
+  it('gets the pay button back once verified', async () => {
+    renderBookings({ bookings: [approved()], awaitingVerification: false });
+    await openCard();
+    // Two doors lead to the same payment — the inline CTA and the sticky bar.
+    expect(screen.getAllByRole('button', { name: /ادفع العربون/ }).length).toBeGreaterThan(0);
+  });
+
+  it('never shows the block to a verified account', async () => {
+    renderBookings({ bookings: [approved()] });
+    await openCard();
+    expect(screen.queryByText(/الدفع مقفول/)).not.toBeInTheDocument();
+  });
+});
+

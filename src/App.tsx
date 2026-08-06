@@ -88,6 +88,7 @@ const ChatThreadScreen = lazy(() => import('./entertainment/ChatThreadScreen'));
 import ResetPasswordScreen from './components/ResetPasswordScreen';
 import CompleteProfileScreen from './components/CompleteProfileScreen';
 import PendingApprovalScreen from './components/PendingApprovalScreen';
+import VerificationBanner from './components/VerificationBanner';
 const OwnerOnboardingWizard = lazy(() => import('./components/OwnerOnboardingWizard'));
 import BannedScreen from './components/BannedScreen';
 const InteractiveMap = lazy(() => import('./components/InteractiveMap'));
@@ -1773,13 +1774,22 @@ export default function App() {
     return <BannedScreen currentUser={currentUser} onLogout={handleLogout} />;
   }
 
-  // Servant/owner accounts need admin review before they can use the app —
-  // grandfathered existing accounts are already 'approved' (migration 008),
-  // so this only affects new signups going forward.
-  const needsApproval = (currentUser.role === 'servant' || currentUser.role === 'owner') &&
+  // Servant and owner accounts are verified by a human before money can move.
+  // That check used to be a full-screen wall on the way in, which meant a
+  // registered servant saw LESS than a logged-out visitor: no houses, no
+  // prices, just a WhatsApp link. Signing up made the product worse.
+  //
+  // The verification now gates the till instead of the front door — see
+  // VerificationBanner. An unverified account browses and can send a booking
+  // request; it cannot pay a deposit, and an unverified owner's house stays
+  // unpublished (houses carry their own approval). Nothing is committed and
+  // no money moves before a human has looked, so the protection is the same.
+  const awaitingVerification =
+    (currentUser.role === 'servant' || currentUser.role === 'owner') &&
     currentUser.approvalStatus !== 'approved';
 
-  if (needsApproval) {
+  // A rejected account is a decision, not a queue — that one still stops here.
+  if (currentUser.approvalStatus === 'rejected') {
     return <PendingApprovalScreen currentUser={currentUser} onLogout={handleLogout} />;
   }
 
@@ -1863,6 +1873,10 @@ export default function App() {
         (b) => b.userId === currentUser.id && (b.status === 'pending' || (b.status === 'approved' && !b.depositPaid)),
       ).length : 0}
     >
+      {awaitingVerification && (
+        <VerificationBanner role={currentUser.role === 'owner' ? 'owner' : 'servant'} />
+      )}
+
       {/* Screen Routing & Render Logic */}
       <Suspense fallback={<ScreenFallback />}>
       {selectedHouse ? (
@@ -1929,6 +1943,7 @@ export default function App() {
           {activeScreen === 'bookings' && (
             // User bookings & quotes tracker
             <UserBookings
+            awaitingVerification={awaitingVerification}
               bookings={bookings}
               houses={houses}
               currentUser={currentUser}

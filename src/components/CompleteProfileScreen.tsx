@@ -30,7 +30,9 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
   const [error, setError] = useState('');
 
   const isChurchAffiliated = role === 'individual' || role === 'servant';
-  const needsOrgName = role === 'servant' || role === 'owner';
+  // The servant's organisation IS their church, so they answer once below and
+  // both fields are filled from it. Only an owner has a separate business name.
+  const needsOrgName = role === 'owner';
 
   // Minimum accepted age is 6 years old
   const minAgeDate = new Date();
@@ -62,7 +64,7 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
       dateOfBirth,
       governorate,
       address: address.trim() || undefined,
-      organizationName: needsOrgName ? orgName.trim() : undefined,
+      organizationName: needsOrgName ? orgName.trim() : (role === 'servant' ? churchName.trim() : undefined),
       churchName: isChurchAffiliated ? churchName.trim() : undefined,
       priestName: isChurchAffiliated ? priestName.trim() : undefined,
     });
@@ -157,7 +159,9 @@ export default function CompleteProfileScreen({ currentUser, onComplete }: Compl
             {isChurchAffiliated && (
               <>
                 <div>
-                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">اسم الكنيسة:</label>
+                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">
+                    {role === 'servant' ? 'اسم الكنيسة / أسرة الخدمة:' : 'اسم الكنيسة:'}
+                  </label>
                   <div className="relative">
                     <input type="text" required placeholder="مثال: كنيسة الأنبا أنطونيوس" value={churchName} onChange={(e) => setChurchName(e.target.value)}
                       className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none" />
