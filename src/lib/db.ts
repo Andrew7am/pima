@@ -30,6 +30,7 @@ export function mapUser(r: Record<string, unknown>): User {
     churchName: r.church_name as string ?? undefined,
     priestName: r.priest_name as string ?? undefined,
     isBanned: (r.is_banned as boolean) ?? false,
+    releasedAt: (r.released_at as string) ?? undefined,
     avatarUrl: r.avatar_url as string ?? undefined,
     // Pre-migration-079 rows have no column → undefined → treated as opted in.
     emailOptOut: (r.email_opt_out as boolean) ?? false,
@@ -1386,4 +1387,24 @@ export async function checkAchievements(): Promise<string[]> {
   const { data, error } = await supabase.rpc('check_achievements');
   if (error) { console.error('checkAchievements:', error); return []; }
   return (data as string[]) ?? [];
+}
+
+/**
+ * Release an account: hand its email back so the person can register again,
+ * anonymise the profile, and keep every booking, payment and review.
+ *
+ * Not a delete. public.users cascades to twenty-two tables including houses,
+ * bookings and payments — removing a house owner would take other guests'
+ * bookings and the money trail with them. See migration 107.
+ */
+export async function releaseUserAccount(userId: string): Promise<{ ok: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('admin_release_user', { target: userId });
+  if (error) {
+    console.error('releaseUserAccount:', error);
+    // The RPC raises Arabic messages for the cases an admin can actually hit
+    // (their own account, another admin, a missing row) — show those verbatim
+    // rather than a generic failure that hides which rule was broken.
+    return { ok: false, error: error.message };
+  }
+  return { ok: true, error: (data as { freed_email?: string } | null)?.freed_email };
 }

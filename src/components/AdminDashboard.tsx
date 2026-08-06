@@ -61,6 +61,8 @@ interface AdminDashboardProps {
   onToggleUserRole: (userId: string, newRole: User['role']) => void;
   onSuspendHouse?: (houseId: string, suspend: boolean) => void;
   onBanUser?: (userId: string, banned: boolean) => void;
+  /** Frees the email and anonymises the profile, keeping every record. */
+  onReleaseUser?: (userId: string) => Promise<boolean>;
   onCancelBooking?: (bookingId: string) => void;
   onDeleteReview?: (reviewId: string) => void;
   allocationsCount?: number;
@@ -130,7 +132,7 @@ export default function AdminDashboard({
   onRejectHouseEdit,
   onToggleUserRole,
   onSuspendHouse,
-  onBanUser,
+  onBanUser, onReleaseUser,
   onCancelBooking,
   onDeleteReview,
   allocationsCount = 0,
@@ -300,6 +302,7 @@ export default function AdminDashboard({
 
   // User detail view
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
+  const [releasingUserId, setReleasingUserId] = useState<string | null>(null);
 
   // Audit search & filter. The log is the only forensic tool in the panel and
   // it grew to hundreds of rows with no way to ask it anything — "who released
@@ -2023,6 +2026,29 @@ export default function AdminDashboard({
                       <button onClick={() => { if (usr.isBanned || confirm(`حظر "${usr.name}"؟`)) onBanUser?.(usr.id, !usr.isBanned); }}
                         className={`flex items-center gap-1 min-h-11 text-[11px] font-bold px-2 rounded-lg border cursor-pointer ${usr.isBanned ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-700'}`}>
                         <Ban className="w-3 h-3" /> {usr.isBanned ? 'رفع الحظر' : 'حظر'}
+                      </button>
+                    )}
+                    {/* Release, not delete. public.users cascades to bookings
+                        and payments, so a real delete would take other guests'
+                        records with it — see migration 107. */}
+                    {usr.role !== 'admin' && !usr.releasedAt && onReleaseUser && (
+                      <button
+                        onClick={async () => {
+                          if (!confirm(
+                            `حذف حساب "${usr.name}" نهائياً؟\n\n`
+                            + `• الإيميل (${usr.email}) هيتحرر فوراً ويقدر يسجّل حساب جديد بيه\n`
+                            + '• حجوزاته ودفعاته وتقييماته هتفضل زي ما هي باسم «مستخدم محذوف»\n'
+                            + '• أي جلسة مفتوحة ليه هتتقفل حالاً\n\n'
+                            + 'مش هينفع ترجع في القرار ده.',
+                          )) return;
+                          setReleasingUserId(usr.id);
+                          const ok = await onReleaseUser(usr.id);
+                          setReleasingUserId(null);
+                          if (ok) alert(`تم حذف الحساب. الإيميل ${usr.email} بقى متاح للتسجيل من جديد.`);
+                        }}
+                        disabled={releasingUserId === usr.id}
+                        className="flex items-center gap-1 min-h-11 text-[11px] font-bold px-2 rounded-lg border border-rose-300 bg-white text-rose-700 hover:bg-rose-50 cursor-pointer disabled:opacity-50">
+                        <Trash2 className="w-3 h-3" /> {releasingUserId === usr.id ? 'جاري الحذف…' : 'حذف الحساب'}
                       </button>
                     )}
                   </div>

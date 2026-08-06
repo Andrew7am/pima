@@ -149,6 +149,7 @@ createRoot(document.getElementById('root')!).render(
       onToggleUserRole={noop}
       onSuspendHouse={noop}
       onBanUser={noop}
+      onReleaseUser={async () => true}
       onCancelBooking={noop}
       onDeleteReview={noop}
       onVerifyPayment={noop}

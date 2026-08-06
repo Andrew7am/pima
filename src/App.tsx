@@ -11,7 +11,7 @@ import {
   loadHouses, deleteHouse, createHouse as createHouseDb, updateHouse as updateHouseDb, houseUpdatePayload as houseUpdatePayloadDb,
   loadBookings, loadReviews, loadReviewsForHouses, loadPayments, loadNotifications, subscribeToNotifications, loadPointsHistory,
   subscribeToBookingsForUser, subscribeToBookingsForHouse, subscribeToRoomsForHouse,
-  loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlistForHouses, loadPromoBanners, loadHouseImages,
+  loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlistForHouses, loadPromoBanners, loadHouseImages, releaseUserAccount,
   loadAttendeesForBooking, loadAllocationsForBooking, saveAttendeesForBooking, saveAllocationsForBooking, loadAllocationsCount,
   createBooking, updateBookingStatus, updateBookingFields, deleteBooking as deleteBookingDb,
   createReview, updateReview as updateReviewDb, deleteReview as deleteReviewDb, createPayment, updatePaymentStatus,
@@ -1400,6 +1400,18 @@ export default function App() {
     trackQuery(supabase.from('users').update({ is_banned: banned }).eq('id', userId), 'حظر / رفع الحظر عن المستخدم');
   };
 
+  // Release an account: the email goes back to the person so they can sign up
+  // again, the profile becomes «مستخدم محذوف», and their bookings/payments
+  // stay. Deliberately not a delete — see migration 107.
+  const handleReleaseUser = async (userId: string): Promise<boolean> => {
+    const { ok, error } = await releaseUserAccount(userId);
+    if (!ok) { alert(error || 'تعذر حذف الحساب. حاول مرة أخرى.'); return false; }
+    setUsers((prev) => prev.map((u) => (u.id === userId
+      ? { ...u, name: 'مستخدم محذوف', email: '', phone: '', isBanned: true, releasedAt: new Date().toISOString() }
+      : u)));
+    return true;
+  };
+
   // Self-service avatar update (any role) — used by ProfileScreen and, once
   // set, surfaced in the owner's Messages conversation list/thread.
   const handleUpdateAvatar = (avatarUrl: string) => {
@@ -2063,6 +2075,7 @@ export default function App() {
               onToggleUserRole={handleToggleUserRole}
               onSuspendHouse={handleSuspendHouse}
               onBanUser={handleBanUser}
+              onReleaseUser={handleReleaseUser}
               onCancelBooking={handleAdminCancelBooking}
               onDeleteReview={handleDeleteReview}
               allocationsCount={allocationsCount}

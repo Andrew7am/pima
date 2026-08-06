@@ -35,6 +35,8 @@ export interface User {
   churchName?: string;
   priestName?: string;
   isBanned?: boolean;
+  /** Set when an admin released the account: email handed back, records kept. */
+  releasedAt?: string;
   avatarUrl?: string;
   avatar?: string;            // entertainment: display avatar used by the ported games
   equippedAssists?: string[]; // entertainment: equipped in-match power-ups (SmartAssistBar)
