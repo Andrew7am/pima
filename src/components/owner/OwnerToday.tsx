@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { arabicNumber, arabicPlural, GUEST_FORMS } from '../../lib/arabic';
+import { arabicNumber, arabicPlural, arabicPercent, GUEST_FORMS } from '../../lib/arabic';
+import { occupancyRate, monthWindow } from '../../lib/occupancy';
 import { motion } from 'motion/react';
 import { RetreatHouse, Booking, Room } from '../../types';
 import { Sun, LogIn, LogOut, Sparkles, Banknote, Users, TrendingUp, TrendingDown, CheckCircle2, Wrench, ScanLine } from 'lucide-react';
@@ -48,23 +49,25 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
   // Current-month occupancy → a simple pricing nudge.
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth();
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
-  const mStart = new Date(y, m, 1), mEnd = new Date(y, m + 1, 0);
-  const occupiedDays = (() => {
-    const set = new Set<string>();
-    confirmed.forEach((b) => {
-      const s = new Date(b.checkIn) > mStart ? new Date(b.checkIn) : mStart;
-      const e = new Date(b.checkOut) < mEnd ? new Date(b.checkOut) : mEnd;
-      for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) set.add(d.toISOString().split('T')[0]);
-    });
-    return set.size;
-  })();
-  const occupancy = daysInMonth > 0 ? Math.round((occupiedDays / daysInMonth) * 100) : 0;
+  // This counted "days with ANY booking ÷ days in month" and called it
+  // occupancy — so a single guest booked across the month read 100% on a
+  // 40-bed house, and the pricing nudge below told the owner to RAISE prices
+  // on an almost empty house. It measures beds sold now (lib/occupancy), the
+  // same figure every other owner screen shows.
+  const totalBeds = rooms.length > 0
+    ? rooms.reduce((sum, r) => sum + r.bedsCount, 0)
+    : (house?.bedsCount ?? 0);
+  const occupancy = occupancyRate({
+    bookings,
+    bedsCount: totalBeds,
+    ...monthWindow(y, m),
+  });
   const monthLabel = now.toLocaleDateString('ar-EG', { month: 'long' });
-  const pricing = occupancy >= 70
-    ? { up: true, text: `إشغالك مرتفع هذا الشهر (${occupancy}%). فكّر في رفع السعر 10–15% لزيادة الأرباح.` }
+  const pricing = occupancy === null ? null
+    : occupancy >= 70
+    ? { up: true, text: `إشغالك مرتفع هذا الشهر (${arabicPercent(occupancy)}). فكّر في رفع السعر ${arabicPercent(10)}–${arabicPercent(15)} لزيادة الأرباح.` }
     : occupancy <= 30
-      ? { up: false, text: `إشغال ${monthLabel} منخفض (${occupancy}%). عرض أو خصم بسيط قد يملأ الغرف الفاضية.` }
+      ? { up: false, text: `إشغال ${monthLabel} منخفض (${arabicPercent(occupancy)}). عرض أو خصم بسيط قد يملأ الغرف الفاضية.` }
       : null;
 
   const dateLabel = new Date(todayStr).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });

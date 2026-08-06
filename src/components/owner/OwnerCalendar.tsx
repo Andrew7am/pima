@@ -40,7 +40,12 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
     if (blocked.has(ds)) blockedDays++;
     else if (bookingsOn(ds).length > 0) bookedDays++;
   }
-  const occupancyPct = daysCount > 0 ? Math.round((bookedDays / daysCount) * 100) : 0;
+  // Days with any booking ÷ days in the month. That is a calendar figure,
+  // not occupancy — a single guest fills a day here without filling a bed.
+  // It kept the word الإشغال and so contradicted the real occupancy shown one
+  // screen away; renamed rather than removed, because "how much of the month
+  // is spoken for" is exactly what someone looking at a calendar wants.
+  const bookedDaysPct = daysCount > 0 ? Math.round((bookedDays / daysCount) * 100) : 0;
 
   const shift = (delta: number) => {
     let m = month + delta, y = year;
@@ -85,9 +90,9 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
       {/* Month stats */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { label: 'إشغال الشهر', value: arabicPercent(occupancyPct), color: 'text-[var(--color-owner-primary)]' },
-          { label: 'أيام محجوزة', value: bookedDays, color: 'text-amber-600' },
-          { label: 'أيام مغلقة', value: blockedDays, color: 'text-rose-600' },
+          { label: 'محجوز من الشهر', value: arabicPercent(bookedDaysPct), color: 'text-[var(--color-owner-primary)]' },
+          { label: 'أيام محجوزة', value: arabicNumber(bookedDays), color: 'text-amber-600' },
+          { label: 'أيام مغلقة', value: arabicNumber(blockedDays), color: 'text-rose-600' },
         ].map((s) => (
           <div key={s.label} className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-2.5 text-center">
             <div className={`text-lg font-black ${s.color}`}>{s.value}</div>

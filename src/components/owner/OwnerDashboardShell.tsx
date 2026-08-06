@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { arabicNumber, arabicPlural, arabicDateRange, arabicBadge, arabicPercent, arabicUnit, arabicDecimal, GUEST_FORMS, ROOM_FORMS, BED_FORMS, REVIEW_FORMS, HOUSE_FORMS, TASK_FORMS, BOOKING_FORMS } from '../../lib/arabic';
+import { occupancyRate, monthWindow, bedsInUseOn } from '../../lib/occupancy';
 import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, RoomType, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification, Expense, Payout } from '../../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
 import {
@@ -306,21 +307,18 @@ export default function OwnerDashboardShell({
   const now = new Date();
   const curYear = now.getFullYear();
   const curMonth = now.getMonth() + 1;
-  const daysInMonth = new Date(curYear, curMonth, 0).getDate();
-  const totalHouseDays = ownerHouses.length * daysInMonth;
-  const occupiedDays = ownerBookings.reduce((sum, b) => {
-    if (b.status !== 'approved' && b.status !== 'completed') return sum;
-    const bStart = new Date(b.checkIn);
-    const bEnd = new Date(b.checkOut);
-    const monthStart = new Date(curYear, curMonth - 1, 1);
-    const monthEnd = new Date(curYear, curMonth, 0);
-    if (bEnd < monthStart || bStart > monthEnd) return sum;
-    const overlapStart = bStart > monthStart ? bStart : monthStart;
-    const overlapEnd = bEnd < monthEnd ? bEnd : monthEnd;
-    const days = Math.max(0, Math.round((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-    return sum + days;
-  }, 0);
-  const occupancyRate = totalHouseDays > 0 ? Math.round((occupiedDays / totalHouseDays) * 100) : 0;
+
+  // This used to divide booked *days* by (number of houses × days in month),
+  // which ignored both how many beds a house has and how many guests were in
+  // them — one guest booked all month read as a full house. lib/occupancy now
+  // holds the single definition every owner screen shows; see the note there
+  // on the four different numbers that all used to be called الإشغال.
+  const monthBeds = ownerHouses.reduce((sum, h) => sum + (h.bedsCount ?? 0), 0);
+  const occupancyPct = occupancyRate({
+    bookings: ownerBookings,
+    bedsCount: monthBeds,
+    ...monthWindow(curYear, curMonth - 1),
+  });
 
   const ownerReviews = reviews.filter((r) => ownerHouseIds.includes(r.houseId));
   const avgRating = ownerReviews.length > 0 ? (ownerReviews.reduce((sum, r) => sum + r.rating, 0) / ownerReviews.length) : 0;
@@ -803,7 +801,11 @@ export default function OwnerDashboardShell({
 
         const totalRooms = ownerRooms.length;
         const totalBeds = ownerRooms.length > 0 ? ownerRooms.reduce((s, r) => s + r.bedsCount, 0) : (house?.bedsCount ?? 0);
-        const occupiedBedsNow = todayBookings.reduce((s, b) => s + b.guestsCount, 0);
+        // Beds slept in tonight — a staffing number, not a performance one.
+        // Shares one definition with every other screen (lib/occupancy) so
+        // "occupied" cannot quietly mean something different here.
+        const occupiedBedsNow = bedsInUseOn(ownerBookings, todayStr);
+        const todayOccupancy = totalBeds > 0 ? Math.round((occupiedBedsNow / totalBeds) * 100) : null;
         const roomBedStates = ownerRooms.map((r) => getRoomBedState(r, allocations, ownerBookings, todayStr));
         const roomStatusCounts = {
           available: roomBedStates.filter((s) => s === 'available').length,
@@ -884,10 +886,10 @@ export default function OwnerDashboardShell({
                     <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                       <circle cx="50" cy="50" r="40" fill="none" stroke="var(--color-owner-hover)" strokeWidth="11" />
                       <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" strokeWidth="11" strokeLinecap="round"
-                        strokeDasharray={`${(occupancyRate / 100) * 251.2} 251.2`} />
+                        strokeDasharray={`${((todayOccupancy ?? 0) / 100) * 251.2} 251.2`} />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-sm font-black text-[var(--color-owner-text)]">{arabicPercent(occupancyRate)}</span>
+                      <span className="text-sm font-black text-[var(--color-owner-text)]">{todayOccupancy === null ? '—' : arabicPercent(todayOccupancy)}</span>
                     </div>
                   </div>
                   <div>
@@ -2381,7 +2383,7 @@ export default function OwnerDashboardShell({
 
       {/* Overflow: Reports */}
       {activeTab === 'reports' && (
-        <OwnerReports ownerBookings={ownerBookings} ownerReviews={ownerReviews} confirmedRevenue={confirmedRevenue} platformCommissionAmount={platformCommissionAmount} netOwnerPayout={netOwnerPayout} occupancyRate={occupancyRate} avgRating={avgRating} />
+        <OwnerReports ownerBookings={ownerBookings} ownerReviews={ownerReviews} confirmedRevenue={confirmedRevenue} platformCommissionAmount={platformCommissionAmount} netOwnerPayout={netOwnerPayout} occupancyRate={occupancyPct ?? 0} avgRating={avgRating} />
       )}
 
       {/* Primary: Food Menu (in the bottom nav) */}
