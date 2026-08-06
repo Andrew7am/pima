@@ -68,12 +68,14 @@ const APP_HANDOFF_MS = 1200;
  * still on screen after a moment, the hand-off did not happen. Leaving the
  * app cancels it, because the page is hidden by then.
  */
-export async function shareToWhatsApp(text: string, to?: string): Promise<void> {
+export type ShareOutcome = 'opened' | 'copied' | 'failed';
+
+export async function shareToWhatsApp(text: string, to?: string): Promise<ShareOutcome> {
   const waMe = whatsAppShareUrl(text, to);
 
   if (!Capacitor.isNativePlatform()) {
     window.open(waMe, '_blank', 'noopener,noreferrer');
-    return;
+    return 'opened';
   }
 
   const digits = to ? to.replace(/[^0-9]/g, '') : '';
@@ -88,12 +90,27 @@ export async function shareToWhatsApp(text: string, to?: string): Promise<void> 
 
   window.location.href = scheme;
 
-  setTimeout(() => {
-    document.removeEventListener('visibilitychange', markHandedOff);
-    window.removeEventListener('pagehide', markHandedOff);
-    if (handedOff || document.visibilityState === 'hidden') return;
-    // WhatsApp did not take it. A Custom Tab on wa.me at least gives the
-    // sender somewhere to go, rather than a button that did nothing.
-    void openExternal(waMe);
-  }, APP_HANDOFF_MS);
+  await new Promise((resolve) => setTimeout(resolve, APP_HANDOFF_MS));
+  document.removeEventListener('visibilitychange', markHandedOff);
+  window.removeEventListener('pagehide', markHandedOff);
+  if (handedOff || document.visibilityState === 'hidden') return 'opened';
+
+  // The hand-off did not happen, and on an APK built before the manifest
+  // declared <queries> it never will — Android will not let this app see
+  // WhatsApp, so nothing it tries can reach it.
+  //
+  // So stop trying to leave and make the button useful where it stands: put
+  // the invitation on the clipboard. Pasting it into WhatsApp by hand is one
+  // extra step, and it works on every build, today, with no rebuild and no
+  // permission. A button that always does something beats a button that
+  // silently does nothing.
+  try {
+    await navigator.clipboard.writeText(text);
+    return 'copied';
+  } catch {
+    // Clipboard refused too — fall back to a browser tab on wa.me, which at
+    // least puts the message somewhere the sender can act on.
+    await openExternal(waMe);
+    return 'failed';
+  }
 }

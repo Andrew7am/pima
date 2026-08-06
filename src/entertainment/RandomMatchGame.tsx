@@ -336,7 +336,10 @@ export default function RandomMatchGame({
    * ended in `https://yourapp.com/download`, a placeholder nobody ever
    * replaced, so anyone who did receive it got a dead link.
    */
-  const shareViaWhatsApp = (code: string) => {
+  /** What the last invite attempt did, so the button can say so. */
+  const [shareNote, setShareNote] = useState<string | null>(null);
+
+  const shareViaWhatsApp = async (code: string) => {
     const message = [
       '🎮 تعالى نلعب مع بعض على بيما!',
       '',
@@ -346,7 +349,15 @@ export default function RandomMatchGame({
       '',
       SITE_URL,
     ].join('\n');
-    void shareToWhatsApp(message);
+    setShareNote(null);
+    const outcome = await shareToWhatsApp(message);
+    // Only worth saying something when WhatsApp did NOT take over — if it
+    // did, the player is already in WhatsApp and will never see this.
+    if (outcome === 'copied') {
+      setShareNote('الدعوة اتنسخت — افتح واتساب والصقها.');
+    } else if (outcome === 'failed') {
+      setShareNote('مقدرناش نفتح واتساب. انسخ كود الغرفة وابعته بنفسك.');
+    }
   };
 
   useEffect(() => {
@@ -1341,6 +1352,12 @@ export default function RandomMatchGame({
                     <MessageSquare className="w-5 h-5" />
                     <span>دعوة عبر واتساب</span>
                   </motion.button>
+
+                  {shareNote && (
+                    <p className="text-[10px] font-bold text-amber-300 text-center leading-relaxed px-2">
+                      {shareNote}
+                    </p>
+                  )}
                 </div>
               </div>
 
