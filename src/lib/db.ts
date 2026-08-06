@@ -57,6 +57,11 @@ export function mapHouse(r: Record<string, unknown>): RetreatHouse {
     suitability: (r.suitability as RetreatHouse['suitability']) ?? [],
     activities: (r.activities as string[]) ?? [],
     images: (r.images as string[]) ?? [],
+    // images_count only comes from the houses_list view. Reading a row straight
+    // from public.houses means the full set is present, so the count is the
+    // length and the row is hydrated.
+    imagesCount: (r.images_count as number) ?? ((r.images as string[]) ?? []).length,
+    imagesHydrated: r.images_count === undefined,
     conferenceHalls: (r.conference_halls as RetreatHouse['conferenceHalls']) ?? [],
     restaurants: (r.restaurants as RetreatHouse['restaurants']) ?? [],
     paymentMethods: (r.payment_methods as RetreatHouse['paymentMethods']) ?? [],
@@ -357,8 +362,34 @@ const HOUSE_PUBLIC_COLUMNS =
   'day_use_price_per_person,' +
   'room_capacity,housing_rules,contract_terms,menu,image_descriptions,pending_edit';
 
+/**
+ * Every house, with ONE photo each.
+ *
+ * Reads the houses_list view (migration 106) rather than the table: browsing
+ * used to pull the complete base64 photo set of every house, which is what put
+ * egress at 2.789 GB on sixteen users. The rest of a house's photos arrive from
+ * loadHouseImages() when somebody actually opens it.
+ *
+ * A house from here carries imagesHydrated: false, and houseUpdatePayload
+ * refuses to write images for such a row — otherwise saving a price would
+ * delete the owner's photos.
+ */
 export async function loadHouses(includePaymentMethods = false): Promise<RetreatHouse[]> {
-  let { data, error } = await supabase.from('houses').select(HOUSE_PUBLIC_COLUMNS).order('created_at');
+  // The view and the table return different row shapes, so both are widened to
+  // the same thing the mapper already takes.
+  type Row = Record<string, unknown>;
+  const first = await supabase.from('houses_list')
+    .select(`${HOUSE_PUBLIC_COLUMNS},images_count`).order('created_at');
+  let data = first.data as unknown as Row[] | null;
+  let error = first.error;
+  if (error) {
+    // A deploy can land before its migration; fall back to the table so the
+    // site still works — heavy, but correct, and it says so in the console.
+    console.error('loadHouses (view missing, falling back to full images):', error);
+    const table = await supabase.from('houses').select(HOUSE_PUBLIC_COLUMNS).order('created_at');
+    data = table.data as unknown as Row[] | null;
+    error = table.error;
+  }
   if (error) {
     // PostgREST rejects the WHOLE select when one column is missing, so a
     // deploy that lands before its migration would empty the entire site
@@ -371,10 +402,12 @@ export async function loadHouses(includePaymentMethods = false): Promise<Retreat
     const fallbackColumns = HOUSE_PUBLIC_COLUMNS
       .replace('nearby_landmark,', '')
       .replace('day_use_price_per_person,', '');
-    ({ data, error } = await supabase.from('houses').select(fallbackColumns).order('created_at'));
+    const retry = await supabase.from('houses').select(fallbackColumns).order('created_at');
+    data = retry.data as unknown as Row[] | null;
+    error = retry.error;
     if (error) { console.error('loadHouses (fallback):', error); return []; }
   }
-  const houses = ((data ?? []) as unknown as Record<string, unknown>[]).map(mapHouse); // paymentMethods defaults to []
+  const houses = (data ?? []).map(mapHouse); // paymentMethods defaults to []
   if (includePaymentMethods) {
     // Owner/admin get their own houses' payout numbers merged back in.
     const merge = (rows: { house_id?: string; id?: string; payment_methods: RetreatHouse['paymentMethods'] }[]) => {
@@ -470,10 +503,33 @@ export async function createHouse(h: RetreatHouse): Promise<boolean> {
   return true;
 }
 
+/**
+ * The complete photo set for one house.
+ *
+ * List screens hold only the cover (migration 106). Call this before showing
+ * a gallery, and before ANY screen that lets somebody edit the photos — the
+ * result is what makes a house safe to write back.
+ */
+export async function loadHouseImages(houseId: string): Promise<string[] | null> {
+  const { data, error } = await supabase
+    .from('houses').select('images').eq('id', houseId).single();
+  if (error) { console.error('loadHouseImages:', error); return null; }
+  return ((data?.images as string[]) ?? []);
+}
+
 // Shared column mapping so a full house update (owner form) and an
 // approved pending-edit merge (admin) never drift out of sync again.
 export function houseUpdatePayload(h: RetreatHouse) {
+  // A house that came from the list view holds ONE photo. Writing that back
+  // would delete every other photo the owner uploaded — while they were only
+  // trying to change a price. So the column is left out entirely unless the
+  // caller has fetched the full set. Omitting is right rather than throwing:
+  // the rest of the save is still valid and should still happen.
+  const imageFields = h.imagesHydrated
+    ? { images: h.images, image_descriptions: h.imageDescriptions ?? {} }
+    : {};
   return {
+    ...imageFields,
     name: h.name, description: h.description,
     governorate: h.governorate,
     address: h.address, lat: h.lat, lng: h.lng,
@@ -481,8 +537,6 @@ export function houseUpdatePayload(h: RetreatHouse) {
     rooms_description: h.roomsDescription,
     price_per_night_per_person: h.pricePerNightPerPerson,
     day_use_price_per_person: h.dayUsePricePerPerson ?? null,
-    images: h.images,
-    image_descriptions: h.imageDescriptions ?? {},
     blocked_dates: h.blockedDates ?? [],
     services: h.services, activities: h.activities, suitability: h.suitability,
     conference_halls: h.conferenceHalls, restaurants: h.restaurants,

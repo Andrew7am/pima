@@ -11,7 +11,7 @@ import {
   loadHouses, deleteHouse, createHouse as createHouseDb, updateHouse as updateHouseDb, houseUpdatePayload as houseUpdatePayloadDb,
   loadBookings, loadReviews, loadReviewsForHouses, loadPayments, loadNotifications, subscribeToNotifications, loadPointsHistory,
   subscribeToBookingsForUser, subscribeToBookingsForHouse, subscribeToRoomsForHouse,
-  loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlistForHouses, loadPromoBanners,
+  loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlistForHouses, loadPromoBanners, loadHouseImages,
   loadAttendeesForBooking, loadAllocationsForBooking, saveAttendeesForBooking, saveAllocationsForBooking, loadAllocationsCount,
   createBooking, updateBookingStatus, updateBookingFields, deleteBooking as deleteBookingDb,
   createReview, updateReview as updateReviewDb, deleteReview as deleteReviewDb, createPayment, updatePaymentStatus,
@@ -699,9 +699,23 @@ export default function App() {
   // server-side by house_id — see loadAppData) are fetched lazily rather
   // than for every login: one house's worth when its detail page opens, and
   // every house the owner runs when they open their dashboard.
+  // Houses arrive from the list view carrying one photo each (migration 106).
+  // This fetches the rest for one house and marks it hydrated — which is also
+  // what allows its photos to be written back at all; see houseUpdatePayload.
+  const hydrateHouseImages = useCallback(async (houseId: string) => {
+    const images = await loadHouseImages(houseId);
+    if (!images) return;
+    const apply = (h: RetreatHouse) => (h.id === houseId
+      ? { ...h, images, imagesCount: images.length, imagesHydrated: true } : h);
+    setHouses((prev) => prev.map(apply));
+    setSelectedHouse((prev) => (prev && prev.id === houseId ? apply(prev) : prev));
+  }, []);
+
   useEffect(() => {
     if (!selectedHouse) return;
     const houseId = selectedHouse.id;
+    // Opening a house is the moment its gallery is worth paying for.
+    if (!selectedHouse.imagesHydrated) hydrateHouseImages(houseId);
     Promise.all([
       loadRoomsForHouses([houseId]), loadAnnouncementsForHouses([houseId]),
       loadReviewsForHouses([houseId]), loadWaitlistForHouses([houseId]),
@@ -721,6 +735,11 @@ export default function App() {
     if (!housesLoaded) return; // wait for loadAppData's houses fetch before deriving ownerHouseIds from it
     const ownerHouseIds = houses.filter((h) => h.ownerId === currentUser.id).map((h) => h.id);
     if (ownerHouseIds.length === 0) { setOwnerRoomsChecked(true); return; }
+    // An owner edits their own photos, so their houses must hold the full set
+    // before the house page opens — otherwise adding one photo would be built
+    // on top of a one-photo array and drop the rest.
+    houses.filter((h) => ownerHouseIds.includes(h.id) && !h.imagesHydrated)
+      .forEach((h) => hydrateHouseImages(h.id));
     Promise.all([
       loadRoomsForHouses(ownerHouseIds), loadAnnouncementsForHouses(ownerHouseIds),
       loadReviewsForHouses(ownerHouseIds), loadWaitlistForHouses(ownerHouseIds), loadExpensesForHouses(ownerHouseIds),

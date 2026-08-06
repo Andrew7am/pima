@@ -430,6 +430,13 @@ export default function OwnerDashboardShell({
 
     if (ownerHouses.length >= 1) {
       const existing = ownerHouses[0];
+      // The photo set arrives a moment after the list does (migration 106).
+      // Submitting before it would send a one-photo array as the new gallery
+      // and lose the rest on approval — so this waits rather than guesses.
+      if (existing.imagesHydrated === false) {
+        alert('صور البيت لسه بتتحمّل. استنى ثانية وحاول تاني.');
+        return;
+      }
       const base = getEditBase(existing);
       const updatedImages = imageUrl && imageUrl !== base.images[0] ? [imageUrl, ...base.images.slice(1)] : base.images;
       requestHouseEdit(existing, {
@@ -2342,7 +2349,15 @@ export default function OwnerDashboardShell({
                   <span>إدارة صور الغرف والخدمات والمباني 📸</span>
                   <span className="text-[11px] text-[var(--color-owner-secondary)]">{expandedPhotosForHouse === house.id ? 'إخفاء الصور ▲' : 'إضافة وعرض الصور ▼'}</span>
                 </button>
-                {expandedPhotosForHouse === house.id && (
+                {/* Browse screens hold ONE photo per house (migration 106) and
+                    the full set arrives a moment later. Editing before it does
+                    would build the new list on top of a one-photo array and
+                    delete the rest, so the editor waits rather than races. */}
+                {expandedPhotosForHouse === house.id && house.imagesHydrated === false ? (
+                  <div className="p-4 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl text-center text-[12px] font-bold text-[var(--color-owner-secondary)]">
+                    جاري تحميل صور البيت…
+                  </div>
+                ) : expandedPhotosForHouse === house.id && (
                   <div className="p-3 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl space-y-3 text-right">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <div>

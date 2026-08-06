@@ -102,6 +102,20 @@ export interface RetreatHouse {
   restaurants: Restaurant[];
   activities: string[]; // ["مسرح", "ألعاب ترفيهية", "مساحة خضراء", "بينج بونج وبلياردو", "سينما"]
   images: string[];
+  /**
+   * How many photos this house actually has. List screens receive only the
+   * cover (see migration 106), so `images.length` there is 1 no matter how
+   * many exist — this is the real count.
+   */
+  imagesCount?: number;
+  /**
+   * True only when `images` holds the COMPLETE set, fetched by id.
+   *
+   * Nothing may write `images` back to the database while this is false: the
+   * house came from the list view holding one photo, and saving it would
+   * delete the rest. houseUpdatePayload enforces that by omitting the column.
+   */
+  imagesHydrated?: boolean;
   status: 'pending' | 'approved' | 'rejected' | 'suspended';
   rating: number;
   reviewsCount: number;
