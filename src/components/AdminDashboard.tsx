@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS } from '../lib/arabic';
+import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
 // Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
 // to the singular. The counted nouns live in lib/arabic alongside the rule
 // itself, so the owner screens and this one cannot drift into two different
@@ -28,6 +29,23 @@ import HouseDetail from './HouseDetail';
 import { AMENITIES_LIST } from '../mockData';
 import { loadBookingMessages } from '../lib/bookingMessages';
 import { BookingMessage } from '../types';
+
+/** One labelled row with a proportional bar — used by the audience panel. */
+function DemoBar({ label, count, pct, tint }: { label: string; count: number; pct: number; tint: string }) {
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-bold text-[#4A4A3A] truncate">{label}</span>
+        <span className="text-[11px] font-bold text-[#8A8A70] shrink-0 tabular-nums">
+          {arabicNumber(count)} · {arabicNumber(pct)}٪
+        </span>
+      </div>
+      <div className="h-1.5 w-full bg-[#EBEBE0] rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${tint}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
 
 interface AdminDashboardProps {
   currentUser: User;
@@ -579,6 +597,16 @@ export default function AdminDashboard({
   ].filter((a) => a.count > 0);
 
   const totalPending = actionQueue.reduce((s, a) => s + a.count, 0);
+
+  // Recomputed only when the user list changes — the period filter above
+  // deliberately does not apply: this is who the audience IS, not what
+  // they did in a window.
+  const demo = React.useMemo(() => ({
+    govs: byGovernorate(users),
+    ages: byAgeBand(users),
+    median: medianAge(users),
+    coverage: coverage(users),
+  }), [users]);
 
   const goTo = (section: typeof navSection, tab: typeof activeTab) => {
     setNavSection(section);
@@ -1932,6 +1960,78 @@ export default function AdminDashboard({
                 <input type="date" value={finTo} onChange={(e) => setFinTo(e.target.value)} className="flex-1 bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
               </div>
             )}
+          </div>
+
+          {/* Who the users are.
+              Governorate and date of birth are both required at signup, so
+              this reports what people entered rather than estimating. There
+              is no gender breakdown because gender is not collected for
+              users at all — it exists only on Attendee, the people a group
+              leader registers onto a booking, which is a different
+              population. Every unrecorded value is counted as «غير محدد»
+              rather than dropped: dropping them would shrink the denominator
+              and make every share look larger than it is. */}
+          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#5A5A40]" />
+                <span className="text-[12px] font-black text-[#4A4A3A]">مين بيستخدم بيما</span>
+              </div>
+              <span className="text-[11px] font-bold text-[#8A8A70]">
+                {arabicNumber(demo.coverage.total)} مستخدم
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-[#FAF8F5] rounded-2xl p-3">
+                <div className="text-[11px] font-bold text-[#8A8A70]">متوسط السن</div>
+                <div className="text-lg font-black text-[#4A4A3A]">
+                  {demo.median === null ? '—' : `${arabicNumber(demo.median)} سنة`}
+                </div>
+                <div className="text-[11px] text-[#8A8A70]">
+                  من {arabicNumber(demo.coverage.age)} مسجّل تاريخ ميلادهم
+                </div>
+              </div>
+              {/* The top slice is only a governorate if it is a named one.
+                  byGovernorate sorts «غير محدد» last, so govs[0] is only
+                  UNKNOWN when nobody recorded one at all — and then its
+                  percentage describes the missing data, not a place. Reading
+                  it out under a dash would say «—» and «١٠٠٪ من المستخدمين»
+                  in the same breath. */}
+              {(() => {
+                const top = demo.govs.find((g) => g.label !== 'غير محدد');
+                return (
+                  <div className="bg-[#FAF8F5] rounded-2xl p-3">
+                    <div className="text-[11px] font-bold text-[#8A8A70]">أكتر محافظة</div>
+                    <div className="text-lg font-black text-[#4A4A3A] truncate">{top ? top.label : '—'}</div>
+                    <div className="text-[11px] text-[#8A8A70]">
+                      {top
+                        ? `${arabicNumber(top.pct)}٪ من المستخدمين`
+                        : 'مفيش محافظات مسجّلة'}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-[11px] font-black text-[#8A8A70]">الفئات العمرية</div>
+              {demo.ages.map((s) => (
+                <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[#5A5A40]" />
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-[11px] font-black text-[#8A8A70]">المحافظات</div>
+              {demo.govs.slice(0, 8).map((s) => (
+                <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[#0A2342]" />
+              ))}
+              {demo.govs.length > 8 && (
+                <p className="text-[11px] text-[#8A8A70]">
+                  و{arabicNumber(demo.govs.length - 8)} محافظة أخرى.
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Collected vs Expected — side by side */}
