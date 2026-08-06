@@ -91,7 +91,7 @@ export default function OwnerScanner({ open, onClose, bookings, onCheckIn }: Own
         <div className="flex-1 flex flex-col items-center justify-center gap-3 text-white p-6 text-center">
           <div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center"><CheckCircle2 className="w-8 h-8" /></div>
           <div className="text-base font-black">تم تسجيل وصول {done.organizationName || done.userName} ✓</div>
-          <button type="button" onClick={onClose} className="mt-2 bg-white text-[#101B33] text-xs font-black px-5 py-2.5 rounded-2xl">تمام</button>
+          <button type="button" onClick={onClose} className="mt-2 bg-white text-[#101B33] text-xs font-black px-5 min-h-11.5 rounded-2xl">تمام</button>
         </div>
       ) : manual ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6">
@@ -99,9 +99,9 @@ export default function OwnerScanner({ open, onClose, bookings, onCheckIn }: Own
           <p className="text-white/80 text-[12px] font-bold text-center">{supported ? 'أدخل رقم الحجز يدويًا:' : 'المسح غير مدعوم على هذا المتصفح — أدخل رقم الحجز يدويًا:'}</p>
           <input type="text" value={manualCode} onChange={(e) => setManualCode(e.target.value)} placeholder="رقم الحجز — PM-XXXXX"
             className="w-full max-w-xs bg-white/10 border border-white/20 rounded-2xl px-4 py-3 text-white text-center outline-none placeholder-white/40" />
-          {error && <p className="text-rose-300 text-[11px] font-bold">{error}</p>}
+          {error && <p className="text-rose-300 text-[12px] font-bold">{error}</p>}
           <button type="button" onClick={submitManual} disabled={!manualCode.trim()} className="bg-emerald-500 disabled:opacity-40 text-white text-xs font-black px-6 py-3 rounded-2xl">تسجيل وصول</button>
-          {supported && <button type="button" onClick={() => { setManual(false); setError(''); }} className="text-white/70 text-[11px] font-bold underline">العودة للكاميرا</button>}
+          {supported && <button type="button" onClick={() => { setManual(false); setError(''); }} className="text-white/70 text-[12px] font-bold underline">العودة للكاميرا</button>}
         </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center p-6 gap-3">
@@ -110,8 +110,8 @@ export default function OwnerScanner({ open, onClose, bookings, onCheckIn }: Own
             <div className="absolute inset-8 border-2 border-white/80 rounded-2xl" />
           </div>
           <p className="text-white/80 text-[12px] font-bold text-center">وجّه الكاميرا نحو رمز QR الخاص بالضيف</p>
-          {error && <p className="text-rose-300 text-[11px] font-bold">{error}</p>}
-          <button type="button" onClick={() => setManual(true)} className="flex items-center gap-1 text-white/80 text-[11px] font-bold underline"><Keyboard className="w-3.5 h-3.5" /> إدخال يدوي</button>
+          {error && <p className="text-rose-300 text-[12px] font-bold">{error}</p>}
+          <button type="button" onClick={() => setManual(true)} className="flex items-center gap-1 text-white/80 text-[12px] font-bold underline"><Keyboard className="w-3.5 h-3.5" /> إدخال يدوي</button>
         </div>
       )}
     </div>

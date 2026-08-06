@@ -68,19 +68,19 @@ export default function OwnerCustomers({ bookings, reviews = [], users = [], onO
         <h2 className="text-base font-black text-[var(--color-owner-text)] flex items-center gap-1.5">
           <Users className="w-4.5 h-4.5 text-[var(--color-owner-primary)]" /> العملاء ({arabicNumber(customers.length)})
         </h2>
-        <p className="text-[11px] text-[var(--color-owner-secondary)] mt-0.5">سجل ضيوفك وتاريخ إقامتهم — اضغط لعرض الملف الكامل.</p>
+        <p className="text-[12px] text-[var(--color-owner-secondary)] mt-0.5">سجل ضيوفك وتاريخ إقامتهم — اضغط لعرض الملف الكامل.</p>
       </div>
 
       <div className="relative">
         <Search className="w-4 h-4 text-[var(--color-owner-secondary)] absolute right-3 top-1/2 -translate-y-1/2" />
         <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث بالاسم أو رقم الهاتف…"
-          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl pr-9 pl-3 py-2.5 text-xs text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)]" />
+          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl pr-9 pl-3 min-h-11.5 text-xs text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)]" />
       </div>
 
       <div className="flex gap-1.5">
         {([['spent', 'الأكثر إنفاقًا'], ['bookings', 'الأكثر حجزًا'], ['recent', 'الأحدث']] as [SortKey, string][]).map(([k, label]) => (
           <button key={k} type="button" onClick={() => setSort(k)}
-            className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border ${sort === k ? 'bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border-[var(--color-owner-border)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>{label}</button>
+            className={`text-[11px] font-bold px-2.5 min-h-11 rounded-xl border ${sort === k ? 'bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border-[var(--color-owner-border)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>{label}</button>
         ))}
       </div>
 
@@ -104,10 +104,10 @@ export default function OwnerCustomers({ bookings, reviews = [], users = [], onO
                     <span className="text-xs font-black text-[var(--color-owner-text)] truncate">{c.name}</span>
                     {c.userId === topSpenderId && <Crown className="w-3.5 h-3.5 text-[#D4AF37] fill-[#D4AF37] shrink-0" />}
                   </div>
-                  <div className="text-[10px] text-[var(--color-owner-secondary)] font-bold">{arabicPlural(c.totalBookings, BOOKING_FORMS)} · آخر إقامة {c.lastStay ? arabicDate(c.lastStay) : '—'}</div>
+                  <div className="text-[11px] text-[var(--color-owner-secondary)] font-bold">{arabicPlural(c.totalBookings, BOOKING_FORMS)} · آخر إقامة {c.lastStay ? arabicDate(c.lastStay) : '—'}</div>
                 </div>
                 <div className="text-left shrink-0">
-                  <div className="text-[11px] font-black text-[var(--color-owner-primary)]">{arabicNumber(c.totalSpent)} ج.م</div>
+                  <div className="text-[12px] font-black text-[var(--color-owner-primary)]">{arabicNumber(c.totalSpent)} ج.م</div>
                   <ChevronDown className="w-3.5 h-3.5 text-[var(--color-owner-secondary)] -rotate-90 mr-auto" />
                 </div>
               </button>
@@ -129,7 +129,7 @@ export default function OwnerCustomers({ bookings, reviews = [], users = [], onO
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-black text-[var(--color-owner-text)]">{openCustomer.name}</div>
-                  {openCustomer.phone && <div className="text-[10px] text-[var(--color-owner-secondary)] font-bold flex items-center gap-1"><Phone className="w-3 h-3" /> {openCustomer.phone}</div>}
+                  {openCustomer.phone && <div className="text-[11px] text-[var(--color-owner-secondary)] font-bold flex items-center gap-1"><Phone className="w-3 h-3" /> {openCustomer.phone}</div>}
                 </div>
               </div>
 
@@ -137,32 +137,32 @@ export default function OwnerCustomers({ bookings, reviews = [], users = [], onO
               <div className="grid grid-cols-3 gap-2">
                 {openCustomer.phone && (
                   <>
-                    <a href={`tel:${openCustomer.phone}`} className="flex flex-col items-center gap-1 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl py-2.5 text-[var(--color-owner-primary)]"><Phone className="w-4 h-4" /><span className="text-[10px] font-black">اتصال</span></a>
-                    <a href={`https://wa.me/${openCustomer.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-2xl py-2.5 text-emerald-700"><MessageCircle className="w-4 h-4" /><span className="text-[10px] font-black">واتساب</span></a>
+                    <a href={`tel:${openCustomer.phone}`} className="flex flex-col items-center gap-1 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl min-h-11.5 text-[var(--color-owner-primary)]"><Phone className="w-4 h-4" /><span className="text-[11px] font-black">اتصال</span></a>
+                    <a href={`https://wa.me/${openCustomer.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex flex-col items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-2xl min-h-11.5 text-emerald-700"><MessageCircle className="w-4 h-4" /><span className="text-[11px] font-black">واتساب</span></a>
                   </>
                 )}
                 {onOpenMessages && (
-                  <button type="button" onClick={() => { setOpenId(null); onOpenMessages(); }} className="flex flex-col items-center gap-1 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl py-2.5 text-[var(--color-owner-primary)]"><MessageCircle className="w-4 h-4" /><span className="text-[10px] font-black">محادثة</span></button>
+                  <button type="button" onClick={() => { setOpenId(null); onOpenMessages(); }} className="flex flex-col items-center gap-1 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl min-h-11.5 text-[var(--color-owner-primary)]"><MessageCircle className="w-4 h-4" /><span className="text-[11px] font-black">محادثة</span></button>
                 )}
               </div>
 
               {/* Stats */}
               <div className="grid grid-cols-3 gap-2">
-                <div className="bg-[var(--color-owner-bg)] rounded-2xl p-2.5 text-center"><Wallet className="w-4 h-4 text-[var(--color-owner-primary)] mx-auto" /><div className="text-[13px] font-black text-[var(--color-owner-text)] mt-0.5">{arabicNumber(openCustomer.totalSpent)}</div><div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">إجمالي الإنفاق</div></div>
-                <div className="bg-[var(--color-owner-bg)] rounded-2xl p-2.5 text-center"><Calendar className="w-4 h-4 text-[var(--color-owner-primary)] mx-auto" /><div className="text-[13px] font-black text-[var(--color-owner-text)] mt-0.5">{openCustomer.totalBookings}</div><div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">عدد الحجوزات</div></div>
-                <div className="bg-[var(--color-owner-bg)] rounded-2xl p-2.5 text-center"><Star className="w-4 h-4 text-amber-400 fill-amber-400 mx-auto" /><div className="text-[13px] font-black text-[var(--color-owner-text)] mt-0.5">{avg > 0 ? arabicDecimal(avg) : '—'}</div><div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">متوسط تقييمه</div></div>
+                <div className="bg-[var(--color-owner-bg)] rounded-2xl p-2.5 text-center"><Wallet className="w-4 h-4 text-[var(--color-owner-primary)] mx-auto" /><div className="text-[12px] font-black text-[var(--color-owner-text)] mt-0.5">{arabicNumber(openCustomer.totalSpent)}</div><div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">إجمالي الإنفاق</div></div>
+                <div className="bg-[var(--color-owner-bg)] rounded-2xl p-2.5 text-center"><Calendar className="w-4 h-4 text-[var(--color-owner-primary)] mx-auto" /><div className="text-[12px] font-black text-[var(--color-owner-text)] mt-0.5">{openCustomer.totalBookings}</div><div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">عدد الحجوزات</div></div>
+                <div className="bg-[var(--color-owner-bg)] rounded-2xl p-2.5 text-center"><Star className="w-4 h-4 text-amber-400 fill-amber-400 mx-auto" /><div className="text-[12px] font-black text-[var(--color-owner-text)] mt-0.5">{avg > 0 ? arabicDecimal(avg) : '—'}</div><div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">متوسط تقييمه</div></div>
               </div>
 
               {/* Bookings history */}
               <div className="space-y-1.5">
-                <div className="text-[11px] font-black text-[var(--color-owner-text)]">سجل الحجوزات</div>
+                <div className="text-[12px] font-black text-[var(--color-owner-text)]">سجل الحجوزات</div>
                 {openBookings.map((b) => (
                   <div key={b.id} className="flex items-center justify-between bg-[var(--color-owner-bg)] rounded-xl px-3 py-2">
                     <div className="min-w-0">
-                      <div className="text-[10px] font-bold text-[var(--color-owner-text)]">{arabicDateRange(b.checkIn, b.checkOut)}</div>
-                      <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(b.guestsCount, GUEST_FORMS)} · {STATUS_LABEL[b.status] || b.status}</div>
+                      <div className="text-[11px] font-bold text-[var(--color-owner-text)]">{arabicDateRange(b.checkIn, b.checkOut)}</div>
+                      <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(b.guestsCount, GUEST_FORMS)} · {STATUS_LABEL[b.status] || b.status}</div>
                     </div>
-                    <span className="text-[10px] font-black text-[var(--color-owner-primary)] shrink-0">{arabicNumber(b.totalPrice)} ج.م</span>
+                    <span className="text-[11px] font-black text-[var(--color-owner-primary)] shrink-0">{arabicNumber(b.totalPrice)} ج.م</span>
                   </div>
                 ))}
               </div>
@@ -170,11 +170,11 @@ export default function OwnerCustomers({ bookings, reviews = [], users = [], onO
               {/* Their reviews */}
               {openReviews.length > 0 && (
                 <div className="space-y-1.5">
-                  <div className="text-[11px] font-black text-[var(--color-owner-text)]">تقييماته</div>
+                  <div className="text-[12px] font-black text-[var(--color-owner-text)]">تقييماته</div>
                   {openReviews.map((r) => (
                     <div key={r.id} className="bg-[var(--color-owner-bg)] rounded-xl p-2.5">
                       <div className="flex items-center gap-1 mb-1">{[1, 2, 3, 4, 5].map((n) => <Star key={n} className={`w-3 h-3 ${n <= Math.round(r.rating) ? 'text-amber-400 fill-amber-400' : 'text-[var(--color-owner-border)]'}`} />)}</div>
-                      {r.comment && <p className="text-[10px] text-[var(--color-owner-secondary)] leading-relaxed">"{r.comment}"</p>}
+                      {r.comment && <p className="text-[11px] text-[var(--color-owner-secondary)] leading-relaxed">"{r.comment}"</p>}
                     </div>
                   ))}
                 </div>

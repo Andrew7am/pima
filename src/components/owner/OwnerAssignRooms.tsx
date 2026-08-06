@@ -64,24 +64,24 @@ export default function OwnerAssignRooms({ open, onClose, booking, rooms, alloca
     <BottomSheet open={open} onClose={onClose} title="تخصيص الغرف للحاجز">
       <div className="space-y-3">
         <div className="bg-[var(--color-owner-bg)] rounded-2xl p-3 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--color-owner-secondary)]">
+          <div className="flex items-center gap-1.5 text-[12px] font-bold text-[var(--color-owner-secondary)]">
             <Users className="w-3.5 h-3.5" /> {booking.organizationName || booking.userName} · {arabicPlural(booking.guestsCount, GUEST_FORMS)}
           </div>
-          <button type="button" onClick={autoSuggest} className="flex items-center gap-1 text-[10px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-2 py-1">
+          <button type="button" onClick={autoSuggest} className="flex items-center gap-1 text-[11px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-2 min-h-11">
             <Sparkles className="w-3 h-3" /> اقتراح تلقائي
           </button>
         </div>
 
         {/* Progress toward the head-count */}
         <div className={`rounded-2xl p-3 border ${enough ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'}`}>
-          <div className="flex items-center justify-between text-[11px] font-black">
+          <div className="flex items-center justify-between text-[12px] font-black">
             <span className={enough ? 'text-emerald-800' : 'text-amber-800'}>الأسرّة المحدّدة: {selectedBeds} / {booking.guestsCount}</span>
             <span className={enough ? 'text-emerald-700' : 'text-amber-700'}>{enough ? 'كافٍ ✓' : `ناقص ${booking.guestsCount - selectedBeds}`}</span>
           </div>
         </div>
 
         {available.length === 0 ? (
-          <p className="text-[11px] font-bold text-[var(--color-owner-secondary)] text-center py-4">لا توجد غرف متاحة في هذه الفترة. أضف غرفًا أو حرّر التواريخ.</p>
+          <p className="text-[12px] font-bold text-[var(--color-owner-secondary)] text-center py-4">لا توجد غرف متاحة في هذه الفترة. أضف غرفًا أو حرّر التواريخ.</p>
         ) : (
           <div className="space-y-1.5 max-h-[40vh] overflow-y-auto">
             {available.map(({ room, free }) => {
@@ -94,7 +94,7 @@ export default function OwnerAssignRooms({ open, onClose, booking, rooms, alloca
                   </span>
                   <BedDouble className="w-4 h-4 text-[var(--color-owner-primary)] shrink-0" />
                   <span className="flex-1 text-[12px] font-black text-[var(--color-owner-text)]">غرفة {room.name}</span>
-                  <span className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(free, BED_FORMS)} متاح</span>
+                  <span className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(free, BED_FORMS)} متاح</span>
                 </button>
               );
             })}
@@ -102,10 +102,10 @@ export default function OwnerAssignRooms({ open, onClose, booking, rooms, alloca
         )}
 
         <button type="button" onClick={() => { onSave(booking.id, [...selected]); onClose(); }} disabled={selected.size === 0}
-          className="w-full flex items-center justify-center gap-1.5 bg-[var(--color-owner-primary)] disabled:opacity-40 text-white text-[11px] font-black py-3 rounded-2xl">
+          className="w-full flex items-center justify-center gap-1.5 bg-[var(--color-owner-primary)] disabled:opacity-40 text-white text-[12px] font-black py-3 rounded-2xl">
           <Send className="w-4 h-4" /> إرسال {selected.size} غرفة للحاجز
         </button>
-        <p className="text-[10px] font-bold text-[var(--color-owner-secondary)] text-center leading-relaxed">بعد الإرسال، الحاجز (الخادم) هو اللي يكتب أسماء المشاركين ويوزّعهم داخل الغرف دي.</p>
+        <p className="text-[11px] font-bold text-[var(--color-owner-secondary)] text-center leading-relaxed">بعد الإرسال، الحاجز (الخادم) هو اللي يكتب أسماء المشاركين ويوزّعهم داخل الغرف دي.</p>
       </div>
     </BottomSheet>
   );

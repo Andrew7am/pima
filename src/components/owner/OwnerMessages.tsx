@@ -103,7 +103,7 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
           المحادثات
         </h2>
         {totalUnread > 0 && (
-          <span className="text-[10px] font-extrabold text-emerald-700">{totalUnread} رسالة جديدة</span>
+          <span className="text-[11px] font-extrabold text-emerald-700">{totalUnread} رسالة جديدة</span>
         )}
       </div>
 
@@ -115,7 +115,7 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="ابحث باسم الحاجز أو المحادثة..."
-          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl pr-9 pl-3 py-2.5 text-xs text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)]"
+          className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl pr-9 pl-3 min-h-11 text-xs text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)]"
         />
       </div>
 
@@ -125,7 +125,7 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
         <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-8 text-center space-y-2">
           <MessageCircle className="w-8 h-8 text-[var(--color-owner-secondary)]/50 mx-auto" />
           <p className="text-xs text-[var(--color-owner-secondary)]">لا توجد محادثات بعد</p>
-          <p className="text-[10px] text-[var(--color-owner-secondary)]/70">ستظهر هنا محادثاتك مع كل ضيف فور استلام طلبات الحجز.</p>
+          <p className="text-[11px] text-[var(--color-owner-secondary)]/70">ستظهر هنا محادثاتك مع كل ضيف فور استلام طلبات الحجز.</p>
         </div>
       ) : (
         <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] overflow-hidden">
@@ -151,11 +151,11 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
                 <Avatar name={b.userName} avatarUrl={avatarFor(b.userId)} />
                 <div className="flex-1 min-w-0 space-y-0.5">
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`text-[13px] truncate ${unreadCount > 0 ? 'font-black text-[var(--color-owner-text)]' : 'font-bold text-[var(--color-owner-text)]'}`}>{b.userName}</span>
-                    <span className={`text-[10px] shrink-0 ${unreadCount > 0 ? 'text-emerald-700 font-black' : 'text-[var(--color-owner-secondary)] font-bold'}`}>{timeText}</span>
+                    <span className={`text-[12px] truncate ${unreadCount > 0 ? 'font-black text-[var(--color-owner-text)]' : 'font-bold text-[var(--color-owner-text)]'}`}>{b.userName}</span>
+                    <span className={`text-[11px] shrink-0 ${unreadCount > 0 ? 'text-emerald-700 font-black' : 'text-[var(--color-owner-secondary)] font-bold'}`}>{timeText}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`text-[11px] truncate flex items-center gap-1 ${unreadCount > 0 && !isMine ? 'text-[var(--color-owner-text)] font-bold' : 'text-[var(--color-owner-secondary)] font-medium'}`}>
+                    <span className={`text-[12px] truncate flex items-center gap-1 ${unreadCount > 0 && !isMine ? 'text-[var(--color-owner-text)] font-bold' : 'text-[var(--color-owner-secondary)] font-medium'}`}>
                       {isMine && preview && (
                         preview.readAt
                           ? <CheckCheck className="w-3.5 h-3.5 text-sky-500 shrink-0" />
@@ -164,7 +164,7 @@ export default function OwnerMessages({ owner, ownerBookings, users }: OwnerMess
                       <span className="truncate">{previewText}</span>
                     </span>
                     {unreadCount > 0 && !isMine && (
-                      <span className="min-w-[18px] h-[18px] px-1.5 bg-emerald-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shrink-0">
+                      <span className="min-w-[18px] h-[18px] px-1.5 bg-emerald-500 text-white text-[11px] font-black rounded-full flex items-center justify-center shrink-0">
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
                     )}

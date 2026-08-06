@@ -32,14 +32,14 @@ export default function OwnerDisclosure({ title, hint, icon, defaultOpen = false
         id={id}
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-right cursor-pointer hover:bg-[var(--color-owner-hover)] transition-colors"
+        className="w-full flex items-center justify-between gap-2 px-3 min-h-11.5 text-right cursor-pointer hover:bg-[var(--color-owner-hover)] transition-colors"
       >
         <span className="flex items-center gap-1.5 min-w-0">
           {icon}
-          <span className="text-[11px] font-black text-[var(--color-owner-text)] truncate">{title}</span>
+          <span className="text-[12px] font-black text-[var(--color-owner-text)] truncate">{title}</span>
         </span>
         <span className="flex items-center gap-1.5 shrink-0">
-          {hint && <span className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{hint}</span>}
+          {hint && <span className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{hint}</span>}
           <ChevronDown className={`w-4 h-4 text-[var(--color-owner-secondary)] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
         </span>
       </button>

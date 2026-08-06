@@ -189,29 +189,29 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[13px] font-black text-[var(--color-owner-text)] truncate">{rev.userName}</span>
+              <span className="text-[12px] font-black text-[var(--color-owner-text)] truncate">{rev.userName}</span>
               {rev.ownerReply
-                ? <span className="shrink-0 text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">تم الرد</span>
+                ? <span className="shrink-0 text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">تم الرد</span>
                 : isNew
-                  ? <span className="shrink-0 text-[9px] font-black px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200">جديد</span>
-                  : <span className="shrink-0 text-[9px] font-black px-2 py-0.5 rounded-full bg-[var(--color-owner-bg)] text-[var(--color-owner-secondary)] border border-[var(--color-owner-border)]">بدون رد</span>}
+                  ? <span className="shrink-0 text-[11px] font-black px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200">جديد</span>
+                  : <span className="shrink-0 text-[11px] font-black px-2 py-0.5 rounded-full bg-[var(--color-owner-bg)] text-[var(--color-owner-secondary)] border border-[var(--color-owner-border)]">بدون رد</span>}
             </div>
             <div className="flex items-center gap-2 mt-1">
               <Stars value={rev.rating} className="w-3 h-3" />
-              <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{reviewAge(rev.createdAt)}</span>
+              <span className="text-[11px] text-[var(--color-owner-secondary)] font-bold">{reviewAge(rev.createdAt)}</span>
             </div>
           </div>
         </div>
 
-        {rev.comment && <p className="text-[11px] text-[var(--color-owner-text)] leading-relaxed">"{rev.comment}"</p>}
+        {rev.comment && <p className="text-[12px] text-[var(--color-owner-text)] leading-relaxed">"{rev.comment}"</p>}
 
         {(rev.likedTags?.length || rev.problemTags?.length) ? (
           <div className="flex flex-wrap gap-1.5">
             {rev.likedTags?.map((tag) => (
-              <span key={`l-${tag}`} className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-1.5 py-0.5"><ThumbsUp className="w-2.5 h-2.5" /> {tag}</span>
+              <span key={`l-${tag}`} className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-1.5 py-0.5"><ThumbsUp className="w-2.5 h-2.5" /> {tag}</span>
             ))}
             {rev.problemTags?.map((tag) => (
-              <span key={`p-${tag}`} className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-1.5 py-0.5"><AlertTriangle className="w-2.5 h-2.5" /> {tag}</span>
+              <span key={`p-${tag}`} className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-1.5 py-0.5"><AlertTriangle className="w-2.5 h-2.5" /> {tag}</span>
             ))}
           </div>
         ) : null}
@@ -219,23 +219,23 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
         {rev.ownerReply ? (
           <div className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl p-3 space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black text-[var(--color-owner-primary)] flex items-center gap-1"><MessageSquare className="w-3 h-3" /> رد الإدارة</span>
-              {rev.ownerReplyCreatedAt && <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{reviewAge(rev.ownerReplyCreatedAt)}</span>}
+              <span className="text-[11px] font-black text-[var(--color-owner-primary)] flex items-center gap-1"><MessageSquare className="w-3 h-3" /> رد الإدارة</span>
+              {rev.ownerReplyCreatedAt && <span className="text-[11px] text-[var(--color-owner-secondary)] font-bold">{reviewAge(rev.ownerReplyCreatedAt)}</span>}
             </div>
-            <p className="text-[10px] text-[var(--color-owner-text)] leading-relaxed">{rev.ownerReply}</p>
+            <p className="text-[11px] text-[var(--color-owner-text)] leading-relaxed">{rev.ownerReply}</p>
             <div className="flex gap-2 justify-end pt-0.5">
-              <button type="button" onClick={() => openReply(rev)} className="flex items-center gap-1 text-[10px] font-bold text-[var(--color-owner-primary)]"><Pencil className="w-3 h-3" /> تعديل</button>
-              <button type="button" onClick={() => deleteReply(rev)} className="flex items-center gap-1 text-[10px] font-bold text-rose-600"><Trash2 className="w-3 h-3" /> حذف</button>
+              <button type="button" onClick={() => openReply(rev)} className="flex items-center gap-1 text-[11px] font-bold text-[var(--color-owner-primary)]"><Pencil className="w-3 h-3" /> تعديل</button>
+              <button type="button" onClick={() => deleteReply(rev)} className="flex items-center gap-1 text-[11px] font-bold text-rose-600"><Trash2 className="w-3 h-3" /> حذف</button>
             </div>
           </div>
         ) : (
           <div className="flex items-center justify-end gap-2 pt-0.5">
             <button type="button" onClick={() => openReplyWithSuggestion(rev)}
-              className="flex items-center gap-1 bg-[#D4AF37]/12 text-[#B8901F] border border-[#D4AF37]/30 text-[10px] font-black px-3 py-1.5 rounded-xl active:scale-[0.98] transition-transform">
+              className="flex items-center gap-1 bg-[#D4AF37]/12 text-[#B8901F] border border-[#D4AF37]/30 text-[11px] font-black px-3 min-h-11.5 rounded-xl active:scale-[0.98] transition-transform">
               <Sparkles className="w-3.5 h-3.5" /> اقتراح رد
             </button>
             <button type="button" onClick={() => openReply(rev)}
-              className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-black px-3.5 py-1.5 rounded-xl active:scale-[0.98] transition-transform">
+              className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[11px] font-black px-3.5 min-h-11.5 rounded-xl active:scale-[0.98] transition-transform">
               <CornerDownLeft className="w-3.5 h-3.5" /> الرد
             </button>
           </div>
@@ -251,7 +251,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
         <div className="bg-[var(--color-owner-surface)] rounded-[24px] border border-[var(--color-owner-border)] p-10 text-center space-y-2">
           <MessageSquare className="w-9 h-9 text-[var(--color-owner-secondary)]/40 mx-auto" />
           <p className="text-xs font-bold text-[var(--color-owner-text)]">لا توجد تقييمات لبيتك بعد.</p>
-          <p className="text-[10px] text-[var(--color-owner-secondary)]">ستظهر هنا آراء الضيوف فور تقييمهم لإقامتهم.</p>
+          <p className="text-[11px] text-[var(--color-owner-secondary)]">ستظهر هنا آراء الضيوف فور تقييمهم لإقامتهم.</p>
         </div>
       </div>
     );
@@ -263,7 +263,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
     return (
       <div className="space-y-3" dir="rtl">
         <div className="flex items-center justify-between">
-          <button type="button" onClick={() => setView('dashboard')} className="flex items-center gap-1 text-[11px] font-bold text-[var(--color-owner-secondary)]">
+          <button type="button" onClick={() => setView('dashboard')} className="flex items-center gap-1 text-[12px] font-bold text-[var(--color-owner-secondary)]">
             <ChevronLeft className="w-4 h-4 rotate-180" /> رجوع للملخص
           </button>
           <h2 className="text-sm font-black text-[var(--color-owner-text)]">كل التقييمات ({total})</h2>
@@ -276,29 +276,29 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-[var(--color-owner-secondary)] absolute right-3 top-1/2 -translate-y-1/2" />
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث بالاسم أو نص التقييم…"
-              className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl pr-9 pl-3 py-2.5 text-[11px] text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)]" />
+              className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl pr-9 pl-3 min-h-11.5 text-[12px] text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)]" />
           </div>
           <div className="flex gap-1.5 overflow-x-auto pb-0.5">
             {([['all', `الكل (${total})`], ['answered', `تم الرد (${answered})`], ['unanswered', `بدون رد (${unanswered})`], [5, '5★'], [4, '4★'], [3, '3★'], [2, '2★'], [1, '1★']] as [FilterKey, string][]).map(([k, label]) => (
               <button key={String(k)} type="button" onClick={() => setFilter(k)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-black border transition-colors ${filter === k ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>{label}</button>
+                className={`shrink-0 px-3 min-h-11.5 rounded-full text-[11px] font-black border transition-colors ${filter === k ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>{label}</button>
             ))}
           </div>
           <div className="flex gap-1.5">
             {([['newest', 'الأحدث'], ['oldest', 'الأقدم'], ['highest', 'الأعلى'], ['lowest', 'الأقل']] as [SortKey, string][]).map(([k, label]) => (
               <button key={k} type="button" onClick={() => setSort(k)}
-                className={`text-[10px] font-bold px-2.5 py-1 rounded-xl border ${sort === k ? 'bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border-[var(--color-owner-border)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>{label}</button>
+                className={`text-[11px] font-bold px-2.5 min-h-11 rounded-xl border ${sort === k ? 'bg-[var(--color-owner-hover)] text-[var(--color-owner-primary)] border-[var(--color-owner-border)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>{label}</button>
             ))}
           </div>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-8 text-center text-[11px] text-[var(--color-owner-secondary)] font-bold">لا توجد تقييمات مطابقة.</div>
+          <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-8 text-center text-[12px] text-[var(--color-owner-secondary)] font-bold">لا توجد تقييمات مطابقة.</div>
         ) : (
           <div className="space-y-2.5">
             {shown.map((rev, i) => ReviewCard(rev, i))}
             {visibleCount < filtered.length && (
-              <div ref={sentinelRef} className="py-3 text-center text-[10px] text-[var(--color-owner-secondary)] font-bold">جارٍ تحميل المزيد…</div>
+              <div ref={sentinelRef} className="py-3 text-center text-[11px] text-[var(--color-owner-secondary)] font-bold">جارٍ تحميل المزيد…</div>
             )}
           </div>
         )}
@@ -319,20 +319,20 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
         <div className="flex gap-4">
           <div className="text-center shrink-0 pt-1">
             <div className="text-4xl font-black text-[var(--color-owner-primary)] leading-none flex items-center gap-1 justify-center">{avgAnim}<Star className="w-5 h-5 text-amber-400 fill-amber-400" /></div>
-            <div className="text-[10px] font-black text-[var(--color-owner-text)] mt-1">{avgNum >= 4.5 ? 'ممتاز' : avgNum >= 4 ? 'جيد جدًا' : avgNum >= 3 ? 'جيد' : 'مقبول'}</div>
+            <div className="text-[11px] font-black text-[var(--color-owner-text)] mt-1">{avgNum >= 4.5 ? 'ممتاز' : avgNum >= 4 ? 'جيد جدًا' : avgNum >= 3 ? 'جيد' : 'مقبول'}</div>
             <Stars value={avgNum} className="w-3 h-3 mt-1" />
-            <div className="text-[9px] text-[var(--color-owner-secondary)] font-bold mt-1">({total} تقييم)</div>
+            <div className="text-[11px] text-[var(--color-owner-secondary)] font-bold mt-1">({total} تقييم)</div>
           </div>
           <div className="flex-1 space-y-1.5 pt-0.5">
             {[5, 4, 3, 2, 1].map((star, i) => {
               const pct = total > 0 ? Math.round((dist[star] / total) * 100) : 0;
               return (
                 <div key={star} className="flex items-center gap-2">
-                  <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] w-5 shrink-0 flex items-center gap-0.5">{star}<Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" /></span>
+                  <span className="text-[11px] font-bold text-[var(--color-owner-secondary)] w-5 shrink-0 flex items-center gap-0.5">{star}<Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" /></span>
                   <span className="flex-1 h-2 rounded-full bg-[var(--color-owner-bg)] overflow-hidden">
                     <span className="block h-full bg-amber-400 rounded-full transition-all duration-700" style={{ width: `${pct}%`, transitionDelay: `${i * 60}ms` }} />
                   </span>
-                  <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] w-14 shrink-0 text-left">{arabicPercent(pct)} ({arabicNumber(dist[star])})</span>
+                  <span className="text-[11px] font-bold text-[var(--color-owner-secondary)] w-14 shrink-0 text-left">{arabicPercent(pct)} ({arabicNumber(dist[star])})</span>
                 </div>
               );
             })}
@@ -343,14 +343,14 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
           <div className="mt-3 flex items-center gap-2.5 bg-[#D4AF37]/10 border border-[#D4AF37]/25 rounded-2xl p-3">
             <div className="w-9 h-9 rounded-full bg-[#D4AF37]/20 flex items-center justify-center shrink-0"><Award className="w-4.5 h-4.5 text-[#B8901F]" /></div>
             <div className="min-w-0">
-              <div className="text-[11px] font-black text-[var(--color-owner-text)]">{badge.label}</div>
-              <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{badge.sub}</div>
+              <div className="text-[12px] font-black text-[var(--color-owner-text)]">{badge.label}</div>
+              <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{badge.sub}</div>
             </div>
           </div>
         )}
 
         <button type="button" onClick={() => setView('all')}
-          className="mt-3 w-full flex items-center justify-center gap-2 bg-[var(--color-owner-primary)] text-white text-[11px] font-black py-2.5 rounded-2xl active:scale-[0.99] transition-transform">
+          className="mt-3 w-full flex items-center justify-center gap-2 bg-[var(--color-owner-primary)] text-white text-[12px] font-black min-h-11.5 rounded-2xl active:scale-[0.99] transition-transform">
           عرض جميع التقييمات
         </button>
       </div>
@@ -366,8 +366,8 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
             <div className="flex items-start gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0"><Smile className="w-4 h-4 text-emerald-600" /></div>
               <div>
-                <div className="text-[10px] font-black text-[var(--color-owner-text)]">أكثر ما أعجب الضيوف</div>
-                <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{likedTop.join(' · ')}</div>
+                <div className="text-[11px] font-black text-[var(--color-owner-text)]">أكثر ما أعجب الضيوف</div>
+                <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{likedTop.join(' · ')}</div>
               </div>
             </div>
           )}
@@ -376,17 +376,17 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
               <div className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center shrink-0"><AlertTriangle className="w-4 h-4 text-rose-600" /></div>
               <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <div className="text-[10px] font-black text-[var(--color-owner-text)]">أكثر الشكاوى تكرارًا</div>
-                  <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{arabicNumber(complaintList.length)} نوع</div>
+                  <div className="text-[11px] font-black text-[var(--color-owner-text)]">أكثر الشكاوى تكرارًا</div>
+                  <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{arabicNumber(complaintList.length)} نوع</div>
                 </div>
                 {complaintList.slice(0, 6).map((c, i) => (
                   <div key={c.tag} className="flex items-center gap-2">
-                    <span className="text-[9px] font-black text-[var(--color-owner-secondary)] w-4 shrink-0">{arabicNumber(i + 1)}</span>
-                    <span className="text-[10px] font-bold text-[var(--color-owner-text)] w-24 shrink-0 truncate">{c.tag}</span>
+                    <span className="text-[11px] font-black text-[var(--color-owner-secondary)] w-4 shrink-0">{arabicNumber(i + 1)}</span>
+                    <span className="text-[11px] font-bold text-[var(--color-owner-text)] w-24 shrink-0 truncate">{c.tag}</span>
                     <span className="flex-1 h-1.5 rounded-full bg-[var(--color-owner-bg)] overflow-hidden">
                       <span className="block h-full bg-rose-400 rounded-full" style={{ width: `${(c.count / complaintMax) * 100}%` }} />
                     </span>
-                    <span className="text-[9px] font-black text-rose-600 w-8 shrink-0 text-left">{c.count} {c.count === 1 ? 'مرة' : 'مرات'}</span>
+                    <span className="text-[11px] font-black text-rose-600 w-8 shrink-0 text-left">{c.count} {c.count === 1 ? 'مرة' : 'مرات'}</span>
                   </div>
                 ))}
               </div>
@@ -395,7 +395,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
           {complaintTop && (
             <div className="flex items-start gap-2.5 bg-[var(--color-owner-bg)] rounded-2xl p-2.5">
               <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center shrink-0"><Lightbulb className="w-4 h-4 text-sky-600" /></div>
-              <p className="text-[10px] font-bold text-[var(--color-owner-text)] leading-relaxed">تحسين <span className="text-[var(--color-owner-primary)]">{complaintTop}</span> قد يرفع متوسط تقييمك إلى {targetRating.toFixed(1)}.</p>
+              <p className="text-[11px] font-bold text-[var(--color-owner-text)] leading-relaxed">تحسين <span className="text-[var(--color-owner-primary)]">{complaintTop}</span> قد يرفع متوسط تقييمك إلى {targetRating.toFixed(1)}.</p>
             </div>
           )}
         </div>
@@ -416,7 +416,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
           ].map((s) => (
             <div key={s.label} className="bg-[var(--color-owner-bg)] rounded-2xl p-3 text-center">
               <div className={`text-xl font-black ${s.color}`}>{s.value}{s.suffix}</div>
-              <div className="text-[9px] font-bold text-[var(--color-owner-secondary)] mt-0.5">{s.label}</div>
+              <div className="text-[11px] font-bold text-[var(--color-owner-secondary)] mt-0.5">{s.label}</div>
             </div>
           ))}
         </div>
@@ -425,7 +425,7 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
       {/* Latest 3 reviews */}
       <div className="flex items-center justify-between px-1">
         <span className="text-xs font-black text-[var(--color-owner-text)]">أحدث التقييمات</span>
-        <button type="button" onClick={() => setView('all')} className="text-[10px] font-bold text-[var(--color-owner-primary)]">عرض الكل</button>
+        <button type="button" onClick={() => setView('all')} className="text-[11px] font-bold text-[var(--color-owner-primary)]">عرض الكل</button>
       </div>
       <div className="space-y-2.5">
         {latest3.map((rev, i) => ReviewCard(rev, i))}
@@ -444,19 +444,19 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
           <div className="space-y-3">
             <div className="bg-[var(--color-owner-bg)] rounded-2xl p-3">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[11px] font-black text-[var(--color-owner-text)]">{replyFor.userName}</span>
+                <span className="text-[12px] font-black text-[var(--color-owner-text)]">{replyFor.userName}</span>
                 <Stars value={replyFor.rating} className="w-3 h-3" />
               </div>
-              <p className="text-[10px] text-[var(--color-owner-secondary)] leading-relaxed">"{replyFor.comment}"</p>
+              <p className="text-[11px] text-[var(--color-owner-secondary)] leading-relaxed">"{replyFor.comment}"</p>
             </div>
 
             {/* AI reply suggestions */}
             <div className="space-y-1.5">
-              <div className="flex items-center gap-1 text-[10px] font-black text-[var(--color-owner-text)]"><Sparkles className="w-3 h-3 text-[#D4AF37]" /> اقتراح رد</div>
+              <div className="flex items-center gap-1 text-[11px] font-black text-[var(--color-owner-text)]"><Sparkles className="w-3 h-3 text-[#D4AF37]" /> اقتراح رد</div>
               <div className="flex gap-1.5">
                 {suggestions.map((s) => (
                   <button key={s.key} type="button" onClick={() => setReplyText(s.text)}
-                    className="flex-1 text-[10px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl py-2">{s.label}</button>
+                    className="flex-1 text-[11px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl min-h-11">{s.label}</button>
                 ))}
               </div>
             </div>
@@ -464,12 +464,12 @@ export default function OwnerReviewsCenter({ reviews, users = [], onUpdateReview
             <div className="relative">
               <textarea value={replyText} onChange={(e) => setReplyText(e.target.value.slice(0, REPLY_MAX))} rows={4}
                 placeholder="اكتب ردًا رسميًا ومهذبًا باسم بيتك…"
-                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl p-3 text-[11px] text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)] resize-none" />
-              <span className="absolute bottom-2 left-3 text-[9px] font-bold text-[var(--color-owner-secondary)]">{replyText.length}/{REPLY_MAX}</span>
+                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl p-3 text-[12px] text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)] resize-none" />
+              <span className="absolute bottom-2 left-3 text-[11px] font-bold text-[var(--color-owner-secondary)]">{replyText.length}/{REPLY_MAX}</span>
             </div>
 
             <button type="button" onClick={submitReply} disabled={!replyText.trim()}
-              className="w-full flex items-center justify-center gap-1.5 bg-[var(--color-owner-primary)] disabled:opacity-40 text-white text-[11px] font-black py-3 rounded-2xl">
+              className="w-full flex items-center justify-center gap-1.5 bg-[var(--color-owner-primary)] disabled:opacity-40 text-white text-[12px] font-black py-3 rounded-2xl">
               <Send className="w-4 h-4" /> إرسال الرد
             </button>
           </div>
@@ -505,14 +505,14 @@ function ReviewsHeader() {
       <h2 className="text-base font-black text-[var(--color-owner-text)] flex items-center gap-1.5">
         <MessageSquare className="w-4.5 h-4.5 text-[var(--color-owner-primary)]" /> التقييمات
       </h2>
-      <p className="text-[11px] text-[var(--color-owner-secondary)] mt-0.5">آراء ضيوف بيت المؤتمرات</p>
+      <p className="text-[12px] text-[var(--color-owner-secondary)] mt-0.5">آراء ضيوف بيت المؤتمرات</p>
     </div>
   );
 }
 
 function Flash({ msg }: { msg: string }) {
   return (
-    <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-3 rounded-2xl flex items-center gap-2 text-[11px] font-bold">
+    <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-3 rounded-2xl flex items-center gap-2 text-[12px] font-bold">
       <Check className="w-4 h-4 shrink-0" /> {msg}
     </div>
   );

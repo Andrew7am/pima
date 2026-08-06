@@ -28,7 +28,7 @@ function Section({ title, icon: Icon, count, children }: { title: string; icon: 
     <div className="bg-[var(--color-owner-surface)] rounded-[24px] border border-[var(--color-owner-border)] p-4 space-y-2.5 shadow-sm">
       <div className="flex items-center justify-between">
         <span className="text-xs font-black text-[var(--color-owner-text)] flex items-center gap-1.5"><Icon className="w-4 h-4 text-[var(--color-owner-primary)]" /> {title}</span>
-        <span className="text-[10px] font-black text-[var(--color-owner-secondary)] bg-[var(--color-owner-bg)] rounded-full px-2 py-0.5">{count}</span>
+        <span className="text-[11px] font-black text-[var(--color-owner-secondary)] bg-[var(--color-owner-bg)] rounded-full px-2 py-0.5">{count}</span>
       </div>
       {children}
     </div>
@@ -79,11 +79,11 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
           <h2 className="text-base font-black text-[var(--color-owner-text)] flex items-center gap-1.5">
             <Sun className="w-4.5 h-4.5 text-[#D4AF37]" /> لوحة اليوم
           </h2>
-          <p className="text-[11px] text-[var(--color-owner-secondary)] mt-0.5">{dateLabel} — {house?.name || 'بيتك'}</p>
+          <p className="text-[12px] text-[var(--color-owner-secondary)] mt-0.5">{dateLabel} — {house?.name || 'بيتك'}</p>
         </div>
         {onCheckInBooking && (
           <button type="button" onClick={() => setScannerOpen(true)}
-            className="flex items-center gap-1 text-[10px] font-black text-white bg-[var(--color-owner-primary)] rounded-xl px-2.5 py-2 active:scale-95 transition-transform">
+            className="flex items-center gap-1 text-[11px] font-black text-white bg-[var(--color-owner-primary)] rounded-xl px-2.5 min-h-11 active:scale-95 transition-transform">
             <ScanLine className="w-3.5 h-3.5" /> مسح وصول
           </button>
         )}
@@ -103,7 +103,7 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
           <div key={s.label} className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 flex flex-col items-center gap-1 text-center">
             <s.icon className="w-4 h-4 text-[var(--color-owner-primary)]" />
             <span className={`${s.small ? 'text-sm' : 'text-xl'} font-black text-[var(--color-owner-text)] leading-none`}>{s.value}</span>
-            <span className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{s.label}</span>
+            <span className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{s.label}</span>
           </div>
         ))}
       </div>
@@ -114,26 +114,26 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
           <div className="w-8 h-8 rounded-xl bg-[#D4AF37]/20 flex items-center justify-center shrink-0">
             {pricing.up ? <TrendingUp className="w-4 h-4 text-[#B8901F]" /> : <TrendingDown className="w-4 h-4 text-[#B8901F]" />}
           </div>
-          <p className="text-[10px] font-bold text-[var(--color-owner-text)] leading-relaxed">{pricing.text}</p>
+          <p className="text-[11px] font-bold text-[var(--color-owner-text)] leading-relaxed">{pricing.text}</p>
         </div>
       )}
 
       {/* Arrivals */}
       <Section title="الوصول اليوم" icon={LogIn} count={arrivals.length}>
         {arrivals.length === 0 ? (
-          <p className="text-[10px] text-[var(--color-owner-secondary)] font-bold text-center py-2">لا يوجد وصول اليوم.</p>
+          <p className="text-[11px] text-[var(--color-owner-secondary)] font-bold text-center py-2">لا يوجد وصول اليوم.</p>
         ) : arrivals.map((b) => (
           <motion.div key={b.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
             className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] rounded-2xl p-2.5">
             <button type="button" onClick={() => onViewBooking?.(b.id)} className="min-w-0 text-right">
-              <div className="text-[11px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
-              <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(b.guestsCount, GUEST_FORMS)} · متبقٍ {arabicNumber(cashDueAtArrival(b))} ج.م</div>
+              <div className="text-[12px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
+              <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(b.guestsCount, GUEST_FORMS)} · متبقٍ {arabicNumber(cashDueAtArrival(b))} ج.م</div>
             </button>
             {b.checkedInAt ? (
-              <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-1 shrink-0">وصل ✓</span>
+              <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-1 shrink-0">وصل ✓</span>
             ) : onCheckInBooking && (
               <button type="button" onClick={() => onCheckInBooking(b.id)}
-                className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-black px-3 py-1.5 rounded-xl shrink-0 active:scale-95 transition-transform">
+                className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[11px] font-black px-3 min-h-11.5 rounded-xl shrink-0 active:scale-95 transition-transform">
                 <LogIn className="w-3.5 h-3.5" /> تسجيل وصول
               </button>
             )}
@@ -144,18 +144,18 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
       {/* Departures */}
       <Section title="المغادرة اليوم" icon={LogOut} count={departures.length}>
         {departures.length === 0 ? (
-          <p className="text-[10px] text-[var(--color-owner-secondary)] font-bold text-center py-2">لا يوجد مغادرة اليوم.</p>
+          <p className="text-[11px] text-[var(--color-owner-secondary)] font-bold text-center py-2">لا يوجد مغادرة اليوم.</p>
         ) : departures.map((b) => (
           <div key={b.id} className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] rounded-2xl p-2.5">
             <button type="button" onClick={() => onViewBooking?.(b.id)} className="min-w-0 text-right">
-              <div className="text-[11px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
-              <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(b.guestsCount, GUEST_FORMS)}</div>
+              <div className="text-[12px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
+              <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(b.guestsCount, GUEST_FORMS)}</div>
             </button>
             {b.checkedOutAt ? (
-              <span className="text-[9px] font-black text-[var(--color-owner-secondary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-full px-2 py-1 shrink-0">غادر ✓</span>
+              <span className="text-[11px] font-black text-[var(--color-owner-secondary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-full px-2 py-1 shrink-0">غادر ✓</span>
             ) : onCheckOutBooking && (
               <button type="button" onClick={() => onCheckOutBooking(b.id)}
-                className="flex items-center gap-1 bg-slate-600 text-white text-[10px] font-black px-3 py-1.5 rounded-xl shrink-0 active:scale-95 transition-transform">
+                className="flex items-center gap-1 bg-slate-600 text-white text-[11px] font-black px-3 min-h-11.5 rounded-xl shrink-0 active:scale-95 transition-transform">
                 <LogOut className="w-3.5 h-3.5" /> تسجيل خروج
               </button>
             )}
@@ -166,7 +166,7 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
       {/* Housekeeping */}
       <Section title="النظافة والصيانة" icon={Sparkles} count={cleaningRooms.length + maintenanceRooms.length}>
         {cleaningRooms.length + maintenanceRooms.length === 0 ? (
-          <p className="text-[10px] text-emerald-700 font-bold text-center py-2">كل الغرف جاهزة ✨</p>
+          <p className="text-[11px] text-emerald-700 font-bold text-center py-2">كل الغرف جاهزة ✨</p>
         ) : (
           <div className="grid grid-cols-2 gap-2">
             {[...cleaningRooms, ...maintenanceRooms].map((r) => {
@@ -174,14 +174,14 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
               return (
                 <div key={r.id} className={`flex items-center justify-between gap-1 rounded-2xl p-2.5 border ${isClean ? 'bg-orange-50 border-orange-200' : 'bg-slate-50 border-slate-200'}`}>
                   <div className="min-w-0">
-                    <div className="text-[11px] font-black text-[var(--color-owner-text)]">{r.name}</div>
-                    <div className={`text-[9px] font-black flex items-center gap-0.5 ${isClean ? 'text-orange-600' : 'text-slate-500'}`}>
+                    <div className="text-[12px] font-black text-[var(--color-owner-text)]">{r.name}</div>
+                    <div className={`text-[11px] font-black flex items-center gap-0.5 ${isClean ? 'text-orange-600' : 'text-slate-500'}`}>
                       {isClean ? <><Sparkles className="w-2.5 h-2.5" /> تنظيف</> : <><Wrench className="w-2.5 h-2.5" /> صيانة</>}
                     </div>
                   </div>
                   {onUpdateRoom && (
                     <button type="button" onClick={() => onUpdateRoom({ ...r, status: 'available' })}
-                      className="flex items-center gap-0.5 bg-emerald-600 text-white text-[9px] font-black px-2 py-1 rounded-xl shrink-0 active:scale-95 transition-transform">
+                      className="flex items-center gap-0.5 bg-emerald-600 text-white text-[11px] font-black px-2 min-h-11 rounded-xl shrink-0 active:scale-95 transition-transform">
                       <CheckCircle2 className="w-3 h-3" /> خلصت
                     </button>
                   )}

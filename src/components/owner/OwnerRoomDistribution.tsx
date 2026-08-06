@@ -43,12 +43,12 @@ export default function OwnerRoomDistribution({ rooms, allocations, bookings, on
           <h3 className="text-sm font-black text-[var(--color-owner-text)]">خريطة إشغال الغرف</h3>
           <div className="flex items-center gap-2">
             <input type="date" value={viewDate} onChange={(e) => setViewDate(e.target.value)}
-              className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-2.5 py-1.5 text-[10px] text-[var(--color-owner-text)]" />
+              className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-2.5 min-h-11.5 text-[11px] text-[var(--color-owner-text)]" />
             <button
               type="button"
               disabled={recalculating}
               onClick={async () => { setRecalculating(true); await onRecalculateAll(); setRecalculating(false); }}
-              className="flex items-center gap-1.5 bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-[10px] font-extrabold px-3 py-1.5 rounded-xl cursor-pointer disabled:opacity-60"
+              className="flex items-center gap-1.5 bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white text-[11px] font-extrabold px-3 min-h-11.5 rounded-xl cursor-pointer disabled:opacity-60"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>{recalculating ? 'جارٍ إعادة التوزيع...' : 'إعادة حساب التوزيع'}</span>
@@ -57,7 +57,7 @@ export default function OwnerRoomDistribution({ rooms, allocations, bookings, on
         </div>
 
         {rooms.length === 0 ? (
-          <div className="text-center py-6 text-[10px] text-[var(--color-owner-secondary)]">لا توجد غرف مضافة بعد. أضف غرفك من تبويب "عرض الغرف".</div>
+          <div className="text-center py-6 text-[11px] text-[var(--color-owner-secondary)]">لا توجد غرف مضافة بعد. أضف غرفك من تبويب "عرض الغرف".</div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
             {rooms.map((room) => {
@@ -66,8 +66,8 @@ export default function OwnerRoomDistribution({ rooms, allocations, bookings, on
               return (
                 <div key={room.id} className={`flex flex-col items-center justify-center gap-1 aspect-square rounded-2xl border-2 p-2 text-center ${STATE_CLASS[state]}`}>
                   <BedDouble className="w-4 h-4" />
-                  <span className="text-[10px] font-black truncate w-full">{room.name}</span>
-                  <span className="text-[9px] font-bold">{used} / {room.bedsCount} — {STATE_LABEL[state]}</span>
+                  <span className="text-[11px] font-black truncate w-full">{room.name}</span>
+                  <span className="text-[11px] font-bold">{used} / {room.bedsCount} — {STATE_LABEL[state]}</span>
                 </div>
               );
             })}
@@ -78,17 +78,17 @@ export default function OwnerRoomDistribution({ rooms, allocations, bookings, on
       <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-2">
         <h3 className="text-sm font-black text-[var(--color-owner-text)]">حجوزات بحاجة لتوزيع</h3>
         {needsAttention.length === 0 ? (
-          <div className="text-center py-4 text-[10px] text-[var(--color-owner-secondary)]">كل الحجوزات النشطة مُوزّعة على الغرف بالكامل 🎉</div>
+          <div className="text-center py-4 text-[11px] text-[var(--color-owner-secondary)]">كل الحجوزات النشطة مُوزّعة على الغرف بالكامل 🎉</div>
         ) : (
           <div className="space-y-2">
             {needsAttention.map(({ booking, allocatedCount }) => (
               <div key={booking.id} className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl p-3">
                 <div className="min-w-0">
-                  <div className="text-[11px] font-bold text-[var(--color-owner-text)] truncate">{booking.userName}</div>
-                  <div className="text-[10px] text-[var(--color-owner-secondary)]">{arabicDateRange(booking.checkIn, booking.checkOut)} • مُوزَّع {arabicNumber(allocatedCount)} / {arabicNumber(booking.guestsCount)}</div>
+                  <div className="text-[12px] font-bold text-[var(--color-owner-text)] truncate">{booking.userName}</div>
+                  <div className="text-[11px] text-[var(--color-owner-secondary)]">{arabicDateRange(booking.checkIn, booking.checkOut)} • مُوزَّع {arabicNumber(allocatedCount)} / {arabicNumber(booking.guestsCount)}</div>
                 </div>
                 <button type="button" onClick={() => onOpenBooking(booking)}
-                  className="flex items-center gap-1 shrink-0 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer">
+                  className="flex items-center gap-1 shrink-0 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 px-3 min-h-11.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer">
                   <Shuffle className="w-3.5 h-3.5" /><span>توزيع الآن</span>
                 </button>
               </div>

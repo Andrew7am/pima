@@ -54,8 +54,8 @@ export default function OwnerNotifications({ owner, notifications, onMarkNotific
                     <span className="text-xs font-bold text-[var(--color-owner-text)]">{n.title}</span>
                     {!n.isRead && <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-owner-accent)] shrink-0" />}
                   </div>
-                  <p className="text-[10px] text-[var(--color-owner-secondary)] mt-0.5">{n.message}</p>
-                  <span className="text-[9px] text-[var(--color-owner-secondary)]/70 mt-1 block">{formatDate(n.createdAt)}</span>
+                  <p className="text-[11px] text-[var(--color-owner-secondary)] mt-0.5">{n.message}</p>
+                  <span className="text-[11px] text-[var(--color-owner-secondary)]/70 mt-1 block">{formatDate(n.createdAt)}</span>
                 </div>
               </button>
             );

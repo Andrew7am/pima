@@ -75,7 +75,7 @@ export default function OwnerTour({ ownerFirstName, onClose, onNavigateSupport }
       body: (
         <>
           لو لقيت أي حاجة مش واضحة أو محتاج نساعدك تظبط بيتك، تواصل مع فريق الدعم مباشرة من داخل التطبيق. برضو تقدر ترجع للجولة دي في أي وقت من زرار{' '}
-          <span className="inline-flex items-center gap-0.5 bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] rounded-md px-1.5 py-0.5 text-[10px] font-black text-[var(--color-owner-text)]">
+          <span className="inline-flex items-center gap-0.5 bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] rounded-md px-1.5 py-0.5 text-[11px] font-black text-[var(--color-owner-text)]">
             ؟
           </span>{' '}
           في أعلى الصفحة الرئيسية.
@@ -107,7 +107,7 @@ export default function OwnerTour({ ownerFirstName, onClose, onNavigateSupport }
               <Icon className="w-5 h-5 text-[var(--color-owner-accent)]" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] font-black text-[var(--color-owner-accent)] tracking-wide">{current.chip}</span>
+              <span className="text-[11px] font-black text-[var(--color-owner-accent)] tracking-wide">{current.chip}</span>
               <h3 className="text-base font-black mt-0.5 leading-tight">{current.title}</h3>
             </div>
           </div>
@@ -117,7 +117,7 @@ export default function OwnerTour({ ownerFirstName, onClose, onNavigateSupport }
         <div className="flex-1 overflow-y-auto p-5 space-y-3">
           <p className="text-xs text-[var(--color-owner-text)] leading-relaxed font-medium">{current.body}</p>
           {current.tip && (
-            <div className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl px-3 py-2.5 text-[11px] font-bold text-[var(--color-owner-secondary)]">
+            <div className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl px-3 py-2.5 text-[12px] font-bold text-[var(--color-owner-secondary)]">
               {current.tip}
             </div>
           )}
@@ -142,7 +142,7 @@ export default function OwnerTour({ ownerFirstName, onClose, onNavigateSupport }
               id="owner-tour-back"
               type="button"
               onClick={() => setStep((s) => s - 1)}
-              className="flex items-center gap-1 text-[11px] font-bold text-[var(--color-owner-secondary)] hover:text-[var(--color-owner-text)] px-3 py-2 rounded-xl transition-colors cursor-pointer"
+              className="flex items-center gap-1 text-[12px] font-bold text-[var(--color-owner-secondary)] hover:text-[var(--color-owner-text)] px-3 min-h-11 rounded-xl transition-colors cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
               <span>السابق</span>
@@ -152,7 +152,7 @@ export default function OwnerTour({ ownerFirstName, onClose, onNavigateSupport }
               id="owner-tour-skip"
               type="button"
               onClick={onClose}
-              className="text-[11px] font-bold text-[var(--color-owner-secondary)] hover:text-[var(--color-owner-text)] px-3 py-2 rounded-xl transition-colors cursor-pointer"
+              className="text-[12px] font-bold text-[var(--color-owner-secondary)] hover:text-[var(--color-owner-text)] px-3 min-h-11 rounded-xl transition-colors cursor-pointer"
             >
               تخطي الجولة
             </button>
@@ -165,7 +165,7 @@ export default function OwnerTour({ ownerFirstName, onClose, onNavigateSupport }
                   id="owner-tour-contact-support"
                   type="button"
                   onClick={() => { onClose(); onNavigateSupport(); }}
-                  className="text-[11px] font-bold text-[var(--color-owner-primary)] px-3 py-2 rounded-xl hover:bg-[var(--color-owner-hover)] transition-colors cursor-pointer"
+                  className="text-[12px] font-bold text-[var(--color-owner-primary)] px-3 min-h-11 rounded-xl hover:bg-[var(--color-owner-hover)] transition-colors cursor-pointer"
                 >
                   تواصل مع الدعم
                 </button>
@@ -174,7 +174,7 @@ export default function OwnerTour({ ownerFirstName, onClose, onNavigateSupport }
                 id="owner-tour-done"
                 type="button"
                 onClick={onClose}
-                className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white font-black text-xs px-5 py-2.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white font-black text-xs px-5 min-h-11.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <Home className="w-3.5 h-3.5" />
                 <span>يلا نبدأ</span>
@@ -185,7 +185,7 @@ export default function OwnerTour({ ownerFirstName, onClose, onNavigateSupport }
               id="owner-tour-next"
               type="button"
               onClick={() => setStep((s) => s + 1)}
-              className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white font-black text-xs px-5 py-2.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+              className="bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-white font-black text-xs px-5 min-h-11.5 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
             >
               <span>التالي</span>
               <ChevronLeft className="w-4 h-4" />

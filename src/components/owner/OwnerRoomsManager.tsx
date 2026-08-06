@@ -197,15 +197,15 @@ export default function OwnerRoomsManager({
           <h2 className="text-base font-black text-[var(--color-owner-text)] flex items-center gap-1.5">
             <BedDouble className="w-4.5 h-4.5 text-[var(--color-owner-primary)]" /> الغرف ({rooms.length})
           </h2>
-          <p className="text-[11px] text-[var(--color-owner-secondary)] mt-0.5">إدارة غرف {houseName || 'بيت المؤتمرات'}</p>
+          <p className="text-[12px] text-[var(--color-owner-secondary)] mt-0.5">إدارة غرف {houseName || 'بيت المؤتمرات'}</p>
         </div>
         <div className="flex items-center gap-1.5">
           <button type="button" onClick={() => setView('types')}
-            className="flex items-center gap-1 text-[10px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-2.5 py-2">
+            className="flex items-center gap-1 text-[11px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-2.5 min-h-11">
             <Layers className="w-3.5 h-3.5" /> أنواع الغرف
           </button>
           <button type="button" onClick={() => { if (selectMode) exitSelect(); else setSelectMode(true); }}
-            className={`flex items-center gap-1 text-[10px] font-black rounded-xl px-2.5 py-2 border ${selectMode ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-primary)] border-[var(--color-owner-border)]'}`}>
+            className={`flex items-center gap-1 text-[11px] font-black rounded-xl px-2.5 min-h-11 border ${selectMode ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-primary)] border-[var(--color-owner-border)]'}`}>
             <CheckCircle2 className="w-3.5 h-3.5" /> تحديد
           </button>
         </div>
@@ -223,8 +223,8 @@ export default function OwnerRoomsManager({
           <div key={s.label} className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-2 flex flex-col items-center gap-1 text-center">
             <span className={`w-7 h-7 rounded-xl flex items-center justify-center ${s.chip}`}><s.icon className="w-3.5 h-3.5" /></span>
             <span className="text-base font-black text-[var(--color-owner-text)] leading-none">{s.value}</span>
-            <span className="text-[9px] font-bold text-[var(--color-owner-secondary)] leading-tight">{s.label}</span>
-            {s.sub && <span className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{s.sub}</span>}
+            <span className="text-[11px] font-bold text-[var(--color-owner-secondary)] leading-tight">{s.label}</span>
+            {s.sub && <span className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{s.sub}</span>}
           </div>
         ))}
       </div>
@@ -232,13 +232,13 @@ export default function OwnerRoomsManager({
       {/* Search + filter toggle */}
       <div className="flex items-center gap-2">
         <button type="button" onClick={() => setShowFilters((v) => !v)}
-          className={`flex items-center gap-1 text-[10px] font-black rounded-2xl px-3 py-2.5 border shrink-0 ${showFilters ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
+          className={`flex items-center gap-1 text-[11px] font-black rounded-2xl px-3 min-h-11 border shrink-0 ${showFilters ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
           <Filter className="w-3.5 h-3.5" /> فلتر
         </button>
         <div className="relative flex-1">
           <Search className="w-3.5 h-3.5 text-[var(--color-owner-secondary)] absolute right-3 top-1/2 -translate-y-1/2" />
           <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث برقم الغرفة…"
-            className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl pr-9 pl-3 py-2.5 text-[11px] text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)]" />
+            className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-2xl pr-9 pl-3 min-h-11 text-[12px] text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)]" />
         </div>
       </div>
 
@@ -250,7 +250,7 @@ export default function OwnerRoomsManager({
             const dot = f.key !== 'all' ? STATUS_META[f.key as EffStatus].dot : '';
             return (
               <button key={f.key} type="button" onClick={() => setStatusFilter(f.key)}
-                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black border transition-colors ${active ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
+                className={`shrink-0 flex items-center gap-1.5 px-3 min-h-11 rounded-full text-[11px] font-black border transition-colors ${active ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
                 {dot && <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />}
                 {f.label}
               </button>
@@ -262,21 +262,21 @@ export default function OwnerRoomsManager({
       {/* Floor tabs */}
       {floors.length > 0 && (
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-          <span className="text-[10px] font-black text-[var(--color-owner-text)] shrink-0">الدور</span>
+          <span className="text-[11px] font-black text-[var(--color-owner-text)] shrink-0">الدور</span>
           <button type="button" onClick={() => setFloorFilter('all')}
-            className={`shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-black border ${floorFilter === 'all' ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>الكل</button>
+            className={`shrink-0 px-3 min-h-11.5 rounded-xl text-[11px] font-black border ${floorFilter === 'all' ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>الكل</button>
           {floors.map((f) => (
             <button key={f} type="button" onClick={() => setFloorFilter(f)}
-              className={`shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-black border ${floorFilter === f ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>{f === 0 ? 'أرضي' : f}</button>
+              className={`shrink-0 px-3 min-h-11.5 rounded-xl text-[11px] font-black border ${floorFilter === f ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-surface)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>{f === 0 ? 'أرضي' : f}</button>
           ))}
         </div>
       )}
 
       {/* Room grid */}
       {rooms.length === 0 ? (
-        <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-8 text-center text-[11px] text-[var(--color-owner-secondary)] font-bold">لا توجد غرف مضافة بعد. أضف أول غرفة من زر +.</div>
+        <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-8 text-center text-[12px] text-[var(--color-owner-secondary)] font-bold">لا توجد غرف مضافة بعد. أضف أول غرفة من زر +.</div>
       ) : filteredRooms.length === 0 ? (
-        <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-8 text-center text-[11px] text-[var(--color-owner-secondary)] font-bold">لا توجد غرف مطابقة.</div>
+        <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-8 text-center text-[12px] text-[var(--color-owner-secondary)] font-bold">لا توجد غرف مطابقة.</div>
       ) : (
         <div className="grid grid-cols-2 gap-2.5">
           {filteredRooms.map((room) => {
@@ -305,11 +305,11 @@ export default function OwnerRoomsManager({
                 </div>
                 <div className="mt-2 inline-flex items-center gap-1 bg-white/70 rounded-xl px-1.5 py-0.5">
                   <TypeIcon className="w-3 h-3 text-[var(--color-owner-primary)]" />
-                  <span className="text-[9px] font-black text-[var(--color-owner-text)]">{type?.name ?? arabicPlural(room.bedsCount, BED_FORMS)}</span>
+                  <span className="text-[11px] font-black text-[var(--color-owner-text)]">{type?.name ?? arabicPlural(room.bedsCount, BED_FORMS)}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-1.5">
                   <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                  <span className={`text-[10px] font-black ${meta.text}`}>{meta.label}</span>
+                  <span className={`text-[11px] font-black ${meta.text}`}>{meta.label}</span>
                 </div>
               </div>
             );
@@ -328,7 +328,7 @@ export default function OwnerRoomsManager({
       {/* Bulk action bar */}
       {selectMode && selected.size > 0 && (
         <div className="fixed bottom-20 inset-x-3 z-40 bg-[var(--color-owner-primary)] rounded-2xl p-2 flex items-center gap-1 shadow-xl">
-          <span className="text-[10px] font-black text-white px-2 shrink-0">{selected.size} محددة</span>
+          <span className="text-[11px] font-black text-white px-2 shrink-0">{selected.size} محددة</span>
           <div className="flex-1 flex items-center gap-1 overflow-x-auto">
             <BulkBtn icon={Tag} label="النوع" onClick={() => setBulkSheet('type')} />
             <BulkBtn icon={CheckCircle2} label="الحالة" onClick={() => setBulkSheet('status')} />
@@ -336,7 +336,7 @@ export default function OwnerRoomsManager({
             <BulkBtn icon={ArrowRightLeft} label="الدور" onClick={() => setBulkSheet('floor')} />
             <BulkBtn icon={Trash2} label="حذف" danger onClick={() => { if (confirm(`حذف ${selected.size} غرفة؟`)) bulkApply((r) => onDeleteRoom?.(r.id)); }} />
           </div>
-          <button aria-label="إلغاء تحديد الغرف" type="button" onClick={exitSelect} className="text-white p-1.5 shrink-0"><X className="w-4 h-4" /></button>
+          <button aria-label="إلغاء تحديد الغرف" type="button" onClick={exitSelect} className="grid place-items-center w-11 h-11 text-white shrink-0"><X className="w-4 h-4" /></button>
         </div>
       )}
 
@@ -352,16 +352,16 @@ export default function OwnerRoomsManager({
           return (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className={`inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1 rounded-full ${meta.card} ${meta.text} border`}>
+                <span className={`inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1 rounded-full ${meta.card} ${meta.text} border`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} /> {meta.label}
                 </span>
-                {type && <span className="text-[10px] font-black text-[var(--color-owner-secondary)]">{type.name}</span>}
-                {price !== undefined && <span className="text-[10px] font-black text-[var(--color-owner-primary)] mr-auto">{arabicNumber(price)} ج.م / الليلة</span>}
+                {type && <span className="text-[11px] font-black text-[var(--color-owner-secondary)]">{type.name}</span>}
+                {price !== undefined && <span className="text-[11px] font-black text-[var(--color-owner-primary)] mr-auto">{arabicNumber(price)} ج.م / الليلة</span>}
               </div>
 
               {occupied && booking ? (
                 <>
-                  <div className="bg-[var(--color-owner-bg)] rounded-2xl p-3.5 space-y-2 text-[11px]">
+                  <div className="bg-[var(--color-owner-bg)] rounded-2xl p-3.5 space-y-2 text-[12px]">
                     <Row label="الضيف" value={booking.organizationName || booking.userName} />
                     <Row label="الإقامة" value={arabicDateRange(booking.checkIn, booking.checkOut)} />
                     <Row label="مدة الإقامة" value={arabicPlural(nightsBetween(booking.checkIn, booking.checkOut), NIGHT_FORMS)} />
@@ -375,7 +375,7 @@ export default function OwnerRoomsManager({
                 </>
               ) : (
                 <>
-                  <div className="bg-[var(--color-owner-bg)] rounded-2xl p-3.5 space-y-2 text-[11px]">
+                  <div className="bg-[var(--color-owner-bg)] rounded-2xl p-3.5 space-y-2 text-[12px]">
                     <Row label="عدد الأسرة" value={`${openRoom.bedsCount}`} />
                     <Row label="الدور" value={floorLabel(openRoom.floor ?? 1)} />
                     {type && type.facilities.length > 0 && (
@@ -383,7 +383,7 @@ export default function OwnerRoomsManager({
                         {type.facilities.map((f) => {
                           const meta2 = FACILITIES.find((x) => x.key === f);
                           if (!meta2) return null;
-                          return <span key={f} className="inline-flex items-center gap-1 text-[9px] font-bold text-[var(--color-owner-secondary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-1.5 py-0.5"><meta2.icon className="w-3 h-3" /> {meta2.label}</span>;
+                          return <span key={f} className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--color-owner-secondary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-1.5 py-0.5"><meta2.icon className="w-3 h-3" /> {meta2.label}</span>;
                         })}
                       </div>
                     )}
@@ -431,18 +431,18 @@ export default function OwnerRoomsManager({
         <div className="grid grid-cols-3 gap-2">
           {([['available', 'متاحة'], ['cleaning', 'تنظيف'], ['maintenance', 'صيانة']] as const).map(([val, label]) => (
             <button key={val} type="button" onClick={() => bulkApply((r) => onUpdateRoom?.({ ...r, status: val }))}
-              className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl py-3 text-[11px] font-black text-[var(--color-owner-text)]">{label}</button>
+              className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl py-3 text-[12px] font-black text-[var(--color-owner-text)]">{label}</button>
           ))}
         </div>
       </BottomSheet>
       <BottomSheet open={bulkSheet === 'type'} onClose={() => setBulkSheet(null)} title="تغيير النوع">
         {roomTypes.length === 0 ? (
-          <p className="text-[11px] text-[var(--color-owner-secondary)] font-bold text-center py-4">أضف أنواع الغرف أولاً من "أنواع الغرف".</p>
+          <p className="text-[12px] text-[var(--color-owner-secondary)] font-bold text-center py-4">أضف أنواع الغرف أولاً من "أنواع الغرف".</p>
         ) : (
           <div className="space-y-1.5">
             {roomTypes.map((t) => (
               <button key={t.id} type="button" onClick={() => bulkApply((r) => onUpdateRoom?.({ ...r, typeId: t.id, bedsCount: t.bedsCount, pricePerNight: t.price }))}
-                className="w-full flex items-center justify-between bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-3 py-2.5 text-[11px] font-black text-[var(--color-owner-text)]">
+                className="w-full flex items-center justify-between bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-xl px-3 min-h-11 text-[12px] font-black text-[var(--color-owner-text)]">
                 <span>{t.name}</span><span className="text-[var(--color-owner-secondary)]">{arabicNumber(t.price)} ج.م</span>
               </button>
             ))}
@@ -480,9 +480,9 @@ const TONE: Record<string, string> = {
 function SheetAction({ icon: Icon, label, onClick, tone = 'primary' }: { icon: React.ElementType; label: string; onClick: () => void; tone?: keyof typeof TONE }) {
   return (
     <button type="button" onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-1 rounded-2xl border py-2.5 px-1 text-center ${TONE[tone]}`}>
+      className={`flex flex-col items-center justify-center gap-1 rounded-2xl border min-h-11.5 px-1 text-center ${TONE[tone]}`}>
       <Icon className="w-4 h-4" />
-      <span className="text-[10px] font-black leading-tight">{label}</span>
+      <span className="text-[11px] font-black leading-tight">{label}</span>
     </button>
   );
 }
@@ -490,9 +490,9 @@ function SheetAction({ icon: Icon, label, onClick, tone = 'primary' }: { icon: R
 function BulkBtn({ icon: Icon, label, onClick, danger }: { icon: React.ElementType; label: string; onClick: () => void; danger?: boolean }) {
   return (
     <button type="button" onClick={onClick}
-      className={`shrink-0 flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-xl ${danger ? 'text-rose-200' : 'text-white'}`}>
+      className={`shrink-0 flex flex-col items-center gap-0.5 px-2.5 min-h-11 rounded-xl ${danger ? 'text-rose-200' : 'text-white'}`}>
       <Icon className="w-4 h-4" />
-      <span className="text-[9px] font-black">{label}</span>
+      <span className="text-[11px] font-black">{label}</span>
     </button>
   );
 }
@@ -539,7 +539,7 @@ function RoomForm({ mode, houseId, roomTypes, initial, onSubmit }: {
         <Field label="الدور"><input type="number" min={0} value={floor} onChange={(e) => setFloor(Number(e.target.value) || 0)} className={INPUT} /></Field>
         <Field label="السعر (اختياري)"><input type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} className={INPUT} /></Field>
       </div>
-      <button type="button" onClick={submit} className="w-full bg-[var(--color-owner-primary)] text-white text-[11px] font-black py-3 rounded-2xl">{mode === 'edit' ? 'حفظ التغييرات' : 'إضافة الغرفة'}</button>
+      <button type="button" onClick={submit} className="w-full bg-[var(--color-owner-primary)] text-white text-[12px] font-black py-3 rounded-2xl">{mode === 'edit' ? 'حفظ التغييرات' : 'إضافة الغرفة'}</button>
     </div>
   );
 }
@@ -548,10 +548,10 @@ function ExtendForm({ booking, onSubmit }: { booking: Booking; onSubmit: (date: 
   const [date, setDate] = useState(booking.checkOut);
   return (
     <div className="space-y-3">
-      <p className="text-[11px] font-bold text-[var(--color-owner-secondary)]">المغادرة الحالية: {arabicDate(booking.checkOut)}</p>
+      <p className="text-[12px] font-bold text-[var(--color-owner-secondary)]">المغادرة الحالية: {arabicDate(booking.checkOut)}</p>
       <Field label="تاريخ المغادرة الجديد"><input type="date" min={booking.checkOut} value={date} onChange={(e) => setDate(e.target.value)} className={INPUT} /></Field>
       <button type="button" onClick={() => onSubmit(date)} disabled={date <= booking.checkOut}
-        className="w-full bg-[var(--color-owner-primary)] disabled:opacity-40 text-white text-[11px] font-black py-3 rounded-2xl">تأكيد التمديد</button>
+        className="w-full bg-[var(--color-owner-primary)] disabled:opacity-40 text-white text-[12px] font-black py-3 rounded-2xl">تأكيد التمديد</button>
     </div>
   );
 }
@@ -562,7 +562,7 @@ function BulkPriceForm({ onSubmit }: { onSubmit: (price: number) => void }) {
     <div className="space-y-3">
       <Field label="السعر الجديد لليلة (ج.م)"><input type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} className={INPUT} /></Field>
       <button type="button" onClick={() => price && onSubmit(Number(price))} disabled={!price}
-        className="w-full bg-[var(--color-owner-primary)] disabled:opacity-40 text-white text-[11px] font-black py-3 rounded-2xl">تطبيق على المحدد</button>
+        className="w-full bg-[var(--color-owner-primary)] disabled:opacity-40 text-white text-[12px] font-black py-3 rounded-2xl">تطبيق على المحدد</button>
     </div>
   );
 }
@@ -573,7 +573,7 @@ function BulkFloorForm({ onSubmit }: { onSubmit: (floor: number) => void }) {
     <div className="space-y-3">
       <Field label="الدور الجديد"><input type="number" min={0} value={floor} onChange={(e) => setFloor(e.target.value)} className={INPUT} /></Field>
       <button type="button" onClick={() => onSubmit(Number(floor) || 0)}
-        className="w-full bg-[var(--color-owner-primary)] text-white text-[11px] font-black py-3 rounded-2xl">تطبيق على المحدد</button>
+        className="w-full bg-[var(--color-owner-primary)] text-white text-[12px] font-black py-3 rounded-2xl">تطبيق على المحدد</button>
     </div>
   );
 }
@@ -591,17 +591,17 @@ function RoomTypesPage({ houseId, roomTypes, rooms, onBack, onAddRoomType, onUpd
   return (
     <div className="space-y-3 pb-24" dir="rtl">
       <div className="flex items-center justify-between">
-        <button type="button" onClick={onBack} className="flex items-center gap-1 text-[11px] font-bold text-[var(--color-owner-secondary)]">
+        <button type="button" onClick={onBack} className="flex items-center gap-1 text-[12px] font-bold text-[var(--color-owner-secondary)]">
           <ChevronLeft className="w-4 h-4 rotate-180" /> رجوع للغرف
         </button>
-        <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[10px] font-black px-3 py-2 rounded-xl">
+        <button type="button" onClick={() => setAdding(true)} className="flex items-center gap-1 bg-[var(--color-owner-primary)] text-white text-[11px] font-black px-3 min-h-11 rounded-xl">
           <Plus className="w-3.5 h-3.5" /> إضافة نوع غرفة
         </button>
       </div>
       <h2 className="text-base font-black text-[var(--color-owner-text)] flex items-center gap-1.5"><Layers className="w-4 h-4 text-[var(--color-owner-primary)]" /> إدارة أنواع الغرف</h2>
 
       {roomTypes.length === 0 ? (
-        <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-8 text-center text-[11px] text-[var(--color-owner-secondary)] font-bold">لا توجد أنواع غرف بعد.</div>
+        <div className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-8 text-center text-[12px] text-[var(--color-owner-secondary)] font-bold">لا توجد أنواع غرف بعد.</div>
       ) : (
         <div className="space-y-2">
           {roomTypes.map((t) => {
@@ -612,7 +612,7 @@ function RoomTypesPage({ houseId, roomTypes, rooms, onBack, onAddRoomType, onUpd
                 <span className="w-10 h-10 rounded-2xl bg-[var(--color-owner-hover)] flex items-center justify-center shrink-0"><TypeIcon className="w-5 h-5 text-[var(--color-owner-primary)]" /></span>
                 <div className="flex-1 min-w-0">
                   <div className="text-[12px] font-black text-[var(--color-owner-text)]">{t.name}</div>
-                  <div className="text-[10px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(countByType(t.id), ROOM_FORMS)} · {arabicPlural(t.bedsCount, BED_FORMS)} · {arabicPlural(t.facilities.length, AMENITY_FORMS)}</div>
+                  <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(countByType(t.id), ROOM_FORMS)} · {arabicPlural(t.bedsCount, BED_FORMS)} · {arabicPlural(t.facilities.length, AMENITY_FORMS)}</div>
                 </div>
                 <div className="text-[12px] font-black text-[var(--color-owner-primary)] shrink-0">{arabicNumber(t.price)} ج.م</div>
               </button>
@@ -663,8 +663,8 @@ function RoomTypeForm({ houseId, initial, onSubmit, onDelete }: {
             const active = icon === o.key;
             return (
               <button key={o.key} type="button" onClick={() => setIcon(o.key)}
-                className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border ${active ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-bg)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
-                <Icon className="w-4 h-4" /><span className="text-[9px] font-black">{o.label}</span>
+                className={`flex-1 flex flex-col items-center gap-1 min-h-11 rounded-xl border ${active ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-bg)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
+                <Icon className="w-4 h-4" /><span className="text-[11px] font-black">{o.label}</span>
               </button>
             );
           })}
@@ -680,7 +680,7 @@ function RoomTypeForm({ houseId, initial, onSubmit, onDelete }: {
             const active = facilities.includes(f.key);
             return (
               <button key={f.key} type="button" onClick={() => toggle(f.key)}
-                className={`flex items-center gap-1 justify-center py-2 rounded-xl border text-[10px] font-bold ${active ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-bg)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
+                className={`flex items-center gap-1 justify-center min-h-11 rounded-xl border text-[11px] font-bold ${active ? 'bg-[var(--color-owner-primary)] text-white border-[var(--color-owner-primary)]' : 'bg-[var(--color-owner-bg)] text-[var(--color-owner-secondary)] border-[var(--color-owner-border)]'}`}>
                 <f.icon className="w-3 h-3" /> {f.label}
               </button>
             );
@@ -688,17 +688,17 @@ function RoomTypeForm({ houseId, initial, onSubmit, onDelete }: {
         </div>
       </Field>
       <Field label="الوصف (اختياري)"><textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={2} className={`${INPUT} resize-none`} /></Field>
-      <button type="button" onClick={submit} className="w-full bg-[var(--color-owner-primary)] text-white text-[11px] font-black py-3 rounded-2xl">{initial ? 'حفظ التغييرات' : 'إضافة نوع غرفة'}</button>
-      {onDelete && <button type="button" onClick={onDelete} className="w-full text-rose-600 text-[10px] font-black py-2">حذف النوع</button>}
+      <button type="button" onClick={submit} className="w-full bg-[var(--color-owner-primary)] text-white text-[12px] font-black py-3 rounded-2xl">{initial ? 'حفظ التغييرات' : 'إضافة نوع غرفة'}</button>
+      {onDelete && <button type="button" onClick={onDelete} className="w-full text-rose-600 text-[11px] font-black min-h-11">حذف النوع</button>}
     </div>
   );
 }
 
-const INPUT = 'w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[11px] px-3 py-2.5 rounded-xl text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)]';
+const INPUT = 'w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[12px] px-3 min-h-11 rounded-xl text-[var(--color-owner-text)] outline-none focus:border-[var(--color-owner-primary)]';
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[10px] font-black text-[var(--color-owner-secondary)] mb-1">{label}</label>
+      <label className="block text-[11px] font-black text-[var(--color-owner-secondary)] mb-1">{label}</label>
       {children}
     </div>
   );

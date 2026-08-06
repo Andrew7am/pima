@@ -79,10 +79,10 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
           <h2 className="text-base font-black text-[var(--color-owner-text)] flex items-center gap-1.5">
             <CalendarDays className="w-4.5 h-4.5 text-[var(--color-owner-primary)]" /> تقويم الإشغال
           </h2>
-          <p className="text-[11px] text-[var(--color-owner-secondary)] mt-0.5">{house.name} — تابع الحجوزات واحظر أيام الصيانة</p>
+          <p className="text-[12px] text-[var(--color-owner-secondary)] mt-0.5">{house.name} — تابع الحجوزات واحظر أيام الصيانة</p>
         </div>
         <button type="button" onClick={() => setBlockSheet(true)}
-          className="flex items-center gap-1 text-[10px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-2.5 py-2">
+          className="flex items-center gap-1 text-[11px] font-black text-[var(--color-owner-primary)] bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] rounded-xl px-2.5 min-h-11">
           <Ban className="w-3.5 h-3.5" /> حظر فترة
         </button>
       </div>
@@ -96,7 +96,7 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
         ].map((s) => (
           <div key={s.label} className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-2.5 text-center">
             <div className={`text-lg font-black ${s.color}`}>{s.value}</div>
-            <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{s.label}</div>
+            <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{s.label}</div>
           </div>
         ))}
       </div>
@@ -109,7 +109,7 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
           <button aria-label="الشهر التالي" type="button" onClick={() => shift(1)} className="p-1.5 rounded-xl hover:bg-[var(--color-owner-hover)] text-[var(--color-owner-secondary)]"><ChevronLeft className="w-4 h-4" /></button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 text-[9px] font-black text-[var(--color-owner-secondary)] text-center">
+        <div className="grid grid-cols-7 gap-1 text-[11px] font-black text-[var(--color-owner-secondary)] text-center">
           {WEEKDAYS.map((w) => <div key={w}>{w}</div>)}
         </div>
         <div className="grid grid-cols-7 gap-1">
@@ -128,7 +128,7 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
                 : 'bg-[var(--color-owner-bg)] text-[var(--color-owner-text)] border border-[var(--color-owner-border)]';
             return (
               <button key={ds} type="button" onClick={() => setOpenDay(ds)}
-                className={`relative aspect-square rounded-xl flex flex-col items-center justify-center text-[11px] font-black transition-all active:scale-95 ${cls} ${isPast ? 'opacity-45' : ''} ${isToday ? 'ring-2 ring-[var(--color-owner-primary)]' : ''}`}>
+                className={`relative aspect-square rounded-xl flex flex-col items-center justify-center text-[12px] font-black transition-all active:scale-95 ${cls} ${isPast ? 'opacity-45' : ''} ${isToday ? 'ring-2 ring-[var(--color-owner-primary)]' : ''}`}>
                 {day}
                 {isBooked && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-amber-500" />}
               </button>
@@ -136,7 +136,7 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
           })}
         </div>
 
-        <div className="flex justify-center gap-3 text-[9px] font-bold text-[var(--color-owner-secondary)] flex-wrap pt-1">
+        <div className="flex justify-center gap-3 text-[11px] font-bold text-[var(--color-owner-secondary)] flex-wrap pt-1">
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-amber-100 border border-amber-200" /> محجوز</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-rose-500" /> مغلق</span>
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)]" /> متاح</span>
@@ -148,16 +148,16 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
         {openDay && (
           <div className="space-y-3">
             {openIsBlocked ? (
-              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3 text-[11px] font-bold text-rose-800 flex items-center gap-2">
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3 text-[12px] font-bold text-rose-800 flex items-center gap-2">
                 <Lock className="w-4 h-4" /> هذا اليوم مغلق يدويًا (صيانة/خدمة).
               </div>
             ) : openBookings.length > 0 ? (
               <div className="space-y-2">
-                <div className="text-[11px] font-black text-[var(--color-owner-text)]">{arabicPlural(openBookings.length, BOOKING_FORMS)} في هذا اليوم</div>
+                <div className="text-[12px] font-black text-[var(--color-owner-text)]">{arabicPlural(openBookings.length, BOOKING_FORMS)} في هذا اليوم</div>
                 {openBookings.map((b) => (
                   <div key={b.id} className="bg-[var(--color-owner-bg)] rounded-2xl p-3 space-y-1">
-                    <div className="text-[11px] font-black text-[var(--color-owner-text)]">{b.organizationName || b.userName}</div>
-                    <div className="text-[10px] font-bold text-[var(--color-owner-secondary)] flex items-center gap-2 flex-wrap">
+                    <div className="text-[12px] font-black text-[var(--color-owner-text)]">{b.organizationName || b.userName}</div>
+                    <div className="text-[11px] font-bold text-[var(--color-owner-secondary)] flex items-center gap-2 flex-wrap">
                       <span>{arabicDateRange(b.checkIn, b.checkOut)}</span>
                       <span className="flex items-center gap-0.5"><Users className="w-3 h-3" /> {b.guestsCount}</span>
                       <span>{arabicNumber(b.totalPrice)} ج.م</span>
@@ -166,12 +166,12 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
                 ))}
               </div>
             ) : (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-[11px] font-bold text-emerald-800">هذا اليوم متاح وشاغر.</div>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-[12px] font-bold text-emerald-800">هذا اليوم متاح وشاغر.</div>
             )}
 
             {openBookings.length === 0 && (
               <button type="button" onClick={() => { toggleBlockDay(openDay); setOpenDay(null); }}
-                className={`w-full flex items-center justify-center gap-1.5 text-[11px] font-black py-3 rounded-2xl ${openIsBlocked ? 'bg-emerald-600 text-white' : 'bg-rose-500 text-white'}`}>
+                className={`w-full flex items-center justify-center gap-1.5 text-[12px] font-black py-3 rounded-2xl ${openIsBlocked ? 'bg-emerald-600 text-white' : 'bg-rose-500 text-white'}`}>
                 {openIsBlocked ? <><Unlock className="w-4 h-4" /> إلغاء الحظر (إتاحة اليوم)</> : <><Lock className="w-4 h-4" /> حظر هذا اليوم (صيانة)</>}
               </button>
             )}
@@ -182,21 +182,21 @@ export default function OwnerCalendar({ house, bookings, onUpdateHouse }: OwnerC
       {/* Block range sheet */}
       <BottomSheet open={blockSheet} onClose={() => setBlockSheet(false)} title="حظر فترة">
         <div className="space-y-3">
-          <p className="text-[10px] font-bold text-[var(--color-owner-secondary)] leading-relaxed">الأيام المحظورة تظهر فورًا كغير متاحة للحجز للجميع.</p>
+          <p className="text-[11px] font-bold text-[var(--color-owner-secondary)] leading-relaxed">الأيام المحظورة تظهر فورًا كغير متاحة للحجز للجميع.</p>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[10px] font-black text-[var(--color-owner-secondary)] mb-1">من تاريخ</label>
+              <label className="block text-[11px] font-black text-[var(--color-owner-secondary)] mb-1">من تاريخ</label>
               <input type="date" value={blkFrom} onChange={(e) => setBlkFrom(e.target.value)}
-                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[11px] px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] outline-none text-left" />
+                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[12px] px-2.5 min-h-11 rounded-xl text-[var(--color-owner-text)] outline-none text-left" />
             </div>
             <div>
-              <label className="block text-[10px] font-black text-[var(--color-owner-secondary)] mb-1">إلى تاريخ (اختياري)</label>
+              <label className="block text-[11px] font-black text-[var(--color-owner-secondary)] mb-1">إلى تاريخ (اختياري)</label>
               <input type="date" min={blkFrom || undefined} value={blkTo} onChange={(e) => setBlkTo(e.target.value)}
-                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[11px] px-2.5 py-2 rounded-xl text-[var(--color-owner-text)] outline-none text-left" />
+                className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[12px] px-2.5 min-h-11 rounded-xl text-[var(--color-owner-text)] outline-none text-left" />
             </div>
           </div>
           <button type="button" onClick={blockRange} disabled={!blkFrom}
-            className="w-full flex items-center justify-center gap-1.5 bg-rose-500 disabled:opacity-40 text-white text-[11px] font-black py-3 rounded-2xl">
+            className="w-full flex items-center justify-center gap-1.5 bg-rose-500 disabled:opacity-40 text-white text-[12px] font-black py-3 rounded-2xl">
             <Lock className="w-4 h-4" /> حظر الفترة
           </button>
         </div>

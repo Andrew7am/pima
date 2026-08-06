@@ -57,7 +57,7 @@ export default function OwnerReports({ ownerBookings, ownerReviews, occupancyRat
         <h2 className="text-base font-black text-[var(--color-owner-text)] flex items-center gap-1.5">
           <BarChart3 className="w-4.5 h-4.5 text-[var(--color-owner-primary)]" /> التقارير والرؤى
         </h2>
-        <p className="text-[11px] text-[var(--color-owner-secondary)] mt-0.5">نظرة تشغيلية على أداء بيتك</p>
+        <p className="text-[12px] text-[var(--color-owner-secondary)] mt-0.5">نظرة تشغيلية على أداء بيتك</p>
       </div>
 
       {/* KPI row */}
@@ -71,7 +71,7 @@ export default function OwnerReports({ ownerBookings, ownerReviews, occupancyRat
           <div key={k.label} className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1">
             <k.icon className="w-4 h-4 text-[var(--color-owner-primary)]" />
             <div className={`text-lg font-black ${k.color}`}>{k.value}</div>
-            <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{k.label}</div>
+            <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{k.label}</div>
           </div>
         ))}
       </div>
@@ -82,11 +82,11 @@ export default function OwnerReports({ ownerBookings, ownerReviews, occupancyRat
         <div className="flex items-end justify-between gap-2 h-32">
           {months.map((m, i) => (
             <div key={`${m.year}-${m.month}`} className="flex-1 flex flex-col items-center gap-1.5">
-              <span className="text-[9px] font-bold text-[var(--color-owner-text)]">{monthCounts[i] ? arabicNumber(monthCounts[i]) : ''}</span>
+              <span className="text-[11px] font-bold text-[var(--color-owner-text)]">{monthCounts[i] ? arabicNumber(monthCounts[i]) : ''}</span>
               <motion.div initial={{ height: 0 }} animate={{ height: `${Math.max(4, (monthCounts[i] / maxCount) * 100)}%` }}
                 transition={{ duration: 0.6, delay: i * 0.06, ease: 'easeOut' }}
                 className="w-full max-w-[28px] rounded-t-lg bg-[var(--color-owner-primary)]" style={{ minHeight: 4 }} />
-              <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{m.label}</span>
+              <span className="text-[11px] text-[var(--color-owner-secondary)] font-bold">{m.label}</span>
             </div>
           ))}
         </div>
@@ -101,11 +101,11 @@ export default function OwnerReports({ ownerBookings, ownerReviews, occupancyRat
             const pct = Math.round((n / sourceTotal) * 100);
             return (
               <div key={src} className="flex items-center gap-2">
-                <span className="flex items-center gap-1 text-[10px] font-bold text-[var(--color-owner-secondary)] w-24 shrink-0"><meta.icon className="w-3 h-3" /> {meta.label}</span>
+                <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--color-owner-secondary)] w-24 shrink-0"><meta.icon className="w-3 h-3" /> {meta.label}</span>
                 <span className="flex-1 h-2.5 rounded-full bg-[var(--color-owner-bg)] overflow-hidden">
                   <motion.span className="block h-full rounded-full" style={{ background: meta.color }} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6 }} />
                 </span>
-                <span className="text-[9px] font-black text-[var(--color-owner-secondary)] w-12 shrink-0 text-left">{arabicPercent(pct)} ({arabicNumber(n)})</span>
+                <span className="text-[11px] font-black text-[var(--color-owner-secondary)] w-12 shrink-0 text-left">{arabicPercent(pct)} ({arabicNumber(n)})</span>
               </div>
             );
           })}
@@ -118,18 +118,18 @@ export default function OwnerReports({ ownerBookings, ownerReviews, occupancyRat
         <div className="flex items-end justify-between gap-2 h-28">
           {SEASONS.map((s, i) => (
             <div key={s.key} className="flex-1 flex flex-col items-center gap-1.5">
-              <span className="text-[9px] font-bold text-[var(--color-owner-text)]">{seasonCounts[i] ? arabicNumber(seasonCounts[i]) : ''}</span>
+              <span className="text-[11px] font-bold text-[var(--color-owner-text)]">{seasonCounts[i] ? arabicNumber(seasonCounts[i]) : ''}</span>
               <motion.div initial={{ height: 0 }} animate={{ height: `${Math.max(4, (seasonCounts[i] / maxSeason) * 100)}%` }}
                 transition={{ duration: 0.6, delay: i * 0.08, ease: 'easeOut' }}
                 className="w-full max-w-[36px] rounded-t-lg bg-amber-400" style={{ minHeight: 4 }} />
-              <span className="text-[9px] text-[var(--color-owner-secondary)] font-bold">{s.label}</span>
+              <span className="text-[11px] text-[var(--color-owner-secondary)] font-bold">{s.label}</span>
             </div>
           ))}
         </div>
       </div>
 
       {ownerReviews.length > 0 && (
-        <p className="text-[10px] text-[var(--color-owner-secondary)] font-bold text-center">توزيع التقييمات وتفاصيلها في صفحة "التقييمات".</p>
+        <p className="text-[11px] text-[var(--color-owner-secondary)] font-bold text-center">توزيع التقييمات وتفاصيلها في صفحة "التقييمات".</p>
       )}
     </div>
   );

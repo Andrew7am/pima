@@ -54,21 +54,21 @@ export default function OwnerSpotlight({ open, onClose, bookings, rooms, onOpenB
 
             <div className="max-h-[60vh] overflow-y-auto p-2">
               {!query ? (
-                <p className="text-[11px] text-[var(--color-owner-secondary)] font-bold text-center py-8">اكتب للبحث في كل شيء دفعة واحدة.</p>
+                <p className="text-[12px] text-[var(--color-owner-secondary)] font-bold text-center py-8">اكتب للبحث في كل شيء دفعة واحدة.</p>
               ) : empty ? (
-                <p className="text-[11px] text-[var(--color-owner-secondary)] font-bold text-center py-8">لا توجد نتائج لـ "{q}".</p>
+                <p className="text-[12px] text-[var(--color-owner-secondary)] font-bold text-center py-8">لا توجد نتائج لـ "{q}".</p>
               ) : (
                 <div className="space-y-2">
                   {bookingResults.length > 0 && (
                     <div>
-                      <div className="text-[9px] font-black text-[var(--color-owner-secondary)] px-2 py-1">الحجوزات</div>
+                      <div className="text-[11px] font-black text-[var(--color-owner-secondary)] px-2 py-1">الحجوزات</div>
                       {bookingResults.map((b) => (
                         <button key={b.id} type="button" onClick={() => { onOpenBooking(b.id); onClose(); }}
                           className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl hover:bg-[var(--color-owner-hover)] text-right">
                           <span className="w-8 h-8 rounded-xl bg-[var(--color-owner-hover)] flex items-center justify-center shrink-0"><ClipboardList className="w-4 h-4 text-[var(--color-owner-primary)]" /></span>
                           <div className="flex-1 min-w-0">
-                            <div className="text-[11px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
-                            <div className="text-[9px] font-bold text-[var(--color-owner-secondary)] flex items-center gap-1.5">
+                            <div className="text-[12px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
+                            <div className="text-[11px] font-bold text-[var(--color-owner-secondary)] flex items-center gap-1.5">
                               <span className="font-mono">{bookingRef(b)}</span><span>· {arabicDate(b.checkIn)}</span>
                               {b.userPhone && <span className="flex items-center gap-0.5"><Phone className="w-2.5 h-2.5" />{b.userPhone}</span>}
                             </div>
@@ -79,14 +79,14 @@ export default function OwnerSpotlight({ open, onClose, bookings, rooms, onOpenB
                   )}
                   {roomResults.length > 0 && (
                     <div>
-                      <div className="text-[9px] font-black text-[var(--color-owner-secondary)] px-2 py-1">الغرف</div>
+                      <div className="text-[11px] font-black text-[var(--color-owner-secondary)] px-2 py-1">الغرف</div>
                       {roomResults.map((r) => (
                         <button key={r.id} type="button" onClick={() => { onGoRooms(); onClose(); }}
                           className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl hover:bg-[var(--color-owner-hover)] text-right">
                           <span className="w-8 h-8 rounded-xl bg-[var(--color-owner-hover)] flex items-center justify-center shrink-0"><BedDouble className="w-4 h-4 text-[var(--color-owner-primary)]" /></span>
                           <div className="flex-1 min-w-0">
-                            <div className="text-[11px] font-black text-[var(--color-owner-text)]">غرفة {r.name}</div>
-                            <div className="text-[9px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(r.bedsCount, BED_FORMS)}</div>
+                            <div className="text-[12px] font-black text-[var(--color-owner-text)]">غرفة {r.name}</div>
+                            <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(r.bedsCount, BED_FORMS)}</div>
                           </div>
                         </button>
                       ))}

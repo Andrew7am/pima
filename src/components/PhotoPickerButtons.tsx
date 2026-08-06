@@ -52,7 +52,7 @@ export default function PhotoPickerButtons({ idPrefix, onSelect, className = '',
     <div className={`flex gap-2 ${className}`}>
       <label
         htmlFor={`${idPrefix}-gallery`}
-        className={`flex-1 flex items-center justify-center gap-1.5 bg-white border border-[#D6D6C2] hover:bg-[#EBEBE0]/50 text-[#4A4A3A] text-[10px] font-bold py-2 rounded-xl transition-colors ${uploading ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+        className={`flex-1 flex items-center justify-center gap-1.5 bg-white border border-[#D6D6C2] hover:bg-[#EBEBE0]/50 text-[#4A4A3A] text-[11px] font-bold min-h-11 rounded-xl transition-colors ${uploading ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
       >
         {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
         <span>{uploading ? 'جارٍ الرفع…' : 'اختر صورة'}</span>
@@ -60,7 +60,7 @@ export default function PhotoPickerButtons({ idPrefix, onSelect, className = '',
       </label>
       <label
         htmlFor={`${idPrefix}-camera`}
-        className={`flex-1 flex items-center justify-center gap-1.5 bg-white border border-[#D6D6C2] hover:bg-[#EBEBE0]/50 text-[#4A4A3A] text-[10px] font-bold py-2 rounded-xl transition-colors ${uploading ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+        className={`flex-1 flex items-center justify-center gap-1.5 bg-white border border-[#D6D6C2] hover:bg-[#EBEBE0]/50 text-[#4A4A3A] text-[11px] font-bold min-h-11 rounded-xl transition-colors ${uploading ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
       >
         {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
         <span>التقط بالكاميرا</span>
