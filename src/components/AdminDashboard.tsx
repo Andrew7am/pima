@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS } from '../lib/arabic';
+import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, ROLE_LABELS, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS } from '../lib/arabic';
 import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
 import { topHousesByBookings, topHousesByCollected } from '../lib/topHouses';
 // Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
@@ -766,7 +766,7 @@ export default function AdminDashboard({
         // Recent activity feed: mix new signups + new bookings, last 7 days, sorted
         const activity: { ts: number; icon: string; text: string }[] = [];
         users.filter((u) => userTs(u) >= weekAgoMs).forEach((u) => {
-          activity.push({ ts: userTs(u), icon: '👤', text: `${u.name} أنشأ حساب جديد (${u.role === 'servant' ? 'خادم' : u.role === 'owner' ? 'مالك' : 'فرد'})` });
+          activity.push({ ts: userTs(u), icon: '👤', text: `${u.name} أنشأ حساب جديد (${ROLE_LABELS[u.role] ?? 'فرد'})` });
         });
         bookings.filter((b) => bookingTs(b) >= weekAgoMs).forEach((b) => {
           activity.push({ ts: bookingTs(b), icon: '📅', text: `حجز جديد: ${b.organizationName || b.userName} → ${b.houseName}` });
@@ -1054,7 +1054,7 @@ export default function AdminDashboard({
                   <div>
                     <h3 className="text-xs font-bold text-[#4A4A3A]">{acc.name}</h3>
                     <p className="text-[12px] text-[#8A8A70] mt-0.5">
-                      {acc.role === 'owner' ? 'صاحب بيت' : 'خادم'} · {acc.email} · {acc.phone}
+                      {ROLE_LABELS[acc.role] ?? 'خادم'} · {acc.email} · {acc.phone}
                     </p>
                     {acc.organizationName && (
                       <p className="text-[12px] text-[#8A8A70] mt-0.5">الجهة: {acc.organizationName}</p>
@@ -1243,16 +1243,31 @@ export default function AdminDashboard({
                   house_status_changed: 'تغيير حالة بيت',
                   user_approval_changed: 'تغيير اعتماد حساب',
                   user_ban_changed: 'تغيير حالة حظر',
+                  // Money decisions — added with migration 104. Until then the
+                  // log covered who approved a booking but not who released a
+                  // transfer or changed the commission rate.
+                  payment_status_changed: 'تحقق من دفعة',
+                  payout_status_changed: 'تحويل لصاحب بيت',
+                  settings_changed: 'تغيير إعدادات المنصة',
                 };
+                // The money rows are the ones an audit is read for, so they
+                // are marked rather than left to look like any other line.
+                const isMoney = entry.action === 'payment_status_changed'
+                  || entry.action === 'payout_status_changed'
+                  || entry.action === 'settings_changed';
                 return (
-                  <div key={entry.id} className="bg-white rounded-2xl border border-[#D6D6C2] p-3 text-[12px] space-y-1">
+                  <div key={entry.id} className={`bg-white rounded-2xl border p-3 text-[12px] space-y-1 ${isMoney ? 'border-[#D4AF37]' : 'border-[#D6D6C2]'}`}>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-[#0A2342]">{actionLabels[entry.action] || entry.action}</span>
-                      <span className="text-[#8A8A70] shrink-0">{new Date(entry.createdAt).toLocaleString('ar-EG')}</span>
+                      <span className="font-bold text-[#0A2342] flex items-center gap-1.5">
+                        {isMoney && <Wallet className="w-3.5 h-3.5 text-[#B8912B] shrink-0" />}
+                        {actionLabels[entry.action] || entry.action}
+                      </span>
+                      <span className="text-[#8A8A70] shrink-0">{arabicDateTime(entry.createdAt)}</span>
                     </div>
                     <div className="text-[#4A4A3A]">{entry.details}</div>
                     <div className="text-[#8A8A70]">
-                      بواسطة: {entry.actorName || 'غير معروف'} ({entry.actorRole === 'admin' ? 'أدمن' : entry.actorRole === 'owner' ? 'مالك بيت' : entry.actorRole})
+                      {/* A role with no Arabic name printed its English key mid-sentence. */}
+                      بواسطة: {entry.actorName || 'غير معروف'} ({ROLE_LABELS[entry.actorRole ?? ''] ?? 'غير معروف'})
                     </div>
                   </div>
                 );
@@ -1895,7 +1910,7 @@ export default function AdminDashboard({
                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
                       usr.role === 'admin' ? 'bg-red-50 text-red-800 border-red-200' : usr.role === 'owner' ? 'bg-[#EBEBE0] text-[#5A5A40] border-[#BCBC9D]' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                     }`}>
-                      {usr.role === 'admin' ? 'إدارة' : usr.role === 'owner' ? 'صاحب بيت' : usr.role === 'servant' ? 'خادم' : 'فرد'}
+                      {ROLE_LABELS[usr.role] ?? 'فرد'}
                     </span>
                     <button onClick={() => setDetailUserId(usr.id)}
                       className="flex items-center gap-1 min-h-11 px-2 text-[11px] font-bold text-[#5A5A40] hover:bg-[#EBEBE0]/50 px-2 py-1 rounded-lg cursor-pointer border border-[#D6D6C2]">
@@ -2806,7 +2821,7 @@ export default function AdminDashboard({
               <div className="bg-white rounded-2xl border border-[#D6D6C2] p-4 space-y-2 text-[11px]">
                 <div className="flex justify-between"><span className="text-[#8A8A70]">الإيميل:</span><span className="font-bold">{detailUser.email}</span></div>
                 <div className="flex justify-between"><span className="text-[#8A8A70]">الهاتف:</span><span className="font-bold font-mono">{detailUser.phone}</span></div>
-                <div className="flex justify-between"><span className="text-[#8A8A70]">الدور:</span><span className="font-bold">{detailUser.role === 'admin' ? 'إدارة' : detailUser.role === 'owner' ? 'صاحب بيت' : detailUser.role === 'servant' ? 'خادم' : 'فرد'}</span></div>
+                <div className="flex justify-between"><span className="text-[#8A8A70]">الدور:</span><span className="font-bold">{ROLE_LABELS[detailUser.role] ?? 'فرد'}</span></div>
                 {detailUser.organizationName && <div className="flex justify-between"><span className="text-[#8A8A70]">الكنيسة/المنظمة:</span><span className="font-bold">{detailUser.organizationName}</span></div>}
                 {detailUser.governorate && <div className="flex justify-between"><span className="text-[#8A8A70]">المحافظة:</span><span className="font-bold">{detailUser.governorate}</span></div>}
                 <div className="flex justify-between"><span className="text-[#8A8A70]">تاريخ التسجيل:</span><span className="font-bold">{new Date(detailUser.createdAt).toLocaleDateString('ar-EG')}</span></div>

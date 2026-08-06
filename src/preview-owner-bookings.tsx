@@ -16,7 +16,7 @@ const owner = {
   name: 'أ. مينا صبحي',
   email: 'owner@example.com',
   phone: '01001234567',
-  role: 'house_owner',
+  role: 'owner',
   points: 0,
   favorites: [],
   createdAt: '2025-01-01T00:00:00.000Z',

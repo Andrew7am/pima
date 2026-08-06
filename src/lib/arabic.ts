@@ -170,3 +170,22 @@ export function arabicDateRange(fromISO: string, toISO: string): string {
   }
   return `${arabicDate(fromISO)} – ${arabicDate(toISO)}`;
 }
+
+/**
+ * The four account roles, named once.
+ *
+ * The admin panel spelled these inline in four places and did not agree with
+ * itself: an owner was «مالك» on the activity feed, «صاحب بيت» on the users
+ * list and account queue, and an admin was «إدارة» in two places. The audit
+ * log had a third problem — any role it had no Arabic branch for printed its
+ * raw English key mid-sentence.
+ *
+ * Keyed loosely so an unexpected value returns undefined and the caller can
+ * say «غير معروف» rather than leak a database string to the screen.
+ */
+export const ROLE_LABELS: Record<string, string> = {
+  individual: 'فرد',
+  servant: 'خادم',
+  owner: 'صاحب بيت',
+  admin: 'إدارة',
+};
