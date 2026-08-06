@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS } from '../lib/arabic';
 import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
+import { topHousesByBookings, topHousesByCollected } from '../lib/topHouses';
 // Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
 // to the singular. The counted nouns live in lib/arabic alongside the rule
 // itself, so the owner screens and this one cannot drift into two different
@@ -482,16 +483,10 @@ export default function AdminDashboard({
     .map(([id, v]) => ({ id, ...v, net: Math.round(v.collected * (1 - PLATFORM_COMMISSION)) }))
     .sort((a, b) => b.collected - a.collected);
 
-  // Top houses by collected revenue
-  const houseCollected: Record<string, number> = {};
-  payments.filter((p) => p.paymentStatus === 'approved' && periodBookingIds.has(p.bookingId)).forEach((p) => {
-    const hid = bookingHouseId[p.bookingId];
-    if (hid) houseCollected[hid] = (houseCollected[hid] || 0) + p.amount;
-  });
-  const topHouses = Object.entries(houseCollected)
-    .map(([id, amount]) => ({ id, name: houses.find((h) => h.id === id)?.name || id, amount }))
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 5);
+  // Top houses by money actually collected in the selected period. The النمو
+  // tab asks a different question — who is busiest — so it calls a different
+  // function; see lib/topHouses for why the two must not share a name.
+  const topCollectingHouses = topHousesByCollected(payments, bookingHouseId, houses, periodBookingIds);
 
   // Load chat messages when admin opens a booking chat
   useEffect(() => {
@@ -763,19 +758,10 @@ export default function AdminDashboard({
         }
         const maxDay = Math.max(1, ...days.map((d) => d.count));
 
-        // Top houses this month
-        const perHouse = new Map<string, { count: number; revenue: number }>();
-        bookings
-          .filter((b) => (b.status === 'approved' || b.status === 'completed') && bookingTs(b) >= monthStart)
-          .forEach((b) => {
-            const cur = perHouse.get(b.houseId) ?? { count: 0, revenue: 0 };
-            perHouse.set(b.houseId, { count: cur.count + 1, revenue: cur.revenue + b.totalPrice });
-          });
-        const topHouses = [...perHouse.entries()]
-          .map(([houseId, v]) => ({ house: houses.find((h) => h.id === houseId), ...v }))
-          .filter((x) => x.house)
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 5);
+        // Busiest houses this month — ranked on bookings taken, which is a
+        // different list from التقارير's highest-collecting houses and is now
+        // labelled as such on screen.
+        const busiestHouses = topHousesByBookings(bookings, houses, monthStart);
 
         // Recent activity feed: mix new signups + new bookings, last 7 days, sorted
         const activity: { ts: number; icon: string; text: string }[] = [];
@@ -845,12 +831,12 @@ export default function AdminDashboard({
 
             {/* Top houses this month */}
             <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-2">
-              <span className="text-xs font-black text-[#4A4A3A]">أعلى ٥ بيوت هذا الشهر</span>
-              {topHouses.length === 0 ? (
+              <span className="text-xs font-black text-[#4A4A3A]">أكتر ٥ بيوت حجزاً هذا الشهر</span>
+              {busiestHouses.length === 0 ? (
                 <p className="text-[12px] text-[#8A8A70] text-center py-3">لا يوجد حجوزات مؤكدة هذا الشهر بعد.</p>
               ) : (
                 <div className="space-y-1.5">
-                  {topHouses.map((row, i) => (
+                  {busiestHouses.map((row, i) => (
                     <div key={row.house!.id} className="flex items-center gap-2 bg-[#FAF8F5] border border-[#D6D6C2] rounded-2xl p-2.5">
                       <span className="w-6 h-6 rounded-full bg-[#5A5A40] text-white text-[12px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
                       <div className="flex-1 min-w-0">
@@ -859,7 +845,9 @@ export default function AdminDashboard({
                       </div>
                       <div className="text-left shrink-0">
                         <div className="text-[11px] font-black text-[#4A4A3A]">{arabicPlural(row.count, BOOKING_FORMS)}</div>
-                        <div className="text-[11px] text-[#8A8A70]">{arabicNumber(row.revenue)} ج.م</div>
+                        {/* Booked, not collected — التقارير is where money in
+                            hand is reported, and it ranks a different list. */}
+                        <div className="text-[11px] text-[#8A8A70]">{arabicNumber(row.bookedValue)} ج.م محجوزة</div>
                       </div>
                     </div>
                   ))}
@@ -2119,16 +2107,16 @@ export default function AdminDashboard({
           </div>
 
           {/* Top houses by revenue */}
-          {topHouses.length > 0 && (
+          {topCollectingHouses.length > 0 && (
             <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] space-y-2">
-              <h3 className="text-xs font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أكثر البيوت دخلاً</h3>
-              {topHouses.map((h, i) => (
+              <h3 className="text-xs font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أعلى ٥ بيوت تحصيلاً (الفترة المختارة)</h3>
+              {topCollectingHouses.map((h, i) => (
                 <div key={h.id} className="flex items-center justify-between text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0">
                   <span className="font-bold text-[#4A4A3A] truncate flex items-center gap-1.5">
                     <span className="w-4 h-4 rounded-full bg-[#EBEBE0] text-[#5A5A40] text-[11px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
                     {h.name}
                   </span>
-                  <span className="font-black text-emerald-800 shrink-0">{arabicNumber(h.amount)} ج.م</span>
+                  <span className="font-black text-emerald-800 shrink-0">{arabicNumber(h.collected)} ج.م</span>
                 </div>
               ))}
             </div>
