@@ -560,9 +560,14 @@ export default function AdminDashboard({
     key: typeof navSection; label: string; icon: React.ElementType;
     tabs: { key: typeof activeTab; label: string; badge?: number; pulse?: boolean }[];
   }[] = [
-    { key: 'home', label: 'الرئيسية', icon: BarChart3, tabs: [
-      { key: 'growth', label: 'النمو' },
-      { key: 'reports', label: 'التقارير' },
+    // Order is the MIRROR of how it reads on screen. The page is RTL, so the
+    // first child renders rightmost — money, content, home, people, system
+    // lands as النظام · المستخدمين · الرئيسية · المحتوى · الحجوزات from the
+    // left, with الرئيسية dead centre and two items either side of it.
+    { key: 'money', label: 'الحجوزات', icon: Coins, tabs: [
+      { key: 'bookings', label: 'الحجوزات', badge: pendingOrUnpaidBookingsCount },
+      { key: 'payments', label: 'الدفعيات', badge: pendingPaymentsCount },
+      { key: 'payouts', label: 'طلبات التحويل', badge: pendingPayoutsCount },
     ]},
     { key: 'content', label: 'المحتوى', icon: Building, tabs: [
       { key: 'houses', label: 'البيوت' },
@@ -570,15 +575,14 @@ export default function AdminDashboard({
       { key: 'announcements', label: 'البانرات' },
       { key: 'reviews', label: 'التقييمات' },
     ]},
-    { key: 'people', label: 'الناس', icon: Users, tabs: [
+    { key: 'home', label: 'الرئيسية', icon: BarChart3, tabs: [
+      { key: 'growth', label: 'النمو' },
+      { key: 'reports', label: 'التقارير' },
+    ]},
+    { key: 'people', label: 'المستخدمين', icon: Users, tabs: [
       { key: 'users', label: 'المستخدمين' },
       { key: 'accounts', label: 'مراجعة الحسابات', badge: pendingAccounts.length, pulse: true },
       { key: 'messages', label: 'المحادثات' },
-    ]},
-    { key: 'money', label: 'الحجوزات والمال', icon: Coins, tabs: [
-      { key: 'bookings', label: 'الحجوزات', badge: pendingOrUnpaidBookingsCount },
-      { key: 'payments', label: 'الدفعيات', badge: pendingPaymentsCount },
-      { key: 'payouts', label: 'طلبات التحويل', badge: pendingPayoutsCount },
     ]},
     { key: 'system', label: 'النظام', icon: Settings, tabs: [
       { key: 'settings', label: 'الإعدادات' },
@@ -641,28 +645,10 @@ export default function AdminDashboard({
 
       {/* Grouped navigation. Picking a section also jumps to its first tab —
           before, the sub-tabs changed while the content stayed behind. */}
+      {/* The five sections moved to a floating bar pinned at the bottom of the
+          screen — see the end of this component. Sub-tabs stay here, beside
+          the content they filter. */}
       <div className="bg-white border border-[#D6D6C2] rounded-2xl overflow-hidden">
-        <div className="flex border-b border-[#D6D6C2] overflow-x-auto">
-          {NAV_GROUPS.map((g) => {
-            const Icon = g.icon;
-            const groupPending = g.tabs.reduce((s, t) => s + (t.badge ?? 0), 0);
-            const isOn = navSection === g.key;
-            return (
-              <button key={g.key} onClick={() => goTo(g.key, g.tabs[0].key)}
-                className={`flex-1 min-w-[86px] flex flex-col items-center gap-1 py-2.5 text-[12px] font-black transition-all cursor-pointer relative ${
-                  isOn ? 'bg-[#0A2342] text-white' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-                }`}>
-                <Icon className="w-4 h-4" />
-                {g.label}
-                {groupPending > 0 && !isOn && (
-                  <span className="absolute top-1.5 left-2 min-w-[15px] h-[15px] px-1 bg-rose-500 text-white text-[11px] font-black rounded-full flex items-center justify-center">
-                    {arabicBadge(groupPending)}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
         {/* Sub-tabs: natural width and scrollable, so labels aren't squeezed */}
         <div className="flex gap-1.5 p-1.5 overflow-x-auto">
           {NAV_GROUPS.find((g) => g.key === navSection)!.tabs.map((t) => (
@@ -2995,6 +2981,76 @@ export default function AdminDashboard({
           </div>
         </div>
       )}
+
+      {/* ── The bottom navigation ──────────────────────────────────────────
+          Five sections, الرئيسية in the middle as the primary action.
+
+          Sticky rather than fixed, so it rides inside the app shell's own
+          scroll container instead of floating over the whole viewport — the
+          shell clips overflow, and a `fixed` bar would sit outside it and
+          collide with the layout on desktop.
+
+          The raised disc stays INSIDE the bar's box. The same constraint is
+          documented on the app's own bottom bar in WebLayout: the shell
+          clips, so a button breaking the top edge is simply cut off. The bar
+          is tall enough to hold the circle instead.
+
+          The safe-area inset keeps the tap targets clear of the Android
+          gesture bar, matching the treatment the other two bars already have. */}
+      <div className="sticky bottom-0 z-20 pt-2 pb-[env(safe-area-inset-bottom)]">
+        <nav
+          aria-label="أقسام لوحة الإدارة"
+          className="bg-white rounded-[28px] shadow-[0_8px_28px_rgba(10,35,66,0.14),0_2px_8px_rgba(10,35,66,0.06)] border border-[#EBEBE0] px-2 py-2 flex items-stretch"
+        >
+          {NAV_GROUPS.map((g) => {
+            const Icon = g.icon;
+            const isOn = navSection === g.key;
+            const isPrimary = g.key === 'home';
+
+            if (isPrimary) {
+              return (
+                <button
+                  key={g.key}
+                  onClick={() => goTo(g.key, g.tabs[0].key)}
+                  aria-current={isOn ? 'page' : undefined}
+                  className="flex-1 flex flex-col items-center justify-center gap-1 min-h-14 cursor-pointer group"
+                >
+                  <span
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-[250ms] ${
+                      isOn
+                        ? 'bg-[#0A2342] shadow-[0_6px_16px_rgba(10,35,66,0.35)] scale-100'
+                        : 'bg-[#0A2342]/90 shadow-[0_3px_10px_rgba(10,35,66,0.2)] scale-95 group-hover:scale-100'
+                    }`}
+                  >
+                    <Icon className="w-6 h-6 text-[#C5A059]" />
+                  </span>
+                  <span className={`text-[11px] font-black transition-colors duration-[250ms] ${isOn ? 'text-[#C5A059]' : 'text-[#8A8A70]'}`}>
+                    {g.label}
+                  </span>
+                </button>
+              );
+            }
+
+            return (
+              <button
+                key={g.key}
+                onClick={() => goTo(g.key, g.tabs[0].key)}
+                aria-current={isOn ? 'page' : undefined}
+                className="flex-1 flex flex-col items-center justify-center gap-1.5 min-h-14 cursor-pointer"
+              >
+                <Icon
+                  className={`w-5 h-5 transition-all duration-[250ms] ${
+                    isOn ? 'text-[#C5A059] scale-110' : 'text-[#8A8A70] scale-100'
+                  }`}
+                />
+                <span className={`text-[11px] font-bold transition-colors duration-[250ms] ${isOn ? 'text-[#C5A059]' : 'text-[#8A8A70]'}`}>
+                  {g.label}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
     </div>
   );
