@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { arabicNumber, arabicPlural, arabicDateRange, arabicBadge, arabicPercent, arabicUnit, arabicDecimal, GUEST_FORMS, ROOM_FORMS, BED_FORMS, REVIEW_FORMS, HOUSE_FORMS, TASK_FORMS, BOOKING_FORMS } from '../../lib/arabic';
+import { arabicNumber, arabicPlural, arabicDateRange, arabicBadge, arabicPercent, arabicDecimal, GUEST_FORMS, ROOM_FORMS, BED_FORMS, REVIEW_FORMS, HOUSE_FORMS, TASK_FORMS, BOOKING_FORMS } from '../../lib/arabic';
 import { occupancyRate, monthWindow, bedsInUseOn } from '../../lib/occupancy';
 import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, RoomType, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification, Expense, Payout } from '../../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
 import {
   Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2,
   Building, Settings, MessageSquare, Camera, BedDouble, Phone, Mail, Lock, Menu, ChevronRight,
-  MessageCircle, Bell, BarChart3, Search, MoreVertical, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun, Moon, Download, QrCode,
+  MessageCircle, Bell, BarChart3, Search, MoreVertical, Utensils, MapPin, Image as ImageIcon, HelpCircle, KeyRound, Shuffle, ChevronDown, Sun, Moon, Download, QrCode, Wallet,
 } from 'lucide-react';
 import { bookingTypeLabel } from '../../lib/bookingGroups';
 import { categorizeBooking as categorize, sortForOwner } from '../../lib/ownerBookingOrder';
 import { bookingRef, bookingAge } from '../../lib/bookingRef';
 import { bookingMoney } from '../../lib/bookingMoney';
+import { availableForTransfer, cashDueAtArrival } from '../../lib/paymentLedger';
 import { ownerBookingBadge } from '../../lib/ownerBookingBadge';
 import { arabicDay, arabicDayYear, nightsBetween, nightsLabel } from '../../lib/bookingDates';
 import OwnerDisclosure from './OwnerDisclosure';
@@ -806,6 +807,24 @@ export default function OwnerDashboardShell({
         // "occupied" cannot quietly mean something different here.
         const occupiedBedsNow = bedsInUseOn(ownerBookings, todayStr);
         const todayOccupancy = totalBeds > 0 ? Math.round((occupiedBedsNow / totalBeds) * 100) : null;
+        // The money answers, quoted from the same helpers the finance centre
+        // uses — not recomputed here. A home screen that disagrees with the
+        // finance screen about what the owner is owed is worse than one that
+        // stays silent.
+        const ownerPayouts = payouts.filter((p) => ownerHouseIds.includes(p.houseId));
+        const transferable = availableForTransfer({
+          depositReceived, platformCommissionAmount, payouts: ownerPayouts,
+          confirmedBookings, commissionRate: PLATFORM_COMMISSION,
+        });
+        // Cash the owner collects at the door, counting only stays that have
+        // not ended — money from a finished booking is already in their pocket.
+        const cashAtDoor = confirmedBookings
+          .filter((b) => b.checkOut >= todayStr)
+          .reduce((sum, b) => sum + cashDueAtArrival(b), 0);
+        const monthRevenue = confirmedBookings
+          .filter((b) => { const d = new Date(b.checkIn); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); })
+          .reduce((sum, b) => sum + b.totalPrice, 0);
+
         const roomBedStates = ownerRooms.map((r) => getRoomBedState(r, allocations, ownerBookings, todayStr));
         const roomStatusCounts = {
           available: roomBedStates.filter((s) => s === 'available').length,
@@ -900,58 +919,12 @@ export default function OwnerDashboardShell({
               </div>
             </div>
 
-            {/* ── 4 KPI cards (mockup): colored icon chips, all clickable ── */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {([
-                { label: 'الحجوزات اليوم', value: ownerBookings.filter((b) => b.createdAt.startsWith(todayStr)).length, unit: 'جديدة', icon: ClipboardList, chip: 'bg-indigo-50 text-indigo-600', tab: 'bookings' as ActiveTab },
-                { label: 'إجمالي الغرف', value: totalRooms, unit: arabicUnit(totalRooms, ROOM_FORMS), icon: BedDouble, chip: 'bg-sky-50 text-sky-600', tab: 'rooms' as ActiveTab },
-                { label: 'المشغول الآن', value: roomStatusCounts.booked, unit: arabicUnit(roomStatusCounts.booked, ROOM_FORMS), icon: Users, chip: 'bg-orange-50 text-orange-600', tab: 'rooms' as ActiveTab },
-                { label: 'المتبقي', value: roomStatusCounts.available, unit: arabicUnit(roomStatusCounts.available, ROOM_FORMS), icon: Check, chip: 'bg-emerald-50 text-emerald-600', tab: 'rooms' as ActiveTab },
-              ]).map((k) => (
-                <button key={k.label} type="button" onClick={() => { setActiveTab(k.tab); setShowOverflow(false); }}
-                  className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-3.5 flex flex-col items-center gap-1.5 text-center shadow-sm hover:shadow transition-all cursor-pointer">
-                  <span className={`w-10 h-10 rounded-2xl flex items-center justify-center ${k.chip}`}><k.icon className="w-4.5 h-4.5 w-[18px] h-[18px]" /></span>
-                  <span className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{k.label}</span>
-                  <span className="text-xl font-black text-[var(--color-owner-text)] leading-none">{arabicNumber(k.value)}</span>
-                  <span className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{k.unit}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* ── مداخل سريعة: قائمة الطعام + التقييمات ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button type="button" onClick={() => { setActiveTab('meals'); setShowOverflow(false); }}
-                className="w-full flex items-center gap-3 bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-3.5 text-right shadow-sm hover:shadow transition-all cursor-pointer">
-                <span className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-amber-50 text-amber-600"><Utensils className="w-5 h-5" /></span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12px] font-black text-[var(--color-owner-text)]">قائمة الطعام</div>
-                  <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">إدارة وجبات وأسعار مطعم البيت</div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-[var(--color-owner-secondary)] rotate-180 shrink-0" />
-              </button>
-
-              {(() => {
-                const unanswered = ownerReviews.filter((r) => !r.ownerReply).length;
-                return (
-                  <button type="button" onClick={() => { setActiveTab('reviews'); setShowOverflow(false); }}
-                    className="w-full flex items-center gap-3 bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-3.5 text-right shadow-sm hover:shadow transition-all cursor-pointer">
-                    <span className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 bg-[var(--color-owner-accent)]/15 text-[var(--color-owner-accent)]"><Star className="w-5 h-5 fill-current" /></span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[12px] font-black text-[var(--color-owner-text)]">التقييمات</span>
-                        {unanswered > 0 && <span className="text-[11px] font-black text-rose-600 bg-rose-50 border border-rose-200 rounded-full px-1.5">{unanswered} بدون رد</span>}
-                      </div>
-                      <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">
-                        {ownerReviews.length > 0 ? `${arabicDecimal(avgRating)} ★ · ${arabicPlural(ownerReviews.length, REVIEW_FORMS)}` : 'لا توجد تقييمات بعد'}
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-[var(--color-owner-secondary)] rotate-180 shrink-0" />
-                  </button>
-                );
-              })()}
-            </div>
-
-            {/* ── تحتاج انتباه (mockup): derived, each row jumps to its fix ── */}
+            {/* ── تحتاج انتباه: first, because it is the only reason to open
+                   the app on a normal morning. Every row jumps to its fix.
+                   Four statistics cards used to sit above it; three of them
+                   repeated the room counts that the الغرف tab already states
+                   with percentages, and the occupancy donut above says the
+                   same thing a fourth time. ── */}
             {(() => {
               const attentionRooms = roomStatusCounts.cleaning + roomStatusCounts.maintenance;
               const items: { key: string; title: string; sub: string; icon: React.ElementType; chip: string; go: () => void }[] = [];
@@ -997,6 +970,61 @@ export default function OwnerDashboardShell({
                 </div>
               );
             })()}
+
+            {/* ── فلوسك: the question an owner actually opens the app for, and
+                   the one thing the front never answered. Every figure comes
+                   from lib/paymentLedger, so it cannot drift from the finance
+                   screen it links into. ── */}
+            <button type="button" onClick={() => { setActiveTab('financials'); setShowOverflow(false); }}
+              className="w-full text-right bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 shadow-sm hover:shadow transition-all cursor-pointer">
+              <div className="flex items-center gap-2">
+                <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-[var(--color-owner-accent)]/15 text-[var(--color-owner-accent)]"><Wallet className="w-4 h-4" /></span>
+                <span className="text-xs font-black text-[var(--color-owner-text)]">فلوسك</span>
+                <ChevronRight className="w-4 h-4 text-[var(--color-owner-secondary)] rotate-180 shrink-0 ms-auto" />
+              </div>
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                {([
+                  // "Transferable" is only ever the deposits Pima holds; the
+                  // rest is cash the owner takes at the door. Naming both
+                  // stops the two being read as one balance.
+                  { label: 'مستحق للتحويل', value: transferable, tint: 'text-[var(--color-owner-success-ink)]' },
+                  { label: 'تحصّله عند الوصول', value: cashAtDoor, tint: 'text-[var(--color-owner-text)]' },
+                  { label: 'إيراد الشهر', value: monthRevenue, tint: 'text-[var(--color-owner-text)]' },
+                ]).map((m) => (
+                  <div key={m.label} className="bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] rounded-2xl p-2.5">
+                    {/* Wraps rather than truncates: "تحصّله عند الوصو…" is a
+                        different promise from the one being made. */}
+                    <div className="text-[11px] font-bold text-[var(--color-owner-secondary)] leading-tight">{m.label}</div>
+                    <div className={`text-base font-black leading-tight mt-0.5 ${m.tint}`}>{arabicNumber(Math.round(m.value))}</div>
+                    <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">ج.م</div>
+                  </div>
+                ))}
+              </div>
+            </button>
+
+            {/* ── مداخل سريعة: one compact row instead of four statistic cards
+                   and two full-width tiles. Each carries the one number that
+                   makes it worth tapping. ── */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {([
+                { key: 'rooms', label: 'الغرف', sub: totalRooms > 0 ? `${arabicNumber(roomStatusCounts.available)} متاحة من ${arabicNumber(totalRooms)}` : 'أضف غرفك', icon: BedDouble, chip: 'bg-sky-50 text-sky-600', tab: 'rooms' as ActiveTab },
+                { key: 'meals', label: 'قائمة الطعام', sub: 'وجبات وأسعار', icon: Utensils, chip: 'bg-amber-50 text-amber-600', tab: 'meals' as ActiveTab },
+                { key: 'reviews', label: 'التقييمات', sub: ownerReviews.length > 0 ? `${arabicDecimal(avgRating)} ★ · ${arabicPlural(ownerReviews.length, REVIEW_FORMS)}` : 'لا توجد بعد', icon: Star, chip: 'bg-[var(--color-owner-accent)]/15 text-[var(--color-owner-accent)]', tab: 'reviews' as ActiveTab, badge: ownerReviews.filter((r) => !r.ownerReply).length },
+                { key: 'reports', label: 'التقارير', sub: 'أرقام بيتك بالتفصيل', icon: BarChart3, chip: 'bg-indigo-50 text-indigo-600', tab: 'reports' as ActiveTab },
+              ]).map((q) => (
+                <button key={q.key} type="button" onClick={() => { setActiveTab(q.tab); setShowOverflow(false); }}
+                  className="relative flex items-center gap-2.5 bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 text-right shadow-sm hover:shadow transition-all cursor-pointer">
+                  <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${q.chip}`}><q.icon className="w-4 h-4" /></span>
+                  <span className="min-w-0">
+                    <span className="block text-[12px] font-black text-[var(--color-owner-text)] truncate">{q.label}</span>
+                    <span className="block text-[11px] font-bold text-[var(--color-owner-secondary)] truncate">{q.sub}</span>
+                  </span>
+                  {'badge' in q && (q.badge ?? 0) > 0 && (
+                    <span className="absolute top-2 start-2 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[11px] font-black rounded-full flex items-center justify-center">{arabicBadge(q.badge as number)}</span>
+                  )}
+                </button>
+              ))}
+            </div>
 
             {/* ── آخر نشاط (mockup): notifications as a timeline ── */}
             <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-2.5 shadow-sm">
