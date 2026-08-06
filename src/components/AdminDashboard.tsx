@@ -301,6 +301,12 @@ export default function AdminDashboard({
   // User detail view
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
 
+  // Audit search & filter. The log is the only forensic tool in the panel and
+  // it grew to hundreds of rows with no way to ask it anything — "who released
+  // that transfer" meant scrolling.
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditKind, setAuditKind] = useState<'all' | 'money' | 'content' | 'people'>('all');
+
   // Chat viewer — admin reads booking messages for dispute resolution
   const [chatBookingId, setChatBookingId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<BookingMessage[]>([]);
@@ -522,6 +528,55 @@ export default function AdminDashboard({
     downloadCsv('financials.csv',
       ['المالك', 'المحصّل', 'العمولة', 'صافي المستحقات'],
       ownerRows.map((o) => [o.name, String(o.collected), String(Math.round(o.collected * PLATFORM_COMMISSION)), String(o.net)])
+    );
+  };
+
+  // Which family an audit action belongs to. Money is its own group because
+  // that is what an audit gets opened for; keeping it a derived predicate
+  // rather than a column means a new action type is classified in one place.
+  const AUDIT_KINDS: Record<'money' | 'content' | 'people', string[]> = {
+    money: ['payment_status_changed', 'payout_status_changed', 'settings_changed'],
+    content: ['house_status_changed', 'booking_status_changed'],
+    people: ['user_approval_changed', 'user_ban_changed'],
+  };
+  const AUDIT_ACTION_LABELS: Record<string, string> = {
+    booking_status_changed: 'تغيير حالة حجز',
+    house_status_changed: 'تغيير حالة بيت',
+    user_approval_changed: 'تغيير اعتماد حساب',
+    user_ban_changed: 'تغيير حالة حظر',
+    payment_status_changed: 'تحقق من دفعة',
+    payout_status_changed: 'تحويل لصاحب بيت',
+    settings_changed: 'تغيير إعدادات المنصة',
+  };
+
+  const filteredAudit = React.useMemo(() => {
+    const q = auditSearch.trim().toLowerCase();
+    return auditLog.filter((e) => {
+      if (auditKind !== 'all' && !AUDIT_KINDS[auditKind].includes(e.action)) return false;
+      if (!q) return true;
+      // Searches what is on screen — the Arabic label and details — as well as
+      // the actor. Searching the raw action key too, since an admin reading a
+      // migration may well paste one in.
+      return [
+        AUDIT_ACTION_LABELS[e.action] ?? '', e.action,
+        e.details ?? '', e.actorName ?? '', ROLE_LABELS[e.actorRole ?? ''] ?? '',
+      ].some((f) => f.toLowerCase().includes(q));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auditLog, auditSearch, auditKind]);
+
+  const exportAudit = () => {
+    downloadCsv('audit-log.csv',
+      ['الإجراء', 'التفاصيل', 'بواسطة', 'الدور', 'التاريخ'],
+      // Exports what is FILTERED, not everything: an export that ignores the
+      // filter above it is a different answer from the one on screen.
+      filteredAudit.map((e) => [
+        AUDIT_ACTION_LABELS[e.action] ?? e.action,
+        e.details ?? '',
+        e.actorName ?? 'غير معروف',
+        ROLE_LABELS[e.actorRole ?? ''] ?? 'غير معروف',
+        arabicDateTime(e.createdAt),
+      ])
     );
   };
 
@@ -1228,28 +1283,68 @@ export default function AdminDashboard({
       {/* Audit log — who approved/rejected/banned what, and when (migration 032) */}
       {activeTab === 'audit' && (
         <div className="space-y-3">
-          <div className="text-xs font-bold text-[#8A8A70] px-1">
-            سجل قرارات الإدارة (آخر {arabicNumber(auditLog.length)} إجراء) — مين وافق أو رفض أو حظر إيه وإمتى:
+          <div className="flex items-center justify-between gap-2 px-1">
+            <div className="text-xs font-bold text-[#8A8A70]">
+              سجل قرارات الإدارة (آخر {arabicNumber(auditLog.length)} إجراء) — مين وافق أو رفض أو حظر إيه وإمتى:
+            </div>
+            {auditLog.length > 0 && (
+              <button type="button" onClick={exportAudit}
+                className="shrink-0 flex items-center gap-1 text-[11px] font-black text-[#0A2342] bg-white border border-[#D6D6C2] rounded-xl px-2.5 min-h-11 cursor-pointer hover:bg-[#F0EDE6]">
+                <Download className="w-3.5 h-3.5" /> تصدير CSV
+              </button>
+            )}
           </div>
+
+          {auditLog.length > 0 && (
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="w-4 h-4 text-[#8A8A70] absolute right-3 top-1/2 -translate-y-1/2" />
+                <input
+                  id="admin-audit-search"
+                  type="text"
+                  value={auditSearch}
+                  onChange={(e) => setAuditSearch(e.target.value)}
+                  placeholder="ابحث بالإجراء أو التفاصيل أو مين عمله..."
+                  className="w-full bg-white border border-[#D6D6C2] rounded-xl pr-9 pl-3 min-h-11 text-[12px] text-[#2D2D24] outline-none focus:border-[#5A5A40] text-right"
+                />
+              </div>
+              <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+                {([
+                  { key: 'all' as const, label: 'الكل', n: auditLog.length },
+                  { key: 'money' as const, label: 'فلوس', n: auditLog.filter((e) => AUDIT_KINDS.money.includes(e.action)).length },
+                  { key: 'content' as const, label: 'بيوت وحجوزات', n: auditLog.filter((e) => AUDIT_KINDS.content.includes(e.action)).length },
+                  { key: 'people' as const, label: 'حسابات', n: auditLog.filter((e) => AUDIT_KINDS.people.includes(e.action)).length },
+                ]).map((f) => (
+                  <button key={f.key} type="button" onClick={() => setAuditKind(f.key)}
+                    className={`shrink-0 flex items-center gap-1 text-[11px] font-black px-3 min-h-11 rounded-xl border transition-colors cursor-pointer ${
+                      auditKind === f.key ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white text-[#4A4A3A] border-[#D6D6C2] hover:bg-[#F0EDE6]'
+                    }`}>
+                    {f.label}
+                    <span className={`text-[11px] font-black ${auditKind === f.key ? 'text-white/80' : 'text-[#8A8A70]'}`}>{arabicNumber(f.n)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {auditLog.length === 0 ? (
             <div className="bg-white rounded-3xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70]">
               لا توجد إجراءات إدارية مسجلة بعد.
             </div>
+          ) : filteredAudit.length === 0 ? (
+            // "Nothing matched" and "nothing happened" are different answers,
+            // and only one of them is the admin's own filter talking.
+            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70] space-y-2">
+              <div>مفيش إجراءات مطابقة للبحث.</div>
+              <button type="button" onClick={() => { setAuditSearch(''); setAuditKind('all'); }}
+                className="inline-flex items-center min-h-11 px-3 text-[11px] font-black text-[#0A2342] underline cursor-pointer">
+                امسح البحث والفلترة
+              </button>
+            </div>
           ) : (
             <div className="space-y-2">
-              {auditLog.map((entry) => {
-                const actionLabels: Record<string, string> = {
-                  booking_status_changed: 'تغيير حالة حجز',
-                  house_status_changed: 'تغيير حالة بيت',
-                  user_approval_changed: 'تغيير اعتماد حساب',
-                  user_ban_changed: 'تغيير حالة حظر',
-                  // Money decisions — added with migration 104. Until then the
-                  // log covered who approved a booking but not who released a
-                  // transfer or changed the commission rate.
-                  payment_status_changed: 'تحقق من دفعة',
-                  payout_status_changed: 'تحويل لصاحب بيت',
-                  settings_changed: 'تغيير إعدادات المنصة',
-                };
+              {filteredAudit.map((entry) => {
+                const actionLabels = AUDIT_ACTION_LABELS;
                 // The money rows are the ones an audit is read for, so they
                 // are marked rather than left to look like any other line.
                 const isMoney = entry.action === 'payment_status_changed'

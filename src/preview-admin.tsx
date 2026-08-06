@@ -103,26 +103,27 @@ const promoBanners: PromoBanner[] = [
     status: 'published', isActive: true, createdAt: iso(-6) },
 ] as unknown as PromoBanner[];
 
-// The action names the DB triggers actually write (032/033, plus the money
-// ones from 104). Inventing plausible-looking names here would have the
+// The action names AND the Arabic details the DB triggers actually write
+// (032/033 + 104, all speaking Arabic since 105). Inventing plausible-looking
+// values here would have the
 // harness render the raw-key fallback and report a bug the app does not have.
 const auditLog: AuditLogEntry[] = [
   { id: 'a1', actorId: 'user_admin', actorName: 'إدارة بيما', actorRole: 'admin',
     action: 'payout_status_changed', targetType: 'payout', targetId: 'po2',
-    details: 'حالة التحويل: processing ← completed | المبلغ: 2100 ج.م | المالك: أ. سامح فؤاد',
+    details: 'حالة التحويل: جارٍ التحويل ← تم التحويل | المبلغ: 2100 ج.م | المالك: أ. سامح فؤاد',
     createdAt: iso(0, 11) },
   { id: 'a2', actorId: 'user_admin', actorName: 'إدارة بيما', actorRole: 'admin',
     action: 'settings_changed', targetType: 'settings', targetId: '1',
     details: 'نسبة عمولة المنصة: 0.05 ← 0.07', createdAt: iso(-1, 16) },
   { id: 'a3', actorId: 'user_admin', actorName: 'إدارة بيما', actorRole: 'admin',
     action: 'payment_status_changed', targetType: 'payment', targetId: 'pay2',
-    details: 'حالة الدفعة: pending ← approved | المبلغ: 720 ج.م', createdAt: iso(-9, 14) },
+    details: 'حالة الدفعة: معلّق ← معتمد | المبلغ: 720 ج.م', createdAt: iso(-9, 14) },
   { id: 'a4', actorId: 'u_own2', actorName: 'أ. سامح فؤاد', actorRole: 'owner',
     action: 'booking_status_changed', targetType: 'booking', targetId: bookings[2].id,
-    details: 'الحالة: pending ← approved', createdAt: iso(-9, 12) },
+    details: 'الحالة: بانتظار الرد ← مؤكد', createdAt: iso(-9, 12) },
   { id: 'a5', actorId: 'user_admin', actorName: 'إدارة بيما', actorRole: 'admin',
     action: 'house_status_changed', targetType: 'house', targetId: houses[1].id,
-    details: 'الحالة: pending ← approved | البيت: "بيت الشماسة فيبي"', createdAt: iso(-30, 9) },
+    details: 'الحالة: قيد المراجعة ← نشط | البيت: "بيت الشماسة فيبي"', createdAt: iso(-30, 9) },
 ] as unknown as AuditLogEntry[];
 
 const noop = () => undefined;
