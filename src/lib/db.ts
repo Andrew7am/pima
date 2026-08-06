@@ -424,6 +424,41 @@ export async function loadHouseBookingCounts(): Promise<Record<string, number> |
   return result;
 }
 
+/**
+ * Note that someone opened a house's page (migration 106).
+ *
+ * Fire-and-forget on purpose. The visitor came to read the page, not to
+ * generate telemetry, so nothing here is awaited by the caller and no failure
+ * is ever shown to them.
+ *
+ * The session guard is the only dedup anonymous visitors can get: they have
+ * no identity server-side, so a refresh would otherwise count again. Signed-in
+ * viewers are deduplicated properly, in the RPC, one view per house per hour —
+ * which is the check that actually cannot be bypassed.
+ */
+export async function recordHouseView(houseId: string): Promise<void> {
+  const key = `pima_viewed_${houseId}`;
+  try {
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+  } catch {
+    /* private mode — fall through and let the server dedup what it can */
+  }
+  const { error } = await supabase.rpc('record_house_view', { p_house_id: houseId });
+  if (error) console.warn('recordHouseView:', error);
+}
+
+/** View totals per house (migration 106) — admin, or an owner's own houses. */
+export async function loadHouseViewCounts(): Promise<Record<string, { total: number; last30: number }> | null> {
+  const { data, error } = await supabase.rpc('house_view_counts');
+  if (error) { console.error('loadHouseViewCounts:', error); return null; }
+  const result: Record<string, { total: number; last30: number }> = {};
+  for (const row of (data ?? []) as { house_id: string; views_total: number; views_30d: number }[]) {
+    result[row.house_id] = { total: row.views_total, last30: row.views_30d };
+  }
+  return result;
+}
+
 // Daily rewarded-ad claim (migration 088). True = 25 points were granted just
 // now; false = already claimed today (or signed out). The server is the only
 // judge — the client cannot self-grant.

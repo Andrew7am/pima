@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS } from '../lib/arabic';
 import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
+import { loadHouseViewCounts } from '../lib/db';
 // Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
 // to the singular. The counted nouns live in lib/arabic alongside the rule
 // itself, so the owner screens and this one cannot drift into two different
@@ -619,6 +620,16 @@ export default function AdminDashboard({
   const [housePage, setHousePage] = useState(1);
   const [housePerPage, setHousePerPage] = useState(10);
   const [openHouseMenu, setOpenHouseMenu] = useState<string | null>(null);
+
+  // Real view counts (migration 106). Fetched only when the properties
+  // screen is open — it is one extra round trip and no other tab reads it.
+  const [houseViews, setHouseViews] = React.useState<Record<string, { total: number; last30: number }> | null>(null);
+  React.useEffect(() => {
+    if (activeTab !== 'houses' || houseViews !== null) return;
+    let cancelled = false;
+    void loadHouseViewCounts().then((v) => { if (!cancelled && v) setHouseViews(v); });
+    return () => { cancelled = true; };
+  }, [activeTab, houseViews]);
 
   const houseStats = React.useMemo(() => ({
     total: houses.length,
@@ -1358,13 +1369,15 @@ export default function AdminDashboard({
             <button
               type="button"
               onClick={() => downloadCsv('houses.csv',
-                              ['الاسم', 'المحافظة', 'النوع', 'الحالة', 'التقييم', 'عدد التقييمات', 'الحجوزات', 'المالك'],
+                              ['الاسم', 'المحافظة', 'النوع', 'الحالة', 'التقييم', 'عدد التقييمات', 'الحجوزات', 'المشاهدات', 'المالك'],
                               filteredHouses.map((h) => [
                                 h.name, h.governorate,
                                 h.propertyType === 'student' ? 'سكن طلابي' : h.propertyType === 'staff' ? 'سكن عاملين' : 'بيت مؤتمرات',
                                 h.status === 'approved' ? 'نشط' : h.status === 'pending' ? 'قيد المراجعة' : h.status === 'suspended' ? 'موقوف' : 'مرفوض',
                                 String(h.rating ?? 0), String(h.reviewsCount ?? 0),
-                                String(bookingsPerHouse.get(h.id) ?? 0), h.ownerName ?? '',
+                                String(bookingsPerHouse.get(h.id) ?? 0),
+                  houseViews ? String(houseViews[h.id]?.total ?? 0) : '',
+                  h.ownerName ?? '',
                               ]),
                             )}
               aria-label="تصدير البيوت"
@@ -1526,6 +1539,17 @@ export default function AdminDashboard({
                             <span className="tabular-nums">{arabicNumber(bookingCount)}</span>
                             <span className="text-[#BCBC9D] font-normal">حجز</span>
                           </span>
+                          {/* Only once the counts have actually loaded. A zero
+                              drawn while the request is still in flight reads
+                              as «nobody looked at this house», which is a
+                              different claim from «we do not know yet». */}
+                          {houseViews && (
+                            <span className="flex items-center gap-1 text-[11px] font-bold text-[#4A4A3A]">
+                              <Eye className="w-3.5 h-3.5 text-[#8A8A70]" />
+                              <span className="tabular-nums">{arabicNumber(houseViews[house.id]?.total ?? 0)}</span>
+                              <span className="text-[#BCBC9D] font-normal">مشاهدة</span>
+                            </span>
+                          )}
                         </div>
                       </div>
 

@@ -26,6 +26,7 @@ import {
   deleteOwnAccount,
   loadAuditLog,
   loadPaymentProofImage,
+  recordHouseView,
 } from './lib/db';
 import { autoAllocate } from './lib/roomAllocation';
 import { resolvePaymentVerdict } from './lib/paymentLedger';
@@ -609,6 +610,18 @@ export default function App() {
       prevHouseRef.current = null;
     }
   }, [selectedHouse]);
+
+  // Someone opened a house's page (migration 106).
+  //
+  // Keyed on the id and placed here rather than in HouseDetail, because a
+  // house can be opened from the list, the map or a shared link, and this is
+  // the one place all three arrive at. Not awaited and never surfaced: the
+  // visitor came to read the page, and a telemetry failure is not their
+  // problem.
+  useEffect(() => {
+    if (!selectedHouse?.id) return;
+    void recordHouseView(selectedHouse.id);
+  }, [selectedHouse?.id]);
 
   // A page opens at its top.
   //
