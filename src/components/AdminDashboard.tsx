@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, ROLE_LABELS, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS } from '../lib/arabic';
 import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
 import { topHousesByBookings, topHousesByCollected } from '../lib/topHouses';
+import { loadHouseImages, saveHouseImages } from '../lib/db';
+import { inlineImageStats, migrateImages } from '../lib/migrateImagesToStorage';
 // Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
 // to the singular. The counted nouns live in lib/arabic alongside the rule
 // itself, so the owner screens and this one cannot drift into two different
@@ -17,7 +19,7 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
   { value: 'we_cash', label: 'وي كاش' },
   { value: 'bank_transfer', label: 'تحويل بنكي' },
 ];
-import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft } from 'lucide-react';
+import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { timeAgo } from '../lib/timeAgo';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
@@ -303,6 +305,9 @@ export default function AdminDashboard({
   // User detail view
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [releasingUserId, setReleasingUserId] = useState<string | null>(null);
+  // One-off maintenance: moving pre-Storage photos out of the database.
+  const [imgMigrationBusy, setImgMigrationBusy] = useState(false);
+  const [imgMigrationLog, setImgMigrationLog] = useState<string[]>([]);
 
   // Audit search & filter. The log is the only forensic tool in the panel and
   // it grew to hundreds of rows with no way to ask it anything — "who released
@@ -1279,6 +1284,77 @@ export default function AdminDashboard({
           </div>
           <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-3 text-[11px] text-amber-900 leading-relaxed">
             ⚠️ التغييرات بتأثر على الحجوزات الجديدة والدفعات الجاية. نسبة العمولة والعربون والنقاط بتتطبّق على السيرفر كمان مش بس في العرض.
+          </div>
+
+          {/* ── Maintenance: move the pre-Storage photos out of the database ──
+              One-off, resumable, and safe to run again: each house is saved as
+              soon as it finishes, and anything already on Storage is skipped. */}
+          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-3">
+            <div className="flex items-center gap-1.5 pb-2 border-b border-[#EBEBE0]">
+              <ImageIcon className="w-4 h-4 text-[#5A5A40]" />
+              <h3 className="text-xs font-black text-[#0A2342]">نقل صور البيوت القديمة للتخزين</h3>
+            </div>
+            <p className="text-[11px] text-[#8A8A70] leading-relaxed">
+              الصور القديمة متخزنة جوه الداتابيز نفسها، وده اللي بيستهلك الـEgress.
+              الزرار ده بيرفعها على Supabase Storage مضغوطة ويسيب رابط بدلها.
+              الصور اللي اترفعت بعد التحديث بتتخطى. تقدر توقف وتكمّل بعدين —
+              كل بيت بيتحفظ أول ما يخلص.
+            </p>
+            {imgMigrationLog.length > 0 && (
+              <div className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl p-2.5 space-y-1 max-h-40 overflow-y-auto">
+                {imgMigrationLog.map((line, i) => (
+                  <div key={i} className="text-[11px] font-bold text-[#4A4A3A]">{line}</div>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              disabled={imgMigrationBusy}
+              onClick={async () => {
+                if (!confirm(
+                  `نقل صور ${arabicNumber(houses.length)} بيت للتخزين؟\n\n`
+                  + '• الصور اللي على Storage خلاص هتتخطى\n'
+                  + '• أي صورة تفشل هتفضل مكانها ومش هتضيع\n'
+                  + '• ممكن ياخد وقت — سيب الصفحة مفتوحة',
+                )) return;
+                setImgMigrationBusy(true);
+                setImgMigrationLog(['بدأنا…']);
+                let totalMoved = 0, totalFailed = 0, skipped = 0;
+                for (const [i, h] of houses.entries()) {
+                  const full = await loadHouseImages(h.id);
+                  if (!full) {
+                    setImgMigrationLog((l) => [...l, `⚠️ ${h.name}: تعذّر قراءة الصور`]);
+                    continue;
+                  }
+                  const { inline } = inlineImageStats(full);
+                  if (inline === 0) {
+                    skipped++;
+                    setImgMigrationLog((l) => [...l, `✓ ${h.name}: مفيش صور محتاجة نقل`]);
+                    continue;
+                  }
+                  setImgMigrationLog((l) => [...l,
+                    `⏳ ${h.name} (${arabicNumber(i + 1)} من ${arabicNumber(houses.length)}): ${arabicNumber(inline)} صورة…`]);
+                  const res = await migrateImages(full, { folder: 'listings' });
+                  totalMoved += res.moved; totalFailed += res.failed;
+                  // Only write when something actually moved — a house whose
+                  // uploads all failed is left exactly as it was.
+                  if (res.changed) await saveHouseImages(h.id, res.images);
+                  setImgMigrationLog((l) => [...l,
+                    `${res.failed ? '⚠️' : '✓'} ${h.name}: اتنقل ${arabicNumber(res.moved)}`
+                    + (res.failed ? ` · فشل ${arabicNumber(res.failed)}` : '')]);
+                }
+                setImgMigrationLog((l) => [...l,
+                  `— خلصنا. اتنقل ${arabicNumber(totalMoved)} صورة`
+                  + (totalFailed ? ` · فشل ${arabicNumber(totalFailed)}` : '')
+                  + ` · ${arabicNumber(skipped)} بيت مكانش محتاج`]);
+                setImgMigrationBusy(false);
+              }}
+              className="w-full flex items-center justify-center gap-1.5 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-[12px] font-bold min-h-11 rounded-xl cursor-pointer disabled:opacity-60"
+            >
+              {imgMigrationBusy
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري النقل…</>
+                : <><ImageIcon className="w-4 h-4" /> ابدأ نقل الصور</>}
+            </button>
           </div>
         </div>
       )}

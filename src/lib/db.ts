@@ -1408,3 +1408,16 @@ export async function releaseUserAccount(userId: string): Promise<{ ok: boolean;
   }
   return { ok: true, error: (data as { freed_email?: string } | null)?.freed_email };
 }
+
+/**
+ * Write ONLY the images column for one house.
+ *
+ * Used by the storage migration, which has just fetched the complete set and
+ * rewritten it. Deliberately not houseUpdatePayload: that carries thirty other
+ * fields, and a maintenance job should touch the one thing it came to change.
+ */
+export async function saveHouseImages(houseId: string, images: string[]): Promise<boolean> {
+  const { error } = await supabase.from('houses').update({ images }).eq('id', houseId);
+  if (error) { console.error('saveHouseImages:', error); return false; }
+  return true;
+}
