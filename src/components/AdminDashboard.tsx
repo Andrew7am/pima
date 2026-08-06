@@ -81,15 +81,15 @@ function KpiCard({ title, value, delta, suffix }: {
   const isDown = !!delta && delta.startsWith('−');
   return (
     <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-1">
-      <div className="text-[10px] text-[#8A8A70] font-bold">{title}</div>
+      <div className="text-[12px] text-[#8A8A70] font-bold">{title}</div>
       <div className="text-xl font-black text-[#4A4A3A]">
         {typeof value === 'number' ? value.toLocaleString('ar-EG') : value}
         {/* An explicit space: the currency was rendering flush against the
             number (٠ج.م) because a margin utility alone does not separate
             two inline runs reliably in RTL. */}
-        {suffix && <span className="text-[10px] text-[#8A8A70] font-bold">{' '}{suffix}</span>}
+        {suffix && <span className="text-[12px] text-[#8A8A70] font-bold">{' '}{suffix}</span>}
       </div>
-      <div className={`text-[10px] font-extrabold ${isUp ? 'text-emerald-700' : isDown ? 'text-rose-700' : 'text-[#8A8A70]'}`}>
+      <div className={`text-[12px] font-extrabold ${isUp ? 'text-emerald-700' : isDown ? 'text-rose-700' : 'text-[#8A8A70]'}`}>
         {delta === null
           ? <span className="text-[#8A8A70] font-medium">لا يوجد أسبوع سابق للمقارنة</span>
           : <>{isUp ? '↗' : isDown ? '↘' : '→'} {delta}{' '}
@@ -595,7 +595,7 @@ export default function AdminDashboard({
             <Shield className="w-5 h-5 text-[#C5A059]" />
           </span>
           <div className="min-w-0">
-            <span className="text-[9.5px] text-[#C5A059] font-black block">لوحة الإدارة</span>
+            <span className="text-[11px] text-[#C5A059] font-black block">لوحة الإدارة</span>
             <h2 className="text-sm font-extrabold truncate">{currentUser.name}</h2>
           </div>
         </div>
@@ -607,7 +607,7 @@ export default function AdminDashboard({
           }`}
         >
           <span className="text-lg font-black leading-none block">{totalPending.toLocaleString('ar-EG')}</span>
-          <span className="text-[9px] font-bold text-white/80">{totalPending > 0 ? 'محتاج إجراء' : 'كله تمام ✓'}</span>
+          <span className="text-[11px] font-bold text-white/80">{totalPending > 0 ? 'محتاج إجراء' : 'كله تمام ✓'}</span>
         </button>
       </div>
 
@@ -621,13 +621,13 @@ export default function AdminDashboard({
             const isOn = navSection === g.key;
             return (
               <button key={g.key} onClick={() => goTo(g.key, g.tabs[0].key)}
-                className={`flex-1 min-w-[86px] flex flex-col items-center gap-1 py-2.5 text-[10px] font-black transition-all cursor-pointer relative ${
+                className={`flex-1 min-w-[86px] flex flex-col items-center gap-1 py-2.5 text-[12px] font-black transition-all cursor-pointer relative ${
                   isOn ? 'bg-[#0A2342] text-white' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
                 }`}>
                 <Icon className="w-4 h-4" />
                 {g.label}
                 {groupPending > 0 && !isOn && (
-                  <span className="absolute top-1.5 left-2 min-w-[15px] h-[15px] px-1 bg-rose-500 text-white text-[8.5px] font-black rounded-full flex items-center justify-center">
+                  <span className="absolute top-1.5 left-2 min-w-[15px] h-[15px] px-1 bg-rose-500 text-white text-[11px] font-black rounded-full flex items-center justify-center">
                     {arabicBadge(groupPending)}
                   </span>
                 )}
@@ -639,12 +639,12 @@ export default function AdminDashboard({
         <div className="flex gap-1.5 p-1.5 overflow-x-auto">
           {NAV_GROUPS.find((g) => g.key === navSection)!.tabs.map((t) => (
             <button key={t.key} id={`admin-tab-${t.key}`} onClick={() => setActiveTab(t.key)}
-              className={`shrink-0 flex items-center gap-1.5 py-2 px-3 rounded-xl text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+              className={`shrink-0 flex items-center gap-1.5 min-h-11 px-3 rounded-xl text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === t.key ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#5A5A40] bg-[#FAF8F5] hover:bg-[#EBEBE0]/60'
               }`}>
               {t.label}
               {(t.badge ?? 0) > 0 && (
-                <span className={`min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-black flex items-center justify-center ${
+                <span className={`min-w-[16px] h-[16px] px-1 rounded-full text-[11px] font-black flex items-center justify-center ${
                   activeTab === t.key ? 'bg-white/25 text-white' : 'bg-rose-500 text-white'
                 }`}>{arabicBadge(t.badge ?? 0)}</span>
               )}
@@ -659,7 +659,7 @@ export default function AdminDashboard({
           <div className="px-3.5 py-2.5 border-b border-[#D6D6C2]/60 flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
             <span className="text-[11px] font-black text-[#0A2342]">محتاج إجراء منك</span>
-            <span className="text-[9px] font-bold text-[#8A8A70]">({totalPending.toLocaleString('ar-EG')})</span>
+            <span className="text-[11px] font-bold text-[#8A8A70]">({totalPending.toLocaleString('ar-EG')})</span>
           </div>
           <div className="divide-y divide-[#D6D6C2]/50">
             {actionQueue.map((a) => (
@@ -668,7 +668,7 @@ export default function AdminDashboard({
                 <span className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
                   <a.Icon className="w-4 h-4 text-rose-600" />
                 </span>
-                <span className="flex-1 text-[11.5px] font-bold text-[#2E2E24] truncate">{a.label}</span>
+                <span className="flex-1 text-[12px] font-bold text-[#2E2E24] truncate">{a.label}</span>
                 <span className="text-[11px] font-black text-rose-600 shrink-0">{a.count.toLocaleString('ar-EG')}</span>
                 <ChevronLeft className="w-4 h-4 text-[#B8B8A0] shrink-0" />
               </button>
@@ -774,7 +774,7 @@ export default function AdminDashboard({
             <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-[#4A4A3A]">الحجوزات آخر ١٤ يوم</span>
-                <span className="text-[10px] font-bold text-[#8A8A70]">{arabicPlural(days.reduce((s, d) => s + d.count, 0), BOOKING_FORMS)}</span>
+                <span className="text-[12px] font-bold text-[#8A8A70]">{arabicPlural(days.reduce((s, d) => s + d.count, 0), BOOKING_FORMS)}</span>
               </div>
               <div className="flex items-end gap-1 h-24" dir="ltr">
                 {days.map((d) => (
@@ -782,7 +782,7 @@ export default function AdminDashboard({
                     <div className="flex-1 w-full flex items-end">
                       <div className="w-full bg-[#5A5A40] rounded-t-md group-hover:bg-[#4A4A3A] transition-colors" style={{ height: `${(d.count / maxDay) * 100}%`, minHeight: d.count > 0 ? '4px' : '0' }} title={`${new Date(d.ts).toLocaleDateString('ar-EG')} · ${arabicPlural(d.count, BOOKING_FORMS)}`} />
                     </div>
-                    <span className="text-[8.5px] font-bold text-[#8A8A70]">{arabicNumber(new Date(d.ts).getDate())}</span>
+                    <span className="text-[11px] font-bold text-[#8A8A70]">{arabicNumber(new Date(d.ts).getDate())}</span>
                   </div>
                 ))}
               </div>
@@ -798,7 +798,7 @@ export default function AdminDashboard({
                   { label: 'اللي دفعوا فعلاً', value: funnelPaid, pct: pct(funnelPaid, funnelSignups) },
                 ]).map((step) => (
                   <div key={step.label} className="space-y-0.5">
-                    <div className="flex justify-between items-center text-[10px] font-bold text-[#4A4A3A]">
+                    <div className="flex justify-between items-center text-[12px] font-bold text-[#4A4A3A]">
                       <span>{step.label}</span>
                       <span>{step.value.toLocaleString('ar-EG')} <span className="text-[#8A8A70] font-medium">({arabicNumber(step.pct)}٪)</span></span>
                     </div>
@@ -809,7 +809,7 @@ export default function AdminDashboard({
                 ))}
               </div>
               {funnelSignups > 0 && (
-                <p className="text-[9px] text-[#8A8A70] font-medium">
+                <p className="text-[11px] text-[#8A8A70] font-medium">
                   💡 {pct(funnelBooked, funnelSignups) < 20 ? 'أقل من ٢٠٪ من المسجّلين بيبدأوا حجز — فرصة تحسين في التصفح وسهولة الحجز.' : 'التحويل من التسجيل للحجز في نطاق صحي.'}
                 </p>
               )}
@@ -819,19 +819,19 @@ export default function AdminDashboard({
             <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-2">
               <span className="text-xs font-black text-[#4A4A3A]">أعلى ٥ بيوت هذا الشهر</span>
               {topHouses.length === 0 ? (
-                <p className="text-[10px] text-[#8A8A70] text-center py-3">لا يوجد حجوزات مؤكدة هذا الشهر بعد.</p>
+                <p className="text-[12px] text-[#8A8A70] text-center py-3">لا يوجد حجوزات مؤكدة هذا الشهر بعد.</p>
               ) : (
                 <div className="space-y-1.5">
                   {topHouses.map((row, i) => (
                     <div key={row.house!.id} className="flex items-center gap-2 bg-[#FAF8F5] border border-[#D6D6C2] rounded-2xl p-2.5">
-                      <span className="w-6 h-6 rounded-full bg-[#5A5A40] text-white text-[10px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
+                      <span className="w-6 h-6 rounded-full bg-[#5A5A40] text-white text-[12px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-[11px] font-bold text-[#4A4A3A] truncate">{row.house!.name}</div>
-                        <div className="text-[9.5px] text-[#8A8A70]">{row.house!.governorate}</div>
+                        <div className="text-[11px] text-[#8A8A70]">{row.house!.governorate}</div>
                       </div>
                       <div className="text-left shrink-0">
                         <div className="text-[11px] font-black text-[#4A4A3A]">{arabicPlural(row.count, BOOKING_FORMS)}</div>
-                        <div className="text-[9px] text-[#8A8A70]">{arabicNumber(row.revenue)} ج.م</div>
+                        <div className="text-[11px] text-[#8A8A70]">{arabicNumber(row.revenue)} ج.م</div>
                       </div>
                     </div>
                   ))}
@@ -843,18 +843,18 @@ export default function AdminDashboard({
             <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-2">
               <span className="text-xs font-black text-[#4A4A3A]">آخر نشاط (٧ أيام)</span>
               {recentActivity.length === 0 ? (
-                <p className="text-[10px] text-[#8A8A70] text-center py-3">لا يوجد نشاط في آخر أسبوع.</p>
+                <p className="text-[12px] text-[#8A8A70] text-center py-3">لا يوجد نشاط في آخر أسبوع.</p>
               ) : (
                 <div className="space-y-1">
                   {recentActivity.map((a, i) => {
                     return (
-                      <div key={i} className="flex items-center gap-2 text-[10px] text-[#4A4A3A] py-1 border-b border-[#EBEBE0]/60 last:border-0">
+                      <div key={i} className="flex items-center gap-2 text-[12px] text-[#4A4A3A] py-1 border-b border-[#EBEBE0]/60 last:border-0">
                         <span className="text-sm">{a.icon}</span>
                         <span className="flex-1 min-w-0 truncate">{a.text}</span>
                         {/* lib/timeAgo already does this, with Arabic-Indic digits
                             and real plural agreement. This built its own with a
                             template literal and printed "منذ 21 د". */}
-                        <span className="text-[9px] text-[#8A8A70] font-bold shrink-0">{timeAgo(new Date(a.ts).toISOString())}</span>
+                        <span className="text-[11px] text-[#8A8A70] font-bold shrink-0">{timeAgo(new Date(a.ts).toISOString())}</span>
                       </div>
                     );
                   })}
@@ -884,7 +884,7 @@ export default function AdminDashboard({
                     <div key={house.id} className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden text-right">
                       <div className="h-24 bg-[#EBEBE0] relative">
                         {house.images[0] && <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-full h-full object-cover" />}
-                        <span className="absolute top-2 right-2 bg-[#5A5A40]/90 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[9px] font-bold">
+                        <span className="absolute top-2 right-2 bg-[#5A5A40]/90 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[11px] font-bold">
                           {house.governorate}
                         </span>
                       </div>
@@ -892,12 +892,12 @@ export default function AdminDashboard({
                       <div className="p-4 space-y-2.5">
                         <div>
                           <h3 className="text-xs font-bold text-[#4A4A3A]">{house.name}</h3>
-                          <p className="text-[10px] text-[#8A8A70] mt-0.5">صاحب البيت: {house.ownerName}</p>
+                          <p className="text-[12px] text-[#8A8A70] mt-0.5">صاحب البيت: {house.ownerName}</p>
                         </div>
 
                         <p className="text-[11px] text-[#4A4A3A] leading-relaxed line-clamp-2">{house.description}</p>
 
-                        <div className="bg-[#EBEBE0]/30 rounded-2xl p-2.5 grid grid-cols-3 gap-1.5 text-center text-[10px] text-[#4A4A3A] font-bold border border-[#D6D6C2]">
+                        <div className="bg-[#EBEBE0]/30 rounded-2xl p-2.5 grid grid-cols-3 gap-1.5 text-center text-[12px] text-[#4A4A3A] font-bold border border-[#D6D6C2]">
                           <div>الغرف: {house.roomsCount}</div>
                           <div>الأسرة: {house.bedsCount}</div>
                           <div>سعر الفرد: {house.pricePerNightPerPerson} ج.م</div>
@@ -953,18 +953,18 @@ export default function AdminDashboard({
                       <div key={house.id} className="bg-white rounded-3xl border border-amber-200 shadow-sm p-4 space-y-2.5 text-right">
                         <div className="flex items-center justify-between">
                           <h3 className="text-xs font-bold text-[#4A4A3A]">{house.name}</h3>
-                          <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
+                          <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
                             تعديل قيد المراجعة
                           </span>
                         </div>
-                        <p className="text-[10px] text-[#8A8A70]">صاحب البيت: {house.ownerName}</p>
+                        <p className="text-[12px] text-[#8A8A70]">صاحب البيت: {house.ownerName}</p>
 
                         {rows.length === 0 && arrayFieldsChanged.length === 0 ? (
-                          <p className="text-[10px] text-[#8A8A70]">لا توجد تغييرات ظاهرة في الحقول الأساسية.</p>
+                          <p className="text-[12px] text-[#8A8A70]">لا توجد تغييرات ظاهرة في الحقول الأساسية.</p>
                         ) : (
                           <div className="space-y-1.5">
                             {rows.map((f) => (
-                              <div key={f.key as string} className="bg-[#EBEBE0]/30 rounded-xl p-2 text-[10px] border border-[#D6D6C2]">
+                              <div key={f.key as string} className="bg-[#EBEBE0]/30 rounded-xl p-2 text-[12px] border border-[#D6D6C2]">
                                 <span className="font-bold text-[#4A4A3A] block mb-0.5">{f.label}:</span>
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-rose-600 line-through">
@@ -978,7 +978,7 @@ export default function AdminDashboard({
                               </div>
                             ))}
                             {arrayFieldsChanged.length > 0 && (
-                              <div className="bg-[#EBEBE0]/30 rounded-xl p-2 text-[10px] border border-[#D6D6C2]">
+                              <div className="bg-[#EBEBE0]/30 rounded-xl p-2 text-[12px] border border-[#D6D6C2]">
                                 <span className="font-bold text-[#4A4A3A]">تم أيضاً تعديل: </span>
                                 <span className="text-[#5A5A40]">{arrayFieldsChanged.join('، ')}</span>
                               </div>
@@ -1037,14 +1037,14 @@ export default function AdminDashboard({
                 <div key={acc.id} className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden text-right p-4 space-y-2.5">
                   <div>
                     <h3 className="text-xs font-bold text-[#4A4A3A]">{acc.name}</h3>
-                    <p className="text-[10px] text-[#8A8A70] mt-0.5">
+                    <p className="text-[12px] text-[#8A8A70] mt-0.5">
                       {acc.role === 'owner' ? 'صاحب بيت' : 'خادم'} · {acc.email} · {acc.phone}
                     </p>
                     {acc.organizationName && (
-                      <p className="text-[10px] text-[#8A8A70] mt-0.5">الجهة: {acc.organizationName}</p>
+                      <p className="text-[12px] text-[#8A8A70] mt-0.5">الجهة: {acc.organizationName}</p>
                     )}
                     {acc.churchName && (
-                      <p className="text-[10px] text-[#8A8A70] mt-0.5">الكنيسة: {acc.churchName} — الأب الكاهن: {acc.priestName}</p>
+                      <p className="text-[12px] text-[#8A8A70] mt-0.5">الكنيسة: {acc.churchName} — الأب الكاهن: {acc.priestName}</p>
                     )}
                   </div>
 
@@ -1053,7 +1053,7 @@ export default function AdminDashboard({
                     href={`https://wa.me/2${acc.phone.replace(/^0/, '')}?text=${encodeURIComponent('سلام ونعمة، برجاء إرسال صورة بطاقتك الشخصية (وش وضهر) لاستكمال مراجعة حسابك على بيما.')}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-[10.5px] font-bold py-2.5 hover:bg-emerald-100 transition-colors"
+                    className="flex items-center justify-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-[12px] font-bold py-2.5 hover:bg-emerald-100 transition-colors"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
                     <span>تواصل واتساب لمراجعة البطاقة الشخصية</span>
@@ -1113,11 +1113,11 @@ export default function AdminDashboard({
                       const raw = parseFloat(e.target.value) || 0;
                       setSettingsDraft((prev) => ({ ...prev, [f.key]: f.factor === 100 ? raw / 100 : Math.round(raw) }));
                     }}
-                    className="w-28 bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40]"
+                    className="w-28 bg-white border border-[#D6D6C2] text-xs px-3 min-h-11 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40]"
                   />
-                  <span className="text-[10px] text-[#8A8A70] font-bold">{f.suffix}</span>
+                  <span className="text-[12px] text-[#8A8A70] font-bold">{f.suffix}</span>
                 </div>
-                <p className="text-[9px] text-[#8A8A70]">{f.hint}</p>
+                <p className="text-[11px] text-[#8A8A70]">{f.hint}</p>
               </div>
             ))}
 
@@ -1137,13 +1137,13 @@ export default function AdminDashboard({
                 value={settingsDraft.supportWhatsApp}
                 onChange={(e) => setSettingsDraft((prev) => ({ ...prev, supportWhatsApp: e.target.value.replace(/\D/g, '') }))}
                 placeholder="201096126259"
-                className="w-48 bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40] font-mono"
+                className="w-48 bg-white border border-[#D6D6C2] text-xs px-3 min-h-11 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40] font-mono"
               />
-              <p className="text-[9px] text-[#8A8A70]">
+              <p className="text-[11px] text-[#8A8A70]">
                 بكود الدولة وبدون + أو مسافات — كده بالظبط زي ما واتساب عايزه. مثال: 201096126259
               </p>
               {!/^\d{8,15}$/.test(settingsDraft.supportWhatsApp) && (
-                <p role="alert" className="text-[9px] font-bold text-rose-600">
+                <p role="alert" className="text-[11px] font-bold text-rose-600">
                   الرقم لازم يكون من ٨ لـ ١٥ رقم بكود الدولة، وإلا مش هيتحفظ.
                 </p>
               )}
@@ -1153,32 +1153,32 @@ export default function AdminDashboard({
             <div className="border-t border-[#EBEBE0] pt-3 space-y-2">
               <div>
                 <div className="text-[11px] font-black text-[#4A4A3A]">أرقام تحصيل المنصة (يدفع عليها العميل العربون):</div>
-                <p className="text-[9px] text-[#8A8A70]">دي أرقامك إنت (بيما). لو سيبتها فاضية، العميل هيدفع لصاحب البيت مباشرة زي النظام القديم.</p>
+                <p className="text-[11px] text-[#8A8A70]">دي أرقامك إنت (بيما). لو سيبتها فاضية، العميل هيدفع لصاحب البيت مباشرة زي النظام القديم.</p>
               </div>
               {(settingsDraft.paymentMethods ?? []).map((m, i) => (
                 <div key={m.id} className="flex flex-wrap items-center gap-1.5 bg-[#FBFBFA] border border-[#EBEBE0] rounded-xl p-2">
                   <select value={m.type}
                     onChange={(e) => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.map((x, j) => (j === i ? { ...x, type: e.target.value as OwnerPaymentMethod['type'] } : x)) }))}
-                    className="bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg text-[#4A4A3A]">
+                    className="bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg text-[#4A4A3A]">
                     {PLATFORM_PM_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                   <input placeholder="الاسم (مثلاً: إنستاباي بيما)" value={m.label}
                     onChange={(e) => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) }))}
-                    className="flex-1 min-w-[110px] bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg text-[#4A4A3A]" />
+                    className="flex-1 min-w-[110px] bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg text-[#4A4A3A]" />
                   <input placeholder="الرقم / الحساب" dir="ltr" value={m.value}
                     onChange={(e) => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)) }))}
-                    className="flex-1 min-w-[110px] bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg text-[#4A4A3A] font-mono" />
+                    className="flex-1 min-w-[110px] bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg text-[#4A4A3A] font-mono" />
                   <button type="button" onClick={() => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.filter((_, j) => j !== i) }))}
-                    className="text-rose-600 text-[10px] font-bold px-2 py-1.5 cursor-pointer">حذف</button>
+                    className="text-rose-600 text-[12px] font-bold px-2 py-1.5 cursor-pointer">حذف</button>
                 </div>
               ))}
               <button type="button"
                 onClick={() => setSettingsDraft((prev) => ({ ...prev, paymentMethods: [...(prev.paymentMethods ?? []), { id: `ppm_${Date.now()}`, type: 'instapay', label: '', value: '' }] }))}
-                className="text-[10px] font-bold bg-[#EBEBE0] hover:bg-[#DDD] text-[#4A4A3A] px-3 py-1.5 rounded-lg cursor-pointer transition-colors">+ إضافة رقم تحصيل</button>
+                className="text-[12px] font-bold bg-[#EBEBE0] hover:bg-[#DDD] text-[#4A4A3A] px-3 min-h-11 rounded-lg cursor-pointer transition-colors">+ إضافة رقم تحصيل</button>
             </div>
 
             {settingsSaved && (
-              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10.5px] font-bold rounded-xl px-3 py-2 text-center">
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-[12px] font-bold rounded-xl px-3 py-2 text-center">
                 ✅ تم حفظ الإعدادات وتطبيقها.
               </div>
             )}
@@ -1203,7 +1203,7 @@ export default function AdminDashboard({
               </button>
             </div>
           </div>
-          <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-3 text-[9.5px] text-amber-900 leading-relaxed">
+          <div className="bg-amber-50/60 border border-amber-200/60 rounded-2xl p-3 text-[11px] text-amber-900 leading-relaxed">
             ⚠️ التغييرات بتأثر على الحجوزات الجديدة والدفعات الجاية. نسبة العمولة والعربون والنقاط بتتطبّق على السيرفر كمان مش بس في العرض.
           </div>
         </div>
@@ -1229,7 +1229,7 @@ export default function AdminDashboard({
                   user_ban_changed: 'تغيير حالة حظر',
                 };
                 return (
-                  <div key={entry.id} className="bg-white rounded-2xl border border-[#D6D6C2] p-3 text-[10.5px] space-y-1">
+                  <div key={entry.id} className="bg-white rounded-2xl border border-[#D6D6C2] p-3 text-[12px] space-y-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-bold text-[#0A2342]">{actionLabels[entry.action] || entry.action}</span>
                       <span className="text-[#8A8A70] shrink-0">{new Date(entry.createdAt).toLocaleString('ar-EG')}</span>
@@ -1266,12 +1266,12 @@ export default function AdminDashboard({
                     {house.images[0] ? <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-14 h-14 rounded-xl object-cover shrink-0" /> : <div className="w-14 h-14 rounded-xl bg-[#EBEBE0] shrink-0" />}
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-bold text-[#4A4A3A] truncate">{house.name}</div>
-                      <div className="text-[9.5px] text-[#8A8A70] mt-0.5">{house.governorate} · {owner?.name || house.ownerName}</div>
-                      <span className={`inline-block mt-1 text-[8.5px] font-bold px-2 py-0.5 rounded border ${statusClass}`}>{statusLabel}</span>
+                      <div className="text-[11px] text-[#8A8A70] mt-0.5">{house.governorate} · {owner?.name || house.ownerName}</div>
+                      <span className={`inline-block mt-1 text-[11px] font-bold px-2 py-0.5 rounded border ${statusClass}`}>{statusLabel}</span>
                     </div>
                     <button
                       onClick={() => setPreviewHouseId(house.id)}
-                      className="shrink-0 flex items-center gap-1 text-[10px] font-bold px-3 py-2 rounded-xl border border-[#D6D6C2] bg-white text-[#4A4A3A] hover:bg-[#F0EDE6] cursor-pointer"
+                      className="shrink-0 flex items-center gap-1 min-h-11 text-[12px] font-bold px-3 rounded-xl border border-[#D6D6C2] bg-white text-[#4A4A3A] hover:bg-[#F0EDE6] cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>معاينة</span>
@@ -1285,7 +1285,7 @@ export default function AdminDashboard({
                             onSuspendHouse && onSuspendHouse(house.id, suspend);
                           }
                         }}
-                        className={`shrink-0 flex items-center gap-1 text-[10px] font-bold px-3 py-2 rounded-xl border transition-all cursor-pointer ${
+                        className={`shrink-0 flex items-center gap-1 min-h-11 text-[12px] font-bold px-3 rounded-xl border transition-all cursor-pointer ${
                           house.status === 'approved'
                             ? 'bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100'
                             : 'bg-emerald-700 border-emerald-700 text-white hover:bg-emerald-800'
@@ -1302,7 +1302,7 @@ export default function AdminDashboard({
                             onDeleteHouse(house.id);
                           }
                         }}
-                        className="shrink-0 flex items-center gap-1 text-[10px] font-bold px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 cursor-pointer"
+                        className="shrink-0 flex items-center gap-1 min-h-11 text-[12px] font-bold px-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>حذف نهائي</span>
@@ -1323,7 +1323,7 @@ export default function AdminDashboard({
           {reviews.length > 0 && (
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-2">
-                <div className="text-[10px] text-[#8A8A70] font-bold">متوسط تقييم المنصة</div>
+                <div className="text-[12px] text-[#8A8A70] font-bold">متوسط تقييم المنصة</div>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-black text-[#4A4A3A]">{arabicDecimal(avgRating)}</span>
                   <div className="flex gap-0.5">
@@ -1332,18 +1332,18 @@ export default function AdminDashboard({
                     ))}
                   </div>
                 </div>
-                <div className="text-[9px] text-[#8A8A70]">{arabicPlural(reviews.length, REVIEW_FORMS)}</div>
+                <div className="text-[11px] text-[#8A8A70]">{arabicPlural(reviews.length, REVIEW_FORMS)}</div>
               </div>
               <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-1.5">
-                <div className="text-[10px] text-[#8A8A70] font-bold">توزيع النجوم</div>
+                <div className="text-[12px] text-[#8A8A70] font-bold">توزيع النجوم</div>
                 {starDist.map((s) => (
                   <div key={s.star} className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-bold text-[#4A4A3A] w-3">{s.star}</span>
+                    <span className="text-[11px] font-bold text-[#4A4A3A] w-3">{s.star}</span>
                     <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                     <div className="flex-1 h-2 bg-[#EBEBE0]/50 rounded-full overflow-hidden">
                       <div className="h-full bg-amber-500 rounded-full" style={{ width: `${reviews.length > 0 ? (s.count / reviews.length) * 100 : 0}%` }} />
                     </div>
-                    <span className="text-[8.5px] text-[#8A8A70] w-6 text-left">{s.count}</span>
+                    <span className="text-[11px] text-[#8A8A70] w-6 text-left">{s.count}</span>
                   </div>
                 ))}
               </div>
@@ -1365,20 +1365,20 @@ export default function AdminDashboard({
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-[11px] font-bold text-[#4A4A3A]">{rev.userName}</div>
-                        <div className="text-[9px] text-[#8A8A70]">في: {house?.name || rev.houseName || rev.houseId}</div>
+                        <div className="text-[11px] text-[#8A8A70]">في: {house?.name || rev.houseName || rev.houseId}</div>
                       </div>
-                      <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-600 shrink-0">
+                      <span className="flex items-center gap-0.5 text-[12px] font-bold text-amber-600 shrink-0">
                         <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                         {arabicDecimal(rev.overall_rating ?? rev.rating)}
                       </span>
                     </div>
-                    {rev.comment && <p className="text-[10.5px] text-[#4A4A3A] leading-relaxed bg-[#FAF8F5] rounded-xl p-2 border border-[#E7E5DB]">{rev.comment}</p>}
+                    {rev.comment && <p className="text-[12px] text-[#4A4A3A] leading-relaxed bg-[#FAF8F5] rounded-xl p-2 border border-[#E7E5DB]">{rev.comment}</p>}
                     <div className="flex items-center justify-between">
-                      <span className="text-[8.5px] text-[#BCBC9D]">{new Date(rev.createdAt).toLocaleDateString('ar-EG')}</span>
+                      <span className="text-[11px] text-[#BCBC9D]">{new Date(rev.createdAt).toLocaleDateString('ar-EG')}</span>
                       <button
                         id={`delete-review-${rev.id}`}
                         onClick={() => { if (confirm('حذف هذه المراجعة نهائياً؟ سيُعاد حساب تقييم البيت تلقائياً.')) onDeleteReview && onDeleteReview(rev.id); }}
-                        className="flex items-center gap-1 text-[10px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer"
+                        className="flex items-center gap-1 text-[12px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-3 h-3" />
                         <span>حذف</span>
@@ -1404,13 +1404,13 @@ export default function AdminDashboard({
                 </span>
                 <div className="min-w-0">
                   <h3 className="text-[13px] font-black text-[#0A2342]">إدارة البانرات</h3>
-                  <p className="text-[9px] font-bold text-[#8A8A70]">البنرات الرسمية الظاهرة داخل تطبيق بيما</p>
+                  <p className="text-[11px] font-bold text-[#8A8A70]">البنرات الرسمية الظاهرة داخل تطبيق بيما</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => { pbResetForm(); setPbView('form'); }}
-                className="flex items-center gap-1.5 bg-[#0A2342] hover:bg-[#123E75] text-white text-[10px] font-black px-3.5 py-2 rounded-xl shadow-sm transition-all cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 bg-[#0A2342] hover:bg-[#123E75] text-white text-[12px] font-black px-3.5 py-2 rounded-xl shadow-sm transition-all cursor-pointer shrink-0"
               >
                 + إنشاء بانر جديد
               </button>
@@ -1426,7 +1426,7 @@ export default function AdminDashboard({
                   key={key}
                   type="button"
                   onClick={() => setPbView(key)}
-                  className={`px-3.5 py-2 rounded-xl text-[10.5px] font-black border transition-all cursor-pointer ${
+                  className={`px-3.5 py-2 rounded-xl text-[12px] font-black border transition-all cursor-pointer ${
                     pbView === key
                       ? 'bg-[#5A5A40] text-white border-[#5A5A40] shadow-sm'
                       : 'bg-[#FAF8F5] text-[#5A5A40] border-[#E7E5DB] hover:bg-white'
@@ -1442,7 +1442,7 @@ export default function AdminDashboard({
           <div className="bg-white p-4 rounded-2xl border border-[#D6D6C2] space-y-2.5">
             <div className="flex items-center justify-between gap-2 text-[#4A4A3A]">
               <h3 className="text-xs font-black">{pbEditingId ? 'تعديل البانر' : 'بانر جديد'}</h3>
-              <button type="button" onClick={() => { pbResetForm(); setPbView('list'); }} className="text-[9.5px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] cursor-pointer shrink-0">
+              <button type="button" onClick={() => { pbResetForm(); setPbView('list'); }} className="text-[11px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] cursor-pointer shrink-0">
                 إلغاء ✕
               </button>
             </div>
@@ -1461,19 +1461,19 @@ export default function AdminDashboard({
               <div className="col-span-2 space-y-1.5">
                 <input value={pbImage} onChange={(e) => setPbImage(e.target.value)} placeholder="رابط الصورة (https://...)" className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" dir="ltr" />
                 <div className="flex items-center gap-2">
-                  <span className="text-[9.5px] font-bold text-[#8A8A70] shrink-0">أو ارفع صورة:</span>
+                  <span className="text-[11px] font-bold text-[#8A8A70] shrink-0">أو ارفع صورة:</span>
                   <PhotoPickerButtons idPrefix="promo-banner" folder="banners" onSelect={(url) => setPbImage(url)} className="flex-1" />
                 </div>
               </div>
               {pbPlacement === 'countdown' && (
-                <label className="col-span-2 text-[10px] font-bold text-[#8A8A70]">ينتهي العرض في:
+                <label className="col-span-2 text-[12px] font-bold text-[#8A8A70]">ينتهي العرض في:
                   <input type="datetime-local" value={pbEndsAt} onChange={(e) => setPbEndsAt(e.target.value)} className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
                 </label>
               )}
 
               {/* Destination: a house inside the app beats any external link */}
               <div className="col-span-2 space-y-1.5 border-t border-[#E7E5DB] pt-2.5">
-                <span className="text-[10px] font-black text-[#4A4A3A]">وجهة الزر</span>
+                <span className="text-[12px] font-black text-[#4A4A3A]">وجهة الزر</span>
                 <select value={pbHouseId} onChange={(e) => setPbHouseId(e.target.value)}
                   className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right cursor-pointer">
                   <option value="">بدون — استخدم رابط خارجي</option>
@@ -1482,7 +1482,7 @@ export default function AdminDashboard({
                   ))}
                 </select>
                 {pbHouseId ? (
-                  <p className="text-[9px] font-bold text-emerald-700">الضغط على الزر هيفتح صفحة البيت جوّه التطبيق.</p>
+                  <p className="text-[11px] font-bold text-emerald-700">الضغط على الزر هيفتح صفحة البيت جوّه التطبيق.</p>
                 ) : (
                   <input value={pbLinkUrl} onChange={(e) => setPbLinkUrl(e.target.value)} placeholder="رابط خارجي (اختياري — مثال: instagram.com/pima_app)" className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" dir="ltr" />
                 )}
@@ -1490,22 +1490,22 @@ export default function AdminDashboard({
 
               {/* Publish state */}
               <div className="col-span-2 space-y-1.5 border-t border-[#E7E5DB] pt-2.5">
-                <span className="text-[10px] font-black text-[#4A4A3A]">النشر</span>
+                <span className="text-[12px] font-black text-[#4A4A3A]">النشر</span>
                 <div className="flex gap-1.5">
                   {([['draft', 'مسودة'], ['published', 'نشر الآن'], ['scheduled', 'جدولة']] as const).map(([v, label]) => (
                     <button key={v} type="button" onClick={() => setPbStatus(v)}
-                      className={`flex-1 py-2 rounded-xl text-[10.5px] font-black border transition-all cursor-pointer ${
+                      className={`flex-1 py-2 rounded-xl text-[12px] font-black border transition-all cursor-pointer ${
                         pbStatus === v ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white text-[#5A5A40] border-[#D6D6C2]'
                       }`}>{label}</button>
                   ))}
                 </div>
                 {pbStatus === 'scheduled' && (
                   <div className="grid grid-cols-2 gap-2">
-                    <label className="text-[9px] font-bold text-[#8A8A70]">يبدأ في:
+                    <label className="text-[11px] font-bold text-[#8A8A70]">يبدأ في:
                       <input type="datetime-local" value={pbStartsAt} onChange={(e) => setPbStartsAt(e.target.value)}
                         className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-2 py-2 text-right" />
                     </label>
-                    <label className="text-[9px] font-bold text-[#8A8A70]">ينتهي في:
+                    <label className="text-[11px] font-bold text-[#8A8A70]">ينتهي في:
                       <input type="datetime-local" value={pbEndsAt} onChange={(e) => setPbEndsAt(e.target.value)}
                         className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-2 py-2 text-right" />
                     </label>
@@ -1515,14 +1515,14 @@ export default function AdminDashboard({
 
               {/* Audience — empty means everyone, which is what every old banner is */}
               <div className="col-span-2 space-y-2 border-t border-[#E7E5DB] pt-2.5">
-                <span className="text-[10px] font-black text-[#4A4A3A]">
+                <span className="text-[12px] font-black text-[#4A4A3A]">
                   الجمهور {pbRoles.length + pbGovs.length === 0 && pbBooked === 'any' ? '— الكل' : '— مُستهدف 🎯'}
                 </span>
                 <div className="flex gap-1.5 flex-wrap">
                   {([['individual', 'أفراد'], ['servant', 'خدام'], ['owner', 'أصحاب بيوت']] as const).map(([r, label]) => (
                     <button key={r} type="button"
                       onClick={() => setPbRoles((p) => p.includes(r) ? p.filter((x) => x !== r) : [...p, r])}
-                      className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold border cursor-pointer transition-all ${
+                      className={`px-2.5 py-1.5 rounded-xl text-[12px] font-bold border cursor-pointer transition-all ${
                         pbRoles.includes(r) ? 'bg-[#0A2342] text-white border-[#0A2342]' : 'bg-white text-[#5A5A40] border-[#D6D6C2]'
                       }`}>{label}</button>
                   ))}
@@ -1530,13 +1530,13 @@ export default function AdminDashboard({
                 <div className="flex gap-1.5">
                   {([['any', 'حجز أو لا'], ['yes', 'حجز قبل كده'], ['no', 'لسه ما حجزش']] as const).map(([v, label]) => (
                     <button key={v} type="button" onClick={() => setPbBooked(v)}
-                      className={`flex-1 py-1.5 rounded-xl text-[9.5px] font-bold border cursor-pointer transition-all ${
+                      className={`flex-1 py-1.5 rounded-xl text-[11px] font-bold border cursor-pointer transition-all ${
                         pbBooked === v ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white text-[#5A5A40] border-[#D6D6C2]'
                       }`}>{label}</button>
                   ))}
                 </div>
                 <select value="" onChange={(e) => { if (e.target.value) setPbGovs((p) => p.includes(e.target.value) ? p : [...p, e.target.value]); }}
-                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[10.5px] px-3 py-2 text-right cursor-pointer">
+                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[12px] px-3 py-2 text-right cursor-pointer">
                   <option value="">+ أضف محافظة (اختياري)</option>
                   {GOVERNORATES.filter((g) => !pbGovs.includes(g)).map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
@@ -1544,19 +1544,19 @@ export default function AdminDashboard({
                   <div className="flex gap-1 flex-wrap">
                     {pbGovs.map((g) => (
                       <button key={g} type="button" onClick={() => setPbGovs((p) => p.filter((x) => x !== g))}
-                        className="text-[9px] font-bold bg-[#EBEBE0] text-[#4A4A3A] px-2 py-1 rounded-lg cursor-pointer">{g} ✕</button>
+                        className="text-[11px] font-bold bg-[#EBEBE0] text-[#4A4A3A] px-2 py-1 rounded-lg cursor-pointer">{g} ✕</button>
                     ))}
                   </div>
                 )}
                 {(pbRoles.length > 0 || pbGovs.length > 0 || pbBooked !== 'any') && (
-                  <p className="text-[9px] font-bold text-amber-700">الزائر غير المسجّل مش هيشوف البانر المُستهدف.</p>
+                  <p className="text-[11px] font-bold text-amber-700">الزائر غير المسجّل مش هيشوف البانر المُستهدف.</p>
                 )}
               </div>
 
               {/* Split test */}
               <div className="col-span-2 space-y-1.5 border-t border-[#E7E5DB] pt-2.5">
-                <span className="text-[10px] font-black text-[#4A4A3A]">تجربة A/B (اختياري)</span>
-                <p className="text-[9px] font-bold text-[#8A8A70]">اكتب نفس اسم التجربة في بانرين، والنظام يوزّعهم على الزوار ويقارن نتايجهم.</p>
+                <span className="text-[12px] font-black text-[#4A4A3A]">تجربة A/B (اختياري)</span>
+                <p className="text-[11px] font-bold text-[#8A8A70]">اكتب نفس اسم التجربة في بانرين، والنظام يوزّعهم على الزوار ويقارن نتايجهم.</p>
                 <div className="grid grid-cols-3 gap-2">
                   <input value={pbExperiment} onChange={(e) => setPbExperiment(e.target.value)} placeholder="اسم التجربة" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-right" />
                   <input value={pbVariant} onChange={(e) => setPbVariant(e.target.value)} placeholder="أ / ب" className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 py-2 text-center" />
@@ -1566,24 +1566,24 @@ export default function AdminDashboard({
               {/* Icon links shown inside the banner (social accounts, site, phone…) */}
               <div className="col-span-2 space-y-1.5 pt-1 border-t border-[#E7E5DB]">
                 <div className="flex items-center justify-between gap-2 pt-1.5">
-                  <span className="text-[10px] font-black text-[#4A4A3A]">أيقونات داخل البانر ({arabicNumber(pbLinks.length)})</span>
+                  <span className="text-[12px] font-black text-[#4A4A3A]">أيقونات داخل البانر ({arabicNumber(pbLinks.length)})</span>
                   <button
                     type="button"
                     onClick={() => setPbLinks((p) => [...p, { id: `pl_${Date.now()}`, platform: 'instagram', url: '' }])}
-                    className="text-[9.5px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer shrink-0"
+                    className="text-[11px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer shrink-0"
                   >
                     + إضافة أيقونة
                   </button>
                 </div>
                 {pbLinks.length === 0 ? (
-                  <p className="text-[9px] text-[#8A8A70] font-bold">مثال: أضف إنستجرام وفيسبوك وواتساب في نفس البانر — كل أيقونة بلينكها.</p>
+                  <p className="text-[11px] text-[#8A8A70] font-bold">مثال: أضف إنستجرام وفيسبوك وواتساب في نفس البانر — كل أيقونة بلينكها.</p>
                 ) : (
                   pbLinks.map((l, i) => (
                     <div key={l.id} className="flex items-center gap-1.5">
                       <select
                         value={l.platform}
                         onChange={(e) => setPbLinks((p) => p.map((x, j) => (j === i ? { ...x, platform: e.target.value as PromoLinkPlatform } : x)))}
-                        className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[10.5px] px-2 py-2 text-[#2D2D24] focus:outline-none shrink-0"
+                        className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[12px] px-2 py-2 text-[#2D2D24] focus:outline-none shrink-0"
                       >
                         {PROMO_PLATFORMS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                       </select>
@@ -1591,7 +1591,7 @@ export default function AdminDashboard({
                         value={l.url}
                         onChange={(e) => setPbLinks((p) => p.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))}
                         placeholder="الرابط (أو الرقم لواتساب/الاتصال)"
-                        className="flex-1 min-w-0 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[10.5px] px-2 py-2 text-right"
+                        className="flex-1 min-w-0 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[12px] px-2 py-2 text-right"
                         dir="ltr"
                       />
                       <button
@@ -1627,7 +1627,7 @@ export default function AdminDashboard({
               };
               return (
                 <div className="space-y-1.5 pt-1">
-                  <span className="text-[9.5px] font-black text-[#8A8A70] flex items-center gap-1"><Eye className="w-3 h-3" /> معاينة (زي ما الزائر هيشوفها)</span>
+                  <span className="text-[11px] font-black text-[#8A8A70] flex items-center gap-1"><Eye className="w-3 h-3" /> معاينة (زي ما الزائر هيشوفها)</span>
                   <div className="bg-[#FAF8F5] border border-dashed border-[#D6D6C2] rounded-2xl p-2" dir="rtl">
                     {pbPlacement === 'carousel'
                       ? <SummerOfferCarousel slides={[draft]} />
@@ -1720,7 +1720,7 @@ export default function AdminDashboard({
                 <Megaphone className="w-7 h-7 text-[#C9C5B4] mx-auto" />
                 <p className="text-[11px] text-[#8A8A70] font-bold">لا توجد بانرات بعد — سيظهر التصميم الافتراضي للزوار.</p>
                 <button type="button" onClick={() => { pbResetForm(); setPbView('form'); }}
-                  className="text-[10px] font-black text-[#0A2342] underline cursor-pointer">أنشئ أول بانر</button>
+                  className="text-[12px] font-black text-[#0A2342] underline cursor-pointer">أنشئ أول بانر</button>
               </div>
             ) : (
               // Sorted by the same key the reorder arrows write, so a move is
@@ -1762,35 +1762,35 @@ export default function AdminDashboard({
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${b.placement === 'carousel' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700'}`}>{b.placement === 'carousel' ? 'كاروسيل' : 'عدّاد'}</span>
+                      <span className={`text-[11px] font-black px-2 py-0.5 rounded-full shrink-0 ${b.placement === 'carousel' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700'}`}>{b.placement === 'carousel' ? 'كاروسيل' : 'عدّاد'}</span>
                       {(() => {
                         const s = bannerStateLabel(b);
                         const tone = s.tone === 'live' ? 'bg-emerald-100 text-emerald-700'
                           : s.tone === 'warn' ? 'bg-amber-100 text-amber-800' : 'bg-[#EBEBE0] text-[#8A8A70]';
-                        return <span className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${tone}`}>{s.label}</span>;
+                        return <span className={`text-[11px] font-black px-2 py-0.5 rounded-full shrink-0 ${tone}`}>{s.label}</span>;
                       })()}
-                      {b.linkedHouseId && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-[#0A2342]/10 text-[#0A2342] shrink-0">🏠 مرتبط ببيت</span>}
+                      {b.linkedHouseId && <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-[#0A2342]/10 text-[#0A2342] shrink-0">🏠 مرتبط ببيت</span>}
                     </div>
                     <p className="text-[11px] font-black text-[#4A4A3A] truncate mt-0.5">{b.title || b.badge || '—'}</p>
-                    {b.subtitle && <p className="text-[9.5px] text-[#8A8A70] truncate">{b.subtitle}</p>}
+                    {b.subtitle && <p className="text-[11px] text-[#8A8A70] truncate">{b.subtitle}</p>}
                     {b.endsAt && (
-                      <p className="text-[9px] font-bold text-[#8A8A70] mt-0.5">
+                      <p className="text-[11px] font-bold text-[#8A8A70] mt-0.5">
                         ينتهي: {new Date(b.endsAt).toLocaleString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     )}
                   </div>
 
                   <div className="flex flex-col items-stretch gap-1 shrink-0">
-                    <button type="button" onClick={() => { pbStartEdit(b); setPbView('form'); }} className="flex items-center justify-center gap-1 text-[9.5px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer">
+                    <button type="button" onClick={() => { pbStartEdit(b); setPbView('form'); }} className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer">
                       <Pencil className="w-3 h-3" /> تعديل
                     </button>
                     <button type="button" onClick={() => setPbDesigningId(pbDesigningId === b.id ? null : b.id)}
-                      className={`flex items-center justify-center gap-1 text-[9.5px] font-bold px-2 py-1 rounded-lg cursor-pointer border ${
+                      className={`flex items-center justify-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg cursor-pointer border ${
                         pbDesigningId === b.id ? 'bg-[#0A2342] text-white border-[#0A2342]' : 'text-[#0A2342] border-[#0A2342]/30 hover:bg-[#FAF8F5]'
                       }`}>
                       <Wand2 className="w-3 h-3" /> تصميم
                     </button>
-                    <button type="button" onClick={() => onTogglePromoBanner?.(b.id, !b.isActive)} className={`text-[9.5px] font-bold px-2 py-1 rounded-lg cursor-pointer ${b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>{b.isActive ? 'مفعّل' : 'متوقف'}</button>
+                    <button type="button" onClick={() => onTogglePromoBanner?.(b.id, !b.isActive)} className={`text-[11px] font-bold px-2 py-1 rounded-lg cursor-pointer ${b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>{b.isActive ? 'مفعّل' : 'متوقف'}</button>
                     <button type="button"
                       onClick={() => onAddPromoBanner?.({
                         ...b,
@@ -1801,10 +1801,10 @@ export default function AdminDashboard({
                         sort: promoBanners.filter((x) => x.placement === b.placement).length,
                         createdAt: new Date().toISOString(),
                       })}
-                      className="flex items-center justify-center gap-1 text-[9.5px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer">
+                      className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 py-1 rounded-lg cursor-pointer">
                       <Copy className="w-3 h-3" /> نسخة
                     </button>
-                    <button type="button" onClick={() => { if (confirm('حذف هذا البانر نهائياً؟')) { if (pbEditingId === b.id) pbResetForm(); onDeletePromoBanner?.(b.id); } }} className="text-[9.5px] font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg cursor-pointer">حذف</button>
+                    <button type="button" onClick={() => { if (confirm('حذف هذا البانر نهائياً؟')) { if (pbEditingId === b.id) pbResetForm(); onDeletePromoBanner?.(b.id); } }} className="text-[11px] font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg cursor-pointer">حذف</button>
                   </div>
                 </div>
                 );
@@ -1824,9 +1824,9 @@ export default function AdminDashboard({
               <div className="flex-1 relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8A8A70]" />
                 <input type="text" placeholder="ابحث بالاسم أو الإيميل أو الهاتف أو الكنيسة..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs pr-9 pl-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D] text-right" />
+                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs min-h-11 pr-9 pl-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D] text-right" />
               </div>
-              <button onClick={exportUsers} className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[10px] font-bold px-3 py-2 rounded-xl cursor-pointer shrink-0">
+              <button onClick={exportUsers} className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold px-3 py-2 rounded-xl cursor-pointer shrink-0">
                 <Download className="w-3.5 h-3.5" /> تصدير CSV
               </button>
             </div>
@@ -1840,14 +1840,14 @@ export default function AdminDashboard({
                 { key: 'banned' as const, label: 'محظورين' },
               ]).map((f) => (
                 <button key={f.key} onClick={() => setUserRoleFilter(f.key)}
-                  className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${userRoleFilter === f.key ? 'bg-[#5A5A40] text-white shadow-sm' : 'bg-[#FAF8F5] text-[#8A8A70] border border-[#E7E5DB] hover:bg-[#EBEBE0]/50'}`}>
+                  className={`text-[12px] font-bold px-2.5 min-h-11 rounded-lg transition-all cursor-pointer whitespace-nowrap ${userRoleFilter === f.key ? 'bg-[#5A5A40] text-white shadow-sm' : 'bg-[#FAF8F5] text-[#8A8A70] border border-[#E7E5DB] hover:bg-[#EBEBE0]/50'}`}>
                   {f.label}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="text-[10px] text-[#8A8A70] px-1 font-bold">{arabicPlural(filteredUsers.length, USER_FORMS)}</div>
+          <div className="text-[12px] text-[#8A8A70] px-1 font-bold">{arabicPlural(filteredUsers.length, USER_FORMS)}</div>
 
           <div className="space-y-2">
             {filteredUsers.map((usr) => (
@@ -1856,29 +1856,29 @@ export default function AdminDashboard({
                   <div className="min-w-0">
                     <div className="text-xs font-bold text-[#4A4A3A] flex items-center gap-1.5">
                       {usr.name}
-                      {usr.isBanned && <span className="text-[8px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded">محظور</span>}
+                      {usr.isBanned && <span className="text-[11px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded">محظور</span>}
                     </div>
-                    <div className="text-[10px] text-[#8A8A70] mt-0.5">{usr.email} · {usr.phone}</div>
-                    {usr.organizationName && <div className="text-[9px] text-[#5A5A40] font-black mt-0.5">{usr.organizationName}</div>}
-                    <div className="text-[9px] text-[#BCBC9D] mt-0.5">
+                    <div className="text-[12px] text-[#8A8A70] mt-0.5">{usr.email} · {usr.phone}</div>
+                    {usr.organizationName && <div className="text-[11px] text-[#5A5A40] font-black mt-0.5">{usr.organizationName}</div>}
+                    <div className="text-[11px] text-[#BCBC9D] mt-0.5">
                       تسجيل: {new Date(usr.createdAt).toLocaleDateString('ar-EG')}
                       {usr.points ? ` · ${arabicPlural(usr.points, POINT_FORMS)}` : ''}
                     </div>
                   </div>
 
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
                       usr.role === 'admin' ? 'bg-red-50 text-red-800 border-red-200' : usr.role === 'owner' ? 'bg-[#EBEBE0] text-[#5A5A40] border-[#BCBC9D]' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                     }`}>
                       {usr.role === 'admin' ? 'إدارة' : usr.role === 'owner' ? 'صاحب بيت' : usr.role === 'servant' ? 'خادم' : 'فرد'}
                     </span>
                     <button onClick={() => setDetailUserId(usr.id)}
-                      className="flex items-center gap-1 text-[9px] font-bold text-[#5A5A40] hover:bg-[#EBEBE0]/50 px-2 py-1 rounded-lg cursor-pointer border border-[#D6D6C2]">
+                      className="flex items-center gap-1 min-h-11 px-2 text-[11px] font-bold text-[#5A5A40] hover:bg-[#EBEBE0]/50 px-2 py-1 rounded-lg cursor-pointer border border-[#D6D6C2]">
                       <Eye className="w-3 h-3" /> تفاصيل
                     </button>
                     {usr.role !== 'admin' && (
                       <select value={usr.role} onChange={(e) => onToggleUserRole(usr.id, e.target.value as User['role'])}
-                        className="text-[9px] bg-white border border-[#D6D6C2] rounded px-1.5 py-0.5 text-[#4A4A3A] outline-none focus:border-[#5A5A40]">
+                        className="text-[11px] bg-white border border-[#D6D6C2] rounded px-1.5 min-h-11 text-[#4A4A3A] outline-none focus:border-[#5A5A40]">
                         <option value="individual">فرد</option>
                         <option value="servant">خادم كنسي</option>
                         <option value="owner">صاحب بيت</option>
@@ -1886,7 +1886,7 @@ export default function AdminDashboard({
                     )}
                     {usr.role !== 'admin' && (
                       <button onClick={() => { if (usr.isBanned || confirm(`حظر "${usr.name}"؟`)) onBanUser?.(usr.id, !usr.isBanned); }}
-                        className={`flex items-center gap-1 text-[9px] font-bold px-2 py-1 rounded-lg border cursor-pointer ${usr.isBanned ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-700'}`}>
+                        className={`flex items-center gap-1 min-h-11 text-[11px] font-bold px-2 rounded-lg border cursor-pointer ${usr.isBanned ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-700'}`}>
                         <Ban className="w-3 h-3" /> {usr.isBanned ? 'رفع الحظر' : 'حظر'}
                       </button>
                     )}
@@ -1903,7 +1903,7 @@ export default function AdminDashboard({
         <div className="space-y-4">
           {/* Period filter */}
           <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-2">
-            <span className="text-[10px] font-bold text-[#8A8A70]">عرض الأرقام المالية عن فترة (حسب تاريخ الدخول):</span>
+            <span className="text-[12px] font-bold text-[#8A8A70]">عرض الأرقام المالية عن فترة (حسب تاريخ الدخول):</span>
             <div className="flex flex-wrap gap-1.5">
               {([
                 { key: 'today', label: 'اليوم' },
@@ -1917,7 +1917,7 @@ export default function AdminDashboard({
                   key={p.key}
                   type="button"
                   onClick={() => setFinPeriod(p.key)}
-                  className={`text-[9.5px] font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  className={`text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
                     finPeriod === p.key ? 'bg-[#5A5A40] text-white' : 'bg-[#EBEBE0]/50 text-[#4A4A3A] hover:bg-[#DEDECB]'
                   }`}
                 >
@@ -1927,9 +1927,9 @@ export default function AdminDashboard({
             </div>
             {finPeriod === 'custom' && (
               <div className="flex items-center gap-1.5 pt-1">
-                <input type="date" value={finFrom} onChange={(e) => setFinFrom(e.target.value)} className="flex-1 bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
-                <span className="text-[9px] text-[#8A8A70] shrink-0">إلى</span>
-                <input type="date" value={finTo} onChange={(e) => setFinTo(e.target.value)} className="flex-1 bg-white border border-[#D6D6C2] text-[10px] px-2 py-1.5 rounded-lg focus:outline-none" />
+                <input type="date" value={finFrom} onChange={(e) => setFinFrom(e.target.value)} className="flex-1 bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                <span className="text-[11px] text-[#8A8A70] shrink-0">إلى</span>
+                <input type="date" value={finTo} onChange={(e) => setFinTo(e.target.value)} className="flex-1 bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
               </div>
             )}
           </div>
@@ -1938,15 +1938,15 @@ export default function AdminDashboard({
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gradient-to-br from-emerald-50 to-white p-4 rounded-3xl border border-emerald-200 space-y-1">
               <CheckCircle2 className="w-5 h-5 text-emerald-700" />
-              <div className="text-[10px] text-emerald-900 font-bold">المحصّل فعلاً</div>
+              <div className="text-[12px] text-emerald-900 font-bold">المحصّل فعلاً</div>
               <div className="text-lg font-black text-emerald-900">{arabicNumber(collectedRevenue)} ج.م</div>
-              <div className="text-[9px] text-emerald-800/70">من دفعات معتمدة</div>
+              <div className="text-[11px] text-emerald-800/70">من دفعات معتمدة</div>
             </div>
             <div className="bg-gradient-to-br from-[#EBEBE0]/40 to-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
               <TrendingUp className="w-5 h-5 text-[#5A5A40]" />
-              <div className="text-[10px] text-[#8A8A70] font-bold">المتوقع الكلي</div>
+              <div className="text-[12px] text-[#8A8A70] font-bold">المتوقع الكلي</div>
               <div className="text-lg font-black text-[#4A4A3A]">{arabicNumber(expectedRevenue)} ج.م</div>
-              <div className="text-[9px] text-[#8A8A70]">قيمة الحجوزات المؤكدة</div>
+              <div className="text-[11px] text-[#8A8A70]">قيمة الحجوزات المؤكدة</div>
             </div>
           </div>
 
@@ -1958,11 +1958,11 @@ export default function AdminDashboard({
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <div className="text-[9px] text-white/60 font-bold">من المحصّل فعلاً</div>
+                <div className="text-[11px] text-white/60 font-bold">من المحصّل فعلاً</div>
                 <div className="text-xl font-black text-white">{arabicNumber(collectedCommission)} ج.م</div>
               </div>
               <div>
-                <div className="text-[9px] text-white/60 font-bold">المتوقعة (كل الحجوزات)</div>
+                <div className="text-[11px] text-white/60 font-bold">المتوقعة (كل الحجوزات)</div>
                 <div className="text-xl font-black text-white/80">{arabicNumber(expectedCommission)} ج.م</div>
               </div>
             </div>
@@ -1972,15 +1972,15 @@ export default function AdminDashboard({
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
               <DollarSign className="w-5 h-5 text-emerald-700" />
-              <div className="text-[10px] text-[#8A8A70] font-bold">مستحقات الملّاك (صافي المحصّل)</div>
+              <div className="text-[12px] text-[#8A8A70] font-bold">مستحقات الملّاك (صافي المحصّل)</div>
               <div className="text-lg font-black text-emerald-800">{arabicNumber(ownersNetFromCollected)} ج.م</div>
-              <div className="text-[9px] text-[#8A8A70]">بعد خصم عمولتك</div>
+              <div className="text-[11px] text-[#8A8A70]">بعد خصم عمولتك</div>
             </div>
             <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
               <AlertTriangle className="w-5 h-5 text-amber-600" />
-              <div className="text-[10px] text-[#8A8A70] font-bold">متبقٍ لم يُحصّل بعد</div>
+              <div className="text-[12px] text-[#8A8A70] font-bold">متبقٍ لم يُحصّل بعد</div>
               <div className="text-lg font-black text-amber-700">{arabicNumber(outstanding)} ج.م</div>
-              <div className="text-[9px] text-[#8A8A70]">المتوقع − المحصّل</div>
+              <div className="text-[11px] text-[#8A8A70]">المتوقع − المحصّل</div>
             </div>
           </div>
 
@@ -1988,17 +1988,17 @@ export default function AdminDashboard({
           <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] space-y-2">
             <h3 className="text-xs font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">مستحقات كل صاحب بيت</h3>
             {ownerRows.length === 0 ? (
-              <p className="text-[10px] text-[#8A8A70] text-center py-3">لا توجد حجوزات في هذه الفترة.</p>
+              <p className="text-[12px] text-[#8A8A70] text-center py-3">لا توجد حجوزات في هذه الفترة.</p>
             ) : (
               <>
-                <div className="grid grid-cols-4 gap-1 text-[8.5px] font-bold text-[#8A8A70] pb-1 border-b border-[#EBEBE0]">
+                <div className="grid grid-cols-4 gap-1 text-[11px] font-bold text-[#8A8A70] pb-1 border-b border-[#EBEBE0]">
                   <span>المالك</span>
                   <span className="text-center">المحصّل</span>
                   <span className="text-center">عمولتك</span>
                   <span className="text-center">صافي مستحقاته</span>
                 </div>
                 {ownerRows.map((o) => (
-                  <div key={o.id} className="grid grid-cols-4 gap-1 text-[10px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0 items-center">
+                  <div key={o.id} className="grid grid-cols-4 gap-1 text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0 items-center">
                     <span className="font-bold text-[#4A4A3A] truncate">{o.name}</span>
                     <span className="text-center text-emerald-800 font-bold">{arabicNumber(o.collected)}</span>
                     <span className="text-center text-[#C5A059] font-bold">{arabicNumber(Math.round(o.collected * PLATFORM_COMMISSION))}</span>
@@ -2014,9 +2014,9 @@ export default function AdminDashboard({
             <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] space-y-2">
               <h3 className="text-xs font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أكثر البيوت دخلاً</h3>
               {topHouses.map((h, i) => (
-                <div key={h.id} className="flex items-center justify-between text-[10.5px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0">
+                <div key={h.id} className="flex items-center justify-between text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0">
                   <span className="font-bold text-[#4A4A3A] truncate flex items-center gap-1.5">
-                    <span className="w-4 h-4 rounded-full bg-[#EBEBE0] text-[#5A5A40] text-[8px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
+                    <span className="w-4 h-4 rounded-full bg-[#EBEBE0] text-[#5A5A40] text-[11px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
                     {h.name}
                   </span>
                   <span className="font-black text-emerald-800 shrink-0">{arabicNumber(h.amount)} ج.م</span>
@@ -2029,12 +2029,12 @@ export default function AdminDashboard({
           <div className="grid grid-cols-2 gap-3 text-right">
             <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
               <BarChart3 className="w-5 h-5 text-[#5A5A40]" />
-              <div className="text-[10px] text-[#8A8A70] font-bold">حجوزات مؤكدة (الفترة):</div>
+              <div className="text-[12px] text-[#8A8A70] font-bold">حجوزات مؤكدة (الفترة):</div>
               <div className="text-lg font-black text-[#4A4A3A]">{arabicNumber(periodConfirmed.length)}</div>
             </div>
             <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
               <Users className="w-5 h-5 text-[#8A8A70]" />
-              <div className="text-[10px] text-[#8A8A70] font-bold">متوسط الحضور بالرحلة:</div>
+              <div className="text-[12px] text-[#8A8A70] font-bold">متوسط الحضور بالرحلة:</div>
               <div className="text-lg font-black text-[#4A4A3A]">{arabicPlural(averageBookingSize, GUEST_FORMS)}</div>
             </div>
           </div>
@@ -2064,10 +2064,10 @@ export default function AdminDashboard({
 
           {/* Export buttons */}
           <div className="flex gap-2">
-            <button onClick={exportFinancials} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[10px] font-bold py-2.5 rounded-xl cursor-pointer">
+            <button onClick={exportFinancials} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold py-2.5 rounded-xl cursor-pointer">
               <Download className="w-3.5 h-3.5" /> تصدير المالية CSV
             </button>
-            <button onClick={exportBookings} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[10px] font-bold py-2.5 rounded-xl cursor-pointer">
+            <button onClick={exportBookings} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold py-2.5 rounded-xl cursor-pointer">
               <Download className="w-3.5 h-3.5" /> تصدير الحجوزات CSV
             </button>
           </div>
@@ -2087,7 +2087,7 @@ export default function AdminDashboard({
         <div className="space-y-4 text-right">
           <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
             <h3 className="text-xs font-bold text-[#4A4A3A]">قائمة الحوالات والدفعيات لإثباتات الحجز:</h3>
-            <div className="text-[10px] text-[#8A8A70]">
+            <div className="text-[12px] text-[#8A8A70]">
               بانتظار التحقق: <strong className="text-amber-800">{arabicNumber(payments.filter(p => p.paymentStatus === 'pending').length)}</strong> / إجمالي المعاملات بالمنصة: {arabicNumber(payments.length)}
             </div>
           </div>
@@ -2117,25 +2117,25 @@ export default function AdminDashboard({
                     {/* Header info */}
                     <div className="p-3.5 bg-slate-50 border-b border-[#D6D6C2]/60 flex flex-wrap items-center justify-between gap-2">
                       <div className="space-y-0.5">
-                        <span className="text-[9px] text-[#8A8A70] font-bold">معرف الدفع: #{pay.id.toUpperCase()}</span>
+                        <span className="text-[11px] text-[#8A8A70] font-bold">معرف الدفع: #{pay.id.toUpperCase()}</span>
                         <h4 className="text-xs font-extrabold text-[#4A4A3A]">{pay.userName}</h4>
-                        {b && <p className="text-[10px] text-[#8A8A70]">لحجز بيت: <strong>{b.houseName}</strong> (حساب #{b.id.toUpperCase()})</p>}
+                        {b && <p className="text-[12px] text-[#8A8A70]">لحجز بيت: <strong>{b.houseName}</strong> (حساب #{b.id.toUpperCase()})</p>}
                       </div>
 
                       <div className="flex items-center gap-2">
                         {/* Status badges */}
                         {pay.paymentStatus === 'approved' && (
-                          <span className="text-[9px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full">
+                          <span className="text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full">
                             مقبول ومعتمد ✅
                           </span>
                         )}
                         {pay.paymentStatus === 'rejected' && (
-                          <span className="text-[9px] font-bold bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full">
+                          <span className="text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full">
                             مرفوض ومرفوع للمراجعة ❌
                           </span>
                         )}
                         {pay.paymentStatus === 'pending' && (
-                          <span className="text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full animate-pulse">
+                          <span className="text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full animate-pulse">
                             قيد المراجعة والتحقق ⏳
                           </span>
                         )}
@@ -2147,13 +2147,13 @@ export default function AdminDashboard({
                       <div className="space-y-3">
                         {/* Amount */}
                         <div className="flex items-center justify-between py-1 border-b border-dashed border-[#E7E5DB]">
-                          <span className="text-[10px] text-[#867E65] font-bold">المبلغ المحول:</span>
+                          <span className="text-[12px] text-[#867E65] font-bold">المبلغ المحول:</span>
                           <span className="text-sm font-black text-emerald-800">{arabicNumber(pay.amount)} ج.م</span>
                         </div>
 
                         {/* Method with custom local Egyptian descriptors */}
                         <div className="flex items-center justify-between py-1 border-b border-dashed border-[#E7E5DB]">
-                          <span className="text-[10px] text-[#867E65] font-bold">وسيلة الدفع المستخدمة:</span>
+                          <span className="text-[12px] text-[#867E65] font-bold">وسيلة الدفع المستخدمة:</span>
                           <span className="text-xs font-extrabold text-[#464E3D] flex items-center gap-1">
                             {pay.paymentMethod === 'instapay' && (
                               <>
@@ -2190,7 +2190,7 @@ export default function AdminDashboard({
 
                         {/* Render customized transaction parameters based on type */}
                         <div className="bg-[#FAF8F5] p-3 rounded-2xl border border-[#E7E5DB] text-[11px] space-y-1 text-[#2D2D24]">
-                          <div className="font-extrabold text-[#464E3D] text-[10px] mb-1">بيانات وتفاصيل المعاملة المصرحة:</div>
+                          <div className="font-extrabold text-[#464E3D] text-[12px] mb-1">بيانات وتفاصيل المعاملة المصرحة:</div>
                           
                           {pay.paymentMethod === 'instapay' && pay.details && (
                             <>
@@ -2224,19 +2224,19 @@ export default function AdminDashboard({
                           )}
                           {/* Was printing the raw column — "2026-08-05T18:06:42.612+00:00"
                               — on the screen where money gets approved. */}
-                          <div className="text-[10px] text-[#867E65] pt-1">تاريخ تقديم الإيصال: {arabicDateTime(pay.paymentDate)}</div>
+                          <div className="text-[12px] text-[#867E65] pt-1">تاريخ تقديم الإيصال: {arabicDateTime(pay.paymentDate)}</div>
                         </div>
 
                         {/* Admin Notes form */}
                         <div className="space-y-1">
-                          <label className="block text-[10px] font-bold text-[#867E65]">ملاحظات مراجعة الإدارة والرد على الحجز:</label>
+                          <label className="block text-[12px] font-bold text-[#867E65]">ملاحظات مراجعة الإدارة والرد على الحجز:</label>
                           <input
                             id={`admin-payment-notes-input-${pay.id}`}
                             type="text"
                             placeholder="اكتب ردك هنا (مثال: تم مطابقة إيصال فودافون كاش مع المحفظة)"
                             value={notesInputs[pay.id] || pay.adminNotes || ''}
                             onChange={(e) => setNotesInputs({ ...notesInputs, [pay.id]: e.target.value })}
-                            className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
+                            className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 min-h-11 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
                           />
                         </div>
 
@@ -2252,7 +2252,7 @@ export default function AdminDashboard({
                                   alert('تم رفض الإيصال وتنبيه المستخدم لتعديل التفاصيل.');
                                 }
                               }}
-                              className="flex-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 text-xs font-bold py-2 px-3 rounded-xl transition-colors cursor-pointer text-center"
+                              className="flex-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 text-xs font-bold min-h-11 px-3 rounded-xl transition-colors cursor-pointer text-center"
                             >
                               رفض وإعادة الحجز لـ "غير مدفوع" ✕
                             </button>
@@ -2275,7 +2275,7 @@ export default function AdminDashboard({
 
                       {/* Right side: Proof Image display */}
                       <div className="flex flex-col items-center justify-center p-3 bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl relative">
-                        <span className="text-[10px] font-bold text-[#867E65] mb-2">إثبات التحويل المرفق:</span>
+                        <span className="text-[12px] font-bold text-[#867E65] mb-2">إثبات التحويل المرفق:</span>
                         {proofImg ? (
                           <div className="space-y-2 text-center">
                             <img
@@ -2289,7 +2289,7 @@ export default function AdminDashboard({
                               id={`admin-zoom-btn-${pay.id}`}
                               type="button"
                               onClick={() => setSelectedProofImage(proofImg)}
-                              className="text-[9px] text-[#464E3D] hover:underline font-bold"
+                              className="text-[11px] text-[#464E3D] hover:underline font-bold"
                             >
                               🔍 اضغط لتكبير الصورة لرؤية التفاصيل بدقة
                             </button>
@@ -2297,13 +2297,13 @@ export default function AdminDashboard({
                         ) : !proofFetched ? (
                           <div className="text-center p-6 text-[#867E65]">
                             <Clock className="w-6 h-6 text-[#BCBC9D] mx-auto mb-1 animate-pulse" />
-                            <p className="text-[10px] font-bold">جارٍ تحميل الصورة...</p>
+                            <p className="text-[12px] font-bold">جارٍ تحميل الصورة...</p>
                           </div>
                         ) : (
                           <div className="text-center p-6 text-[#867E65]">
                             <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-1" />
-                            <p className="text-[10px] font-bold">لا يوجد لقطة شاشة مرفقة</p>
-                            <p className="text-[9px] mt-0.5">الدفع تم نقداً أو بطرق لا تستدعي صورة، أو تم الدفع المباشر بالكامل.</p>
+                            <p className="text-[12px] font-bold">لا يوجد لقطة شاشة مرفقة</p>
+                            <p className="text-[11px] mt-0.5">الدفع تم نقداً أو بطرق لا تستدعي صورة، أو تم الدفع المباشر بالكامل.</p>
                           </div>
                         )}
                       </div>
@@ -2352,7 +2352,7 @@ export default function AdminDashboard({
               <div className="space-y-2">
                 <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
                   <h3 className="text-xs font-bold text-[#4A4A3A]">مستحقات جاهزة للتحويل (لكل حجز):</h3>
-                  <div className="text-[10px] text-[#8A8A70]">{arabicPlural(owedBookings.length, BOOKING_FORMS)}</div>
+                  <div className="text-[12px] text-[#8A8A70]">{arabicPlural(owedBookings.length, BOOKING_FORMS)}</div>
                 </div>
                 {owedHouseIds.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70]">لا توجد مستحقات غير محوّلة حالياً.</div>
@@ -2371,29 +2371,29 @@ export default function AdminDashboard({
                       </div>
                       {methods.length > 0 ? (
                         <div className="bg-[#FBFBFA] border border-[#EBEBE0] rounded-xl p-2 space-y-1">
-                          <div className="text-[9px] font-black text-[#8A8A70]">حوّل إلى:</div>
+                          <div className="text-[11px] font-black text-[#8A8A70]">حوّل إلى:</div>
                           {methods.map((m) => (
-                            <div key={m.id} className="flex items-center justify-between gap-2 text-[10px]">
+                            <div key={m.id} className="flex items-center justify-between gap-2 text-[12px]">
                               <span className="font-bold text-[#4A4A3A] shrink-0">{m.label}</span>
                               <span dir="ltr" className="font-mono font-black text-[#5A5A40] select-all break-all">{m.value}</span>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="text-[9px] text-rose-600 font-bold">⚠️ لا توجد وسيلة تحويل مسجّلة لهذا البيت.</div>
+                        <div className="text-[11px] text-rose-600 font-bold">⚠️ لا توجد وسيلة تحويل مسجّلة لهذا البيت.</div>
                       )}
                       <div className="space-y-1.5">
                         {list.map((b) => (
                           <div key={b.id} className="flex items-center justify-between gap-2 bg-[#FBFBFA] rounded-xl px-2.5 py-1.5">
                             <div className="min-w-0">
                               <div className="text-[11px] font-bold text-[#4A4A3A] truncate">{b.userName}</div>
-                              <div className="text-[9px] text-[#8A8A70] font-bold">{arabicDateRange(b.checkIn, b.checkOut)}</div>
+                              <div className="text-[11px] text-[#8A8A70] font-bold">{arabicDateRange(b.checkIn, b.checkOut)}</div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <span className="text-[11px] font-black text-[#5A5A40]">{arabicNumber(ownerShare(b))} ج.م</span>
                               <button type="button"
                                 onClick={() => { if (confirm(`تأكيد تحويل ${arabicNumber(ownerShare(b))} ج.م لـ${ownerName} عن حجز ${b.userName}؟`)) onSettleBookings({ houseId: hid, ownerId, amount: ownerShare(b), bookingIds: [b.id], note: `حجز ${b.userName}` }); }}
-                                className="text-[10px] font-bold bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg cursor-pointer">حوّل ✓</button>
+                                className="text-[12px] font-bold bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg cursor-pointer">حوّل ✓</button>
                             </div>
                           </div>
                         ))}
@@ -2410,7 +2410,7 @@ export default function AdminDashboard({
             )}
             <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
               <h3 className="text-xs font-bold text-[#4A4A3A]">طلبات تحويل أصحاب البيوت + السجل:</h3>
-              <div className="text-[10px] text-[#8A8A70]">قيد التنفيذ: <strong className="text-amber-800">{arabicNumber(pendingTotal)} ج.م</strong></div>
+              <div className="text-[12px] text-[#8A8A70]">قيد التنفيذ: <strong className="text-amber-800">{arabicNumber(pendingTotal)} ج.م</strong></div>
             </div>
             {payouts.length === 0 ? (
               <div className="bg-white rounded-2xl border border-[#D6D6C2] p-8 text-center text-xs text-[#8A8A70]">لا توجد طلبات تحويل بعد.</div>
@@ -2426,24 +2426,24 @@ export default function AdminDashboard({
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <div className="text-xs font-black text-[#4A4A3A]">{ownerName} · <span className="font-bold text-[#8A8A70]">{houseName}</span></div>
-                          <div className="text-[9.5px] text-[#8A8A70] font-bold">{(p.completedAt ?? p.requestedAt).split('T')[0]}{p.note ? ` · ${p.note}` : ''}</div>
+                          <div className="text-[11px] text-[#8A8A70] font-bold">{(p.completedAt ?? p.requestedAt).split('T')[0]}{p.note ? ` · ${p.note}` : ''}</div>
                         </div>
-                        <span className={`shrink-0 text-[9px] font-black px-2 py-1 rounded-full border ${meta.cls}`}>{meta.label}</span>
+                        <span className={`shrink-0 text-[11px] font-black px-2 py-1 rounded-full border ${meta.cls}`}>{meta.label}</span>
                       </div>
                       {open && (() => {
                         const methods = houses.find((h) => h.id === p.houseId)?.paymentMethods ?? [];
                         return methods.length > 0 ? (
                           <div className="bg-[#FBFBFA] border border-[#EBEBE0] rounded-xl p-2 space-y-1">
-                            <div className="text-[9px] font-black text-[#8A8A70]">حوّل إلى:</div>
+                            <div className="text-[11px] font-black text-[#8A8A70]">حوّل إلى:</div>
                             {methods.map((m) => (
-                              <div key={m.id} className="flex items-center justify-between gap-2 text-[10px]">
+                              <div key={m.id} className="flex items-center justify-between gap-2 text-[12px]">
                                 <span className="font-bold text-[#4A4A3A] shrink-0">{m.label}</span>
                                 <span dir="ltr" className="font-mono font-black text-[#5A5A40] select-all break-all">{m.value}</span>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <div className="text-[9px] text-rose-600 font-bold">⚠️ لا توجد وسيلة تحويل مسجّلة لهذا البيت — راسِل صاحبه.</div>
+                          <div className="text-[11px] text-rose-600 font-bold">⚠️ لا توجد وسيلة تحويل مسجّلة لهذا البيت — راسِل صاحبه.</div>
                         );
                       })()}
                       <div className="flex items-center justify-between gap-2">
@@ -2452,12 +2452,12 @@ export default function AdminDashboard({
                           <div className="flex gap-1.5">
                             {p.status === 'pending' && (
                               <button type="button" onClick={() => onUpdatePayoutStatus(p.id, 'processing')}
-                                className="text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-2.5 py-1.5 rounded-lg cursor-pointer">بدء التحويل</button>
+                                className="text-[12px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-2.5 py-1.5 rounded-lg cursor-pointer">بدء التحويل</button>
                             )}
                             <button type="button" onClick={() => { if (confirm(`تأكيد تحويل ${arabicNumber(p.amount)} ج.م لـ${ownerName}؟`)) onUpdatePayoutStatus(p.id, 'completed'); }}
-                              className="text-[10px] font-bold bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg cursor-pointer">تم التحويل ✓</button>
+                              className="text-[12px] font-bold bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg cursor-pointer">تم التحويل ✓</button>
                             <button type="button" onClick={() => { if (confirm('رفض طلب التحويل؟')) onUpdatePayoutStatus(p.id, 'rejected'); }}
-                              className="text-[10px] font-bold bg-white text-rose-700 border border-rose-200 px-2.5 py-1.5 rounded-lg cursor-pointer">رفض</button>
+                              className="text-[12px] font-bold bg-white text-rose-700 border border-rose-200 px-2.5 py-1.5 rounded-lg cursor-pointer">رفض</button>
                           </div>
                         )}
                       </div>
@@ -2475,7 +2475,7 @@ export default function AdminDashboard({
         <div className="space-y-4 text-right">
           <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
             <h3 className="text-xs font-bold text-[#4A4A3A]">إدارة حجوزات المنصة والتحصيل:</h3>
-            <div className="text-[10px] text-[#8A8A70]">
+            <div className="text-[12px] text-[#8A8A70]">
               المعلقة أو غير مكتملة السداد: <strong className="text-amber-800">{arabicNumber(pendingOrUnpaidBookingsCount)}</strong> / إجمالي الحجوزات: {arabicNumber(bookings.length)}
             </div>
           </div>
@@ -2487,7 +2487,7 @@ export default function AdminDashboard({
               placeholder="ابحث باسم المستخدم، اسم البيت، أو رقم الحجز..."
               value={bookingSearch}
               onChange={(e) => setBookingSearch(e.target.value)}
-              className="flex-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D] text-right"
+              className="flex-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 min-h-11 text-[#2D2D24] focus:outline-none focus:border-[#464E3D] text-right"
             />
             <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
               {(['all', 'pending', 'unpaid', 'completed'] as const).map((filterOpt) => (
@@ -2495,7 +2495,7 @@ export default function AdminDashboard({
                   key={filterOpt}
                   type="button"
                   onClick={() => setBookingFilter(filterOpt)}
-                  className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                  className={`text-[12px] font-bold px-2.5 min-h-11 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                     bookingFilter === filterOpt
                       ? 'bg-[#5A5A40] text-white shadow-sm'
                       : 'bg-[#FAF8F5] text-[#8A8A70] border border-[#E7E5DB] hover:bg-[#EBEBE0]/50'
@@ -2542,38 +2542,38 @@ export default function AdminDashboard({
                   >
                     <div className="p-3.5 bg-slate-50 border-b border-[#D6D6C2]/60 flex flex-wrap items-center justify-between gap-2">
                       <div className="space-y-0.5">
-                        <span className="text-[9px] text-[#8A8A70] font-bold">رقم الحجز: #{booking.id.toUpperCase()}</span>
+                        <span className="text-[11px] text-[#8A8A70] font-bold">رقم الحجز: #{booking.id.toUpperCase()}</span>
                         <h4 className="text-xs font-extrabold text-[#4A4A3A]">{booking.userName}</h4>
-                        <p className="text-[10px] text-[#8A8A70]">الهاتف: <strong className="font-mono text-[11px] text-[#4A4A3A]">{booking.userPhone}</strong></p>
+                        <p className="text-[12px] text-[#8A8A70]">الهاتف: <strong className="font-mono text-[11px] text-[#4A4A3A]">{booking.userPhone}</strong></p>
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {booking.status === 'pending' && (
-                          <span className="text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full animate-pulse">
+                          <span className="text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full animate-pulse">
                             قيد الموافقة ⏳
                           </span>
                         )}
                         {booking.status === 'approved' && (
-                          <span className="text-[9px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full">
+                          <span className="text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full">
                             مقبول ومعتمد ✓
                           </span>
                         )}
                         {booking.status === 'rejected' && (
-                          <span className="text-[9px] font-bold bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full">
+                          <span className="text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full">
                             مرفوض ✕
                           </span>
                         )}
                         {booking.status === 'cancelled' && (
-                          <span className="text-[9px] font-bold bg-slate-50 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-full">
+                          <span className="text-[11px] font-bold bg-slate-50 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-full">
                             ملغى من المستخدم
                           </span>
                         )}
 
                         {remaining > 0 ? (
-                          <span className="text-[9px] font-bold bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full">
+                          <span className="text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full">
                             متبقي: {remaining.toLocaleString('ar-EG')} ج.م ⚠️
                           </span>
                         ) : (
-                          <span className="text-[9px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full">
+                          <span className="text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full">
                             مدفوع بالكامل ✅
                           </span>
                         )}
@@ -2583,11 +2583,11 @@ export default function AdminDashboard({
                     <div className="p-4 space-y-3">
                       <div className="grid grid-cols-2 gap-3 text-right">
                         <div className="space-y-1">
-                          <div className="text-[10px] text-[#8A8A70] font-bold">بيت الخلوة:</div>
+                          <div className="text-[12px] text-[#8A8A70] font-bold">بيت الخلوة:</div>
                           <div className="text-xs font-black text-[#4A4A3A]">{booking.houseName}</div>
                         </div>
                         <div className="space-y-1">
-                          <div className="text-[10px] text-[#8A8A70] font-bold">تاريخ الدخول والمدة:</div>
+                          <div className="text-[12px] text-[#8A8A70] font-bold">تاريخ الدخول والمدة:</div>
                           <div className="text-xs font-black text-[#4A4A3A] flex items-center gap-1 justify-end">
                             <Calendar className="w-3.5 h-3.5 text-[#8A8A70]" />
                             <span>{arabicDateRange(booking.checkIn, booking.checkOut)}</span>
@@ -2597,15 +2597,15 @@ export default function AdminDashboard({
 
                       <div className="bg-[#FAF8F5] p-3 rounded-2xl border border-[#E7E5DB] text-[11px] grid grid-cols-3 gap-2 text-center text-[#4A4A3A] font-bold">
                         <div>
-                          <div className="text-[9px] text-[#8A8A70] mb-0.5">القيمة الإجمالية</div>
+                          <div className="text-[11px] text-[#8A8A70] mb-0.5">القيمة الإجمالية</div>
                           <div className="text-emerald-800">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</div>
                         </div>
                         <div>
-                          <div className="text-[9px] text-[#8A8A70] mb-0.5">المسدد المقرّ</div>
+                          <div className="text-[11px] text-[#8A8A70] mb-0.5">المسدد المقرّ</div>
                           <div className="text-blue-800">{totalPaid.toLocaleString('ar-EG')} ج.م</div>
                         </div>
                         <div>
-                          <div className="text-[9px] text-[#8A8A70] mb-0.5">المتبقي المستحق</div>
+                          <div className="text-[11px] text-[#8A8A70] mb-0.5">المتبقي المستحق</div>
                           <div className={`text-rose-800 ${remaining > 0 ? 'underline' : ''}`}>{remaining.toLocaleString('ar-EG')} ج.م</div>
                         </div>
                       </div>
@@ -2621,14 +2621,14 @@ export default function AdminDashboard({
                           <span>واتساب</span>
                         </a>
                         <button onClick={() => { setChatBookingId(booking.id); goTo('people', 'messages'); }}
-                          className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer">
+                          className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-xs font-bold min-h-11 px-3 rounded-xl transition-all cursor-pointer">
                           <MessageSquareDashed className="w-3.5 h-3.5" /> الشات
                         </button>
                         {booking.status !== 'rejected' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
                           <button
                             id={`admin-cancel-booking-${booking.id}`}
                             onClick={() => { if (confirm(`إلغاء حجز "${booking.userName}" في "${booking.houseName}" نهائياً؟`)) onCancelBooking && onCancelBooking(booking.id); }}
-                            className="shrink-0 flex items-center gap-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer"
+                            className="shrink-0 flex items-center gap-1 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 text-xs font-bold min-h-11 px-3 rounded-xl transition-all cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                             <span>إلغاء الحجز</span>
@@ -2655,7 +2655,7 @@ export default function AdminDashboard({
                 <button key={b.id} onClick={() => setChatBookingId(isOpen ? null : b.id)}
                   className={`text-right p-3 rounded-2xl border transition-all cursor-pointer ${isOpen ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white border-[#D6D6C2] hover:bg-[#FAF8F5]'}`}>
                   <div className="text-[11px] font-bold truncate">{b.userName}</div>
-                  <div className={`text-[9px] truncate ${isOpen ? 'text-white/70' : 'text-[#8A8A70]'}`}>{b.houseName} · {arabicDate(b.checkIn)}</div>
+                  <div className={`text-[11px] truncate ${isOpen ? 'text-white/70' : 'text-[#8A8A70]'}`}>{b.houseName} · {arabicDate(b.checkIn)}</div>
                 </button>
               );
             })}
@@ -2667,13 +2667,13 @@ export default function AdminDashboard({
                   <MessageSquareDashed className="w-4 h-4 text-[#5A5A40]" />
                   محادثة الحجز #{chatBookingId.slice(0, 8)}
                 </div>
-                <button onClick={() => setChatBookingId(null)} className="text-[10px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] cursor-pointer">إغلاق</button>
+                <button onClick={() => setChatBookingId(null)} className="text-[12px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] cursor-pointer">إغلاق</button>
               </div>
               <div className="p-4 max-h-80 overflow-y-auto space-y-2">
                 {chatLoading ? (
-                  <div className="text-center py-6 text-[10px] text-[#8A8A70] animate-pulse">جاري تحميل المحادثة...</div>
+                  <div className="text-center py-6 text-[12px] text-[#8A8A70] animate-pulse">جاري تحميل المحادثة...</div>
                 ) : chatMessages.length === 0 ? (
-                  <div className="text-center py-6 text-[10px] text-[#8A8A70]">لا توجد رسائل في هذا الحجز بعد.</div>
+                  <div className="text-center py-6 text-[12px] text-[#8A8A70]">لا توجد رسائل في هذا الحجز بعد.</div>
                 ) : (
                   chatMessages.map((msg) => {
                     const booking = bookings.find((b) => b.id === chatBookingId);
@@ -2681,9 +2681,9 @@ export default function AdminDashboard({
                     return (
                       <div key={msg.id} className={`flex ${isGuest ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[75%] rounded-2xl px-3 py-2 space-y-0.5 ${isGuest ? 'bg-emerald-50 border border-emerald-200' : 'bg-[#FAF8F5] border border-[#E7E5DB]'}`}>
-                          <div className="text-[9px] font-bold text-[#8A8A70]">{msg.senderName}</div>
+                          <div className="text-[11px] font-bold text-[#8A8A70]">{msg.senderName}</div>
                           <div className="text-[11px] text-[#4A4A3A]">{msg.content}</div>
-                          <div className="text-[8px] text-[#BCBC9D]">{new Date(msg.createdAt).toLocaleString('ar-EG')}</div>
+                          <div className="text-[11px] text-[#BCBC9D]">{new Date(msg.createdAt).toLocaleString('ar-EG')}</div>
                         </div>
                       </div>
                     );
@@ -2720,9 +2720,9 @@ export default function AdminDashboard({
               <div className="space-y-1.5">
                 <h5 className="text-[11px] font-black text-[#4A4A3A]">الحجوزات ({detailUserBookings.length})</h5>
                 {detailUserBookings.length === 0 ? (
-                  <div className="text-[10px] text-[#8A8A70] bg-white rounded-xl border border-[#D6D6C2] p-3 text-center">لا توجد حجوزات</div>
+                  <div className="text-[12px] text-[#8A8A70] bg-white rounded-xl border border-[#D6D6C2] p-3 text-center">لا توجد حجوزات</div>
                 ) : detailUserBookings.map((b) => (
-                  <div key={b.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[10px] space-y-0.5">
+                  <div key={b.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[12px] space-y-0.5">
                     <div className="flex justify-between font-bold"><span>{b.houseName}</span><span className={b.status === 'approved' || b.status === 'completed' ? 'text-emerald-700' : b.status === 'pending' ? 'text-amber-700' : 'text-rose-700'}>{b.status === 'approved' ? 'مقبول' : b.status === 'completed' ? 'مكتمل' : b.status === 'pending' ? 'معلّق' : b.status === 'cancelled' ? 'ملغى' : 'مرفوض'}</span></div>
                     <div className="text-[#8A8A70]">{arabicDateRange(b.checkIn, b.checkOut)} · {arabicPlural(b.guestsCount, GUEST_FORMS)} · {arabicNumber(b.totalPrice)} ج.م</div>
                   </div>
@@ -2733,9 +2733,9 @@ export default function AdminDashboard({
               <div className="space-y-1.5">
                 <h5 className="text-[11px] font-black text-[#4A4A3A]">المدفوعات ({detailUserPayments.length})</h5>
                 {detailUserPayments.length === 0 ? (
-                  <div className="text-[10px] text-[#8A8A70] bg-white rounded-xl border border-[#D6D6C2] p-3 text-center">لا توجد مدفوعات</div>
+                  <div className="text-[12px] text-[#8A8A70] bg-white rounded-xl border border-[#D6D6C2] p-3 text-center">لا توجد مدفوعات</div>
                 ) : detailUserPayments.map((p) => (
-                  <div key={p.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[10px] flex justify-between items-center">
+                  <div key={p.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[12px] flex justify-between items-center">
                     <div><span className="font-bold">{arabicNumber(p.amount)} ج.م</span> <span className="text-[#8A8A70]">({p.paymentMethod})</span></div>
                     <span className={`font-bold ${p.paymentStatus === 'approved' ? 'text-emerald-700' : p.paymentStatus === 'pending' ? 'text-amber-700' : 'text-rose-700'}`}>
                       {p.paymentStatus === 'approved' ? 'معتمد' : p.paymentStatus === 'pending' ? 'معلّق' : 'مرفوض'}
@@ -2748,9 +2748,9 @@ export default function AdminDashboard({
               <div className="space-y-1.5">
                 <h5 className="text-[11px] font-black text-[#4A4A3A]">التقييمات ({detailUserReviews.length})</h5>
                 {detailUserReviews.length === 0 ? (
-                  <div className="text-[10px] text-[#8A8A70] bg-white rounded-xl border border-[#D6D6C2] p-3 text-center">لا توجد تقييمات</div>
+                  <div className="text-[12px] text-[#8A8A70] bg-white rounded-xl border border-[#D6D6C2] p-3 text-center">لا توجد تقييمات</div>
                 ) : detailUserReviews.map((r) => (
-                  <div key={r.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[10px] space-y-0.5">
+                  <div key={r.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[12px] space-y-0.5">
                     <div className="flex justify-between items-center">
                       <span className="font-bold">{houses.find((h) => h.id === r.houseId)?.name || r.houseId}</span>
                       <span className="flex items-center gap-0.5 text-amber-600 font-bold"><Star className="w-3 h-3 fill-amber-500 text-amber-500" />{arabicDecimal(r.overall_rating ?? r.rating)}</span>
@@ -2823,17 +2823,17 @@ export default function AdminDashboard({
             {editingHouseId === previewHouse.id ? (
               <div className="p-5 space-y-3">
                 <input type="text" value={editDraft.name ?? ''} onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))}
-                  placeholder="اسم البيت" className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
+                  placeholder="اسم البيت" className="w-full bg-white border border-[#D6D6C2] text-xs px-3 min-h-11 rounded-xl" />
                 <textarea value={editDraft.description ?? ''} onChange={(e) => setEditDraft((d) => ({ ...d, description: e.target.value }))}
-                  placeholder="الوصف" rows={3} className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl resize-none" />
+                  placeholder="الوصف" rows={3} className="w-full bg-white border border-[#D6D6C2] text-xs px-3 min-h-11 rounded-xl resize-none" />
                 <input type="number" value={editDraft.pricePerNightPerPerson ?? 0} onChange={(e) => setEditDraft((d) => ({ ...d, pricePerNightPerPerson: Number(e.target.value) }))}
-                  placeholder="السعر لليلة للفرد" className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
+                  placeholder="السعر لليلة للفرد" className="w-full bg-white border border-[#D6D6C2] text-xs px-3 min-h-11 rounded-xl" />
                 {/* Blank, not 0, when the house does not sell a day — so an
                     admin opening this form cannot set a price by saving it. */}
                 <input type="number" min={0} value={editDraft.dayUsePricePerPerson ?? ''}
                   onChange={(e) => setEditDraft((d) => ({ ...d, dayUsePricePerPerson: e.target.value === '' ? undefined : Number(e.target.value) }))}
                   placeholder="سعر اليوم بدون مبيت للفرد (اتركه فارغاً لو غير متاح)"
-                  className="w-full bg-white border border-[#D6D6C2] text-xs px-3 py-2 rounded-xl" />
+                  className="w-full bg-white border border-[#D6D6C2] text-xs px-3 min-h-11 rounded-xl" />
                 <div>
                   <p className="text-[11px] font-bold text-[#8A8A70] mb-1.5">الخدمات:</p>
                   <div className="grid grid-cols-2 gap-1.5">
@@ -2843,7 +2843,7 @@ export default function AdminDashboard({
                       return (
                         <button key={s} type="button"
                           onClick={() => setEditDraft((d) => ({ ...d, services: active ? list.filter((x) => x !== s) : [...list, s] }))}
-                          className={`text-[10.5px] font-bold py-1.5 px-2 rounded-lg border ${active ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white border-[#D6D6C2] text-[#4A4A3A]'}`}>
+                          className={`text-[12px] font-bold py-1.5 px-2 rounded-lg border ${active ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white border-[#D6D6C2] text-[#4A4A3A]'}`}>
                           {s}
                         </button>
                       );
