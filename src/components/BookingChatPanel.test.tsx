@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import BookingChatPanel from './BookingChatPanel';
 import type { BookingMessage } from '../types';
 import * as api from '../lib/bookingMessages';
+import { fileToAttachment } from '../lib/attachments';
 
 vi.mock('../lib/bookingMessages', () => ({
   loadBookingMessages: vi.fn(),
@@ -37,6 +38,42 @@ function panel(bookingIds: string[]) {
     />
   );
 }
+
+describe('BookingChatPanel attachments', () => {
+  // Attaching used to be Promise.all over the whole selection: pick five
+  // photos and one oversized PDF and the single rejection discarded all six.
+  it('keeps the attachments that succeeded when one file is rejected', async () => {
+    load.mockResolvedValue([]);
+    const prepare = vi.mocked(fileToAttachment);
+    prepare.mockReset();
+    prepare.mockImplementation(async (f: File) => {
+      if (f.name === 'big.pdf') throw new Error('حجم الملف كبير جدًا (الحد الأقصى ٣ ميجابايت).');
+      return { url: `data:,${f.name}`, type: 'image' as const, name: f.name };
+    });
+    const alerted: string[] = [];
+    vi.spyOn(window, 'alert').mockImplementation((m?: unknown) => { alerted.push(String(m)); });
+
+    render(panel(['b1']));
+    await waitFor(() => expect(load).toHaveBeenCalled());
+
+    const input = document.querySelector('input[type=file]') as HTMLInputElement;
+    const files = [
+      new File(['a'], 'a.jpg', { type: 'image/jpeg' }),
+      new File(['b'], 'big.pdf', { type: 'application/pdf' }),
+      new File(['c'], 'c.jpg', { type: 'image/jpeg' }),
+    ];
+    Object.defineProperty(input, 'files', { value: files, configurable: true });
+    await act(async () => { input.dispatchEvent(new Event('change', { bubbles: true })); });
+
+    // Both good images survive, and the rejection names the offending file
+    // with the error's own Arabic wording.
+    await waitFor(() => expect(prepare).toHaveBeenCalledTimes(3));
+    expect(alerted.join()).toContain('big.pdf');
+    expect(alerted.join()).toContain('٣ ميجابايت');
+    expect(screen.getByText('a.jpg')).toBeTruthy();
+    expect(screen.getByText('c.jpg')).toBeTruthy();
+  });
+});
 
 describe('BookingChatPanel thread isolation', () => {
   it('renders the messages of the thread it was given', async () => {

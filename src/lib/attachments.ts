@@ -1,4 +1,5 @@
 import { OutgoingAttachment } from './bookingMessages';
+import { arabicNumber } from './arabic';
 
 // Attachments are stored as data URLs in the message row (same approach the
 // app already uses for house/room images), so images are downscaled + JPEG-
@@ -49,7 +50,10 @@ export async function fileToAttachment(file: File): Promise<OutgoingAttachment> 
     return { url, type: 'image', name: file.name };
   }
   if (file.size > MAX_FILE_BYTES) {
-    throw new Error('حجم الملف كبير جدًا (الحد الأقصى 3 ميجا).');
+    // Latin «3» in an otherwise Arabic sentence was the only one left in this
+    // file, and DepositPayment right next to it already says «١٠ ميجابايت».
+    // Derived from the constant so the sentence cannot drift from the cap.
+    throw new Error(`حجم الملف كبير جدًا (الحد الأقصى ${arabicNumber(MAX_FILE_BYTES / (1024 * 1024))} ميجابايت).`);
   }
   const url = await readAsDataUrl(file);
   return { url, type: 'file', name: file.name };

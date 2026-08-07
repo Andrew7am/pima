@@ -2,11 +2,12 @@
 import { User, Booking, Review, RetreatHouse } from '../types';
 import {
   User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft,
-  Trash2, ShieldCheck, Camera, Coins, Award, CalendarCheck, ChevronRight, Copy, Check, Mail,
+  Trash2, ShieldCheck, Camera, Coins, Award, CalendarCheck, ChevronRight, Copy, Check, Mail, Bell,
 } from 'lucide-react';
 import RewardsDashboard from './RewardsDashboard';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { setEmailOptOut } from '../lib/db';
+import { webPushAvailable, webPushState, enableWebPush, disableWebPush, WebPushState } from '../lib/push';
 
 interface ProfileScreenProps {
   currentUser: User;
@@ -90,9 +91,12 @@ function SettingsRow({ icon: Icon, label, sublabel, onClick, tint = '#5A5A40', b
 
 // Same visual language as SettingsRow, but the control is a switch rather than
 // a navigation chevron.
-function ToggleRow({ icon: Icon, label, sublabel, checked, onChange, tint = '#5A5A40', busy }: {
+function ToggleRow({ icon: Icon, label, sublabel, checked, onChange, tint = '#5A5A40', busy, disabled }: {
   icon: React.ElementType; label: string; sublabel?: string;
   checked: boolean; onChange: (next: boolean) => void; tint?: string; busy?: boolean;
+  /** Set when the switch cannot act at all — a browser that has denied
+   *  notifications can only be changed from its own site settings. */
+  disabled?: boolean;
 }) {
   return (
     <div className="w-full flex items-center gap-3 bg-white px-3.5 py-3 text-right">
@@ -108,7 +112,7 @@ function ToggleRow({ icon: Icon, label, sublabel, checked, onChange, tint = '#5A
         role="switch"
         aria-checked={checked}
         aria-label={label}
-        disabled={busy}
+        disabled={busy || disabled}
         onClick={() => onChange(!checked)}
         className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 cursor-pointer ${checked ? 'bg-[#2E7D5B]' : 'bg-[#D6D6C2]'}`}
       >
@@ -170,6 +174,30 @@ export default function ProfileScreen({
   // a user expects to see next to "email notifications".
   const [emailsOn, setEmailsOn] = useState(!currentUser.emailOptOut);
   const [emailBusy, setEmailBusy] = useState(false);
+
+  // Browser push. `webPushAvailable` is false in the Android app (which
+  // registers itself) and on any browser or deployment where it cannot work,
+  // and the row is hidden entirely in that case.
+  const pushAvailable = webPushAvailable();
+  const [pushState, setPushState] = useState<WebPushState>(() => webPushState());
+  const [pushBusy, setPushBusy] = useState(false);
+
+  const handleTogglePush = async (next: boolean) => {
+    setPushBusy(true);
+    try {
+      if (next) {
+        setPushState(await enableWebPush(currentUser.id));
+      } else {
+        await disableWebPush();
+        // Permission itself survives — only this browser's token is gone. The
+        // switch reads off our own token, not Notification.permission, so it
+        // must be set explicitly rather than re-read.
+        setPushState('default');
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const handleToggleEmails = async (next: boolean) => {
     setEmailBusy(true);
@@ -415,6 +443,25 @@ export default function ProfileScreen({
           onChange={handleToggleEmails}
           busy={emailBusy}
         />
+        {/* Only offered where it can actually work — a switch that cannot
+            deliver is worse than no switch. Hidden in the Android app too,
+            which registers for push on its own. */}
+        {pushAvailable && (
+          <ToggleRow
+            icon={Bell}
+            tint="#B45309"
+            label="إشعارات المتصفح"
+            sublabel={
+              pushState === 'granted' ? 'شغّالة — هتوصلك والموقع مقفول'
+                : pushState === 'denied' ? 'المتصفح رافض — فعّلها من إعدادات الموقع'
+                : 'شغّلها توصلك وأنت بره الموقع'
+            }
+            checked={pushState === 'granted'}
+            onChange={handleTogglePush}
+            busy={pushBusy}
+            disabled={pushState === 'denied'}
+          />
+        )}
         <SettingsRow icon={HelpCircle} tint="#5A5A40" label="التواصل والدعم الفني" onClick={onNavigateSupport} />
         <SettingsRow icon={ShieldCheck} tint="#5A5A40" label="سياسة الخصوصية وشروط الاستخدام" onClick={onNavigatePrivacy} />
       </div>

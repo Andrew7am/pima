@@ -47,7 +47,7 @@ import WebLayout from './components/WebLayout';
 import AuthScreen from './components/AuthScreen';
 import LandingPage from './components/LandingPage';
 import SelfRegisterScreen from './components/SelfRegisterScreen';
-import { registerPushNotifications } from './lib/push';
+import { registerPushNotifications, syncWebPushToken } from './lib/push';
 import { analytics } from './lib/analytics';
 const ContactSupport = lazy(() => import('./components/ContactSupport'));
 const ProfileScreen = lazy(() => import('./components/ProfileScreen'));
@@ -205,9 +205,19 @@ export default function App() {
   // otherwise always see the `currentUser` from its first render.
   const currentUserIdRef = useRef<string | null>(null);
   useEffect(() => { currentUserIdRef.current = currentUser?.id ?? null; }, [currentUser]);
-  // Register this device for native push once logged in (no-op on web / until a
-  // Firebase project + the push runbook are set up).
-  useEffect(() => { if (currentUser?.id) registerPushNotifications(currentUser.id); }, [currentUser?.id]);
+  // Register this device for push once logged in (no-op until a Firebase
+  // project + the push runbook are set up).
+  //
+  // Native prompts on its own — that is the platform norm for an installed app.
+  // Web deliberately does NOT: syncWebPushToken returns immediately unless the
+  // browser has already been granted permission through the switch in الإعدادات.
+  // It still has to run on every login, because FCM rotates web tokens and a
+  // stale one is a notification that silently goes nowhere.
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    registerPushNotifications(currentUser.id);
+    syncWebPushToken(currentUser.id);
+  }, [currentUser?.id]);
 
   // One-click unsubscribe arriving from an email footer link. Runs with no
   // session — the token is the credential — then strips itself from the URL so

@@ -3,6 +3,8 @@ import { ChevronRight, Send, Loader2, MessageCircle, Paperclip, X, FileText, Dow
 import { BookingMessage, Booking, RetreatHouse } from '../types';
 import { loadBookingMessages, sendBookingMessage, deleteBookingMessage, markBookingMessagesRead, subscribeToBookingMessages, subscribeToTypingPresence, OutgoingAttachment } from '../lib/bookingMessages';
 import { fileToAttachment } from '../lib/attachments';
+import { mapWithConcurrency, isOk } from '../lib/concurrency';
+import { arabicNumber } from '../lib/arabic';
 import { tapFeedback } from '../lib/haptics';
 import { PimaAvatar, PimaStatusBadge, PimaTimeline, PimaDateCapsule, PimaTypingDots, PimaQuickReplyChip } from './chat/primitives';
 
@@ -161,10 +163,29 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
     if (!files || files.length === 0) return;
     setAttaching(true);
     try {
-      const prepared = await Promise.all(Array.from(files).map((f) => fileToAttachment(f)));
-      setAttachments((prev) => [...prev, ...prepared]);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'تعذّر إرفاق الملف.');
+      // Was Promise.all, which is all-or-nothing: attach five photos and one
+      // oversized PDF among them and the rejection threw away the other five
+      // too, leaving an error and an empty attachment tray. Each file settles
+      // on its own now, so the good ones survive and only the bad ones are
+      // named.
+      const picked = Array.from(files);
+      const settled = await mapWithConcurrency(picked, 3, (f) => fileToAttachment(f));
+
+      const prepared = settled.filter(isOk).map((r) => r.value);
+      if (prepared.length) setAttachments((prev) => [...prev, ...prepared]);
+
+      const rejected = settled
+        .map((r, i) => (isOk(r) ? null : { name: picked[i].name, error: r.error }))
+        .filter(Boolean) as { name: string; error: unknown }[];
+      if (rejected.length) {
+        // fileToAttachment throws user-facing Arabic (e.g. the 3 MB cap), so
+        // show its own wording rather than a generic failure.
+        const reason = rejected[0].error;
+        const detail = reason instanceof Error ? reason.message : 'تعذّر إرفاق الملف.';
+        alert(rejected.length === 1
+          ? `${rejected[0].name}: ${detail}`
+          : `${arabicNumber(rejected.length)} ملفات مترفعتش — ${detail}`);
+      }
     } finally {
       setAttaching(false);
     }

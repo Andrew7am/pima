@@ -251,6 +251,12 @@ export default defineConfig(({ mode }) => {
           manualChunks(id) {
             if (!id.includes('node_modules')) return undefined;
             if (id.includes('leaflet')) return 'vendor-leaflet';
+            // Firebase is imported dynamically by lib/push.ts and is only ever
+            // needed by someone who switches browser notifications on. Left to
+            // the catch-all `vendor` rule below it lands in the eagerly-loaded
+            // chunk, so every visitor downloads the whole FCM SDK to run code
+            // almost none of them reach — the dynamic import buys nothing.
+            if (id.includes('/@firebase/') || id.includes('/firebase/')) return 'vendor-firebase';
             // Keep recharts + its d3/victory-vendor family in one isolated chunk.
             // Lumping them into the generic `vendor` chunk triggers a circular-init
             // (TDZ) crash at boot in the production bundle ("Cannot access 'X'
