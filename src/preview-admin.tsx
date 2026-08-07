@@ -38,6 +38,13 @@ function Preview() {
         onToggleUserRole={noop}
         onSuspendHouse={noop}
         onDeleteHouse={noop}
+        // Controls that only render when their handler is present. Leaving
+        // these out hid the payment-revert button and the booking editor
+        // entirely, and a preview that silently omits what you came to look
+        // at is worse than no preview.
+        onVerifyPayment={noop}
+        onUpdateBookingDetails={async () => true}
+        onCancelBooking={noop}
       />
     </div>
   );

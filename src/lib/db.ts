@@ -358,7 +358,7 @@ const HOUSE_PUBLIC_COLUMNS =
   'room_capacity,housing_rules,contract_terms,menu,image_descriptions,pending_edit';
 
 export async function loadHouses(includePaymentMethods = false): Promise<RetreatHouse[]> {
-  let { data, error } = await supabase.from('houses').select(HOUSE_PUBLIC_COLUMNS).order('created_at');
+  let { data, error } = await supabase.from('houses').select(HOUSE_PUBLIC_COLUMNS).neq('status', 'archived').order('created_at');
   if (error) {
     // PostgREST rejects the WHOLE select when one column is missing, so a
     // deploy that lands before its migration would empty the entire site
@@ -371,7 +371,7 @@ export async function loadHouses(includePaymentMethods = false): Promise<Retreat
     const fallbackColumns = HOUSE_PUBLIC_COLUMNS
       .replace('nearby_landmark,', '')
       .replace('day_use_price_per_person,', '');
-    ({ data, error } = await supabase.from('houses').select(fallbackColumns).order('created_at'));
+    ({ data, error } = await supabase.from('houses').select(fallbackColumns).neq('status', 'archived').order('created_at'));
     if (error) { console.error('loadHouses (fallback):', error); return []; }
   }
   const houses = ((data ?? []) as unknown as Record<string, unknown>[]).map(mapHouse); // paymentMethods defaults to []
@@ -479,9 +479,27 @@ export async function claimDailyAdPoints(): Promise<boolean> {
   if (error) { console.error('claimDailyAdPoints:', error); return false; }
   return data === true;
 }
+/**
+ * Retire a house without destroying the money record attached to it.
+ *
+ * This was a hard DELETE, and the cascade behind it took the house's
+ * bookings, then their payments — including the guest's own transfer
+ * screenshot, which is stored as a base64 data URI inside the payment row
+ * rather than as a file — plus the payouts recording what Pima sent the
+ * owner. Every audit trigger in the schema is AFTER UPDATE, so a delete left
+ * no record that any of it had ever existed.
+ *
+ * Pima holds guests' deposits on their way to house owners. Those rows are
+ * evidence of other people's money, not Pima's own bookkeeping, so the button
+ * that erased them was the wrong button to have.
+ *
+ * archive_house (migration 107) sets status = 'archived' and stamps who and
+ * when. The DELETE policies are dropped in the same migration, so this is not
+ * merely the preferred path — it is the only one left.
+ */
 export async function deleteHouse(houseId: string): Promise<boolean> {
-  const { error } = await supabase.from('houses').delete().eq('id', houseId);
-  if (error) { console.error('deleteHouse:', error); return false; }
+  const { error } = await supabase.rpc('archive_house', { p_house_id: houseId });
+  if (error) { console.error('archiveHouse:', error); return false; }
   return true;
 }
 

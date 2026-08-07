@@ -1591,14 +1591,16 @@ export default function AdminDashboard({
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    if (confirm(`حذف بيت "${house.name}" نهائيًا؟ ده هيمسح كل حجوزاته وغرفه ومش هترجع تاني.`)) {
+                                    if (confirm(`أرشفة بيت "${house.name}"؟
+
+هيختفي من المنصة ومن نتايج البحث، بس حجوزاته ودفعاته هتفضل محفوظة — دي فلوس ناس عدّت من عندنا ومينفعش تتمسح.`)) {
                                       onDeleteHouse(house.id);
                                     }
                                     setOpenHouseMenu(null);
                                   }}
                                   className="w-full text-right px-3 min-h-11 text-[12px] font-bold text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer border-t border-[#EBEBE0]"
                                 >
-                                  حذف نهائي
+                                  أرشفة البيت
                                 </button>
                               )}
                               </div>
