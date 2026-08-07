@@ -954,29 +954,51 @@ export default function OwnerDashboardShell({
               if (departuresToday.length > 0) {
                 items.push({ key: 'departures', title: `${arabicNumber(departuresToday.length)} مغادرة اليوم`, sub: departuresToday.map((b) => b.organizationName || b.userName).slice(0, 2).join('، '), icon: Calendar, chip: 'bg-slate-100 text-slate-600', go: () => { setActiveTab('bookings'); setBookingFilter('departures_today'); } });
               }
+              // Nothing to do: one quiet line, not a full card announcing an
+              // absence. A big empty box competes for attention it has not
+              // earned, and on a good morning the screen should feel calm.
+              if (items.length === 0) {
+                return (
+                  <p className="text-[11px] font-bold text-[var(--color-owner-secondary)] text-center py-1">
+                    مفيش حاجة مستنية منك — كل شيء تمام 🎉
+                  </p>
+                );
+              }
+              // Something to do: this is the loudest thing on the screen, and
+              // the first row is the starting point. Every card here used to
+              // carry the identical surface, border, radius and shadow, so
+              // nothing said which to read first.
+              const [first, ...rest] = items;
               return (
-                <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-2.5 shadow-sm">
+                <div className="bg-[var(--color-owner-warning)]/10 rounded-3xl border-2 border-[var(--color-owner-warning)]/50 p-4 space-y-2.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-[var(--color-owner-text)]">تحتاج انتباه</span>
-                    {items.length > 0 && <span className="min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[11px] font-black rounded-full flex items-center justify-center">{items.length}</span>}
+                    <span className="text-sm font-black text-[var(--color-owner-text)]">تحتاج انتباه</span>
+                    <span className="min-w-[20px] h-5 px-1.5 bg-rose-500 text-white text-[11px] font-black rounded-full flex items-center justify-center">{arabicNumber(items.length)}</span>
                   </div>
-                  {items.length === 0 ? (
-                    <p className="text-[11px] text-[var(--color-owner-secondary)] text-center py-3">لا توجد مهام معلّقة — كل شيء تمام 🎉</p>
-                  ) : (
-                    <div className="space-y-1.5">
-                      {items.map((it) => (
-                        <button key={it.key} type="button" onClick={() => { it.go(); setShowOverflow(false); }}
-                          className="w-full flex items-center gap-3 bg-[var(--color-owner-bg)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] rounded-2xl p-2.5 text-right transition-colors cursor-pointer">
-                          <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${it.chip}`}><it.icon className="w-4 h-4" /></span>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-[12px] font-extrabold text-[var(--color-owner-text)] truncate">{it.title}</div>
-                            <div className="text-[11px] font-bold text-[var(--color-owner-secondary)] truncate">{it.sub}</div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-[var(--color-owner-secondary)] rotate-180 shrink-0" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
+
+                  {/* The one to start with, given the weight of a primary
+                      action rather than the weight of a list row. */}
+                  <button type="button" onClick={() => { first.go(); setShowOverflow(false); }}
+                    className="w-full flex items-center gap-3 bg-[var(--color-owner-surface)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-warning)]/40 rounded-2xl p-3.5 text-right shadow-sm transition-colors cursor-pointer">
+                    <span className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${first.chip}`}><first.icon className="w-5 h-5" /></span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-[14px] font-black text-[var(--color-owner-text)] truncate">{first.title}</span>
+                      <span className="block text-[11px] font-bold text-[var(--color-owner-secondary)] truncate">{first.sub}</span>
+                    </span>
+                    <ChevronRight className="w-5 h-5 text-[var(--color-owner-text)] rotate-180 shrink-0" />
+                  </button>
+
+                  {/* The rest, quieter — present but not competing. */}
+                  {rest.map((it) => (
+                    <button key={it.key} type="button" onClick={() => { it.go(); setShowOverflow(false); }}
+                      className="w-full flex items-center gap-3 min-h-11 px-2 text-right rounded-xl hover:bg-[var(--color-owner-surface)] transition-colors cursor-pointer">
+                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${it.chip}`}><it.icon className="w-3.5 h-3.5" /></span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[12px] font-bold text-[var(--color-owner-text)] truncate">{it.title}</span>
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-[var(--color-owner-secondary)] rotate-180 shrink-0" />
+                    </button>
+                  ))}
                 </div>
               );
             })()}
@@ -1023,7 +1045,7 @@ export default function OwnerDashboardShell({
                 { key: 'reports', label: 'التقارير', sub: 'أرقام بيتك بالتفصيل', icon: BarChart3, chip: 'bg-indigo-50 text-indigo-600', tab: 'reports' as ActiveTab },
               ]).map((q) => (
                 <button key={q.key} type="button" onClick={() => { setActiveTab(q.tab); setShowOverflow(false); }}
-                  className="relative flex items-center gap-2.5 bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 text-right shadow-sm hover:shadow transition-all cursor-pointer">
+                  className="relative flex items-center gap-2.5 bg-[var(--color-owner-surface)]/60 rounded-2xl border border-[var(--color-owner-border)]/60 p-3 text-right hover:bg-[var(--color-owner-surface)] transition-all cursor-pointer">
                   <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${q.chip}`}><q.icon className="w-4 h-4" /></span>
                   <span className="min-w-0">
                     <span className="block text-[12px] font-black text-[var(--color-owner-text)] truncate">{q.label}</span>
@@ -1036,10 +1058,11 @@ export default function OwnerDashboardShell({
               ))}
             </div>
 
-            {/* ── آخر نشاط (mockup): notifications as a timeline ── */}
-            <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-2.5 shadow-sm">
+            {/* ── آخر نشاط: a log, and read last. Quieter surface and a muted
+                   heading so it stops competing with the two cards above. ── */}
+            <div className="bg-[var(--color-owner-surface)]/60 rounded-3xl border border-[var(--color-owner-border)]/60 p-4 space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-[var(--color-owner-text)]">آخر نشاط</span>
+                <span className="text-xs font-black text-[var(--color-owner-secondary)]">آخر نشاط</span>
                 <button type="button" onClick={() => { setActiveTab('notifications'); setShowOverflow(false); }} className="inline-flex items-center min-h-11 px-2 -me-2 text-[11px] font-bold text-[var(--color-owner-primary)] hover:underline cursor-pointer">عرض الكل</button>
               </div>
               {recentNotifications.length === 0 ? (
