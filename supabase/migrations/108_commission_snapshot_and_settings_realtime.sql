@@ -21,6 +21,67 @@
 --    stale rate to new bookings too.
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- ── 0. A capacity check that only checks when capacity changed ───────────────
+--
+-- Found by this migration failing to apply: backfilling a new column fired
+-- check_booking_capacity on every historical row, and a house with real
+-- overlapping bookings (100 beds, 143 reserved) aborted the whole script.
+--
+-- The backfill is the messenger, not the problem. validate_booking_price has
+-- returned early on an UPDATE that leaves price, guests and dates alone since
+-- migration 024; check_booking_capacity never got the same guard, so it
+-- re-validates on EVERY update to a booking. On an over-committed house that
+-- means the owner cannot mark a deposit paid, approve, or even cancel — each
+-- of those is an UPDATE, and each one re-runs a check that already fails.
+-- Cancelling is the worst of it: the one action that would relieve the
+-- overbooking is blocked by the overbooking.
+--
+-- Same guard, same reasoning: capacity is re-checked when something that
+-- affects capacity moves.
+CREATE OR REPLACE FUNCTION public.check_booking_capacity()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+  house_beds INTEGER;
+  used_beds  INTEGER;
+BEGIN
+  IF TG_OP = 'UPDATE'
+     AND NEW.guests_count = OLD.guests_count
+     AND NEW.check_in     = OLD.check_in
+     AND NEW.check_out    = OLD.check_out
+     AND NEW.house_id     = OLD.house_id
+     AND NEW.status IS NOT DISTINCT FROM OLD.status THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.status NOT IN ('pending', 'approved') THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT beds_count INTO house_beds
+  FROM public.houses
+  WHERE id = NEW.house_id;
+
+  IF house_beds IS NULL THEN
+    RAISE EXCEPTION 'HOUSE_NOT_FOUND: House % does not exist', NEW.house_id;
+  END IF;
+
+  SELECT COALESCE(SUM(guests_count), 0) INTO used_beds
+  FROM public.bookings
+  WHERE house_id = NEW.house_id
+    AND status IN ('pending', 'approved')
+    AND id <> NEW.id
+    AND daterange(check_in, GREATEST(check_out, check_in + 1), '[)')
+     && daterange(NEW.check_in, GREATEST(NEW.check_out, NEW.check_in + 1), '[)');
+
+  IF used_beds + NEW.guests_count > house_beds THEN
+    RAISE EXCEPTION 'INSUFFICIENT_CAPACITY: Only % beds available for these dates (house has %, % already reserved)',
+      (house_beds - used_beds), house_beds, used_beds;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
 -- ── 1. The snapshot ──────────────────────────────────────────────────────────
 
 ALTER TABLE public.bookings
