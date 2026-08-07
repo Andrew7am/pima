@@ -20,6 +20,7 @@ import {
   createWaitlistEntry, notifyWaitlist as notifyWaitlistDb, notifyOwnerDistributionDone as notifyOwnerDistributionDoneDb,
   loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
   loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb, settleBookingsPayout,
+  recordRefund as recordRefundDb, setPaymentAccount,
   loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
   createPromoBanner, setPromoBannerActive, deletePromoBanner, updatePromoBanner,
   loadPlatformSettings, updatePlatformSettings,
@@ -1327,6 +1328,31 @@ export default function App() {
     // trg_notify_guest_on_booking_update) — atomic with these writes.
   };
 
+  /**
+   * Give a guest their money back, and record that it happened.
+   *
+   * Until now there was nowhere to put this: payment_status is
+   * pending|approved|rejected, so a deposit on a cancelled trip stayed counted
+   * as collected indefinitely and nothing said it was owed back. The server
+   * refuses an amount larger than the payment or one against a payment that was
+   * never approved — both would invent an outflow — so the optimistic update
+   * only lands after it agrees.
+   */
+  const handleRecordRefund = async (paymentId: string, amount: number, note?: string): Promise<boolean> => {
+    const ok = await trackWrite(recordRefundDb({ paymentId, amount, note }), 'تسجيل استرجاع');
+    if (!ok) return false;
+    setPayments((prev) => prev.map((p) => (p.id === paymentId
+      ? { ...p, refundedAmount: amount, refundedAt: new Date().toISOString(), refundNote: note }
+      : p)));
+    return true;
+  };
+
+  /** Which of Pima's own accounts a payment landed in, for weekly reconciliation. */
+  const handleSetPaymentAccount = (paymentId: string, account: string) => {
+    setPayments((prev) => prev.map((p) => (p.id === paymentId ? { ...p, receivedAccount: account } : p)));
+    trackWrite(setPaymentAccount(paymentId, account), 'تحديد حساب التحصيل');
+  };
+
   // --- Admin Operations ---
   const handleApproveHouse = (houseId: string) => {
     setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, status: 'approved' } : h)));
@@ -2080,6 +2106,8 @@ export default function App() {
               payments={payments}
               onVerifyPayment={handleVerifyPayment}
               onUpdateBookingDetails={handleUpdateBookingDetails}
+              onRecordRefund={handleRecordRefund}
+              onSetPaymentAccount={handleSetPaymentAccount}
               onSetUserApproval={handleSetUserApproval}
               promoBanners={promoBanners}
               onAddPromoBanner={handleAddPromoBanner}

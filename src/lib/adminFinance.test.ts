@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { summarizeFinances } from './adminFinance';
+import { summarizeFinances, accountBalances, refundsDue } from './adminFinance';
 import type { Booking, Payment, Payout } from '../types';
 
 const RATE = 0.05;
@@ -193,5 +193,98 @@ describe('summarizeFinances', () => {
   it('ignores a payment whose booking no longer exists', () => {
     const s = run({ payments: [payment({ id: 'p1', bookingId: 'gone' })] });
     expect(s.collectedByPima).toBe(0);
+  });
+});
+
+describe('accountBalances', () => {
+  const p = (over: Partial<Payment> & { id: string }): Payment => ({
+    bookingId: 'b1', userId: 'u1', userName: 'ضيف', amount: 1000, paymentMethod: 'instapay',
+    paymentStatus: 'approved', paymentDate: '2026-08-01T00:00:00Z', ...over,
+  } as Payment);
+
+  it('tallies each of Pima\u2019s accounts separately', () => {
+    const r = accountBalances({ window: null, payments: [
+      p({ id: 'p1', receivedAccount: 'إنستاباي بيما', amount: 3000 }),
+      p({ id: 'p2', receivedAccount: 'إنستاباي بيما', amount: 2000 }),
+      p({ id: 'p3', receivedAccount: 'فودافون كاش', amount: 1500 }),
+    ] });
+    expect(r.accounts.map((a) => [a.account, a.net])).toEqual([
+      ['إنستاباي بيما', 5000], ['فودافون كاش', 1500],
+    ]);
+  });
+
+  it('takes refunds back out of the account they left from', () => {
+    const r = accountBalances({ window: null, payments: [
+      p({ id: 'p1', receivedAccount: 'إنستاباي بيما', amount: 3000, refundedAmount: 1000 }),
+    ] });
+    expect(r.accounts[0]).toMatchObject({ received: 3000, refunded: 1000, net: 2000 });
+  });
+
+  it('shows unassigned payments rather than dropping them', () => {
+    // Dropping them would make this disagree with the finance page for no
+    // visible reason, which is worse than an untidy row.
+    const r = accountBalances({ window: null, payments: [p({ id: 'p1', amount: 800 })] });
+    expect(r.accounts[0].account).toBe('غير محدد');
+    expect(r.unassignedCount).toBe(1);
+  });
+
+  it('ignores payments that were never approved', () => {
+    const r = accountBalances({ window: null, payments: [
+      p({ id: 'p1', receivedAccount: 'بنك', paymentStatus: 'pending' }),
+    ] });
+    expect(r.accounts).toEqual([]);
+  });
+});
+
+describe('refundsDue', () => {
+  const b = (over: Partial<Booking> & { id: string }): Booking => ({
+    houseId: 'h1', houseName: 'بيت', userId: 'u1', userName: 'مينا', userPhone: '',
+    userEmail: '', userRole: 'individual', checkIn: '2026-09-10', checkOut: '2026-09-12',
+    guestsCount: 10, totalPrice: 20000, depositPaid: true, depositAmount: 3000,
+    status: 'approved', isLargeConferenceQuote: false, ...over,
+  } as Booking);
+  const p = (over: Partial<Payment> & { id: string }): Payment => ({
+    bookingId: 'b1', userId: 'u1', userName: 'مينا', amount: 3000, paymentMethod: 'instapay',
+    paymentStatus: 'approved', paymentDate: '2026-08-01T00:00:00Z', ...over,
+  } as Payment);
+
+  it('owes the guest back when the trip was cancelled', () => {
+    const r = refundsDue({ bookings: [b({ id: 'b1', status: 'cancelled' })], payments: [p({ id: 'p1' })] });
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ outstanding: 3000, reason: 'cancelled' });
+  });
+
+  it('owes only what is left after a partial refund', () => {
+    const r = refundsDue({
+      bookings: [b({ id: 'b1', status: 'cancelled' })],
+      payments: [p({ id: 'p1', refundedAmount: 1000 })],
+    });
+    expect(r[0].outstanding).toBe(2000);
+  });
+
+  it('drops the row once it is fully refunded', () => {
+    const r = refundsDue({
+      bookings: [b({ id: 'b1', status: 'cancelled' })],
+      payments: [p({ id: 'p1', refundedAmount: 3000 })],
+    });
+    expect(r).toEqual([]);
+  });
+
+  it('owes the guest back when they simply overpaid a live booking', () => {
+    const r = refundsDue({ bookings: [b({ id: 'b1' })], payments: [p({ id: 'p1', amount: 25000 })] });
+    expect(r[0]).toMatchObject({ outstanding: 5000, reason: 'overpaid' });
+  });
+
+  it('says nothing about an ordinary deposit on a live booking', () => {
+    // The 85% still to be paid at the door is not an overpayment.
+    expect(refundsDue({ bookings: [b({ id: 'b1' })], payments: [p({ id: 'p1' })] })).toEqual([]);
+  });
+
+  it('biggest amount first', () => {
+    const r = refundsDue({
+      bookings: [b({ id: 'b1', status: 'cancelled' }), b({ id: 'b2', status: 'cancelled' })],
+      payments: [p({ id: 'p1', amount: 1000 }), p({ id: 'p2', bookingId: 'b2', amount: 9000 })],
+    });
+    expect(r.map((x) => x.outstanding)).toEqual([9000, 1000]);
   });
 });

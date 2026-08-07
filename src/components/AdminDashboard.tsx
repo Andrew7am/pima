@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS } from '../lib/arabic';
+import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS, PAYMENT_FORMS } from '../lib/arabic';
 import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
-import { summarizeFinances } from '../lib/adminFinance';
+import { summarizeFinances, accountBalances, refundsDue } from '../lib/adminFinance';
 import { unclaimedOwedBookings } from '../lib/paymentLedger';
 import { findFinanceExceptions } from '../lib/adminExceptions';
 import { pendingRenewals, emptyBedNightsAhead } from '../lib/seasonPlanning';
@@ -77,6 +77,8 @@ interface AdminDashboardProps {
   // «we need to shift a day» — and had no control for it. The owner's handler
   // already does the capacity check and the room re-allocation.
   onUpdateBookingDetails?: (bookingId: string, fields: { checkIn?: string; checkOut?: string; guestsCount?: number }) => Promise<boolean>;
+  onRecordRefund?: (paymentId: string, amount: number, note?: string) => Promise<boolean>;
+  onSetPaymentAccount?: (paymentId: string, account: string) => void;
   onSetUserApproval?: (userId: string, status: 'approved' | 'rejected') => void;
   promoBanners?: PromoBanner[];
   onAddPromoBanner?: (b: PromoBanner) => void;
@@ -148,6 +150,8 @@ export default function AdminDashboard({
   payments = [],
   onVerifyPayment,
   onUpdateBookingDetails,
+  onRecordRefund,
+  onSetPaymentAccount,
   onSetUserApproval,
   promoBanners = [],
   onAddPromoBanner,
@@ -541,12 +545,19 @@ export default function AdminDashboard({
   };
   const openExceptions = financeExceptions.filter((e) => !dismissedExceptions.has(e.id));
 
+  // Guests' money still in Pima's hands, and what is in each collection
+  // account. Both were unrepresentable before migration 108.
+  const refundQueue = React.useMemo(() => refundsDue({ bookings, payments }), [bookings, payments]);
+  const [refundingId, setRefundingId] = useState<string | null>(null);
+
   // The season, which for Pima is the business.
   const renewals = React.useMemo(() => pendingRenewals({ bookings }), [bookings]);
   const occupancy = React.useMemo(
     () => emptyBedNightsAhead({ houses, bookings, weeks: 8 }),
     [houses, bookings],
   );
+
+  const treasury = React.useMemo(() => accountBalances({ payments, window: finBounds }), [payments, finBounds]);
 
   const fin = summarizeFinances({
     bookings,
@@ -2443,6 +2454,39 @@ export default function AdminDashboard({
             ))}
           </div>
 
+          {/* ── الخزنة ──
+              payment_method records the KIND of transfer — instapay, vodafone,
+              bank — not WHICH account, and Pima has several. Without this
+              there is no way to tally the app against each real balance at the
+              end of a week, which is the only way to notice a transfer that
+              never actually arrived. */}
+          {treasury.accounts.length > 0 && (
+            <>
+              <div className="px-1 pt-1">
+                <span className="text-[11px] font-black text-[#8A8A70]">الخزنة</span>
+              </div>
+              <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-1">
+                {treasury.accounts.map((a) => (
+                  <div key={a.account} className="flex justify-between items-start gap-3 text-[12px] py-2 border-b border-[#EBEBE0]/60 last:border-0">
+                    <div className="min-w-0">
+                      <div className="font-bold text-[#4A4A3A] truncate">{a.account}</div>
+                      <div className="text-[11px] text-[#8A8A70]">
+                        {arabicPlural(a.count, PAYMENT_FORMS)}
+                        {a.refunded > 0 && ` · اترجّع ${arabicNumber(a.refunded)}`}
+                      </div>
+                    </div>
+                    <span className="font-black text-[#0A2342] shrink-0 tabular-nums">{arabicNumber(a.net)} ج.م</span>
+                  </div>
+                ))}
+                {treasury.unassignedCount > 0 && (
+                  <p className="text-[11px] text-[#8A8A70] leading-relaxed pt-1">
+                    {arabicNumber(treasury.unassignedCount)} دفعة مش متسجّل وصلت على أنهي حساب. حدّدها من صفحة الدفعيات علشان المطابقة تظبط.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+
           {/* ── التفاصيل ── */}
           <div className="px-1 pt-1">
             <span className="text-[11px] font-black text-[#8A8A70]">التفاصيل</span>
@@ -2622,6 +2666,64 @@ export default function AdminDashboard({
             <h3 className="text-[16px] font-black text-[#4A4A3A]">التدقيق</h3>
             <p className="text-[12px] text-[#8A8A70] mt-0.5">الحاجات اللي المفروض ما تحصلش في فلوس بيما. الصفحة فاضية يبقى كله مظبوط.</p>
           </div>
+
+          {/* Money that belongs to a guest and is still in Pima's hands —
+              either the trip was cancelled after the deposit arrived, or the
+              guest simply sent more than the booking costs. Both were
+              invisible: payment_status has no refunded state, so the money
+              stayed counted as collected indefinitely and nothing said it was
+              owed back. cancellationPolicy computes what a guest is due, but
+              only to render a sentence; nothing persisted it. */}
+          {refundQueue.length > 0 && (
+            <div className="bg-white rounded-[20px] border border-rose-200 p-4 space-y-2">
+              <div className="flex items-center justify-between gap-2 border-b border-[#EBEBE0] pb-2">
+                <h3 className="text-[12px] font-black text-rose-800">فلوس محتاجة ترجع للضيوف</h3>
+                <span className="text-[11px] font-black text-rose-700 shrink-0 tabular-nums">
+                  {arabicNumber(refundQueue.reduce((s, r) => s + r.outstanding, 0))} ج.م
+                </span>
+              </div>
+              {refundQueue.map((r) => (
+                <div key={r.paymentId} className="py-2.5 border-b border-[#EBEBE0]/60 last:border-0 space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-[12px] font-black text-[#4A4A3A] truncate">{r.who}</div>
+                      <div className="text-[11px] text-[#8A8A70] truncate">
+                        {r.houseName} · {r.reason === 'cancelled' ? 'الحجز اتلغى' : 'دفع زيادة'}
+                      </div>
+                    </div>
+                    <span className="text-[12px] font-black text-rose-700 shrink-0 tabular-nums">
+                      {arabicNumber(r.outstanding)} ج.م
+                    </span>
+                  </div>
+                  {r.alreadyRefunded > 0 && (
+                    <div className="text-[11px] text-[#8A8A70]">اترجّع منها {arabicNumber(r.alreadyRefunded)} قبل كده.</div>
+                  )}
+                  {onRecordRefund && (
+                    <button
+                      type="button"
+                      disabled={refundingId === r.paymentId}
+                      onClick={async () => {
+                        const raw = prompt(`هترجّع كام لـ${r.who}؟\n\nالمستحق ${r.outstanding} ج.م.`, String(r.outstanding));
+                        if (raw === null) return;
+                        const amount = Number(raw);
+                        if (!Number.isFinite(amount) || amount <= 0 || amount > r.outstanding) {
+                          alert(`اكتب مبلغ بين ١ و${r.outstanding}.`); return;
+                        }
+                        const note = prompt('ملاحظة (اختياري) — رقم التحويل مثلاً:') || undefined;
+                        setRefundingId(r.paymentId);
+                        const ok = await onRecordRefund(r.paymentId, amount + r.alreadyRefunded, note);
+                        setRefundingId(null);
+                        if (ok) alert('اتسجّل الاسترجاع.');
+                      }}
+                      className="w-full bg-rose-50 border border-rose-200 hover:bg-rose-100 disabled:opacity-60 text-rose-800 text-[12px] font-bold min-h-11 rounded-xl cursor-pointer"
+                    >
+                      {refundingId === r.paymentId ? 'بيتسجّل…' : 'سجّل استرجاع'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           {openExceptions.length === 0 ? (
             <div className="bg-white rounded-[20px] p-8 border border-[#EBEBE0] text-center space-y-2">

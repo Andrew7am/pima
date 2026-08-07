@@ -225,3 +225,121 @@ export function summarizeFinances(args: {
     perHouse,
   };
 }
+
+// ---------------------------------------------------------------------------
+// The treasury: what is in each of Pima's own accounts
+// ---------------------------------------------------------------------------
+
+export interface AccountBalance {
+  account: string;
+  received: number;
+  refunded: number;
+  net: number;
+  count: number;
+}
+
+/**
+ * Money in, per collection account, so the app can be tallied against the real
+ * balances at the end of a week.
+ *
+ * payment_method records the KIND of transfer — instapay, vodafone, bank — not
+ * WHICH account, and Pima has several. Reconciling was impossible: a transfer
+ * that never actually arrived looked identical to one that did.
+ *
+ * Payments recorded before the account column existed, and any recorded
+ * without one, are reported under «غير محدد» rather than dropped. Dropping
+ * them would make the totals here disagree with the finance page for no
+ * visible reason, which is worse than an untidy row.
+ */
+export function accountBalances(args: {
+  payments: Payment[];
+  window: FinanceWindow | null;
+}): { accounts: AccountBalance[]; unassignedCount: number } {
+  const { payments, window: w } = args;
+  const rows = new Map<string, AccountBalance>();
+  let unassignedCount = 0;
+
+  for (const p of payments) {
+    if (p.paymentStatus !== 'approved') continue;
+    if (!inWindow(p.paymentDate, w)) continue;
+    const key = (p.receivedAccount || '').trim() || 'غير محدد';
+    if (key === 'غير محدد') unassignedCount++;
+    let row = rows.get(key);
+    if (!row) { row = { account: key, received: 0, refunded: 0, net: 0, count: 0 }; rows.set(key, row); }
+    row.received += p.amount;
+    row.refunded += p.refundedAmount || 0;
+    row.count++;
+  }
+  for (const row of rows.values()) row.net = row.received - row.refunded;
+
+  return {
+    accounts: [...rows.values()].sort((a, b) => b.net - a.net),
+    unassignedCount,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Refunds owed
+// ---------------------------------------------------------------------------
+
+export interface RefundDue {
+  paymentId: string;
+  bookingId: string;
+  who: string;
+  houseName: string;
+  received: number;
+  alreadyRefunded: number;
+  outstanding: number;
+  reason: 'cancelled' | 'overpaid';
+}
+
+/**
+ * Money Pima is holding that belongs to a guest.
+ *
+ * Two ways it happens: the trip was cancelled or rejected after the deposit
+ * arrived, or the guest simply sent more than the booking costs. Both were
+ * invisible — payment_status has no refunded state, so the money stayed
+ * counted as collected indefinitely and nothing said it was owed back.
+ *
+ * Partial refunds are respected: only what is still outstanding is listed, so
+ * a row leaves this queue when it is actually settled and not before.
+ */
+export function refundsDue(args: { bookings: Booking[]; payments: Payment[] }): RefundDue[] {
+  const { bookings, payments } = args;
+  const byId = new Map(bookings.map((b) => [b.id, b]));
+  const out: RefundDue[] = [];
+
+  for (const p of payments) {
+    if (p.paymentStatus !== 'approved') continue;
+    const b = byId.get(p.bookingId);
+    if (!b) continue;
+    const already = p.refundedAmount || 0;
+
+    const dead = b.status === 'cancelled' || b.status === 'rejected';
+    if (dead) {
+      const outstanding = p.amount - already;
+      if (outstanding > 0) {
+        out.push({
+          paymentId: p.id, bookingId: b.id, who: b.userName, houseName: b.houseName,
+          received: p.amount, alreadyRefunded: already, outstanding, reason: 'cancelled',
+        });
+      }
+      continue;
+    }
+
+    // Still a live trip, but the guest sent more than it costs.
+    const receivedForBooking = approvedTotalFor(b.id, payments);
+    const over = receivedForBooking - b.totalPrice;
+    if (over > 0) {
+      const outstanding = Math.min(over, p.amount) - already;
+      if (outstanding > 0) {
+        out.push({
+          paymentId: p.id, bookingId: b.id, who: b.userName, houseName: b.houseName,
+          received: p.amount, alreadyRefunded: already, outstanding, reason: 'overpaid',
+        });
+      }
+    }
+  }
+
+  return out.sort((a, b) => b.outstanding - a.outstanding);
+}

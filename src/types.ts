@@ -219,6 +219,16 @@ export interface Payment {
   paymentMethod: 'bank' | 'instapay' | 'vodafone' | 'cash' | 'online';
   paymentStatus: 'pending' | 'approved' | 'rejected';
   paymentDate: string;
+  /** Which of Pima's own collection accounts received this, copied at the time
+   *  so deleting the account later cannot rewrite where the money went. */
+  receivedAccount?: string;
+  /** A refund is an event with its own date, amount and author — not a status
+   *  on the original payment. Collapsing it into the status would lose all
+   *  three, and could not express a partial refund at all. */
+  refundedAmount?: number;
+  refundedAt?: string;
+  refundMethod?: string;
+  refundNote?: string;
   proofImage?: string;
   transactionReference?: string;
   adminNotes?: string;
@@ -533,6 +543,10 @@ export interface Payout {
   note?: string;
   requestedAt: string;
   completedAt?: string;
+  /** The bookings this transfer settled. Empty for an owner-requested payout,
+   *  which names an amount rather than specific bookings. Without it a payout
+   *  could only be explained by an admin reconstructing it from timestamps. */
+  bookingIds?: string[];
 }
 
 export interface AuditLogEntry {

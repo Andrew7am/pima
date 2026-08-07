@@ -183,6 +183,11 @@ export function mapPayment(r: Record<string, unknown>): Payment {
     transactionReference: r.transaction_reference as string ?? undefined,
     adminNotes: r.admin_notes as string ?? undefined,
     details: r.details as Payment['details'] ?? undefined,
+    receivedAccount: (r.received_account as string) ?? undefined,
+    refundedAmount: r.refunded_amount != null ? Number(r.refunded_amount) : undefined,
+    refundedAt: (r.refunded_at as string) ?? undefined,
+    refundMethod: (r.refund_method as string) ?? undefined,
+    refundNote: (r.refund_note as string) ?? undefined,
   };
 }
 
@@ -257,6 +262,7 @@ export function mapPayout(r: Record<string, unknown>): Payout {
     note: (r.note as string) ?? undefined,
     requestedAt: r.requested_at as string,
     completedAt: (r.completed_at as string) ?? undefined,
+    bookingIds: (r.booking_ids as string[]) ?? undefined,
   };
 }
 
@@ -605,7 +611,10 @@ export async function loadReviewsForHouses(houseIds: string[]): Promise<Review[]
 // shown inline in the admin payments list.
 export async function loadPayments(): Promise<Payment[]> {
   const { data, error } = await supabase.from('payments')
-    .select('id, booking_id, user_id, user_name, amount, payment_method, payment_status, payment_date, transaction_reference, admin_notes, details, created_at')
+    // Explicit column list on purpose — proof_image is a base64 data URI worth
+    // hundreds of KB per row and is fetched separately. Which also means a new
+    // column is invisible here until it is named.
+    .select('id, booking_id, user_id, user_name, amount, payment_method, payment_status, payment_date, transaction_reference, admin_notes, details, created_at, received_account, refunded_amount, refunded_at, refund_method, refund_note')
     .order('created_at', { ascending: false });
   if (error) { console.error('loadPayments:', error); return []; }
   return (data ?? []).map(mapPayment);
@@ -800,6 +809,11 @@ export async function settleBookingsPayout(args: {
     id: payoutId, house_id: args.houseId, owner_id: args.ownerId, amount: args.amount,
     status: 'completed', method: args.method ?? null, note: args.note ?? null,
     requested_at: now, completed_at: now,
+    // What this transfer actually paid for. The pairing was previously implicit
+    // — the same timestamp on the payout and on each booking — which is exact
+    // but unreadable: an owner asking "what is this transfer?" could only be
+    // answered by an admin reconstructing it by hand.
+    booking_ids: args.bookingIds,
   });
   if (pErr) { console.error('settleBookingsPayout(payout):', pErr); return false; }
   const { error: bErr } = await supabase.from('bookings').update({ owner_settled_at: now }).in('id', args.bookingIds);
@@ -1080,6 +1094,48 @@ export async function updatePaymentStatus(id: string, status: Payment['paymentSt
   const { error } = await supabase.from('payments').update(patch).eq('id', id);
   if (error) console.error('updatePaymentStatus:', error);
   return !error;
+}
+
+/**
+ * Record which of Pima's own accounts a payment landed in.
+ *
+ * payment_method says instapay / vodafone / bank — the KIND of transfer, not
+ * WHICH account, and Pima has several. Without this there is no way to tally
+ * the app against each real balance at the end of a week, which is the only
+ * way to notice a transfer that never actually arrived.
+ *
+ * The label is copied rather than referenced: the accounts live in a jsonb
+ * column on one settings row, and deleting an account later must not rewrite
+ * where money went.
+ */
+export async function setPaymentAccount(paymentId: string, account: string): Promise<boolean> {
+  const { error } = await supabase.from('payments').update({ received_account: account }).eq('id', paymentId);
+  if (error) { console.error('setPaymentAccount:', error); return false; }
+  return true;
+}
+
+/**
+ * Give money back, and say so.
+ *
+ * Refunds had nowhere to live: payment_status is pending|approved|rejected, so
+ * a deposit on a cancelled trip stayed counted as collected forever and
+ * nothing recorded that it was owed back. cancellationPolicy computes what the
+ * guest is due, but only to render a sentence — nothing persisted it.
+ *
+ * The server refuses a refund larger than the payment, or one against a
+ * payment that was never approved; both would invent an outflow.
+ */
+export async function recordRefund(args: {
+  paymentId: string; amount: number; method?: string; note?: string;
+}): Promise<boolean> {
+  const { error } = await supabase.rpc('record_refund', {
+    p_payment_id: args.paymentId,
+    p_amount: args.amount,
+    p_method: args.method ?? null,
+    p_note: args.note ?? null,
+  });
+  if (error) { console.error('recordRefund:', error); return false; }
+  return true;
 }
 
 // Marks one member's trip-share as paid/unpaid (migration 080). Deliberately a
