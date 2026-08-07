@@ -152,17 +152,24 @@ export function summarizeFinances(args: {
   const owedBookings = heldBookings.filter((b) => !b.ownerSettledAt);
   const ownersOwed = owedBookings.reduce((s, b) => s + ownerShareOf(b, commissionRate), 0);
 
-  // What has already left, by either route. paymentLedger's availableForTransfer
-  // treats these as independent for the same reason: a per-booking settlement
-  // stamps ownerSettledAt and never touches the payouts table, so neither can
-  // be derived from the other.
-  const settledInWindow = bookings
-    .filter((b) => b.ownerSettledAt && inWindow(b.ownerSettledAt, w))
-    .reduce((s, b) => s + ownerShareOf(b, commissionRate), 0);
-  const payoutsInWindow = payouts
+  // What has already left, counted ONCE, from the payouts table only.
+  //
+  // It is tempting to add up ownerShareOf() over the bookings stamped
+  // ownerSettledAt and treat that as a second, independent settlement route.
+  // It is not one. settleBookingsPayout (db.ts:776-790) inserts a completed
+  // owner_payouts row AND stamps owner_settled_at on the same bookings with
+  // the same timestamp — it is the only writer of that column in the whole
+  // codebase. Adding both showed every per-booking transfer twice: a 2,000
+  // settlement read as 4,000.
+  //
+  // Payouts are also the better source on their own terms. owner_payouts.amount
+  // is the EGP that actually moved, recorded at the moment it moved.
+  // Recomputing it with ownerShareOf() applies TODAY's commission rate to a
+  // transfer made under whatever rate was in force then, so every past payout
+  // would silently change the next time the rate is edited.
+  const ownersPaid = payouts
     .filter((p) => p.status === 'completed' && inWindow(p.completedAt, w))
     .reduce((s, p) => s + p.amount, 0);
-  const ownersPaid = settledInWindow + payoutsInWindow;
 
   const cashAtDoor = heldBookings.reduce((s, b) => s + cashDueAtArrival(b), 0);
 
@@ -187,12 +194,13 @@ export function summarizeFinances(args: {
     const received = approvedTotalFor(b.id, payments);
     row.collected += received;
     row.commission += Math.min(received, Math.round(b.totalPrice * commissionRate));
-    if (b.ownerSettledAt) row.paid += ownerShareOf(b, commissionRate);
-    else row.owed += ownerShareOf(b, commissionRate);
+    // Settled bookings are not added to `owed`; what was paid for them comes
+    // from the payout rows below, never from re-deriving the share here.
+    if (!b.ownerSettledAt) row.owed += ownerShareOf(b, commissionRate);
     houseAgg.set(b.houseId, (houseAgg.get(b.houseId) || 0) + received);
   }
 
-  // Payout rows settle an owner without naming a booking, so they land here.
+  // The single source for money that left, matching the page total.
   for (const p of payouts) {
     if (p.status !== 'completed' || !inWindow(p.completedAt, w)) continue;
     rowFor(p.ownerId).paid += p.amount;

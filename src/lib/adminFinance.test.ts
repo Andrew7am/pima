@@ -81,10 +81,34 @@ describe('summarizeFinances', () => {
     expect(s.ownersOwed).toBe(0);
   });
 
-  it('stops owing money that has already been settled per booking', () => {
-    const s = run({ bookings: [booking({ id: 'b1', ownerSettledAt: '2026-08-05T09:00:00Z' })] });
+  it('counts a per-booking settlement once, not twice', () => {
+    // settleBookingsPayout (db.ts:776-790) writes BOTH a completed payout row
+    // and owner_settled_at on the booking, with the same timestamp. Treating
+    // those as two independent settlements showed one 2,000 transfer as 4,000.
+    // The first version of this test passed only because it left the payout
+    // row out — which the real code path never does.
+    const settledAt = '2026-08-05T09:00:00Z';
+    const s = run({
+      bookings: [booking({ id: 'b1', ownerSettledAt: settledAt })],
+      payouts: [{ id: 'x1', houseId: 'h1', ownerId: 'o1', amount: 2000, status: 'completed',
+        requestedAt: settledAt, completedAt: settledAt } as Payout],
+    });
     expect(s.ownersOwed).toBe(0);
     expect(s.ownersPaid).toBe(2000);
+    expect(s.perOwner[0].paid).toBe(2000);
+  });
+
+  it('reports what actually left, not what the current rate would make it', () => {
+    // The payout row is the EGP that moved. Re-deriving it from today's
+    // commission rate would silently reprice every past transfer the moment
+    // the admin edits the rate — and the settings screen promises the
+    // opposite: «التغييرات بتأثر على الحجوزات الجديدة والدفعات الجاية».
+    const settledAt = '2026-08-05T09:00:00Z';
+    const at5pct = { id: 'x1', houseId: 'h1', ownerId: 'o1', amount: 3500, status: 'completed',
+      requestedAt: settledAt, completedAt: settledAt } as Payout;
+    const args = { bookings: [booking({ id: 'b1', ownerSettledAt: settledAt })], payouts: [at5pct] };
+    expect(run({ ...args, commissionRate: 0.05 }).ownersPaid).toBe(3500);
+    expect(run({ ...args, commissionRate: 0.20 }).ownersPaid).toBe(3500);
   });
 
   it('stops owing money that has already gone out as a completed payout', () => {
