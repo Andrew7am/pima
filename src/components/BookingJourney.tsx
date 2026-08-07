@@ -60,7 +60,7 @@ export default function BookingJourney({
                   {done ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
                 </div>
 
-                <span className={`text-[8.5px] font-black leading-tight ${
+                <span className={`text-[11px] font-black leading-tight ${
                   done ? 'text-[#0A2342]' : current ? 'text-[#C5A059]' : 'text-[#B8B8A0]'
                 }`}>
                   {step.label}
@@ -69,13 +69,13 @@ export default function BookingJourney({
                 {/* Only ever a real timestamp — a stage with no recorded date
                     (e.g. approved before migration 087) shows none. */}
                 {!bar && step.at && (
-                  <span className="text-[7.5px] font-bold text-[#8A8A70] leading-tight">{arabicDate(step.at)}</span>
+                  <span className="text-[11px] font-bold text-[#8A8A70] leading-tight">{arabicDate(step.at)}</span>
                 )}
                 {!bar && step.note && (
-                  <span className="text-[7.5px] font-bold text-[#8A8A70] leading-tight">{step.note}</span>
+                  <span className="text-[11px] font-bold text-[#8A8A70] leading-tight">{step.note}</span>
                 )}
                 {!bar && current && step.key === 'approved' && lastUpdated(booking.updatedAt) && (
-                  <span className="text-[7px] font-bold text-[#B8B8A0] leading-tight">{lastUpdated(booking.updatedAt)}</span>
+                  <span className="text-[11px] font-bold text-[#B8B8A0] leading-tight">{lastUpdated(booking.updatedAt)}</span>
                 )}
               </div>
 
@@ -92,7 +92,7 @@ export default function BookingJourney({
       {!bar && (
         <div className="flex items-start gap-2 bg-[#FBF3E4] border border-[#C5A059]/30 rounded-2xl px-3 py-2.5">
           <ShieldCheck className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" />
-          <p className="text-[10px] font-bold text-[#4A4A3A] leading-relaxed">{message}</p>
+          <p className="text-[11px] font-bold text-[#4A4A3A] leading-relaxed">{message}</p>
         </div>
       )}
     </div>

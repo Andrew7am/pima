@@ -179,7 +179,7 @@ export default function DepositPayment({
       <div className="flex-1 text-center">
         <h2 className="text-[14px] font-black text-[#0A2342]">دفع العربون</h2>
         {showStep && (
-          <span className="inline-block mt-1 text-[9.5px] font-black text-[#B8944E] bg-[#FDF9EF] border border-[#EBD9B4] rounded-full px-2.5 py-0.5">
+          <span className="inline-block mt-1 text-[11px] font-black text-[#B8944E] bg-[#FDF9EF] border border-[#EBD9B4] rounded-full px-2.5 py-0.5">
             {arabicNumber(step)} من {arabicNumber(2)}
           </span>
         )}
@@ -210,20 +210,20 @@ export default function DepositPayment({
                     <img src={house.images[0]} alt="" referrerPolicy="no-referrer" className="w-[72px] h-[72px] rounded-2xl object-cover shrink-0" />
                   )}
                   <div className="min-w-0 flex-1 leading-tight space-y-1">
-                    <span className="block text-[12.5px] font-black text-[#0A2342] truncate">{booking.houseName}</span>
-                    <span className="block text-[9px] font-bold text-[#8A8A70]" dir="ltr">#{booking.id.toUpperCase()}</span>
-                    <span className="flex items-center gap-1 text-[9.5px] font-bold text-[#4A4A3A]">
+                    <span className="block text-[12px] font-black text-[#0A2342] truncate">{booking.houseName}</span>
+                    <span className="block text-[11px] font-bold text-[#8A8A70]" dir="ltr">#{booking.id.toUpperCase()}</span>
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-[#4A4A3A]">
                       <CalendarDays className="w-3 h-3 text-[#C9A24A] shrink-0" />
                       {arabicDateRange(booking.checkIn, booking.checkOut)}
                     </span>
-                    <span className="flex items-center gap-1 text-[9.5px] font-bold text-[#4A4A3A]">
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-[#4A4A3A]">
                       <Users className="w-3 h-3 text-[#C9A24A] shrink-0" />
                       {arabicNumber(booking.guestsCount)} أفراد
                     </span>
                   </div>
                 </div>
                 <div className="mt-3 pt-3 border-t border-[#EDE7DA] flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-[#8A8A70]">مبلغ العربون</span>
+                  <span className="text-[11px] font-bold text-[#8A8A70]">مبلغ العربون</span>
                   <span className="text-[20px] font-black text-[#0A2342]">{arabicNumber(amount)} <span className="text-[12px]">ج.م</span></span>
                 </div>
               </div>
@@ -241,7 +241,7 @@ export default function DepositPayment({
                     <span className="block text-[11px] font-black text-[#2D2D24]">
                       رصيدك: {arabicNumber(currentUser.points ?? 0)} نقطة بيما
                     </span>
-                    <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
+                    <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">
                       تُخصم النقاط عند إنشاء الحجز، وليست متاحة على العربون.
                     </span>
                   </div>
@@ -251,7 +251,7 @@ export default function DepositPayment({
               <div className="space-y-2 pima-rise pima-rise-2">
                 <span className="block text-[11px] font-black text-[#0A2342] px-1">اختر وسيلة الدفع</span>
                 {available.length === 0 && (
-                  <p className="text-[10.5px] font-medium text-[#8A8A70] bg-white border border-[#EDE7DA] rounded-2xl p-3">
+                  <p className="text-[11px] font-medium text-[#8A8A70] bg-white border border-[#EDE7DA] rounded-2xl p-3">
                     لم يحدّد المكان وسيلة استلام بعد. تواصل مع فريق بيما لإتمام الدفع.
                   </p>
                 )}
@@ -272,13 +272,13 @@ export default function DepositPayment({
                       </span>
                       <span className="flex-1 min-w-0 leading-tight">
                         <span className="block text-[12px] font-black text-[#0A2342]">{m.label}</span>
-                        <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">{m.hint}</span>
+                        <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">{m.hint}</span>
                       </span>
                       <span className="shrink-0">{m.glyph}</span>
                     </button>
                   );
                 })}
-                <p className="flex items-center justify-center gap-1.5 text-[9.5px] font-bold text-[#8A8A70] pt-1">
+                <p className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#8A8A70] pt-1">
                   <Lock className="w-3 h-3 text-[#C9A24A]" />
                   بياناتك آمنة ومشفّرة
                 </p>
@@ -290,7 +290,7 @@ export default function DepositPayment({
                 type="button"
                 disabled={!method}
                 onClick={() => { tapFeedback(); setStep(2); }}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[13px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
               >
                 متابعة
                 <ChevronLeft className="w-4 h-4" />
@@ -305,7 +305,7 @@ export default function DepositPayment({
             <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
               <div className={`${CARD} p-3 flex items-center justify-between gap-2 pima-rise`}>
                 <button type="button" onClick={() => { tapFeedback(); setStep(1); }}
-                  className="text-[10px] font-black text-[#B8944E] border border-[#EBD9B4] rounded-full px-3 py-1 hover:bg-[#FDF9EF] transition-colors cursor-pointer pima-press">
+                  className="text-[11px] font-black text-[#B8944E] border border-[#EBD9B4] rounded-full px-3 py-1 hover:bg-[#FDF9EF] transition-colors cursor-pointer pima-press">
                   تغيير
                 </button>
                 <span className="flex items-center gap-2">
@@ -321,24 +321,24 @@ export default function DepositPayment({
                     <button
                       type="button"
                       onClick={copyPayee}
-                      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-black transition-colors cursor-pointer pima-press ${
+                      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-black transition-colors cursor-pointer pima-press ${
                         copied ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-[#FDF9EF] border-[#EBD9B4] text-[#B8944E]'
                       }`}
                     >
                       {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copied ? 'تم النسخ' : 'نسخ'}
                     </button>
-                    <span className="text-[10.5px] font-bold text-[#8A8A70]">قم بتحويل مبلغ العربون إلى</span>
+                    <span className="text-[11px] font-bold text-[#8A8A70]">قم بتحويل مبلغ العربون إلى</span>
                   </div>
                   {/* Selectable, so a guest whose clipboard is blocked can still
                       take the address by hand. */}
                   <span className="block text-[15px] font-black text-[#0A2342] text-right select-all" dir="ltr">{payee.value}</span>
                   {copyFailed && (
-                    <span className="block text-[9.5px] font-bold text-rose-600">
+                    <span className="block text-[11px] font-bold text-rose-600">
                       تعذّر النسخ التلقائي — اضغط مطوّلًا على العنوان لنسخه يدويًا.
                     </span>
                   )}
-                  <p className="flex items-start gap-1.5 text-[9.5px] font-medium text-[#8A8A70] leading-relaxed pt-1 border-t border-[#EDE7DA]">
+                  <p className="flex items-start gap-1.5 text-[11px] font-medium text-[#8A8A70] leading-relaxed pt-1 border-t border-[#EDE7DA]">
                     <ShieldCheck className="w-3.5 h-3.5 text-[#C9A24A] shrink-0 mt-0.5" />
                     افتح تطبيق {payee.label} واختر تحويل أموال وأدخل عنوان الدفع أعلاه، ثم أرفق صورة الإيصال هنا.
                   </p>
@@ -361,8 +361,8 @@ export default function DepositPayment({
                   >
                     <UploadCloud className="w-8 h-8 text-[#C9A24A]" />
                     <span className="text-[11px] font-black text-[#2D2D24]">اسحب وأفلت الصورة هنا</span>
-                    <span className="text-[10px] font-medium text-[#8A8A70]">أو اختر من جهازك</span>
-                    <span className="text-[8.5px] font-medium text-[#B5AF98]">JPG, PNG, PDF · الحد الأقصى ١٠ ميجابايت</span>
+                    <span className="text-[11px] font-medium text-[#8A8A70]">أو اختر من جهازك</span>
+                    <span className="text-[11px] font-medium text-[#B5AF98]">JPG, PNG, PDF · الحد الأقصى ١٠ ميجابايت</span>
                   </button>
                 ) : (
                   <div className={`${CARD} p-3 flex items-center gap-3 animate-in fade-in duration-200`}>
@@ -373,7 +373,7 @@ export default function DepositPayment({
                     </span>
                     <div className="min-w-0 flex-1 leading-tight">
                       <span className="block text-[11px] font-black text-[#0A2342] truncate">{proofName}</span>
-                      <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">
+                      <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">
                         {arabicDecimal(proofSize / (1024 * 1024))} ميجابايت
                       </span>
                     </div>
@@ -396,7 +396,7 @@ export default function DepositPayment({
                     value={reference}
                     onChange={(e) => setReference(e.target.value)}
                     placeholder="أدخل رقم المرجع إن وجد"
-                    className="flex-1 bg-transparent py-3 text-[11.5px] font-bold text-[#2D2D24] placeholder:text-[#B5AF98] placeholder:font-medium focus:outline-none"
+                    className="flex-1 bg-transparent py-3 text-[12px] font-bold text-[#2D2D24] placeholder:text-[#B5AF98] placeholder:font-medium focus:outline-none"
                   />
                 </div>
               </div>
@@ -407,12 +407,12 @@ export default function DepositPayment({
                 type="button"
                 disabled={!proof}
                 onClick={submit}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[13px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
               >
                 <Lock className="w-4 h-4" />
                 تأكيد إرسال إثبات الدفع
               </button>
-              <p className="flex items-center justify-center gap-1.5 text-[9.5px] font-medium text-[#8A8A70]">
+              <p className="flex items-center justify-center gap-1.5 text-[11px] font-medium text-[#8A8A70]">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#C9A24A]" />
                 سيتم مراجعة الإثبات والتأكيد خلال ساعات قليلة
               </p>
@@ -449,7 +449,7 @@ export default function DepositPayment({
             </div>
 
             <div className={`${CARD} p-4 text-right space-y-2.5`}>
-              <span className="flex items-center gap-1.5 text-[11.5px] font-black text-[#0A2342]">
+              <span className="flex items-center gap-1.5 text-[12px] font-black text-[#0A2342]">
                 <Clock className="w-4 h-4 text-[#C9A24A]" />
                 ماذا يحدث الآن
               </span>
@@ -460,7 +460,7 @@ export default function DepositPayment({
               ].map((s) => (
                 <div key={s.label} className="flex items-center justify-between gap-2">
                   <s.icon className={`w-4 h-4 shrink-0 ${s.done ? 'text-emerald-600' : 'text-[#B5AF98]'}`} />
-                  <span className={`flex-1 text-[10.5px] font-bold ${s.done ? 'text-[#2D2D24]' : 'text-[#8A8A70]'}`}>{s.label}</span>
+                  <span className={`flex-1 text-[11px] font-bold ${s.done ? 'text-[#2D2D24]' : 'text-[#8A8A70]'}`}>{s.label}</span>
                 </div>
               ))}
             </div>
@@ -469,7 +469,7 @@ export default function DepositPayment({
               <button
                 type="button"
                 onClick={() => { tapFeedback(); onClose(); }}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[13px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
               >
                 <CalendarDays className="w-4 h-4" />
                 العودة لتفاصيل الحجز
@@ -478,7 +478,7 @@ export default function DepositPayment({
                 <button
                   type="button"
                   onClick={() => { tapFeedback(); onGoHome(); }}
-                  className="w-full flex items-center justify-center gap-2 bg-white border border-[#EDE7DA] hover:border-[#E3CD9F] text-[#4A4A3A] font-black text-[12.5px] py-3.5 rounded-2xl transition-colors cursor-pointer pima-press"
+                  className="w-full flex items-center justify-center gap-2 bg-white border border-[#EDE7DA] hover:border-[#E3CD9F] text-[#4A4A3A] font-black text-[12px] py-3.5 rounded-2xl transition-colors cursor-pointer pima-press"
                 >
                   <Home className="w-4 h-4 text-[#C9A24A]" />
                   العودة للرئيسية

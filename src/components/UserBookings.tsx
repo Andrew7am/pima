@@ -158,7 +158,7 @@ function Fact({ icon: Icon, label, value, accent }: { icon: React.ElementType; l
         <Icon className="w-4 h-4 text-[#5A5A40]" />
       </span>
       <div className="min-w-0">
-        <div className="text-[9px] text-[#8A8A70] font-bold">{label}</div>
+        <div className="text-[11px] text-[#8A8A70] font-bold">{label}</div>
         <div className={`text-[12px] font-black truncate ${accent ?? 'text-[#4A4A3A]'}`}>{value}</div>
       </div>
     </div>
@@ -699,7 +699,7 @@ export default function UserBookings({
               the screen two headers. */}
           <div className="text-center pt-1">
             <h2 className="text-lg font-black text-[#2D2D24]">حجوزاتي</h2>
-            <p className="text-[10.5px] font-bold text-[#8A8A70] mt-0.5">كل رحلتك في مكان واحد</p>
+            <p className="text-[11px] font-bold text-[#8A8A70] mt-0.5">كل رحلتك في مكان واحد</p>
           </div>
 
           {/* Search — a guest hunting for one booking has the place name or the
@@ -712,7 +712,7 @@ export default function UserBookings({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="ابحث باسم المكان أو رقم الحجز"
-                className="w-full bg-white border border-[#EDE7DA] rounded-2xl py-2.5 pr-10 pl-3 text-[11px] font-bold text-[#2D2D24] placeholder:text-[#B8B8A0] focus:outline-none focus:border-[#C5A059] shadow-sm"
+                className="w-full bg-white border border-[#EDE7DA] rounded-2xl min-h-11 pr-10 pl-3 text-[11px] font-bold text-[#2D2D24] placeholder:text-[#B8B8A0] focus:outline-none focus:border-[#C5A059] shadow-sm"
               />
             </div>
             {search && (
@@ -734,14 +734,14 @@ export default function UserBookings({
                 <button
                   key={t.key}
                   onClick={() => setTab(t.key)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-[11px] font-black transition-all cursor-pointer border ${
+                  className={`shrink-0 flex items-center gap-1.5 px-3.5 min-h-11 rounded-2xl text-[11px] font-black transition-all cursor-pointer border ${
                     active
                       ? 'bg-[#0A2342] text-white border-[#0A2342] shadow-sm'
                       : 'bg-white text-[#5A5A40] border-[#D6D6C2] hover:bg-[#FAF8F5]'
                   } ${t.count === 0 && !active ? 'opacity-45' : ''}`}
                 >
                   <span>{t.label}</span>
-                  <span className={`min-w-[17px] h-[17px] px-1 rounded-full text-[9px] font-black flex items-center justify-center ${
+                  <span className={`min-w-[17px] h-[17px] px-1 rounded-full text-[11px] font-black flex items-center justify-center ${
                     active ? 'bg-white/20 text-white' : t.key === 'action' && t.count > 0 ? 'bg-rose-500 text-white' : 'bg-[#EBEBE0] text-[#5A5A40]'
                   }`}>
                     {arabicNumber(t.count)}
@@ -781,39 +781,39 @@ export default function UserBookings({
                   {cover && <img src={cover} alt="" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/25" />
 
-                  <span className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 text-[#2D2D24] text-[9.5px] font-black px-2.5 py-1 rounded-full shadow-sm">
+                  <span className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 text-[#2D2D24] text-[11px] font-black px-2.5 py-1 rounded-full shadow-sm">
                     <Sparkles className="w-3 h-3 text-[#C5A059]" /> الحجز القادم
                   </span>
 
                   {d >= 0 && (
                     <div className="absolute top-14 right-3 bg-black/55 backdrop-blur-sm rounded-2xl px-3 py-2 text-center">
-                      <div className="text-[8.5px] font-bold text-white/70 leading-none">تبقى</div>
+                      <div className="text-[11px] font-bold text-white/70 leading-none">تبقى</div>
                       <div className="text-xl font-black leading-tight">{d.toLocaleString('ar-EG')}</div>
-                      <div className="text-[8.5px] font-bold text-white/70 leading-none">{d === 1 ? 'يوم' : d === 2 ? 'يومين' : 'أيام'}</div>
+                      <div className="text-[11px] font-bold text-white/70 leading-none">{d === 1 ? 'يوم' : d === 2 ? 'يومين' : 'أيام'}</div>
                     </div>
                   )}
 
                   <div className="absolute inset-x-0 bottom-0 p-4 space-y-1.5">
                     <h3 className="text-[15px] font-black leading-tight">{nextBooking.houseName}</h3>
                     {(h?.governorate || h?.address) && (
-                      <div className="flex items-center gap-1 text-[10px] font-bold text-white/80">
+                      <div className="flex items-center gap-1 text-[11px] font-bold text-white/80">
                         <MapPin className="w-3 h-3 shrink-0" />
                         <span className="truncate">{[h?.address, h?.governorate].filter(Boolean).join(' - ')}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-3 text-[10px] font-bold text-white/85">
+                    <div className="flex items-center gap-3 text-[11px] font-bold text-white/85">
                       <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{arabicDateRange(nextBooking.checkIn, nextBooking.checkOut)}</span>
                       <span className="flex items-center gap-1"><Users className="w-3 h-3" />{nextBooking.guestsCount.toLocaleString('ar-EG')} فرد</span>
                     </div>
                     <div className="flex items-center justify-between gap-2 pt-1.5">
                       <span className="text-[17px] font-black">{nextBooking.totalPrice.toLocaleString('ar-EG')} <span className="text-[11px]">ج.م</span></span>
-                      <span className={`flex items-center gap-1 text-[9.5px] font-black px-2.5 py-1 rounded-full ${badge.color}`}>
+                      <span className={`flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-full ${badge.color}`}>
                         <BadgeIcon className="w-3 h-3" /> {badge.label}
                       </span>
                     </div>
                     <button
                       onClick={() => setDetailBookingId(nextBooking.id)}
-                      className="mt-1 flex items-center gap-1 bg-white/95 hover:bg-white text-[#2D2D24] text-[10px] font-black px-3 py-1.5 rounded-full shadow-sm cursor-pointer transition-colors"
+                      className="mt-1 flex items-center gap-1 bg-white/95 hover:bg-white text-[#2D2D24] text-[11px] font-black px-3 min-h-11 rounded-full shadow-sm cursor-pointer transition-colors"
                     >
                       عرض التفاصيل <ChevronLeft className="w-3 h-3" />
                     </button>
@@ -831,13 +831,13 @@ export default function UserBookings({
 
           <div className="flex items-center justify-between px-1">
             <span className="text-[12px] font-black text-[#2D2D24]">جميع الحجوزات</span>
-            <label className="flex items-center gap-1 text-[10px] font-black text-[#5A5A40] cursor-pointer">
+            <label className="flex items-center gap-1 text-[11px] font-black text-[#5A5A40] cursor-pointer">
               <ArrowDownWideNarrow className="w-3.5 h-3.5 text-[#B8B8A0]" />
               <select
                 id="bookings-sort"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="bg-transparent focus:outline-none cursor-pointer"
+                className="bg-transparent focus:outline-none cursor-pointer min-h-11"
               >
                 <option value="smart">الأهم أولاً</option>
                 <option value="newest">الأحدث</option>
@@ -941,44 +941,44 @@ export default function UserBookings({
 
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-[12.5px] font-black text-[#2E2E24] truncate">{booking.houseName}</h3>
-                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[9px] font-black shrink-0 ${badge.color}`}>
+                        <h3 className="text-[12px] font-black text-[#2E2E24] truncate">{booking.houseName}</h3>
+                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-black shrink-0 ${badge.color}`}>
                           <StatusIcon className="w-3 h-3 shrink-0" />
                           {badge.label}
                         </span>
                       </div>
 
                       {(bookingHouse?.governorate || bookingHouse?.address) && (
-                        <div className="flex items-center gap-1 text-[9.5px] font-bold text-[#8A8A70]">
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-[#8A8A70]">
                           <MapPin className="w-3 h-3 shrink-0" />
                           <span className="truncate">{[bookingHouse?.address, bookingHouse?.governorate].filter(Boolean).join(' - ')}</span>
                         </div>
                       )}
 
-                      <div className="flex items-center gap-2.5 text-[9.5px] font-bold text-[#5A5A40]">
+                      <div className="flex items-center gap-2.5 text-[11px] font-bold text-[#5A5A40]">
                         <span className="flex items-center gap-1"><Users className="w-3 h-3 text-[#BCBC9D]" />{booking.guestsCount.toLocaleString('ar-EG')} فرد</span>
                         <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-[#BCBC9D]" />{arabicDateRange(booking.checkIn, booking.checkOut)}</span>
                       </div>
 
                       <div className="flex items-center justify-between gap-2 pt-0.5">
                         <div className="min-w-0">
-                          <span className="text-[12.5px] font-black text-[#0A2342]">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</span>
+                          <span className="text-[12px] font-black text-[#0A2342]">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</span>
                           {/* What is still owed, or that nothing is — the number
                               a guest scans this row for. */}
-                          <span className={`block text-[9px] font-black ${booking.depositPaid ? 'text-emerald-700' : 'text-[#B8944E]'}`}>
+                          <span className={`block text-[11px] font-black ${booking.depositPaid ? 'text-emerald-700' : 'text-[#B8944E]'}`}>
                             {booking.depositPaid
                               ? 'العربون مدفوع'
                               : `المتبقي ${Math.max(0, booking.totalPrice - (booking.depositPaid ? booking.depositAmount : 0)).toLocaleString('ar-EG')} ج.م`}
                           </span>
                         </div>
-                        <span className={`flex items-center gap-0.5 text-[9.5px] font-black shrink-0 ${nextStep.cls}`}>
+                        <span className={`flex items-center gap-0.5 text-[11px] font-black shrink-0 ${nextStep.cls}`}>
                           {nextStep.label}
                           <ChevronLeft className="w-3.5 h-3.5" />
                         </span>
                       </div>
 
                       {dLeftCompact >= 0 && dLeftCompact <= 7 && (
-                        <span className="inline-block text-[9px] font-black text-[#0A2342] bg-[#0A2342]/5 rounded-full px-2 py-0.5">
+                        <span className="inline-block text-[11px] font-black text-[#0A2342] bg-[#0A2342]/5 rounded-full px-2 py-0.5">
                           {dLeftCompact === 0
                             ? 'اليوم 🎉'
                             : `بعد ${arabicPlural(dLeftCompact, { one: 'يوم', two: 'يومين', few: 'أيام', many: 'يوم' })}`}
@@ -1002,7 +1002,7 @@ export default function UserBookings({
                       <button
                         type="button"
                         onClick={() => setDetailBookingId(null)}
-                        className="p-1.5 rounded-full hover:bg-[#F1EEE6] cursor-pointer"
+                        className="grid place-items-center w-11 h-11 rounded-full hover:bg-[#F1EEE6] cursor-pointer"
                         aria-label="إغلاق"
                       >
                         <X className="w-4 h-4 text-[#4A4A3A]" />
@@ -1020,7 +1020,7 @@ export default function UserBookings({
                       <button
                         type="button"
                         onClick={() => { navigator.clipboard?.writeText(booking.id); setCopiedBookingId(booking.id); }}
-                        className="flex items-center gap-1.5 text-[9.5px] font-bold text-[#8A8A70] hover:text-[#B8944E] transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 min-h-11 -my-2 text-[11px] font-bold text-[#8A8A70] hover:text-[#B8944E] transition-colors cursor-pointer"
                       >
                         <span dir="ltr">#{booking.id.toUpperCase()}</span>
                         {copiedBookingId === booking.id
@@ -1028,12 +1028,12 @@ export default function UserBookings({
                           : <Copy className="w-3 h-3 text-[#B5AF98]" />}
                       </button>
                       <h3 className="text-[14px] font-black text-[#0A2342] leading-tight line-clamp-2">{booking.houseName}</h3>
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-black ${badge.color}`}>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-black ${badge.color}`}>
                         <StatusIcon className="w-3.5 h-3.5 shrink-0" />
                         {badge.label}
                       </span>
                       {booking.isLargeConferenceQuote && (
-                        <span className="block text-[9px] font-bold text-[#8A8A70]">طلب عرض سعر لمؤتمر كبير</span>
+                        <span className="block text-[11px] font-bold text-[#8A8A70]">طلب عرض سعر لمؤتمر كبير</span>
                       )}
                     </div>
                   </div>
@@ -1052,7 +1052,7 @@ export default function UserBookings({
                           ? 'خلوتك اليوم! 🎉'
                           : `باقي ${arabicPlural(d, { one: 'يوم واحد', two: 'يومين', few: 'أيام', many: 'يوم' })} على خلوتك`;
                         return (
-                          <div className="mt-3 flex items-center justify-center gap-1.5 bg-[#FBF9F4] border border-[#EDE7DA] text-[#0A2342] rounded-full py-1.5 text-[10.5px] font-black">
+                          <div className="mt-3 flex items-center justify-center gap-1.5 bg-[#FBF9F4] border border-[#EDE7DA] text-[#0A2342] rounded-full py-1.5 text-[11px] font-black">
                             <CalendarCheck className="w-3.5 h-3.5 text-[#C5A059]" />
                             <span>{text}</span>
                           </div>
@@ -1070,8 +1070,8 @@ export default function UserBookings({
                       <span className="inline-flex w-14 h-14 rounded-full bg-[#F6F0E2] items-center justify-center">
                         <Clock className="w-6 h-6 text-[#C9A24A]" />
                       </span>
-                      <span className="block text-[13px] font-black text-[#0A2342]">بانتظار مراجعة الطلب</span>
-                      <p className="text-[10.5px] font-medium text-[#8A8A70] leading-relaxed">
+                      <span className="block text-[12px] font-black text-[#0A2342]">بانتظار مراجعة الطلب</span>
+                      <p className="text-[11px] font-medium text-[#8A8A70] leading-relaxed">
                         سيتم إشعارك فور مراجعة طلبك من قبل بيت المؤتمرات.
                         <br />لن يُطلب منك أي دفع قبل الموافقة.
                       </p>
@@ -1085,8 +1085,8 @@ export default function UserBookings({
                           <ShieldCheck className="w-5 h-5 text-[#C9A24A]" />
                         </span>
                         <div className="min-w-0">
-                          <span className="block text-[12.5px] font-black text-[#0A2342] leading-snug">تمت الموافقة على طلبك 🎉</span>
-                          <span className="block text-[10px] font-medium text-[#8A8A70] leading-relaxed mt-1">
+                          <span className="block text-[12px] font-black text-[#0A2342] leading-snug">تمت الموافقة على طلبك 🎉</span>
+                          <span className="block text-[11px] font-medium text-[#8A8A70] leading-relaxed mt-1">
                             وافق بيت المؤتمرات على طلبك. ادفع العربون لتأكيد الحجز النهائي.
                           </span>
                         </div>
@@ -1097,14 +1097,14 @@ export default function UserBookings({
                       {awaitingVerification ? (
                         <div role="status" className="w-full rounded-2xl border border-[#E3CD9F] bg-[#FBF6E9] px-3 py-2.5 text-center">
                           <p className="text-[11px] font-black text-[#8A6A28]">الدفع مقفول لحد ما نوثّق حسابك</p>
-                          <p className="text-[10px] font-medium text-[#6B6552] mt-0.5 leading-relaxed">
+                          <p className="text-[11px] font-medium text-[#6B6552] mt-0.5 leading-relaxed">
                             حجزك محفوظ ومكانك متحجوز. ابعت صورة بطاقتك على واتساب الدعم وهنفتحلك الدفع.
                           </p>
                         </div>
                       ) : platformPayeeMissing ? (
                         <div role="status" className="w-full rounded-2xl border border-[#E3CD9F] bg-[#FBF6E9] px-3 py-2.5 text-center">
                           <p className="text-[11px] font-black text-[#8A6A28]">الدفع مش متاح دلوقتي</p>
-                          <p className="text-[10px] font-medium text-[#6B6552] mt-0.5 leading-relaxed">
+                          <p className="text-[11px] font-medium text-[#6B6552] mt-0.5 leading-relaxed">
                             حجزك محفوظ. كلّم دعم بيما على واتساب وهنكمّل معاك الدفع.
                           </p>
                         </div>
@@ -1112,7 +1112,7 @@ export default function UserBookings({
                         <button
                           type="button"
                           onClick={() => { setIsPaying(booking.id); setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString()); }}
-                          className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12.5px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
+                          className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
                         >
                           <Wallet className="w-4 h-4" />
                           ادفع العربون الآن · {arabicNumber(Math.round(booking.totalPrice * settings.depositRate))} ج.م
@@ -1128,8 +1128,8 @@ export default function UserBookings({
                           <FileDown className="w-5 h-5 text-[#C9A24A]" />
                         </span>
                         <div className="min-w-0">
-                          <span className="block text-[12.5px] font-black text-[#0A2342] leading-snug">إثبات الدفع قيد المراجعة</span>
-                          <span className="block text-[10px] font-medium text-[#8A8A70] leading-relaxed mt-1">
+                          <span className="block text-[12px] font-black text-[#0A2342] leading-snug">إثبات الدفع قيد المراجعة</span>
+                          <span className="block text-[11px] font-medium text-[#8A8A70] leading-relaxed mt-1">
                             تم استلام إثبات الدفع بنجاح، وسيتم مراجعته خلال ساعات قليلة.
                           </span>
                         </div>
@@ -1149,8 +1149,8 @@ export default function UserBookings({
                           <ShieldCheck className="w-5 h-5 text-emerald-600" />
                         </span>
                         <div className="min-w-0">
-                          <span className="block text-[12.5px] font-black text-[#0A2342] leading-snug">الحجز مؤكّد 🎉</span>
-                          <span className="block text-[10px] font-medium text-[#8A8A70] leading-relaxed mt-1">
+                          <span className="block text-[12px] font-black text-[#0A2342] leading-snug">الحجز مؤكّد 🎉</span>
+                          <span className="block text-[11px] font-medium text-[#8A8A70] leading-relaxed mt-1">
                             تم تأكيد حجزك بنجاح. نتمنى لك إقامة مباركة.
                           </span>
                         </div>
@@ -1159,7 +1159,7 @@ export default function UserBookings({
                         <button
                           type="button"
                           onClick={() => setActiveReceipt(booking)}
-                          className="flex items-center justify-center gap-1.5 bg-white border border-[#EDE7DA] hover:border-[#E3CD9F] text-[#4A4A3A] font-black text-[11px] py-2.5 rounded-2xl transition-colors cursor-pointer pima-press"
+                          className="flex items-center justify-center gap-1.5 bg-white border border-[#EDE7DA] hover:border-[#E3CD9F] text-[#4A4A3A] font-black text-[11px] min-h-11 rounded-2xl transition-colors cursor-pointer pima-press"
                         >
                           <FileDown className="w-3.5 h-3.5 text-[#C9A24A]" />
                           عرض سند الحجز
@@ -1167,7 +1167,7 @@ export default function UserBookings({
                         <button
                           type="button"
                           onClick={() => downloadBookingIcs(booking, bookingHouse?.address)}
-                          className="flex items-center justify-center gap-1.5 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[11px] py-2.5 rounded-2xl shadow-[0_2px_8px_rgba(184,148,78,0.3)] cursor-pointer pima-press"
+                          className="flex items-center justify-center gap-1.5 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[11px] min-h-11 rounded-2xl shadow-[0_2px_8px_rgba(184,148,78,0.3)] cursor-pointer pima-press"
                         >
                           <CalendarPlus className="w-3.5 h-3.5" />
                           أضف إلى التقويم
@@ -1186,11 +1186,11 @@ export default function UserBookings({
                     { icon: Wallet, label: 'إجمالي التكلفة', value: `${booking.totalPrice.toLocaleString('ar-EG')} ج.م` },
                   ].map((f) => (
                     <div key={f.label} className="rounded-2xl border border-[#EDE7DA] bg-[#FBF9F4] p-3">
-                      <span className="flex items-center gap-1.5 text-[9.5px] font-bold text-[#8A8A70]">
+                      <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#8A8A70]">
                         <f.icon className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
                         {f.label}
                       </span>
-                      <span className="block text-[12.5px] font-black text-[#0A2342] mt-1.5">{f.value}</span>
+                      <span className="block text-[12px] font-black text-[#0A2342] mt-1.5">{f.value}</span>
                     </div>
                   ))}
                 </div>
@@ -1217,7 +1217,7 @@ export default function UserBookings({
                             style={{ width: `${paymentBarPct(pct)}%`, transition: 'width 800ms var(--motion-ease)' }}
                           />
                         </div>
-                        <div className="flex items-center justify-between text-[9.5px] font-bold">
+                        <div className="flex items-center justify-between text-[11px] font-bold">
                           <span className="text-[#8A8A70]">مدفوع {paid.toLocaleString('ar-EG')} ج.م</span>
                           <span className={remaining === 0 ? 'text-emerald-700' : 'text-[#B8944E]'}>
                             {remaining === 0 ? 'مدفوع بالكامل ✓' : `المتبقي ${remaining.toLocaleString('ar-EG')} ج.م`}
@@ -1239,18 +1239,18 @@ export default function UserBookings({
                     {/* Kept out of the four-fact grid above so it stays four
                         equal cards; this block is «what you asked for». */}
                     {booking.conferenceDetails.bookingType && (
-                      <div className="text-[10px] text-[#464E3D] font-medium pt-1">نوع الحجز: {bookingTypeLabel(booking)}</div>
+                      <div className="text-[11px] text-[#464E3D] font-medium pt-1">نوع الحجز: {bookingTypeLabel(booking)}</div>
                     )}
                     {booking.conferenceDetails.extraRequests && (
-                      <div className="text-[10px] text-[#2D2D24]/80 leading-relaxed bg-white border border-[#E7E5DB] p-2 rounded-xl mt-1 text-right whitespace-pre-line">
+                      <div className="text-[11px] text-[#2D2D24]/80 leading-relaxed bg-white border border-[#E7E5DB] p-2 rounded-xl mt-1 text-right whitespace-pre-line">
                         {booking.conferenceDetails.extraRequests}
                       </div>
                     )}
                     {booking.conferenceDetails.diocese && (
-                      <div className="text-[10px] text-[#464E3D] font-medium pt-1">الإيبارشية: {booking.conferenceDetails.diocese}</div>
+                      <div className="text-[11px] text-[#464E3D] font-medium pt-1">الإيبارشية: {booking.conferenceDetails.diocese}</div>
                     )}
                     {booking.isLargeConferenceQuote && (
-                      <div className="flex gap-4 text-[10px] text-[#464E3D] font-medium pt-1">
+                      <div className="flex gap-4 text-[11px] text-[#464E3D] font-medium pt-1">
                         <span>• شامل حجز قاعة الاجتماعات</span>
                         {booking.conferenceDetails.mealsIncluded && <span>• شامل الوجبات اليومية الثلاث كاملة</span>}
                       </div>
@@ -1271,7 +1271,7 @@ export default function UserBookings({
                   const showConfirmed = booking.status === 'approved' && booking.depositPaid;
                   if (!(booking.status === 'pending' || canPayDeposit || showConfirmed)) return null;
                   return (
-                    <div className="px-4 py-3.5 border-b border-[#D6D6C2]/60 space-y-2.5 text-[10.5px]">
+                    <div className="px-4 py-3.5 border-b border-[#D6D6C2]/60 space-y-2.5 text-[11px]">
                       {/* Awaiting-deposit prompt (the CTA below performs the action) */}
                       {canPayDeposit && (
                         <div className="flex items-start gap-2 bg-amber-50/70 border border-amber-200/80 rounded-2xl p-2.5 text-amber-950">
@@ -1333,12 +1333,12 @@ export default function UserBookings({
                     <div className="px-4 py-3.5 border-b border-[#D6D6C2]/60 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-black text-[#0A2342] flex items-center gap-1.5"><Coins className="w-4 h-4 text-[#C5A059]" /> تحصيل المشاركين</span>
-                        <span className="text-[9.5px] font-black text-[#8A8A70]">نصيب الفرد: {share.toLocaleString('ar-EG')} ج.م</span>
+                        <span className="text-[11px] font-black text-[#8A8A70]">نصيب الفرد: {share.toLocaleString('ar-EG')} ج.م</span>
                       </div>
                       <div className="h-2 bg-[#EBEBE0] rounded-full overflow-hidden">
                         <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${Math.round((paidCount / roster.length) * 100)}%` }} />
                       </div>
-                      <div className="text-[9.5px] font-bold text-[#8A8A70]">دفع {paidCount.toLocaleString('ar-EG')} من {roster.length.toLocaleString('ar-EG')} — محصَّل {collected.toLocaleString('ar-EG')} ج.م</div>
+                      <div className="text-[11px] font-bold text-[#8A8A70]">دفع {paidCount.toLocaleString('ar-EG')} من {roster.length.toLocaleString('ar-EG')} — محصَّل {collected.toLocaleString('ar-EG')} ج.م</div>
                       <div className="max-h-44 overflow-y-auto space-y-1 pr-0.5">
                         {roster.map((a) => (
                           <button
@@ -1346,12 +1346,12 @@ export default function UserBookings({
                             type="button"
                             onClick={() => toggleSharePaid(booking, a)}
                             disabled={togglingShareId === a.id}
-                            className={`w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 py-1.5 text-right transition-all cursor-pointer disabled:opacity-50 ${
+                            className={`w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 min-h-11 text-right transition-all cursor-pointer disabled:opacity-50 ${
                               a.sharePaid ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-[#D6D6C2] hover:bg-[#FAF8F5]'
                             }`}
                           >
-                            <span className={`text-[10.5px] font-bold truncate ${a.sharePaid ? 'text-emerald-900' : 'text-[#4A4A3A]'}`}>{a.name || 'بدون اسم'}</span>
-                            <span className={`shrink-0 flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full ${a.sharePaid ? 'bg-emerald-500 text-white' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>
+                            <span className={`text-[11px] font-bold truncate ${a.sharePaid ? 'text-emerald-900' : 'text-[#4A4A3A]'}`}>{a.name || 'بدون اسم'}</span>
+                            <span className={`shrink-0 flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-full ${a.sharePaid ? 'bg-emerald-500 text-white' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>
                               {a.sharePaid ? <><Check className="w-3 h-3" /> دفع</> : 'لسه'}
                             </span>
                           </button>
@@ -1365,33 +1365,33 @@ export default function UserBookings({
                     hierarchy: one prominent primary CTA + uniform secondary pills. */}
                 <div className="p-4 bg-[#FAF8F5] border-b border-[#E7E5DB] space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-bold text-[#867E65]">حالة السداد والمالية:</span>
+                    <span className="text-[11px] font-bold text-[#867E65]">حالة السداد والمالية:</span>
                     {(() => {
                       const payStatus = booking.paymentStatus || 'unpaid';
                       if (payStatus === 'pending_verification') {
                         return (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-amber-50 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-full shadow-sm">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-full shadow-sm">
                             <Clock className="w-3 h-3 text-amber-600 animate-pulse" />
                             <span>بانتظار مراجعة الإدارة والتحقق ⏳</span>
                           </span>
                         );
                       } else if (payStatus === 'paid_deposit') {
                         return (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-emerald-50 text-emerald-950 border border-emerald-200 px-2.5 py-1 rounded-full shadow-sm">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-extrabold bg-emerald-50 text-emerald-950 border border-emerald-200 px-2.5 py-1 rounded-full shadow-sm">
                             <CheckCircle2 className="w-3 h-3 text-emerald-700" />
                             <span>تم تأكيد دفع العربون ({arabicPercent(Math.round(settings.depositRate * 100))}) 🎉</span>
                           </span>
                         );
                       } else if (payStatus === 'paid_full') {
                         return (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-300 px-2.5 py-1 rounded-full shadow-sm">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-300 px-2.5 py-1 rounded-full shadow-sm">
                             <ShieldCheck className="w-3 h-3 text-emerald-700" />
                             <span>مدفوع بالكامل كلياً ✅</span>
                           </span>
                         );
                       } else {
                         return (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-rose-50 text-rose-950 border border-rose-200 px-2.5 py-1 rounded-full shadow-sm">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-rose-50 text-rose-950 border border-rose-200 px-2.5 py-1 rounded-full shadow-sm">
                             <Coins className="w-3 h-3 text-rose-600" />
                             <span>بانتظار سداد العربون (لم يُدفع) 💸</span>
                           </span>
@@ -1404,13 +1404,13 @@ export default function UserBookings({
                   {booking.status === 'approved' && !roomsAssigned && (
                     <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-right">
                       <div className="text-[11px] font-black text-amber-900 flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> بانتظار تخصيص الغرف من صاحب البيت</div>
-                      <div className="text-[9.5px] text-amber-800 font-bold mt-1 leading-relaxed">أول ما صاحب البيت يبعت غرف مجموعتك، هتقدر تكتب أسماء المشاركين وتوزّعهم من هنا.</div>
+                      <div className="text-[11px] text-amber-800 font-bold mt-1 leading-relaxed">أول ما صاحب البيت يبعت غرف مجموعتك، هتقدر تكتب أسماء المشاركين وتوزّعهم من هنا.</div>
                     </div>
                   )}
                   {booking.status === 'approved' && roomsReady && (
                     <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-right space-y-1.5">
                       <div className="text-[11px] font-black text-emerald-900 flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> صاحب البيت خصّص لك {booking.assignedRoomIds?.length ?? 0} غرفة — ابدأ التوزيع 🎉</div>
-                      <div className="text-[9.5px] text-emerald-800 font-bold leading-relaxed">١) اضغط «توزيع الغرف» ٢) اكتب أسماء المشاركين ٣) وزّعهم على الغرف (تلقائي أو يدوي) ٤) اطبع الكشف.</div>
+                      <div className="text-[11px] text-emerald-800 font-bold leading-relaxed">١) اضغط «توزيع الغرف» ٢) اكتب أسماء المشاركين ٣) وزّعهم على الغرف (تلقائي أو يدوي) ٤) اطبع الكشف.</div>
                     </div>
                   )}
 
@@ -1440,7 +1440,7 @@ export default function UserBookings({
                     <button
                       id={`booking-chat-btn-${booking.id}`}
                       onClick={() => setChatOpenBookingId(chatOpenBookingId === booking.id ? null : booking.id)}
-                      className="w-full flex items-center justify-center gap-2 bg-[#0A2342] hover:bg-[#123E75] text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
+                      className="w-full flex items-center justify-center gap-2 bg-[#0A2342] hover:bg-[#123E75] text-white px-4 min-h-11 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
                     >
                       <MessageCircle className="w-4 h-4" />
                       <span>{chatOpenBookingId === booking.id ? 'إغلاق المحادثة' : 'راسل صاحب البيت'}</span>
@@ -1453,7 +1453,7 @@ export default function UserBookings({
                       <button
                         id={`booking-allocation-btn-${booking.id}`}
                         onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <Building className="w-3.5 h-3.5 text-[#867E65]" />
                         <span>توزيع الغرف</span>
@@ -1463,7 +1463,7 @@ export default function UserBookings({
                       <button
                         onClick={async () => { const ok = await onNotifyOwnerDistribution!(booking.id); if (ok) { setNotifiedOwner((p) => new Set(p).add(booking.id)); } }}
                         disabled={notifiedOwner.has(booking.id)}
-                        className="flex items-center gap-1.5 bg-[#464E3D] hover:bg-[#333A2C] disabled:opacity-60 text-white px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-[#464E3D] hover:bg-[#333A2C] disabled:opacity-60 text-white px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>{notifiedOwner.has(booking.id) ? 'تم إبلاغ صاحب البيت ✓' : 'أبلغ صاحب البيت إني خلّصت'}</span>
@@ -1483,7 +1483,7 @@ export default function UserBookings({
                             setCustomActivities(prev => ({ ...prev, [booking.id]: getThemeActivities('growth') }));
                           }
                         }}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <Calendar className="w-3.5 h-3.5 text-emerald-700" />
                         <span>برنامج الخلوة</span>
@@ -1492,7 +1492,7 @@ export default function UserBookings({
                     {(booking.status === 'approved' || booking.status === 'completed') && (
                       <button
                         onClick={() => downloadBookingIcs(booking, bookingHouse?.address)}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <CalendarPlus className="w-3.5 h-3.5 text-[#867E65]" />
                         <span>أضف لتقويمك</span>
@@ -1506,7 +1506,7 @@ export default function UserBookings({
                           const msg = `سلام ونعمة 🙏\nانضم لقائمة مشاركين خلوة «${booking.houseName}» (${arabicDateRange(booking.checkIn, booking.checkOut)}) واكتب اسمك من هنا:\n${link}`;
                           void shareToWhatsApp(msg);
                         }}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <UserPlus className="w-3.5 h-3.5 text-emerald-700" />
                         <span>ادعُ المشاركين</span>
@@ -1516,7 +1516,7 @@ export default function UserBookings({
                       <button
                         id={`booking-chat-btn-${booking.id}`}
                         onClick={() => setChatOpenBookingId(chatOpenBookingId === booking.id ? null : booking.id)}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <MessageCircle className="w-3.5 h-3.5 text-sky-700" />
                         <span>راسل صاحب البيت</span>
@@ -1525,7 +1525,7 @@ export default function UserBookings({
                     <button
                       id={`booking-receipt-btn-${booking.id}`}
                       onClick={() => setActiveReceipt(booking)}
-                      className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                     >
                       <FileText className="w-3.5 h-3.5 text-[#867E65]" />
                       <span>سند التأكيد</span>
@@ -1543,7 +1543,7 @@ export default function UserBookings({
                                 : `باقي ${daysLeft} يوم فقط على الوصول — وفقاً لسياسة الإلغاء لا يوجد استرداد للمبلغ المدفوع (${paid.toLocaleString('ar-EG')} ج.م).`;
                           if (confirm(`هل أنت متأكد من إلغاء هذا الحجز؟\n\n🛡️ سياسة الإلغاء: ${policyLine}`)) onCancelBooking?.(booking.id);
                         }}
-                        className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 px-3 py-1.5 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <XCircle className="w-3.5 h-3.5 text-red-600" />
                         <span>إلغاء الحجز</span>
@@ -1621,7 +1621,7 @@ export default function UserBookings({
                 {stage === 'awaiting_deposit' && isPaying !== booking.id && !awaitingVerification && !platformPayeeMissing && (
                   <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm border-t border-[#EDE7DA] px-4 py-3 flex items-center gap-3">
                     <div className="shrink-0 leading-tight">
-                      <span className="block text-[9px] font-bold text-[#8A8A70]">المتبقي للدفع</span>
+                      <span className="block text-[11px] font-bold text-[#8A8A70]">المتبقي للدفع</span>
                       <span className="block text-[15px] font-black text-[#0A2342]">
                         {Math.round(booking.totalPrice * settings.depositRate).toLocaleString('ar-EG')} ج.م
                       </span>
@@ -1629,7 +1629,7 @@ export default function UserBookings({
                     <button
                       type="button"
                       onClick={() => { setIsPaying(booking.id); setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString()); }}
-                      className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12.5px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
+                      className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
                     >
                       <Wallet className="w-4 h-4" />
                       ادفع العربون الآن
@@ -1680,23 +1680,23 @@ export default function UserBookings({
             
             <div id="receipt-pdf-container" className="bg-white relative">
               {/* Stamp styling */}
-              <div className="absolute top-4 left-4 border-4 border-[#5A5A40]/30 text-[#5A5A40]/40 rounded-full w-14 h-14 flex items-center justify-center rotate-12 font-black text-[9px] uppercase pointer-events-none">
+              <div className="absolute top-4 left-4 border-4 border-[#5A5A40]/30 text-[#5A5A40]/40 rounded-full w-14 h-14 flex items-center justify-center rotate-12 font-black text-[11px] uppercase pointer-events-none">
                 CONFIRMED
               </div>
 
               {/* Receipt Header */}
               <div className="bg-gradient-to-r from-[#4A4A3A] to-[#5A5A40] text-white p-5 text-center space-y-1">
                 <h3 className="text-sm font-extrabold tracking-wide">سند تأكيد حجز رسمي كنسي</h3>
-                <p className="text-[10px] text-white/80">تطبيق حجز بيوت المؤتمرات والفنادق المسيحية بمصر</p>
+                <p className="text-[11px] text-white/80">تطبيق حجز بيوت المؤتمرات والفنادق المسيحية بمصر</p>
               </div>
 
               {/* Receipt Content */}
               <div className="p-5 space-y-4">
                 <div className="text-center pb-2 border-b border-dashed border-[#D6D6C2]">
-                  <span className="text-[10px] text-[#8A8A70]">رقم الحجز: {activeReceipt.id.toUpperCase()}</span>
+                  <span className="text-[11px] text-[#8A8A70]">رقم الحجز: {activeReceipt.id.toUpperCase()}</span>
                   <div className="text-xs font-extrabold text-[#4A4A3A] mt-0.5">سند تأكيد {activeReceipt.userName}</div>
                   {activeReceipt.organizationName && (
-                    <div className="text-[10px] text-[#8A8A70] mt-0.5">{activeReceipt.organizationName}</div>
+                    <div className="text-[11px] text-[#8A8A70] mt-0.5">{activeReceipt.organizationName}</div>
                   )}
                 </div>
 
@@ -1738,7 +1738,7 @@ export default function UserBookings({
                   </div>
                 </div>
 
-                <div className="bg-[#EBEBE0]/30 rounded-2xl p-3 border border-[#D6D6C2] text-[10px] text-[#8A8A70] leading-relaxed text-center space-y-1">
+                <div className="bg-[#EBEBE0]/30 rounded-2xl p-3 border border-[#D6D6C2] text-[11px] text-[#8A8A70] leading-relaxed text-center space-y-1">
                   <p>يرجى تقديم هذا السند المطبوع أو عبر الموبايل لمسؤول الاستقبال عند الوصول للبيت لتسهيل عملية التسكين واستلام الغرف.</p>
                   <p className="font-semibold text-[#4A4A3A]">نتمنى لكم فترة خلوة مباركة ومثمرة روحيًا!</p>
                 </div>
@@ -1846,7 +1846,7 @@ export default function UserBookings({
                   <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
                   <div className="text-right">
                     <h3 className="text-xs font-black">مخطط برنامج الخلوة والتحضيرات 📅</h3>
-                    <p className="text-[9px] text-amber-100 font-medium">بيت {activePlannerBooking.houseName} • {activePlannerBooking.guestsCount} فرد</p>
+                    <p className="text-[11px] text-amber-100 font-medium">بيت {activePlannerBooking.houseName} • {activePlannerBooking.guestsCount} فرد</p>
                   </div>
                 </div>
                 <button aria-label="إغلاق مخطط الرحلة"
@@ -1861,7 +1861,7 @@ export default function UserBookings({
               <div className="bg-[#EBEBE0]/50 border-b border-[#D6D6C2] p-1.5 flex gap-1">
                 <button
                   onClick={() => setPlannerTab('schedule')}
-                  className={`flex-1 py-2 text-center text-[10.5px] font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2 text-center text-[11px] font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     plannerTab === 'schedule'
                       ? 'bg-white text-[#4A4A3A] shadow-xs border border-[#D6D6C2]'
                       : 'text-[#8A8A70] hover:text-[#4A4A3A]'
@@ -1872,7 +1872,7 @@ export default function UserBookings({
                 </button>
                 <button
                   onClick={() => setPlannerTab('packing')}
-                  className={`flex-1 py-2 text-center text-[10.5px] font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`flex-1 py-2 text-center text-[11px] font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     plannerTab === 'packing'
                       ? 'bg-white text-[#4A4A3A] shadow-xs border border-[#D6D6C2]'
                       : 'text-[#8A8A70] hover:text-[#4A4A3A]'
@@ -1890,13 +1890,13 @@ export default function UserBookings({
                 {plannerTab === 'schedule' && (
                   <div className="space-y-4">
                     {/* Theme selector info */}
-                    <div className="bg-amber-50/70 border border-amber-200/60 p-3 rounded-2xl text-[10px] leading-relaxed">
+                    <div className="bg-amber-50/70 border border-amber-200/60 p-3 rounded-2xl text-[11px] leading-relaxed">
                       <span className="font-extrabold text-[#5A5A40] block mb-1">💡 اختر الطابع الروحي المناسب لخدمتكم لتوليد برنامج تلقائي:</span>
                       
                       <div className="grid grid-cols-3 gap-1.5 mt-2">
                         <button
                           onClick={() => changeThemeTemplate(bookingId, 'growth')}
-                          className={`py-1.5 px-2 rounded-lg text-[9px] font-bold text-center transition-all cursor-pointer border ${
+                          className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all cursor-pointer border ${
                             plannerTheme === 'growth'
                               ? 'bg-[#5A5A40] border-[#5A5A40] text-white shadow-xs'
                               : 'bg-white border-[#D6D6C2] text-[#8A8A70] hover:text-[#4A4A3A]'
@@ -1906,7 +1906,7 @@ export default function UserBookings({
                         </button>
                         <button
                           onClick={() => changeThemeTemplate(bookingId, 'fellowship')}
-                          className={`py-1.5 px-2 rounded-lg text-[9px] font-bold text-center transition-all cursor-pointer border ${
+                          className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all cursor-pointer border ${
                             plannerTheme === 'fellowship'
                               ? 'bg-[#5A5A40] border-[#5A5A40] text-white shadow-xs'
                               : 'bg-white border-[#D6D6C2] text-[#8A8A70] hover:text-[#4A4A3A]'
@@ -1916,7 +1916,7 @@ export default function UserBookings({
                         </button>
                         <button
                           onClick={() => changeThemeTemplate(bookingId, 'saints')}
-                          className={`py-1.5 px-2 rounded-lg text-[9px] font-bold text-center transition-all cursor-pointer border ${
+                          className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all cursor-pointer border ${
                             plannerTheme === 'saints'
                               ? 'bg-[#5A5A40] border-[#5A5A40] text-white shadow-xs'
                               : 'bg-white border-[#D6D6C2] text-[#8A8A70] hover:text-[#4A4A3A]'
@@ -1928,11 +1928,11 @@ export default function UserBookings({
                     </div>
 
                     {/* Meal Fasting Suggestion Card */}
-                    <div className="bg-emerald-50/60 border border-emerald-200/50 p-2.5 rounded-2xl flex items-center justify-between text-[9px]">
+                    <div className="bg-emerald-50/60 border border-emerald-200/50 p-2.5 rounded-2xl flex items-center justify-between text-[11px]">
                       <div className="flex items-center gap-1.5 text-[#3D5E4E]">
                         <BookOpen className="w-4 h-4 shrink-0 text-emerald-700" />
                         <div>
-                          <span className="font-extrabold block text-[10px]">قائمة الطعام والوجبات المقترحة للمجموعة:</span>
+                          <span className="font-extrabold block text-[11px]">قائمة الطعام والوجبات المقترحة للمجموعة:</span>
                           <span className="font-medium text-[#5A7E6E]">بناءً على أيام الأسبوع، نقترح تجهيز وجبات كنسية خفيفة وسهلة التحضير.</span>
                         </div>
                       </div>
@@ -1953,7 +1953,7 @@ export default function UserBookings({
                               
                               <button
                                 onClick={() => addActivity(bookingId, dayNum)}
-                                className="text-[#5A5A40] hover:text-emerald-700 text-[9px] font-black hover:underline flex items-center gap-0.5 cursor-pointer"
+                                className="text-[#5A5A40] hover:text-emerald-700 text-[11px] font-black hover:underline flex items-center gap-0.5 cursor-pointer"
                               >
                                 <Plus className="w-3 h-3" />
                                 <span>إضافة فقرة للبرنامج</span>
@@ -1962,7 +1962,7 @@ export default function UserBookings({
 
                             {/* Activities Rows */}
                             {dayActs.length === 0 ? (
-                              <p className="text-[9.5px] text-[#8A8A70] text-center py-2 font-bold">لا توجد فقرات مسجلة لبرنامج هذا اليوم حالياً.</p>
+                              <p className="text-[11px] text-[#8A8A70] text-center py-2 font-bold">لا توجد فقرات مسجلة لبرنامج هذا اليوم حالياً.</p>
                             ) : (
                               <div className="space-y-1.5">
                                 {dayActs.map((act) => (
@@ -1972,7 +1972,7 @@ export default function UserBookings({
                                       type="text"
                                       value={act.time}
                                       onChange={(e) => updateActivity(bookingId, act.id, 'time', e.target.value)}
-                                      className="w-16 bg-white border border-[#D6D6C2] rounded-lg px-1.5 py-1 text-[9px] text-center font-bold text-[#4A4A3A] focus:ring-1 focus:ring-[#5A5A40] focus:outline-none"
+                                      className="w-16 bg-white border border-[#D6D6C2] rounded-lg px-1.5 py-1 text-[11px] text-center font-bold text-[#4A4A3A] focus:ring-1 focus:ring-[#5A5A40] focus:outline-none"
                                       title="وقت الفقرة"
                                     />
                                     
@@ -1981,7 +1981,7 @@ export default function UserBookings({
                                       type="text"
                                       value={act.activity}
                                       onChange={(e) => updateActivity(bookingId, act.id, 'activity', e.target.value)}
-                                      className="flex-1 bg-white border border-[#D6D6C2] rounded-lg px-2 py-1 text-[9.5px] font-semibold text-[#4A4A3A] focus:ring-1 focus:ring-[#5A5A40] focus:outline-none"
+                                      className="flex-1 bg-white border border-[#D6D6C2] rounded-lg px-2 py-1 text-[11px] font-semibold text-[#4A4A3A] focus:ring-1 focus:ring-[#5A5A40] focus:outline-none"
                                       title="تفاصيل ومسمى النشاط"
                                     />
 
@@ -2009,7 +2009,7 @@ export default function UserBookings({
                   <div className="space-y-4">
                     {/* Progress indicator */}
                     <div className="bg-white rounded-2xl border border-[#D6D6C2] p-3 shadow-xs space-y-1.5">
-                      <div className="flex justify-between text-[10px] font-black">
+                      <div className="flex justify-between text-[11px] font-black">
                         <span>معدل جاهزية تحضير الرحلة كنسيًا وشخصيًا:</span>
                         <span className="text-amber-700">{progressPercentage}% ({totalCheckedCount} من أصل {totalItemsCount})</span>
                       </div>
@@ -2019,12 +2019,12 @@ export default function UserBookings({
                           style={{ width: `${progressPercentage}%` }}
                         />
                       </div>
-                      <p className="text-[8.5px] text-[#8A8A70] leading-relaxed">تجهيز الأغراض يضمن عدم نسيان الأساسيات والاحتياجات الطقسية للخدام والمخدومين.</p>
+                      <p className="text-[11px] text-[#8A8A70] leading-relaxed">تجهيز الأغراض يضمن عدم نسيان الأساسيات والاحتياجات الطقسية للخدام والمخدومين.</p>
                     </div>
 
                     {/* Group Items Section (للخدام) */}
                     <div className="space-y-2">
-                      <h4 className="text-[10px] font-black text-[#5A5A40] flex items-center gap-1 pl-2">
+                      <h4 className="text-[11px] font-black text-[#5A5A40] flex items-center gap-1 pl-2">
                         <Users className="w-3.5 h-3.5 text-amber-600" />
                         <span>الأغراض وتجهيزات الخدمة المشتركة (للخدام):</span>
                       </h4>
@@ -2036,14 +2036,14 @@ export default function UserBookings({
                           value={newGroupText}
                           onChange={(e) => setNewGroupText(e.target.value)}
                           placeholder="إضافة غرض خدمة مشترك (مثل: قربان، هدايا...)"
-                          className="flex-1 bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 text-[9.5px] font-bold focus:ring-1 focus:ring-[#5A5A40] focus:outline-none"
+                          className="flex-1 bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 text-[11px] font-bold focus:ring-1 focus:ring-[#5A5A40] focus:outline-none"
                         />
                         <button
                           onClick={() => {
                             addChecklistItem(bookingId, newGroupText, 'group');
                             setNewGroupText('');
                           }}
-                          className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[9.5px] font-black px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                          className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-black px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
                         >
                           إضافة
                         </button>
@@ -2052,7 +2052,7 @@ export default function UserBookings({
                       {/* Group list */}
                       <div className="bg-white rounded-2xl border border-[#D6D6C2] overflow-hidden shadow-xs divide-y divide-[#EBEBE0]/60">
                         {groupItems.length === 0 ? (
-                          <p className="p-3 text-[9.5px] text-[#8A8A70] text-center font-bold">لا توجد أغراض مسجلة هنا.</p>
+                          <p className="p-3 text-[11px] text-[#8A8A70] text-center font-bold">لا توجد أغراض مسجلة هنا.</p>
                         ) : (
                           groupItems.map(item => (
                             <div key={item.id} className="p-2.5 flex items-center justify-between hover:bg-[#FAF8F5] transition-colors gap-2">
@@ -2067,7 +2067,7 @@ export default function UserBookings({
                                 }`}>
                                   {item.checked && <Check className="w-3 h-3 stroke-[3]" />}
                                 </span>
-                                <span className={`text-[9.5px] font-bold leading-relaxed ${item.checked ? 'line-through text-[#8A8A70]' : 'text-[#4A4A3A]'}`}>
+                                <span className={`text-[11px] font-bold leading-relaxed ${item.checked ? 'line-through text-[#8A8A70]' : 'text-[#4A4A3A]'}`}>
                                   {item.text}
                                 </span>
                               </button>
@@ -2087,7 +2087,7 @@ export default function UserBookings({
 
                     {/* Personal Items Section (للأفراد) */}
                     <div className="space-y-2">
-                      <h4 className="text-[10px] font-black text-[#5A5A40] flex items-center gap-1 pl-2">
+                      <h4 className="text-[11px] font-black text-[#5A5A40] flex items-center gap-1 pl-2">
                         <BookOpen className="w-3.5 h-3.5 text-[#5A5A40]" />
                         <span>الأغراض الشخصية الفردية (لكل مخدوم وخادم):</span>
                       </h4>
@@ -2099,14 +2099,14 @@ export default function UserBookings({
                           value={newPersonalText}
                           onChange={(e) => setNewPersonalText(e.target.value)}
                           placeholder="إضافة غرض شخصي فردي (مثل: كاب للشمس، أدوية...)"
-                          className="flex-1 bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 text-[9.5px] font-bold focus:ring-1 focus:ring-[#5A5A40] focus:outline-none"
+                          className="flex-1 bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 text-[11px] font-bold focus:ring-1 focus:ring-[#5A5A40] focus:outline-none"
                         />
                         <button
                           onClick={() => {
                             addChecklistItem(bookingId, newPersonalText, 'personal');
                             setNewPersonalText('');
                           }}
-                          className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[9.5px] font-black px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                          className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-black px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
                         >
                           إضافة
                         </button>
@@ -2115,7 +2115,7 @@ export default function UserBookings({
                       {/* Personal list */}
                       <div className="bg-white rounded-2xl border border-[#D6D6C2] overflow-hidden shadow-xs divide-y divide-[#EBEBE0]/60">
                         {personalItems.length === 0 ? (
-                          <p className="p-3 text-[9.5px] text-[#8A8A70] text-center font-bold">لا توجد أغراض فردية مسجلة هنا.</p>
+                          <p className="p-3 text-[11px] text-[#8A8A70] text-center font-bold">لا توجد أغراض فردية مسجلة هنا.</p>
                         ) : (
                           personalItems.map(item => (
                             <div key={item.id} className="p-2.5 flex items-center justify-between hover:bg-[#FAF8F5] transition-colors gap-2">
@@ -2130,7 +2130,7 @@ export default function UserBookings({
                                 }`}>
                                   {item.checked && <Check className="w-3 h-3 stroke-[3]" />}
                                 </span>
-                                <span className={`text-[9.5px] font-bold leading-relaxed ${item.checked ? 'line-through text-[#8A8A70]' : 'text-[#4A4A3A]'}`}>
+                                <span className={`text-[11px] font-bold leading-relaxed ${item.checked ? 'line-through text-[#8A8A70]' : 'text-[#4A4A3A]'}`}>
                                   {item.text}
                                 </span>
                               </button>
@@ -2157,7 +2157,7 @@ export default function UserBookings({
                   onClick={() => {
                     window.print();
                   }}
-                  className="bg-white border border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#FAF8F5] text-[10.5px] font-black px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                  className="bg-white border border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#FAF8F5] text-[11px] font-black px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-xs"
                 >
                   <Printer className="w-4 h-4 text-slate-700" />
                   <span>طباعة البرنامج والتحضيرات 🖨️</span>
@@ -2165,7 +2165,7 @@ export default function UserBookings({
 
                 <button
                   onClick={() => setActivePlannerBooking(null)}
-                  className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[10.5px] font-black px-5 py-2 rounded-xl transition-all cursor-pointer"
+                  className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-black px-5 py-2 rounded-xl transition-all cursor-pointer"
                 >
                   إغلاق التخطيط
                 </button>

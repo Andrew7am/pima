@@ -7,9 +7,10 @@ import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import UserDashboard from './components/UserDashboard';
 import HouseDetail from './components/HouseDetail';
+import UserBookings from './components/UserBookings';
 import { INITIAL_HOUSES } from './mockData';
 import { DEFAULT_PLATFORM_SETTINGS } from './types';
-import type { Booking, Review, Room, User } from './types';
+import type { Attendee, Booking, Review, Room, User } from './types';
 import './index.css';
 
 const day = (from: number) => {
@@ -49,11 +50,65 @@ const bookings: Booking[] = [
     isLargeConferenceQuote: false, createdAt: '2026-08-01T00:00:00Z' },
 ] as unknown as Booking[];
 
+// The servant's own bookings, in the three states that change what the screen
+// offers: awaiting a reply, approved-and-unpaid (the transfer card), and paid
+// with a group to house (attendees + room distribution).
+const myBookings: Booking[] = [
+  { id: 'mb1', houseId: house.id, houseName: house.name, userId: servant.id,
+    userName: servant.name, userPhone: servant.phone, userEmail: servant.email,
+    userRole: 'servant', organizationName: 'كنيسة مارجرجس - شبرا',
+    checkIn: day(30), checkOut: day(33), guestsCount: 55, totalPrice: 16500,
+    depositPaid: false, depositAmount: 2475, status: 'pending',
+    isLargeConferenceQuote: false, paymentStatus: 'unpaid', createdAt: '2026-08-05T09:00:00Z' },
+  { id: 'mb2', houseId: house.id, houseName: house.name, userId: servant.id,
+    userName: servant.name, userPhone: servant.phone, userEmail: servant.email,
+    userRole: 'servant', organizationName: 'كنيسة مارجرجس - شبرا',
+    checkIn: day(12), checkOut: day(15), guestsCount: 40, totalPrice: 12000,
+    depositPaid: false, depositAmount: 1800, status: 'approved',
+    isLargeConferenceQuote: false, paymentStatus: 'unpaid', createdAt: '2026-07-28T09:00:00Z' },
+  { id: 'mb3', houseId: house.id, houseName: house.name, userId: servant.id,
+    userName: servant.name, userPhone: servant.phone, userEmail: servant.email,
+    userRole: 'servant', organizationName: 'كنيسة مارجرجس - شبرا',
+    checkIn: day(4), checkOut: day(7), guestsCount: 24, totalPrice: 7200,
+    depositPaid: true, depositAmount: 1080, status: 'approved',
+    isLargeConferenceQuote: false, paymentStatus: 'paid_deposit', createdAt: '2026-07-10T09:00:00Z' },
+] as unknown as Booking[];
+
+// A real group: some with their share paid, some not — that split is what the
+// per-person money column exists to show.
+const attendees: Attendee[] = Array.from({ length: 24 }, (_, i) => ({
+  id: `at${i}`, bookingId: 'mb3', name: `مشارك رقم ${i + 1}`,
+  gender: i % 2 === 0 ? 'male' : 'female', age: 18 + (i % 12),
+  sharePaid: i % 3 !== 0,
+})) as unknown as Attendee[];
+
 const noop = () => undefined;
 
 function Preview() {
   const screen = new URLSearchParams(location.search).get('screen') ?? 'cards';
   const [favorites, setFavorites] = useState<string[]>([]);
+
+  if (screen === 'bookings') {
+    return (
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <UserBookings
+          bookings={myBookings}
+          houses={houses}
+          currentUser={servant}
+          attendees={attendees}
+          allocations={[]}
+          rooms={rooms}
+          payments={[]}
+          settings={DEFAULT_PLATFORM_SETTINGS}
+          reviews={reviews}
+          onCancelBooking={noop}
+          onUpdateAttendees={noop}
+          onUpdateAllocations={noop}
+          onSubmitPayment={noop}
+        />
+      </main>
+    );
+  }
 
   if (screen === 'detail') {
     return (
