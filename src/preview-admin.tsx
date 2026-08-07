@@ -17,6 +17,22 @@ const noop = () => {};
 // The finance page is entirely gated on Pima having somewhere to receive
 // money — with no accounts configured it correctly reports nothing. Give the
 // preview one so the figures are exercised rather than all zero.
+// The audit screen is designed to be empty, and the mock data is clean — so
+// the preview showed the empty state and nothing else, and the row layout went
+// unseen. One deliberately broken booking: marked as having paid its deposit
+// with no payment behind it, which is the failure paymentLedger records as
+// having actually cost money.
+const PREVIEW_BOOKINGS = [
+  ...INITIAL_BOOKINGS,
+  {
+    ...INITIAL_BOOKINGS[0],
+    id: 'booking_preview_broken',
+    userName: 'حالة للمعاينة',
+    depositPaid: true,
+    status: 'approved',
+  },
+];
+
 const settings: PlatformSettings = {
   ...DEFAULT_PLATFORM_SETTINGS,
   paymentMethods: [{ id: 'pm_1', type: 'instapay', value: 'pima@instapay', label: 'إنستاباي بيما' }],
@@ -29,7 +45,7 @@ function Preview() {
         currentUser={admin}
         houses={INITIAL_HOUSES}
         users={INITIAL_USERS}
-        bookings={INITIAL_BOOKINGS}
+        bookings={PREVIEW_BOOKINGS}
         reviews={INITIAL_REVIEWS}
         payments={INITIAL_PAYMENTS}
         settings={settings}

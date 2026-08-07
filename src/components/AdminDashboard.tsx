@@ -3,6 +3,8 @@ import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange
 import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
 import { summarizeFinances } from '../lib/adminFinance';
 import { unclaimedOwedBookings } from '../lib/paymentLedger';
+import { findFinanceExceptions } from '../lib/adminExceptions';
+import { pendingRenewals, emptyBedNightsAhead } from '../lib/seasonPlanning';
 import { loadHouseViewCounts } from '../lib/db';
 // Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
 // to the singular. The counted nouns live in lib/arabic alongside the rule
@@ -164,7 +166,7 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
   // Tabs within Admin — "growth" is default: the admin's morning check
   // (what's happening + what needs attention). Older tabs still exist.
-  const [activeTab, setActiveTab] = useState<'growth' | 'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'finance' | 'audience' | 'payments' | 'payouts' | 'bookings' | 'settings' | 'audit' | 'messages'>('growth');
+  const [activeTab, setActiveTab] = useState<'growth' | 'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'finance' | 'audience' | 'season' | 'exceptions' | 'payments' | 'payouts' | 'bookings' | 'settings' | 'audit' | 'messages'>('growth');
   // Draft copy of settings for the settings form
   const [settingsDraft, setSettingsDraft] = useState(settings);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -518,6 +520,34 @@ export default function AdminDashboard({
   // instead of out of the booking value, counted payments on cancelled
   // bookings as owner dues, and never subtracted a transfer once it had been
   // made. See src/lib/adminFinance.ts for what each figure means and why.
+  // The books' own invariants. Dismissals live in localStorage rather than a
+  // table: some rows stay true for weeks by design — a guest who genuinely
+  // overpaid is owed a refund and the row is correct until it is paid — and a
+  // screen that can never be emptied is a screen nobody opens twice.
+  const financeExceptions = React.useMemo(
+    () => findFinanceExceptions({ bookings, payments, payouts, houses, commissionRate: settings.commissionRate }),
+    [bookings, payments, payouts, houses, settings.commissionRate],
+  );
+  const [dismissedExceptions, setDismissedExceptions] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('pima_admin_dismissed_exceptions') || '[]')); }
+    catch { return new Set(); }
+  });
+  const dismissException = (id: string) => {
+    setDismissedExceptions((prev) => {
+      const next = new Set(prev); next.add(id);
+      try { localStorage.setItem('pima_admin_dismissed_exceptions', JSON.stringify([...next])); } catch { /* private mode */ }
+      return next;
+    });
+  };
+  const openExceptions = financeExceptions.filter((e) => !dismissedExceptions.has(e.id));
+
+  // The season, which for Pima is the business.
+  const renewals = React.useMemo(() => pendingRenewals({ bookings }), [bookings]);
+  const occupancy = React.useMemo(
+    () => emptyBedNightsAhead({ houses, bookings, weeks: 8 }),
+    [houses, bookings],
+  );
+
   const fin = summarizeFinances({
     bookings,
     payments,
@@ -616,6 +646,7 @@ export default function AdminDashboard({
       { key: 'bookings', label: 'الحجوزات', badge: pendingOrUnpaidBookingsCount },
       { key: 'payments', label: 'الدفعيات', badge: pendingPaymentsCount },
       { key: 'payouts', label: 'طلبات التحويل', badge: pendingPayoutsCount },
+      { key: 'exceptions', label: 'التدقيق', badge: financeExceptions.filter((e) => !dismissedExceptions.has(e.id)).length, pulse: true },
     ]},
     { key: 'content', label: 'المحتوى', icon: Building, tabs: [
       { key: 'houses', label: 'البيوت' },
@@ -634,6 +665,7 @@ export default function AdminDashboard({
       // reading identically. The page heading still says «إحصائيات
       // المستخدمين», so the full name is where it explains itself.
       { key: 'audience', label: 'الجمهور' },
+      { key: 'season', label: 'الموسم' },
     ]},
     { key: 'people', label: 'المستخدمين', icon: Users, tabs: [
       { key: 'users', label: 'المستخدمين' },
@@ -2569,6 +2601,220 @@ export default function AdminDashboard({
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── التدقيق ────────────────────────────────────────────────────────
+          Empty when the books agree. That is the whole design: the weekly
+          question is not «how much did I make» — الماليات answers that — it is
+          «is anything wrong, and what». Until now the only way to ask was to
+          scroll the payments list newest-first and hope something looked odd.
+
+          Every rule is an invariant of Pima's own model. A generic
+          reconciliation report would flag every booking as underpaid, because
+          ~85% of every booking value is SUPPOSED to be missing from Pima's
+          accounts — it is cash the guest hands the owner at the door. */}
+      {activeTab === 'exceptions' && (
+        <div className="space-y-4">
+
+          <div className="px-1">
+            <h3 className="text-[16px] font-black text-[#4A4A3A]">التدقيق</h3>
+            <p className="text-[12px] text-[#8A8A70] mt-0.5">الحاجات اللي المفروض ما تحصلش في فلوس بيما. الصفحة فاضية يبقى كله مظبوط.</p>
+          </div>
+
+          {openExceptions.length === 0 ? (
+            <div className="bg-white rounded-[20px] p-8 border border-[#EBEBE0] text-center space-y-2">
+              <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
+              <p className="text-[12px] font-black text-[#4A4A3A]">كل حاجة مظبوطة</p>
+              <p className="text-[11px] text-[#8A8A70]">
+                اتفحص {arabicPlural(bookings.length, BOOKING_FORMS)} ومفيش ولا حاجة خارجة عن المتوقع.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <AlertTriangle className="w-4 h-4 text-rose-600" />
+                  <div className="text-[22px] font-black text-rose-700 leading-tight mt-1.5 tabular-nums">
+                    {arabicNumber(openExceptions.filter((e) => e.severity === 'high').length)}
+                  </div>
+                  <div className="text-[11px] font-bold text-[#8A8A70]">محتاج تصرّف دلوقتي</div>
+                </div>
+                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <Clock className="w-4 h-4 text-amber-600" />
+                  <div className="text-[22px] font-black text-amber-700 leading-tight mt-1.5 tabular-nums">
+                    {arabicNumber(openExceptions.filter((e) => e.severity === 'medium').length)}
+                  </div>
+                  <div className="text-[11px] font-bold text-[#8A8A70]">محتاج مراجعة</div>
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                {openExceptions.map((e) => (
+                  <div
+                    key={e.id}
+                    className={`bg-white rounded-[20px] p-4 border space-y-2 ${
+                      e.severity === 'high' ? 'border-rose-200' : 'border-[#EBEBE0]'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[12px] font-black text-[#4A4A3A] truncate">{e.who}</div>
+                        <div className="text-[11px] text-[#8A8A70] truncate">{e.houseName}</div>
+                      </div>
+                      <span className={`text-[12px] font-black shrink-0 tabular-nums ${
+                        e.severity === 'high' ? 'text-rose-700' : 'text-amber-700'
+                      }`}>
+                        {arabicNumber(e.amount)} ج.م
+                      </span>
+                    </div>
+
+                    <p className="text-[12px] text-[#4A4A3A] leading-relaxed">{e.detail}</p>
+
+                    <div className="flex items-center justify-between gap-2 pt-0.5">
+                      <span className="text-[11px] font-bold text-[#5A5A40]">← {e.action}</span>
+                      <div className="flex gap-1.5 shrink-0">
+                        {e.bookingId && (
+                          <button
+                            type="button"
+                            onClick={() => { setBookingSearch(e.bookingId!); setBookingFilter('all'); goTo('money', 'bookings'); }}
+                            className="text-[11px] font-bold bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] min-h-11 px-3 rounded-xl cursor-pointer"
+                          >
+                            افتح الحجز
+                          </button>
+                        )}
+                        {/* Some rows stay true for weeks by design — an
+                            overpaid guest is owed a refund and the row is
+                            correct until it is paid. Without this the screen
+                            could never return to empty, and an alert that is
+                            always on is an alert nobody reads. */}
+                        <button
+                          type="button"
+                          onClick={() => dismissException(e.id)}
+                          className="text-[11px] font-bold bg-white border border-[#D6D6C2] hover:bg-[#FAF8F5] text-[#8A8A70] min-h-11 px-3 rounded-xl cursor-pointer"
+                        >
+                          شفته
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {dismissedExceptions.size > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setDismissedExceptions(new Set());
+                try { localStorage.removeItem('pima_admin_dismissed_exceptions'); } catch { /* private mode */ }
+              }}
+              className="w-full text-[11px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] min-h-11 cursor-pointer"
+            >
+              رجّع {arabicNumber(dismissedExceptions.size)} حاجة كنت اتجاهلتها
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── الموسم ─────────────────────────────────────────────────────────
+          Pima's whole year is a few weeks of summer, and nothing in the panel
+          acted on that. Two things a seasonal business should be doing in
+          February: seeing which weeks ahead are still empty, and calling the
+          churches that came last year and have not come back. */}
+      {activeTab === 'season' && (
+        <div className="space-y-4">
+
+          <div className="px-1">
+            <h3 className="text-[16px] font-black text-[#4A4A3A]">الموسم</h3>
+            <p className="text-[12px] text-[#8A8A70] mt-0.5">الأسابيع اللي لسه فاضية قدّامنا، والكنايس اللي جت السنة اللي فاتت ولسه مرجعتش.</p>
+          </div>
+
+          {/* A bed empty on a Friday in August is not deferred to September —
+              it is gone. Pricing it is what turns occupancy into a decision. */}
+          <div className="bg-[#0A2342] text-white rounded-[20px] p-4 space-y-1">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-5 h-5 text-[#C5A059]" />
+              <span className="text-[11px] font-black text-[#C5A059]">أسرّة فاضية في الـ٨ أسابيع الجاية</span>
+            </div>
+            <div className="text-[22px] font-black tabular-nums">
+              {arabicNumber(occupancy.totalEmptyValue)}<span className="text-[12px] font-bold text-white/70"> ج.م</span>
+            </div>
+            <div className="text-[11px] text-white/60">
+              {arabicNumber(occupancy.totalEmptyBeds)} ليلة سرير مش مباعة — دي فلوس بتتفقد كل أسبوع بيعدّي.
+            </div>
+          </div>
+
+          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
+            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">الإشغال أسبوع بأسبوع</h3>
+            {occupancy.weeks.map((w) => (
+              <div key={w.startISO} className="space-y-1">
+                <div className="flex items-center justify-between gap-2 text-[11px]">
+                  <span className="font-bold text-[#4A4A3A]">{arabicDateRange(w.startISO, w.endISO)}</span>
+                  <span className="text-[#8A8A70] tabular-nums shrink-0">
+                    {arabicNumber(w.occupancyPct)}٪ · {arabicNumber(w.emptyValue)} ج.م فاضي
+                  </span>
+                </div>
+                <div className="h-2 bg-[#EBEBE0] rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${w.occupancyPct >= 70 ? 'bg-emerald-600' : w.occupancyPct >= 35 ? 'bg-[#C5A059]' : 'bg-rose-400'}`}
+                    style={{ width: `${Math.min(100, w.occupancyPct)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+            {occupancy.weeks.every((w) => w.capacity === 0) && (
+              <p className="text-[11px] text-[#8A8A70]">مفيش بيوت معتمدة لسه، فمفيش سعة تتحسب.</p>
+            )}
+          </div>
+
+          {/* The church is the customer, not whichever servant held the phone
+              that year — so these are grouped by organisation. */}
+          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2">
+            <div className="flex items-center justify-between gap-2 border-b border-[#EBEBE0] pb-2">
+              <h3 className="text-[12px] font-black text-[#0A2342]">جم السنة اللي فاتت ولسه مرجعوش</h3>
+              <span className="text-[11px] font-bold text-[#8A8A70] shrink-0">{arabicNumber(renewals.length)}</span>
+            </div>
+            {renewals.length === 0 ? (
+              <p className="text-[12px] text-[#8A8A70] text-center py-3">مفيش حد في نفس التوقيت من السنة اللي فاتت.</p>
+            ) : (
+              renewals.slice(0, 20).map((r) => {
+                const msg = `سلام ونعمة${r.name ? ` يا ${r.name}` : ''}، معاكم بيما. زي ما حجزتوا معانا في "${r.lastHouseName}" السنة اللي فاتت، حابين نطمّنكم إن الحجز للموسم الجديد فتح — والأماكن بتخلص بدري. تحبوا نحجزلكم؟`;
+                return (
+                  <div key={r.key} className="py-2.5 border-b border-[#EBEBE0]/60 last:border-0 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[12px] font-black text-[#4A4A3A] truncate">{r.name}</div>
+                        <div className="text-[11px] text-[#8A8A70] truncate">
+                          {r.lastHouseName} · {arabicDate(r.lastCheckIn)}
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-black text-[#0A2342] shrink-0 tabular-nums">
+                        {arabicNumber(r.lastTotal)} ج.م
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] text-[#8A8A70]">{arabicPlural(r.lastGuests, GUEST_FORMS)}</span>
+                      {r.phone && (
+                        <a
+                          href={getWhatsAppLink(r.phone, msg)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold min-h-11 px-3 rounded-xl shrink-0"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" /> كلّمهم
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            {renewals.length > 20 && (
+              <p className="text-[11px] text-[#8A8A70]">و{arabicNumber(renewals.length - 20)} مجموعة تانية.</p>
+            )}
           </div>
         </div>
       )}
