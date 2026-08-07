@@ -154,7 +154,7 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
   // Tabs within Admin — "growth" is default: the admin's morning check
   // (what's happening + what needs attention). Older tabs still exist.
-  const [activeTab, setActiveTab] = useState<'growth' | 'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'payouts' | 'bookings' | 'settings' | 'audit' | 'messages'>('growth');
+  const [activeTab, setActiveTab] = useState<'growth' | 'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'finance' | 'audience' | 'payments' | 'payouts' | 'bookings' | 'settings' | 'audit' | 'messages'>('growth');
   // Draft copy of settings for the settings form
   const [settingsDraft, setSettingsDraft] = useState(settings);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -578,7 +578,15 @@ export default function AdminDashboard({
     ]},
     { key: 'home', label: 'الرئيسية', icon: BarChart3, tabs: [
       { key: 'growth', label: 'النمو' },
-      { key: 'reports', label: 'التقارير' },
+      // Money and audience were one «التقارير» page. They answer different
+      // questions, so splitting them is what makes either one readable.
+      { key: 'finance', label: 'الماليات' },
+      // «الجمهور», not «المستخدمين» — the bottom bar already has a
+      // «المستخدمين» section, and it goes somewhere else entirely (managing
+      // accounts, not counting them). Both were on screen at the same time
+      // reading identically. The page heading still says «إحصائيات
+      // المستخدمين», so the full name is where it explains itself.
+      { key: 'audience', label: 'الجمهور' },
     ]},
     { key: 'people', label: 'المستخدمين', icon: Users, tabs: [
       { key: 'users', label: 'المستخدمين' },
@@ -937,6 +945,18 @@ export default function AdminDashboard({
       {/* Moderation Panel */}
       {activeTab === 'moderation' && (
         <div className="space-y-4">
+          {/* What this screen is allowed to decide. It used to sit at the
+              bottom of the reports page, which is the one screen where it
+              had nothing to do with anything above it. It belongs here,
+              where someone is about to approve or reject a house. */}
+          <div className="bg-[#5A5A40] text-white rounded-2xl p-3 flex gap-2.5 items-start leading-relaxed">
+            <Shield className="w-5 h-5 text-amber-200 shrink-0 mt-0.5" />
+            <div>
+              <span className="text-[12px] font-bold text-amber-200 block">رقابة المحتوى والبيوت القبطية:</span>
+              <span className="text-[11px] text-white/80">يقتصر دور الإدارة ومسؤول الخدمة على التحقق من هوية ملاك البيوت وضمان مطابقة البيوت للشروط الروحية واللياقة الكاملة للخدمة المسيحية لضمان سلامة خلوات الكنائس والأسر.</span>
+            </div>
+          </div>
+
           <div className="text-xs font-bold text-[#8A8A70] px-1">البيوت الجديدة المرسلة بانتظار الاعتماد للظهور:</div>
 
           {pendingHouses.length === 0 && pendingHouseEdits.length === 0 ? (
@@ -2219,11 +2239,35 @@ export default function AdminDashboard({
       )}
 
       {/* Booking Reports */}
-      {activeTab === 'reports' && (
+      {/* ── الماليات ──────────────────────────────────────────────────────
+          Money only. This and the audience panel used to be one «التقارير»
+          scroll, so a question about revenue and a question about who signs
+          up were answered by the same long page and neither was easy to
+          read. They are separate questions, so they are separate screens.
+
+          The four summary figures are deliberately identical tiles. They
+          were four different treatments before — an emerald gradient, a
+          beige gradient and two plain cards — which made the eye rank them
+          by decoration instead of by number. The one card that still stands
+          out is the commission, because that is the business's own cut. */}
+      {activeTab === 'finance' && (
         <div className="space-y-4">
-          {/* Period filter */}
-          <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-2">
-            <span className="text-[12px] font-bold text-[#8A8A70]">عرض الأرقام المالية عن فترة (حسب تاريخ الدخول):</span>
+
+          <div className="px-1">
+            <h3 className="text-[16px] font-black text-[#4A4A3A]">الماليات</h3>
+            <p className="text-[12px] text-[#8A8A70] mt-0.5">كل أرقام الفلوس في مكان واحد — المحصّل، عمولتك، ومستحقات الملّاك.</p>
+          </div>
+
+          {/* The period control, and what it selected. Showing the count here
+              means the filter reports its own result instead of leaving you
+              to guess which bookings the figures below are describing. */}
+          <div className="bg-white p-3.5 rounded-[20px] border border-[#EBEBE0] space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[12px] font-bold text-[#8A8A70]">الفترة (حسب تاريخ الدخول)</span>
+              <span className="text-[11px] font-black text-[#0A2342] bg-[#EBEBE0]/60 px-2 py-1 rounded-lg shrink-0">
+                {arabicPlural(periodConfirmed.length, BOOKING_FORMS)} مؤكد
+              </span>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {([
                 { key: 'today', label: 'اليوم' },
@@ -2237,7 +2281,7 @@ export default function AdminDashboard({
                   key={p.key}
                   type="button"
                   onClick={() => setFinPeriod(p.key)}
-                  className={`text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  className={`text-[11px] font-bold px-3 min-h-11 rounded-xl transition-all cursor-pointer ${
                     finPeriod === p.key ? 'bg-[#5A5A40] text-white' : 'bg-[#EBEBE0]/50 text-[#4A4A3A] hover:bg-[#DEDECB]'
                   }`}
                 >
@@ -2254,131 +2298,56 @@ export default function AdminDashboard({
             )}
           </div>
 
-          {/* Who the users are.
-              Governorate and date of birth are both required at signup, so
-              this reports what people entered rather than estimating. There
-              is no gender breakdown because gender is not collected for
-              users at all — it exists only on Attendee, the people a group
-              leader registers onto a booking, which is a different
-              population. Every unrecorded value is counted as «غير محدد»
-              rather than dropped: dropping them would shrink the denominator
-              and make every share look larger than it is. */}
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-[#5A5A40]" />
-                <span className="text-[12px] font-black text-[#4A4A3A]">مين بيستخدم بيما</span>
-              </div>
-              <span className="text-[11px] font-bold text-[#8A8A70]">
-                {arabicNumber(demo.coverage.total)} مستخدم
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[#FAF8F5] rounded-2xl p-3">
-                <div className="text-[11px] font-bold text-[#8A8A70]">متوسط السن</div>
-                <div className="text-lg font-black text-[#4A4A3A]">
-                  {demo.median === null ? '—' : `${arabicNumber(demo.median)} سنة`}
+          {/* ── الخلاصة ── */}
+          <div className="px-1 pt-1">
+            <span className="text-[11px] font-black text-[#8A8A70]">الخلاصة</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            {([
+              { label: 'المحصّل فعلاً', hint: 'من دفعات معتمدة', value: collectedRevenue, Icon: CheckCircle2, tint: 'text-emerald-700', num: 'text-emerald-800' },
+              { label: 'المتوقع الكلي', hint: 'قيمة الحجوزات المؤكدة', value: expectedRevenue, Icon: TrendingUp, tint: 'text-[#5A5A40]', num: 'text-[#4A4A3A]' },
+              { label: 'مستحقات الملّاك', hint: 'من المحصّل بعد عمولتك', value: ownersNetFromCollected, Icon: DollarSign, tint: 'text-[#0A2342]', num: 'text-[#0A2342]' },
+              { label: 'متبقٍ لم يُحصّل', hint: 'المتوقع − المحصّل', value: outstanding, Icon: AlertTriangle, tint: 'text-amber-600', num: 'text-amber-700' },
+            ] as const).map((k) => (
+              <div key={k.label} className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                <k.Icon className={`w-4 h-4 ${k.tint}`} />
+                <div className={`text-[20px] font-black leading-tight mt-1.5 tabular-nums ${k.num}`}>
+                  {arabicNumber(k.value)}
+                  <span className="text-[12px] font-bold text-[#8A8A70]"> ج.م</span>
                 </div>
-                <div className="text-[11px] text-[#8A8A70]">
-                  من {arabicNumber(demo.coverage.age)} مسجّل تاريخ ميلادهم
-                </div>
+                <div className="text-[11px] font-bold text-[#4A4A3A]">{k.label}</div>
+                <div className="text-[11px] text-[#8A8A70] leading-snug">{k.hint}</div>
               </div>
-              {/* The top slice is only a governorate if it is a named one.
-                  byGovernorate sorts «غير محدد» last, so govs[0] is only
-                  UNKNOWN when nobody recorded one at all — and then its
-                  percentage describes the missing data, not a place. Reading
-                  it out under a dash would say «—» and «١٠٠٪ من المستخدمين»
-                  in the same breath. */}
-              {(() => {
-                const top = demo.govs.find((g) => g.label !== 'غير محدد');
-                return (
-                  <div className="bg-[#FAF8F5] rounded-2xl p-3">
-                    <div className="text-[11px] font-bold text-[#8A8A70]">أكتر محافظة</div>
-                    <div className="text-lg font-black text-[#4A4A3A] truncate">{top ? top.label : '—'}</div>
-                    <div className="text-[11px] text-[#8A8A70]">
-                      {top
-                        ? `${arabicNumber(top.pct)}٪ من المستخدمين`
-                        : 'مفيش محافظات مسجّلة'}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-[11px] font-black text-[#8A8A70]">الفئات العمرية</div>
-              {demo.ages.map((s) => (
-                <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[#5A5A40]" />
-              ))}
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-[11px] font-black text-[#8A8A70]">المحافظات</div>
-              {demo.govs.slice(0, 8).map((s) => (
-                <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[#0A2342]" />
-              ))}
-              {demo.govs.length > 8 && (
-                <p className="text-[11px] text-[#8A8A70]">
-                  و{arabicNumber(demo.govs.length - 8)} محافظة أخرى.
-                </p>
-              )}
-            </div>
+            ))}
           </div>
 
-          {/* Collected vs Expected — side by side */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gradient-to-br from-emerald-50 to-white p-4 rounded-3xl border border-emerald-200 space-y-1">
-              <CheckCircle2 className="w-5 h-5 text-emerald-700" />
-              <div className="text-[12px] text-emerald-900 font-bold">المحصّل فعلاً</div>
-              <div className="text-lg font-black text-emerald-900">{arabicNumber(collectedRevenue)} ج.م</div>
-              <div className="text-[11px] text-emerald-800/70">من دفعات معتمدة</div>
-            </div>
-            <div className="bg-gradient-to-br from-[#EBEBE0]/40 to-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
-              <TrendingUp className="w-5 h-5 text-[#5A5A40]" />
-              <div className="text-[12px] text-[#8A8A70] font-bold">المتوقع الكلي</div>
-              <div className="text-lg font-black text-[#4A4A3A]">{arabicNumber(expectedRevenue)} ج.م</div>
-              <div className="text-[11px] text-[#8A8A70]">قيمة الحجوزات المؤكدة</div>
-            </div>
-          </div>
-
-          {/* Commission — the business's cut */}
-          <div className="bg-[#0A2342] text-white rounded-3xl p-4 space-y-2">
+          {/* The only card that keeps its colour, because it is the one
+              number that is the business's rather than a total passing
+              through it. */}
+          <div className="bg-[#0A2342] text-white rounded-[20px] p-4 space-y-2.5">
             <div className="flex items-center gap-2">
               <Coins className="w-5 h-5 text-[#C5A059]" />
-              <span className="text-[11px] font-black text-[#C5A059]">عمولة المنصة ({arabicNumber(Math.round(PLATFORM_COMMISSION * 100))}٪)</span>
+              <span className="text-[11px] font-black text-[#C5A059]">عمولة بيما ({arabicNumber(Math.round(PLATFORM_COMMISSION * 100))}٪)</span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="text-[11px] text-white/60 font-bold">من المحصّل فعلاً</div>
-                <div className="text-xl font-black text-white">{arabicNumber(collectedCommission)} ج.م</div>
+                <div className="text-[20px] font-black text-white tabular-nums">{arabicNumber(collectedCommission)}<span className="text-[12px] text-white/70"> ج.م</span></div>
               </div>
               <div>
                 <div className="text-[11px] text-white/60 font-bold">المتوقعة (كل الحجوزات)</div>
-                <div className="text-xl font-black text-white/80">{arabicNumber(expectedCommission)} ج.م</div>
+                <div className="text-[20px] font-black text-white/80 tabular-nums">{arabicNumber(expectedCommission)}<span className="text-[12px] text-white/60"> ج.م</span></div>
               </div>
             </div>
           </div>
 
-          {/* Owner payouts + outstanding */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
-              <DollarSign className="w-5 h-5 text-emerald-700" />
-              <div className="text-[12px] text-[#8A8A70] font-bold">مستحقات الملّاك (صافي المحصّل)</div>
-              <div className="text-lg font-black text-emerald-800">{arabicNumber(ownersNetFromCollected)} ج.م</div>
-              <div className="text-[11px] text-[#8A8A70]">بعد خصم عمولتك</div>
-            </div>
-            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
-              <div className="text-[12px] text-[#8A8A70] font-bold">متبقٍ لم يُحصّل بعد</div>
-              <div className="text-lg font-black text-amber-700">{arabicNumber(outstanding)} ج.م</div>
-              <div className="text-[11px] text-[#8A8A70]">المتوقع − المحصّل</div>
-            </div>
+          {/* ── التفاصيل ── */}
+          <div className="px-1 pt-1">
+            <span className="text-[11px] font-black text-[#8A8A70]">التفاصيل</span>
           </div>
 
-          {/* Per-owner breakdown */}
-          <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] space-y-2">
-            <h3 className="text-xs font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">مستحقات كل صاحب بيت</h3>
+          <div className="bg-white rounded-[20px] p-4 border border-[#EBEBE0] space-y-2">
+            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">مستحقات كل صاحب بيت</h3>
             {ownerRows.length === 0 ? (
               <p className="text-[12px] text-[#8A8A70] text-center py-3">لا توجد حجوزات في هذه الفترة.</p>
             ) : (
@@ -2392,83 +2361,131 @@ export default function AdminDashboard({
                 {ownerRows.map((o) => (
                   <div key={o.id} className="grid grid-cols-4 gap-1 text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0 items-center">
                     <span className="font-bold text-[#4A4A3A] truncate">{o.name}</span>
-                    <span className="text-center text-emerald-800 font-bold">{arabicNumber(o.collected)}</span>
-                    <span className="text-center text-[#C5A059] font-bold">{arabicNumber(Math.round(o.collected * PLATFORM_COMMISSION))}</span>
-                    <span className="text-center text-[#0A2342] font-black">{arabicNumber(o.net)}</span>
+                    <span className="text-center text-emerald-800 font-bold tabular-nums">{arabicNumber(o.collected)}</span>
+                    <span className="text-center text-[#C5A059] font-bold tabular-nums">{arabicNumber(Math.round(o.collected * PLATFORM_COMMISSION))}</span>
+                    <span className="text-center text-[#0A2342] font-black tabular-nums">{arabicNumber(o.net)}</span>
                   </div>
                 ))}
               </>
             )}
           </div>
 
-          {/* Top houses by revenue */}
           {topHouses.length > 0 && (
-            <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] space-y-2">
-              <h3 className="text-xs font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أكثر البيوت دخلاً</h3>
+            <div className="bg-white rounded-[20px] p-4 border border-[#EBEBE0] space-y-2">
+              <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أكثر البيوت دخلاً</h3>
               {topHouses.map((h, i) => (
-                <div key={h.id} className="flex items-center justify-between text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0">
+                <div key={h.id} className="flex items-center justify-between gap-2 text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0">
                   <span className="font-bold text-[#4A4A3A] truncate flex items-center gap-1.5">
                     <span className="w-4 h-4 rounded-full bg-[#EBEBE0] text-[#5A5A40] text-[11px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
                     {h.name}
                   </span>
-                  <span className="font-black text-emerald-800 shrink-0">{arabicNumber(h.amount)} ج.م</span>
+                  <span className="font-black text-emerald-800 shrink-0 tabular-nums">{arabicNumber(h.amount)} ج.م</span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Booking-level context stats */}
-          <div className="grid grid-cols-2 gap-3 text-right">
-            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
-              <BarChart3 className="w-5 h-5 text-[#5A5A40]" />
-              <div className="text-[12px] text-[#8A8A70] font-bold">حجوزات مؤكدة (الفترة):</div>
-              <div className="text-lg font-black text-[#4A4A3A]">{arabicNumber(periodConfirmed.length)}</div>
-            </div>
-            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
-              <Users className="w-5 h-5 text-[#8A8A70]" />
-              <div className="text-[12px] text-[#8A8A70] font-bold">متوسط الحضور بالرحلة:</div>
-              <div className="text-lg font-black text-[#4A4A3A]">{arabicPlural(averageBookingSize, GUEST_FORMS)}</div>
-            </div>
-          </div>
-
-          {/* Quick general platform stats */}
-          <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] space-y-3 text-right">
-            <h3 className="text-xs font-bold text-[#4A4A3A]">إحصائيات المنصة العامة:</h3>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between items-center py-1.5 border-b border-[#D6D6C2]/60">
-                <span className="text-[#8A8A70]">إجمالي الحسابات المسجلة بالمنصة:</span>
-                <span className="font-bold text-[#4A4A3A]">{arabicPlural(totalRegisteredUsers, MEMBER_FORMS)}</span>
-              </div>
-              <div className="flex justify-between items-center py-1.5 border-b border-[#D6D6C2]/60">
-                <span className="text-[#8A8A70]">البيوت المؤكدة والنشطة للجمهور:</span>
-                <span className="font-bold text-[#4A4A3A]">{arabicPlural(totalHousesApproved, HOUSE_FORMS)}</span>
-              </div>
-              <div className="flex justify-between items-center py-1.5 border-b border-[#D6D6C2]/60">
-                <span className="text-[#8A8A70]">إجمالي الزوار المسكنين تلقائياً بالمنصة:</span>
-                <span className="font-bold text-[#5A5A40]">{arabicPlural(allocationsCount, GUEST_FORMS)}</span>
-              </div>
-              <div className="flex justify-between items-center py-1.5">
-                <span className="text-[#8A8A70]">الطلبات قيد المراجعة حاليًا:</span>
-                <span className="font-bold text-amber-700">{arabicPlural(pendingHouses.length, HOUSE_FORMS)} معلق</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Export buttons */}
           <div className="flex gap-2">
-            <button onClick={exportFinancials} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold py-2.5 rounded-xl cursor-pointer">
+            <button onClick={exportFinancials} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
               <Download className="w-3.5 h-3.5" /> تصدير المالية CSV
             </button>
-            <button onClick={exportBookings} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold py-2.5 rounded-xl cursor-pointer">
+            <button onClick={exportBookings} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
               <Download className="w-3.5 h-3.5" /> تصدير الحجوزات CSV
             </button>
           </div>
+        </div>
+      )}
 
-          <div className="bg-[#5A5A40] text-white rounded-2xl p-3 flex gap-2.5 items-start text-xs leading-relaxed">
-            <Shield className="w-5 h-5 text-amber-200 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold text-amber-200 block">رقابة المحتوى والبيوت القبطية:</span>
-              <span className="text-[11px] text-white/80">يقتصر دور الإدارة ومسؤول الخدمة على التحقق من هوية ملاك البيوت وضمان مطابقة البيوت للشروط الروحية واللياقة الكاملة للخدمة المسيحية لضمان سلامة خلوات الكنائس والأسر.</span>
+      {/* ── إحصائيات المستخدمين ────────────────────────────────────────────
+          Who signs up, and from where.
+
+          Governorate and date of birth are both required at signup, so this
+          reports what people entered rather than estimating. There is no
+          gender breakdown because gender is not collected for users at all —
+          it exists only on Attendee, the people a group leader registers
+          onto a booking, which is a different population. Every unrecorded
+          value is counted as «غير محدد» rather than dropped: dropping them
+          would shrink the denominator and make every share look larger than
+          it is. */}
+      {activeTab === 'audience' && (
+        <div className="space-y-4">
+
+          <div className="px-1">
+            <h3 className="text-[16px] font-black text-[#4A4A3A]">إحصائيات المستخدمين</h3>
+            <p className="text-[12px] text-[#8A8A70] mt-0.5">مين بيستخدم بيما — أعمارهم ومحافظاتهم، من بيانات التسجيل نفسها.</p>
+          </div>
+
+          {(() => {
+            // Only a named governorate counts as «the top one». byGovernorate
+            // sorts «غير محدد» last, so the first named entry is the answer —
+            // and when there is none, saying «—» is honest where reading out
+            // «١٠٠٪ من المستخدمين» under a dash would not be.
+            const top = demo.govs.find((g) => g.label !== 'غير محدد');
+            const named = demo.govs.filter((g) => g.label !== 'غير محدد').length;
+            return (
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <Users className="w-4 h-4 text-[#0A2342]" />
+                  <div className="text-[22px] font-black text-[#4A4A3A] leading-tight mt-1.5 tabular-nums">{arabicNumber(demo.coverage.total)}</div>
+                  <div className="text-[11px] font-bold text-[#8A8A70]">إجمالي المستخدمين</div>
+                </div>
+                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <CalendarDays className="w-4 h-4 text-[#5A5A40]" />
+                  <div className="text-[22px] font-black text-[#4A4A3A] leading-tight mt-1.5 tabular-nums">
+                    {demo.median === null ? '—' : arabicNumber(demo.median)}
+                  </div>
+                  <div className="text-[11px] font-bold text-[#8A8A70]">متوسط السن</div>
+                  <div className="text-[11px] text-[#8A8A70] leading-snug">من {arabicNumber(demo.coverage.age)} مسجّل تاريخ ميلاده</div>
+                </div>
+                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <MapPin className="w-4 h-4 text-[#C5A059]" />
+                  <div className="text-[16px] font-black text-[#4A4A3A] leading-tight mt-1.5 truncate">{top ? top.label : '—'}</div>
+                  <div className="text-[11px] font-bold text-[#8A8A70]">أكتر محافظة</div>
+                  <div className="text-[11px] text-[#8A8A70] leading-snug">
+                    {top ? `${arabicNumber(top.pct)}٪ من المستخدمين` : 'مفيش محافظات مسجّلة'}
+                  </div>
+                </div>
+                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <Building className="w-4 h-4 text-[#5A5A40]" />
+                  <div className="text-[22px] font-black text-[#4A4A3A] leading-tight mt-1.5 tabular-nums">{arabicNumber(named)}</div>
+                  <div className="text-[11px] font-bold text-[#8A8A70]">محافظة وصلتها بيما</div>
+                </div>
+              </div>
+            );
+          })()}
+
+          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
+            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">الفئات العمرية</h3>
+            {demo.ages.map((s) => (
+              <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[#5A5A40]" />
+            ))}
+          </div>
+
+          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
+            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">المحافظات</h3>
+            {demo.govs.slice(0, 8).map((s) => (
+              <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[#0A2342]" />
+            ))}
+            {demo.govs.length > 8 && (
+              <p className="text-[11px] text-[#8A8A70]">و{arabicNumber(demo.govs.length - 8)} محافظة أخرى.</p>
+            )}
+          </div>
+
+          <div className="bg-white rounded-[20px] p-4 border border-[#EBEBE0] space-y-2.5">
+            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أرقام المنصة العامة</h3>
+            <div className="space-y-1">
+              {([
+                { label: 'إجمالي الحسابات المسجلة', value: arabicPlural(totalRegisteredUsers, MEMBER_FORMS), tint: 'text-[#4A4A3A]' },
+                { label: 'البيوت المؤكدة والنشطة للجمهور', value: arabicPlural(totalHousesApproved, HOUSE_FORMS), tint: 'text-[#4A4A3A]' },
+                { label: 'إجمالي الزوار المسكّنين تلقائياً', value: arabicPlural(allocationsCount, GUEST_FORMS), tint: 'text-[#5A5A40]' },
+                { label: 'متوسط الحضور بالرحلة', value: arabicPlural(averageBookingSize, GUEST_FORMS), tint: 'text-[#4A4A3A]' },
+                { label: 'الطلبات قيد المراجعة حاليًا', value: `${arabicPlural(pendingHouses.length, HOUSE_FORMS)} معلق`, tint: 'text-amber-700' },
+              ] as const).map((r) => (
+                <div key={r.label} className="flex justify-between items-center gap-2 text-[12px] py-1.5 border-b border-[#EBEBE0]/60 last:border-0">
+                  <span className="text-[#8A8A70]">{r.label}</span>
+                  <span className={`font-bold shrink-0 ${r.tint}`}>{r.value}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
