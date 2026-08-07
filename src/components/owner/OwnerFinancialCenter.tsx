@@ -1,13 +1,14 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { arabicNumber, arabicPlural, arabicDate, arabicPercent, EXPENSE_FORMS } from '../../lib/arabic';
+import { arabicNumber, arabicPlural, arabicDate, arabicPercent, EXPENSE_FORMS, BOOKING_FORMS, GUEST_FORMS } from '../../lib/arabic';
 import { motion } from 'motion/react';
 import { Booking, Expense, Payout, User } from '../../types';
 import {
   Wallet, Info, ArrowUpRight, ArrowDownRight, CreditCard, Receipt, Banknote,
   CheckCircle2, TrendingUp, Search, Plus, ChevronDown, Sparkles, Wrench,
-  Zap, Droplet, Utensils, History, Landmark, Coins, Trash2, Pencil, Bell, Clock, Download, FileText,
+  Zap, Droplet, Utensils, History, Landmark, Trash2, Pencil, Bell, Clock, Download, FileText,
 } from 'lucide-react';
 import BottomSheet from './BottomSheet';
+import OwnerDisclosure from './OwnerDisclosure';
 import { downloadCsv } from '../../lib/exportCsv';
 import { availableForTransfer as availableForTransferOf, cashDueAtArrival, commissionOf, commissionTotal } from '../../lib/paymentLedger';
 import { printMonthlyStatement } from '../../lib/invoice';
@@ -529,15 +530,23 @@ export default function OwnerFinancialCenter({
         )}
       </div>
 
-      {/* ── Section 3: Statistics ───────────────────────────────── */}
+      {/* ── Section 3: The breakdown behind the wallet ───────────────
+             This grid used to repeat the wallet's own two headline numbers —
+             `confirmedRevenue` as «إجمالي الحجوزات» and `netOwnerPayout` as
+             «صافي المستحقات» — about 400px below the hero that already showed
+             both. Two identical figures on one screen do not reassure; they
+             make an owner check whether they disagree.
+
+             What is left is the only thing the hero does not say: how the net
+             was arrived at. Deposit collected, still to collect, commission —
+             the three terms of the arithmetic, in that order. */}
       <div className="grid grid-cols-2 gap-2.5">
         {[
-          { icon: Coins, label: 'إجمالي الحجوزات', value: confirmedRevenue, key: 'revenue' as const, color: '#1F2E4E' },
-          { icon: CreditCard, label: 'العربون المحصل عبر Pima', value: depositReceived, key: 'deposit' as const, color: '#1F2E4E' },
-          { icon: Banknote, label: 'المتبقي للتحصيل', value: remainingBalance, key: 'remaining' as const, color: '#F59E0B' },
-          { icon: Receipt, label: 'عمولة Pima', value: platformCommissionAmount, key: 'commission' as const, color: '#D4AF37' },
+          { icon: CreditCard, label: 'العربون المحصل عبر Pima', value: depositReceived, key: 'deposit' as const, color: '#1F2E4E', wide: false },
+          { icon: Banknote, label: 'المتبقي للتحصيل', value: remainingBalance, key: 'remaining' as const, color: '#F59E0B', wide: false },
+          { icon: Receipt, label: 'عمولة Pima', value: platformCommissionAmount, key: 'commission' as const, color: '#D4AF37', wide: true },
         ].map((s) => (
-          <div key={s.label} className="bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1.5">
+          <div key={s.label} className={`bg-[var(--color-owner-surface)] rounded-2xl border border-[var(--color-owner-border)] p-3 space-y-1.5 ${s.wide ? 'col-span-2' : ''}`}>
             <div className="flex items-center justify-between">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${s.color}1A` }}>
                 <s.icon className="w-4 h-4" style={{ color: s.color }} />
@@ -548,18 +557,6 @@ export default function OwnerFinancialCenter({
             <Money value={s.value} className="text-base font-black text-[var(--color-owner-text)] block" />
           </div>
         ))}
-        <div className="col-span-2 bg-emerald-50 rounded-2xl border border-emerald-200 p-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-            </div>
-            <div>
-              <div className="text-[11px] text-emerald-800 font-bold">صافي المستحقات</div>
-              <Money value={netOwnerPayout} className="text-base font-black text-emerald-900 block" />
-            </div>
-          </div>
-          <TrendBadge pct={pct('net')} />
-        </div>
       </div>
 
       {/* ── Section 4: Expected Cash Today ──────────────────────── */}
@@ -570,7 +567,13 @@ export default function OwnerFinancialCenter({
               <Bell className="w-4 h-4 text-amber-700" />
             </div>
             <p className="text-[12px] font-bold text-amber-900">
-              اليوم لديك {guestsToday} {guestsToday === 1 ? 'ضيف' : 'ضيوف'} سيصلون.
+              {/* Was «اليوم لديك {guestsToday} ضيوف سيصلون» — the only Latin
+                  digits on a screen of Arabic ones, and a hand-rolled two-branch
+                  plural next to a five-form helper. Phrased as a label so no
+                  verb has to agree with the count either. arabicPlural emits
+                  the numeral itself, and GUEST_FORMS is the same word the rest
+                  of the owner UI counts people with. */}
+              وصول اليوم: {arabicPlural(guestsToday, GUEST_FORMS)}
             </p>
           </div>
           <div className="bg-white/60 rounded-2xl p-3 flex items-center justify-between">
@@ -582,7 +585,17 @@ export default function OwnerFinancialCenter({
         </div>
       )}
 
-      {/* ── Section 5: Analytics ────────────────────────────────── */}
+      {/* ── Section 5: Analytics — trend, not today ──────────────────
+             Two charts nobody opens this screen to see. They answer «كيف ماشي
+             الشغل» which is a monthly question, while everything above answers
+             «كام ليا» which is a daily one. Folded so the daily question keeps
+             the screen. */}
+      <OwnerDisclosure
+        id="owner-finance-analytics"
+        title="الرسوم البيانية"
+        icon={<TrendingUp className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" />}
+        hint="الإيرادات والتوزيع"
+      >
       <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-3">
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-[var(--color-owner-primary)]" />
@@ -650,6 +663,20 @@ export default function OwnerFinancialCenter({
         </div>
       </div>
 
+      </OwnerDisclosure>
+
+      {/* ── Sections 6+7: Filters and transactions, folded together ───
+             797px of booking rows was the longest thing on this screen, and
+             the period/search filters directly above it only exist to narrow
+             that list. Collapsing the list alone would have left its own
+             controls stranded above it, so both go behind one heading — the
+             count on the outside says whether opening it is worth it. */}
+      <OwnerDisclosure
+        id="owner-finance-transactions"
+        title="العمليات المالية"
+        icon={<Receipt className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" />}
+        hint={arabicPlural(filteredBookings.length, BOOKING_FORMS)}
+      >
       {/* ── Section 6: Filters ──────────────────────────────────── */}
       <div className="space-y-2.5">
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-0.5 px-0.5">
@@ -714,6 +741,7 @@ export default function OwnerFinancialCenter({
           );
         })}
       </div>
+      </OwnerDisclosure>
 
       {/* ── Section 8: Expenses — compact entry into the dedicated page ── */}
       <div className="space-y-2">

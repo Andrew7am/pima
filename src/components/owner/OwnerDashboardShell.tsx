@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { arabicNumber, arabicPlural, arabicDateRange, arabicBadge, arabicPercent, arabicDecimal, GUEST_FORMS, ROOM_FORMS, BED_FORMS, REVIEW_FORMS, HOUSE_FORMS, TASK_FORMS, BOOKING_FORMS } from '../../lib/arabic';
+import { arabicNumber, arabicPlural, arabicDateRange, arabicBadge, arabicPercent, arabicDecimal, GUEST_FORMS, ROOM_FORMS, BED_FORMS, DAY_FORMS, REVIEW_FORMS, HOUSE_FORMS, TASK_FORMS, BOOKING_FORMS } from '../../lib/arabic';
 import { occupancyRate, monthWindow, bedsInUseOn } from '../../lib/occupancy';
 import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, RoomType, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification, Expense, Payout } from '../../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
@@ -2018,10 +2018,21 @@ export default function OwnerDashboardShell({
             </div>
           )}
 
-          <form onSubmit={handleSubmitHouse} className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-5 space-y-5 text-right">
-            <div className="space-y-1 pb-2 border-b border-[var(--color-owner-border)]">
-              <h3 className="text-xs font-extrabold text-[var(--color-owner-text)]">{ownerHouses.length >= 1 ? 'تعديل بيانات بيتك الحالي' : 'تفاصيل تسجيل بيت مؤتمرات جديد'}</h3>
-            </div>
+          {/* 2562px of form, always open, and the longest thing on the
+              longest page. An owner reaching the gallery scrolled two and a
+              half metres of fields they did not come to change. Closed by
+              default — EXCEPT when there is no house yet, where filling this
+              in is the entire job. */}
+          <OwnerDisclosure
+            id="owner-house-edit"
+            title={ownerHouses.length >= 1 ? 'تعديل بيانات بيتك' : 'تفاصيل تسجيل بيت مؤتمرات جديد'}
+            icon={<Building className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" />}
+            defaultOpen={ownerHouses.length === 0}
+            hint={ownerHouses.length >= 1
+              ? 'الاسم · السعر · المرافق · الموقع'
+              : undefined}
+          >
+          <form onSubmit={handleSubmitHouse} className="space-y-5 text-right">
 
             {/* Basic info — name/type/description, prerequisite fields not covered by the 7 named sections below */}
             <div className="space-y-3">
@@ -2355,12 +2366,27 @@ export default function OwnerDashboardShell({
             </div>
 
           </form>
+          </OwnerDisclosure>
 
-          {/* 6. Food */}
-          <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-5 space-y-3">
-            <div className="flex items-center gap-1.5 pb-2 border-b border-[var(--color-owner-border)]"><Utensils className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" /><span className="text-[12px] font-black text-[var(--color-owner-text)]">الطعام</span></div>
+          {/* 6. Food — 2180px of menu editor that was always open, sitting
+                 between the house form and the gallery. Closed by default with
+                 the answer on the outside, so an owner who only came to change
+                 a price never scrolls through a week of meals. */}
+          <OwnerDisclosure
+            id="owner-house-food"
+            title="الطعام"
+            icon={<Utensils className="w-3.5 h-3.5 text-[var(--color-owner-primary)]" />}
+            hint={(() => {
+              const menu = ownerHouses[0]?.menu;
+              if (!menu) return 'لم تُضبط بعد';
+              const days = menu.weeklyMenu?.length ?? 0;
+              return menu.isIncluded
+                ? `شاملة${days ? ` · ${arabicPlural(days, DAY_FORMS)}` : ''}`
+                : `غير شاملة${days ? ` · ${arabicPlural(days, DAY_FORMS)}` : ''}`;
+            })()}
+          >
             <OwnerFoodMenu house={ownerHouses[0]} onUpdateHouse={onUpdateHouse} />
-          </div>
+          </OwnerDisclosure>
 
           {/* 7. Gallery — photo manager */}
           {ownerHouses.length >= 1 && (() => {
