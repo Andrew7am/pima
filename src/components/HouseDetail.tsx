@@ -10,6 +10,7 @@ import BookingFlow, { ApplicantDetails } from './house/BookingFlow';
 import { tapFeedback } from '../lib/haptics';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice, offersDayUse, computeMealPlan, activeDiscountFor, applyDiscount } from '../lib/pricing';
+import { buildPriestQuote, printPriestQuote } from '../lib/priestQuote';
 import { buildRoomOfferings } from '../lib/roomOffering';
 import { bookingRef } from '../lib/bookingRef';
 import { getCapacityStatus, occupiedEnd } from '../lib/roomOccupancy';
@@ -1222,6 +1223,10 @@ export default function HouseDetail({
             originalTotalPrice={originalTotalPrice}
             discountPct={discountPct}
             discountSaving={discountSaving}
+            onPrintPriestQuote={currentUser && checkIn && checkOut ? () => printPriestQuote(buildPriestQuote({
+              house, checkIn, checkOut, guestsCount, withMeals: !!withMeals,
+              settings, servant: currentUser,
+            })) : undefined}
             totalPrice={totalPrice}
             depositAmount={depositAmount}
             breakdown={stayPrice.breakdown}
