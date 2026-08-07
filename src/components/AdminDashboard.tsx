@@ -1481,7 +1481,27 @@ export default function AdminDashboard({
                             المزيد
                           </button>
                           {menuOpen && (
-                            <div className="absolute left-0 top-full mt-1 z-20 w-40 bg-white border border-[#EBEBE0] rounded-[16px] shadow-[0_8px_24px_rgba(16,43,92,0.12)] overflow-hidden">
+                            <>
+                              {/* Tapping anywhere else closes it. Without this
+                                  the only way out was to find «المزيد» again. */}
+                              <button
+                                type="button"
+                                aria-label="إغلاق القائمة"
+                                onClick={() => setOpenHouseMenu(null)}
+                                className="fixed inset-0 z-30 cursor-default"
+                              />
+                              {/* right-0, not left-0.
+                                  The actions column is the rightmost thing on
+                                  screen and this menu is 160px wide, so
+                                  anchoring its LEFT edge to an 86px column ran
+                                  it ~49px past the right edge of a 375px
+                                  phone — which is why it looked cut in half.
+                                  Anchored right, it opens inwards and fits.
+
+                                  z-40 clears the sticky section bar at the
+                                  bottom, which is z-20 and comes later in the
+                                  DOM, so at equal z it painted over the menu. */}
+                              <div className="absolute right-0 top-full mt-1 z-40 w-40 bg-white border border-[#EBEBE0] rounded-[16px] shadow-[0_8px_24px_rgba(16,43,92,0.12)] overflow-hidden">
                               {(house.status === 'approved' || house.status === 'suspended') && onSuspendHouse && (
                                 <button
                                   type="button"
@@ -1511,7 +1531,8 @@ export default function AdminDashboard({
                                   حذف نهائي
                                 </button>
                               )}
-                            </div>
+                              </div>
+                            </>
                           )}
                         </div>
                       </div>

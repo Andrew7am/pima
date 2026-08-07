@@ -26,6 +26,8 @@ function Preview() {
         onApproveHouse={noop}
         onRejectHouse={noop}
         onToggleUserRole={noop}
+        onSuspendHouse={noop}
+        onDeleteHouse={noop}
       />
     </div>
   );
