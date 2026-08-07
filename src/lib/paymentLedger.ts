@@ -100,8 +100,61 @@ export function availableForTransfer(args: {
 }
 
 /** The owner's cut of one booking's deposit, as the admin payout tab computes it. */
+/**
+ * The commission rate THIS booking was agreed at.
+ *
+ * Stamped onto the row when the booking is made (migration 108) and never
+ * changed after. Before that column existed there was only the live platform
+ * rate, so a rate change silently recomputed the commission on every booking
+ * ever made — cutting what owners were owed on deals already closed. The
+ * fallback is only for a row written by a client older than the migration.
+ */
+export function rateOf(booking: Booking, fallbackRate: number): number {
+  return booking.commissionRate ?? fallbackRate;
+}
+
+/** Pima's cut of one booking, at that booking's own rate. */
+export function commissionOf(booking: Booking, fallbackRate: number): number {
+  return Math.round((booking.totalPrice || 0) * rateOf(booking, fallbackRate));
+}
+
+/** Pima's cut across a set of bookings — each at its own agreed rate. */
+export function commissionTotal(bookings: Booking[], fallbackRate: number): number {
+  return bookings.reduce((sum, b) => sum + commissionOf(b, fallbackRate), 0);
+}
+
+/**
+ * What the owner keeps of the whole BOOKED value — collected or not.
+ *
+ * This is a headline figure, not a payable one: most of it is cash the guest
+ * hands over at the door and Pima never touches. See availableForTransfer for
+ * what can actually be sent.
+ */
+export function ownerNetOfBooked(bookings: Booking[], fallbackRate: number): number {
+  const gross = bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+  return gross - commissionTotal(bookings, fallbackRate);
+}
+
+/**
+ * What the owner keeps of money ACTUALLY COLLECTED through the platform.
+ *
+ * The admin's owner-dues table used to compute this as collected × (1 − the
+ * CURRENT global rate), while the owner's own screen used booked value. Two
+ * numbers, both labelled «صافي مستحقات», differing by more than tenfold in
+ * ordinary data.
+ */
+export function ownerNetOfCollected(
+  collectedByBooking: { booking: Booking; collected: number }[],
+  fallbackRate: number,
+): number {
+  return collectedByBooking.reduce(
+    (sum, { booking, collected }) => sum + (collected - collected * rateOf(booking, fallbackRate)),
+    0,
+  );
+}
+
 export function ownerShareOf(booking: Booking, commissionRate: number): number {
-  return Math.max(0, Math.round((booking.depositAmount || 0) - (booking.totalPrice || 0) * commissionRate));
+  return Math.max(0, Math.round((booking.depositAmount || 0) - (booking.totalPrice || 0) * rateOf(booking, commissionRate)));
 }
 
 /**

@@ -7,13 +7,18 @@ interface OwnerNotificationsProps {
   owner: User;
   notifications: AppNotification[];
   onMarkNotificationAsRead: (id: string) => void;
+  /** Open the booking the notification is about. Without it the row only
+   *  marked itself read — the bell count went down and nothing else happened,
+   *  which reads as a dead tap. WebLayout's bell already navigated; this
+   *  screen never got the same treatment. */
+  onOpenBooking?: (bookingId: string) => void;
 }
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-export default function OwnerNotifications({ owner, notifications, onMarkNotificationAsRead }: OwnerNotificationsProps) {
+export default function OwnerNotifications({ owner, notifications, onMarkNotificationAsRead, onOpenBooking }: OwnerNotificationsProps) {
   const ownerNotifications = notifications
     .filter((n) => n.userId === owner.id)
     .slice()
@@ -39,7 +44,10 @@ export default function OwnerNotifications({ owner, notifications, onMarkNotific
                 key={n.id}
                 id={`owner-notification-${n.id}`}
                 type="button"
-                onClick={() => !n.isRead && onMarkNotificationAsRead(n.id)}
+                onClick={() => {
+                  if (!n.isRead) onMarkNotificationAsRead(n.id);
+                  if (n.bookingId) onOpenBooking?.(n.bookingId);
+                }}
                 className={`w-full flex items-start gap-3 text-right rounded-2xl border p-3.5 transition-colors cursor-pointer ${
                   n.isRead
                     ? 'bg-[var(--color-owner-surface)] border-[var(--color-owner-border)]'

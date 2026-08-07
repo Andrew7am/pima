@@ -22,7 +22,7 @@ import {
   loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb, settleBookingsPayout,
   loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
   createPromoBanner, setPromoBannerActive, deletePromoBanner, updatePromoBanner,
-  loadPlatformSettings, updatePlatformSettings,
+  loadPlatformSettings, updatePlatformSettings, subscribeToPlatformSettings,
   deleteOwnAccount,
   loadAuditLog,
   loadPaymentProofImage,
@@ -473,6 +473,16 @@ export default function App() {
   // appears until the user reloads the page (loadNotifications is a one-shot
   // fetch, only re-run from loadAppData at login). Dedup by id since the
   // initial loadAppData fetch and this subscription can race on startup.
+  // The commission and deposit rates used to be read once at login. An admin
+  // raising the commission left every open session quoting the old number —
+  // on the owner's finance screen and on the deposit a new guest was asked
+  // for — until they closed the tab. Migration 108 publishes the table; this
+  // listens. No user check: guests are quoted these rates too.
+  useEffect(() => {
+    const unsubscribe = subscribeToPlatformSettings(setSettings);
+    return unsubscribe;
+  }, []);
+
   useEffect(() => {
     if (!currentUser?.id) return;
     const unsubscribe = subscribeToNotifications(currentUser.id, (n) => {

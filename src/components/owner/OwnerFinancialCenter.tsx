@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import BottomSheet from './BottomSheet';
 import { downloadCsv } from '../../lib/exportCsv';
-import { availableForTransfer as availableForTransferOf, cashDueAtArrival } from '../../lib/paymentLedger';
+import { availableForTransfer as availableForTransferOf, cashDueAtArrival, commissionOf, commissionTotal } from '../../lib/paymentLedger';
 import { printMonthlyStatement } from '../../lib/invoice';
 
 interface OwnerFinancialCenterProps {
@@ -154,7 +154,7 @@ export default function OwnerFinancialCenter({
     });
     const revenue = list.reduce((s, b) => s + b.totalPrice, 0);
     const deposit = list.filter((b) => b.depositPaid).reduce((s, b) => s + b.depositAmount, 0);
-    const commission = revenue * commissionRate;
+    const commission = commissionTotal(list, commissionRate);
     const net = revenue - commission;
     const remaining = revenue - deposit;
     return { ...m, count: list.length, revenue, deposit, commission, net, remaining };
@@ -283,7 +283,7 @@ export default function OwnerFinancialCenter({
       'الضيف', 'رقم الحجز', 'الوصول', 'المغادرة', 'الأفراد', 'قيمة الحجز', 'العربون', 'المتبقي', 'عمولة Pima', 'صافيك', 'الحالة',
     ]];
     filteredBookings.forEach((b) => {
-      const comm = Math.round(b.totalPrice * commissionRate);
+      const comm = commissionOf(b, commissionRate);
       rows.push([
         bookingGuestName(b), bookingRef(b), b.checkIn, b.checkOut, b.guestsCount,
         b.totalPrice, b.depositAmount, cashDueAtArrival(b), comm, b.totalPrice - comm,
@@ -298,7 +298,7 @@ export default function OwnerFinancialCenter({
     const d = new Date();
     const inMonth = confirmedBookings.filter((b) => { const c = new Date(b.checkIn); return c.getFullYear() === d.getFullYear() && c.getMonth() === d.getMonth(); });
     const revenue = inMonth.reduce((s, b) => s + b.totalPrice, 0);
-    const commission = revenue * commissionRate;
+    const commission = commissionTotal(inMonth, commissionRate);
     const deposits = inMonth.filter((b) => b.depositPaid).reduce((s, b) => s + b.depositAmount, 0);
     const remaining = inMonth.reduce((s, b) => s + cashDueAtArrival(b), 0);
     const expenses = ownerExpenses.filter((e) => { const c = new Date(e.expenseDate); return c.getFullYear() === d.getFullYear() && c.getMonth() === d.getMonth(); }).reduce((s, e) => s + e.amount, 0);

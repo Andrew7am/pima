@@ -831,9 +831,10 @@ export async function loadPromoBanners(): Promise<PromoBanner[]> {
   return (data ?? []).map(mapPromoBanner);
 }
 
-export async function loadPlatformSettings(): Promise<PlatformSettings> {
-  const { data, error } = await supabase.from('platform_settings').select('*').eq('id', 1).single();
-  if (error || !data) { if (error) console.error('loadPlatformSettings:', error); return DEFAULT_PLATFORM_SETTINGS; }
+// One mapper for both paths: the initial fetch and the realtime UPDATE feed.
+// Two copies would drift, and this one decides the commission and the deposit
+// the whole app quotes.
+export function mapPlatformSettings(data: Record<string, unknown>): PlatformSettings {
   return {
     commissionRate: Number(data.commission_rate) ?? DEFAULT_PLATFORM_SETTINGS.commissionRate,
     depositRate: Number(data.deposit_rate) ?? DEFAULT_PLATFORM_SETTINGS.depositRate,
@@ -847,11 +848,17 @@ export async function loadPlatformSettings(): Promise<PlatformSettings> {
     partialRefundPct: data.partial_refund_pct != null ? Number(data.partial_refund_pct) : DEFAULT_PLATFORM_SETTINGS.partialRefundPct,
     // Pre-migration-069 rows have no column → undefined → fall back to [].
     paymentMethods: data.payment_methods != null ? (data.payment_methods as PlatformSettings['paymentMethods']) : [],
-    supportWhatsApp: data.support_whatsapp || DEFAULT_PLATFORM_SETTINGS.supportWhatsApp,
+    supportWhatsApp: (data.support_whatsapp as string) || DEFAULT_PLATFORM_SETTINGS.supportWhatsApp,
     maxBookingsPerDay: data.max_bookings_per_day != null
       ? Number(data.max_bookings_per_day)
       : DEFAULT_PLATFORM_SETTINGS.maxBookingsPerDay,
   };
+}
+
+export async function loadPlatformSettings(): Promise<PlatformSettings> {
+  const { data, error } = await supabase.from('platform_settings').select('*').eq('id', 1).single();
+  if (error || !data) { if (error) console.error('loadPlatformSettings:', error); return DEFAULT_PLATFORM_SETTINGS; }
+  return mapPlatformSettings(data as Record<string, unknown>);
 }
 
 export async function updatePlatformSettings(s: PlatformSettings): Promise<boolean> {
@@ -1420,4 +1427,25 @@ export async function saveHouseImages(houseId: string, images: string[]): Promis
   const { error } = await supabase.from('houses').update({ images }).eq('id', houseId);
   if (error) { console.error('saveHouseImages:', error); return false; }
   return true;
+}
+
+/**
+ * Watch the platform settings for changes.
+ *
+ * The rates were fetched once at login and never again, so an admin raising
+ * the commission left every open session quoting the old number — on the
+ * owner's finance screen, in their reports, and on the deposit a new guest was
+ * asked for. Migration 108 puts platform_settings in the realtime publication;
+ * this is the other half.
+ */
+export function subscribeToPlatformSettings(onChange: (s: PlatformSettings) => void): () => void {
+  const channel = supabase
+    .channel('platform-settings')
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'platform_settings' },
+      (payload) => { onChange(mapPlatformSettings(payload.new as Record<string, unknown>)); },
+    )
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
 }

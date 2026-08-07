@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, ROLE_LABELS, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS } from '../lib/arabic';
 import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
 import { topHousesByBookings, topHousesByCollected } from '../lib/topHouses';
+import { commissionTotal, ownerShareOf, rateOf } from '../lib/paymentLedger';
 import { loadHouseImages, saveHouseImages } from '../lib/db';
 import { inlineImageStats, migrateImages } from '../lib/migrateImagesToStorage';
 // Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
@@ -468,8 +469,15 @@ export default function AdminDashboard({
     .filter((p) => p.paymentStatus === 'approved' && periodBookingIds.has(p.bookingId))
     .reduce((sum, p) => sum + p.amount, 0);
 
-  const expectedCommission = Math.round(expectedRevenue * PLATFORM_COMMISSION);
-  const collectedCommission = Math.round(collectedRevenue * PLATFORM_COMMISSION);
+  // Each booking at the rate it was agreed at (migration 108), not whatever
+  // the platform charges today.
+  const expectedCommission = commissionTotal(periodBookings, PLATFORM_COMMISSION);
+  const collectedCommission = Math.round(payments
+    .filter((p) => p.paymentStatus === 'approved' && periodBookingIds.has(p.bookingId))
+    .reduce((sum, p) => {
+      const b = bookings.find((x) => x.id === p.bookingId);
+      return sum + p.amount * (b ? rateOf(b, PLATFORM_COMMISSION) : PLATFORM_COMMISSION);
+    }, 0));
   const ownersNetFromCollected = collectedRevenue - collectedCommission;
   const outstanding = Math.max(0, expectedRevenue - collectedRevenue);
 
@@ -479,22 +487,26 @@ export default function AdminDashboard({
   const bookingHouseId: Record<string, string> = {};
   bookings.forEach((b) => { bookingHouseId[b.id] = b.houseId; });
 
-  const ownerAgg: Record<string, { name: string; collected: number; expected: number }> = {};
+  const ownerAgg: Record<string, { name: string; collected: number; expected: number; commission: number }> = {};
   periodConfirmed.forEach((b) => {
     const oid = houseOwnerId[b.houseId];
     if (!oid) return;
-    if (!ownerAgg[oid]) ownerAgg[oid] = { name: users.find((u) => u.id === oid)?.name || 'مالك', collected: 0, expected: 0 };
+    if (!ownerAgg[oid]) ownerAgg[oid] = { name: users.find((u) => u.id === oid)?.name || 'مالك', collected: 0, expected: 0, commission: 0 };
     ownerAgg[oid].expected += b.totalPrice;
   });
   payments.filter((p) => p.paymentStatus === 'approved' && periodBookingIds.has(p.bookingId)).forEach((p) => {
     const hid = bookingHouseId[p.bookingId];
     const oid = hid ? houseOwnerId[hid] : undefined;
     if (!oid) return;
-    if (!ownerAgg[oid]) ownerAgg[oid] = { name: users.find((u) => u.id === oid)?.name || 'مالك', collected: 0, expected: 0 };
+    if (!ownerAgg[oid]) ownerAgg[oid] = { name: users.find((u) => u.id === oid)?.name || 'مالك', collected: 0, expected: 0, commission: 0 };
     ownerAgg[oid].collected += p.amount;
+    // Commission on money that actually arrived, each payment weighted by the
+    // rate ITS booking was agreed at — not one global rate over the lot.
+    const pb = bookings.find((x) => x.id === p.bookingId);
+    ownerAgg[oid].commission += p.amount * (pb ? rateOf(pb, PLATFORM_COMMISSION) : PLATFORM_COMMISSION);
   });
   const ownerRows = Object.entries(ownerAgg)
-    .map(([id, v]) => ({ id, ...v, net: Math.round(v.collected * (1 - PLATFORM_COMMISSION)) }))
+    .map(([id, v]) => ({ id, ...v, net: Math.round(v.collected - v.commission) }))
     .sort((a, b) => b.collected - a.collected);
 
   // Top houses by money actually collected in the selected period. The النمو
@@ -535,7 +547,7 @@ export default function AdminDashboard({
   const exportFinancials = () => {
     downloadCsv('financials.csv',
       ['المالك', 'المحصّل', 'العمولة', 'صافي المستحقات'],
-      ownerRows.map((o) => [o.name, String(o.collected), String(Math.round(o.collected * PLATFORM_COMMISSION)), String(o.net)])
+      ownerRows.map((o) => [o.name, String(o.collected), String(Math.round(o.commission)), String(o.net)])
     );
   };
 
@@ -2295,7 +2307,7 @@ export default function AdminDashboard({
 
           {/* Per-owner breakdown */}
           <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] space-y-2">
-            <h3 className="text-xs font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">مستحقات كل صاحب بيت</h3>
+            <h3 className="text-xs font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">مستحقات كل صاحب بيت — من المُحصّل فعلاً</h3>
             {ownerRows.length === 0 ? (
               <p className="text-[12px] text-[#8A8A70] text-center py-3">لا توجد حجوزات في هذه الفترة.</p>
             ) : (
@@ -2310,7 +2322,7 @@ export default function AdminDashboard({
                   <div key={o.id} className="grid grid-cols-4 gap-1 text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0 items-center">
                     <span className="font-bold text-[#4A4A3A] truncate">{o.name}</span>
                     <span className="text-center text-emerald-800 font-bold">{arabicNumber(o.collected)}</span>
-                    <span className="text-center text-[#C5A059] font-bold">{arabicNumber(Math.round(o.collected * PLATFORM_COMMISSION))}</span>
+                    <span className="text-center text-[#C5A059] font-bold">{arabicNumber(Math.round(o.commission))}</span>
                     <span className="text-center text-[#0A2342] font-black">{arabicNumber(o.net)}</span>
                   </div>
                 ))}
@@ -2638,7 +2650,7 @@ export default function AdminDashboard({
         // (deposit received, not cancelled/rejected, not already settled).
         // Grouped by house so the admin can transfer each booking separately
         // or all of a house's bookings in one payment.
-        const ownerShare = (b: Booking) => Math.max(0, Math.round((b.depositAmount || 0) - (b.totalPrice || 0) * settings.commissionRate));
+        const ownerShare = (b: Booking) => ownerShareOf(b, settings.commissionRate);
         // Only transfer money the PLATFORM actually holds. In owner-direct mode
         // (no platform payment numbers) the platform never received the deposit;
         // and a cash-at-house deposit was handed to the owner. Prompting a payout

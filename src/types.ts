@@ -186,6 +186,9 @@ export interface Booking {
   // phone/walk-in booking himself; temporary = tentative hold the owner
   // placed to block capacity while a group decides.
   source?: 'platform' | 'manual' | 'temporary';
+  /** The commission rate agreed WHEN THIS BOOKING WAS MADE (migration 108).
+   *  Frozen on the row; a later rate change must not touch it. */
+  commissionRate?: number;
   isLargeConferenceQuote: boolean;
   paymentStatus?: 'unpaid' | 'pending_verification' | 'paid_deposit' | 'paid_full';
   // Free-form request details, stored as jsonb. Originally conference-only,

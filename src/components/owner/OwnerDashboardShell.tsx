@@ -12,7 +12,7 @@ import { bookingTypeLabel } from '../../lib/bookingGroups';
 import { categorizeBooking as categorize, sortForOwner } from '../../lib/ownerBookingOrder';
 import { bookingRef, bookingAge } from '../../lib/bookingRef';
 import { bookingMoney } from '../../lib/bookingMoney';
-import { availableForTransfer, cashDueAtArrival } from '../../lib/paymentLedger';
+import { availableForTransfer, cashDueAtArrival, commissionTotal } from '../../lib/paymentLedger';
 import { passwordProblem } from '../../lib/password';
 import { ownerBookingBadge } from '../../lib/ownerBookingBadge';
 import { arabicDay, arabicDayYear, nightsBetween, nightsLabel } from '../../lib/bookingDates';
@@ -298,7 +298,9 @@ export default function OwnerDashboardShell({
   const todayBookings = ownerBookings.filter((b) => (b.status === 'approved' || b.status === 'completed') && b.checkIn <= todayStr && b.checkOut >= todayStr);
   const confirmedBookings = ownerBookings.filter((b) => b.status === 'approved' || b.status === 'completed');
   const confirmedRevenue = confirmedBookings.reduce((sum, b) => sum + b.totalPrice, 0);
-  const platformCommissionAmount = confirmedRevenue * PLATFORM_COMMISSION;
+  // Each booking at the rate IT was agreed at — see migration 108. Using the
+  // current platform rate here rewrote the commission on closed deals.
+  const platformCommissionAmount = commissionTotal(confirmedBookings, PLATFORM_COMMISSION);
   const netOwnerPayout = confirmedRevenue - platformCommissionAmount;
   const depositReceived = confirmedBookings.filter((b) => b.depositPaid).reduce((sum, b) => sum + b.depositAmount, 0);
   const remainingBalance = confirmedRevenue - depositReceived;
@@ -339,7 +341,7 @@ export default function OwnerDashboardShell({
     : ownerBookings;
   const periodConfirmedBookings = periodBookings.filter((b) => b.status === 'approved' || b.status === 'completed');
   const periodConfirmedRevenue = periodConfirmedBookings.reduce((sum, b) => sum + b.totalPrice, 0);
-  const periodPlatformCommission = periodConfirmedRevenue * PLATFORM_COMMISSION;
+  const periodPlatformCommission = commissionTotal(periodConfirmedBookings, PLATFORM_COMMISSION);
   const periodNetPayout = periodConfirmedRevenue - periodPlatformCommission;
 
   // Categories match the refined mockup's Bookings tabs. Data-backed by existing
@@ -2437,7 +2439,13 @@ export default function OwnerDashboardShell({
 
       {/* Overflow: Notifications */}
       {activeTab === 'notifications' && (
-        <OwnerNotifications owner={owner} notifications={notifications} onMarkNotificationAsRead={onMarkNotificationAsRead ?? (() => {})} />
+        <OwnerNotifications owner={owner} notifications={notifications} onMarkNotificationAsRead={onMarkNotificationAsRead ?? (() => {})}
+          onOpenBooking={(bookingId) => {
+            // Land on the booking the notification is about, opened.
+            setActiveTab('bookings');
+            setSelectedBookingId(bookingId);
+            setShowOverflow(false);
+          }} />
       )}
 
       {/* Overflow: Settings / Profile */}
