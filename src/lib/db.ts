@@ -189,6 +189,11 @@ export function mapPayment(r: Record<string, unknown>): Payment {
     transactionReference: r.transaction_reference as string ?? undefined,
     adminNotes: r.admin_notes as string ?? undefined,
     details: r.details as Payment['details'] ?? undefined,
+    receivedAccount: (r.received_account as string) ?? undefined,
+    refundedAmount: r.refunded_amount != null ? Number(r.refunded_amount) : undefined,
+    refundedAt: (r.refunded_at as string) ?? undefined,
+    refundMethod: (r.refund_method as string) ?? undefined,
+    refundNote: (r.refund_note as string) ?? undefined,
   };
 }
 
@@ -263,6 +268,7 @@ export function mapPayout(r: Record<string, unknown>): Payout {
     note: (r.note as string) ?? undefined,
     requestedAt: r.requested_at as string,
     completedAt: (r.completed_at as string) ?? undefined,
+    bookingIds: (r.booking_ids as string[]) ?? undefined,
   };
 }
 
@@ -376,18 +382,25 @@ const HOUSE_PUBLIC_COLUMNS =
  * delete the owner's photos.
  */
 export async function loadHouses(includePaymentMethods = false): Promise<RetreatHouse[]> {
+  // Merge note: two independent changes landed on this function. The cover-only
+  // view (migration 106) is the egress fix; `.neq(status, archived)` is the
+  // archived-house filter. Both are kept — the view exposes `status`, so the
+  // filter applies to it exactly as it did to the table, and it has to be
+  // repeated on every fallback query below or archived houses reappear the
+  // moment a deploy lands ahead of its migration.
+  //
   // The view and the table return different row shapes, so both are widened to
   // the same thing the mapper already takes.
   type Row = Record<string, unknown>;
   const first = await supabase.from('houses_list')
-    .select(`${HOUSE_PUBLIC_COLUMNS},images_count`).order('created_at');
+    .select(`${HOUSE_PUBLIC_COLUMNS},images_count`).neq('status', 'archived').order('created_at');
   let data = first.data as unknown as Row[] | null;
   let error = first.error;
   if (error) {
     // A deploy can land before its migration; fall back to the table so the
     // site still works — heavy, but correct, and it says so in the console.
     console.error('loadHouses (view missing, falling back to full images):', error);
-    const table = await supabase.from('houses').select(HOUSE_PUBLIC_COLUMNS).order('created_at');
+    const table = await supabase.from('houses').select(HOUSE_PUBLIC_COLUMNS).neq('status', 'archived').order('created_at');
     data = table.data as unknown as Row[] | null;
     error = table.error;
   }
@@ -403,7 +416,7 @@ export async function loadHouses(includePaymentMethods = false): Promise<Retreat
     const fallbackColumns = HOUSE_PUBLIC_COLUMNS
       .replace('nearby_landmark,', '')
       .replace('day_use_price_per_person,', '');
-    const retry = await supabase.from('houses').select(fallbackColumns).order('created_at');
+    const retry = await supabase.from('houses').select(fallbackColumns).neq('status', 'archived').order('created_at');
     data = retry.data as unknown as Row[] | null;
     error = retry.error;
     if (error) { console.error('loadHouses (fallback):', error); return []; }
@@ -458,6 +471,53 @@ export async function loadHouseBookingCounts(): Promise<Record<string, number> |
   return result;
 }
 
+/**
+ * Note that someone opened a house's page (migration 106).
+ *
+ * Fire-and-forget on purpose. The visitor came to read the page, not to
+ * generate telemetry, so nothing here is awaited by the caller and no failure
+ * is ever shown to them.
+ *
+ * The session guard is the only dedup anonymous visitors can get: they have
+ * no identity server-side, so a refresh would otherwise count again. Signed-in
+ * viewers are deduplicated properly, in the RPC, one view per house per hour —
+ * which is the check that actually cannot be bypassed.
+ */
+export async function recordHouseView(houseId: string): Promise<void> {
+  const key = `pima_viewed_${houseId}`;
+  try {
+    if (sessionStorage.getItem(key)) return;
+  } catch {
+    /* private mode — no guard available, the server dedups what it can */
+  }
+
+  const { error } = await supabase.rpc('record_house_view', { p_house_id: houseId });
+  if (error) {
+    // Deliberately NOT marking it seen. The guard used to be set before the
+    // call and never cleared, so a failed call poisoned the house for the
+    // rest of the session — which is exactly what happened while migration
+    // 106 was still unapplied: every house opened in that window was marked
+    // viewed, the RPC failed silently, and applying the migration afterwards
+    // changed nothing until the tab was closed. A failure now leaves the
+    // house un-marked so the next open tries again.
+    console.warn('recordHouseView:', error);
+    return;
+  }
+
+  try { sessionStorage.setItem(key, '1'); } catch { /* nothing to guard with */ }
+}
+
+/** View totals per house (migration 106) — admin, or an owner's own houses. */
+export async function loadHouseViewCounts(): Promise<Record<string, { total: number; last30: number }> | null> {
+  const { data, error } = await supabase.rpc('house_view_counts');
+  if (error) { console.error('loadHouseViewCounts:', error); return null; }
+  const result: Record<string, { total: number; last30: number }> = {};
+  for (const row of (data ?? []) as { house_id: string; views_total: number; views_30d: number }[]) {
+    result[row.house_id] = { total: row.views_total, last30: row.views_30d };
+  }
+  return result;
+}
+
 // Daily rewarded-ad claim (migration 088). True = 25 points were granted just
 // now; false = already claimed today (or signed out). The server is the only
 // judge — the client cannot self-grant.
@@ -466,9 +526,27 @@ export async function claimDailyAdPoints(): Promise<boolean> {
   if (error) { console.error('claimDailyAdPoints:', error); return false; }
   return data === true;
 }
+/**
+ * Retire a house without destroying the money record attached to it.
+ *
+ * This was a hard DELETE, and the cascade behind it took the house's
+ * bookings, then their payments — including the guest's own transfer
+ * screenshot, which is stored as a base64 data URI inside the payment row
+ * rather than as a file — plus the payouts recording what Pima sent the
+ * owner. Every audit trigger in the schema is AFTER UPDATE, so a delete left
+ * no record that any of it had ever existed.
+ *
+ * Pima holds guests' deposits on their way to house owners. Those rows are
+ * evidence of other people's money, not Pima's own bookkeeping, so the button
+ * that erased them was the wrong button to have.
+ *
+ * archive_house (migration 107) sets status = 'archived' and stamps who and
+ * when. The DELETE policies are dropped in the same migration, so this is not
+ * merely the preferred path — it is the only one left.
+ */
 export async function deleteHouse(houseId: string): Promise<boolean> {
-  const { error } = await supabase.from('houses').delete().eq('id', houseId);
-  if (error) { console.error('deleteHouse:', error); return false; }
+  const { error } = await supabase.rpc('archive_house', { p_house_id: houseId });
+  if (error) { console.error('archiveHouse:', error); return false; }
   return true;
 }
 
@@ -595,7 +673,10 @@ export async function loadReviewsForHouses(houseIds: string[]): Promise<Review[]
 // shown inline in the admin payments list.
 export async function loadPayments(): Promise<Payment[]> {
   const { data, error } = await supabase.from('payments')
-    .select('id, booking_id, user_id, user_name, amount, payment_method, payment_status, payment_date, transaction_reference, admin_notes, details, created_at')
+    // Explicit column list on purpose — proof_image is a base64 data URI worth
+    // hundreds of KB per row and is fetched separately. Which also means a new
+    // column is invisible here until it is named.
+    .select('id, booking_id, user_id, user_name, amount, payment_method, payment_status, payment_date, transaction_reference, admin_notes, details, created_at, received_account, refunded_amount, refunded_at, refund_method, refund_note')
     .order('created_at', { ascending: false });
   if (error) { console.error('loadPayments:', error); return []; }
   return (data ?? []).map(mapPayment);
@@ -790,6 +871,11 @@ export async function settleBookingsPayout(args: {
     id: payoutId, house_id: args.houseId, owner_id: args.ownerId, amount: args.amount,
     status: 'completed', method: args.method ?? null, note: args.note ?? null,
     requested_at: now, completed_at: now,
+    // What this transfer actually paid for. The pairing was previously implicit
+    // — the same timestamp on the payout and on each booking — which is exact
+    // but unreadable: an owner asking "what is this transfer?" could only be
+    // answered by an admin reconstructing it by hand.
+    booking_ids: args.bookingIds,
   });
   if (pErr) { console.error('settleBookingsPayout(payout):', pErr); return false; }
   const { error: bErr } = await supabase.from('bookings').update({ owner_settled_at: now }).in('id', args.bookingIds);
@@ -1077,6 +1163,48 @@ export async function updatePaymentStatus(id: string, status: Payment['paymentSt
   const { error } = await supabase.from('payments').update(patch).eq('id', id);
   if (error) console.error('updatePaymentStatus:', error);
   return !error;
+}
+
+/**
+ * Record which of Pima's own accounts a payment landed in.
+ *
+ * payment_method says instapay / vodafone / bank — the KIND of transfer, not
+ * WHICH account, and Pima has several. Without this there is no way to tally
+ * the app against each real balance at the end of a week, which is the only
+ * way to notice a transfer that never actually arrived.
+ *
+ * The label is copied rather than referenced: the accounts live in a jsonb
+ * column on one settings row, and deleting an account later must not rewrite
+ * where money went.
+ */
+export async function setPaymentAccount(paymentId: string, account: string): Promise<boolean> {
+  const { error } = await supabase.from('payments').update({ received_account: account }).eq('id', paymentId);
+  if (error) { console.error('setPaymentAccount:', error); return false; }
+  return true;
+}
+
+/**
+ * Give money back, and say so.
+ *
+ * Refunds had nowhere to live: payment_status is pending|approved|rejected, so
+ * a deposit on a cancelled trip stayed counted as collected forever and
+ * nothing recorded that it was owed back. cancellationPolicy computes what the
+ * guest is due, but only to render a sentence — nothing persisted it.
+ *
+ * The server refuses a refund larger than the payment, or one against a
+ * payment that was never approved; both would invent an outflow.
+ */
+export async function recordRefund(args: {
+  paymentId: string; amount: number; method?: string; note?: string;
+}): Promise<boolean> {
+  const { error } = await supabase.rpc('record_refund', {
+    p_payment_id: args.paymentId,
+    p_amount: args.amount,
+    p_method: args.method ?? null,
+    p_note: args.note ?? null,
+  });
+  if (error) { console.error('recordRefund:', error); return false; }
+  return true;
 }
 
 // Marks one member's trip-share as paid/unpaid (migration 080). Deliberately a

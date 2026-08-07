@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { Booking, Payment, Payout } from '../types';
 import {
   approvedTotalFor, depositDue, cashDueAtArrival,
-  availableForTransfer, ownerShareOf, resolvePaymentVerdict,
+  availableForTransfer, ownerShareOf, resolvePaymentVerdict, unclaimedOwedBookings,
 } from './paymentLedger';
 
 // Every case below is a defect that reached production, not a hypothetical.
@@ -202,5 +202,99 @@ describe('rejecting a payment', () => {
     expect(resolvePaymentVerdict({
       booking: booking({ depositPaid: true }), payment: bogus, payments: [cash, bogus], verdict: 'rejected',
     })).toBeNull();
+  });
+});
+
+describe('unclaimedOwedBookings', () => {
+  const bk = (over: Partial<Booking> & { id: string }): Booking => ({
+    houseId: 'h1', houseName: 'بيت', userId: 'u1', userName: 'ضيف', userPhone: '',
+    userEmail: '', userRole: 'individual', checkIn: '2026-09-10', checkOut: '2026-09-12',
+    guestsCount: 10, totalPrice: 20000, depositPaid: true, depositAmount: 3000,
+    status: 'approved', isLargeConferenceQuote: false, ...over,
+  } as Booking);
+  const po = (over: Partial<Payout> & { id: string }): Payout => ({
+    houseId: 'h1', ownerId: 'o1', amount: 2000, status: 'completed',
+    requestedAt: '2026-08-01', completedAt: '2026-08-02T10:00:00Z', ...over,
+  } as Payout);
+
+  // ownerShareOf: 3000 − 20000×0.05 = 2000 per booking.
+
+  it('drops a booking already covered by a completed payout request', () => {
+    const owed = [bk({ id: 'b1' })];
+    const r = unclaimedOwedBookings({ owed, allBookings: owed, payouts: [po({ id: 'x1' })], commissionRate: 0.05 });
+    expect(r.remaining).toHaveLength(0);
+    expect(r.coveredAmount).toBe(2000);
+  });
+
+  it('leaves the rest when the payout covers only some of them', () => {
+    const owed = [bk({ id: 'b1', checkIn: '2026-09-01' }), bk({ id: 'b2', checkIn: '2026-09-20' })];
+    const r = unclaimedOwedBookings({ owed, allBookings: owed, payouts: [po({ id: 'x1' })], commissionRate: 0.05 });
+    expect(r.remaining.map((b) => b.id)).toEqual(['b2']); // oldest settled first
+    expect(r.coveredAmount).toBe(2000);
+  });
+
+  it('ignores a rejected payout request', () => {
+    const owed = [bk({ id: 'b1' })];
+    const r = unclaimedOwedBookings({ owed, allBookings: owed, payouts: [po({ id: 'x1', status: 'rejected' })], commissionRate: 0.05 });
+    expect(r.remaining).toHaveLength(1);
+  });
+
+  it('does not double-net the payout row a per-booking settlement writes', () => {
+    // settleBookingsPayout writes the payout AND stamps owner_settled_at with
+    // the same timestamp. b1 is already out of `owed` because it is stamped;
+    // counting its payout row again would wrongly settle b2 as well — paying
+    // once and marking two bookings done.
+    const stamp = '2026-08-02T10:00:00Z';
+    const settled = bk({ id: 'b1', ownerSettledAt: stamp });
+    const stillOwed = bk({ id: 'b2', checkIn: '2026-09-20' });
+    const r = unclaimedOwedBookings({
+      owed: [stillOwed],
+      allBookings: [settled, stillOwed],
+      payouts: [po({ id: 'x1', completedAt: stamp })],
+      commissionRate: 0.05,
+    });
+    expect(r.remaining.map((b) => b.id)).toEqual(['b2']);
+    expect(r.coveredAmount).toBe(0);
+  });
+
+  it('nets each house separately', () => {
+    const owed = [bk({ id: 'b1', houseId: 'h1' }), bk({ id: 'b2', houseId: 'h2' })];
+    const r = unclaimedOwedBookings({ owed, allBookings: owed, payouts: [po({ id: 'x1', houseId: 'h1' })], commissionRate: 0.05 });
+    expect(r.remaining.map((b) => b.id)).toEqual(['b2']);
+  });
+
+  it('counts a pending request as claimed, so it cannot be paid twice while in flight', () => {
+    const owed = [bk({ id: 'b1' })];
+    const r = unclaimedOwedBookings({ owed, allBookings: owed, payouts: [po({ id: 'x1', status: 'pending', completedAt: undefined })], commissionRate: 0.05 });
+    expect(r.remaining).toHaveLength(0);
+  });
+});
+
+describe('reverting an approved payment to the queue', () => {
+  // The admin panel's «تراجع — رجّع الإيصال للمراجعة» button routes through
+  // here with verdict 'rejected'. A review of that button claimed it leaves
+  // depositPaid true while the approved total drops to zero, recreating the
+  // shortfall this file's cashDueAtArrival comment describes. It does not —
+  // but the claim was worth pinning down, so this is the pin.
+  const b = {
+    id: 'b1', houseId: 'h1', totalPrice: 20000, depositAmount: 3000,
+    depositPaid: true, status: 'approved', paymentStatus: 'paid_deposit',
+  } as Booking;
+  const p = {
+    id: 'p1', bookingId: 'b1', amount: 3000, paymentMethod: 'instapay',
+    paymentStatus: 'approved', paymentDate: '2026-08-01',
+  } as Payment;
+
+  it('clears depositPaid, so the owner is told to collect the whole price', () => {
+    const change = resolvePaymentVerdict({ booking: b, payment: p, payments: [p], verdict: 'rejected' });
+    expect(change).not.toBeNull();
+    expect(change!.depositPaid).toBe(false);
+    expect(change!.paymentStatus).toBe('unpaid');
+    expect(cashDueAtArrival({ ...b, ...change } as Booking)).toBe(20000);
+  });
+
+  it('leaves the booking alone when another approved payment still stands', () => {
+    const p2 = { ...p, id: 'p2' } as Payment;
+    expect(resolvePaymentVerdict({ booking: b, payment: p, payments: [p, p2], verdict: 'rejected' })).toBeNull();
   });
 });

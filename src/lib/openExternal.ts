@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { Share } from '@capacitor/share';
 
 /**
  * Open a link that belongs outside the app.
@@ -47,26 +48,31 @@ export function whatsAppShareUrl(text: string, to?: string): string {
 const APP_HANDOFF_MS = 1200;
 
 /**
- * Share text through WhatsApp.
+ * Share text through WhatsApp, by whichever route the phone will allow.
  *
- * Two wrong answers came before this one, and the difference matters:
+ * This took four attempts, and the reason is worth recording because each one
+ * failed for a different reason:
  *
  *   window.open(waMe, '_blank')  — a silent no-op in the Android WebView.
- *                                  Nothing happened at all.
- *   Browser.open({ url: waMe })  — opens a Chrome Custom Tab INSIDE the app,
- *                                  which loads wa.me: a web page that then
- *                                  asks to open WhatsApp. Better than
- *                                  nothing, still not sharing.
+ *                                  Nothing opened and nothing threw.
+ *   Browser.open({ url: waMe })  — a Chrome Custom Tab INSIDE the app, which
+ *                                  loads wa.me: a web page whose job is to
+ *                                  ask to open WhatsApp. Not sharing.
+ *   whatsapp:// via location     — the right idea, but Android 11 hides other
+ *                                  apps unless <queries> names them, so the
+ *                                  intent had nothing to resolve to.
+ *   <queries> in the manifest    — correct, and it only takes effect in a
+ *                                  freshly built APK.
  *
- * The scheme URL is what actually reaches the app. Capacitor's WebViewClient
- * hands any scheme it does not recognise to an Android Intent, and
- * `whatsapp://send` is registered by WhatsApp itself — so the compose screen
- * opens directly with the text already in it.
+ * The share sheet is what finally works everywhere, and the distinction is
+ * exact: a DIRECT launch has to resolve a target, and an invisible app
+ * resolves to nothing. ACTION_SEND through the system chooser resolves
+ * nothing at all — the OS draws the sheet and the user picks. Package
+ * visibility never enters into it.
  *
- * If WhatsApp is not installed the intent goes nowhere and the page simply
- * stays put, which is why the wa.me fallback is armed on a timer: if we are
- * still on screen after a moment, the hand-off did not happen. Leaving the
- * app cancels it, because the page is hidden by then.
+ * The sheet cannot pre-fill a recipient, so a share aimed at one number still
+ * goes through the scheme, then falls back to the clipboard. The order is
+ * therefore: sheet (no recipient) → scheme → clipboard → wa.me in a tab.
  */
 export type ShareOutcome = 'opened' | 'copied' | 'failed';
 
@@ -76,6 +82,26 @@ export async function shareToWhatsApp(text: string, to?: string): Promise<ShareO
   if (!Capacitor.isNativePlatform()) {
     window.open(waMe, '_blank', 'noopener,noreferrer');
     return 'opened';
+  }
+
+  // The share sheet first, because it is the one route that does not depend
+  // on package visibility at all.
+  //
+  // Android 11 hid other apps from us unless <queries> names them, which is
+  // what broke every earlier attempt: a direct whatsapp:// intent has to
+  // RESOLVE the target, and an invisible app resolves to nothing. ACTION_SEND
+  // through the system chooser resolves nothing — the OS draws the sheet and
+  // the user picks. So this works even where the direct launch cannot.
+  //
+  // The trade-off is that the recipient cannot be pre-filled, so a share
+  // aimed at a specific number still tries the scheme first.
+  if (!to) {
+    try {
+      await Share.share({ text, dialogTitle: 'مشاركة' });
+      return 'opened';
+    } catch {
+      // Cancelled, or no share targets. Fall through to the scheme.
+    }
   }
 
   const digits = to ? to.replace(/[^0-9]/g, '') : '';

@@ -90,6 +90,7 @@ export function arabicBadge(n: number): string {
 export const BOOKING_FORMS: ArabicPluralForms = { one: 'حجز واحد', two: 'حجزان', few: 'حجوزات', many: 'حجز', zero: 'لا حجوزات' };
 export const USER_FORMS: ArabicPluralForms = { one: 'مستخدم واحد', two: 'مستخدمان', few: 'مستخدمين', many: 'مستخدم', zero: 'لا مستخدمين' };
 export const GUEST_FORMS: ArabicPluralForms = { one: 'فرد واحد', two: 'فردان', few: 'أفراد', many: 'فرد' };
+export const PAYMENT_FORMS: ArabicPluralForms = { one: 'دفعة واحدة', two: 'دفعتان', few: 'دفعات', many: 'دفعة', zero: 'لا دفعات' };
 export const ROOM_FORMS: ArabicPluralForms = { one: 'غرفة واحدة', two: 'غرفتان', few: 'غرف', many: 'غرفة' };
 export const BED_FORMS: ArabicPluralForms = { one: 'سرير واحد', two: 'سريران', few: 'أسرّة', many: 'سرير' };
 export const REVIEW_FORMS: ArabicPluralForms = { one: 'تقييم واحد', two: 'تقييمان', few: 'تقييمات', many: 'تقييم' };

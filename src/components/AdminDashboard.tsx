@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, ROLE_LABELS, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS } from '../lib/arabic';
+import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, ROLE_LABELS, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS, PAYMENT_FORMS } from '../lib/arabic';
 import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
-import { topHousesByBookings, topHousesByCollected } from '../lib/topHouses';
-import { commissionTotal, ownerShareOf, rateOf } from '../lib/paymentLedger';
-import { loadHouseImages, saveHouseImages } from '../lib/db';
+import { topHousesByBookings } from '../lib/topHouses';
+import { summarizeFinances, accountBalances, refundsDue } from '../lib/adminFinance';
+import { commissionTotal, ownerShareOf, rateOf, unclaimedOwedBookings } from '../lib/paymentLedger';
+import { findFinanceExceptions } from '../lib/adminExceptions';
+import { pendingRenewals, emptyBedNightsAhead } from '../lib/seasonPlanning';
+import { loadHouseImages, saveHouseImages, loadHouseViewCounts } from '../lib/db';
 import { inlineImageStats, migrateImages } from '../lib/migrateImagesToStorage';
 // Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
 // to the singular. The counted nouns live in lib/arabic alongside the rule
@@ -20,7 +23,7 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
   { value: 'we_cash', label: 'وي كاش' },
   { value: 'bank_transfer', label: 'تحويل بنكي' },
 ];
-import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft, ChevronRight, XCircle, MoreHorizontal, MapPin, CalendarDays, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { timeAgo } from '../lib/timeAgo';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
@@ -70,7 +73,16 @@ interface AdminDashboardProps {
   onDeleteReview?: (reviewId: string) => void;
   allocationsCount?: number;
   payments?: Payment[];
-  onVerifyPayment?: (paymentId: string, status: 'approved' | 'rejected', adminNotes?: string) => void;
+  // 'pending' puts a decided payment back in the queue. Without it a mis-tap
+  // on «اعتماد الدفعة» was permanent: the buttons stopped rendering and there
+  // was no other route to the payment from anywhere in the panel.
+  onVerifyPayment?: (paymentId: string, status: 'approved' | 'rejected' | 'pending', adminNotes?: string) => void;
+  // Support calls land on Pima's own number, so the admin is the one who hears
+  // «we need to shift a day» — and had no control for it. The owner's handler
+  // already does the capacity check and the room re-allocation.
+  onUpdateBookingDetails?: (bookingId: string, fields: { checkIn?: string; checkOut?: string; guestsCount?: number }) => Promise<boolean>;
+  onRecordRefund?: (paymentId: string, amount: number, note?: string) => Promise<boolean>;
+  onSetPaymentAccount?: (paymentId: string, account: string) => void;
   onSetUserApproval?: (userId: string, status: 'approved' | 'rejected') => void;
   promoBanners?: PromoBanner[];
   onAddPromoBanner?: (b: PromoBanner) => void;
@@ -141,6 +153,9 @@ export default function AdminDashboard({
   allocationsCount = 0,
   payments = [],
   onVerifyPayment,
+  onUpdateBookingDetails,
+  onRecordRefund,
+  onSetPaymentAccount,
   onSetUserApproval,
   promoBanners = [],
   onAddPromoBanner,
@@ -159,7 +174,7 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
   // Tabs within Admin — "growth" is default: the admin's morning check
   // (what's happening + what needs attention). Older tabs still exist.
-  const [activeTab, setActiveTab] = useState<'growth' | 'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'reports' | 'payments' | 'payouts' | 'bookings' | 'settings' | 'audit' | 'messages'>('growth');
+  const [activeTab, setActiveTab] = useState<'growth' | 'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'finance' | 'audience' | 'season' | 'exceptions' | 'payments' | 'payouts' | 'bookings' | 'settings' | 'audit' | 'messages'>('growth');
   // Draft copy of settings for the settings form
   const [settingsDraft, setSettingsDraft] = useState(settings);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -297,7 +312,10 @@ export default function AdminDashboard({
 
   // Bookings search & filter states
   const [bookingSearch, setBookingSearch] = useState('');
-  const [bookingFilter, setBookingFilter] = useState<'all' | 'pending' | 'unpaid' | 'completed'>('all');
+  const [bookingFilter, setBookingFilter] = useState<'all' | 'soon' | 'pending' | 'unpaid' | 'temporary' | 'completed'>('all');
+  const [editBookingId, setEditBookingId] = useState<string | null>(null);
+  const [bookingEdit, setBookingEdit] = useState({ checkIn: '', checkOut: '', guestsCount: '' });
+  const [editSaving, setEditSaving] = useState(false);
 
   // Users search & filter
   const [userSearch, setUserSearch] = useState('');
@@ -334,7 +352,14 @@ export default function AdminDashboard({
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
   };
 
+  // A booking that is cancelled or rejected is not work. Cancelling only flips
+  // the status — totalPrice stays, nothing is ever paid against it, so
+  // `remaining > 0` held forever and every dead booking sat in the follow-up
+  // count permanently. The badge climbed on its own until the admin stopped
+  // believing it.
+  const isLiveBooking = (b: Booking) => b.status !== 'cancelled' && b.status !== 'rejected';
   const pendingOrUnpaidBookingsCount = bookings.filter((b) => {
+    if (!isLiveBooking(b)) return false;
     const bPayments = payments.filter((p) => p.bookingId === b.id && p.paymentStatus === 'approved');
     const totalPaid = bPayments.reduce((sum, p) => sum + p.amount, 0);
     const remaining = b.totalPrice - totalPaid;
@@ -359,12 +384,42 @@ export default function AdminDashboard({
       return b.status === 'pending';
     }
     if (bookingFilter === 'unpaid') {
-      return remaining > 0;
+      return isLiveBooking(b) && remaining > 0;
     }
     if (bookingFilter === 'completed') {
       return b.status === 'completed' || (b.status === 'approved' && remaining <= 0);
     }
+    // The Tuesday-morning question: who arrives soon and still owes money. It
+    // could not be asked before — the list had no date-aware filter and no
+    // sort, and arrived newest-typed-first from the server.
+    if (bookingFilter === 'soon') {
+      if (!isLiveBooking(b)) return false;
+      const days = (new Date(b.checkIn).getTime() - Date.now()) / 86400000;
+      return days >= -1 && days <= 14;
+    }
+    // A hold blocks real beds and nothing anywhere expires it, so it needs to
+    // be findable.
+    if (bookingFilter === 'temporary') {
+      return b.source === 'temporary' && isLiveBooking(b);
+    }
     return true; // 'all'
+  });
+
+  // Soonest arrival first for the date-driven views; everything else keeps the
+  // server's newest-first order.
+  const sortedBookings = (bookingFilter === 'soon' || bookingFilter === 'temporary')
+    ? [...filteredBookings].sort((a, b) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime())
+    : filteredBookings;
+
+  // Holds older than this have almost certainly been forgotten. Two weeks is
+  // long enough for a group to decide and short enough that the beds come back
+  // in the same season.
+  const STALE_HOLD_DAYS = 14;
+  const staleHolds = bookings.filter((b) => {
+    if (b.source !== 'temporary' || !isLiveBooking(b)) return false;
+    const created = b.createdAt ? new Date(b.createdAt).getTime() : NaN;
+    if (Number.isNaN(created)) return false;
+    return (Date.now() - created) / 86400000 > STALE_HOLD_DAYS;
   });
 
 
@@ -449,7 +504,12 @@ export default function AdminDashboard({
     if (finPeriod === '7d') { const s = new Date(); s.setDate(s.getDate() - 7); return { start: s, end }; }
     if (finPeriod === '30d') { const s = new Date(); s.setDate(s.getDate() - 30); return { start: s, end }; }
     if (finPeriod === 'month') { return { start: new Date(end.getFullYear(), end.getMonth(), 1), end }; }
-    if (finPeriod === 'custom' && finFrom && finTo) { return { start: new Date(finFrom), end: new Date(finTo) }; }
+    // The end date has to cover its whole day. new Date('2026-08-31') is
+    // midnight, so a payment timestamped that afternoon fell outside a range
+    // whose own label said it was included.
+    if (finPeriod === 'custom' && finFrom && finTo) {
+      return { start: new Date(`${finFrom}T00:00:00`), end: new Date(`${finTo}T23:59:59.999`) };
+    }
     return null; // all
   })();
   const bookingInPeriod = (b: Booking) => {
@@ -458,61 +518,71 @@ export default function AdminDashboard({
     return d >= finBounds.start && d <= finBounds.end;
   };
 
+  // Bookings whose TRIP falls in the window. Used only for context counts —
+  // the money figures below are scoped by when the money moved, which is a
+  // different axis and the right one for a cash page.
   const periodBookings = bookings.filter(bookingInPeriod);
   const periodConfirmed = periodBookings.filter((b) => b.status === 'approved' || b.status === 'completed');
 
-  // Expected = confirmed bookings' total price. Collected = admin-approved
-  // payments whose booking falls in the period.
-  const expectedRevenue = periodConfirmed.reduce((sum, b) => sum + b.totalPrice, 0);
-  const periodBookingIds = new Set(periodBookings.map((b) => b.id));
-  const collectedRevenue = payments
-    .filter((p) => p.paymentStatus === 'approved' && periodBookingIds.has(p.bookingId))
-    .reduce((sum, p) => sum + p.amount, 0);
+  // Pima only holds money if it has somewhere to receive it. With no
+  // collection accounts configured the guest pays the owner directly and
+  // there is nothing to report as held or transferable. The payouts tab gates
+  // on exactly this, and the finance page used to ignore it — reporting owner
+  // dues on money Pima had never touched.
+  const platformCollects = (settings.paymentMethods ?? []).length > 0;
 
-  // Each booking at the rate it was agreed at (migration 108), not whatever
-  // the platform charges today.
-  const expectedCommission = commissionTotal(periodBookings, PLATFORM_COMMISSION);
-  const collectedCommission = Math.round(payments
-    .filter((p) => p.paymentStatus === 'approved' && periodBookingIds.has(p.bookingId))
-    .reduce((sum, p) => {
-      const b = bookings.find((x) => x.id === p.bookingId);
-      return sum + p.amount * (b ? rateOf(b, PLATFORM_COMMISSION) : PLATFORM_COMMISSION);
-    }, 0));
-  const ownersNetFromCollected = collectedRevenue - collectedCommission;
-  const outstanding = Math.max(0, expectedRevenue - collectedRevenue);
-
-  // Per-owner breakdown from collected payments (who to pay out, and how much)
-  const houseOwnerId: Record<string, string> = {};
-  houses.forEach((h) => { houseOwnerId[h.id] = h.ownerId; });
-  const bookingHouseId: Record<string, string> = {};
-  bookings.forEach((b) => { bookingHouseId[b.id] = b.houseId; });
-
-  const ownerAgg: Record<string, { name: string; collected: number; expected: number; commission: number }> = {};
-  periodConfirmed.forEach((b) => {
-    const oid = houseOwnerId[b.houseId];
-    if (!oid) return;
-    if (!ownerAgg[oid]) ownerAgg[oid] = { name: users.find((u) => u.id === oid)?.name || 'مالك', collected: 0, expected: 0, commission: 0 };
-    ownerAgg[oid].expected += b.totalPrice;
+  // Every figure on the finance page, from one tested module.
+  //
+  // This replaced ~45 lines of inline arithmetic that disagreed with the
+  // payout engine next door: it took the commission out of the DEPOSIT
+  // instead of out of the booking value, counted payments on cancelled
+  // bookings as owner dues, and never subtracted a transfer once it had been
+  // made. See src/lib/adminFinance.ts for what each figure means and why.
+  // The books' own invariants. Dismissals live in localStorage rather than a
+  // table: some rows stay true for weeks by design — a guest who genuinely
+  // overpaid is owed a refund and the row is correct until it is paid — and a
+  // screen that can never be emptied is a screen nobody opens twice.
+  const financeExceptions = React.useMemo(
+    () => findFinanceExceptions({ bookings, payments, payouts, houses, commissionRate: settings.commissionRate }),
+    [bookings, payments, payouts, houses, settings.commissionRate],
+  );
+  const [dismissedExceptions, setDismissedExceptions] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('pima_admin_dismissed_exceptions') || '[]')); }
+    catch { return new Set(); }
   });
-  payments.filter((p) => p.paymentStatus === 'approved' && periodBookingIds.has(p.bookingId)).forEach((p) => {
-    const hid = bookingHouseId[p.bookingId];
-    const oid = hid ? houseOwnerId[hid] : undefined;
-    if (!oid) return;
-    if (!ownerAgg[oid]) ownerAgg[oid] = { name: users.find((u) => u.id === oid)?.name || 'مالك', collected: 0, expected: 0, commission: 0 };
-    ownerAgg[oid].collected += p.amount;
-    // Commission on money that actually arrived, each payment weighted by the
-    // rate ITS booking was agreed at — not one global rate over the lot.
-    const pb = bookings.find((x) => x.id === p.bookingId);
-    ownerAgg[oid].commission += p.amount * (pb ? rateOf(pb, PLATFORM_COMMISSION) : PLATFORM_COMMISSION);
-  });
-  const ownerRows = Object.entries(ownerAgg)
-    .map(([id, v]) => ({ id, ...v, net: Math.round(v.collected - v.commission) }))
-    .sort((a, b) => b.collected - a.collected);
+  const dismissException = (id: string) => {
+    setDismissedExceptions((prev) => {
+      const next = new Set(prev); next.add(id);
+      try { localStorage.setItem('pima_admin_dismissed_exceptions', JSON.stringify([...next])); } catch { /* private mode */ }
+      return next;
+    });
+  };
+  const openExceptions = financeExceptions.filter((e) => !dismissedExceptions.has(e.id));
 
-  // Top houses by money actually collected in the selected period. The النمو
-  // tab asks a different question — who is busiest — so it calls a different
-  // function; see lib/topHouses for why the two must not share a name.
-  const topCollectingHouses = topHousesByCollected(payments, bookingHouseId, houses, periodBookingIds);
+  // Guests' money still in Pima's hands, and what is in each collection
+  // account. Both were unrepresentable before migration 108.
+  const refundQueue = React.useMemo(() => refundsDue({ bookings, payments }), [bookings, payments]);
+  const [refundingId, setRefundingId] = useState<string | null>(null);
+
+  // The season, which for Pima is the business.
+  const renewals = React.useMemo(() => pendingRenewals({ bookings }), [bookings]);
+  const occupancy = React.useMemo(
+    () => emptyBedNightsAhead({ houses, bookings, weeks: 8 }),
+    [houses, bookings],
+  );
+
+  const treasury = React.useMemo(() => accountBalances({ payments, window: finBounds }), [payments, finBounds]);
+
+  const fin = summarizeFinances({
+    bookings,
+    payments,
+    payouts,
+    houses,
+    users,
+    commissionRate: PLATFORM_COMMISSION,
+    window: finBounds,
+    platformCollects,
+  });
 
   // Load chat messages when admin opens a booking chat
   useEffect(() => {
@@ -544,10 +614,22 @@ export default function AdminDashboard({
       bookings.map((b) => [b.id, b.userName, b.houseName, b.checkIn, b.checkOut, String(b.guestsCount), String(b.totalPrice), b.status, b.source || 'platform'])
     );
   };
+  // The period goes in the filename. A file called financials.csv says nothing
+  // about which months it covers, and two of them in a downloads folder are
+  // indistinguishable.
+  const finPeriodLabel = (): string => {
+    if (finPeriod === 'custom' && finFrom && finTo) return `${finFrom}_${finTo}`;
+    return finPeriod;
+  };
   const exportFinancials = () => {
-    downloadCsv('financials.csv',
-      ['المالك', 'المحصّل', 'العمولة', 'صافي المستحقات'],
-      ownerRows.map((o) => [o.name, String(o.collected), String(Math.round(o.commission)), String(o.net)])
+    downloadCsv(`financials_${finPeriodLabel()}.csv`,
+      ['المالك', 'المحصّل', 'عمولة بيما', 'لسه عنده', 'اتحوّل'],
+      [
+        ...fin.perOwner.map((o) => [o.name, String(o.collected), String(o.commission), String(o.owed), String(o.paid)]),
+        // A totals row, so the file reconciles against the screen instead of
+        // leaving whoever opens it to re-add the column and wonder.
+        ['الإجمالي', String(fin.collectedByPima), String(fin.platformCommission), String(fin.ownersOwed), String(fin.ownersPaid)],
+      ]
     );
   };
 
@@ -630,9 +712,15 @@ export default function AdminDashboard({
     key: typeof navSection; label: string; icon: React.ElementType;
     tabs: { key: typeof activeTab; label: string; badge?: number; pulse?: boolean }[];
   }[] = [
-    { key: 'home', label: 'الرئيسية', icon: BarChart3, tabs: [
-      { key: 'growth', label: 'النمو' },
-      { key: 'reports', label: 'التقارير' },
+    // Order is the MIRROR of how it reads on screen. The page is RTL, so the
+    // first child renders rightmost — money, content, home, people, system
+    // lands as النظام · المستخدمين · الرئيسية · المحتوى · الحجوزات from the
+    // left, with الرئيسية dead centre and two items either side of it.
+    { key: 'money', label: 'الحجوزات', icon: Coins, tabs: [
+      { key: 'bookings', label: 'الحجوزات', badge: pendingOrUnpaidBookingsCount },
+      { key: 'payments', label: 'الدفعيات', badge: pendingPaymentsCount },
+      { key: 'payouts', label: 'طلبات التحويل', badge: pendingPayoutsCount },
+      { key: 'exceptions', label: 'التدقيق', badge: financeExceptions.filter((e) => !dismissedExceptions.has(e.id)).length, pulse: true },
     ]},
     { key: 'content', label: 'المحتوى', icon: Building, tabs: [
       { key: 'houses', label: 'البيوت' },
@@ -640,15 +728,23 @@ export default function AdminDashboard({
       { key: 'announcements', label: 'البانرات' },
       { key: 'reviews', label: 'التقييمات' },
     ]},
-    { key: 'people', label: 'الناس', icon: Users, tabs: [
+    { key: 'home', label: 'الرئيسية', icon: BarChart3, tabs: [
+      { key: 'growth', label: 'النمو' },
+      // Money and audience were one «التقارير» page. They answer different
+      // questions, so splitting them is what makes either one readable.
+      { key: 'finance', label: 'الماليات' },
+      // «الجمهور», not «المستخدمين» — the bottom bar already has a
+      // «المستخدمين» section, and it goes somewhere else entirely (managing
+      // accounts, not counting them). Both were on screen at the same time
+      // reading identically. The page heading still says «إحصائيات
+      // المستخدمين», so the full name is where it explains itself.
+      { key: 'audience', label: 'الجمهور' },
+      { key: 'season', label: 'الموسم' },
+    ]},
+    { key: 'people', label: 'المستخدمين', icon: Users, tabs: [
       { key: 'users', label: 'المستخدمين' },
       { key: 'accounts', label: 'مراجعة الحسابات', badge: pendingAccounts.length, pulse: true },
       { key: 'messages', label: 'المحادثات' },
-    ]},
-    { key: 'money', label: 'الحجوزات والمال', icon: Coins, tabs: [
-      { key: 'bookings', label: 'الحجوزات', badge: pendingOrUnpaidBookingsCount },
-      { key: 'payments', label: 'الدفعيات', badge: pendingPaymentsCount },
-      { key: 'payouts', label: 'طلبات التحويل', badge: pendingPayoutsCount },
     ]},
     { key: 'system', label: 'النظام', icon: Settings, tabs: [
       { key: 'settings', label: 'الإعدادات' },
@@ -664,6 +760,9 @@ export default function AdminDashboard({
     { key: 'payments' as const, section: 'money' as const, label: 'دفعات بانتظار التحقق', count: pendingPaymentsCount, Icon: CreditCard },
     { key: 'payouts' as const, section: 'money' as const, label: 'طلبات تحويل معلّقة', count: pendingPayoutsCount, Icon: Wallet },
     { key: 'bookings' as const, section: 'money' as const, label: 'حجوزات محتاجة متابعة', count: pendingOrUnpaidBookingsCount, Icon: Calendar },
+    // Nothing expires a hold, so the only thing that will ever clear one is an
+    // admin noticing it. That has to start here.
+    { key: 'bookings' as const, section: 'money' as const, label: `حجوزات مؤقتة قديمة (+${arabicNumber(STALE_HOLD_DAYS)} يوم)`, count: staleHolds.length, Icon: Clock },
   ].filter((a) => a.count > 0);
 
   const totalPending = actionQueue.reduce((s, a) => s + a.count, 0);
@@ -677,6 +776,60 @@ export default function AdminDashboard({
     median: medianAge(users),
     coverage: coverage(users),
   }), [users]);
+
+  // ── Properties management: search, filter, sort, paging ──────────────
+  const [houseQuery, setHouseQuery] = useState('');
+  const [houseStatusFilter, setHouseStatusFilter] = useState<'all' | 'approved' | 'pending' | 'suspended'>('all');
+  const [houseSort, setHouseSort] = useState<'name' | 'rating' | 'bookings'>('name');
+  const [housePage, setHousePage] = useState(1);
+  const [housePerPage, setHousePerPage] = useState(10);
+  const [openHouseMenu, setOpenHouseMenu] = useState<string | null>(null);
+
+  // Real view counts (migration 106). Fetched only when the properties
+  // screen is open — it is one extra round trip and no other tab reads it.
+  const [houseViews, setHouseViews] = React.useState<Record<string, { total: number; last30: number }> | null>(null);
+  React.useEffect(() => {
+    if (activeTab !== 'houses' || houseViews !== null) return;
+    let cancelled = false;
+    void loadHouseViewCounts().then((v) => { if (!cancelled && v) setHouseViews(v); });
+    return () => { cancelled = true; };
+  }, [activeTab, houseViews]);
+
+  const houseStats = React.useMemo(() => ({
+    total: houses.length,
+    active: houses.filter((h) => h.status === 'approved').length,
+    pending: houses.filter((h) => h.status === 'pending').length,
+    suspended: houses.filter((h) => h.status === 'suspended').length,
+  }), [houses]);
+
+  /** Real bookings per house. There is no view counter anywhere in the app,
+   *  so the card shows what can actually be counted rather than inventing a
+   *  «مشاهدات» figure to fill the row. */
+  const bookingsPerHouse = React.useMemo(() => {
+    const m = new Map<string, number>();
+    for (const b of bookings) m.set(b.houseId, (m.get(b.houseId) ?? 0) + 1);
+    return m;
+  }, [bookings]);
+
+  const filteredHouses = React.useMemo(() => {
+    const q = houseQuery.trim().toLowerCase();
+    const rows = houses.filter((h) => {
+      if (houseStatusFilter !== 'all' && h.status !== houseStatusFilter) return false;
+      if (!q) return true;
+      return [h.name, h.governorate, h.ownerName].some((v) => (v ?? '').toLowerCase().includes(q));
+    });
+    const sorted = [...rows];
+    if (houseSort === 'rating') sorted.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+    else if (houseSort === 'bookings') sorted.sort((a, b) => (bookingsPerHouse.get(b.id) ?? 0) - (bookingsPerHouse.get(a.id) ?? 0));
+    else sorted.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+    return sorted;
+  }, [houses, houseQuery, houseStatusFilter, houseSort, bookingsPerHouse]);
+
+  const housePageCount = Math.max(1, Math.ceil(filteredHouses.length / housePerPage));
+  // Clamped, so narrowing the filter while on page 9 does not strand the
+  // admin on an empty page with no way back.
+  const houseSafePage = Math.min(housePage, housePageCount);
+  const pagedHouses = filteredHouses.slice((houseSafePage - 1) * housePerPage, houseSafePage * housePerPage);
 
   const goTo = (section: typeof navSection, tab: typeof activeTab) => {
     setNavSection(section);
@@ -711,28 +864,10 @@ export default function AdminDashboard({
 
       {/* Grouped navigation. Picking a section also jumps to its first tab —
           before, the sub-tabs changed while the content stayed behind. */}
+      {/* The five sections moved to a floating bar pinned at the bottom of the
+          screen — see the end of this component. Sub-tabs stay here, beside
+          the content they filter. */}
       <div className="bg-white border border-[#D6D6C2] rounded-2xl overflow-hidden">
-        <div className="flex border-b border-[#D6D6C2] overflow-x-auto">
-          {NAV_GROUPS.map((g) => {
-            const Icon = g.icon;
-            const groupPending = g.tabs.reduce((s, t) => s + (t.badge ?? 0), 0);
-            const isOn = navSection === g.key;
-            return (
-              <button key={g.key} onClick={() => goTo(g.key, g.tabs[0].key)}
-                className={`flex-1 min-w-[86px] flex flex-col items-center gap-1 min-h-11.5 text-[12px] font-black transition-all cursor-pointer relative ${
-                  isOn ? 'bg-[#0A2342] text-white' : 'text-[#8A8A70] hover:bg-[#EBEBE0]/40'
-                }`}>
-                <Icon className="w-4 h-4" />
-                {g.label}
-                {groupPending > 0 && !isOn && (
-                  <span className="absolute top-1.5 left-2 min-w-[15px] h-[15px] px-1 bg-rose-500 text-white text-[11px] font-black rounded-full flex items-center justify-center">
-                    {arabicBadge(groupPending)}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
         {/* Sub-tabs: natural width and scrollable, so labels aren't squeezed */}
         <div className="flex gap-1.5 p-1.5 overflow-x-auto">
           {NAV_GROUPS.find((g) => g.key === navSection)!.tabs.map((t) => (
@@ -959,6 +1094,18 @@ export default function AdminDashboard({
       {/* Moderation Panel */}
       {activeTab === 'moderation' && (
         <div className="space-y-4">
+          {/* What this screen is allowed to decide. It used to sit at the
+              bottom of the reports page, which is the one screen where it
+              had nothing to do with anything above it. It belongs here,
+              where someone is about to approve or reject a house. */}
+          <div className="bg-[#5A5A40] text-white rounded-2xl p-3 flex gap-2.5 items-start leading-relaxed">
+            <Shield className="w-5 h-5 text-amber-200 shrink-0 mt-0.5" />
+            <div>
+              <span className="text-[12px] font-bold text-amber-200 block">رقابة المحتوى والبيوت القبطية:</span>
+              <span className="text-[11px] text-white/80">يقتصر دور الإدارة ومسؤول الخدمة على التحقق من هوية ملاك البيوت وضمان مطابقة البيوت للشروط الروحية واللياقة الكاملة للخدمة المسيحية لضمان سلامة خلوات الكنائس والأسر.</span>
+            </div>
+          </div>
+
           <div className="text-xs font-bold text-[#8A8A70] px-1">البيوت الجديدة المرسلة بانتظار الاعتماد للظهور:</div>
 
           {pendingHouses.length === 0 && pendingHouseEdits.length === 0 ? (
@@ -1465,78 +1612,322 @@ export default function AdminDashboard({
 
       {/* Houses control — suspend / reactivate any house */}
       {activeTab === 'houses' && (
-        <div className="space-y-3">
-          <div className="text-xs font-bold text-[#8A8A70] px-1">التحكم في كل بيوت المنصة (إيقاف / إعادة تفعيل):</div>
-          {houses.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center">
+        <div className="space-y-4">
+
+          {/* Title and what this screen is for. */}
+          <div className="px-1">
+            <h3 className="text-[16px] font-black text-[#4A4A3A]">إدارة البيوت</h3>
+            <p className="text-[12px] text-[#8A8A70] mt-0.5">عرض وإدارة كل بيوت المؤتمرات المسجّلة على بيما.</p>
+          </div>
+
+          {/* Four figures, each counted from the houses themselves. */}
+          <div className="grid grid-cols-2 gap-2.5">
+            {([
+              { label: 'إجمالي البيوت', value: houseStats.total, Icon: Home, tint: 'text-[#0A2342]' },
+              { label: 'نشطة', value: houseStats.active, Icon: CheckCircle2, tint: 'text-emerald-700' },
+              { label: 'قيد المراجعة', value: houseStats.pending, Icon: Clock, tint: 'text-amber-700' },
+              { label: 'موقوفة', value: houseStats.suspended, Icon: XCircle, tint: 'text-rose-700' },
+            ] as const).map((k) => (
+              <div key={k.label} className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                <k.Icon className={`w-4 h-4 ${k.tint}`} />
+                <div className="text-[22px] font-black text-[#4A4A3A] leading-tight mt-1.5 tabular-nums">
+                  {arabicNumber(k.value)}
+                </div>
+                <div className="text-[11px] font-bold text-[#8A8A70]">{k.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Search takes the width; sort and export stay quiet beside it. */}
+          <div className="flex items-stretch gap-2">
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-4 h-4 text-[#BCBC9D] absolute top-1/2 -translate-y-1/2 right-3 pointer-events-none" />
+              <input
+                id="admin-house-search"
+                value={houseQuery}
+                onChange={(e) => { setHouseQuery(e.target.value); setHousePage(1); }}
+                placeholder="ابحث باسم البيت أو المحافظة أو المالك…"
+                aria-label="ابحث في البيوت"
+                className="w-full bg-white border border-[#EBEBE0] rounded-[20px] text-[12px] min-h-11 pr-9 pl-3 text-[#4A4A3A] placeholder-[#BCBC9D] focus:outline-none focus:border-[#756B42] transition-colors"
+              />
+            </div>
+            <select
+              value={houseSort}
+              onChange={(e) => setHouseSort(e.target.value as typeof houseSort)}
+              aria-label="ترتيب البيوت"
+              className="shrink-0 bg-white border border-[#EBEBE0] rounded-[20px] text-[12px] font-bold min-h-11 px-3 text-[#4A4A3A] focus:outline-none focus:border-[#756B42] cursor-pointer"
+            >
+              <option value="name">الاسم</option>
+              <option value="rating">التقييم</option>
+              <option value="bookings">الحجوزات</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => downloadCsv('houses.csv',
+                              ['الاسم', 'المحافظة', 'النوع', 'الحالة', 'التقييم', 'عدد التقييمات', 'الحجوزات', 'المشاهدات', 'المالك'],
+                              filteredHouses.map((h) => [
+                                h.name, h.governorate,
+                                h.propertyType === 'student' ? 'سكن طلابي' : h.propertyType === 'staff' ? 'سكن عاملين' : 'بيت مؤتمرات',
+                                h.status === 'approved' ? 'نشط' : h.status === 'pending' ? 'قيد المراجعة' : h.status === 'suspended' ? 'موقوف' : 'مرفوض',
+                                String(h.rating ?? 0), String(h.reviewsCount ?? 0),
+                                String(bookingsPerHouse.get(h.id) ?? 0),
+                  houseViews ? String(houseViews[h.id]?.total ?? 0) : '',
+                  h.ownerName ?? '',
+                              ]),
+                            )}
+              aria-label="تصدير البيوت"
+              className="shrink-0 flex items-center gap-1.5 bg-white border border-[#EBEBE0] rounded-[20px] text-[12px] font-bold min-h-11 px-3 text-[#4A4A3A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              تصدير
+            </button>
+          </div>
+
+          {/* Status filter — the counts double as the reason to tap. */}
+          <div className="flex gap-1.5 overflow-x-auto">
+            {([
+              { key: 'all', label: 'الكل', n: houseStats.total },
+              { key: 'approved', label: 'نشطة', n: houseStats.active },
+              { key: 'pending', label: 'قيد المراجعة', n: houseStats.pending },
+              { key: 'suspended', label: 'موقوفة', n: houseStats.suspended },
+            ] as const).map((f) => {
+              const on = houseStatusFilter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => { setHouseStatusFilter(f.key); setHousePage(1); }}
+                  className={`shrink-0 flex items-center gap-1.5 min-h-11 px-3.5 rounded-full text-[12px] font-bold border transition-all duration-200 cursor-pointer ${
+                    on
+                      ? 'bg-[#756B42] border-[#756B42] text-white'
+                      : 'bg-white border-[#EBEBE0] text-[#8A8A70] hover:border-[#D6D6C2]'
+                  }`}
+                >
+                  {f.label}
+                  <span className={`text-[11px] font-black tabular-nums ${on ? 'text-white/70' : 'text-[#BCBC9D]'}`}>
+                    {arabicNumber(f.n)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {filteredHouses.length === 0 ? (
+            <div className="bg-white rounded-[24px] p-10 border border-[#EBEBE0] text-center">
               <Home className="w-8 h-8 text-[#BCBC9D] mx-auto mb-2" />
-              <p className="text-sm font-bold text-[#4A4A3A]">لا توجد بيوت مسجلة بعد</p>
+              <p className="text-[12px] font-bold text-[#4A4A3A]">
+                {houses.length === 0 ? 'لا توجد بيوت مسجلة بعد' : 'مفيش بيوت مطابقة للبحث'}
+              </p>
+              {houses.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setHouseQuery(''); setHouseStatusFilter('all'); }}
+                  className="mt-3 text-[12px] font-bold text-[#756B42] underline cursor-pointer"
+                >
+                  امسح البحث والفلتر
+                </button>
+              )}
             </div>
           ) : (
-            <div className="space-y-2">
-              {houses.map((house) => {
-                const statusLabel = house.status === 'approved' ? 'نشط' : house.status === 'pending' ? 'قيد المراجعة' : house.status === 'suspended' ? 'موقوف من الإدارة' : 'مرفوض';
-                const statusClass = house.status === 'approved' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : house.status === 'pending' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-rose-50 text-rose-800 border-rose-200';
-                const owner = users.find((u) => u.id === house.ownerId);
+            <div className="space-y-2.5">
+              {pagedHouses.map((house) => {
+                const statusLabel = house.status === 'approved' ? 'نشط'
+                  : house.status === 'pending' ? 'قيد المراجعة'
+                    : house.status === 'suspended' ? 'موقوف' : 'مرفوض';
+                const statusClass = house.status === 'approved' ? 'bg-emerald-50 text-emerald-800'
+                  : house.status === 'pending' ? 'bg-amber-50 text-amber-800'
+                    : 'bg-rose-50 text-rose-800';
+                const dotClass = house.status === 'approved' ? 'bg-emerald-600'
+                  : house.status === 'pending' ? 'bg-amber-500' : 'bg-rose-600';
+                const typeLabel = house.propertyType === 'student' ? 'سكن طلابي'
+                  : house.propertyType === 'staff' ? 'سكن عاملين' : 'بيت مؤتمرات';
+                const bookingCount = bookingsPerHouse.get(house.id) ?? 0;
+                const menuOpen = openHouseMenu === house.id;
+
                 return (
-                  // Identity on one line, actions on the next until there is
-                  // room for both. On one line at 375px the three buttons and
-                  // the thumbnail left the name 49px — not enough to read
-                  // which house the row is about — and pushed the whole page
-                  // 14px wider than the screen.
-                  <div key={house.id} className="bg-white p-3 rounded-2xl border border-[#D6D6C2] flex flex-col md:flex-row md:items-center gap-3 text-right">
-                    <div className="flex items-center gap-3 min-w-0 md:flex-1">
-                      {house.images[0] ? <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-14 h-14 rounded-xl object-cover shrink-0" /> : <div className="w-14 h-14 rounded-xl bg-[#EBEBE0] shrink-0" />}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-[#4A4A3A] truncate">{house.name}</div>
-                        <div className="text-[11px] text-[#8A8A70] mt-0.5 truncate">{house.governorate} · {owner?.name || house.ownerName}</div>
-                        <span className={`inline-block mt-1 text-[11px] font-bold px-2 py-0.5 rounded border ${statusClass}`}>{statusLabel}</span>
+                  <div key={house.id} className="bg-white rounded-[24px] border border-[#EBEBE0] p-3 shadow-[0_1px_3px_rgba(16,43,92,0.04)]">
+                    <div className="flex items-start gap-3">
+
+                      {/* Actions first in the DOM, which in RTL puts them on
+                          the right — where the eye lands last, after the
+                          house has been identified. */}
+                      <div className="shrink-0 flex flex-col gap-1.5 w-[86px]">
+                        <span className={`flex items-center justify-center gap-1.5 text-[11px] font-bold py-1.5 rounded-full ${statusClass}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
+                          {statusLabel}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewHouseId(house.id)}
+                          className="flex items-center justify-center gap-1.5 min-h-11 rounded-[14px] border border-[#EBEBE0] text-[12px] font-bold text-[#4A4A3A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          عرض
+                        </button>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setOpenHouseMenu(menuOpen ? null : house.id)}
+                            aria-expanded={menuOpen}
+                            aria-label={`إجراءات ${house.name}`}
+                            className="w-full flex items-center justify-center gap-1.5 min-h-11 rounded-[14px] border border-[#EBEBE0] text-[12px] font-bold text-[#4A4A3A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                            المزيد
+                          </button>
+                          {menuOpen && (
+                            <>
+                              {/* Tapping anywhere else closes it. Without this
+                                  the only way out was to find «المزيد» again. */}
+                              <button
+                                type="button"
+                                aria-label="إغلاق القائمة"
+                                onClick={() => setOpenHouseMenu(null)}
+                                className="fixed inset-0 z-30 cursor-default"
+                              />
+                              {/* right-0, not left-0.
+                                  The actions column is the rightmost thing on
+                                  screen and this menu is 160px wide, so
+                                  anchoring its LEFT edge to an 86px column ran
+                                  it ~49px past the right edge of a 375px
+                                  phone — which is why it looked cut in half.
+                                  Anchored right, it opens inwards and fits.
+
+                                  z-40 clears the sticky section bar at the
+                                  bottom, which is z-20 and comes later in the
+                                  DOM, so at equal z it painted over the menu. */}
+                              <div className="absolute right-0 top-full mt-1 z-40 w-40 bg-white border border-[#EBEBE0] rounded-[16px] shadow-[0_8px_24px_rgba(16,43,92,0.12)] overflow-hidden">
+                              {(house.status === 'approved' || house.status === 'suspended') && onSuspendHouse && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const suspend = house.status === 'approved';
+                                    if (!suspend || confirm(`إيقاف بيت "${house.name}"؟ هيختفي من المنصة فوراً لحد ما تعيد تفعيله.`)) {
+                                      onSuspendHouse(house.id, suspend);
+                                    }
+                                    setOpenHouseMenu(null);
+                                  }}
+                                  className="w-full text-right px-3 min-h-11 text-[12px] font-bold text-[#4A4A3A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                                >
+                                  {house.status === 'approved' ? 'إيقاف البيت' : 'إعادة التفعيل'}
+                                </button>
+                              )}
+                              {onDeleteHouse && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (confirm(`أرشفة بيت "${house.name}"؟
+
+هيختفي من المنصة ومن نتايج البحث، بس حجوزاته ودفعاته هتفضل محفوظة — دي فلوس ناس عدّت من عندنا ومينفعش تتمسح.`)) {
+                                      onDeleteHouse(house.id);
+                                    }
+                                    setOpenHouseMenu(null);
+                                  }}
+                                  className="w-full text-right px-3 min-h-11 text-[12px] font-bold text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer border-t border-[#EBEBE0]"
+                                >
+                                  أرشفة البيت
+                                </button>
+                              )}
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap md:flex-nowrap md:shrink-0">
-                    <button
-                      onClick={() => setPreviewHouseId(house.id)}
-                      className="shrink-0 flex items-center gap-1 min-h-11 text-[12px] font-bold px-3 rounded-xl border border-[#D6D6C2] bg-white text-[#4A4A3A] hover:bg-[#F0EDE6] cursor-pointer"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>معاينة</span>
-                    </button>
-                    {(house.status === 'approved' || house.status === 'suspended') && (
-                      <button
-                        id={`toggle-house-suspend-${house.id}`}
-                        onClick={() => {
-                          const suspend = house.status === 'approved';
-                          if (!suspend || confirm(`إيقاف بيت "${house.name}"؟ هيختفي من المنصة فوراً لحد ما تعيد تفعيله.`)) {
-                            onSuspendHouse && onSuspendHouse(house.id, suspend);
-                          }
-                        }}
-                        className={`shrink-0 flex items-center gap-1 min-h-11 text-[12px] font-bold px-3 rounded-xl border transition-all cursor-pointer ${
-                          house.status === 'approved'
-                            ? 'bg-rose-50 border-rose-200 text-rose-800 hover:bg-rose-100'
-                            : 'bg-emerald-700 border-emerald-700 text-white hover:bg-emerald-800'
-                        }`}
-                      >
-                        <Power className="w-3.5 h-3.5" />
-                        <span>{house.status === 'approved' ? 'إيقاف' : 'إعادة تفعيل'}</span>
-                      </button>
-                    )}
-                    {onDeleteHouse && (
-                      <button
-                        onClick={() => {
-                          if (confirm(`حذف بيت "${house.name}" نهائيًا؟ ده هيمسح كل حجوزاته وغرفه ومش هترجع تاني.`)) {
-                            onDeleteHouse(house.id);
-                          }
-                        }}
-                        className="shrink-0 flex items-center gap-1 min-h-11 text-[12px] font-bold px-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>حذف نهائي</span>
-                      </button>
-                    )}
+
+                      {/* Name, where it is, what it is, and the three numbers
+                          the platform can actually count. */}
+                      <div className="flex-1 min-w-0 py-0.5">
+                        <div className="text-[13px] font-black text-[#4A4A3A] truncate">{house.name}</div>
+                        <div className="text-[11px] text-[#8A8A70] mt-1 flex items-center gap-1.5 flex-wrap">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            {house.governorate}
+                          </span>
+                          <span className="text-[#D6D6C2]">·</span>
+                          <span>{typeLabel}</span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-2.5">
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-[#4A4A3A]">
+                            <Star className="w-3.5 h-3.5 text-[#C5A059]" />
+                            <span className="tabular-nums">{house.rating ? house.rating.toFixed(1) : '—'}</span>
+                            <span className="text-[#BCBC9D] font-normal">({arabicNumber(house.reviewsCount ?? 0)})</span>
+                          </span>
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-[#4A4A3A]">
+                            <CalendarDays className="w-3.5 h-3.5 text-[#8A8A70]" />
+                            <span className="tabular-nums">{arabicNumber(bookingCount)}</span>
+                            <span className="text-[#BCBC9D] font-normal">حجز</span>
+                          </span>
+                          {/* Only once the counts have actually loaded. A zero
+                              drawn while the request is still in flight reads
+                              as «nobody looked at this house», which is a
+                              different claim from «we do not know yet». */}
+                          {houseViews && (
+                            <span className="flex items-center gap-1 text-[11px] font-bold text-[#4A4A3A]">
+                              <Eye className="w-3.5 h-3.5 text-[#8A8A70]" />
+                              <span className="tabular-nums">{arabicNumber(houseViews[house.id]?.total ?? 0)}</span>
+                              <span className="text-[#BCBC9D] font-normal">مشاهدة</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Image last in the DOM, so RTL places it on the left. */}
+                      {house.images[0] ? (
+                        <img
+                          referrerPolicy="no-referrer"
+                          src={house.images[0]}
+                          alt={house.name}
+                          className="w-[88px] h-[88px] rounded-[18px] object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-[88px] h-[88px] rounded-[18px] bg-[#F4F2EC] shrink-0 flex items-center justify-center">
+                          <Home className="w-6 h-6 text-[#D6D6C2]" />
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Paging. Rows-per-page sits opposite the numbers. */}
+          {filteredHouses.length > 0 && (
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <select
+                value={housePerPage}
+                onChange={(e) => { setHousePerPage(Number(e.target.value)); setHousePage(1); }}
+                aria-label="عدد البيوت في الصفحة"
+                className="bg-white border border-[#EBEBE0] rounded-[16px] text-[12px] font-bold min-h-11 px-2.5 text-[#4A4A3A] focus:outline-none focus:border-[#756B42] cursor-pointer"
+              >
+                {[10, 25, 50].map((n) => (
+                  <option key={n} value={n}>{arabicNumber(n)} لكل صفحة</option>
+                ))}
+              </select>
+
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setHousePage((p) => Math.max(1, p - 1))}
+                  disabled={houseSafePage === 1}
+                  aria-label="الصفحة السابقة"
+                  className="w-11 h-11 flex items-center justify-center rounded-[14px] border border-[#EBEBE0] text-[#4A4A3A] disabled:opacity-30 hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <span className="text-[12px] font-bold text-[#8A8A70] px-2 tabular-nums">
+                  {arabicNumber(houseSafePage)} / {arabicNumber(housePageCount)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setHousePage((p) => Math.min(housePageCount, p + 1))}
+                  disabled={houseSafePage === housePageCount}
+                  aria-label="الصفحة التالية"
+                  className="w-11 h-11 flex items-center justify-center rounded-[14px] border border-[#EBEBE0] text-[#4A4A3A] disabled:opacity-30 hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -2148,11 +2539,50 @@ export default function AdminDashboard({
       )}
 
       {/* Booking Reports */}
-      {activeTab === 'reports' && (
+      {/* ── الماليات ──────────────────────────────────────────────────────
+          Money only. This and the audience panel used to be one «التقارير»
+          scroll, so a question about revenue and a question about who signs
+          up were answered by the same long page and neither was easy to read.
+
+          Every figure comes from src/lib/adminFinance.ts. It used to be
+          computed inline here and disagreed with the payout engine next door
+          about the same booking — see that file's header for the arithmetic
+          and what it was getting wrong. */}
+      {activeTab === 'finance' && (
         <div className="space-y-4">
-          {/* Period filter */}
-          <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-2">
-            <span className="text-[12px] font-bold text-[#8A8A70]">عرض الأرقام المالية عن فترة (حسب تاريخ الدخول):</span>
+
+          <div className="px-1">
+            <h3 className="text-[16px] font-black text-[#4A4A3A]">الماليات</h3>
+            <p className="text-[12px] text-[#8A8A70] mt-0.5">فلوس بيما — اللي حصّلته، اللي ليك منه، واللي لسه لازم يتبعت للملّاك.</p>
+          </div>
+
+          {/* Without collection accounts Pima is not in the money path at all,
+              and every figure below is legitimately zero. Saying so beats a
+              page of zeroes that reads like a bug. */}
+          {!platformCollects && (
+            <div className="bg-amber-50 border border-amber-200 rounded-[20px] p-3.5 flex gap-2.5 items-start">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="text-[12px] font-black text-amber-900">بيما لسه مالهاش حسابات تحصيل</div>
+                <p className="text-[11px] text-amber-800/80 leading-relaxed mt-0.5">
+                  الضيف بيدفع لصاحب البيت على طول، فبيما مش ماسكة فلوس ومفيش حاجة تتحوّل. ضيف أرقام إنستاباي وفودافون كاش بتوع بيما من «الإعدادات» علشان التحصيل يشتغل.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* The period control, and what it selected. Scoped by the date the
+              MONEY moved, not by the trip's check-in — a deposit banked today
+              for a trip next month is cash in hand today. Dating it to the trip
+              and then ending every window at «now» meant it showed up in no
+              period at all except «كل الوقت». */}
+          <div className="bg-white p-3.5 rounded-[20px] border border-[#EBEBE0] space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[12px] font-bold text-[#8A8A70]">الفترة (حسب تاريخ الدفع)</span>
+              <span className="text-[11px] font-black text-[#0A2342] bg-[#EBEBE0]/60 px-2 py-1 rounded-lg shrink-0">
+                {arabicPlural(fin.bookingCount, BOOKING_FORMS)}
+              </span>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {([
                 { key: 'today', label: 'اليوم' },
@@ -2166,7 +2596,7 @@ export default function AdminDashboard({
                   key={p.key}
                   type="button"
                   onClick={() => setFinPeriod(p.key)}
-                  className={`text-[11px] font-bold px-2.5 min-h-11.5 rounded-lg transition-all cursor-pointer ${
+                  className={`text-[11px] font-bold px-3 min-h-11 rounded-xl transition-all cursor-pointer ${
                     finPeriod === p.key ? 'bg-[#5A5A40] text-white' : 'bg-[#EBEBE0]/50 text-[#4A4A3A] hover:bg-[#DEDECB]'
                   }`}
                 >
@@ -2183,222 +2613,515 @@ export default function AdminDashboard({
             )}
           </div>
 
-          {/* Who the users are.
-              Governorate and date of birth are both required at signup, so
-              this reports what people entered rather than estimating. There
-              is no gender breakdown because gender is not collected for
-              users at all — it exists only on Attendee, the people a group
-              leader registers onto a booking, which is a different
-              population. Every unrecorded value is counted as «غير محدد»
-              rather than dropped: dropping them would shrink the denominator
-              and make every share look larger than it is. */}
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-[#5A5A40]" />
-                <span className="text-[12px] font-black text-[#4A4A3A]">مين بيستخدم بيما</span>
+          {/* ── فلوس بيما ──
+              The cash position, in the order the admin cares about it: what
+              came in, what is mine, what I still owe, what I have sent. */}
+          <div className="px-1 pt-1">
+            <span className="text-[11px] font-black text-[#8A8A70]">فلوس بيما</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            {([
+              { label: 'حصّلته بيما', hint: 'عرابين وصلت لحسابات بيما', value: fin.collectedByPima, Icon: CheckCircle2, tint: 'text-emerald-700', num: 'text-emerald-800' },
+              { label: 'عمولة بيما', hint: `${arabicNumber(Math.round(PLATFORM_COMMISSION * 100))}٪ من قيمة الحجز`, value: fin.platformCommission, Icon: Coins, tint: 'text-[#C5A059]', num: 'text-[#0A2342]' },
+              { label: 'لسه عندك للملّاك', hint: 'محتاج يتحوّل', value: fin.ownersOwed, Icon: Wallet, tint: 'text-amber-600', num: 'text-amber-700' },
+              { label: 'حوّلته للملّاك', hint: 'خرج فعلاً من حساباتك', value: fin.ownersPaid, Icon: DollarSign, tint: 'text-[#5A5A40]', num: 'text-[#4A4A3A]' },
+            ] as const).map((k) => (
+              <div key={k.label} className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                <k.Icon className={`w-4 h-4 ${k.tint}`} />
+                <div className={`text-[20px] font-black leading-tight mt-1.5 tabular-nums ${k.num}`}>
+                  {arabicNumber(k.value)}
+                  <span className="text-[12px] font-bold text-[#8A8A70]"> ج.م</span>
+                </div>
+                <div className="text-[11px] font-bold text-[#4A4A3A]">{k.label}</div>
+                <div className="text-[11px] text-[#8A8A70] leading-snug">{k.hint}</div>
               </div>
-              <span className="text-[11px] font-bold text-[#8A8A70]">
-                {arabicNumber(demo.coverage.total)} مستخدم
-              </span>
-            </div>
+            ))}
+          </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[#FAF8F5] rounded-2xl p-3">
-                <div className="text-[11px] font-bold text-[#8A8A70]">متوسط السن</div>
-                <div className="text-lg font-black text-[#4A4A3A]">
-                  {demo.median === null ? '—' : `${arabicNumber(demo.median)} سنة`}
+          {/* Everything that is real money but is NOT Pima's to hold. This used
+              to be one card labelled «متبقٍ لم يُحصّل» under a warning triangle
+              — a permanent alarm over ~85% of the business, which is by design
+              paid in cash at the door and never enters Pima's accounts. */}
+          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-1">
+            {([
+              { label: 'باقي عند الضيف', hint: 'كاش لصاحب البيت عند الوصول — مش بيعدّي على بيما', value: fin.cashAtDoor, tint: 'text-[#4A4A3A]' },
+              ...(fin.collectedByOwnerDirect > 0 ? [{ label: 'اتدفع للمالك مباشرة', hint: 'عربون كاش استلمه صاحب البيت بنفسه', value: fin.collectedByOwnerDirect, tint: 'text-[#4A4A3A]' }] : []),
+              ...(fin.collectedOnCancelled > 0 ? [{ label: 'محصّل على حجوزات ملغية', hint: 'فلوس فعلية مستنية قرار استرجاع', value: fin.collectedOnCancelled, tint: 'text-rose-700' }] : []),
+              { label: 'قيمة الحجوزات', hint: 'إجمالي سعر الحجوزات اللي اتدفع فيها', value: fin.bookingValue, tint: 'text-[#4A4A3A]' },
+            ] as const).map((r) => (
+              <div key={r.label} className="flex justify-between items-start gap-3 text-[12px] py-2 border-b border-[#EBEBE0]/60 last:border-0">
+                <div className="min-w-0">
+                  <div className="font-bold text-[#4A4A3A]">{r.label}</div>
+                  <div className="text-[11px] text-[#8A8A70] leading-snug">{r.hint}</div>
                 </div>
-                <div className="text-[11px] text-[#8A8A70]">
-                  من {arabicNumber(demo.coverage.age)} مسجّل تاريخ ميلادهم
-                </div>
+                <span className={`font-black shrink-0 tabular-nums ${r.tint}`}>{arabicNumber(r.value)} ج.م</span>
               </div>
-              {/* The top slice is only a governorate if it is a named one.
-                  byGovernorate sorts «غير محدد» last, so govs[0] is only
-                  UNKNOWN when nobody recorded one at all — and then its
-                  percentage describes the missing data, not a place. Reading
-                  it out under a dash would say «—» and «١٠٠٪ من المستخدمين»
-                  in the same breath. */}
-              {(() => {
-                const top = demo.govs.find((g) => g.label !== 'غير محدد');
-                return (
-                  <div className="bg-[#FAF8F5] rounded-2xl p-3">
-                    <div className="text-[11px] font-bold text-[#8A8A70]">أكتر محافظة</div>
-                    <div className="text-lg font-black text-[#4A4A3A] truncate">{top ? top.label : '—'}</div>
-                    <div className="text-[11px] text-[#8A8A70]">
-                      {top
-                        ? `${arabicNumber(top.pct)}٪ من المستخدمين`
-                        : 'مفيش محافظات مسجّلة'}
+            ))}
+          </div>
+
+          {/* ── الخزنة ──
+              payment_method records the KIND of transfer — instapay, vodafone,
+              bank — not WHICH account, and Pima has several. Without this
+              there is no way to tally the app against each real balance at the
+              end of a week, which is the only way to notice a transfer that
+              never actually arrived. */}
+          {treasury.accounts.length > 0 && (
+            <>
+              <div className="px-1 pt-1">
+                <span className="text-[11px] font-black text-[#8A8A70]">الخزنة</span>
+              </div>
+              <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-1">
+                {treasury.accounts.map((a) => (
+                  <div key={a.account} className="flex justify-between items-start gap-3 text-[12px] py-2 border-b border-[#EBEBE0]/60 last:border-0">
+                    <div className="min-w-0">
+                      <div className="font-bold text-[#4A4A3A] truncate">{a.account}</div>
+                      <div className="text-[11px] text-[#8A8A70]">
+                        {arabicPlural(a.count, PAYMENT_FORMS)}
+                        {a.refunded > 0 && ` · اترجّع ${arabicNumber(a.refunded)}`}
+                      </div>
                     </div>
-                  </div>
-                );
-              })()}
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-[11px] font-black text-[#8A8A70]">الفئات العمرية</div>
-              {demo.ages.map((s) => (
-                <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[#5A5A40]" />
-              ))}
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-[11px] font-black text-[#8A8A70]">المحافظات</div>
-              {demo.govs.slice(0, 8).map((s) => (
-                <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[#0A2342]" />
-              ))}
-              {demo.govs.length > 8 && (
-                <p className="text-[11px] text-[#8A8A70]">
-                  و{arabicNumber(demo.govs.length - 8)} محافظة أخرى.
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Collected vs Expected — side by side */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gradient-to-br from-emerald-50 to-white p-4 rounded-3xl border border-emerald-200 space-y-1">
-              <CheckCircle2 className="w-5 h-5 text-emerald-700" />
-              <div className="text-[12px] text-emerald-900 font-bold">المحصّل فعلاً</div>
-              <div className="text-lg font-black text-emerald-900">{arabicNumber(collectedRevenue)} ج.م</div>
-              <div className="text-[11px] text-emerald-800/70">من دفعات معتمدة</div>
-            </div>
-            <div className="bg-gradient-to-br from-[#EBEBE0]/40 to-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
-              <TrendingUp className="w-5 h-5 text-[#5A5A40]" />
-              <div className="text-[12px] text-[#8A8A70] font-bold">المتوقع الكلي</div>
-              <div className="text-lg font-black text-[#4A4A3A]">{arabicNumber(expectedRevenue)} ج.م</div>
-              <div className="text-[11px] text-[#8A8A70]">قيمة الحجوزات المؤكدة</div>
-            </div>
-          </div>
-
-          {/* Commission — the business's cut */}
-          <div className="bg-[#0A2342] text-white rounded-3xl p-4 space-y-2">
-            <div className="flex items-center gap-2">
-              <Coins className="w-5 h-5 text-[#C5A059]" />
-              <span className="text-[11px] font-black text-[#C5A059]">عمولة المنصة ({arabicNumber(Math.round(PLATFORM_COMMISSION * 100))}٪)</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="text-[11px] text-white/60 font-bold">من المحصّل فعلاً</div>
-                <div className="text-xl font-black text-white">{arabicNumber(collectedCommission)} ج.م</div>
-              </div>
-              <div>
-                <div className="text-[11px] text-white/60 font-bold">المتوقعة (كل الحجوزات)</div>
-                <div className="text-xl font-black text-white/80">{arabicNumber(expectedCommission)} ج.م</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Owner payouts + outstanding */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
-              <DollarSign className="w-5 h-5 text-emerald-700" />
-              <div className="text-[12px] text-[#8A8A70] font-bold">مستحقات الملّاك (صافي المحصّل)</div>
-              <div className="text-lg font-black text-emerald-800">{arabicNumber(ownersNetFromCollected)} ج.م</div>
-              <div className="text-[11px] text-[#8A8A70]">بعد خصم عمولتك</div>
-            </div>
-            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
-              <div className="text-[12px] text-[#8A8A70] font-bold">متبقٍ لم يُحصّل بعد</div>
-              <div className="text-lg font-black text-amber-700">{arabicNumber(outstanding)} ج.م</div>
-              <div className="text-[11px] text-[#8A8A70]">المتوقع − المحصّل</div>
-            </div>
-          </div>
-
-          {/* Per-owner breakdown */}
-          <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] space-y-2">
-            <h3 className="text-xs font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">مستحقات كل صاحب بيت — من المُحصّل فعلاً</h3>
-            {ownerRows.length === 0 ? (
-              <p className="text-[12px] text-[#8A8A70] text-center py-3">لا توجد حجوزات في هذه الفترة.</p>
-            ) : (
-              <>
-                <div className="grid grid-cols-4 gap-1 text-[11px] font-bold text-[#8A8A70] pb-1 border-b border-[#EBEBE0]">
-                  <span>المالك</span>
-                  <span className="text-center">المحصّل</span>
-                  <span className="text-center">عمولتك</span>
-                  <span className="text-center">صافي مستحقاته</span>
-                </div>
-                {ownerRows.map((o) => (
-                  <div key={o.id} className="grid grid-cols-4 gap-1 text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0 items-center">
-                    <span className="font-bold text-[#4A4A3A] truncate">{o.name}</span>
-                    <span className="text-center text-emerald-800 font-bold">{arabicNumber(o.collected)}</span>
-                    <span className="text-center text-[#C5A059] font-bold">{arabicNumber(Math.round(o.commission))}</span>
-                    <span className="text-center text-[#0A2342] font-black">{arabicNumber(o.net)}</span>
+                    <span className="font-black text-[#0A2342] shrink-0 tabular-nums">{arabicNumber(a.net)} ج.م</span>
                   </div>
                 ))}
-              </>
+                {treasury.unassignedCount > 0 && (
+                  <p className="text-[11px] text-[#8A8A70] leading-relaxed pt-1">
+                    {arabicNumber(treasury.unassignedCount)} دفعة مش متسجّل وصلت على أنهي حساب. حدّدها من صفحة الدفعيات علشان المطابقة تظبط.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── التفاصيل ── */}
+          <div className="px-1 pt-1">
+            <span className="text-[11px] font-black text-[#8A8A70]">التفاصيل</span>
+          </div>
+
+          {/* One row per owner, sorted by who is owed the most so the payment
+              backlog is the first thing read. The old table was a 4-column
+              grid that gave an Arabic name 75px and cut most real ones in
+              half; the name now owns its own line. */}
+          <div className="bg-white rounded-[20px] p-4 border border-[#EBEBE0] space-y-1">
+            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">مستحقات كل صاحب بيت</h3>
+            {fin.perOwner.length === 0 ? (
+              <p className="text-[12px] text-[#8A8A70] text-center py-3">مفيش فلوس اتحركت في الفترة دي.</p>
+            ) : (
+              fin.perOwner.map((o) => (
+                <div key={o.id} className="py-2.5 border-b border-[#EBEBE0]/60 last:border-0 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12px] font-black text-[#4A4A3A] truncate">{o.name}</span>
+                    {o.owed > 0 ? (
+                      <span className="text-[11px] font-black text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg shrink-0 tabular-nums">
+                        لسه {arabicNumber(o.owed)} ج.م
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg shrink-0">
+                        متسدّد
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-3 text-[11px] text-[#8A8A70]">
+                    <span>حصّلت <span className="font-bold text-[#4A4A3A] tabular-nums">{arabicNumber(o.collected)}</span></span>
+                    <span>عمولتك <span className="font-bold text-[#C5A059] tabular-nums">{arabicNumber(o.commission)}</span></span>
+                    <span>حوّلت <span className="font-bold text-[#5A5A40] tabular-nums">{arabicNumber(o.paid)}</span></span>
+                  </div>
+                </div>
+              ))
             )}
           </div>
 
-          {/* Top houses by revenue */}
-          {topCollectingHouses.length > 0 && (
-            <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] space-y-2">
-              <h3 className="text-xs font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أعلى ٥ بيوت تحصيلاً (الفترة المختارة)</h3>
-              {topCollectingHouses.map((h, i) => (
-                <div key={h.id} className="flex items-center justify-between text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0">
+          {fin.perHouse.length > 0 && (
+            <div className="bg-white rounded-[20px] p-4 border border-[#EBEBE0] space-y-2">
+              <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أكثر البيوت تحصيلاً</h3>
+              {fin.perHouse.slice(0, 5).map((h, i) => (
+                <div key={h.id} className="flex items-center justify-between gap-2 text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0">
                   <span className="font-bold text-[#4A4A3A] truncate flex items-center gap-1.5">
                     <span className="w-4 h-4 rounded-full bg-[#EBEBE0] text-[#5A5A40] text-[11px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
                     {h.name}
                   </span>
-                  <span className="font-black text-emerald-800 shrink-0">{arabicNumber(h.collected)} ج.م</span>
+                  <span className="font-black text-emerald-800 shrink-0 tabular-nums">{arabicNumber(h.amount)} ج.م</span>
+                </div>
+              ))}
+              {fin.perHouse.length > 5 && (
+                <p className="text-[11px] text-[#8A8A70]">و{arabicNumber(fin.perHouse.length - 5)} بيت آخر.</p>
+              )}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <button onClick={exportFinancials} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+              <Download className="w-3.5 h-3.5" /> تصدير المالية CSV
+            </button>
+            <button onClick={exportBookings} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+              <Download className="w-3.5 h-3.5" /> تصدير الحجوزات CSV
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── إحصائيات المستخدمين ────────────────────────────────────────────
+          Who signs up, and from where.
+
+          Governorate and date of birth are both required at signup, so this
+          reports what people entered rather than estimating. There is no
+          gender breakdown because gender is not collected for users at all —
+          it exists only on Attendee, the people a group leader registers
+          onto a booking, which is a different population. Every unrecorded
+          value is counted as «غير محدد» rather than dropped: dropping them
+          would shrink the denominator and make every share look larger than
+          it is. */}
+      {activeTab === 'audience' && (
+        <div className="space-y-4">
+
+          <div className="px-1">
+            <h3 className="text-[16px] font-black text-[#4A4A3A]">إحصائيات المستخدمين</h3>
+            <p className="text-[12px] text-[#8A8A70] mt-0.5">مين بيستخدم بيما — أعمارهم ومحافظاتهم، من بيانات التسجيل نفسها.</p>
+          </div>
+
+          {(() => {
+            // Only a named governorate counts as «the top one». byGovernorate
+            // sorts «غير محدد» last, so the first named entry is the answer —
+            // and when there is none, saying «—» is honest where reading out
+            // «١٠٠٪ من المستخدمين» under a dash would not be.
+            const top = demo.govs.find((g) => g.label !== 'غير محدد');
+            const named = demo.govs.filter((g) => g.label !== 'غير محدد').length;
+            return (
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <Users className="w-4 h-4 text-[#0A2342]" />
+                  <div className="text-[22px] font-black text-[#4A4A3A] leading-tight mt-1.5 tabular-nums">{arabicNumber(demo.coverage.total)}</div>
+                  <div className="text-[11px] font-bold text-[#8A8A70]">إجمالي المستخدمين</div>
+                </div>
+                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <CalendarDays className="w-4 h-4 text-[#5A5A40]" />
+                  <div className="text-[22px] font-black text-[#4A4A3A] leading-tight mt-1.5 tabular-nums">
+                    {demo.median === null ? '—' : arabicNumber(demo.median)}
+                  </div>
+                  <div className="text-[11px] font-bold text-[#8A8A70]">متوسط السن</div>
+                  <div className="text-[11px] text-[#8A8A70] leading-snug">من {arabicNumber(demo.coverage.age)} مسجّل تاريخ ميلاده</div>
+                </div>
+                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <MapPin className="w-4 h-4 text-[#C5A059]" />
+                  <div className="text-[16px] font-black text-[#4A4A3A] leading-tight mt-1.5 truncate">{top ? top.label : '—'}</div>
+                  <div className="text-[11px] font-bold text-[#8A8A70]">أكتر محافظة</div>
+                  <div className="text-[11px] text-[#8A8A70] leading-snug">
+                    {top ? `${arabicNumber(top.pct)}٪ من المستخدمين` : 'مفيش محافظات مسجّلة'}
+                  </div>
+                </div>
+                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <Building className="w-4 h-4 text-[#5A5A40]" />
+                  <div className="text-[22px] font-black text-[#4A4A3A] leading-tight mt-1.5 tabular-nums">{arabicNumber(named)}</div>
+                  <div className="text-[11px] font-bold text-[#8A8A70]">محافظة وصلتها بيما</div>
+                </div>
+              </div>
+            );
+          })()}
+
+          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
+            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">الفئات العمرية</h3>
+            {demo.ages.map((s) => (
+              <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[#5A5A40]" />
+            ))}
+          </div>
+
+          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
+            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">المحافظات</h3>
+            {demo.govs.slice(0, 8).map((s) => (
+              <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[#0A2342]" />
+            ))}
+            {demo.govs.length > 8 && (
+              <p className="text-[11px] text-[#8A8A70]">و{arabicNumber(demo.govs.length - 8)} محافظة أخرى.</p>
+            )}
+          </div>
+
+          <div className="bg-white rounded-[20px] p-4 border border-[#EBEBE0] space-y-2.5">
+            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أرقام المنصة العامة</h3>
+            <div className="space-y-1">
+              {([
+                { label: 'إجمالي الحسابات المسجلة', value: arabicPlural(totalRegisteredUsers, MEMBER_FORMS), tint: 'text-[#4A4A3A]' },
+                { label: 'البيوت المؤكدة والنشطة للجمهور', value: arabicPlural(totalHousesApproved, HOUSE_FORMS), tint: 'text-[#4A4A3A]' },
+                { label: 'إجمالي الزوار المسكّنين تلقائياً', value: arabicPlural(allocationsCount, GUEST_FORMS), tint: 'text-[#5A5A40]' },
+                { label: 'متوسط الحضور بالرحلة', value: arabicPlural(averageBookingSize, GUEST_FORMS), tint: 'text-[#4A4A3A]' },
+                { label: 'الطلبات قيد المراجعة حاليًا', value: `${arabicPlural(pendingHouses.length, HOUSE_FORMS)} معلق`, tint: 'text-amber-700' },
+              ] as const).map((r) => (
+                <div key={r.label} className="flex justify-between items-center gap-2 text-[12px] py-1.5 border-b border-[#EBEBE0]/60 last:border-0">
+                  <span className="text-[#8A8A70]">{r.label}</span>
+                  <span className={`font-bold shrink-0 ${r.tint}`}>{r.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── التدقيق ────────────────────────────────────────────────────────
+          Empty when the books agree. That is the whole design: the weekly
+          question is not «how much did I make» — الماليات answers that — it is
+          «is anything wrong, and what». Until now the only way to ask was to
+          scroll the payments list newest-first and hope something looked odd.
+
+          Every rule is an invariant of Pima's own model. A generic
+          reconciliation report would flag every booking as underpaid, because
+          ~85% of every booking value is SUPPOSED to be missing from Pima's
+          accounts — it is cash the guest hands the owner at the door. */}
+      {activeTab === 'exceptions' && (
+        <div className="space-y-4">
+
+          <div className="px-1">
+            <h3 className="text-[16px] font-black text-[#4A4A3A]">التدقيق</h3>
+            <p className="text-[12px] text-[#8A8A70] mt-0.5">الحاجات اللي المفروض ما تحصلش في فلوس بيما. الصفحة فاضية يبقى كله مظبوط.</p>
+          </div>
+
+          {/* Money that belongs to a guest and is still in Pima's hands —
+              either the trip was cancelled after the deposit arrived, or the
+              guest simply sent more than the booking costs. Both were
+              invisible: payment_status has no refunded state, so the money
+              stayed counted as collected indefinitely and nothing said it was
+              owed back. cancellationPolicy computes what a guest is due, but
+              only to render a sentence; nothing persisted it. */}
+          {refundQueue.length > 0 && (
+            <div className="bg-white rounded-[20px] border border-rose-200 p-4 space-y-2">
+              <div className="flex items-center justify-between gap-2 border-b border-[#EBEBE0] pb-2">
+                <h3 className="text-[12px] font-black text-rose-800">فلوس محتاجة ترجع للضيوف</h3>
+                <span className="text-[11px] font-black text-rose-700 shrink-0 tabular-nums">
+                  {arabicNumber(refundQueue.reduce((s, r) => s + r.outstanding, 0))} ج.م
+                </span>
+              </div>
+              {refundQueue.map((r) => (
+                <div key={r.paymentId} className="py-2.5 border-b border-[#EBEBE0]/60 last:border-0 space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-[12px] font-black text-[#4A4A3A] truncate">{r.who}</div>
+                      <div className="text-[11px] text-[#8A8A70] truncate">
+                        {r.houseName} · {r.reason === 'cancelled' ? 'الحجز اتلغى' : 'دفع زيادة'}
+                      </div>
+                    </div>
+                    <span className="text-[12px] font-black text-rose-700 shrink-0 tabular-nums">
+                      {arabicNumber(r.outstanding)} ج.م
+                    </span>
+                  </div>
+                  {r.alreadyRefunded > 0 && (
+                    <div className="text-[11px] text-[#8A8A70]">اترجّع منها {arabicNumber(r.alreadyRefunded)} قبل كده.</div>
+                  )}
+                  {onRecordRefund && (
+                    <button
+                      type="button"
+                      disabled={refundingId === r.paymentId}
+                      onClick={async () => {
+                        const raw = prompt(`هترجّع كام لـ${r.who}؟\n\nالمستحق ${r.outstanding} ج.م.`, String(r.outstanding));
+                        if (raw === null) return;
+                        const amount = Number(raw);
+                        if (!Number.isFinite(amount) || amount <= 0 || amount > r.outstanding) {
+                          alert(`اكتب مبلغ بين ١ و${r.outstanding}.`); return;
+                        }
+                        const note = prompt('ملاحظة (اختياري) — رقم التحويل مثلاً:') || undefined;
+                        setRefundingId(r.paymentId);
+                        const ok = await onRecordRefund(r.paymentId, amount + r.alreadyRefunded, note);
+                        setRefundingId(null);
+                        if (ok) alert('اتسجّل الاسترجاع.');
+                      }}
+                      className="w-full bg-rose-50 border border-rose-200 hover:bg-rose-100 disabled:opacity-60 text-rose-800 text-[12px] font-bold min-h-11 rounded-xl cursor-pointer"
+                    >
+                      {refundingId === r.paymentId ? 'بيتسجّل…' : 'سجّل استرجاع'}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
           )}
 
-          {/* Booking-level context stats */}
-          <div className="grid grid-cols-2 gap-3 text-right">
-            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
-              <BarChart3 className="w-5 h-5 text-[#5A5A40]" />
-              <div className="text-[12px] text-[#8A8A70] font-bold">حجوزات مؤكدة (الفترة):</div>
-              <div className="text-lg font-black text-[#4A4A3A]">{arabicNumber(periodConfirmed.length)}</div>
+          {openExceptions.length === 0 ? (
+            <div className="bg-white rounded-[20px] p-8 border border-[#EBEBE0] text-center space-y-2">
+              <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
+              <p className="text-[12px] font-black text-[#4A4A3A]">كل حاجة مظبوطة</p>
+              <p className="text-[11px] text-[#8A8A70]">
+                اتفحص {arabicPlural(bookings.length, BOOKING_FORMS)} ومفيش ولا حاجة خارجة عن المتوقع.
+              </p>
             </div>
-            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] space-y-1">
-              <Users className="w-5 h-5 text-[#8A8A70]" />
-              <div className="text-[12px] text-[#8A8A70] font-bold">متوسط الحضور بالرحلة:</div>
-              <div className="text-lg font-black text-[#4A4A3A]">{arabicPlural(averageBookingSize, GUEST_FORMS)}</div>
-            </div>
-          </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <AlertTriangle className="w-4 h-4 text-rose-600" />
+                  <div className="text-[22px] font-black text-rose-700 leading-tight mt-1.5 tabular-nums">
+                    {arabicNumber(openExceptions.filter((e) => e.severity === 'high').length)}
+                  </div>
+                  <div className="text-[11px] font-bold text-[#8A8A70]">محتاج تصرّف دلوقتي</div>
+                </div>
+                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <Clock className="w-4 h-4 text-amber-600" />
+                  <div className="text-[22px] font-black text-amber-700 leading-tight mt-1.5 tabular-nums">
+                    {arabicNumber(openExceptions.filter((e) => e.severity === 'medium').length)}
+                  </div>
+                  <div className="text-[11px] font-bold text-[#8A8A70]">محتاج مراجعة</div>
+                </div>
+              </div>
 
-          {/* Quick general platform stats */}
-          <div className="bg-white rounded-3xl p-4 border border-[#D6D6C2] space-y-3 text-right">
-            <h3 className="text-xs font-bold text-[#4A4A3A]">إحصائيات المنصة العامة:</h3>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between items-center py-1.5 border-b border-[#D6D6C2]/60">
-                <span className="text-[#8A8A70]">إجمالي الحسابات المسجلة بالمنصة:</span>
-                <span className="font-bold text-[#4A4A3A]">{arabicPlural(totalRegisteredUsers, MEMBER_FORMS)}</span>
-              </div>
-              <div className="flex justify-between items-center py-1.5 border-b border-[#D6D6C2]/60">
-                <span className="text-[#8A8A70]">البيوت المؤكدة والنشطة للجمهور:</span>
-                <span className="font-bold text-[#4A4A3A]">{arabicPlural(totalHousesApproved, HOUSE_FORMS)}</span>
-              </div>
-              <div className="flex justify-between items-center py-1.5 border-b border-[#D6D6C2]/60">
-                <span className="text-[#8A8A70]">إجمالي الزوار المسكنين تلقائياً بالمنصة:</span>
-                <span className="font-bold text-[#5A5A40]">{arabicPlural(allocationsCount, GUEST_FORMS)}</span>
-              </div>
-              <div className="flex justify-between items-center py-1.5">
-                <span className="text-[#8A8A70]">الطلبات قيد المراجعة حاليًا:</span>
-                <span className="font-bold text-amber-700">{arabicPlural(pendingHouses.length, HOUSE_FORMS)} معلق</span>
-              </div>
-            </div>
-          </div>
+              <div className="space-y-2.5">
+                {openExceptions.map((e) => (
+                  <div
+                    key={e.id}
+                    className={`bg-white rounded-[20px] p-4 border space-y-2 ${
+                      e.severity === 'high' ? 'border-rose-200' : 'border-[#EBEBE0]'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[12px] font-black text-[#4A4A3A] truncate">{e.who}</div>
+                        <div className="text-[11px] text-[#8A8A70] truncate">{e.houseName}</div>
+                      </div>
+                      <span className={`text-[12px] font-black shrink-0 tabular-nums ${
+                        e.severity === 'high' ? 'text-rose-700' : 'text-amber-700'
+                      }`}>
+                        {arabicNumber(e.amount)} ج.م
+                      </span>
+                    </div>
 
-          {/* Export buttons */}
-          <div className="flex gap-2">
-            <button onClick={exportFinancials} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11.5 rounded-xl cursor-pointer">
-              <Download className="w-3.5 h-3.5" /> تصدير المالية CSV
+                    <p className="text-[12px] text-[#4A4A3A] leading-relaxed">{e.detail}</p>
+
+                    <div className="flex items-center justify-between gap-2 pt-0.5">
+                      <span className="text-[11px] font-bold text-[#5A5A40]">← {e.action}</span>
+                      <div className="flex gap-1.5 shrink-0">
+                        {e.bookingId && (
+                          <button
+                            type="button"
+                            onClick={() => { setBookingSearch(e.bookingId!); setBookingFilter('all'); goTo('money', 'bookings'); }}
+                            className="text-[11px] font-bold bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] min-h-11 px-3 rounded-xl cursor-pointer"
+                          >
+                            افتح الحجز
+                          </button>
+                        )}
+                        {/* Some rows stay true for weeks by design — an
+                            overpaid guest is owed a refund and the row is
+                            correct until it is paid. Without this the screen
+                            could never return to empty, and an alert that is
+                            always on is an alert nobody reads. */}
+                        <button
+                          type="button"
+                          onClick={() => dismissException(e.id)}
+                          className="text-[11px] font-bold bg-white border border-[#D6D6C2] hover:bg-[#FAF8F5] text-[#8A8A70] min-h-11 px-3 rounded-xl cursor-pointer"
+                        >
+                          شفته
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {dismissedExceptions.size > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setDismissedExceptions(new Set());
+                try { localStorage.removeItem('pima_admin_dismissed_exceptions'); } catch { /* private mode */ }
+              }}
+              className="w-full text-[11px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] min-h-11 cursor-pointer"
+            >
+              رجّع {arabicNumber(dismissedExceptions.size)} حاجة كنت اتجاهلتها
             </button>
-            <button onClick={exportBookings} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11.5 rounded-xl cursor-pointer">
-              <Download className="w-3.5 h-3.5" /> تصدير الحجوزات CSV
-            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── الموسم ─────────────────────────────────────────────────────────
+          Pima's whole year is a few weeks of summer, and nothing in the panel
+          acted on that. Two things a seasonal business should be doing in
+          February: seeing which weeks ahead are still empty, and calling the
+          churches that came last year and have not come back. */}
+      {activeTab === 'season' && (
+        <div className="space-y-4">
+
+          <div className="px-1">
+            <h3 className="text-[16px] font-black text-[#4A4A3A]">الموسم</h3>
+            <p className="text-[12px] text-[#8A8A70] mt-0.5">الأسابيع اللي لسه فاضية قدّامنا، والكنايس اللي جت السنة اللي فاتت ولسه مرجعتش.</p>
           </div>
 
-          <div className="bg-[#5A5A40] text-white rounded-2xl p-3 flex gap-2.5 items-start text-xs leading-relaxed">
-            <Shield className="w-5 h-5 text-amber-200 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold text-amber-200 block">رقابة المحتوى والبيوت القبطية:</span>
-              <span className="text-[11px] text-white/80">يقتصر دور الإدارة ومسؤول الخدمة على التحقق من هوية ملاك البيوت وضمان مطابقة البيوت للشروط الروحية واللياقة الكاملة للخدمة المسيحية لضمان سلامة خلوات الكنائس والأسر.</span>
+          {/* A bed empty on a Friday in August is not deferred to September —
+              it is gone. Pricing it is what turns occupancy into a decision. */}
+          <div className="bg-[#0A2342] text-white rounded-[20px] p-4 space-y-1">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-5 h-5 text-[#C5A059]" />
+              <span className="text-[11px] font-black text-[#C5A059]">أسرّة فاضية في الـ٨ أسابيع الجاية</span>
             </div>
+            <div className="text-[22px] font-black tabular-nums">
+              {arabicNumber(occupancy.totalEmptyValue)}<span className="text-[12px] font-bold text-white/70"> ج.م</span>
+            </div>
+            <div className="text-[11px] text-white/60">
+              {arabicNumber(occupancy.totalEmptyBeds)} ليلة سرير مش مباعة — دي فلوس بتتفقد كل أسبوع بيعدّي.
+            </div>
+          </div>
+
+          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
+            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">الإشغال أسبوع بأسبوع</h3>
+            {occupancy.weeks.map((w) => (
+              <div key={w.startISO} className="space-y-1">
+                <div className="flex items-center justify-between gap-2 text-[11px]">
+                  <span className="font-bold text-[#4A4A3A]">{arabicDateRange(w.startISO, w.endISO)}</span>
+                  <span className="text-[#8A8A70] tabular-nums shrink-0">
+                    {arabicNumber(w.occupancyPct)}٪ · {arabicNumber(w.emptyValue)} ج.م فاضي
+                  </span>
+                </div>
+                <div className="h-2 bg-[#EBEBE0] rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${w.occupancyPct >= 70 ? 'bg-emerald-600' : w.occupancyPct >= 35 ? 'bg-[#C5A059]' : 'bg-rose-400'}`}
+                    style={{ width: `${Math.min(100, w.occupancyPct)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+            {occupancy.weeks.every((w) => w.capacity === 0) && (
+              <p className="text-[11px] text-[#8A8A70]">مفيش بيوت معتمدة لسه، فمفيش سعة تتحسب.</p>
+            )}
+          </div>
+
+          {/* The church is the customer, not whichever servant held the phone
+              that year — so these are grouped by organisation. */}
+          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2">
+            <div className="flex items-center justify-between gap-2 border-b border-[#EBEBE0] pb-2">
+              <h3 className="text-[12px] font-black text-[#0A2342]">جم السنة اللي فاتت ولسه مرجعوش</h3>
+              <span className="text-[11px] font-bold text-[#8A8A70] shrink-0">{arabicNumber(renewals.length)}</span>
+            </div>
+            {renewals.length === 0 ? (
+              <p className="text-[12px] text-[#8A8A70] text-center py-3">مفيش حد في نفس التوقيت من السنة اللي فاتت.</p>
+            ) : (
+              renewals.slice(0, 20).map((r) => {
+                const msg = `سلام ونعمة${r.name ? ` يا ${r.name}` : ''}، معاكم بيما. زي ما حجزتوا معانا في "${r.lastHouseName}" السنة اللي فاتت، حابين نطمّنكم إن الحجز للموسم الجديد فتح — والأماكن بتخلص بدري. تحبوا نحجزلكم؟`;
+                return (
+                  <div key={r.key} className="py-2.5 border-b border-[#EBEBE0]/60 last:border-0 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[12px] font-black text-[#4A4A3A] truncate">{r.name}</div>
+                        <div className="text-[11px] text-[#8A8A70] truncate">
+                          {r.lastHouseName} · {arabicDate(r.lastCheckIn)}
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-black text-[#0A2342] shrink-0 tabular-nums">
+                        {arabicNumber(r.lastTotal)} ج.م
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] text-[#8A8A70]">{arabicPlural(r.lastGuests, GUEST_FORMS)}</span>
+                      {r.phone && (
+                        <a
+                          href={getWhatsAppLink(r.phone, msg)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold min-h-11 px-3 rounded-xl shrink-0"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" /> كلّمهم
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            {renewals.length > 20 && (
+              <p className="text-[11px] text-[#8A8A70]">و{arabicNumber(renewals.length - 20)} مجموعة تانية.</p>
+            )}
           </div>
         </div>
       )}
@@ -2592,6 +3315,36 @@ export default function AdminDashboard({
                             </button>
                           </div>
                         )}
+
+                        {/* A decided payment had no controls at all, so a
+                            mis-tap on «اعتماد» was permanent from the panel.
+                            The commonest real case is not a slip but the bank:
+                            the proof is approved and the transfer never lands.
+                            The only recovery available was cancelling the whole
+                            booking — which destroys a trip that may be perfectly
+                            good and still leaves the payment marked approved.
+
+                            This returns the payment to the queue. It does NOT
+                            touch the booking's own status: undoing a payment
+                            decision is not the same as cancelling the trip. The
+                            database has been ready for this all along — migration
+                            091 stamps previous_status, reviewed_at and reviewed_by
+                            on every status change, so the reversal is recorded. */}
+                        {!isPending && onVerifyPayment && (
+                          <div className="pt-2">
+                            <button
+                              id={`admin-payment-reopen-btn-${pay.id}`}
+                              type="button"
+                              onClick={() => {
+                                if (!confirm('هترجّع الإيصال ده لقائمة المراجعة تاني.\n\nالفلوس مش هتتحسب محصّلة لحد ما تراجعه، والحجز هيفضل زي ما هو. تمام؟')) return;
+                                onVerifyPayment(pay.id, 'pending', notesInputs[pay.id]);
+                              }}
+                              className="w-full bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 px-3 rounded-xl transition-colors cursor-pointer text-center"
+                            >
+                              تراجع — رجّع الإيصال للمراجعة
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Right side: Proof Image display */}
@@ -2663,7 +3416,14 @@ export default function AdminDashboard({
           return (b.paymentStatus === 'paid_deposit' || b.paymentStatus === 'paid_full' || b.depositPaid) &&
             b.status !== 'cancelled' && b.status !== 'rejected' && !b.ownerSettledAt && ownerShare(b) > 0;
         });
-        const owedByHouse = owedBookings.reduce<Record<string, Booking[]>>((acc, b) => {
+        // An owner's own payout REQUEST names a house and an amount, never a
+        // booking — so completing one settled nothing, the bookings that funded
+        // it stayed here looking unpaid, and the admin could send the same
+        // money a second time. Net them off before listing.
+        const { remaining: unclaimedOwed, coveredAmount: alreadyClaimed } = unclaimedOwedBookings({
+          owed: owedBookings, allBookings: bookings, payouts, commissionRate: settings.commissionRate,
+        });
+        const owedByHouse = unclaimedOwed.reduce<Record<string, Booking[]>>((acc, b) => {
           (acc[b.houseId] ??= []).push(b); return acc;
         }, {});
         const owedHouseIds = Object.keys(owedByHouse);
@@ -2673,8 +3433,15 @@ export default function AdminDashboard({
               <div className="space-y-2">
                 <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
                   <h3 className="text-xs font-bold text-[#4A4A3A]">مستحقات جاهزة للتحويل (لكل حجز):</h3>
-                  <div className="text-[12px] text-[#8A8A70]">{arabicPlural(owedBookings.length, BOOKING_FORMS)}</div>
+                  <div className="text-[12px] text-[#8A8A70]">{arabicPlural(unclaimedOwed.length, BOOKING_FORMS)}</div>
                 </div>
+                {/* Say what was netted off, rather than silently showing a
+                    shorter list than the money would suggest. */}
+                {alreadyClaimed > 0 && (
+                  <p className="text-[11px] text-[#8A8A70] leading-relaxed">
+                    اتخصم {arabicNumber(alreadyClaimed)} ج.م اتحوّلت خلاص عن طريق طلبات التحويل تحت، علشان الحجوزات دي متتدفعش مرتين.
+                  </p>
+                )}
                 {owedHouseIds.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70]">لا توجد مستحقات غير محوّلة حالياً.</div>
                 ) : owedHouseIds.map((hid) => {
@@ -2811,7 +3578,7 @@ export default function AdminDashboard({
               className="flex-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 min-h-11 text-[#2D2D24] focus:outline-none focus:border-[#464E3D] text-right"
             />
             <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
-              {(['all', 'pending', 'unpaid', 'completed'] as const).map((filterOpt) => (
+              {(['all', 'soon', 'pending', 'unpaid', 'temporary', 'completed'] as const).map((filterOpt) => (
                 <button
                   key={filterOpt}
                   type="button"
@@ -2825,6 +3592,8 @@ export default function AdminDashboard({
                   {filterOpt === 'all' && 'الكل'}
                   {filterOpt === 'pending' && 'بانتظار الموافقة'}
                   {filterOpt === 'unpaid' && 'متبقي مستحقات'}
+                  {filterOpt === 'soon' && 'وصول قريب'}
+                  {filterOpt === 'temporary' && 'حجوزات مؤقتة'}
                   {filterOpt === 'completed' && 'مدفوع بالكامل'}
                 </button>
               ))}
@@ -2832,14 +3601,14 @@ export default function AdminDashboard({
           </div>
 
           {/* Bookings list */}
-          {filteredBookings.length === 0 ? (
+          {sortedBookings.length === 0 ? (
             <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-2">
               <Clock className="w-8 h-8 text-[#BCBC9D] mx-auto animate-pulse" />
               <p className="text-sm font-bold text-[#4A4A3A]">لا توجد حجوزات مطابقة للبحث أو التصفية</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredBookings.map((booking) => {
+              {sortedBookings.map((booking) => {
                 const bPayments = payments.filter((p) => p.bookingId === booking.id && p.paymentStatus === 'approved');
                 const totalPaid = bPayments.reduce((sum, p) => sum + p.amount, 0);
                 const remaining = booking.totalPrice - totalPaid;
@@ -2864,7 +3633,23 @@ export default function AdminDashboard({
                     <div className="p-3.5 bg-slate-50 border-b border-[#D6D6C2]/60 flex flex-wrap items-center justify-between gap-2">
                       <div className="space-y-0.5">
                         <span className="text-[11px] text-[#8A8A70] font-bold">رقم الحجز: #{booking.id.toUpperCase()}</span>
-                        <h4 className="text-xs font-extrabold text-[#4A4A3A]">{booking.userName}</h4>
+                        <h4 className="text-xs font-extrabold text-[#4A4A3A] flex items-center gap-1.5 flex-wrap">
+                          {booking.userName}
+                          {/* A hold blocks real beds. Nothing anywhere expires
+                              one, and the panel never showed which bookings
+                              were holds or how old any booking was — so a
+                              forgotten hold killed inventory in silence. */}
+                          {booking.source === 'temporary' && (
+                            <span className="text-[11px] font-bold text-sky-800 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded-md">
+                              مؤقت ⏳ {booking.createdAt ? `· ${timeAgo(booking.createdAt)}` : ''}
+                            </span>
+                          )}
+                          {booking.source === 'manual' && (
+                            <span className="text-[11px] font-bold text-[#5A5A40] bg-[#EBEBE0]/70 border border-[#D6D6C2] px-1.5 py-0.5 rounded-md">
+                              سجّله المالك
+                            </span>
+                          )}
+                        </h4>
                         <p className="text-[12px] text-[#8A8A70]">الهاتف: <strong className="font-mono text-[11px] text-[#4A4A3A]">{booking.userPhone}</strong></p>
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -2956,6 +3741,64 @@ export default function AdminDashboard({
                           </button>
                         )}
                       </div>
+
+                      {/* Shifting a date or adding five people was owner-only,
+                          while the «تواصل معنا» number the group calls is
+                          Pima's. So the admin took the call and then had to ask
+                          the owner to make the change. The handler behind this
+                          is the owner's own — it checks capacity and re-runs
+                          the room allocation, so an edit here cannot overbook. */}
+                      {onUpdateBookingDetails && booking.status !== 'cancelled' && booking.status !== 'rejected' && (
+                        editBookingId === booking.id ? (
+                          <div className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl p-3 space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <label className="space-y-1">
+                                <span className="text-[11px] font-bold text-[#8A8A70]">الدخول</span>
+                                <input type="date" value={bookingEdit.checkIn} onChange={(e) => setBookingEdit((d) => ({ ...d, checkIn: e.target.value }))}
+                                  className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                              </label>
+                              <label className="space-y-1">
+                                <span className="text-[11px] font-bold text-[#8A8A70]">الخروج</span>
+                                <input type="date" value={bookingEdit.checkOut} onChange={(e) => setBookingEdit((d) => ({ ...d, checkOut: e.target.value }))}
+                                  className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                              </label>
+                            </div>
+                            <label className="space-y-1 block">
+                              <span className="text-[11px] font-bold text-[#8A8A70]">عدد الأفراد</span>
+                              <input type="number" min={1} value={bookingEdit.guestsCount} onChange={(e) => setBookingEdit((d) => ({ ...d, guestsCount: e.target.value }))}
+                                className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                            </label>
+                            <div className="flex gap-2">
+                              <button type="button" disabled={editSaving}
+                                onClick={async () => {
+                                  const guests = parseInt(bookingEdit.guestsCount, 10);
+                                  if (!bookingEdit.checkIn || !bookingEdit.checkOut || !Number.isFinite(guests) || guests < 1) { alert('اكتب تواريخ صحيحة وعدد أفراد أكبر من صفر.'); return; }
+                                  if (new Date(bookingEdit.checkOut) <= new Date(bookingEdit.checkIn)) { alert('تاريخ الخروج لازم يكون بعد تاريخ الدخول.'); return; }
+                                  setEditSaving(true);
+                                  const ok = await onUpdateBookingDetails(booking.id, { checkIn: bookingEdit.checkIn, checkOut: bookingEdit.checkOut, guestsCount: guests });
+                                  setEditSaving(false);
+                                  if (ok) setEditBookingId(null);
+                                }}
+                                className="flex-1 bg-[#5A5A40] hover:bg-[#4A4A3A] disabled:opacity-60 text-white text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+                                {editSaving ? 'بيتحفظ…' : 'احفظ التعديل'}
+                              </button>
+                              <button type="button" onClick={() => setEditBookingId(null)}
+                                className="bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 px-4 rounded-xl cursor-pointer">
+                                إلغاء
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button type="button"
+                            onClick={() => {
+                              setEditBookingId(booking.id);
+                              setBookingEdit({ checkIn: booking.checkIn?.slice(0, 10) || '', checkOut: booking.checkOut?.slice(0, 10) || '', guestsCount: String(booking.guestsCount) });
+                            }}
+                            className="w-full flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+                            <Pencil className="w-3.5 h-3.5" /> تعديل التواريخ والعدد
+                          </button>
+                        )
+                      )}
                     </div>
                   </div>
                 );
@@ -3216,6 +4059,76 @@ export default function AdminDashboard({
           </div>
         </div>
       )}
+
+      {/* ── The bottom navigation ──────────────────────────────────────────
+          Five sections, الرئيسية in the middle as the primary action.
+
+          Sticky rather than fixed, so it rides inside the app shell's own
+          scroll container instead of floating over the whole viewport — the
+          shell clips overflow, and a `fixed` bar would sit outside it and
+          collide with the layout on desktop.
+
+          The raised disc stays INSIDE the bar's box. The same constraint is
+          documented on the app's own bottom bar in WebLayout: the shell
+          clips, so a button breaking the top edge is simply cut off. The bar
+          is tall enough to hold the circle instead.
+
+          The safe-area inset keeps the tap targets clear of the Android
+          gesture bar, matching the treatment the other two bars already have. */}
+      <div className="sticky bottom-0 z-20 pt-2 pb-[env(safe-area-inset-bottom)]">
+        <nav
+          aria-label="أقسام لوحة الإدارة"
+          className="bg-white rounded-[28px] shadow-[0_8px_28px_rgba(10,35,66,0.14),0_2px_8px_rgba(10,35,66,0.06)] border border-[#EBEBE0] px-2 py-2 flex items-stretch"
+        >
+          {NAV_GROUPS.map((g) => {
+            const Icon = g.icon;
+            const isOn = navSection === g.key;
+            const isPrimary = g.key === 'home';
+
+            if (isPrimary) {
+              return (
+                <button
+                  key={g.key}
+                  onClick={() => goTo(g.key, g.tabs[0].key)}
+                  aria-current={isOn ? 'page' : undefined}
+                  className="flex-1 flex flex-col items-center justify-center gap-1 min-h-14 cursor-pointer group"
+                >
+                  <span
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-[250ms] ${
+                      isOn
+                        ? 'bg-[#0A2342] shadow-[0_6px_16px_rgba(10,35,66,0.35)] scale-100'
+                        : 'bg-[#0A2342]/90 shadow-[0_3px_10px_rgba(10,35,66,0.2)] scale-95 group-hover:scale-100'
+                    }`}
+                  >
+                    <Icon className="w-6 h-6 text-[#C5A059]" />
+                  </span>
+                  <span className={`text-[11px] font-black transition-colors duration-[250ms] ${isOn ? 'text-[#C5A059]' : 'text-[#8A8A70]'}`}>
+                    {g.label}
+                  </span>
+                </button>
+              );
+            }
+
+            return (
+              <button
+                key={g.key}
+                onClick={() => goTo(g.key, g.tabs[0].key)}
+                aria-current={isOn ? 'page' : undefined}
+                className="flex-1 flex flex-col items-center justify-center gap-1.5 min-h-14 cursor-pointer"
+              >
+                <Icon
+                  className={`w-5 h-5 transition-all duration-[250ms] ${
+                    isOn ? 'text-[#C5A059] scale-110' : 'text-[#8A8A70] scale-100'
+                  }`}
+                />
+                <span className={`text-[11px] font-bold transition-colors duration-[250ms] ${isOn ? 'text-[#C5A059]' : 'text-[#8A8A70]'}`}>
+                  {g.label}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
     </div>
   );

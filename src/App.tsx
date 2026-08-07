@@ -20,12 +20,14 @@ import {
   createWaitlistEntry, notifyWaitlist as notifyWaitlistDb, notifyOwnerDistributionDone as notifyOwnerDistributionDoneDb,
   loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
   loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb, settleBookingsPayout,
+  recordRefund as recordRefundDb, setPaymentAccount,
   loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
   createPromoBanner, setPromoBannerActive, deletePromoBanner, updatePromoBanner,
   loadPlatformSettings, updatePlatformSettings, subscribeToPlatformSettings,
   deleteOwnAccount,
   loadAuditLog,
   loadPaymentProofImage,
+  recordHouseView,
 } from './lib/db';
 import { autoAllocate } from './lib/roomAllocation';
 import { resolvePaymentVerdict } from './lib/paymentLedger';
@@ -629,6 +631,18 @@ export default function App() {
       prevHouseRef.current = null;
     }
   }, [selectedHouse]);
+
+  // Someone opened a house's page (migration 106).
+  //
+  // Keyed on the id and placed here rather than in HouseDetail, because a
+  // house can be opened from the list, the map or a shared link, and this is
+  // the one place all three arrive at. Not awaited and never surfaced: the
+  // visitor came to read the page, and a telemetry failure is not their
+  // problem.
+  useEffect(() => {
+    if (!selectedHouse?.id) return;
+    void recordHouseView(selectedHouse.id);
+  }, [selectedHouse?.id]);
 
   // A page opens at its top.
   //
@@ -1318,7 +1332,7 @@ export default function App() {
     // recipient that never existed.
   };
 
-  const handleVerifyPayment = (paymentId: string, status: 'approved' | 'rejected', adminNotes?: string) => {
+  const handleVerifyPayment = (paymentId: string, status: 'approved' | 'rejected' | 'pending', adminNotes?: string) => {
     setPayments((prevPayments) =>
       prevPayments.map((p) => (p.id === paymentId ? { ...p, paymentStatus: status, adminNotes } : p))
     );
@@ -1326,13 +1340,21 @@ export default function App() {
     const payment = payments.find((p) => p.id === paymentId);
     if (!payment) return;
     // Persist updated payment to Supabase
-    trackWrite(updatePaymentStatus(paymentId, status, adminNotes), status === 'approved' ? 'اعتماد الإيصال' : 'رفض الإيصال');
+    const verb = status === 'approved' ? 'اعتماد الإيصال' : status === 'rejected' ? 'رفض الإيصال' : 'إرجاع الإيصال للمراجعة';
+    trackWrite(updatePaymentStatus(paymentId, status, adminNotes), verb);
     const b = bookings.find((bk) => bk.id === payment.bookingId);
     if (!b) return;
 
     // What this verdict means for the booking — judged against the whole
     // ledger, not this one proof. `null` means leave the booking alone.
-    const change = resolvePaymentVerdict({ booking: b, payment, payments, verdict: status });
+    //
+    // Putting a payment back in the queue means the same thing to the booking
+    // as rejecting it: this money is no longer confirmed. The rejected branch
+    // deliberately leaves booking.status alone, which is what we want — undoing
+    // a payment decision is not the same as cancelling the trip, and those
+    // dates may well have been promised to the group by now.
+    const verdict = status === 'approved' ? 'approved' : 'rejected';
+    const change = resolvePaymentVerdict({ booking: b, payment, payments, verdict });
     if (!change) return;
 
     setBookings((prev) => prev.map((bk) => (bk.id === b.id ? { ...bk, ...change } : bk)));
@@ -1343,6 +1365,31 @@ export default function App() {
     // approved/deposit-received when applicable) now fires server-side
     // (migration 047, trg_notify_guest_on_payment_update +
     // trg_notify_guest_on_booking_update) — atomic with these writes.
+  };
+
+  /**
+   * Give a guest their money back, and record that it happened.
+   *
+   * Until now there was nowhere to put this: payment_status is
+   * pending|approved|rejected, so a deposit on a cancelled trip stayed counted
+   * as collected indefinitely and nothing said it was owed back. The server
+   * refuses an amount larger than the payment or one against a payment that was
+   * never approved — both would invent an outflow — so the optimistic update
+   * only lands after it agrees.
+   */
+  const handleRecordRefund = async (paymentId: string, amount: number, note?: string): Promise<boolean> => {
+    const ok = await trackWrite(recordRefundDb({ paymentId, amount, note }), 'تسجيل استرجاع');
+    if (!ok) return false;
+    setPayments((prev) => prev.map((p) => (p.id === paymentId
+      ? { ...p, refundedAmount: amount, refundedAt: new Date().toISOString(), refundNote: note }
+      : p)));
+    return true;
+  };
+
+  /** Which of Pima's own accounts a payment landed in, for weekly reconciliation. */
+  const handleSetPaymentAccount = (paymentId: string, account: string) => {
+    setPayments((prev) => prev.map((p) => (p.id === paymentId ? { ...p, receivedAccount: account } : p)));
+    trackWrite(setPaymentAccount(paymentId, account), 'تحديد حساب التحصيل');
   };
 
   // --- Admin Operations ---
@@ -1360,6 +1407,15 @@ export default function App() {
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
     );
+    // This write was missing. The dropdown moved, the badge changed, and the
+    // whole thing was thrown away on the next page load — the admin could not
+    // actually change anyone's role and nothing said so. handleBanUser, ten
+    // lines below, had the write all along.
+    //
+    // Promotion to admin is refused by the database for a non-admin caller
+    // (protect_user_privileged_columns, migration 037: NEW.role := OLD.role),
+    // so this sticks only when a real admin is making it.
+    trackQuery(supabase.from('users').update({ role: newRole }).eq('id', userId), 'تغيير صلاحية المستخدم');
     // If the changed user is the currently logged user, update current state too
     if (currentUser && currentUser.id === userId) {
       setCurrentUser((prev) => (prev ? { ...prev, role: newRole } : null));
@@ -2101,6 +2157,9 @@ export default function App() {
               allocationsCount={allocationsCount}
               payments={payments}
               onVerifyPayment={handleVerifyPayment}
+              onUpdateBookingDetails={handleUpdateBookingDetails}
+              onRecordRefund={handleRecordRefund}
+              onSetPaymentAccount={handleSetPaymentAccount}
               onSetUserApproval={handleSetUserApproval}
               promoBanners={promoBanners}
               onAddPromoBanner={handleAddPromoBanner}

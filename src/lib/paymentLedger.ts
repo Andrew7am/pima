@@ -158,6 +158,65 @@ export function ownerShareOf(booking: Booking, commissionRate: number): number {
 }
 
 /**
+ * Drop the bookings an owner has already been paid for through a payout
+ * REQUEST, so the admin cannot transfer the same share a second time.
+ *
+ * There are two ways an owner gets paid and they did not know about each
+ * other. settleBookingsPayout stamps ownerSettledAt on the bookings it
+ * covers, so those drop out of the ready-to-transfer list by themselves.
+ * Completing an owner's own payout request does not stamp anything — it
+ * names a house and an amount, never a booking — so the bookings that funded
+ * it stayed in the list looking unpaid, and the admin could send the money
+ * again.
+ *
+ * Netting is oldest-first, which is the order the money was earned in and the
+ * order an owner assumes when he asks to be paid.
+ *
+ * The subtlety: settleBookingsPayout writes a payout row AND stamps the
+ * bookings, using one timestamp for both. Counting that row here would net off
+ * a SECOND, unrelated booking — paying the owner once but marking two
+ * bookings settled. Those rows are identified by that shared timestamp and
+ * skipped.
+ */
+export function unclaimedOwedBookings(args: {
+  owed: Booking[];
+  allBookings: Booking[];
+  payouts: Payout[];
+  commissionRate: number;
+}): { remaining: Booking[]; coveredAmount: number } {
+  const { owed, allBookings, payouts, commissionRate } = args;
+
+  const settledStamps = new Set(
+    allBookings.filter((b) => b.ownerSettledAt).map((b) => `${b.houseId}|${b.ownerSettledAt}`),
+  );
+
+  const claimedByHouse = new Map<string, number>();
+  for (const p of payouts) {
+    if (p.status === 'rejected') continue;
+    if (p.completedAt && settledStamps.has(`${p.houseId}|${p.completedAt}`)) continue;
+    claimedByHouse.set(p.houseId, (claimedByHouse.get(p.houseId) || 0) + p.amount);
+  }
+
+  const byOldest = [...owed].sort(
+    (a, b) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime(),
+  );
+
+  const remaining: Booking[] = [];
+  let coveredAmount = 0;
+  for (const b of byOldest) {
+    const share = ownerShareOf(b, commissionRate);
+    const budget = claimedByHouse.get(b.houseId) || 0;
+    if (budget >= share && share > 0) {
+      claimedByHouse.set(b.houseId, budget - share);
+      coveredAmount += share;
+      continue;
+    }
+    remaining.push(b);
+  }
+  return { remaining, coveredAmount };
+}
+
+/**
  * What approving or rejecting one payment proof means for its booking.
  *
  * `null` means: record the verdict on the payment row, and leave the booking

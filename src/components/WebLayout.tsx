@@ -290,7 +290,10 @@ export default function WebLayout({
       </div>
 
       {/* Bottom Navigation Bar — fully hidden when the owner is on their
-          own dashboard: OwnerDashboardShell provides its own bottom nav
+          own dashboard, and for an admin on theirs. Both provide their own
+          bottom nav covering real destinations, and the shared bar would
+          otherwise show a single tab pointing at the screen you are already
+          on. OwnerDashboardShell provides its own bottom nav
           on mobile and a sidebar on desktop, both covering more real
           destinations than the tiny 2-item bar we'd otherwise show. */}
       <nav
@@ -298,7 +301,8 @@ export default function WebLayout({
         // same treatment the owner dashboard's own bar already has.
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         className={`shrink-0 bg-white border-t border-[var(--color-natural-border)] rounded-t-3xl shadow-[0_-8px_24px_rgba(0,0,0,0.08),0_-2px_6px_rgba(0,0,0,0.03)] flex items-stretch z-10 ${
-          currentUser?.role === 'owner' && activeScreen === 'owner_panel' ? 'hidden' : ''
+          (currentUser?.role === 'owner' && activeScreen === 'owner_panel')
+          || (currentUser?.role === 'admin' && activeScreen === 'admin_panel') ? 'hidden' : ''
         }`}
       >
         {visibleNav.map(item => {
