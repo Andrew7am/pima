@@ -7,7 +7,7 @@
 import { createRoot } from 'react-dom/client';
 import AdminDashboard from './components/AdminDashboard';
 import { INITIAL_USERS, INITIAL_HOUSES, INITIAL_BOOKINGS, INITIAL_REVIEWS, INITIAL_PAYMENTS } from './mockData';
-import type { User, PlatformSettings } from './types';
+import type { User, PlatformSettings, Booking } from './types';
 import { DEFAULT_PLATFORM_SETTINGS } from './types';
 import './index.css';
 
@@ -22,7 +22,7 @@ const noop = () => {};
 // unseen. One deliberately broken booking: marked as having paid its deposit
 // with no payment behind it, which is the failure paymentLedger records as
 // having actually cost money.
-const PREVIEW_BOOKINGS = [
+const PREVIEW_BOOKINGS: Booking[] = [
   ...INITIAL_BOOKINGS,
   {
     ...INITIAL_BOOKINGS[0],
