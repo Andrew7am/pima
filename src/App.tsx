@@ -2164,6 +2164,7 @@ export default function App() {
               onRejectHouseEdit={handleRejectHouseEdit}
               onToggleUserRole={handleToggleUserRole}
               onSuspendHouse={handleSuspendHouse}
+              onSetHouseDiscount={handleSetHouseDiscount}
               onBanUser={handleBanUser}
               onReleaseUser={handleReleaseUser}
               onCancelBooking={handleAdminCancelBooking}
