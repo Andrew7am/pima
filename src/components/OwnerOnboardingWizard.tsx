@@ -711,7 +711,11 @@ export default function OwnerOnboardingWizard({
               {/* onSelect fires once per pick, so this appends rather than
                   replacing — the old handler was setImageUrl, which meant a
                   second photograph quietly discarded the first. */}
-              <PhotoPickerButtons idPrefix="onboarding-cover" onSelect={addImage} />
+              {/* Registering a house means uploading its whole album. One at a
+                  time is dozens of round trips through the file picker, so this
+                  takes a whole selection at once; addImage already appends and
+                  de-duplicates, so it is called per photo in picked order. */}
+              <PhotoPickerButtons idPrefix="onboarding-cover" multiple onSelect={addImage} />
               {images.length > 0 && (
                 <p className="text-[10px] text-[#8A8A70] font-bold">{images.length} صورة مضافة</p>
               )}

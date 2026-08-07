@@ -100,6 +100,7 @@ export const AMENITY_FORMS: ArabicPluralForms = { one: 'مرفق واحد', two:
 export const NIGHT_FORMS: ArabicPluralForms = { one: 'ليلة واحدة', two: 'ليلتان', few: 'ليالٍ', many: 'ليلة' };
 export const MEMBER_FORMS: ArabicPluralForms = { one: 'عضو واحد', two: 'عضوان', few: 'أعضاء', many: 'عضو' };
 export const POINT_FORMS: ArabicPluralForms = { one: 'نقطة واحدة', two: 'نقطتان', few: 'نقاط', many: 'نقطة' };
+export const PHOTO_FORMS: ArabicPluralForms = { one: 'صورة واحدة', two: 'صورتان', few: 'صور', many: 'صورة' };
 export const DAY_FORMS: ArabicPluralForms = { one: 'يوم واحد', two: 'يومان', few: 'أيام', many: 'يوم' };
 
 /**

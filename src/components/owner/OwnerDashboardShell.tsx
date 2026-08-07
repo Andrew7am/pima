@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { arabicNumber, arabicPlural, arabicDateRange, arabicBadge, arabicPercent, arabicDecimal, GUEST_FORMS, ROOM_FORMS, BED_FORMS, DAY_FORMS, REVIEW_FORMS, HOUSE_FORMS, TASK_FORMS, BOOKING_FORMS } from '../../lib/arabic';
+import { arabicNumber, arabicPlural, arabicDateRange, arabicBadge, arabicPercent, arabicDecimal, GUEST_FORMS, ROOM_FORMS, BED_FORMS, DAY_FORMS, PHOTO_FORMS, REVIEW_FORMS, HOUSE_FORMS, TASK_FORMS, BOOKING_FORMS } from '../../lib/arabic';
 import { occupancyRate, monthWindow, bedsInUseOn } from '../../lib/occupancy';
 import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, RoomType, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification, Expense, Payout } from '../../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
@@ -225,7 +225,9 @@ export default function OwnerDashboardShell({
   const [hallProjector, setHallProjector] = useState(false);
 
   const [expandedPhotosForHouse, setExpandedPhotosForHouse] = useState<string | null>(null);
-  const [extraPhotoUrl, setExtraPhotoUrl] = useState('');
+  // A list, not one URL: the category and caption below apply to the whole
+  // selection, so an owner adding forty bedroom photos picks «غرف» once.
+  const [extraPhotoUrls, setExtraPhotoUrls] = useState<string[]>([]);
   const [extraPhotoLabel, setExtraPhotoLabel] = useState('');
   const [extraPhotoCategory, setExtraPhotoCategory] = useState<'room' | 'service' | 'other'>('room');
   const [photosSuccessMsg, setPhotosSuccessMsg] = useState('');
@@ -2424,20 +2426,38 @@ export default function OwnerDashboardShell({
                           className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[11px] px-2 min-h-11.5 rounded-xl focus:outline-none" />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-0.5">صورة الغرفة/الخدمة:</label>
-                        <PhotoPickerButtons idPrefix={`photo-${house.id}`} onSelect={setExtraPhotoUrl} />
-                        {extraPhotoUrl && (
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <img src={extraPhotoUrl} alt="معاينة" className="w-10 h-10 object-cover rounded-xl border border-[var(--color-owner-border)]" />
+                        <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-0.5">صور الغرف/الخدمات:</label>
+                        <PhotoPickerButtons idPrefix={`photo-${house.id}`} multiple
+                          onSelect={(url) => setExtraPhotoUrls((prev) => [...prev, url])}
+                          onSelectMany={(urls) => setExtraPhotoUrls((prev) => [...prev, ...urls])} />
+                        {extraPhotoUrls.length > 0 && (
+                          <div className="mt-1.5 space-y-1.5">
+                            <div className="flex flex-wrap gap-1.5">
+                              {extraPhotoUrls.map((url) => (
+                                <div key={url} className="relative">
+                                  <img src={url} alt="معاينة" className="w-10 h-10 object-cover rounded-xl border border-[var(--color-owner-border)]" />
+                                  {/* Remove one before sending — with a batch of
+                                      forty, one bad frame should not mean redoing
+                                      the whole selection. */}
+                                  <button type="button" aria-label="إزالة الصورة"
+                                    onClick={() => setExtraPhotoUrls((prev) => prev.filter((u) => u !== url))}
+                                    className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-rose-600 text-white text-[11px] font-black flex items-center justify-center cursor-pointer">×</button>
+                                </div>
+                              ))}
+                            </div>
                             <button type="button" onClick={() => {
                                 const labelPrefix = extraPhotoCategory === 'room' ? '🛌 غرف' : extraPhotoCategory === 'service' ? '🍽️ خدمات' : '⛪ مباني';
                                 const descStr = extraPhotoLabel.trim() ? `${labelPrefix}: ${extraPhotoLabel.trim()}` : labelPrefix;
-                                requestHouseEdit(house, { images: [...base.images, extraPhotoUrl], imageDescriptions: { ...(base.imageDescriptions || {}), [extraPhotoUrl]: descStr } });
-                                setExtraPhotoUrl(''); setExtraPhotoLabel('');
-                                setPhotosSuccessMsg('تم إرسال الصورة ضمن طلب تعديل بانتظار موافقة الإدارة!');
+                                const added = { ...(base.imageDescriptions || {}) };
+                                extraPhotoUrls.forEach((u) => { added[u] = descStr; });
+                                requestHouseEdit(house, { images: [...base.images, ...extraPhotoUrls], imageDescriptions: added });
+                                setPhotosSuccessMsg(`تم إرسال ${arabicPlural(extraPhotoUrls.length, PHOTO_FORMS)} ضمن طلب تعديل بانتظار موافقة الإدارة!`);
+                                setExtraPhotoUrls([]); setExtraPhotoLabel('');
                                 setTimeout(() => setPhotosSuccessMsg(''), 3000);
                               }}
-                              className="flex-1 bg-[var(--color-owner-primary)] text-[var(--color-owner-on-primary)] text-[11px] font-bold px-2 min-h-11.5 rounded-xl cursor-pointer">إضافة للألبوم</button>
+                              className="w-full bg-[var(--color-owner-primary)] text-[var(--color-owner-on-primary)] text-[11px] font-bold px-2 min-h-11.5 rounded-xl cursor-pointer">
+                              إضافة {arabicPlural(extraPhotoUrls.length, PHOTO_FORMS)} للألبوم
+                            </button>
                           </div>
                         )}
                       </div>
