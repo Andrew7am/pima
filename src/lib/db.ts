@@ -67,6 +67,10 @@ export function mapHouse(r: Record<string, unknown>): RetreatHouse {
     restaurants: (r.restaurants as RetreatHouse['restaurants']) ?? [],
     paymentMethods: (r.payment_methods as RetreatHouse['paymentMethods']) ?? [],
     seasonalRates: (r.seasonal_rates as RetreatHouse['seasonalRates']) ?? [],
+    discountPct: r.discount_pct != null ? Number(r.discount_pct) : undefined,
+    discountStartsAt: (r.discount_starts_at as string) ?? undefined,
+    discountEndsAt: (r.discount_ends_at as string) ?? undefined,
+    discountNote: (r.discount_note as string) ?? undefined,
     status: r.status as RetreatHouse['status'],
     rating: r.rating as number,
     reviewsCount: r.reviews_count as number,
@@ -104,6 +108,8 @@ export function mapBooking(r: Record<string, unknown>): Booking {
     totalPrice: r.total_price as number,
     depositPaid: r.deposit_paid as boolean,
     depositAmount: r.deposit_amount as number,
+    discountPctApplied: r.discount_pct_applied != null ? Number(r.discount_pct_applied) : undefined,
+    priceBeforeDiscount: r.price_before_discount != null ? Number(r.price_before_discount) : undefined,
     status: r.status as Booking['status'],
     source: r.source as Booking['source'] ?? 'platform',
     isLargeConferenceQuote: r.is_large_conference_quote as boolean,
@@ -367,7 +373,8 @@ const HOUSE_PUBLIC_COLUMNS =
   'conference_halls,restaurants,seasonal_rates,status,rating,reviews_count,created_at,property_type,' +
   'blocked_dates,sea_proximity,student_housing_gender,distance_from_university,nearby_landmark,monthly_rent,' +
   'day_use_price_per_person,' +
-  'room_capacity,housing_rules,contract_terms,menu,image_descriptions,pending_edit';
+  'room_capacity,housing_rules,contract_terms,menu,image_descriptions,pending_edit,' +
+  'discount_pct,discount_starts_at,discount_ends_at,discount_note';
 
 /**
  * Every house, with ONE photo each.
@@ -544,6 +551,31 @@ export async function claimDailyAdPoints(): Promise<boolean> {
  * when. The DELETE policies are dropped in the same migration, so this is not
  * merely the preferred path — it is the only one left.
  */
+/**
+ * Put a discount on a house, or clear it.
+ *
+ * Admin-only in practice without a line of guarding: protect_house_owner_updates
+ * (migration 019) reverts every house column for a non-admin caller except
+ * pending_edit, blocked_dates and menu — so an owner cannot discount his own
+ * house even though he is the one who pays for it. He asks; the admin sets it.
+ *
+ * pct is a FRACTION (0.25 = 25%), matching commissionRate and depositRate
+ * rather than the number typed in the field.
+ */
+export async function setHouseDiscount(args: {
+  houseId: string; pct: number; startsAt: string | null; endsAt: string | null; note: string | null;
+}): Promise<boolean> {
+  const { error } = await supabase.from('houses').update({
+    discount_pct: args.pct,
+    discount_starts_at: args.startsAt,
+    discount_ends_at: args.endsAt,
+    discount_note: args.note,
+    discount_set_at: new Date().toISOString(),
+  }).eq('id', args.houseId);
+  if (error) { console.error('setHouseDiscount:', error); return false; }
+  return true;
+}
+
 export async function deleteHouse(houseId: string): Promise<boolean> {
   const { error } = await supabase.rpc('archive_house', { p_house_id: houseId });
   if (error) { console.error('archiveHouse:', error); return false; }

@@ -53,6 +53,9 @@ interface BookingFlowProps {
   isMonthlyHousing: boolean;
   /** Before any points are redeemed. */
   originalTotalPrice: number;
+  /** The house discount in force for these dates, 0 when there is none. */
+  discountPct?: number;
+  discountSaving?: number;
   totalPrice: number;
   depositAmount: number;
   /** Rate bands from lib/pricing — one row per distinct nightly rate. */
@@ -127,6 +130,7 @@ const INPUT = 'w-full bg-white border border-[#EDE7DA] rounded-2xl px-3.5 py-3 t
 export default function BookingFlow({
   house, currentUser, checkIn, checkOut, nights, guestsCount, setGuestsCount,
   isQuoteMode, setIsQuoteMode, isMonthlyHousing, originalTotalPrice, totalPrice,
+  discountPct = 0, discountSaving = 0,
   depositAmount, breakdown, datePicker, datesConfirmed, dayUseAvailable, dayUsePrice, onSetStayMode,
   mealPlan, withMeals, onSetWithMeals,
   notices, submitting, onSubmit, onRequireLogin, onExit,
@@ -983,6 +987,14 @@ export default function BookingFlow({
             <span className="text-[12px] font-black text-[#2D2D24]">الإجمالي التقديري</span>
             <span className="text-[14px] font-black text-[#B8944E]">{egp(totalPrice)} ج.م</span>
           </div>
+          {/* Two different savings, said separately. The line below is worded
+              to the guest's points; a house discount is the owner's money, not
+              theirs, and calling it «من نقاطك» would be a lie they could check. */}
+          {discountPct > 0 && discountSaving > 0 && (
+            <p className="text-[9.5px] font-bold text-[#B8944E] text-left">
+              وفّرت {egp(discountSaving)} ج.م — خصم {arabicNumber(Math.round(discountPct * 100))}٪ على البيت
+            </p>
+          )}
           {totalPrice !== originalTotalPrice && (
             <p className="text-[11px] font-medium text-emerald-700 text-left">
               بعد خصم {egp(originalTotalPrice - totalPrice)} ج.م من نقاطك

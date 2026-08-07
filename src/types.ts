@@ -141,6 +141,14 @@ export interface RetreatHouse {
   // Owner-direct (no admin re-approval), like paymentMethods — see
   // migration 055 and lib/pricing.ts for the night-by-night math.
   seasonalRates?: SeasonalRate[];
+  /** A percentage off, applied to stays whose CHECK-IN falls in the window.
+   *  Set by the admin at the owner's request; the owner carries the cost.
+   *  Owners cannot set it themselves — protect_house_owner_updates (019)
+   *  reverts every house column for a non-admin caller. */
+  discountPct?: number;
+  discountStartsAt?: string;
+  discountEndsAt?: string;
+  discountNote?: string;
   // Owner-submitted edits to an already-approved house wait here for admin
   // review instead of applying immediately — only editable/listing fields.
   pendingEdit?: Partial<RetreatHouse>;
@@ -181,6 +189,15 @@ export interface Booking {
   totalPrice: number;
   depositPaid: boolean;
   depositAmount: number;
+  /** The discount that was agreed when this booking was made — frozen by the
+   *  server at INSERT and never recomputed. Read live instead, every booking
+   *  taken under an offer would jump back to full price in the ledger the
+   *  moment the offer ended, contradicting what the guest actually paid. That
+   *  is the bug commissionRate still has. */
+  discountPctApplied?: number;
+  /** What the stay would have cost without it. Null when there was no
+   *  discount, so the «كان» line only appears when it is true. */
+  priceBeforeDiscount?: number;
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
   // platform = guest booked through the app; manual = owner recorded a
   // phone/walk-in booking himself; temporary = tentative hold the owner

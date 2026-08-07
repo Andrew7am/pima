@@ -61,6 +61,7 @@ function Preview() {
         onVerifyPayment={noop}
         onUpdateBookingDetails={async () => true}
         onCancelBooking={noop}
+        onSetHouseDiscount={noop}
       />
     </div>
   );

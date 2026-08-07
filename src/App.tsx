@@ -19,6 +19,7 @@ import {
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
   createWaitlistEntry, notifyWaitlist as notifyWaitlistDb, notifyOwnerDistributionDone as notifyOwnerDistributionDoneDb,
   loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
+  setHouseDiscount,
   loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb, settleBookingsPayout,
   recordRefund as recordRefundDb, setPaymentAccount,
   loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
@@ -1390,6 +1391,19 @@ export default function App() {
   const handleSetPaymentAccount = (paymentId: string, account: string) => {
     setPayments((prev) => prev.map((p) => (p.id === paymentId ? { ...p, receivedAccount: account } : p)));
     trackWrite(setPaymentAccount(paymentId, account), 'تحديد حساب التحصيل');
+  };
+
+  /**
+   * Put a discount on a house. The OWNER asks for it and the owner pays for
+   * it: the commission is a percentage of the discounted price, so a 25% cut
+   * on a 20,000 booking takes the owner from 19,000 to 14,250 and Pima from
+   * 1,000 to 750.
+   */
+  const handleSetHouseDiscount = (args: { houseId: string; pct: number; startsAt: string | null; endsAt: string | null; note: string | null }) => {
+    setHouses((prev) => prev.map((h) => (h.id === args.houseId
+      ? { ...h, discountPct: args.pct, discountStartsAt: args.startsAt ?? undefined, discountEndsAt: args.endsAt ?? undefined, discountNote: args.note ?? undefined }
+      : h)));
+    trackWrite(setHouseDiscount(args), args.pct > 0 ? 'تفعيل خصم على البيت' : 'إلغاء خصم البيت');
   };
 
   // --- Admin Operations ---

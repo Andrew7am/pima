@@ -66,6 +66,9 @@ interface AdminDashboardProps {
   onRejectHouseEdit?: (houseId: string) => void;
   onToggleUserRole: (userId: string, newRole: User['role']) => void;
   onSuspendHouse?: (houseId: string, suspend: boolean) => void;
+  /** Set at the OWNER's request — he carries the cost, since the commission is
+   *  a percentage of the discounted price. pct is a fraction (0.25 = 25%). */
+  onSetHouseDiscount?: (args: { houseId: string; pct: number; startsAt: string | null; endsAt: string | null; note: string | null }) => void;
   onBanUser?: (userId: string, banned: boolean) => void;
   /** Frees the email and anonymises the profile, keeping every record. */
   onReleaseUser?: (userId: string) => Promise<boolean>;
@@ -147,6 +150,7 @@ export default function AdminDashboard({
   onRejectHouseEdit,
   onToggleUserRole,
   onSuspendHouse,
+  onSetHouseDiscount,
   onBanUser, onReleaseUser,
   onCancelBooking,
   onDeleteReview,
@@ -563,6 +567,8 @@ export default function AdminDashboard({
   // account. Both were unrepresentable before migration 108.
   const refundQueue = React.useMemo(() => refundsDue({ bookings, payments }), [bookings, payments]);
   const [refundingId, setRefundingId] = useState<string | null>(null);
+  const [discountHouseId, setDiscountHouseId] = useState<string | null>(null);
+  const [discountDraft, setDiscountDraft] = useState({ pct: '', from: '', to: '', note: '' });
 
   // The season, which for Pima is the business.
   const renewals = React.useMemo(() => pendingRenewals({ bookings }), [bookings]);
@@ -1828,6 +1834,27 @@ export default function AdminDashboard({
                                   أرشفة البيت
                                 </button>
                               )}
+                              {/* Its own gate — pricing an offer and archiving
+                                  a house are different permissions to hand a
+                                  preview or a future limited role. */}
+                              {onSetHouseDiscount && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDiscountHouseId(house.id);
+                                    setDiscountDraft({
+                                      pct: house.discountPct ? String(Math.round(house.discountPct * 100)) : '',
+                                      from: house.discountStartsAt ?? '',
+                                      to: house.discountEndsAt ?? '',
+                                      note: house.discountNote ?? '',
+                                    });
+                                    setOpenHouseMenu(null);
+                                  }}
+                                  className="w-full text-right px-3 min-h-11 text-[12px] font-bold text-[#B8944E] hover:bg-[#FAF6EC] transition-colors cursor-pointer border-t border-[#EBEBE0]"
+                                >
+                                  {house.discountPct ? 'تعديل الخصم' : 'حط خصم'}
+                                </button>
+                              )}
                               </div>
                             </>
                           )}
@@ -1885,6 +1912,91 @@ export default function AdminDashboard({
                         </div>
                       )}
                     </div>
+
+                    {/* A live discount is money leaving the owner's pocket on
+                        every booking, so it is stated on the card, not hidden
+                        behind the menu that set it. */}
+                    {(house.discountPct ?? 0) > 0 && (
+                      <div className="mt-2 flex items-center justify-between gap-2 bg-[#FAF6EC] border border-[#E8DCC0] rounded-xl px-3 py-2">
+                        <span className="text-[11px] font-black text-[#B8944E]">
+                          خصم {arabicNumber(Math.round((house.discountPct ?? 0) * 100))}٪
+                          {house.discountStartsAt && house.discountEndsAt &&
+                            ` · ${arabicDateRange(house.discountStartsAt, house.discountEndsAt)}`}
+                        </span>
+                        {house.discountNote && (
+                          <span className="text-[11px] text-[#8A8A70] truncate">{house.discountNote}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* The discount editor, inline under its card. */}
+                    {discountHouseId === house.id && onSetHouseDiscount && (
+                      <div className="mt-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl p-3 space-y-2">
+                        <label className="space-y-1 block">
+                          <span className="text-[11px] font-bold text-[#8A8A70]">نسبة الخصم ٪ (من ١ لـ٦٠)</span>
+                          <input type="number" min={0} max={60} value={discountDraft.pct}
+                            onChange={(e) => setDiscountDraft((d) => ({ ...d, pct: e.target.value }))}
+                            className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="space-y-1">
+                            <span className="text-[11px] font-bold text-[#8A8A70]">من (تاريخ الدخول)</span>
+                            <input type="date" value={discountDraft.from}
+                              onChange={(e) => setDiscountDraft((d) => ({ ...d, from: e.target.value }))}
+                              className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                          </label>
+                          <label className="space-y-1">
+                            <span className="text-[11px] font-bold text-[#8A8A70]">إلى</span>
+                            <input type="date" value={discountDraft.to}
+                              onChange={(e) => setDiscountDraft((d) => ({ ...d, to: e.target.value }))}
+                              className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                          </label>
+                        </div>
+                        <label className="space-y-1 block">
+                          <span className="text-[11px] font-bold text-[#8A8A70]">مين طلبه؟ (المالك بيتحمّل تمنه — سجّل طلبه)</span>
+                          <input type="text" value={discountDraft.note} placeholder="مثلاً: طلب أ. مينا تليفونياً ٨/٨"
+                            onChange={(e) => setDiscountDraft((d) => ({ ...d, note: e.target.value }))}
+                            className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                        </label>
+                        {/* What it does to the money, before it is saved. */}
+                        {(() => {
+                          const pct = parseInt(discountDraft.pct, 10);
+                          if (!Number.isFinite(pct) || pct <= 0) return null;
+                          const nightly = house.pricePerNightPerPerson || 0;
+                          const after = Math.round(nightly * (1 - pct / 100));
+                          return (
+                            <p className="text-[11px] text-[#8A8A70] leading-relaxed">
+                              الليلة هتبقى {arabicNumber(after)} بدل {arabicNumber(nightly)} ج.م.
+                              المالك بيتحمّل الفرق، وعمولتك بتتحسب على السعر بعد الخصم.
+                            </p>
+                          );
+                        })()}
+                        <div className="flex gap-2">
+                          <button type="button"
+                            onClick={() => {
+                              const pct = discountDraft.pct.trim() === '' ? 0 : parseInt(discountDraft.pct, 10);
+                              if (!Number.isFinite(pct) || pct < 0 || pct > 60) { alert('النسبة من ٠ لـ٦٠.'); return; }
+                              if (pct > 0 && discountDraft.from && discountDraft.to && discountDraft.to < discountDraft.from) { alert('تاريخ النهاية قبل البداية.'); return; }
+                              if (pct > 0 && !discountDraft.note.trim()) { alert('اكتب مين طلب الخصم — المالك بيتحمّل تمنه ولازم يبقى فيه سجل.'); return; }
+                              onSetHouseDiscount({
+                                houseId: house.id,
+                                pct: pct / 100,
+                                startsAt: discountDraft.from || null,
+                                endsAt: discountDraft.to || null,
+                                note: discountDraft.note.trim() || null,
+                              });
+                              setDiscountHouseId(null);
+                            }}
+                            className="flex-1 bg-[#B8944E] hover:bg-[#A5843F] text-white text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+                            {parseInt(discountDraft.pct, 10) > 0 ? 'فعّل الخصم' : 'شيل الخصم'}
+                          </button>
+                          <button type="button" onClick={() => setDiscountHouseId(null)}
+                            className="bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 px-4 rounded-xl cursor-pointer">
+                            إلغاء
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}

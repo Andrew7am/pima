@@ -155,3 +155,54 @@ export function computeMealPlan(
 
   return { state: 'priced', rows: [...rows.values()], total: perPerson * guestsCount };
 }
+
+/**
+ * The discount in force for a stay starting on this date, or 0.
+ *
+ * Judged on CHECK-IN, not on when the booking is made: consistent with
+ * seasonal rates, and it is what an owner actually wants — his house is empty
+ * on particular dates and he is trying to fill those dates.
+ *
+ * This must agree EXACTLY with validate_booking_price (migration 110), which
+ * applies the same percentage to the price it computes for itself. The server
+ * never trusts the number the client sends; it only has to arrive at the same
+ * one. If these two drift, the database refuses the booking with
+ * PRICE_TOO_LOW and the guest sees a failure with no explanation.
+ */
+export function activeDiscountFor(house: RetreatHouse, checkIn: string): number {
+  const pct = house.discountPct ?? 0;
+  if (!(pct > 0)) return 0;
+  if (house.discountStartsAt && checkIn < house.discountStartsAt) return 0;
+  if (house.discountEndsAt && checkIn > house.discountEndsAt) return 0;
+  return pct;
+}
+
+/**
+ * Apply it to the accommodation only.
+ *
+ * Meals are not in the server's `expected` at all — they are added
+ * client-side — so discounting them here would put the client below a floor
+ * the server computes without them. Food is also not what the offer is
+ * about: the owner is discounting his empty beds.
+ */
+export function applyDiscount(amount: number, pct: number): number {
+  return pct > 0 ? Math.round(amount * (1 - pct)) : amount;
+}
+
+/**
+ * Is a discount live TODAY — the question a badge asks.
+ *
+ * activeDiscountFor answers it for a specific stay date; this answers it for
+ * the listing, where no dates are chosen yet. Badging a house whose offer has
+ * ended, or has not begun, advertises a price the guest cannot get and they
+ * only discover it on the last screen.
+ */
+export function hasLiveDiscount(house: RetreatHouse, today = new Date()): boolean {
+  const pct = house.discountPct ?? 0;
+  if (!(pct > 0)) return false;
+  const p = (n: number) => String(n).padStart(2, '0');
+  const iso = `${today.getFullYear()}-${p(today.getMonth() + 1)}-${p(today.getDate())}`;
+  if (house.discountStartsAt && iso < house.discountStartsAt) return false;
+  if (house.discountEndsAt && iso > house.discountEndsAt) return false;
+  return true;
+}

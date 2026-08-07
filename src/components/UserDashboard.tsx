@@ -5,7 +5,7 @@ import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import { Search, MapPin, Map as MapIcon, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking, Flame, Sun } from 'lucide-react';
 import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
 import { loadHousesAvailability, loadHouseBookingCounts } from '../lib/db';
-import { computeStayPrice, offersDayUse } from '../lib/pricing';
+import { computeStayPrice, offersDayUse , hasLiveDiscount } from '../lib/pricing';
 import { isBannerLive, matchesAudience, pickExperimentVariants } from '../lib/bannerVisibility';
 import { bannerSeed } from '../lib/bannerEvents';
 import { copticSeason } from '../lib/copticSeason';
@@ -812,6 +812,17 @@ export default function UserDashboard({
                     <span className="bg-rose-700/90 backdrop-blur-sm text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
                       <Flame className="w-3 h-3" />
                       الأكثر حجزًا
+                    </span>
+                  )}
+                  {/* Only when it is actually live. A discount badge on a
+                      house whose offer has ended, or has not started, is a
+                      price the guest cannot get — and they find out at the
+                      last screen. hasLiveDiscount checks the window against
+                      today, the same way the booking price will. */}
+                  {hasLiveDiscount(house) && (
+                    <span className="bg-[#B8944E] text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                      <Sparkles className="w-3 h-3" />
+                      خصم {arabicNumber(Math.round((house.discountPct ?? 0) * 100))}٪
                     </span>
                   )}
                 </div>
