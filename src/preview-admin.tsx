@@ -7,11 +7,20 @@
 import { createRoot } from 'react-dom/client';
 import AdminDashboard from './components/AdminDashboard';
 import { INITIAL_USERS, INITIAL_HOUSES, INITIAL_BOOKINGS, INITIAL_REVIEWS, INITIAL_PAYMENTS } from './mockData';
-import type { User } from './types';
+import type { User, PlatformSettings } from './types';
+import { DEFAULT_PLATFORM_SETTINGS } from './types';
 import './index.css';
 
 const admin = { ...INITIAL_USERS[0], role: 'admin', name: 'أ. بيشوي' } as User;
 const noop = () => {};
+
+// The finance page is entirely gated on Pima having somewhere to receive
+// money — with no accounts configured it correctly reports nothing. Give the
+// preview one so the figures are exercised rather than all zero.
+const settings: PlatformSettings = {
+  ...DEFAULT_PLATFORM_SETTINGS,
+  paymentMethods: [{ id: 'pm_1', type: 'instapay', value: 'pima@instapay', label: 'إنستاباي بيما' }],
+} as PlatformSettings;
 
 function Preview() {
   return (
@@ -23,6 +32,7 @@ function Preview() {
         bookings={INITIAL_BOOKINGS}
         reviews={INITIAL_REVIEWS}
         payments={INITIAL_PAYMENTS}
+        settings={settings}
         onApproveHouse={noop}
         onRejectHouse={noop}
         onToggleUserRole={noop}

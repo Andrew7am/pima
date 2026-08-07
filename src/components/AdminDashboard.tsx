@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS } from '../lib/arabic';
 import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
+import { summarizeFinances } from '../lib/adminFinance';
 import { loadHouseViewCounts } from '../lib/db';
 // Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
 // to the singular. The counted nouns live in lib/arabic alongside the rule
@@ -434,7 +435,12 @@ export default function AdminDashboard({
     if (finPeriod === '7d') { const s = new Date(); s.setDate(s.getDate() - 7); return { start: s, end }; }
     if (finPeriod === '30d') { const s = new Date(); s.setDate(s.getDate() - 30); return { start: s, end }; }
     if (finPeriod === 'month') { return { start: new Date(end.getFullYear(), end.getMonth(), 1), end }; }
-    if (finPeriod === 'custom' && finFrom && finTo) { return { start: new Date(finFrom), end: new Date(finTo) }; }
+    // The end date has to cover its whole day. new Date('2026-08-31') is
+    // midnight, so a payment timestamped that afternoon fell outside a range
+    // whose own label said it was included.
+    if (finPeriod === 'custom' && finFrom && finTo) {
+      return { start: new Date(`${finFrom}T00:00:00`), end: new Date(`${finTo}T23:59:59.999`) };
+    }
     return null; // all
   })();
   const bookingInPeriod = (b: Booking) => {
@@ -443,56 +449,36 @@ export default function AdminDashboard({
     return d >= finBounds.start && d <= finBounds.end;
   };
 
+  // Bookings whose TRIP falls in the window. Used only for context counts —
+  // the money figures below are scoped by when the money moved, which is a
+  // different axis and the right one for a cash page.
   const periodBookings = bookings.filter(bookingInPeriod);
   const periodConfirmed = periodBookings.filter((b) => b.status === 'approved' || b.status === 'completed');
 
-  // Expected = confirmed bookings' total price. Collected = admin-approved
-  // payments whose booking falls in the period.
-  const expectedRevenue = periodConfirmed.reduce((sum, b) => sum + b.totalPrice, 0);
-  const periodBookingIds = new Set(periodBookings.map((b) => b.id));
-  const collectedRevenue = payments
-    .filter((p) => p.paymentStatus === 'approved' && periodBookingIds.has(p.bookingId))
-    .reduce((sum, p) => sum + p.amount, 0);
+  // Pima only holds money if it has somewhere to receive it. With no
+  // collection accounts configured the guest pays the owner directly and
+  // there is nothing to report as held or transferable. The payouts tab gates
+  // on exactly this, and the finance page used to ignore it — reporting owner
+  // dues on money Pima had never touched.
+  const platformCollects = (settings.paymentMethods ?? []).length > 0;
 
-  const expectedCommission = Math.round(expectedRevenue * PLATFORM_COMMISSION);
-  const collectedCommission = Math.round(collectedRevenue * PLATFORM_COMMISSION);
-  const ownersNetFromCollected = collectedRevenue - collectedCommission;
-  const outstanding = Math.max(0, expectedRevenue - collectedRevenue);
-
-  // Per-owner breakdown from collected payments (who to pay out, and how much)
-  const houseOwnerId: Record<string, string> = {};
-  houses.forEach((h) => { houseOwnerId[h.id] = h.ownerId; });
-  const bookingHouseId: Record<string, string> = {};
-  bookings.forEach((b) => { bookingHouseId[b.id] = b.houseId; });
-
-  const ownerAgg: Record<string, { name: string; collected: number; expected: number }> = {};
-  periodConfirmed.forEach((b) => {
-    const oid = houseOwnerId[b.houseId];
-    if (!oid) return;
-    if (!ownerAgg[oid]) ownerAgg[oid] = { name: users.find((u) => u.id === oid)?.name || 'مالك', collected: 0, expected: 0 };
-    ownerAgg[oid].expected += b.totalPrice;
+  // Every figure on the finance page, from one tested module.
+  //
+  // This replaced ~45 lines of inline arithmetic that disagreed with the
+  // payout engine next door: it took the commission out of the DEPOSIT
+  // instead of out of the booking value, counted payments on cancelled
+  // bookings as owner dues, and never subtracted a transfer once it had been
+  // made. See src/lib/adminFinance.ts for what each figure means and why.
+  const fin = summarizeFinances({
+    bookings,
+    payments,
+    payouts,
+    houses,
+    users,
+    commissionRate: PLATFORM_COMMISSION,
+    window: finBounds,
+    platformCollects,
   });
-  payments.filter((p) => p.paymentStatus === 'approved' && periodBookingIds.has(p.bookingId)).forEach((p) => {
-    const hid = bookingHouseId[p.bookingId];
-    const oid = hid ? houseOwnerId[hid] : undefined;
-    if (!oid) return;
-    if (!ownerAgg[oid]) ownerAgg[oid] = { name: users.find((u) => u.id === oid)?.name || 'مالك', collected: 0, expected: 0 };
-    ownerAgg[oid].collected += p.amount;
-  });
-  const ownerRows = Object.entries(ownerAgg)
-    .map(([id, v]) => ({ id, ...v, net: Math.round(v.collected * (1 - PLATFORM_COMMISSION)) }))
-    .sort((a, b) => b.collected - a.collected);
-
-  // Top houses by collected revenue
-  const houseCollected: Record<string, number> = {};
-  payments.filter((p) => p.paymentStatus === 'approved' && periodBookingIds.has(p.bookingId)).forEach((p) => {
-    const hid = bookingHouseId[p.bookingId];
-    if (hid) houseCollected[hid] = (houseCollected[hid] || 0) + p.amount;
-  });
-  const topHouses = Object.entries(houseCollected)
-    .map(([id, amount]) => ({ id, name: houses.find((h) => h.id === id)?.name || id, amount }))
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 5);
 
   // Load chat messages when admin opens a booking chat
   useEffect(() => {
@@ -524,10 +510,22 @@ export default function AdminDashboard({
       bookings.map((b) => [b.id, b.userName, b.houseName, b.checkIn, b.checkOut, String(b.guestsCount), String(b.totalPrice), b.status, b.source || 'platform'])
     );
   };
+  // The period goes in the filename. A file called financials.csv says nothing
+  // about which months it covers, and two of them in a downloads folder are
+  // indistinguishable.
+  const finPeriodLabel = (): string => {
+    if (finPeriod === 'custom' && finFrom && finTo) return `${finFrom}_${finTo}`;
+    return finPeriod;
+  };
   const exportFinancials = () => {
-    downloadCsv('financials.csv',
-      ['المالك', 'المحصّل', 'العمولة', 'صافي المستحقات'],
-      ownerRows.map((o) => [o.name, String(o.collected), String(Math.round(o.collected * PLATFORM_COMMISSION)), String(o.net)])
+    downloadCsv(`financials_${finPeriodLabel()}.csv`,
+      ['المالك', 'المحصّل', 'عمولة بيما', 'لسه عنده', 'اتحوّل'],
+      [
+        ...fin.perOwner.map((o) => [o.name, String(o.collected), String(o.commission), String(o.owed), String(o.paid)]),
+        // A totals row, so the file reconciles against the screen instead of
+        // leaving whoever opens it to re-add the column and wonder.
+        ['الإجمالي', String(fin.collectedByPima), String(fin.platformCommission), String(fin.ownersOwed), String(fin.ownersPaid)],
+      ]
     );
   };
 
@@ -2242,30 +2240,45 @@ export default function AdminDashboard({
       {/* ── الماليات ──────────────────────────────────────────────────────
           Money only. This and the audience panel used to be one «التقارير»
           scroll, so a question about revenue and a question about who signs
-          up were answered by the same long page and neither was easy to
-          read. They are separate questions, so they are separate screens.
+          up were answered by the same long page and neither was easy to read.
 
-          The four summary figures are deliberately identical tiles. They
-          were four different treatments before — an emerald gradient, a
-          beige gradient and two plain cards — which made the eye rank them
-          by decoration instead of by number. The one card that still stands
-          out is the commission, because that is the business's own cut. */}
+          Every figure comes from src/lib/adminFinance.ts. It used to be
+          computed inline here and disagreed with the payout engine next door
+          about the same booking — see that file's header for the arithmetic
+          and what it was getting wrong. */}
       {activeTab === 'finance' && (
         <div className="space-y-4">
 
           <div className="px-1">
             <h3 className="text-[16px] font-black text-[#4A4A3A]">الماليات</h3>
-            <p className="text-[12px] text-[#8A8A70] mt-0.5">كل أرقام الفلوس في مكان واحد — المحصّل، عمولتك، ومستحقات الملّاك.</p>
+            <p className="text-[12px] text-[#8A8A70] mt-0.5">فلوس بيما — اللي حصّلته، اللي ليك منه، واللي لسه لازم يتبعت للملّاك.</p>
           </div>
 
-          {/* The period control, and what it selected. Showing the count here
-              means the filter reports its own result instead of leaving you
-              to guess which bookings the figures below are describing. */}
+          {/* Without collection accounts Pima is not in the money path at all,
+              and every figure below is legitimately zero. Saying so beats a
+              page of zeroes that reads like a bug. */}
+          {!platformCollects && (
+            <div className="bg-amber-50 border border-amber-200 rounded-[20px] p-3.5 flex gap-2.5 items-start">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="text-[12px] font-black text-amber-900">بيما لسه مالهاش حسابات تحصيل</div>
+                <p className="text-[11px] text-amber-800/80 leading-relaxed mt-0.5">
+                  الضيف بيدفع لصاحب البيت على طول، فبيما مش ماسكة فلوس ومفيش حاجة تتحوّل. ضيف أرقام إنستاباي وفودافون كاش بتوع بيما من «الإعدادات» علشان التحصيل يشتغل.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* The period control, and what it selected. Scoped by the date the
+              MONEY moved, not by the trip's check-in — a deposit banked today
+              for a trip next month is cash in hand today. Dating it to the trip
+              and then ending every window at «now» meant it showed up in no
+              period at all except «كل الوقت». */}
           <div className="bg-white p-3.5 rounded-[20px] border border-[#EBEBE0] space-y-2.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[12px] font-bold text-[#8A8A70]">الفترة (حسب تاريخ الدخول)</span>
+              <span className="text-[12px] font-bold text-[#8A8A70]">الفترة (حسب تاريخ الدفع)</span>
               <span className="text-[11px] font-black text-[#0A2342] bg-[#EBEBE0]/60 px-2 py-1 rounded-lg shrink-0">
-                {arabicPlural(periodConfirmed.length, BOOKING_FORMS)} مؤكد
+                {arabicPlural(fin.bookingCount, BOOKING_FORMS)}
               </span>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -2298,16 +2311,18 @@ export default function AdminDashboard({
             )}
           </div>
 
-          {/* ── الخلاصة ── */}
+          {/* ── فلوس بيما ──
+              The cash position, in the order the admin cares about it: what
+              came in, what is mine, what I still owe, what I have sent. */}
           <div className="px-1 pt-1">
-            <span className="text-[11px] font-black text-[#8A8A70]">الخلاصة</span>
+            <span className="text-[11px] font-black text-[#8A8A70]">فلوس بيما</span>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
             {([
-              { label: 'المحصّل فعلاً', hint: 'من دفعات معتمدة', value: collectedRevenue, Icon: CheckCircle2, tint: 'text-emerald-700', num: 'text-emerald-800' },
-              { label: 'المتوقع الكلي', hint: 'قيمة الحجوزات المؤكدة', value: expectedRevenue, Icon: TrendingUp, tint: 'text-[#5A5A40]', num: 'text-[#4A4A3A]' },
-              { label: 'مستحقات الملّاك', hint: 'من المحصّل بعد عمولتك', value: ownersNetFromCollected, Icon: DollarSign, tint: 'text-[#0A2342]', num: 'text-[#0A2342]' },
-              { label: 'متبقٍ لم يُحصّل', hint: 'المتوقع − المحصّل', value: outstanding, Icon: AlertTriangle, tint: 'text-amber-600', num: 'text-amber-700' },
+              { label: 'حصّلته بيما', hint: 'عرابين وصلت لحسابات بيما', value: fin.collectedByPima, Icon: CheckCircle2, tint: 'text-emerald-700', num: 'text-emerald-800' },
+              { label: 'عمولة بيما', hint: `${arabicNumber(Math.round(PLATFORM_COMMISSION * 100))}٪ من قيمة الحجز`, value: fin.platformCommission, Icon: Coins, tint: 'text-[#C5A059]', num: 'text-[#0A2342]' },
+              { label: 'لسه عندك للملّاك', hint: 'محتاج يتحوّل', value: fin.ownersOwed, Icon: Wallet, tint: 'text-amber-600', num: 'text-amber-700' },
+              { label: 'حوّلته للملّاك', hint: 'خرج فعلاً من حساباتك', value: fin.ownersPaid, Icon: DollarSign, tint: 'text-[#5A5A40]', num: 'text-[#4A4A3A]' },
             ] as const).map((k) => (
               <div key={k.label} className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
                 <k.Icon className={`w-4 h-4 ${k.tint}`} />
@@ -2321,24 +2336,25 @@ export default function AdminDashboard({
             ))}
           </div>
 
-          {/* The only card that keeps its colour, because it is the one
-              number that is the business's rather than a total passing
-              through it. */}
-          <div className="bg-[#0A2342] text-white rounded-[20px] p-4 space-y-2.5">
-            <div className="flex items-center gap-2">
-              <Coins className="w-5 h-5 text-[#C5A059]" />
-              <span className="text-[11px] font-black text-[#C5A059]">عمولة بيما ({arabicNumber(Math.round(PLATFORM_COMMISSION * 100))}٪)</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="text-[11px] text-white/60 font-bold">من المحصّل فعلاً</div>
-                <div className="text-[20px] font-black text-white tabular-nums">{arabicNumber(collectedCommission)}<span className="text-[12px] text-white/70"> ج.م</span></div>
+          {/* Everything that is real money but is NOT Pima's to hold. This used
+              to be one card labelled «متبقٍ لم يُحصّل» under a warning triangle
+              — a permanent alarm over ~85% of the business, which is by design
+              paid in cash at the door and never enters Pima's accounts. */}
+          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-1">
+            {([
+              { label: 'باقي عند الضيف', hint: 'كاش لصاحب البيت عند الوصول — مش بيعدّي على بيما', value: fin.cashAtDoor, tint: 'text-[#4A4A3A]' },
+              ...(fin.collectedByOwnerDirect > 0 ? [{ label: 'اتدفع للمالك مباشرة', hint: 'عربون كاش استلمه صاحب البيت بنفسه', value: fin.collectedByOwnerDirect, tint: 'text-[#4A4A3A]' }] : []),
+              ...(fin.collectedOnCancelled > 0 ? [{ label: 'محصّل على حجوزات ملغية', hint: 'فلوس فعلية مستنية قرار استرجاع', value: fin.collectedOnCancelled, tint: 'text-rose-700' }] : []),
+              { label: 'قيمة الحجوزات', hint: 'إجمالي سعر الحجوزات اللي اتدفع فيها', value: fin.bookingValue, tint: 'text-[#4A4A3A]' },
+            ] as const).map((r) => (
+              <div key={r.label} className="flex justify-between items-start gap-3 text-[12px] py-2 border-b border-[#EBEBE0]/60 last:border-0">
+                <div className="min-w-0">
+                  <div className="font-bold text-[#4A4A3A]">{r.label}</div>
+                  <div className="text-[11px] text-[#8A8A70] leading-snug">{r.hint}</div>
+                </div>
+                <span className={`font-black shrink-0 tabular-nums ${r.tint}`}>{arabicNumber(r.value)} ج.م</span>
               </div>
-              <div>
-                <div className="text-[11px] text-white/60 font-bold">المتوقعة (كل الحجوزات)</div>
-                <div className="text-[20px] font-black text-white/80 tabular-nums">{arabicNumber(expectedCommission)}<span className="text-[12px] text-white/60"> ج.م</span></div>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* ── التفاصيل ── */}
@@ -2346,34 +2362,43 @@ export default function AdminDashboard({
             <span className="text-[11px] font-black text-[#8A8A70]">التفاصيل</span>
           </div>
 
-          <div className="bg-white rounded-[20px] p-4 border border-[#EBEBE0] space-y-2">
+          {/* One row per owner, sorted by who is owed the most so the payment
+              backlog is the first thing read. The old table was a 4-column
+              grid that gave an Arabic name 75px and cut most real ones in
+              half; the name now owns its own line. */}
+          <div className="bg-white rounded-[20px] p-4 border border-[#EBEBE0] space-y-1">
             <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">مستحقات كل صاحب بيت</h3>
-            {ownerRows.length === 0 ? (
-              <p className="text-[12px] text-[#8A8A70] text-center py-3">لا توجد حجوزات في هذه الفترة.</p>
+            {fin.perOwner.length === 0 ? (
+              <p className="text-[12px] text-[#8A8A70] text-center py-3">مفيش فلوس اتحركت في الفترة دي.</p>
             ) : (
-              <>
-                <div className="grid grid-cols-4 gap-1 text-[11px] font-bold text-[#8A8A70] pb-1 border-b border-[#EBEBE0]">
-                  <span>المالك</span>
-                  <span className="text-center">المحصّل</span>
-                  <span className="text-center">عمولتك</span>
-                  <span className="text-center">صافي مستحقاته</span>
-                </div>
-                {ownerRows.map((o) => (
-                  <div key={o.id} className="grid grid-cols-4 gap-1 text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0 items-center">
-                    <span className="font-bold text-[#4A4A3A] truncate">{o.name}</span>
-                    <span className="text-center text-emerald-800 font-bold tabular-nums">{arabicNumber(o.collected)}</span>
-                    <span className="text-center text-[#C5A059] font-bold tabular-nums">{arabicNumber(Math.round(o.collected * PLATFORM_COMMISSION))}</span>
-                    <span className="text-center text-[#0A2342] font-black tabular-nums">{arabicNumber(o.net)}</span>
+              fin.perOwner.map((o) => (
+                <div key={o.id} className="py-2.5 border-b border-[#EBEBE0]/60 last:border-0 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12px] font-black text-[#4A4A3A] truncate">{o.name}</span>
+                    {o.owed > 0 ? (
+                      <span className="text-[11px] font-black text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg shrink-0 tabular-nums">
+                        لسه {arabicNumber(o.owed)} ج.م
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg shrink-0">
+                        متسدّد
+                      </span>
+                    )}
                   </div>
-                ))}
-              </>
+                  <div className="flex gap-3 text-[11px] text-[#8A8A70]">
+                    <span>حصّلت <span className="font-bold text-[#4A4A3A] tabular-nums">{arabicNumber(o.collected)}</span></span>
+                    <span>عمولتك <span className="font-bold text-[#C5A059] tabular-nums">{arabicNumber(o.commission)}</span></span>
+                    <span>حوّلت <span className="font-bold text-[#5A5A40] tabular-nums">{arabicNumber(o.paid)}</span></span>
+                  </div>
+                </div>
+              ))
             )}
           </div>
 
-          {topHouses.length > 0 && (
+          {fin.perHouse.length > 0 && (
             <div className="bg-white rounded-[20px] p-4 border border-[#EBEBE0] space-y-2">
-              <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أكثر البيوت دخلاً</h3>
-              {topHouses.map((h, i) => (
+              <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أكثر البيوت تحصيلاً</h3>
+              {fin.perHouse.slice(0, 5).map((h, i) => (
                 <div key={h.id} className="flex items-center justify-between gap-2 text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0">
                   <span className="font-bold text-[#4A4A3A] truncate flex items-center gap-1.5">
                     <span className="w-4 h-4 rounded-full bg-[#EBEBE0] text-[#5A5A40] text-[11px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
@@ -2382,6 +2407,9 @@ export default function AdminDashboard({
                   <span className="font-black text-emerald-800 shrink-0 tabular-nums">{arabicNumber(h.amount)} ج.م</span>
                 </div>
               ))}
+              {fin.perHouse.length > 5 && (
+                <p className="text-[11px] text-[#8A8A70]">و{arabicNumber(fin.perHouse.length - 5)} بيت آخر.</p>
+              )}
             </div>
           )}
 
