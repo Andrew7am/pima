@@ -269,3 +269,32 @@ describe('unclaimedOwedBookings', () => {
     expect(r.remaining).toHaveLength(0);
   });
 });
+
+describe('reverting an approved payment to the queue', () => {
+  // The admin panel's «تراجع — رجّع الإيصال للمراجعة» button routes through
+  // here with verdict 'rejected'. A review of that button claimed it leaves
+  // depositPaid true while the approved total drops to zero, recreating the
+  // shortfall this file's cashDueAtArrival comment describes. It does not —
+  // but the claim was worth pinning down, so this is the pin.
+  const b = {
+    id: 'b1', houseId: 'h1', totalPrice: 20000, depositAmount: 3000,
+    depositPaid: true, status: 'approved', paymentStatus: 'paid_deposit',
+  } as Booking;
+  const p = {
+    id: 'p1', bookingId: 'b1', amount: 3000, paymentMethod: 'instapay',
+    paymentStatus: 'approved', paymentDate: '2026-08-01',
+  } as Payment;
+
+  it('clears depositPaid, so the owner is told to collect the whole price', () => {
+    const change = resolvePaymentVerdict({ booking: b, payment: p, payments: [p], verdict: 'rejected' });
+    expect(change).not.toBeNull();
+    expect(change!.depositPaid).toBe(false);
+    expect(change!.paymentStatus).toBe('unpaid');
+    expect(cashDueAtArrival({ ...b, ...change } as Booking)).toBe(20000);
+  });
+
+  it('leaves the booking alone when another approved payment still stands', () => {
+    const p2 = { ...p, id: 'p2' } as Payment;
+    expect(resolvePaymentVerdict({ booking: b, payment: p, payments: [p, p2], verdict: 'rejected' })).toBeNull();
+  });
+});
