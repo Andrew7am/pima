@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS } from '../lib/arabic';
 import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
 import { summarizeFinances } from '../lib/adminFinance';
+import { unclaimedOwedBookings } from '../lib/paymentLedger';
 import { loadHouseViewCounts } from '../lib/db';
 // Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
 // to the singular. The counted nouns live in lib/arabic alongside the rule
@@ -66,7 +67,14 @@ interface AdminDashboardProps {
   onDeleteReview?: (reviewId: string) => void;
   allocationsCount?: number;
   payments?: Payment[];
-  onVerifyPayment?: (paymentId: string, status: 'approved' | 'rejected', adminNotes?: string) => void;
+  // 'pending' puts a decided payment back in the queue. Without it a mis-tap
+  // on «اعتماد الدفعة» was permanent: the buttons stopped rendering and there
+  // was no other route to the payment from anywhere in the panel.
+  onVerifyPayment?: (paymentId: string, status: 'approved' | 'rejected' | 'pending', adminNotes?: string) => void;
+  // Support calls land on Pima's own number, so the admin is the one who hears
+  // «we need to shift a day» — and had no control for it. The owner's handler
+  // already does the capacity check and the room re-allocation.
+  onUpdateBookingDetails?: (bookingId: string, fields: { checkIn?: string; checkOut?: string; guestsCount?: number }) => Promise<boolean>;
   onSetUserApproval?: (userId: string, status: 'approved' | 'rejected') => void;
   promoBanners?: PromoBanner[];
   onAddPromoBanner?: (b: PromoBanner) => void;
@@ -137,6 +145,7 @@ export default function AdminDashboard({
   allocationsCount = 0,
   payments = [],
   onVerifyPayment,
+  onUpdateBookingDetails,
   onSetUserApproval,
   promoBanners = [],
   onAddPromoBanner,
@@ -293,7 +302,10 @@ export default function AdminDashboard({
 
   // Bookings search & filter states
   const [bookingSearch, setBookingSearch] = useState('');
-  const [bookingFilter, setBookingFilter] = useState<'all' | 'pending' | 'unpaid' | 'completed'>('all');
+  const [bookingFilter, setBookingFilter] = useState<'all' | 'soon' | 'pending' | 'unpaid' | 'temporary' | 'completed'>('all');
+  const [editBookingId, setEditBookingId] = useState<string | null>(null);
+  const [bookingEdit, setBookingEdit] = useState({ checkIn: '', checkOut: '', guestsCount: '' });
+  const [editSaving, setEditSaving] = useState(false);
 
   // Users search & filter
   const [userSearch, setUserSearch] = useState('');
@@ -320,7 +332,14 @@ export default function AdminDashboard({
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
   };
 
+  // A booking that is cancelled or rejected is not work. Cancelling only flips
+  // the status — totalPrice stays, nothing is ever paid against it, so
+  // `remaining > 0` held forever and every dead booking sat in the follow-up
+  // count permanently. The badge climbed on its own until the admin stopped
+  // believing it.
+  const isLiveBooking = (b: Booking) => b.status !== 'cancelled' && b.status !== 'rejected';
   const pendingOrUnpaidBookingsCount = bookings.filter((b) => {
+    if (!isLiveBooking(b)) return false;
     const bPayments = payments.filter((p) => p.bookingId === b.id && p.paymentStatus === 'approved');
     const totalPaid = bPayments.reduce((sum, p) => sum + p.amount, 0);
     const remaining = b.totalPrice - totalPaid;
@@ -345,12 +364,42 @@ export default function AdminDashboard({
       return b.status === 'pending';
     }
     if (bookingFilter === 'unpaid') {
-      return remaining > 0;
+      return isLiveBooking(b) && remaining > 0;
     }
     if (bookingFilter === 'completed') {
       return b.status === 'completed' || (b.status === 'approved' && remaining <= 0);
     }
+    // The Tuesday-morning question: who arrives soon and still owes money. It
+    // could not be asked before — the list had no date-aware filter and no
+    // sort, and arrived newest-typed-first from the server.
+    if (bookingFilter === 'soon') {
+      if (!isLiveBooking(b)) return false;
+      const days = (new Date(b.checkIn).getTime() - Date.now()) / 86400000;
+      return days >= -1 && days <= 14;
+    }
+    // A hold blocks real beds and nothing anywhere expires it, so it needs to
+    // be findable.
+    if (bookingFilter === 'temporary') {
+      return b.source === 'temporary' && isLiveBooking(b);
+    }
     return true; // 'all'
+  });
+
+  // Soonest arrival first for the date-driven views; everything else keeps the
+  // server's newest-first order.
+  const sortedBookings = (bookingFilter === 'soon' || bookingFilter === 'temporary')
+    ? [...filteredBookings].sort((a, b) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime())
+    : filteredBookings;
+
+  // Holds older than this have almost certainly been forgotten. Two weeks is
+  // long enough for a group to decide and short enough that the beds come back
+  // in the same season.
+  const STALE_HOLD_DAYS = 14;
+  const staleHolds = bookings.filter((b) => {
+    if (b.source !== 'temporary' || !isLiveBooking(b)) return false;
+    const created = b.createdAt ? new Date(b.createdAt).getTime() : NaN;
+    if (Number.isNaN(created)) return false;
+    return (Date.now() - created) / 86400000 > STALE_HOLD_DAYS;
   });
 
 
@@ -605,6 +654,9 @@ export default function AdminDashboard({
     { key: 'payments' as const, section: 'money' as const, label: 'دفعات بانتظار التحقق', count: pendingPaymentsCount, Icon: CreditCard },
     { key: 'payouts' as const, section: 'money' as const, label: 'طلبات تحويل معلّقة', count: pendingPayoutsCount, Icon: Wallet },
     { key: 'bookings' as const, section: 'money' as const, label: 'حجوزات محتاجة متابعة', count: pendingOrUnpaidBookingsCount, Icon: Calendar },
+    // Nothing expires a hold, so the only thing that will ever clear one is an
+    // admin noticing it. That has to start here.
+    { key: 'bookings' as const, section: 'money' as const, label: `حجوزات مؤقتة قديمة (+${arabicNumber(STALE_HOLD_DAYS)} يوم)`, count: staleHolds.length, Icon: Clock },
   ].filter((a) => a.count > 0);
 
   const totalPending = actionQueue.reduce((s, a) => s + a.count, 0);
@@ -2708,6 +2760,36 @@ export default function AdminDashboard({
                             </button>
                           </div>
                         )}
+
+                        {/* A decided payment had no controls at all, so a
+                            mis-tap on «اعتماد» was permanent from the panel.
+                            The commonest real case is not a slip but the bank:
+                            the proof is approved and the transfer never lands.
+                            The only recovery available was cancelling the whole
+                            booking — which destroys a trip that may be perfectly
+                            good and still leaves the payment marked approved.
+
+                            This returns the payment to the queue. It does NOT
+                            touch the booking's own status: undoing a payment
+                            decision is not the same as cancelling the trip. The
+                            database has been ready for this all along — migration
+                            091 stamps previous_status, reviewed_at and reviewed_by
+                            on every status change, so the reversal is recorded. */}
+                        {!isPending && onVerifyPayment && (
+                          <div className="pt-2">
+                            <button
+                              id={`admin-payment-reopen-btn-${pay.id}`}
+                              type="button"
+                              onClick={() => {
+                                if (!confirm('هترجّع الإيصال ده لقائمة المراجعة تاني.\n\nالفلوس مش هتتحسب محصّلة لحد ما تراجعه، والحجز هيفضل زي ما هو. تمام؟')) return;
+                                onVerifyPayment(pay.id, 'pending', notesInputs[pay.id]);
+                              }}
+                              className="w-full bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 px-3 rounded-xl transition-colors cursor-pointer text-center"
+                            >
+                              تراجع — رجّع الإيصال للمراجعة
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Right side: Proof Image display */}
@@ -2779,7 +2861,14 @@ export default function AdminDashboard({
           return (b.paymentStatus === 'paid_deposit' || b.paymentStatus === 'paid_full' || b.depositPaid) &&
             b.status !== 'cancelled' && b.status !== 'rejected' && !b.ownerSettledAt && ownerShare(b) > 0;
         });
-        const owedByHouse = owedBookings.reduce<Record<string, Booking[]>>((acc, b) => {
+        // An owner's own payout REQUEST names a house and an amount, never a
+        // booking — so completing one settled nothing, the bookings that funded
+        // it stayed here looking unpaid, and the admin could send the same
+        // money a second time. Net them off before listing.
+        const { remaining: unclaimedOwed, coveredAmount: alreadyClaimed } = unclaimedOwedBookings({
+          owed: owedBookings, allBookings: bookings, payouts, commissionRate: settings.commissionRate,
+        });
+        const owedByHouse = unclaimedOwed.reduce<Record<string, Booking[]>>((acc, b) => {
           (acc[b.houseId] ??= []).push(b); return acc;
         }, {});
         const owedHouseIds = Object.keys(owedByHouse);
@@ -2789,8 +2878,15 @@ export default function AdminDashboard({
               <div className="space-y-2">
                 <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
                   <h3 className="text-xs font-bold text-[#4A4A3A]">مستحقات جاهزة للتحويل (لكل حجز):</h3>
-                  <div className="text-[12px] text-[#8A8A70]">{arabicPlural(owedBookings.length, BOOKING_FORMS)}</div>
+                  <div className="text-[12px] text-[#8A8A70]">{arabicPlural(unclaimedOwed.length, BOOKING_FORMS)}</div>
                 </div>
+                {/* Say what was netted off, rather than silently showing a
+                    shorter list than the money would suggest. */}
+                {alreadyClaimed > 0 && (
+                  <p className="text-[11px] text-[#8A8A70] leading-relaxed">
+                    اتخصم {arabicNumber(alreadyClaimed)} ج.م اتحوّلت خلاص عن طريق طلبات التحويل تحت، علشان الحجوزات دي متتدفعش مرتين.
+                  </p>
+                )}
                 {owedHouseIds.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70]">لا توجد مستحقات غير محوّلة حالياً.</div>
                 ) : owedHouseIds.map((hid) => {
@@ -2927,7 +3023,7 @@ export default function AdminDashboard({
               className="flex-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 min-h-11 text-[#2D2D24] focus:outline-none focus:border-[#464E3D] text-right"
             />
             <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
-              {(['all', 'pending', 'unpaid', 'completed'] as const).map((filterOpt) => (
+              {(['all', 'soon', 'pending', 'unpaid', 'temporary', 'completed'] as const).map((filterOpt) => (
                 <button
                   key={filterOpt}
                   type="button"
@@ -2941,6 +3037,8 @@ export default function AdminDashboard({
                   {filterOpt === 'all' && 'الكل'}
                   {filterOpt === 'pending' && 'بانتظار الموافقة'}
                   {filterOpt === 'unpaid' && 'متبقي مستحقات'}
+                  {filterOpt === 'soon' && 'وصول قريب'}
+                  {filterOpt === 'temporary' && 'حجوزات مؤقتة'}
                   {filterOpt === 'completed' && 'مدفوع بالكامل'}
                 </button>
               ))}
@@ -2948,14 +3046,14 @@ export default function AdminDashboard({
           </div>
 
           {/* Bookings list */}
-          {filteredBookings.length === 0 ? (
+          {sortedBookings.length === 0 ? (
             <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-2">
               <Clock className="w-8 h-8 text-[#BCBC9D] mx-auto animate-pulse" />
               <p className="text-sm font-bold text-[#4A4A3A]">لا توجد حجوزات مطابقة للبحث أو التصفية</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredBookings.map((booking) => {
+              {sortedBookings.map((booking) => {
                 const bPayments = payments.filter((p) => p.bookingId === booking.id && p.paymentStatus === 'approved');
                 const totalPaid = bPayments.reduce((sum, p) => sum + p.amount, 0);
                 const remaining = booking.totalPrice - totalPaid;
@@ -2980,7 +3078,23 @@ export default function AdminDashboard({
                     <div className="p-3.5 bg-slate-50 border-b border-[#D6D6C2]/60 flex flex-wrap items-center justify-between gap-2">
                       <div className="space-y-0.5">
                         <span className="text-[11px] text-[#8A8A70] font-bold">رقم الحجز: #{booking.id.toUpperCase()}</span>
-                        <h4 className="text-xs font-extrabold text-[#4A4A3A]">{booking.userName}</h4>
+                        <h4 className="text-xs font-extrabold text-[#4A4A3A] flex items-center gap-1.5 flex-wrap">
+                          {booking.userName}
+                          {/* A hold blocks real beds. Nothing anywhere expires
+                              one, and the panel never showed which bookings
+                              were holds or how old any booking was — so a
+                              forgotten hold killed inventory in silence. */}
+                          {booking.source === 'temporary' && (
+                            <span className="text-[11px] font-bold text-sky-800 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded-md">
+                              مؤقت ⏳ {booking.createdAt ? `· ${timeAgo(booking.createdAt)}` : ''}
+                            </span>
+                          )}
+                          {booking.source === 'manual' && (
+                            <span className="text-[11px] font-bold text-[#5A5A40] bg-[#EBEBE0]/70 border border-[#D6D6C2] px-1.5 py-0.5 rounded-md">
+                              سجّله المالك
+                            </span>
+                          )}
+                        </h4>
                         <p className="text-[12px] text-[#8A8A70]">الهاتف: <strong className="font-mono text-[11px] text-[#4A4A3A]">{booking.userPhone}</strong></p>
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -3072,6 +3186,64 @@ export default function AdminDashboard({
                           </button>
                         )}
                       </div>
+
+                      {/* Shifting a date or adding five people was owner-only,
+                          while the «تواصل معنا» number the group calls is
+                          Pima's. So the admin took the call and then had to ask
+                          the owner to make the change. The handler behind this
+                          is the owner's own — it checks capacity and re-runs
+                          the room allocation, so an edit here cannot overbook. */}
+                      {onUpdateBookingDetails && booking.status !== 'cancelled' && booking.status !== 'rejected' && (
+                        editBookingId === booking.id ? (
+                          <div className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl p-3 space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <label className="space-y-1">
+                                <span className="text-[11px] font-bold text-[#8A8A70]">الدخول</span>
+                                <input type="date" value={bookingEdit.checkIn} onChange={(e) => setBookingEdit((d) => ({ ...d, checkIn: e.target.value }))}
+                                  className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                              </label>
+                              <label className="space-y-1">
+                                <span className="text-[11px] font-bold text-[#8A8A70]">الخروج</span>
+                                <input type="date" value={bookingEdit.checkOut} onChange={(e) => setBookingEdit((d) => ({ ...d, checkOut: e.target.value }))}
+                                  className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                              </label>
+                            </div>
+                            <label className="space-y-1 block">
+                              <span className="text-[11px] font-bold text-[#8A8A70]">عدد الأفراد</span>
+                              <input type="number" min={1} value={bookingEdit.guestsCount} onChange={(e) => setBookingEdit((d) => ({ ...d, guestsCount: e.target.value }))}
+                                className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                            </label>
+                            <div className="flex gap-2">
+                              <button type="button" disabled={editSaving}
+                                onClick={async () => {
+                                  const guests = parseInt(bookingEdit.guestsCount, 10);
+                                  if (!bookingEdit.checkIn || !bookingEdit.checkOut || !Number.isFinite(guests) || guests < 1) { alert('اكتب تواريخ صحيحة وعدد أفراد أكبر من صفر.'); return; }
+                                  if (new Date(bookingEdit.checkOut) <= new Date(bookingEdit.checkIn)) { alert('تاريخ الخروج لازم يكون بعد تاريخ الدخول.'); return; }
+                                  setEditSaving(true);
+                                  const ok = await onUpdateBookingDetails(booking.id, { checkIn: bookingEdit.checkIn, checkOut: bookingEdit.checkOut, guestsCount: guests });
+                                  setEditSaving(false);
+                                  if (ok) setEditBookingId(null);
+                                }}
+                                className="flex-1 bg-[#5A5A40] hover:bg-[#4A4A3A] disabled:opacity-60 text-white text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+                                {editSaving ? 'بيتحفظ…' : 'احفظ التعديل'}
+                              </button>
+                              <button type="button" onClick={() => setEditBookingId(null)}
+                                className="bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 px-4 rounded-xl cursor-pointer">
+                                إلغاء
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button type="button"
+                            onClick={() => {
+                              setEditBookingId(booking.id);
+                              setBookingEdit({ checkIn: booking.checkIn?.slice(0, 10) || '', checkOut: booking.checkOut?.slice(0, 10) || '', guestsCount: String(booking.guestsCount) });
+                            }}
+                            className="w-full flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+                            <Pencil className="w-3.5 h-3.5" /> تعديل التواريخ والعدد
+                          </button>
+                        )
+                      )}
                     </div>
                   </div>
                 );

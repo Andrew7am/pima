@@ -1292,7 +1292,7 @@ export default function App() {
     // recipient that never existed.
   };
 
-  const handleVerifyPayment = (paymentId: string, status: 'approved' | 'rejected', adminNotes?: string) => {
+  const handleVerifyPayment = (paymentId: string, status: 'approved' | 'rejected' | 'pending', adminNotes?: string) => {
     setPayments((prevPayments) =>
       prevPayments.map((p) => (p.id === paymentId ? { ...p, paymentStatus: status, adminNotes } : p))
     );
@@ -1300,13 +1300,21 @@ export default function App() {
     const payment = payments.find((p) => p.id === paymentId);
     if (!payment) return;
     // Persist updated payment to Supabase
-    trackWrite(updatePaymentStatus(paymentId, status, adminNotes), status === 'approved' ? 'اعتماد الإيصال' : 'رفض الإيصال');
+    const verb = status === 'approved' ? 'اعتماد الإيصال' : status === 'rejected' ? 'رفض الإيصال' : 'إرجاع الإيصال للمراجعة';
+    trackWrite(updatePaymentStatus(paymentId, status, adminNotes), verb);
     const b = bookings.find((bk) => bk.id === payment.bookingId);
     if (!b) return;
 
     // What this verdict means for the booking — judged against the whole
     // ledger, not this one proof. `null` means leave the booking alone.
-    const change = resolvePaymentVerdict({ booking: b, payment, payments, verdict: status });
+    //
+    // Putting a payment back in the queue means the same thing to the booking
+    // as rejecting it: this money is no longer confirmed. The rejected branch
+    // deliberately leaves booking.status alone, which is what we want — undoing
+    // a payment decision is not the same as cancelling the trip, and those
+    // dates may well have been promised to the group by now.
+    const verdict = status === 'approved' ? 'approved' : 'rejected';
+    const change = resolvePaymentVerdict({ booking: b, payment, payments, verdict });
     if (!change) return;
 
     setBookings((prev) => prev.map((bk) => (bk.id === b.id ? { ...bk, ...change } : bk)));
@@ -1334,6 +1342,15 @@ export default function App() {
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
     );
+    // This write was missing. The dropdown moved, the badge changed, and the
+    // whole thing was thrown away on the next page load — the admin could not
+    // actually change anyone's role and nothing said so. handleBanUser, ten
+    // lines below, had the write all along.
+    //
+    // Promotion to admin is refused by the database for a non-admin caller
+    // (protect_user_privileged_columns, migration 037: NEW.role := OLD.role),
+    // so this sticks only when a real admin is making it.
+    trackQuery(supabase.from('users').update({ role: newRole }).eq('id', userId), 'تغيير صلاحية المستخدم');
     // If the changed user is the currently logged user, update current state too
     if (currentUser && currentUser.id === userId) {
       setCurrentUser((prev) => (prev ? { ...prev, role: newRole } : null));
@@ -2062,6 +2079,7 @@ export default function App() {
               allocationsCount={allocationsCount}
               payments={payments}
               onVerifyPayment={handleVerifyPayment}
+              onUpdateBookingDetails={handleUpdateBookingDetails}
               onSetUserApproval={handleSetUserApproval}
               promoBanners={promoBanners}
               onAddPromoBanner={handleAddPromoBanner}
