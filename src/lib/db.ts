@@ -1105,7 +1105,7 @@ function roomToRow(r: Room): Record<string, unknown> {
  * Returns { ok: false, error: 'INSUFFICIENT_CAPACITY', availableBeds } if the
  * requested guests would exceed remaining capacity for these dates.
  */
-export async function createBooking(b: Booking): Promise<{ ok: boolean; error?: string; availableBeds?: number; booking?: Booking }> {
+export async function createBooking(b: Booking): Promise<{ ok: boolean; error?: string; availableBeds?: number; minimumPrice?: number; booking?: Booking }> {
   const { data, error } = await supabase.from('bookings').insert(bookingToRow(b)).select().single();
   if (error) {
     const msg = error.message || '';
@@ -1113,6 +1113,15 @@ export async function createBooking(b: Booking): Promise<{ ok: boolean; error?: 
       const match = msg.match(/Only (\d+) beds/);
       const availableBeds = match ? parseInt(match[1], 10) : 0;
       return { ok: false, error: 'INSUFFICIENT_CAPACITY', availableBeds };
+    }
+    // validate_booking_price refuses anything below the floor it computes from
+    // the house's own rates. Unmapped, it fell through as a raw Postgres
+    // string into a generic «حاول مرة أخرى» — which is what an owner pricing
+    // a phone booking by hand hits every time, with nothing telling him the
+    // number is the problem.
+    if (msg.includes('PRICE_TOO_LOW')) {
+      const match = msg.match(/expected at least ([\d.]+)/);
+      return { ok: false, error: 'PRICE_TOO_LOW', minimumPrice: match ? Math.ceil(parseFloat(match[1])) : undefined };
     }
     console.error('createBooking:', error);
     return { ok: false, error: msg };
@@ -1608,4 +1617,24 @@ export function subscribeToPlatformSettings(onChange: (s: PlatformSettings) => v
     )
     .subscribe();
   return () => { supabase.removeChannel(channel); };
+}
+
+/**
+ * File the cash deposit an owner says he received, and mark the booking.
+ *
+ * The client used to insert the payment row directly with the GUEST's user_id.
+ * payments_insert_user requires auth.uid() = user_id, and protect_payment_write
+ * refuses it again unless the booking belongs to the caller — the owner is
+ * neither, so the row was never written, silently. The booking flip beside it
+ * did persist, so the booking claimed a deposit with no payment behind it and
+ * the payout screen went on offering that deposit for transfer.
+ *
+ * The check "is this the owner of the house this booking is for" cannot be
+ * expressed as an RLS policy on payments, so it lives inside the function.
+ * Idempotent: a second tap after a dropped connection files nothing extra.
+ */
+export async function recordCashDeposit(bookingId: string): Promise<boolean> {
+  const { error } = await supabase.rpc('record_cash_deposit', { p_booking_id: bookingId });
+  if (error) { console.error('recordCashDeposit:', error); return false; }
+  return true;
 }

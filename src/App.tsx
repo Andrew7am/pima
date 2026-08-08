@@ -21,7 +21,7 @@ import {
   loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
   setHouseDiscount,
   loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb, settleBookingsPayout,
-  recordRefund as recordRefundDb, setPaymentAccount,
+  recordRefund as recordRefundDb, setPaymentAccount, recordCashDeposit,
   loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
   createPromoBanner, setPromoBannerActive, deletePromoBanner, updatePromoBanner,
   loadPlatformSettings, updatePlatformSettings, subscribeToPlatformSettings,
@@ -965,6 +965,20 @@ export default function App() {
         alert(avail === 0
           ? 'البيت مكتمل الإشغال في هذه التواريخ.'
           : `لم يتبقَ سوى ${avail} سرير متاح في هذه التواريخ، والحجز يتطلب ${newBooking.guestsCount} فرد.`);
+      } else if (res.error === 'PRICE_TOO_LOW') {
+        // The one error an owner recording a phone booking will actually hit.
+        // validate_booking_price recomputes the stay from the house's own
+        // rates and refuses anything below the floor, and this fell into the
+        // generic branch — so an owner who worked the price out in his head
+        // was told «حاول مرة أخرى» and retried the same number. The booking
+        // simply never existed, and nothing told him why.
+        // The server's OWN floor, parsed from its exception — not a client
+        // recomputation. If the two ever disagree, the number he is told has
+        // to be the one that actually passes.
+        const floor = res.minimumPrice;
+        alert(floor
+          ? `السعر أقل من اللي البيت مسعّر بيه التواريخ دي.\n\nأقل مبلغ مقبول: ${floor.toLocaleString('ar-EG')} ج.م.`
+          : 'السعر أقل من اللي البيت مسعّر بيه التواريخ دي. راجع أسعارك الموسمية.');
       } else {
         alert('حدث خطأ في حفظ الحجز. حاول مرة أخرى.');
       }
@@ -1281,7 +1295,24 @@ export default function App() {
         adminNotes: 'أكد صاحب البيت استلام العربون نقداً',
       };
       setPayments((prev) => [cashPayment, ...prev]);
-      trackWrite(createPayment(cashPayment), 'تسجيل دفعة العربون نقداً');
+      // This row has never actually been written. It was inserted directly
+      // with user_id = the GUEST's id, and payments_insert_user requires
+      // auth.uid() = user_id; protect_payment_write refuses it again unless
+      // the booking belongs to the caller. The owner is neither, and both
+      // refusals were silent to him.
+      //
+      // The booking flip beside it DID persist — owners short-circuit
+      // protect_booking_privileged_columns — so the booking read «العربون
+      // اتدفع» with no payment behind it, and the payout screen, which
+      // excludes a booking only when it FINDS an approved cash payment, found
+      // none. Pima transferred the owner a deposit he was already holding.
+      //
+      // record_cash_deposit (migration 112) does the ownership check the RLS
+      // policies cannot express, files the row and flips the booking in one
+      // place, and is idempotent so a second tap is harmless.
+      trackWrite(recordCashDeposit(bookingId), 'تسجيل دفعة العربون نقداً')
+        .then(() => { if (target && currentUser?.id === target.userId) refreshCurrentUserPoints(target.userId); });
+      return;
     }
 
     trackWrite(updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' }), 'تأكيد استلام العربون')

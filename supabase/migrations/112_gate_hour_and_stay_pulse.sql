@@ -172,3 +172,78 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.house_stay_pulse(TEXT) TO authenticated;
+
+
+-- ============================================================
+-- 3. The cash deposit an owner confirms, which has been silently
+--    failing to record.
+--
+-- handleConfirmDepositReceived files a cash Payment row so the payout
+-- screen knows the money went into the OWNER's hand and Pima owes
+-- nothing on it. The comment above that code says exactly that.
+--
+-- The row has never been written. It is inserted with
+-- user_id = the GUEST's id, and payments_insert_user requires
+-- auth.uid() = user_id (090:236-238); protect_payment_write refuses it
+-- a second time unless the booking belongs to the caller (090:120-132).
+-- The owner is neither. Both refusals are silent to him.
+--
+-- The booking flip beside it DOES persist, because owners
+-- short-circuit protect_booking_privileged_columns. So the booking
+-- reads «العربون اتدفع» with no payment behind it — and the payout
+-- screen excludes a booking only when it FINDS an approved cash
+-- payment. It finds none, so Pima transfers the owner a deposit he is
+-- already holding. It pays out money it never received.
+--
+-- The audit screen shipped today catches this after the fact
+-- (deposit_paid_but_nothing_received). This stops it happening.
+--
+-- SECURITY DEFINER because no RLS policy can express "the owner of the
+-- house this booking is for" — the check belongs in the function, and
+-- is done here explicitly rather than trusted from the client.
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION public.record_cash_deposit(p_booking_id TEXT)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  b RECORD;
+  v_owner UUID;
+BEGIN
+  SELECT id, house_id, user_id, user_name, deposit_amount, total_price, status
+    INTO b FROM public.bookings WHERE id = p_booking_id;
+  IF b.id IS NULL THEN RAISE EXCEPTION 'BOOKING_NOT_FOUND'; END IF;
+
+  SELECT owner_id INTO v_owner FROM public.houses WHERE id = b.house_id;
+  IF v_owner IS DISTINCT FROM auth.uid() AND NOT public.is_admin(auth.uid()) THEN
+    RAISE EXCEPTION 'NOT_THE_OWNER';
+  END IF;
+  IF b.status IN ('cancelled', 'rejected') THEN
+    RAISE EXCEPTION 'BOOKING_NOT_LIVE';
+  END IF;
+
+  -- Idempotent: confirming twice must not file the deposit twice, and the
+  -- owner tapping again after a dropped connection is the normal case.
+  IF EXISTS (
+    SELECT 1 FROM public.payments
+     WHERE booking_id = b.id AND payment_method = 'cash' AND payment_status = 'approved'
+  ) THEN
+    RETURN;
+  END IF;
+
+  INSERT INTO public.payments (
+    id, booking_id, user_id, user_name, amount,
+    payment_method, payment_status, payment_date, admin_notes
+  ) VALUES (
+    'pay_cash_' || b.id, b.id, b.user_id, COALESCE(b.user_name, 'ضيف'),
+    COALESCE(b.deposit_amount, 0),
+    'cash', 'approved', NOW(),
+    'عربون استلمه صاحب البيت نقداً — سجّله بنفسه'
+  );
+
+  UPDATE public.bookings
+     SET deposit_paid = TRUE, payment_status = 'paid_deposit'
+   WHERE id = b.id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.record_cash_deposit(TEXT) TO authenticated;
