@@ -44,7 +44,8 @@ export interface RoomOffering {
   /** How many rooms of this kind the house has. */
   count: number;
   /** How many of those are free right now. */
-  availableCount: number;
+  /** Hand-flagged out of service. Real date availability lives in roomOccupancy. */
+  outOfServiceCount: number;
 }
 
 const peopleLabel = (n: number): string => {
@@ -91,7 +92,21 @@ export function buildRoomOfferings(
         description: t.description,
         features: t.facilities.map((f) => FACILITY_LABELS[f]).filter(Boolean),
         count: ofType.length,
-        availableCount: ofType.filter((r) => r.status === 'available').length,
+        /**
+         * Rooms an owner has HAND-FLAGGED out of service.
+         *
+         * This used to be availableCount, derived from rooms.status ===
+         * 'available'. Nothing in the codebase writes 'booked' any more —
+         * migration 051 moved real occupancy to room_allocations, and
+         * roomOccupancy.ts is the live engine — so every room that was not
+         * manually flagged read as free, and the guest page told visitors
+         * rooms were available on dates they were fully allocated. It
+         * overstated, which is the expensive direction.
+         *
+         * What rooms.status still genuinely knows is the two states an owner
+         * sets by hand, so that is all this reports.
+         */
+        outOfServiceCount: ofType.filter((r) => r.status === 'maintenance' || r.status === 'cleaning').length,
       };
     });
   }
@@ -123,7 +138,7 @@ export function buildRoomOfferings(
         image: group.find((r) => r.images?.[0])?.images[0],
         features: [],
         count: group.length,
-        availableCount: group.filter((r) => r.status === 'available').length,
+        outOfServiceCount: group.filter((r) => r.status === 'maintenance' || r.status === 'cleaning').length,
       };
     });
 }

@@ -48,16 +48,22 @@ describe('buildRoomOfferings', () => {
       expect(o.features).toEqual([FACILITY_LABELS.ac, FACILITY_LABELS.bathroom]);
     });
 
-    it('counts the rooms of that type, and how many are free', () => {
+    it('counts the rooms of that type, and how many the owner took out of service', () => {
+      // NOT "how many are free". rooms.status has not answered that since
+      // migration 051 moved occupancy to room_allocations — nothing writes
+      // 'booked' any more, so every unflagged room read as available and the
+      // guest page advertised rooms that were fully allocated on the dates
+      // being asked about. The two states it still genuinely knows are the
+      // two an owner sets by hand.
       const rooms = [
         room({ id: 'a', typeId: 't1', status: 'available' }),
-        room({ id: 'b', typeId: 't1', status: 'booked' }),
+        room({ id: 'b', typeId: 't1', status: 'cleaning' }),
         room({ id: 'c', typeId: 't1', status: 'maintenance' }),
         room({ id: 'd', typeId: 'other', status: 'available' }),
       ];
       const [o] = buildRoomOfferings(house(), rooms, [type()]);
       expect(o.count).toBe(3);
-      expect(o.availableCount).toBe(1);
+      expect(o.outOfServiceCount).toBe(2);
     });
 
     it('shows a real photograph when one of those rooms has one', () => {

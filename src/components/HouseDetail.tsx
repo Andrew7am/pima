@@ -1901,13 +1901,21 @@ export default function HouseDetail({
                           {arabicNumber(room.bedsCount)} سرير{room.pricePerNight ? ` · ${arabicNumber(room.pricePerNight)} ج.م/ليلة` : ''}
                         </span>
                       </div>
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                        room.status === 'available' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
-                        room.status === 'booked' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
-                        'bg-rose-50 text-rose-800 border border-rose-200'
-                      }`}>
-                        {room.status === 'available' ? 'متاحة' : room.status === 'booked' ? 'محجوزة' : 'صيانة'}
-                      </span>
+                      {/* Only the two states rooms.status still genuinely
+                          knows, because they are the two an owner sets by
+                          hand. This used to print «متاحة» for every room that
+                          was not hand-flagged — including rooms fully
+                          allocated on the requested dates — because nothing
+                          has written 'booked' since migration 051 moved
+                          occupancy to room_allocations. Whether a room is free
+                          on a date is answered by roomOccupancy, and this list
+                          has no dates to answer it for, so it now says nothing
+                          rather than something false. */}
+                      {(room.status === 'maintenance' || room.status === 'cleaning') && (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 bg-rose-50 text-rose-800 border border-rose-200">
+                          {room.status === 'maintenance' ? 'صيانة' : 'تحضير'}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1977,7 +1985,7 @@ export default function HouseDetail({
                           {/* Real counts instead of a written-in blurb. */}
                           <p className="text-[11px] text-[#8A8A70] leading-relaxed font-semibold mt-1">
                             {room.count > 0
-                              ? <>{arabicNumber(room.count)} غرفة من النوع ده{room.availableCount > 0 ? ` · ${arabicNumber(room.availableCount)} متاحة الآن` : ''}</>
+                              ? <>{arabicNumber(room.count)} غرفة من النوع ده{room.outOfServiceCount > 0 ? ` · ${arabicNumber(room.outOfServiceCount)} خارج الخدمة` : ''}</>
                               : 'غرفة متاحة للحجز'}
                           </p>
                           {room.description && (
