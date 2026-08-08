@@ -31,24 +31,26 @@ BEGIN
     SELECT owner_id, name INTO h_owner, h_name FROM public.houses WHERE id = NEW.house_id;
 
     IF h_owner IS NOT NULL THEN
-      INSERT INTO public.notifications (user_id, booking_id, title, body)
+      INSERT INTO public.notifications (id, user_id, booking_id, title, message, type, is_read)
       VALUES (
-        h_owner, NEW.id,
+        'notif_cancel_owner_' || NEW.id, h_owner, NEW.id,
         'حجز اتلغى',
-        format('%s ألغى حجزه في %s يوم %s.',
-               COALESCE(NEW.user_name, 'ضيف'), COALESCE(h_name, 'البيت'), NEW.check_in)
-      );
+        COALESCE(NEW.user_name, 'ضيف') || ' ألغى حجزه في "' || COALESCE(h_name, 'البيت') || '" يوم ' || NEW.check_in,
+        'danger', FALSE
+      )
+      ON CONFLICT (id) DO NOTHING;
     END IF;
 
     -- And the guest, who until now was told nothing at all — there was
     -- no cancelled branch on their side of the notification triggers.
-    INSERT INTO public.notifications (user_id, booking_id, title, body)
+    INSERT INTO public.notifications (id, user_id, booking_id, title, message, type, is_read)
     VALUES (
-      NEW.user_id, NEW.id,
+      'notif_cancel_guest_' || NEW.id, NEW.user_id, NEW.id,
       'اتلغى حجزك',
-      format('حجزك في %s يوم %s اتلغى. لو فيه عربون مدفوع هنراجعه معاك.',
-             COALESCE(h_name, 'البيت'), NEW.check_in)
-    );
+      'حجزك في "' || COALESCE(h_name, 'البيت') || '" يوم ' || NEW.check_in || ' اتلغى. لو فيه عربون مدفوع هنراجعه معاك.',
+      'danger', FALSE
+    )
+    ON CONFLICT (id) DO NOTHING;
   END IF;
   RETURN NEW;
 END;
@@ -130,6 +132,7 @@ CREATE POLICY "attendee_links_booker" ON public.attendee_links
 
 ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS show_arrival_to_parents BOOLEAN NOT NULL DEFAULT TRUE;
 
+DROP FUNCTION IF EXISTS public.get_booking_invite_info(TEXT);
 CREATE OR REPLACE FUNCTION public.get_booking_invite_info(p_booking_id TEXT)
 RETURNS TABLE (
   house_name       TEXT,
