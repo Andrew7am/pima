@@ -1225,6 +1225,7 @@ export default function HouseDetail({
             discountSaving={discountSaving}
             onPrintPriestQuote={currentUser && checkIn && checkOut ? () => printPriestQuote(buildPriestQuote({
               house, checkIn, checkOut, guestsCount, withMeals: !!withMeals,
+              pointsDiscount: redemptionDiscount,
               settings, servant: currentUser,
             })) : undefined}
             totalPrice={totalPrice}

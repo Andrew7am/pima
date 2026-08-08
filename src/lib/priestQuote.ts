@@ -1,5 +1,5 @@
 import type { RetreatHouse, PlatformSettings, User } from '../types';
-import { computeStayPrice, computeMealPlan, activeDiscountFor, applyDiscount } from './pricing';
+import { computeStayPrice, computeMealPlan, activeDiscountFor, applyDiscount, isDayUse } from './pricing';
 import { openPrintWindow, escapeHtml } from './printWindow';
 
 /**
@@ -37,11 +37,22 @@ export interface QuoteLine {
 }
 
 export interface CancellationStep {
-  /** «قبل ١٢ أغسطس» */
+  /** The boundary date itself. */
   when: string;
+  /**
+   * «لغاية» or «بعد».
+   *
+   * getRefundTier bands INCLUSIVELY — full refund while daysLeft >=
+   * freeCancelDays — so the boundary day is still inside the better tier.
+   * Writing «قبل ٢٧ أغسطس» excluded the 27th and understated the window by a
+   * day on every rung. «لغاية ٢٧ أغسطس» is what the policy actually says.
+   */
+  edge: 'until' | 'after';
   /** What comes back, in pounds — not a percentage. */
   refund: number;
   label: string;
+  /** False once the date has passed — printed struck through, not as an offer. */
+  stillAvailable: boolean;
 }
 
 export interface AlternativeWeek {
@@ -74,14 +85,31 @@ export interface PriestQuote {
 
 const DAY = 86400000;
 
-/** Local calendar arithmetic — see seasonPlanning for why UTC must not appear. */
+const isoOf = (d: Date) => {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
+
+/**
+ * Move a calendar date, by the calendar.
+ *
+ * The first version added days × 86,400,000 ms. A day in Africa/Cairo is not
+ * always that long — DST starts 24 April and ends 30 October — so a shift
+ * across a transition landed at 23:00 the previous day and reported that day
+ * instead. Because check-in and check-out were shifted independently, an
+ * alternative week could silently gain or lose a NIGHT and then be priced at
+ * that wrong length: a trip on 29–31 October advertised the following week as
+ * «أكتر بـ ٤٬٠٠٠ ج.م» when it costs exactly the same.
+ *
+ * setDate re-resolves local midnight, which is what pricing.ts has always
+ * done. The tests missed it by pinning every case to September.
+ */
 function shiftDate(iso: string, days: number): string {
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return iso;
   const d = new Date(+m[1], +m[2] - 1, +m[3]);
-  const t = new Date(d.getTime() + days * DAY);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`;
+  d.setDate(d.getDate() + days);
+  return isoOf(d);
 }
 
 function nightsBetween(checkIn: string, checkOut: string): number {
@@ -122,23 +150,34 @@ export function buildPriestQuote(args: {
   guestsCount: number;
   withMeals: boolean;
   hallFee?: number;
+  /** Points the servant is redeeming — the guest is charged after this. */
+  pointsDiscount?: number;
   settings: PlatformSettings;
   servant: Pick<User, 'name' | 'priestName' | 'churchName'>;
   today?: Date;
 }): PriestQuote {
   const { house, checkIn, checkOut, guestsCount, withMeals, settings, servant } = args;
   const hallFee = args.hallFee ?? 0;
+  const pointsDiscount = args.pointsDiscount ?? 0;
+  const today = args.today ?? new Date();
 
   const p = priceFor(house, checkIn, checkOut, guestsCount, withMeals);
-  const total = p.total + hallFee;
+  const total = Math.max(0, p.total + hallFee - pointsDiscount);
   const nights = nightsBetween(checkIn, checkOut);
+  // «يوم روحي» — arrive and leave the same day. computeStayPrice charges the
+  // house's day rate, but nights is 0, and the sheet was printing «٠ ليالي»
+  // and «٠ ليلة × ٤٠ فرد» beside a real charge.
+  const dayOnly = isDayUse(checkIn, checkOut);
+  const stayHint = dayOnly
+    ? `يوم واحد بدون مبيت × ${guestsCount} فرد`
+    : `${nights} ليلة × ${guestsCount} فرد`;
 
   const lines: QuoteLine[] = [];
   if (p.discountPct > 0) {
     lines.push({
       label: 'الإقامة قبل الخصم',
       amount: p.accommodation,
-      hint: `${nights} ليلة × ${guestsCount} فرد`,
+      hint: stayHint,
     });
     lines.push({
       label: `خصم ${Math.round(p.discountPct * 100)}٪`,
@@ -148,11 +187,16 @@ export function buildPriestQuote(args: {
     lines.push({
       label: 'الإقامة',
       amount: p.accommodation,
-      hint: `${nights} ليلة × ${guestsCount} فرد`,
+      hint: stayHint,
     });
   }
   if (p.meals > 0) lines.push({ label: 'الوجبات', amount: p.meals });
   if (hallFee > 0) lines.push({ label: 'القاعة', amount: hallFee });
+  // Points the servant is spending on this booking. Without it the sheet
+  // quoted the price BEFORE redemption while the guest is charged after it —
+  // a priest approving a budget that is too high, and a deposit figure that
+  // does not match the one the app then asks for.
+  if (pointsDiscount > 0) lines.push({ label: 'خصم النقاط', amount: -pointsDiscount });
 
   const depositDue = Math.round(total * settings.depositRate);
 
@@ -160,14 +204,18 @@ export function buildPriestQuote(args: {
   // أغسطس» does not have to count backwards from a percentage in a meeting.
   const freeUntil = shiftDate(checkIn, -settings.freeCancelDays);
   const partialUntil = shiftDate(checkIn, -settings.partialRefundDays);
+  // A rung whose date has passed is not an option any more. Printed as a live
+  // promise it invites a priest to approve on terms that no longer exist.
+  const todayISO = isoOf(today);
   const cancellation: CancellationStep[] = [
-    { when: freeUntil, refund: depositDue, label: 'يرجع العربون كامل' },
+    { when: freeUntil, edge: 'until', refund: depositDue, label: 'يرجع العربون كامل', stillAvailable: todayISO <= freeUntil },
     {
-      when: partialUntil,
+      when: partialUntil, edge: 'until',
       refund: Math.round(depositDue * settings.partialRefundPct),
       label: `يرجع ${Math.round(settings.partialRefundPct * 100)}٪ من العربون`,
+      stillAvailable: todayISO <= partialUntil,
     },
-    { when: checkIn, refund: 0, label: 'مايرجعش عربون' },
+    { when: partialUntil, edge: 'after', refund: 0, label: 'مايرجعش عربون', stillAvailable: true },
   ];
 
   // The question the priest always asks, answered before he asks it. Same
@@ -226,8 +274,8 @@ export function printPriestQuote(q: PriestQuote): void {
     </tr>`).join('');
 
   const ladder = q.cancellation.map((c) => `
-    <tr>
-      <td class="lbl">قبل ${escapeHtml(day(c.when))}</td>
+    <tr${c.stillAvailable ? '' : ' class="gone"'}>
+      <td class="lbl">${c.edge === 'until' ? 'لغاية' : 'بعد'} ${escapeHtml(day(c.when))}${c.stillAvailable ? '' : '<small>الموعد ده عدّى</small>'}</td>
       <td class="val">${escapeHtml(c.label)} — <b>${money(c.refund)}</b></td>
     </tr>`).join('');
 
@@ -249,7 +297,7 @@ export function printPriestQuote(q: PriestQuote): void {
 
     <h1>عرض تكلفة الرحلة</h1>
     <table>
-      <tr><td class="lbl">التواريخ</td><td class="val">${escapeHtml(day(q.checkIn))} — ${escapeHtml(day(q.checkOut))} (${q.nights} ليالي)</td></tr>
+      <tr><td class="lbl">التواريخ</td><td class="val">${q.nights === 0 ? escapeHtml(day(q.checkIn)) + ' — يوم واحد' : escapeHtml(day(q.checkIn)) + ' — ' + escapeHtml(day(q.checkOut)) + ' (' + q.nights + ' ليالي)'}</td></tr>
       <tr><td class="lbl">العدد</td><td class="val">${q.guestsCount} فرد</td></tr>
       ${lines}
       <tr class="total"><td class="lbl">الإجمالي</td><td class="val">${money(q.total)}</td></tr>
@@ -287,6 +335,8 @@ export function printPriestQuote(q: PriestQuote): void {
       .lbl{color:#4A4A3A;font-weight:600}
       .val{text-align:left;font-weight:700;white-space:nowrap}
       .minus{color:#B8944E}
+      .gone td{color:#B5AF98;text-decoration:line-through}
+      .gone small{text-decoration:none;color:#B5AF98}
       .total td{border-top:2px solid #0A2342;border-bottom:none;font-size:16px;font-weight:900;color:#0A2342;padding-top:12px}
       .perhead td{border-bottom:none;color:#5A5A40;padding-top:0}
       .foot{margin-top:22px;font-size:11px;color:#8A8A70;line-height:1.8}
