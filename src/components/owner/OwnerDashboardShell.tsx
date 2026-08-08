@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { arabicNumber, arabicPlural, arabicDateRange, arabicBadge, arabicPercent, arabicDecimal, GUEST_FORMS, ROOM_FORMS, BED_FORMS, DAY_FORMS, PHOTO_FORMS, REVIEW_FORMS, HOUSE_FORMS, TASK_FORMS, BOOKING_FORMS } from '../../lib/arabic';
+import { arabicNumber, arabicPlural, arabicDateRange, arabicBadge, arabicPercent, arabicDecimal, GUEST_FORMS, ROOM_FORMS, BED_FORMS, DAY_FORMS, PHOTO_FORMS, REVIEW_FORMS, HOUSE_FORMS, TASK_FORMS, BOOKING_FORMS  } from '../../lib/arabic';
 import { occupancyRate, monthWindow, bedsInUseOn } from '../../lib/occupancy';
 import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, RoomType, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification, Expense, Payout } from '../../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
@@ -29,6 +29,7 @@ import OwnerReviewsCenter from './OwnerReviewsCenter';
 import OwnerCalendar from './OwnerCalendar';
 import OwnerAssignRooms from './OwnerAssignRooms';
 import OwnerToday from './OwnerToday';
+import { silentHolds, totalSilentHolds } from '../../lib/silentHolds';
 import OwnerSpotlight from './OwnerSpotlight';
 import OwnerFoodMenu from './OwnerFoodMenu';
 import OwnerRoomDistributionScreen from './OwnerRoomDistribution';
@@ -1956,6 +1957,31 @@ export default function OwnerDashboardShell({
           onRecalculateAll={async () => { if (ownerHouses[0] && onRecalculateAllocation) await onRecalculateAllocation(ownerHouses[0].id); }}
         />
       )}
+
+      {/* The beds his silence is holding.
+          check_booking_capacity counts a booking as occupying beds while it is
+          'pending' OR 'approved', and search runs the same maths — correct, so
+          search never promises capacity the insert would reject. The
+          consequence nobody designed: an unanswered request is, to the entire
+          marketplace, indistinguishable from a confirmed one. An owner who
+          leaves three sitting has withdrawn those beds from his own listing,
+          and experiences it as «بيما مش بتجيبلي حد». */}
+      {activeTab === 'today' && (() => {
+        const holds = silentHolds({ bookings: ownerBookings, houseIds: ownerHouses.map((h) => h.id) });
+        const t = totalSilentHolds(holds);
+        if (t.requests === 0) return null;
+        return (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 mb-3">
+            <div className="text-[12px] font-black text-amber-900">
+              {arabicPlural(t.requests, BOOKING_FORMS)} مستنية ردّك بتحجز {arabicNumber(t.beds)} سرير
+            </div>
+            <p className="text-[11px] text-amber-800/80 leading-relaxed mt-0.5">
+              الطلب المعلّق بيتحسب محجوز في البحث زي المؤكد بالظبط، فالأسرّة دي مش ظاهرة لحد تاني.
+              {holds[0].oldestDays > 0 && ` أقدم طلب مستني ${arabicNumber(holds[0].oldestDays)} يوم.`}
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Overflow: Customers */}
       {activeTab === 'today' && (
