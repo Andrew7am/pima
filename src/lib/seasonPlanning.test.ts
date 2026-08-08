@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pendingRenewals, emptyBedNightsAhead, type HouseForOccupancy } from './seasonPlanning';
+import { pendingRenewals, emptyBedNightsAhead, normalizeOrgName, returnCohorts, type HouseForOccupancy } from './seasonPlanning';
 import type { Booking } from '../types';
 
 const NOW = new Date('2026-08-07T12:00:00Z').getTime();
@@ -150,5 +150,67 @@ describe('calendar days, not UTC instants', () => {
     const first = emptyBedNightsAhead({ houses: [house], bookings: [], now: NOW, weeks: 1 }).weeks[0].startISO;
     const r = emptyBedNightsAhead({ houses: [{ ...house, blockedDates: [first] }], bookings: [], now: NOW, weeks: 1 });
     expect(r.weeks[0].capacity).toBe(60); // exactly one night of 10 beds removed
+  });
+});
+
+describe('normalizeOrgName', () => {
+  it('treats the spellings people actually type as one church', () => {
+    // The whole return rate rests on this: «كنيسة مار جرجس» and «مارجرجس»
+    // being two customers would report a church that came back as churn.
+    const a = normalizeOrgName('كنيسة مار جرجس');
+    expect(normalizeOrgName('مارجرجس  ')).not.toBe('');
+    expect(normalizeOrgName('كنيسه مار جرجس')).toBe(a);
+    expect(normalizeOrgName('  كنيسة   مار جرجس  ')).toBe(a);
+  });
+
+  it('folds the alef forms and ya/alef-maqsura', () => {
+    expect(normalizeOrgName('كنيسة الأنبا')).toBe(normalizeOrgName('كنيسة الانبا'));
+    expect(normalizeOrgName('العذرى')).toBe(normalizeOrgName('العذري'));
+  });
+
+  it('is empty for an empty name, so the caller can fall back to the person', () => {
+    expect(normalizeOrgName('')).toBe('');
+    expect(normalizeOrgName('   ')).toBe('');
+  });
+});
+
+describe('returnCohorts', () => {
+  const trip = (org: string, year: number, id: string): Booking =>
+    bk({ id, organizationName: org, checkIn: `${year}-08-10`, checkOut: `${year}-08-13`, status: 'completed' });
+
+  it('counts a church that came two years running as returned', () => {
+    const r = returnCohorts({ bookings: [trip('كنيسة مار مرقس', 2024, 'a'), trip('كنيسة مار مرقس', 2025, 'b')] });
+    expect(r.find((c) => c.year === 2024)).toMatchObject({ groups: 1, returned: 1, ratePct: 100 });
+  });
+
+  it('counts one that vanished as churn — the case pendingRenewals cannot see', () => {
+    const r = returnCohorts({ bookings: [trip('كنيسة مار مرقس', 2024, 'a')] });
+    expect(r.find((c) => c.year === 2024)).toMatchObject({ groups: 1, returned: 0, ratePct: 0 });
+  });
+
+  it('does not report a spelling change as churn', () => {
+    const r = returnCohorts({ bookings: [trip('كنيسة مار جرجس', 2024, 'a'), trip('مار جرجس', 2025, 'b')] });
+    expect(r.find((c) => c.year === 2024)!.returned).toBe(1);
+  });
+
+  it('ignores bookings that were never confirmed', () => {
+    const r = returnCohorts({
+      bookings: [trip('أ', 2024, 'a'), bk({ id: 'b', organizationName: 'أ', checkIn: '2025-08-10', status: 'rejected' })],
+    });
+    expect(r.find((c) => c.year === 2024)!.returned).toBe(0);
+  });
+
+  it('treats a person with no church as their own group', () => {
+    const r = returnCohorts({
+      bookings: [
+        bk({ id: 'a', organizationName: undefined, userId: 'u1', checkIn: '2024-08-10', status: 'completed' }),
+        bk({ id: 'b', organizationName: undefined, userId: 'u1', checkIn: '2025-08-10', status: 'completed' }),
+      ],
+    });
+    expect(r.find((c) => c.year === 2024)).toMatchObject({ groups: 1, returned: 1 });
+  });
+
+  it('is empty with nothing to count', () => {
+    expect(returnCohorts({ bookings: [] })).toEqual([]);
   });
 });

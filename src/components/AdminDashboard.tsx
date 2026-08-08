@@ -5,7 +5,7 @@ import { topHousesByBookings } from '../lib/topHouses';
 import { summarizeFinances, accountBalances, refundsDue } from '../lib/adminFinance';
 import { commissionTotal, ownerShareOf, rateOf, unclaimedOwedBookings } from '../lib/paymentLedger';
 import { findFinanceExceptions } from '../lib/adminExceptions';
-import { pendingRenewals, emptyBedNightsAhead } from '../lib/seasonPlanning';
+import { pendingRenewals, emptyBedNightsAhead, returnCohorts } from '../lib/seasonPlanning';
 import { loadHouseImages, saveHouseImages, loadHouseViewCounts } from '../lib/db';
 import { inlineImageStats, migrateImages } from '../lib/migrateImagesToStorage';
 // Arabic agreement keys on n % 100: 1 = one, 2 = dual, 3-10 = few, 11-99 back
@@ -572,6 +572,7 @@ export default function AdminDashboard({
 
   // The season, which for Pima is the business.
   const renewals = React.useMemo(() => pendingRenewals({ bookings }), [bookings]);
+  const cohorts = React.useMemo(() => returnCohorts({ bookings }), [bookings]);
   const occupancy = React.useMemo(
     () => emptyBedNightsAhead({ houses, bookings, weeks: 8 }),
     [houses, bookings],
@@ -3202,6 +3203,35 @@ export default function AdminDashboard({
               <p className="text-[11px] text-[#8A8A70]">مفيش بيوت معتمدة لسه، فمفيش سعة تتحسب.</p>
             )}
           </div>
+
+          {/* Whether anyone comes back — which nothing in this app measured.
+              Every growth figure is arrival-side (new users, new bookings, a
+              signup funnel), so «are we keeping churches» had no answer in
+              either direction. The renewals list below answers the neighbouring
+              question — who is due back — but it windows to ±45 days around one
+              anniversary and drops everyone outside it, which is exactly the
+              group that vanished. */}
+          {cohorts.length > 0 && (
+            <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
+              <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">
+                نسبة الكنايس اللي رجعت السنة اللي بعدها
+              </h3>
+              {cohorts.map((c) => (
+                <div key={c.year} className="flex items-center justify-between gap-2 text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0">
+                  <span className="font-bold text-[#4A4A3A]">
+                    جم في {arabicNumber(c.year)}
+                    <span className="text-[11px] font-normal text-[#8A8A70]"> · {arabicNumber(c.groups)} مجموعة</span>
+                  </span>
+                  <span className={`font-black tabular-nums shrink-0 ${c.ratePct >= 50 ? 'text-emerald-800' : c.ratePct >= 25 ? 'text-[#C5A059]' : 'text-rose-700'}`}>
+                    {arabicNumber(c.ratePct)}٪ رجعوا
+                  </span>
+                </div>
+              ))}
+              <p className="text-[11px] text-[#8A8A70] leading-relaxed">
+                الكنيسة بتتحسب بالاسم بعد توحيد طريقة كتابته — «كنيسة مار جرجس» و«مارجرجس» واحدة، وإلا كان أي اختلاف في الكتابة هيتحسب هروب.
+              </p>
+            </div>
+          )}
 
           {/* The church is the customer, not whichever servant held the phone
               that year — so these are grouped by organisation. */}

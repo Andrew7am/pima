@@ -34,10 +34,25 @@ export default function OwnerCustomers({ bookings, reviews = [], users = [], onO
 
   const avatarFor = (userId: string) => users.find((u) => u.id === userId)?.avatarUrl;
 
+  // A booking the owner typed in himself is stored with userId = HIS OWN id
+  // (OwnerDashboardShell: `userId: owner.id`), because there is no account for
+  // a walk-in. Keyed on userId, every phone booking he has ever recorded
+  // collapsed into a single customer row carrying the first one's name — so
+  // his own list was broken for exactly the guests who never came through the
+  // platform, which are the ones this screen is most useful for.
+  //
+  // Those are identified by the phone he typed. Platform bookings keep the
+  // account id, which is the only thing that survives a guest changing number.
+  const keyOf = (b: Booking) =>
+    b.source === 'manual' || b.source === 'temporary'
+      ? `manual:${(b.userPhone || '').trim() || b.userName.trim()}`
+      : b.userId;
+
   const customers: CustomerRow[] = useMemo(() => Object.values(
     bookings.reduce((acc, b) => {
-      if (!acc[b.userId]) acc[b.userId] = { userId: b.userId, name: b.userName, phone: b.userPhone, totalBookings: 0, totalSpent: 0, lastStay: '', firstStay: b.checkIn };
-      const c = acc[b.userId];
+      const k = keyOf(b);
+      if (!acc[k]) acc[k] = { userId: b.userId, name: b.userName, phone: b.userPhone, totalBookings: 0, totalSpent: 0, lastStay: '', firstStay: b.checkIn };
+      const c = acc[k];
       c.totalBookings += 1;
       if (b.status !== 'cancelled' && b.status !== 'rejected') c.totalSpent += b.totalPrice;
       if (b.checkOut > c.lastStay) c.lastStay = b.checkOut;
