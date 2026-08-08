@@ -642,8 +642,15 @@ export default function App() {
   // problem.
   useEffect(() => {
     if (!selectedHouse?.id) return;
+    // Not the admin previewing from the content tab, and not an owner looking
+    // at his own listing. This counted every open by anyone, so the figure was
+    // measuring the platform's own staff at work rather than visitor interest
+    // — and the admin inflates it most, because reviewing houses is his job.
+    // A number that goes up when you look at it is worse than no number.
+    const isStaffLook = currentUser?.role === 'admin' || currentUser?.id === selectedHouse.ownerId;
+    if (isStaffLook) return;
     void recordHouseView(selectedHouse.id);
-  }, [selectedHouse?.id]);
+  }, [selectedHouse?.id, selectedHouse?.ownerId, currentUser?.id, currentUser?.role]);
 
   // A page opens at its top.
   //
