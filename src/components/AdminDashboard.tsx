@@ -1888,13 +1888,27 @@ export default function AdminDashboard({
                               drawn while the request is still in flight reads
                               as «nobody looked at this house», which is a
                               different claim from «we do not know yet». */}
-                          {houseViews && (
-                            <span className="flex items-center gap-1 text-[11px] font-bold text-[#4A4A3A]">
-                              <Eye className="w-3.5 h-3.5 text-[#8A8A70]" />
-                              <span className="tabular-nums">{arabicNumber(houseViews[house.id]?.total ?? 0)}</span>
-                              <span className="text-[#BCBC9D] font-normal">مشاهدة</span>
-                            </span>
-                          )}
+                          {houseViews && (() => {
+                            const seen = houseViews[house.id]?.total ?? 0;
+                            // Arabic-Indic zero is U+0660 — a DOT, and 4.6px
+                            // wide beside an eye icon at this size. Printed
+                            // bare it reads as a missing number rather than as
+                            // «none yet», which is exactly how it was reported:
+                            // «the eye shows without the count».
+                            return (
+                              <span className="flex items-center gap-1 text-[11px] font-bold text-[#4A4A3A]">
+                                <Eye className="w-3.5 h-3.5 text-[#8A8A70]" />
+                                {seen === 0 ? (
+                                  <span className="text-[#BCBC9D] font-normal">لسه مفيش مشاهدات</span>
+                                ) : (
+                                  <>
+                                    <span className="tabular-nums">{arabicNumber(seen)}</span>
+                                    <span className="text-[#BCBC9D] font-normal">مشاهدة</span>
+                                  </>
+                                )}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </div>
 
