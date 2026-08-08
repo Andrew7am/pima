@@ -28,6 +28,7 @@ import OwnerRoomsManager from './OwnerRoomsManager';
 import OwnerReviewsCenter from './OwnerReviewsCenter';
 import OwnerCalendar from './OwnerCalendar';
 import OwnerAssignRooms from './OwnerAssignRooms';
+import { computeStayPrice, applyDiscount, activeDiscountFor } from '../../lib/pricing';
 import OwnerToday from './OwnerToday';
 import { silentHolds, totalSilentHolds } from '../../lib/silentHolds';
 import OwnerSpotlight from './OwnerSpotlight';
@@ -1611,6 +1612,29 @@ export default function OwnerDashboardShell({
                     <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-0.5">إجمالي السعر (ج.م):</label>
                     <input id="mb-price" type="number" min={0} value={mbPrice} onChange={(e) => setMbPrice(e.target.value)} onFocus={(e) => e.target.select()}
                       className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[11px] px-2 min-h-11.5 rounded-xl focus:outline-none" />
+                    {/* His own quote, from the same engine the guest booking
+                        uses — this form was the one booking entry point in the
+                        app that never touched it. Doing the sum in his head
+                        against seasonal rates he set in March is how he lands
+                        under the server's floor and gets the booking refused. */}
+                    {(() => {
+                      const h = ownerHouses[0];
+                      if (!h || !mbCheckIn || !mbCheckOut || mbCheckOut < mbCheckIn || mbGuests < 1) return null;
+                      const quoted = applyDiscount(
+                        computeStayPrice(h, mbCheckIn, mbCheckOut, mbGuests).total,
+                        activeDiscountFor(h, mbCheckIn),
+                      );
+                      if (quoted <= 0) return null;
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => setMbPrice(String(quoted))}
+                          className="mt-1 text-[11px] font-bold text-[var(--color-owner-accent,#B8944E)] underline cursor-pointer"
+                        >
+                          حسب أسعارك: {arabicNumber(quoted)} ج.م — استخدمه
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
                 {(() => {
@@ -1997,6 +2021,10 @@ export default function OwnerDashboardShell({
       {/* Overflow: Finance */}
       {activeTab === 'financials' && (
         <OwnerFinancialCenter
+          payoutDestination={(() => {
+            const pm = ownerHouses[0]?.paymentMethods?.[0];
+            return pm ? `${pm.label} · ${pm.value}` : undefined;
+          })()}
           ownerBookings={ownerBookings}
           confirmedBookings={confirmedBookings}
           confirmedRevenue={confirmedRevenue}

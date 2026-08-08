@@ -1337,6 +1337,24 @@ export default function App() {
       prev.map((b) => (b.id === bookingId ? { ...b, status: 'completed', checkedOutAt } : b))
     );
     trackWrite(updateBookingFields(bookingId, { status: 'completed', checkedOutAt }), 'تسجيل مغادرة الضيف');
+
+    // Flag the rooms that group actually held as needing turnaround.
+    //
+    // Check-out wrote the booking and touched no room, and getRoomBedState
+    // reports a room free the instant a stay ends — so the housekeeping
+    // section printed «كل الغرف جاهزة ✨» while forty people had just walked
+    // out of eleven rooms. Its only input was the owner's own thumb.
+    //
+    // Safe by construction: getRoomFreeBedsForRange ignores status entirely
+    // and availability filters only 'maintenance', so marking a room
+    // 'cleaning' blocks no booking. Both OwnerToday and OwnerRoomsManager
+    // already flip it back.
+    // A room already under maintenance is left alone: that is a state the
+    // owner set deliberately and turnaround does not clear it.
+    const emptied = new Set(allocations.filter((a) => a.bookingId === bookingId).map((a) => a.roomId));
+    rooms
+      .filter((r) => emptied.has(r.id) && r.status !== 'maintenance')
+      .forEach((r) => handleUpdateRoom({ ...r, status: 'cleaning' }));
   };
 
   // --- Egyptian Payment System Operations ---
