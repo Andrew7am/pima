@@ -163,6 +163,11 @@ export function mapReview(r: Record<string, unknown>): Review {
     userName: r.user_name as string,
     userRole: r.user_role as Review['userRole'],
     rating: r.rating as number,
+    bookingId: (r.booking_id as string) ?? undefined,
+    stayGroup: (r.stay_group as string) ?? undefined,
+    stayBand: (r.stay_band as string) ?? undefined,
+    stayNights: r.stay_nights != null ? Number(r.stay_nights) : undefined,
+    stayMonth: r.stay_month != null ? Number(r.stay_month) : undefined,
     food_rating: r.food_rating as number ?? undefined,
     service_rating: r.service_rating as number ?? undefined,
     cleanliness_rating: r.cleanliness_rating as number ?? undefined,
@@ -1038,6 +1043,11 @@ function reviewToRow(r: Review): Record<string, unknown> {
     user_name: r.userName,
     user_role: r.userRole,
     rating: r.rating,
+    booking_id: r.bookingId ?? null,
+    stay_group: r.stayGroup ?? null,
+    stay_band: r.stayBand ?? null,
+    stay_nights: r.stayNights ?? null,
+    stay_month: r.stayMonth ?? null,
     food_rating: r.food_rating ?? null,
     service_rating: r.service_rating ?? null,
     cleanliness_rating: r.cleanliness_rating ?? null,
@@ -1170,8 +1180,21 @@ export async function updateBookingFields(id: string, fields: Partial<Booking>):
   return { ok: true };
 }
 
+/**
+ * One review per STAY, not one per person per house.
+ *
+ * This upserted on (user_id, house_id) against the unique index from
+ * migration 028 — so a church returning to a house it liked, which is the
+ * whole business, silently destroyed what it wrote the year before. Three
+ * summers at one house left exactly one review and no trace of the other two.
+ *
+ * 028's intent — stop one person spamming a house — was right; it picked the
+ * wrong unit. The stay is the unit. Migration 114 replaces the index, so this
+ * is a plain insert and what now gets refused is a second review of the SAME
+ * booking.
+ */
 export async function createReview(r: Review): Promise<boolean> {
-  const { error } = await supabase.from('reviews').upsert(reviewToRow(r), { onConflict: 'user_id,house_id' });
+  const { error } = await supabase.from('reviews').insert(reviewToRow(r));
   if (error) console.error('createReview:', error);
   return !error;
 }

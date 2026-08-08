@@ -291,6 +291,17 @@ export interface Review {
   value_rating?: number;
   overall_rating?: number;
   comment: string;
+  /** The stay being reviewed. One review per booking — replaces the old
+   *  one-per-person-per-house rule, which silently overwrote a returning
+   *  church's earlier reviews. See migration 114. */
+  bookingId?: string;
+  /** The shape of that stay, so «١٤ نجمة» can become «٩ مجموعات ثانوي ٤٠–٥٠
+   *  فرد، ٣ ليالي، ذروة أغسطس». A size BAND, never an exact count, and no
+   *  church is named — these stays carry minors. */
+  stayGroup?: string;
+  stayBand?: string;
+  stayNights?: number;
+  stayMonth?: number;
   createdAt: string;
   ownerReply?: string;
   ownerReplyCreatedAt?: string;

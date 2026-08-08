@@ -1586,7 +1586,31 @@ export default function App() {
   };
 
   // --- Review Operations ---
-  const handleAddReview = async (newReview: Review) => {
+  const handleAddReview = async (review: Review) => {
+    // Stamp the stay this review is about.
+    //
+    // «١٤ نجمة» tells a servant almost nothing. «٩ مجموعات ثانوي ٤٠–٥٠ فرد،
+    // ٣ ليالي، ذروة أغسطس» tells him whether the house suits HIS trip, and it
+    // is a thing only a platform that processed those bookings can say.
+    //
+    // Size is a BAND, never an exact count, and no church is named — the same
+    // disclosure model migration 111 uses for neighbours, for the same reason:
+    // these are stays carrying minors.
+    const stay = bookings
+      .filter((b) => b.houseId === review.houseId && b.userId === review.userId
+        && (b.status === 'approved' || b.status === 'completed'))
+      .sort((a, b) => b.checkIn.localeCompare(a.checkIn))[0];
+    const band = (n: number) => n <= 10 ? 'أقل من ١٠' : n <= 25 ? 'حوالي ١٠–٢٥' : n <= 50 ? 'حوالي ٢٥–٥٠' : 'أكتر من ٥٠';
+    const newReview: Review = stay ? {
+      ...review,
+      bookingId: stay.id,
+      stayGroup: stay.conferenceDetails?.bookingType || 'standard',
+      stayBand: band(stay.guestsCount),
+      stayNights: Math.max(0, Math.round(
+        (new Date(stay.checkOut).getTime() - new Date(stay.checkIn).getTime()) / 86400000)),
+      stayMonth: Number(stay.checkIn.slice(5, 7)),
+    } : review;
+
     // Optimistic insert; rolled back if the DB rejects it.
     setReviews((prev) => [newReview, ...prev]);
 
