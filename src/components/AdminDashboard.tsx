@@ -3486,6 +3486,32 @@ export default function AdminDashboard({
                             database has been ready for this all along — migration
                             091 stamps previous_status, reviewed_at and reviewed_by
                             on every status change, so the reversal is recorded. */}
+                        {/* Which of Pima's accounts this landed in.
+                            The whole chain for this shipped earlier today —
+                            the column, the RPC, the handler, the prop — and
+                            the control itself was never built, so every
+                            payment stayed «غير محدد» and الخزنة could only
+                            ever show one meaningless row. Worse, the treasury
+                            card tells the admin to come and tag payments
+                            here, which was a dead end every week. */}
+                        {pay.paymentStatus === 'approved' && onSetPaymentAccount && (settings.paymentMethods ?? []).length > 0 && (
+                          <div className="pt-2">
+                            <label className="block text-[11px] font-bold text-[#8A8A70] mb-1">وصلت على أنهي حساب؟</label>
+                            <select
+                              value={pay.receivedAccount ?? ''}
+                              onChange={(e) => onSetPaymentAccount(pay.id, e.target.value)}
+                              className={`w-full bg-white border text-[12px] px-2 min-h-11 rounded-xl focus:outline-none cursor-pointer ${
+                                pay.receivedAccount ? 'border-[#D6D6C2] text-[#4A4A3A]' : 'border-amber-300 text-amber-800 bg-amber-50'
+                              }`}
+                            >
+                              <option value="">— لسه محدّدش —</option>
+                              {(settings.paymentMethods ?? []).map((pm) => (
+                                <option key={pm.id} value={`${pm.label} · ${pm.value}`}>{pm.label} · {pm.value}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
                         {!isPending && onVerifyPayment && (
                           <div className="pt-2">
                             <button
