@@ -337,3 +337,44 @@ describe('what is owed is a balance at a date, not a flow', () => {
     expect(s.ownersOwed).toBe(0);
   });
 });
+
+describe('the treasury subtracts what left, not just what arrived', () => {
+  const p = (over: Partial<Payment> & { id: string }): Payment => ({
+    bookingId: 'b1', userId: 'u1', userName: 'ضيف', amount: 5000, paymentMethod: 'instapay',
+    paymentStatus: 'approved', paymentDate: '2026-08-01T00:00:00Z', ...over,
+  } as Payment);
+  const po = (over: Partial<Payout> & { id: string }): Payout => ({
+    houseId: 'h1', ownerId: 'o1', amount: 2000, status: 'completed',
+    requestedAt: '2026-08-02', completedAt: '2026-08-03T00:00:00Z', ...over,
+  } as Payout);
+
+  it('nets a transfer out of the account it left from', () => {
+    // Before migration 115 owner_payouts had no account at all, so this card
+    // reported money RECEIVED while reading as money HELD.
+    const r = accountBalances({
+      window: null,
+      payments: [p({ id: 'p1', receivedAccount: 'إنستاباي بيما' })],
+      payouts: [po({ id: 'x1', paidFromAccount: 'إنستاباي بيما' })],
+    });
+    expect(r.accounts[0]).toMatchObject({ received: 5000, paidOut: 2000, net: 3000 });
+  });
+
+  it('shows a transfer with no account recorded rather than hiding it', () => {
+    const r = accountBalances({
+      window: null,
+      payments: [p({ id: 'p1', receivedAccount: 'إنستاباي بيما' })],
+      payouts: [po({ id: 'x1' })],
+    });
+    const unknown = r.accounts.find((a) => a.account === 'غير محدد');
+    expect(unknown?.paidOut).toBe(2000);
+  });
+
+  it('ignores a payout that is not completed', () => {
+    const r = accountBalances({
+      window: null,
+      payments: [p({ id: 'p1', receivedAccount: 'بنك' })],
+      payouts: [po({ id: 'x1', status: 'pending', paidFromAccount: 'بنك' })],
+    });
+    expect(r.accounts[0].net).toBe(5000);
+  });
+});

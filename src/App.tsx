@@ -818,7 +818,7 @@ export default function App() {
   // records a completed payout (owner gets a realtime "تم تحويل مستحقاتك"
   // notification via trigger 068) and marks those bookings settled so they
   // drop out of the "ready to transfer" list.
-  const handleSettleBookings = async (args: { houseId: string; ownerId: string; amount: number; bookingIds: string[]; note?: string }) => {
+  const handleSettleBookings = async (args: { houseId: string; ownerId: string; amount: number; bookingIds: string[]; note?: string; transactionReference?: string; paidFromAccount?: string }) => {
     const now = new Date().toISOString();
     const ok = await settleBookingsPayout(args);
     if (!ok) { alert('تعذّر تسجيل التحويل. حاول مرة أخرى.'); return; }

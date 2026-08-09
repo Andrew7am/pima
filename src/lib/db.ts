@@ -280,6 +280,8 @@ export function mapPayout(r: Record<string, unknown>): Payout {
     requestedAt: r.requested_at as string,
     completedAt: (r.completed_at as string) ?? undefined,
     bookingIds: (r.booking_ids as string[]) ?? undefined,
+    transactionReference: (r.transaction_reference as string) ?? undefined,
+    paidFromAccount: (r.paid_from_account as string) ?? undefined,
   };
 }
 
@@ -901,12 +903,20 @@ export async function updatePayoutStatus(id: string, status: Payout['status']): 
 // bookingIds with one element => a per-booking transfer; many => a batch.
 export async function settleBookingsPayout(args: {
   houseId: string; ownerId: string; amount: number; bookingIds: string[]; method?: string; note?: string;
+  /** The bank/wallet reference. This is what answers an owner who disputes a
+   *  payment six months later — Pima captures one on every payment IN and
+   *  used to capture none on the way out. */
+  transactionReference?: string;
+  /** Which of Pima's accounts it left from, so الخزنة can subtract it. */
+  paidFromAccount?: string;
 }): Promise<boolean> {
   const now = new Date().toISOString();
   const payoutId = `payout_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   const { error: pErr } = await supabase.from('owner_payouts').insert({
     id: payoutId, house_id: args.houseId, owner_id: args.ownerId, amount: args.amount,
     status: 'completed', method: args.method ?? null, note: args.note ?? null,
+    transaction_reference: args.transactionReference ?? null,
+    paid_from_account: args.paidFromAccount ?? null,
     requested_at: now, completed_at: now,
     // What this transfer actually paid for. The pairing was previously implicit
     // — the same timestamp on the payout and on each booking — which is exact

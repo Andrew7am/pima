@@ -594,6 +594,13 @@ export interface Payout {
    *  which names an amount rather than specific bookings. Without it a payout
    *  could only be explained by an admin reconstructing it from timestamps. */
   bookingIds?: string[];
+  /** The bank or wallet reference. This is what answers an owner who disputes
+   *  a transfer six months later — Pima captures one on every payment IN and
+   *  captured none on the way out until migration 115. */
+  transactionReference?: string;
+  /** Which of Pima's accounts it left from, so الخزنة can subtract it and
+   *  become a cash position rather than a record of money received. */
+  paidFromAccount?: string;
 }
 
 export interface AuditLogEntry {

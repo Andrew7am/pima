@@ -103,7 +103,7 @@ interface AdminDashboardProps {
   payouts?: Payout[];
   onUpdatePayoutStatus?: (id: string, status: Payout['status']) => void;
   // Settle one booking's owner share (bookingIds length 1) or several at once.
-  onSettleBookings?: (args: { houseId: string; ownerId: string; amount: number; bookingIds: string[]; note?: string }) => void;
+  onSettleBookings?: (args: { houseId: string; ownerId: string; amount: number; bookingIds: string[]; note?: string; transactionReference?: string; paidFromAccount?: string }) => void;
 }
 
 // Module scope on purpose: declared inside a render body, this would be a new
@@ -578,7 +578,7 @@ export default function AdminDashboard({
     [houses, bookings],
   );
 
-  const treasury = React.useMemo(() => accountBalances({ payments, window: finBounds }), [payments, finBounds]);
+  const treasury = React.useMemo(() => accountBalances({ payments, payouts, window: finBounds }), [payments, finBounds]);
 
   const fin = summarizeFinances({
     bookings,
@@ -2805,6 +2805,7 @@ export default function AdminDashboard({
                       <div className="text-[11px] text-[#8A8A70]">
                         {arabicPlural(a.count, PAYMENT_FORMS)}
                         {a.refunded > 0 && ` · اترجّع ${arabicNumber(a.refunded)}`}
+                        {a.paidOut > 0 && ` · خرج للملّاك ${arabicNumber(a.paidOut)}`}
                       </div>
                     </div>
                     <span className="font-black text-[#0A2342] shrink-0 tabular-nums">{arabicNumber(a.net)} ج.م</span>
@@ -3609,6 +3610,25 @@ export default function AdminDashboard({
           (acc[b.houseId] ??= []).push(b); return acc;
         }, {});
         const owedHouseIds = Object.keys(owedByHouse);
+
+        // «تم التحويل» was a bare confirm(): it recorded a click and a
+        // timestamp the app generated itself. Pima captures a sender handle, a
+        // reference and a photographed receipt on every payment IN, and
+        // captured nothing at all on the way OUT — so six months later an
+        // owner disputing a payment has a real transfer with a real reference,
+        // and Pima has a checkbox.
+        const askTransfer = (what: string, amount: number): { reference: string; account: string } | null => {
+          const reference = prompt(`${what}\n\nالمبلغ: ${arabicNumber(amount)} ج.م.\n\nاكتب رقم عملية التحويل — ده اللي هيرد على صاحب البيت لو سأل بعدين:`);
+          if (reference === null) return null;
+          if (!reference.trim()) { alert('لازم رقم العملية. من غيره التحويل مالوش أثر.'); return null; }
+          const accounts = settings.paymentMethods ?? [];
+          if (accounts.length === 0) return { reference: reference.trim(), account: '' };
+          if (accounts.length === 1) return { reference: reference.trim(), account: `${accounts[0].label} · ${accounts[0].value}` };
+          const pickedRaw = prompt(`اتحوّل من أنهي حساب؟\n\n${accounts.map((a, i) => `${i + 1}. ${a.label} · ${a.value}`).join('\n')}\n\nاكتب الرقم:`) || '';
+          const picked = accounts[Number(pickedRaw) - 1];
+          return { reference: reference.trim(), account: picked ? `${picked.label} · ${picked.value}` : '' };
+        };
+
         return (
           <div className="space-y-4 text-right">
             {onSettleBookings && (
@@ -3662,7 +3682,7 @@ export default function AdminDashboard({
                             <div className="flex items-center gap-2 shrink-0">
                               <span className="text-[11px] font-black text-[#5A5A40]">{arabicNumber(ownerShare(b))} ج.م</span>
                               <button type="button"
-                                onClick={() => { if (confirm(`تأكيد تحويل ${arabicNumber(ownerShare(b))} ج.م لـ${ownerName} عن حجز ${b.userName}؟`)) onSettleBookings({ houseId: hid, ownerId, amount: ownerShare(b), bookingIds: [b.id], note: `حجز ${b.userName}` }); }}
+                                onClick={() => { const t = askTransfer(`تحويل لـ${ownerName} عن حجز ${b.userName}`, ownerShare(b)); if (t) onSettleBookings({ houseId: hid, ownerId, amount: ownerShare(b), bookingIds: [b.id], note: `حجز ${b.userName}`, transactionReference: t.reference, paidFromAccount: t.account }); }}
                                 className="text-[12px] font-bold bg-emerald-600 text-white px-2.5 min-h-11.5 rounded-lg cursor-pointer">حوّل ✓</button>
                             </div>
                           </div>
@@ -3670,7 +3690,7 @@ export default function AdminDashboard({
                       </div>
                       {list.length > 1 && (
                         <button type="button"
-                          onClick={() => { if (confirm(`تأكيد تحويل الإجمالي ${arabicNumber(total)} ج.م لـ${ownerName} (${arabicPlural(list.length, BOOKING_FORMS)}) دفعة واحدة؟`)) onSettleBookings({ houseId: hid, ownerId, amount: total, bookingIds: list.map((b) => b.id), note: `${arabicPlural(list.length, BOOKING_FORMS)} دفعة واحدة` }); }}
+                          onClick={() => { const t = askTransfer(`تحويل لـ${ownerName} — ${arabicPlural(list.length, BOOKING_FORMS)} دفعة واحدة`, total); if (t) onSettleBookings({ houseId: hid, ownerId, amount: total, bookingIds: list.map((b) => b.id), note: `${arabicPlural(list.length, BOOKING_FORMS)} دفعة واحدة`, transactionReference: t.reference, paidFromAccount: t.account }); }}
                           className="w-full text-[11px] font-black bg-[#3A6B4C] hover:bg-[#2D5A3F] text-white min-h-11 rounded-xl cursor-pointer transition-colors">حوّل الكل دفعة واحدة ({arabicNumber(total)} ج.م) ✓</button>
                       )}
                     </div>
