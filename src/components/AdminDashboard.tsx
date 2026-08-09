@@ -2750,7 +2750,7 @@ export default function AdminDashboard({
             {([
               { label: 'حصّلته بيما', hint: 'عرابين وصلت لحسابات بيما', value: fin.collectedByPima, Icon: CheckCircle2, tint: 'text-emerald-700', num: 'text-emerald-800' },
               { label: 'عمولة بيما', hint: `${arabicNumber(Math.round(PLATFORM_COMMISSION * 100))}٪ من قيمة الحجز`, value: fin.platformCommission, Icon: Coins, tint: 'text-[#C5A059]', num: 'text-[#0A2342]' },
-              { label: 'لسه عندك للملّاك', hint: 'محتاج يتحوّل', value: fin.ownersOwed, Icon: Wallet, tint: 'text-amber-600', num: 'text-amber-700' },
+              { label: 'لسه عندك للملّاك', hint: 'رصيد مستحق — مش رقم الفترة', value: fin.ownersOwed, Icon: Wallet, tint: 'text-amber-600', num: 'text-amber-700' },
               { label: 'حوّلته للملّاك', hint: 'خرج فعلاً من حساباتك', value: fin.ownersPaid, Icon: DollarSign, tint: 'text-[#5A5A40]', num: 'text-[#4A4A3A]' },
             ] as const).map((k) => (
               <div key={k.label} className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">

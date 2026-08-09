@@ -288,3 +288,52 @@ describe('refundsDue', () => {
     expect(r.map((x) => x.outstanding)).toEqual([9000, 1000]);
   });
 });
+
+describe('what is owed is a balance at a date, not a flow', () => {
+  // The audit's case, verbatim: a deposit lands in June and is never remitted.
+  // Filter the page to July and the old code dropped it from what Pima owes,
+  // because it summed only over deposits that arrived INSIDE the window —
+  // while transfers made against those same June deposits stayed counted.
+  const june = payment({ id: 'p1', bookingId: 'b1', paymentDate: '2026-06-15T10:00:00Z' });
+  const julyOnly = {
+    start: new Date('2026-07-01T00:00:00Z'),
+    end: new Date('2026-07-31T23:59:59Z'),
+  };
+
+  it('still owes a June deposit when the page is filtered to July', () => {
+    const s = run({ payments: [june], window: julyOnly });
+    expect(s.ownersOwed).toBe(2000);
+    expect(s.collectedByPima).toBe(0);   // the flow is correctly empty
+  });
+
+  it('does not paint an owner «متسدّد» while his money is still held', () => {
+    const s = run({ payments: [june], window: julyOnly });
+    expect(s.perOwner[0].owed).toBe(2000);
+  });
+
+  it('stops owing once it has actually been settled', () => {
+    const s = run({
+      bookings: [booking({ id: 'b1', ownerSettledAt: '2026-06-20T00:00:00Z' })],
+      payments: [june], window: julyOnly,
+    });
+    expect(s.ownersOwed).toBe(0);
+  });
+
+  it('still owes when the settlement happens AFTER the date being asked about', () => {
+    // Asked «what did we owe at 31 July», a transfer made in August has not
+    // happened yet and must not reduce the July balance.
+    const s = run({
+      bookings: [booking({ id: 'b1', ownerSettledAt: '2026-08-05T00:00:00Z' })],
+      payments: [june], window: julyOnly,
+    });
+    expect(s.ownersOwed).toBe(2000);
+  });
+
+  it('does not count a cash deposit the owner already pocketed', () => {
+    const s = run({
+      payments: [payment({ id: 'p1', bookingId: 'b1', paymentMethod: 'cash', paymentDate: '2026-06-15T10:00:00Z' })],
+      window: julyOnly,
+    });
+    expect(s.ownersOwed).toBe(0);
+  });
+});
