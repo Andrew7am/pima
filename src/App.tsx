@@ -613,6 +613,30 @@ export default function App() {
     }
   }, [houses]);
 
+  // ?booking=<id> — where a tapped push notification lands.
+  //
+  // The service worker sends people here, and until now nothing read it: the
+  // notification opened the home screen, which is the same dead tap the
+  // in-app bell had. Bookings live on different screens per role, so this
+  // routes by role rather than guessing one destination.
+  //
+  // Waits for bookings to arrive, like the ?house= effect above waits for
+  // houses — the URL is read before the data exists on a cold start.
+  useEffect(() => {
+    if (!currentUser || bookings.length === 0) return;
+    const bookingId = new URLSearchParams(window.location.search).get('booking');
+    if (!bookingId) return;
+    const booking = bookings.find((b) => b.id === bookingId);
+    // Strip the param either way, so a refresh doesn't re-navigate and a
+    // notification for a since-deleted booking doesn't stick in the URL.
+    if (!Capacitor.isNativePlatform()) window.history.replaceState({}, '', '/');
+    if (!booking) return;
+    setSelectedHouse(null);
+    setActiveScreen(currentUser.role === 'owner' ? 'owner_panel'
+      : currentUser.role === 'admin' ? 'admin_panel'
+      : 'bookings');
+  }, [currentUser, bookings]);
+
   // Reflect the open house in the address bar (web only) so the URL is
   // shareable/copyable and the browser back button closes the detail view.
   // Pairs with the popstate listener below; the "current !== target" guards

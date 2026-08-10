@@ -36,8 +36,11 @@ if (config.apiKey && config.projectId) {
     const d = payload.data || {};
     self.registration.showNotification(n.title || 'بيما', {
       body: n.body || '',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      // The only icon this project ships — site.webmanifest points at the same
+      // file. /icon-192.png was invented; it does not exist, and a missing
+      // icon silently degrades to the browser's generic bell.
+      icon: '/pima-hero.png',
+      badge: '/pima-hero.png',
       // RTL so Arabic bodies render correctly in the OS notification shade.
       dir: 'rtl',
       lang: 'ar',
