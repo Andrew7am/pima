@@ -62,7 +62,12 @@ captures/
 .cxx/
 
 # Google Services (e.g. APIs or Firebase)
-# google-services.json
+# Was commented out — a dead suggestion, not an active rule — so this file
+# would have gone into a public GitHub repo on the next `git add .` the moment
+# it existed on disk. The Firebase API key inside it is safe to expose in a
+# shipped Android APK (bots decompile it in minutes anyway) but not the same
+# thing as choosing to publish it in source history forever.
+google-services.json
 
 # Freeline
 freeline.py
