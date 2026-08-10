@@ -20,6 +20,7 @@ import OwnerDisclosure from './OwnerDisclosure';
 import { editableHouseFields } from '../../lib/houseEdits';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
+import WebPushToggle from '../WebPushToggle';
 import OwnerMessages from './OwnerMessages';
 import OwnerNotifications from './OwnerNotifications';
 import OwnerReports from './OwnerReports';
@@ -2663,6 +2664,24 @@ export default function OwnerDashboardShell({
               {passwordSaving ? 'جارٍ الحفظ...' : 'حفظ كلمة السر الجديدة'}
             </button>
           </div>
+
+          {/* Browser notifications — the owner most needs to hear about a new
+              booking while the tab is closed, yet the switch used to exist only
+              on the guest profile screen he never sees. Same shared toggle. */}
+          <WebPushToggle userId={owner.id} render={(p) => (
+            <div className="bg-[var(--color-owner-surface)] p-4 rounded-3xl border border-[var(--color-owner-border)] flex items-center gap-3 text-right">
+              <span className="w-9 h-9 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-700">{p.icon}</span>
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-black text-[var(--color-owner-text)] block">{p.label}</span>
+                <span className="text-[11px] text-[var(--color-owner-secondary)] block">{p.sublabel}</span>
+              </div>
+              <button type="button" role="switch" aria-checked={p.checked} aria-label={p.label}
+                disabled={p.busy || p.disabled} onClick={() => p.onChange(!p.checked)}
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 cursor-pointer ${p.checked ? 'bg-emerald-600' : 'bg-[var(--color-owner-border)]'}`}>
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${p.checked ? 'right-0.5' : 'right-[22px]'}`} />
+              </button>
+            </div>
+          )} />
 
           {/* Support */}
           {onNavigateSupport && (

@@ -26,6 +26,7 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft, ChevronRight, XCircle, MoreHorizontal, MapPin, CalendarDays, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { timeAgo } from '../lib/timeAgo';
 import PhotoPickerButtons from './PhotoPickerButtons';
+import WebPushToggle from './WebPushToggle';
 import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
 import BannerStudio from './banner/BannerStudio';
 import BannerCanvas from './banner/BannerCanvas';
@@ -1332,6 +1333,24 @@ export default function AdminDashboard({
       {/* Platform economics settings (admin-configurable, migration 024) */}
       {activeTab === 'settings' && (
         <div className="space-y-3">
+          {/* Browser notifications for the admin's own device. The admin acts
+              on payments and new bookings the moment they arrive, so hearing
+              about them with the tab closed matters here as much as anywhere. */}
+          <WebPushToggle userId={currentUser.id} render={(p) => (
+            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] flex items-center gap-3 text-right">
+              <span className="w-9 h-9 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-700">{p.icon}</span>
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-black text-[#4A4A3A] block">{p.label}</span>
+                <span className="text-[11px] text-[#8A8A70] block">{p.sublabel}</span>
+              </div>
+              <button type="button" role="switch" aria-checked={p.checked} aria-label={p.label}
+                disabled={p.busy || p.disabled} onClick={() => p.onChange(!p.checked)}
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 cursor-pointer ${p.checked ? 'bg-emerald-600' : 'bg-[#D6D6C2]'}`}>
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${p.checked ? 'right-0.5' : 'right-[22px]'}`} />
+              </button>
+            </div>
+          )} />
+
           <div className="text-xs font-bold text-[#8A8A70] px-1">التحكم في اقتصاد المنصة — يُطبَّق فوراً على الحسابات والأسعار:</div>
           <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-4">
             {([

@@ -7,7 +7,7 @@ import {
 import RewardsDashboard from './RewardsDashboard';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { setEmailOptOut } from '../lib/db';
-import { webPushAvailable, webPushState, enableWebPush, disableWebPush, WebPushState } from '../lib/push';
+import WebPushToggle from './WebPushToggle';
 
 interface ProfileScreenProps {
   currentUser: User;
@@ -174,30 +174,6 @@ export default function ProfileScreen({
   // a user expects to see next to "email notifications".
   const [emailsOn, setEmailsOn] = useState(!currentUser.emailOptOut);
   const [emailBusy, setEmailBusy] = useState(false);
-
-  // Browser push. `webPushAvailable` is false in the Android app (which
-  // registers itself) and on any browser or deployment where it cannot work,
-  // and the row is hidden entirely in that case.
-  const pushAvailable = webPushAvailable();
-  const [pushState, setPushState] = useState<WebPushState>(() => webPushState());
-  const [pushBusy, setPushBusy] = useState(false);
-
-  const handleTogglePush = async (next: boolean) => {
-    setPushBusy(true);
-    try {
-      if (next) {
-        setPushState(await enableWebPush(currentUser.id));
-      } else {
-        await disableWebPush();
-        // Permission itself survives — only this browser's token is gone. The
-        // switch reads off our own token, not Notification.permission, so it
-        // must be set explicitly rather than re-read.
-        setPushState('default');
-      }
-    } finally {
-      setPushBusy(false);
-    }
-  };
 
   const handleToggleEmails = async (next: boolean) => {
     setEmailBusy(true);
@@ -445,23 +421,20 @@ export default function ProfileScreen({
         />
         {/* Only offered where it can actually work — a switch that cannot
             deliver is worse than no switch. Hidden in the Android app too,
-            which registers for push on its own. */}
-        {pushAvailable && (
+            which registers for push on its own. Shared with the owner and
+            admin settings so all three roles get the same opt-in. */}
+        <WebPushToggle userId={currentUser.id} render={(p) => (
           <ToggleRow
             icon={Bell}
             tint="#B45309"
-            label="إشعارات المتصفح"
-            sublabel={
-              pushState === 'granted' ? 'شغّالة — هتوصلك والموقع مقفول'
-                : pushState === 'denied' ? 'المتصفح رافض — فعّلها من إعدادات الموقع'
-                : 'شغّلها توصلك وأنت بره الموقع'
-            }
-            checked={pushState === 'granted'}
-            onChange={handleTogglePush}
-            busy={pushBusy}
-            disabled={pushState === 'denied'}
+            label={p.label}
+            sublabel={p.sublabel}
+            checked={p.checked}
+            onChange={p.onChange}
+            busy={p.busy}
+            disabled={p.disabled}
           />
-        )}
+        )} />
         <SettingsRow icon={HelpCircle} tint="#5A5A40" label="التواصل والدعم الفني" onClick={onNavigateSupport} />
         <SettingsRow icon={ShieldCheck} tint="#5A5A40" label="سياسة الخصوصية وشروط الاستخدام" onClick={onNavigatePrivacy} />
       </div>
