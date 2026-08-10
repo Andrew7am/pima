@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MIN_PASSWORD_LENGTH, minPasswordLabel, passwordProblem } from '../lib/password';
 import { UserRole } from '../types';
 import AccountTypeScreen from './AccountTypeScreen';
+import ServantSignupForm from './ServantSignupForm';
 import {
   User as UserIcon, BookOpen, Users, Lock, Mail, Phone, MapPin, Church,
   Home, Calendar as CalendarIcon, ShieldCheck, UserPlus, Award, Headphones,
@@ -153,6 +154,27 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   const [governorate, setGovernorate] = useState('');
   const [churchName, setChurchName] = useState('');
   const [priestName, setPriestName] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [serviceType, setServiceType] = useState('');
+  // Dioceses grouped by governorate, for the servant form's cascade. Loaded
+  // once, lazily: a table missing (migration not applied yet) leaves the map
+  // empty and the field falls back to free text rather than blocking signup.
+  const [diocesesByGov, setDiocesesByGov] = useState<Record<string, string[]>>({});
+  useEffect(() => {
+    if (!isRegisterMode || selectedRole !== 'servant') return;
+    let cancelled = false;
+    (async () => {
+      const { data, error: e } = await supabase
+        .from('dioceses').select('name_ar,governorate').eq('is_active', true).order('name_ar');
+      if (cancelled || e || !data) return;
+      const map: Record<string, string[]> = {};
+      for (const row of data as { name_ar: string; governorate: string }[]) {
+        (map[row.governorate] ||= []).push(row.name_ar);
+      }
+      setDiocesesByGov(map);
+    })();
+    return () => { cancelled = true; };
+  }, [isRegisterMode, selectedRole]);
 
   // Sign in fields
   const [signInEmail, setSignInEmail] = useState('');
@@ -394,6 +416,50 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
     return (
       <AccountTypeScreen
         onSelect={(role) => { setSelectedRole(role); setRoleChosen(true); setError(''); }}
+      />
+    );
+  }
+
+  // --- Servant signup, in two steps ----------------------------------------
+  // Same state and the same handleRegisterSubmit as the compact form below —
+  // only the presentation differs, so nothing about what reaches Supabase
+  // changes. The other two roles keep the existing form until they get their
+  // own design.
+  if (isRegisterMode && roleChosen && selectedRole === 'servant' && !confirmEmail) {
+    return (
+      <ServantSignupForm
+        governorates={GOVERNORATES}
+        diocesesByGovernorate={diocesesByGov}
+        submitting={loading}
+        error={error}
+        values={{
+          name, email, phone, birthDate: dateOfBirth, password, passwordConfirm,
+          governorate, diocese: orgName, church: churchName, serviceType,
+          priestName, inviteCode: referralCode,
+        }}
+        onChange={(p) => {
+          if (p.name !== undefined) setName(p.name);
+          if (p.email !== undefined) setEmail(p.email);
+          if (p.phone !== undefined) setPhone(p.phone);
+          if (p.birthDate !== undefined) setDateOfBirth(p.birthDate);
+          if (p.password !== undefined) setPassword(p.password);
+          if (p.passwordConfirm !== undefined) setPasswordConfirm(p.passwordConfirm);
+          if (p.governorate !== undefined) setGovernorate(p.governorate);
+          if (p.diocese !== undefined) setOrgName(p.diocese);
+          if (p.church !== undefined) setChurchName(p.church);
+          if (p.serviceType !== undefined) setServiceType(p.serviceType);
+          if (p.priestName !== undefined) setPriestName(p.priestName);
+          if (p.inviteCode !== undefined) setReferralCode(p.inviteCode);
+          if (error) setError('');
+        }}
+        onSubmit={() => {
+          // The old form has no confirm field, so this check lives here rather
+          // than in handleRegisterSubmit, which both forms share.
+          if (password !== passwordConfirm) { setError('كلمتا المرور غير متطابقتين.'); return; }
+          void handleRegisterSubmit({ preventDefault: () => {} } as React.FormEvent);
+        }}
+        onBack={() => { setRoleChosen(false); setError(''); }}
+        onGoToLogin={() => { setIsRegisterMode(false); setError(''); }}
       />
     );
   }
