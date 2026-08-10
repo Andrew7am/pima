@@ -28,6 +28,7 @@ export interface ServantSignupValues {
   password: string;
   passwordConfirm: string;
   governorate: string;
+  address: string;
   diocese: string;
   church: string;
   serviceType: string;
@@ -35,9 +36,16 @@ export interface ServantSignupValues {
   inviteCode: string;
 }
 
+/**
+ * Which second step to show. A servant is asked where they serve; an
+ * individual is asked where they live. Step one is identical for both, which
+ * is why this is one component and not two files drifting apart.
+ */
+export type SignupRole = 'servant' | 'individual';
+
 export const EMPTY_SERVANT_SIGNUP: ServantSignupValues = {
   name: '', email: '', phone: '', birthDate: '', password: '', passwordConfirm: '',
-  governorate: '', diocese: '', church: '', serviceType: '', priestName: '', inviteCode: '',
+  governorate: '', address: '', diocese: '', church: '', serviceType: '', priestName: '', inviteCode: '',
 };
 
 /** Known and finite — these are the services a Coptic church actually runs. */
@@ -48,6 +56,7 @@ export const SERVICE_TYPES = [
 ];
 
 interface Props {
+  role: SignupRole;
   governorates: string[];
   /** name_ar keyed by governorate. Missing key → the field falls back to text. */
   diocesesByGovernorate: Record<string, string[]>;
@@ -142,7 +151,7 @@ const IconUser = (
 
 /* ── step indicator ──────────────────────────────────────────────────────── */
 
-function StepBar({ step }: { step: 1 | 2 }) {
+function StepBar({ step, secondLabel }: { step: 1 | 2; secondLabel: string }) {
   const dot = (n: 1 | 2) => (
     <span className="w-7 h-7 rounded-full grid place-items-center text-[12px] font-black shrink-0"
       style={step >= n
@@ -163,7 +172,7 @@ function StepBar({ step }: { step: 1 | 2 }) {
       </div>
       <div className="flex items-center justify-between mt-1.5">
         {label(1, 'البيانات الأساسية')}
-        {label(2, 'بيانات الخدمة')}
+        {label(2, secondLabel)}
       </div>
     </div>
   );
@@ -172,10 +181,13 @@ function StepBar({ step }: { step: 1 | 2 }) {
 /* ── screen ──────────────────────────────────────────────────────────────── */
 
 export default function ServantSignupForm({
-  governorates, diocesesByGovernorate, values, onChange,
+  role, governorates, diocesesByGovernorate, values, onChange,
   onSubmit, onBack, onGoToLogin, submitting = false, error = '',
 }: Props) {
   const [step, setStep] = useState<1 | 2>(1);
+  const servant = role === 'servant';
+  const roleWord = servant ? 'خادم' : 'فرد';
+  const stepTwoLabel = servant ? 'بيانات الخدمة' : 'العنوان والإقامة';
   const set = (k: keyof ServantSignupValues) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => onChange({ [k]: e.target.value } as Partial<ServantSignupValues>);
@@ -221,16 +233,18 @@ export default function ServantSignupForm({
 
           <header className="text-center -mt-2">
             <h1 className="text-[24px] font-black leading-tight" style={{ color: NAVY }}>
-              إنشاء حساب <span style={{ color: GOLD }}>خادم</span>
+              إنشاء حساب <span style={{ color: GOLD }}>{roleWord}</span>
             </h1>
-            <p className="text-[12.5px] mt-1" style={{ color: MUTED }}>خطوتين بسيطتين لبداية رحلتك معنا</p>
+            <p className="text-[12.5px] mt-1" style={{ color: MUTED }}>
+              {servant ? 'خطوتين بسيطتين لبداية رحلتك معنا' : 'خطوتين بسيطتين ونبدأ رحلتك معنا'}
+            </p>
             <svg width="120" height="12" viewBox="0 0 150 14" fill="none" aria-hidden="true" className="mx-auto mt-1">
               <path d="M8 7h58M84 7h58" stroke={GOLD} strokeWidth="1" strokeLinecap="round" opacity=".55" />
               <path d="M75 2.5v9M70.5 7h9" stroke={GOLD} strokeWidth="1.3" strokeLinecap="round" />
             </svg>
           </header>
 
-          <StepBar step={step} />
+          <StepBar step={step} secondLabel={stepTwoLabel} />
 
           {error && (
             <p className="text-[12px] font-bold text-center rounded-xl py-2 px-3 bg-rose-50 border border-rose-200 text-rose-700">
@@ -261,6 +275,21 @@ export default function ServantSignupForm({
               <PasswordField label="كلمة المرور" required value={values.password} onChange={set('password')} />
               <PasswordField label="تأكيد كلمة المرور" required value={values.passwordConfirm} onChange={set('passwordConfirm')} />
 
+              <div className="rounded-2xl border p-3 flex items-start gap-3" style={{ borderColor: '#EFE3CC', backgroundColor: '#FBF6EC' }}>
+                <span className="shrink-0 w-9 h-9 grid place-items-center rounded-full" style={{ backgroundColor: '#F3E7CF', color: GOLD }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 3 5 6v6c0 4.2 2.9 7.9 7 9 4.1-1.1 7-4.8 7-9V6l-7-3Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+                    <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                <div>
+                  <h3 className="text-[12.5px] font-black" style={{ color: NAVY }}>خصوصيتك أمانة</h3>
+                  <p className="text-[10.5px] leading-relaxed mt-0.5" style={{ color: MUTED }}>
+                    نحافظ على بياناتك الشخصية ونستخدمها فقط لتقديم تجربة آمنة ومميزة لك.
+                  </p>
+                </div>
+              </div>
+
               <button type="submit"
                 className="mt-1 w-full rounded-2xl py-3 text-[14px] font-black text-white flex items-center justify-center gap-2 cursor-pointer"
                 style={{ backgroundColor: NAVY }}>
@@ -281,14 +310,23 @@ export default function ServantSignupForm({
           ) : (
             <form className={card} style={{ borderColor: LINE }}
               onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
-              <SectionHead title="بيانات الخدمة" hint="يرجى إدخال بيانات خدمتك الحالية" icon={IconUser} />
+              <SectionHead
+                title={servant ? 'بيانات الخدمة' : 'العنوان والإقامة'}
+                hint={servant ? 'يرجى إدخال بيانات خدمتك الحالية' : 'فين ساكن، وكنيستك — عشان نرشّح لك الأقرب'}
+                icon={IconUser} />
 
               <SelectField label="المحافظة" placeholder="اختر المحافظة" options={governorates} required
                 value={values.governorate}
                 onChange={(e) => onChange({ governorate: e.target.value, diocese: '' })} />
 
-              {/* A servant whose diocese is not in the seed must still get past
-                  this field, so it degrades to text rather than trapping them. */}
+              {!servant && (
+                <TextField label="العنوان بالكامل (اختياري)" placeholder="مثال: مدينة شبين الكوم، قرية ميت حبيش"
+                  value={values.address} onChange={set('address')} />
+              )}
+
+              {/* Whoever it is, their diocese may not be in the seed — the
+                  Church adds and merges them — so the field degrades to text
+                  rather than trapping someone at the door. */}
               {dioceses.length > 0 ? (
                 <SelectField label="الإيبارشية" placeholder="اختر الإيبارشية" options={dioceses}
                   value={values.diocese} onChange={set('diocese')} />
@@ -297,12 +335,14 @@ export default function ServantSignupForm({
                   value={values.diocese} onChange={set('diocese')} />
               )}
 
-              <TextField label="الكنيسة" required placeholder="مثال: كنيسة الأنبا أنطونيوس"
+              <TextField label="الكنيسة" required={servant} placeholder="مثال: كنيسة الأنبا أنطونيوس"
                 value={values.church} onChange={set('church')} />
               <TextField label="اسم راعي الكنيسة" placeholder="مثال: القس مرقس جرجس"
                 value={values.priestName} onChange={set('priestName')} />
-              <SelectField label="الخدمة الحالية" placeholder="اختر خدمتك الحالية" options={SERVICE_TYPES} required
-                value={values.serviceType} onChange={set('serviceType')} />
+              {servant && (
+                <SelectField label="الخدمة الحالية" placeholder="اختر خدمتك الحالية" options={SERVICE_TYPES} required
+                  value={values.serviceType} onChange={set('serviceType')} />
+              )}
 
               <div>
                 <TextField label="كود دعوة صديق (اختياري)" placeholder="مثال: a1b2c3d4"
