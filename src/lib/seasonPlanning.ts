@@ -213,3 +213,86 @@ export function emptyBedNightsAhead(args: {
 
   return { weeks, totalEmptyValue, totalEmptyBeds };
 }
+
+// ---------------------------------------------------------------------------
+// Did they come back?
+// ---------------------------------------------------------------------------
+
+/**
+ * One church, spelled the way people actually type it.
+ *
+ * organizationName is free text re-entered on every booking, so «كنيسة مار
+ * جرجس» and «مارجرجس» are two different customers to any code that compares
+ * the raw strings — and a return rate built on that over-reports churn,
+ * because a church that came back under a slightly different spelling looks
+ * like one that left.
+ *
+ * Normalises the things Egyptian Arabic typing varies on and nobody means:
+ * the alef forms, ya vs alef maqsura, ta marbuta vs ha, tatweel, diacritics,
+ * spacing, and the word «كنيسة» itself, which is present about half the time.
+ */
+export function normalizeOrgName(raw: string): string {
+  return (raw || '')
+    .replace(/[\u064B-\u0652\u0670]/g, '')      // harakat
+    .replace(/\u0640/g, '')                      // tatweel
+    .replace(/[\u0623\u0625\u0622]/g, '\u0627')  // أ إ آ -> ا
+    .replace(/\u0649/g, '\u064A')                // ى -> ي
+    .replace(/\u0629/g, '\u0647')                // ة -> ه
+    .replace(/^\s*كنيسه\s*/u, '')                // the word itself, post-normalisation
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export interface ReturnCohort {
+  /** Check-in year the group first appeared in. */
+  year: number;
+  groups: number;
+  returned: number;
+  /** 0-100. */
+  ratePct: number;
+}
+
+/**
+ * What share of the churches that came in one year came back the next.
+ *
+ * Nothing in this codebase measures this — a search for retention, cohort or
+ * return rate finds nothing, and every figure on the growth tab is
+ * arrival-side: new users, new bookings, a signup funnel. So the question
+ * «are we keeping anyone» has never had an answer, in either direction.
+ *
+ * pendingRenewals answers a neighbouring question — who is due back — but it
+ * windows to ±45 days around one anniversary and silently drops everyone
+ * outside it, which is precisely the group that vanished. Same rows, counted
+ * instead of listed.
+ */
+export function returnCohorts(args: { bookings: Booking[] }): ReturnCohort[] {
+  const yearsByGroup = new Map<string, Set<number>>();
+
+  for (const b of args.bookings) {
+    if (!isConfirmed(b)) continue;
+    const t = dayStart(b.checkIn);
+    if (Number.isNaN(t)) continue;
+    const key = normalizeOrgName(b.organizationName || '') || `user:${b.userId}`;
+    const year = new Date(t).getFullYear();
+    const set = yearsByGroup.get(key) ?? new Set<number>();
+    set.add(year);
+    yearsByGroup.set(key, set);
+  }
+
+  const perYear = new Map<number, { groups: number; returned: number }>();
+  for (const years of yearsByGroup.values()) {
+    for (const y of years) {
+      const row = perYear.get(y) ?? { groups: 0, returned: 0 };
+      row.groups += 1;
+      if (years.has(y + 1)) row.returned += 1;
+      perYear.set(y, row);
+    }
+  }
+
+  return [...perYear.entries()]
+    .map(([year, r]) => ({
+      year, groups: r.groups, returned: r.returned,
+      ratePct: r.groups > 0 ? Math.round((r.returned / r.groups) * 100) : 0,
+    }))
+    .sort((a, b) => a.year - b.year);
+}

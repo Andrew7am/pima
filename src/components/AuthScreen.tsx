@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { MIN_PASSWORD_LENGTH, minPasswordLabel, passwordProblem } from '../lib/password';
 import { UserRole } from '../types';
+import AccountTypeScreen from './AccountTypeScreen';
+import ServantSignupForm from './ServantSignupForm';
 import {
   User as UserIcon, BookOpen, Users, Lock, Mail, Phone, MapPin, Church,
   Home, Calendar as CalendarIcon, ShieldCheck, UserPlus, Award, Headphones,
@@ -119,6 +121,10 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [isViewingPrivacy, setIsViewingPrivacy] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>('individual');
+  // Whether the account-type screen has been answered this time through. Reset
+  // on every entry into register mode, so «رجوع» then «إنشاء حساب جديد» asks
+  // again rather than silently reusing the last answer.
+  const [roleChosen, setRoleChosen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -148,6 +154,31 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   const [governorate, setGovernorate] = useState('');
   const [churchName, setChurchName] = useState('');
   const [priestName, setPriestName] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [serviceType, setServiceType] = useState('');
+  // Its own field, not orgName. Wiring it to orgName stored the diocese as the
+  // organisation name, which reads fine on screen and makes every report over
+  // either column wrong.
+  const [diocese, setDiocese] = useState('');
+  // Dioceses grouped by governorate, for the servant form's cascade. Loaded
+  // once, lazily: a table missing (migration not applied yet) leaves the map
+  // empty and the field falls back to free text rather than blocking signup.
+  const [diocesesByGov, setDiocesesByGov] = useState<Record<string, string[]>>({});
+  useEffect(() => {
+    if (!isRegisterMode || selectedRole !== 'servant') return;
+    let cancelled = false;
+    (async () => {
+      const { data, error: e } = await supabase
+        .from('dioceses').select('name_ar,governorate').eq('is_active', true).order('name_ar');
+      if (cancelled || e || !data) return;
+      const map: Record<string, string[]> = {};
+      for (const row of data as { name_ar: string; governorate: string }[]) {
+        (map[row.governorate] ||= []).push(row.name_ar);
+      }
+      setDiocesesByGov(map);
+    })();
+    return () => { cancelled = true; };
+  }, [isRegisterMode, selectedRole]);
 
   // Sign in fields
   const [signInEmail, setSignInEmail] = useState('');
@@ -330,6 +361,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
           governorate,
           church_name: isChurchAffiliated ? churchName.trim() : null,
           priest_name: isChurchAffiliated ? priestName.trim() : null,
+          diocese: diocese.trim() || null,
         },
       },
     });
@@ -377,6 +409,65 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
           <PrivacyPolicy onBack={() => setIsViewingPrivacy(false)} />
         </div>
       </div>
+    );
+  }
+
+  // --- Account type, asked before the form ---------------------------------
+  // The three-way control still exists inside the form below, so this is not a
+  // one-way door — it only makes the choice the first thing asked instead of a
+  // row of chips halfway down a long page. An owner who picks wrong lands in an
+  // account with nowhere to add a house, and never finds out why.
+  if (isRegisterMode && !roleChosen) {
+    return (
+      <AccountTypeScreen
+        onSelect={(role) => { setSelectedRole(role); setRoleChosen(true); setError(''); }}
+      />
+    );
+  }
+
+  // --- Servant signup, in two steps ----------------------------------------
+  // Same state and the same handleRegisterSubmit as the compact form below —
+  // only the presentation differs, so nothing about what reaches Supabase
+  // changes. The other two roles keep the existing form until they get their
+  // own design.
+  if (isRegisterMode && roleChosen && (selectedRole === 'servant' || selectedRole === 'individual') && !confirmEmail) {
+    return (
+      <ServantSignupForm
+        role={selectedRole === 'servant' ? 'servant' : 'individual'}
+        governorates={GOVERNORATES}
+        diocesesByGovernorate={diocesesByGov}
+        submitting={loading}
+        error={error}
+        values={{
+          name, email, phone, birthDate: dateOfBirth, password, passwordConfirm,
+          governorate, address, diocese, church: churchName, serviceType,
+          priestName, inviteCode: referralCode,
+        }}
+        onChange={(p) => {
+          if (p.name !== undefined) setName(p.name);
+          if (p.email !== undefined) setEmail(p.email);
+          if (p.phone !== undefined) setPhone(p.phone);
+          if (p.birthDate !== undefined) setDateOfBirth(p.birthDate);
+          if (p.password !== undefined) setPassword(p.password);
+          if (p.passwordConfirm !== undefined) setPasswordConfirm(p.passwordConfirm);
+          if (p.governorate !== undefined) setGovernorate(p.governorate);
+          if (p.address !== undefined) setAddress(p.address);
+          if (p.diocese !== undefined) setDiocese(p.diocese);
+          if (p.church !== undefined) setChurchName(p.church);
+          if (p.serviceType !== undefined) setServiceType(p.serviceType);
+          if (p.priestName !== undefined) setPriestName(p.priestName);
+          if (p.inviteCode !== undefined) setReferralCode(p.inviteCode);
+          if (error) setError('');
+        }}
+        onSubmit={() => {
+          // The old form has no confirm field, so this check lives here rather
+          // than in handleRegisterSubmit, which both forms share.
+          if (password !== passwordConfirm) { setError('كلمتا المرور غير متطابقتين.'); return; }
+          void handleRegisterSubmit({ preventDefault: () => {} } as React.FormEvent);
+        }}
+        onBack={() => { setRoleChosen(false); setError(''); }}
+        onGoToLogin={() => { setIsRegisterMode(false); setError(''); }}
+      />
     );
   }
 
@@ -563,7 +654,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
             {/* 8 — Create-account row */}
             <button
               type="button"
-              onClick={() => { setIsRegisterMode(true); setError(''); }}
+              onClick={() => { setIsRegisterMode(true); setRoleChosen(false); setError(''); }}
               className="w-full flex items-center justify-between gap-2 bg-white border border-[#EFE8D8] rounded-2xl p-3 hover:bg-[#FAF7F1] transition-colors"
             >
               <div className="w-9 h-9 rounded-full bg-[#FAF7F1] border border-[#EFE8D8] flex items-center justify-center shrink-0">

@@ -9,7 +9,8 @@ import { ExploreSection, ExploreCard } from './house/HouseExplore';
 import BookingFlow, { ApplicantDetails } from './house/BookingFlow';
 import { tapFeedback } from '../lib/haptics';
 import ReviewWizard from './ReviewWizard';
-import { computeStayPrice, offersDayUse, computeMealPlan } from '../lib/pricing';
+import { computeStayPrice, offersDayUse, computeMealPlan, activeDiscountFor, applyDiscount } from '../lib/pricing';
+import { buildPriestQuote, printPriestQuote } from '../lib/priestQuote';
 import { buildRoomOfferings } from '../lib/roomOffering';
 import { bookingRef } from '../lib/bookingRef';
 import { getCapacityStatus, occupiedEnd } from '../lib/roomOccupancy';
@@ -908,9 +909,24 @@ export default function HouseDetail({
   const mealPlan = computeMealPlan(house, checkIn, checkOut, guestsCount);
   const mealsChargeable = mealPlan.state === 'priced' && !isMonthlyHousing;
   const mealsCost = withMeals && mealsChargeable ? mealPlan.total : 0;
-  const originalTotalPrice = (isMonthlyHousing
+  // The house discount, applied to the accommodation before meals are added.
+  //
+  // This has to mirror validate_booking_price (migration 110) exactly. The
+  // server recomputes the accommodation from the house's own rates, applies
+  // the same percentage, and refuses anything below the resulting floor — so a
+  // client that discounts a different base, or rounds differently, produces a
+  // booking the database rejects with PRICE_TOO_LOW and no explanation the
+  // guest could act on.
+  //
+  // Meals are excluded on both sides: they are not in the server's figure at
+  // all, and the offer is about the owner's empty beds, not his food.
+  const accommodation = isMonthlyHousing
     ? (house.monthlyRent || 1500) * guestsCount * months
-    : stayPrice.total) + mealsCost;
+    : stayPrice.total;
+  const discountPct = activeDiscountFor(house, checkIn);
+  const accommodationAfterDiscount = applyDiscount(accommodation, discountPct);
+  const discountSaving = accommodation - accommodationAfterDiscount;
+  const originalTotalPrice = accommodationAfterDiscount + mealsCost;
 
   // Whether the currently selected dates/guest count would exceed remaining
   // capacity — used to offer joining the waitlist instead of a doomed booking attempt.
@@ -1205,6 +1221,13 @@ export default function HouseDetail({
             setIsQuoteMode={setIsQuoteMode}
             isMonthlyHousing={isMonthlyHousing}
             originalTotalPrice={originalTotalPrice}
+            discountPct={discountPct}
+            discountSaving={discountSaving}
+            onPrintPriestQuote={currentUser && checkIn && checkOut ? () => printPriestQuote(buildPriestQuote({
+              house, checkIn, checkOut, guestsCount, withMeals: !!withMeals,
+              pointsDiscount: redemptionDiscount,
+              settings, servant: currentUser,
+            })) : undefined}
             totalPrice={totalPrice}
             depositAmount={depositAmount}
             breakdown={stayPrice.breakdown}
@@ -1878,13 +1901,21 @@ export default function HouseDetail({
                           {arabicNumber(room.bedsCount)} سرير{room.pricePerNight ? ` · ${arabicNumber(room.pricePerNight)} ج.م/ليلة` : ''}
                         </span>
                       </div>
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                        room.status === 'available' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
-                        room.status === 'booked' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
-                        'bg-rose-50 text-rose-800 border border-rose-200'
-                      }`}>
-                        {room.status === 'available' ? 'متاحة' : room.status === 'booked' ? 'محجوزة' : 'صيانة'}
-                      </span>
+                      {/* Only the two states rooms.status still genuinely
+                          knows, because they are the two an owner sets by
+                          hand. This used to print «متاحة» for every room that
+                          was not hand-flagged — including rooms fully
+                          allocated on the requested dates — because nothing
+                          has written 'booked' since migration 051 moved
+                          occupancy to room_allocations. Whether a room is free
+                          on a date is answered by roomOccupancy, and this list
+                          has no dates to answer it for, so it now says nothing
+                          rather than something false. */}
+                      {(room.status === 'maintenance' || room.status === 'cleaning') && (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 bg-rose-50 text-rose-800 border border-rose-200">
+                          {room.status === 'maintenance' ? 'صيانة' : 'تحضير'}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1954,7 +1985,7 @@ export default function HouseDetail({
                           {/* Real counts instead of a written-in blurb. */}
                           <p className="text-[11px] text-[#8A8A70] leading-relaxed font-semibold mt-1">
                             {room.count > 0
-                              ? <>{arabicNumber(room.count)} غرفة من النوع ده{room.availableCount > 0 ? ` · ${arabicNumber(room.availableCount)} متاحة الآن` : ''}</>
+                              ? <>{arabicNumber(room.count)} غرفة من النوع ده{room.outOfServiceCount > 0 ? ` · ${arabicNumber(room.outOfServiceCount)} خارج الخدمة` : ''}</>
                               : 'غرفة متاحة للحجز'}
                           </p>
                           {room.description && (

@@ -7,6 +7,11 @@ export interface BookingInviteInfo {
   guestsCount: number;
   registeredCount: number;
   status: string;
+  /** Set only while the trip is running and only if the servant left it on.
+   *  Group-level, both of them — no individual is named, counted out or
+   *  located, and there is no reply path. See migration 111. */
+  arrivedAt?: string;
+  departedAt?: string;
 }
 
 // Public (anon-callable) read of a booking's join context — see migration 079.
@@ -22,6 +27,8 @@ export async function getBookingInviteInfo(bookingId: string): Promise<BookingIn
     guestsCount: row.guests_count,
     registeredCount: Number(row.registered_count),
     status: row.status,
+    arrivedAt: row.arrived_at ?? undefined,
+    departedAt: row.departed_at ?? undefined,
   };
 }
 
@@ -51,4 +58,37 @@ export async function selfRegisterAttendee(
     return { ok: false, error: key ? ERR_AR[key] : 'تعذّر التسجيل، حاول مرة أخرى.' };
   }
   return { ok: true };
+}
+
+export interface HouseNeighbour {
+  bookingType: string;
+  sizeBand: string;
+  checkIn: string;
+  checkOut: string;
+}
+
+/**
+ * Who else is in the building those nights.
+ *
+ * A servant bringing forty teenage girls has a right to know, before he
+ * leaves Cairo, that a boys' secondary group shares the house — today the
+ * only person holding that fact is the owner, who has no reason to volunteer
+ * it. It reads like a privacy leak until you invert it: it is a safeguarding
+ * fact, and withholding it protects nobody.
+ *
+ * Aggregate only, and the server enforces that: the kind of group and a SIZE
+ * BAND, never an exact count, never the church, the servant, a name or a
+ * phone, and no channel between the two groups. get_house_neighbours also
+ * verifies the caller owns an approved booking there rather than trusting
+ * this call.
+ */
+export async function getHouseNeighbours(bookingId: string): Promise<HouseNeighbour[]> {
+  const { data, error } = await supabase.rpc('get_house_neighbours', { p_booking_id: bookingId });
+  if (error) { console.error('getHouseNeighbours:', error); return []; }
+  return (data ?? []).map((r: Record<string, string>) => ({
+    bookingType: r.booking_type,
+    sizeBand: r.size_band,
+    checkIn: r.check_in,
+    checkOut: r.check_out,
+  }));
 }

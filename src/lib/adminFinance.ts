@@ -152,10 +152,31 @@ export function summarizeFinances(args: {
     bookingValue += b.totalPrice;
   }
 
-  // What Pima still owes: the same per-booking share the payout tab transfers,
-  // over the bookings it has not settled yet.
-  const owedBookings = heldBookings.filter((b) => !b.ownerSettledAt);
-  const ownersOwed = owedBookings.reduce((s, b) => s + ownerShareOf(b, commissionRate), 0);
+  // What Pima still owes owners — a BALANCE AT A DATE, not a flow.
+  //
+  // This used to be summed over heldBookings, which is deposits that arrived
+  // INSIDE the window. So filtering to «هذا الشهر» made every June deposit
+  // still unremitted vanish from what Pima owes, while transfers made against
+  // those same June deposits stayed counted in full. The figure came out
+  // understated, went into the CSV under a filename naming the period, and
+  // painted an owner «متسدّد» in green purely because no new deposit of his
+  // had landed that month.
+  //
+  // Collected and commission stay windowed: those are FLOWS, and a flow is
+  // what a period is for. What is owed is a STOCK — everything held on or
+  // before the window's end and not settled by then.
+  const asAt = w?.end;
+  const settledByThen = (b: Booking) =>
+    !!b.ownerSettledAt && (!asAt || new Date(b.ownerSettledAt) <= asAt);
+
+  const heldAsAt = platformCollects ? bookings.filter((b) => {
+    if (!isLive(b)) return false;
+    const held = payments.some((p) =>
+      p.bookingId === b.id && p.paymentStatus === 'approved' && !isCashPayment(p)
+      && (!asAt || (!!p.paymentDate && new Date(p.paymentDate) <= asAt)));
+    return held && !settledByThen(b);
+  }) : [];
+  const ownersOwed = heldAsAt.reduce((s, b) => s + ownerShareOf(b, commissionRate), 0);
 
   // What has already left, counted ONCE, from the payouts table only.
   //
@@ -192,6 +213,7 @@ export function summarizeFinances(args: {
 
   const houseAgg = new Map<string, number>();
 
+  // Flows in the window: what came in and what Pima earned on it.
   for (const b of heldBookings) {
     const house = houseById.get(b.houseId);
     if (!house) continue;
@@ -199,10 +221,18 @@ export function summarizeFinances(args: {
     const received = approvedTotalFor(b.id, payments);
     row.collected += received;
     row.commission += Math.min(received, Math.round(b.totalPrice * rateOf(b, commissionRate)));
-    // Settled bookings are not added to `owed`; what was paid for them comes
-    // from the payout rows below, never from re-deriving the share here.
-    if (!b.ownerSettledAt) row.owed += ownerShareOf(b, commissionRate);
     houseAgg.set(b.houseId, (houseAgg.get(b.houseId) || 0) + received);
+  }
+
+  // The balance, on the same basis as the page total — everything held by the
+  // window's end and not settled by then. Computed separately from the loop
+  // above because it is a stock and that one is a flow; running them together
+  // is what put an owner in a green «متسدّد» badge while he was still owed
+  // money from a deposit that arrived last month.
+  for (const b of heldAsAt) {
+    const house = houseById.get(b.houseId);
+    if (!house) continue;
+    rowFor(house.ownerId).owed += ownerShareOf(b, commissionRate);
   }
 
   // The single source for money that left, matching the page total.
@@ -239,6 +269,8 @@ export interface AccountBalance {
   account: string;
   received: number;
   refunded: number;
+  /** Transferred out of this account to owners. */
+  paidOut: number;
   net: number;
   count: number;
 }
@@ -258,9 +290,13 @@ export interface AccountBalance {
  */
 export function accountBalances(args: {
   payments: Payment[];
+  /** Transfers OUT. Without them this counts money RECEIVED, not money HELD —
+   *  which is what an admin reads it as. owner_payouts carried no account
+   *  attribution at all until migration 115, so this could not be done before. */
+  payouts?: Payout[];
   window: FinanceWindow | null;
 }): { accounts: AccountBalance[]; unassignedCount: number } {
-  const { payments, window: w } = args;
+  const { payments, payouts = [], window: w } = args;
   const rows = new Map<string, AccountBalance>();
   let unassignedCount = 0;
 
@@ -270,12 +306,23 @@ export function accountBalances(args: {
     const key = (p.receivedAccount || '').trim() || 'غير محدد';
     if (key === 'غير محدد') unassignedCount++;
     let row = rows.get(key);
-    if (!row) { row = { account: key, received: 0, refunded: 0, net: 0, count: 0 }; rows.set(key, row); }
+    if (!row) { row = { account: key, received: 0, refunded: 0, paidOut: 0, net: 0, count: 0 }; rows.set(key, row); }
     row.received += p.amount;
     row.refunded += p.refundedAmount || 0;
     row.count++;
   }
-  for (const row of rows.values()) row.net = row.received - row.refunded;
+  // What left each account. A transfer with no account recorded lands under
+  // «غير محدد» beside the untagged receipts, so the row is visibly incomplete
+  // rather than quietly wrong.
+  for (const p of payouts) {
+    if (p.status !== 'completed' || !inWindow(p.completedAt, w)) continue;
+    const key = (p.paidFromAccount || '').trim() || 'غير محدد';
+    let row = rows.get(key);
+    if (!row) { row = { account: key, received: 0, refunded: 0, paidOut: 0, net: 0, count: 0 }; rows.set(key, row); }
+    row.paidOut += p.amount;
+  }
+
+  for (const row of rows.values()) row.net = row.received - row.refunded - row.paidOut;
 
   return {
     accounts: [...rows.values()].sort((a, b) => b.net - a.net),

@@ -10,6 +10,7 @@ import {
   Search, ArrowDownWideNarrow, Copy
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
+import HouseNeighbours from './house/HouseNeighbours';
 import BookingJourney from './BookingJourney';
 import BookingChatPanel from './BookingChatPanel';
 import ReviewWizard from './ReviewWizard';
@@ -1044,6 +1045,15 @@ export default function UserBookings({
                   <div className="px-4 pb-4">
                     <div className="rounded-[28px] border border-[#EDE7DA] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4">
                       <BookingJourney booking={booking} payments={payments} />
+                      {/* Renders nothing unless another group genuinely shares
+                          these nights. get_house_neighbours re-checks that the
+                          caller owns an approved booking here, so this guard is
+                          defence in depth rather than the only one. */}
+                      {booking.status === 'approved' && (
+                        <div className="mt-3">
+                          <HouseNeighbours bookingId={booking.id} />
+                        </div>
+                      )}
                       {/* Countdown — a confirmed trip that hasn't happened yet */}
                       {booking.status === 'approved' && (() => {
                         const d = daysUntil(booking.checkIn);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeStayPrice, nightlyRateFor, offersDayUse, isDayUse, computeMealPlan } from './pricing';
+import { computeStayPrice, nightlyRateFor, offersDayUse, isDayUse, computeMealPlan, activeDiscountFor, applyDiscount } from './pricing';
 import type { RetreatHouse, SeasonalRate } from '../types';
 
 // Only the fields pricing actually reads — the rest of RetreatHouse is
@@ -223,5 +223,50 @@ describe('computeMealPlan', () => {
   it('says nothing where the house has said nothing', () => {
     expect(computeMealPlan(house(200), '2026-07-15', '2026-07-18', 10).state).toBe('none');
     expect(computeMealPlan(menuHouse({ weeklyMenu: [] }), '2026-07-15', '2026-07-18', 10).state).toBe('none');
+  });
+});
+
+describe('house discounts', () => {
+  const withDiscount = (over: Partial<RetreatHouse>): RetreatHouse => ({
+    ...house(500), discountPct: 0.25,
+    discountStartsAt: '2026-09-01', discountEndsAt: '2026-09-30', ...over,
+  } as RetreatHouse);
+
+  it('applies inside the window', () => {
+    expect(activeDiscountFor(withDiscount({}), '2026-09-10')).toBe(0.25);
+  });
+
+  it('does not apply before it starts or after it ends', () => {
+    expect(activeDiscountFor(withDiscount({}), '2026-08-31')).toBe(0);
+    expect(activeDiscountFor(withDiscount({}), '2026-10-01')).toBe(0);
+  });
+
+  it('includes both boundary days', () => {
+    // An owner who says «من ١ لـ٣٠ سبتمبر» means both of those days.
+    expect(activeDiscountFor(withDiscount({}), '2026-09-01')).toBe(0.25);
+    expect(activeDiscountFor(withDiscount({}), '2026-09-30')).toBe(0.25);
+  });
+
+  it('runs open-ended when a side is left blank', () => {
+    expect(activeDiscountFor(withDiscount({ discountStartsAt: undefined }), '2020-01-01')).toBe(0.25);
+    expect(activeDiscountFor(withDiscount({ discountEndsAt: undefined }), '2099-01-01')).toBe(0.25);
+  });
+
+  it('is zero when no discount is set', () => {
+    expect(activeDiscountFor(house(500), '2026-09-10')).toBe(0);
+    expect(activeDiscountFor(withDiscount({ discountPct: 0 }), '2026-09-10')).toBe(0);
+  });
+
+  it('rounds the way the server rounds', () => {
+    // validate_booking_price does ROUND(expected * (1 - pct)). Anything else
+    // and the client lands a pound below the floor, and the database refuses
+    // the booking with PRICE_TOO_LOW.
+    expect(applyDiscount(20000, 0.25)).toBe(15000);
+    expect(applyDiscount(3333, 0.25)).toBe(2500);   // 2499.75 -> 2500
+    expect(applyDiscount(10, 0.15)).toBe(9);        // 8.5 -> 9 (half away from zero)
+  });
+
+  it('leaves the amount alone at zero percent', () => {
+    expect(applyDiscount(20000, 0)).toBe(20000);
   });
 });

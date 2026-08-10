@@ -288,3 +288,93 @@ describe('refundsDue', () => {
     expect(r.map((x) => x.outstanding)).toEqual([9000, 1000]);
   });
 });
+
+describe('what is owed is a balance at a date, not a flow', () => {
+  // The audit's case, verbatim: a deposit lands in June and is never remitted.
+  // Filter the page to July and the old code dropped it from what Pima owes,
+  // because it summed only over deposits that arrived INSIDE the window —
+  // while transfers made against those same June deposits stayed counted.
+  const june = payment({ id: 'p1', bookingId: 'b1', paymentDate: '2026-06-15T10:00:00Z' });
+  const julyOnly = {
+    start: new Date('2026-07-01T00:00:00Z'),
+    end: new Date('2026-07-31T23:59:59Z'),
+  };
+
+  it('still owes a June deposit when the page is filtered to July', () => {
+    const s = run({ payments: [june], window: julyOnly });
+    expect(s.ownersOwed).toBe(2000);
+    expect(s.collectedByPima).toBe(0);   // the flow is correctly empty
+  });
+
+  it('does not paint an owner «متسدّد» while his money is still held', () => {
+    const s = run({ payments: [june], window: julyOnly });
+    expect(s.perOwner[0].owed).toBe(2000);
+  });
+
+  it('stops owing once it has actually been settled', () => {
+    const s = run({
+      bookings: [booking({ id: 'b1', ownerSettledAt: '2026-06-20T00:00:00Z' })],
+      payments: [june], window: julyOnly,
+    });
+    expect(s.ownersOwed).toBe(0);
+  });
+
+  it('still owes when the settlement happens AFTER the date being asked about', () => {
+    // Asked «what did we owe at 31 July», a transfer made in August has not
+    // happened yet and must not reduce the July balance.
+    const s = run({
+      bookings: [booking({ id: 'b1', ownerSettledAt: '2026-08-05T00:00:00Z' })],
+      payments: [june], window: julyOnly,
+    });
+    expect(s.ownersOwed).toBe(2000);
+  });
+
+  it('does not count a cash deposit the owner already pocketed', () => {
+    const s = run({
+      payments: [payment({ id: 'p1', bookingId: 'b1', paymentMethod: 'cash', paymentDate: '2026-06-15T10:00:00Z' })],
+      window: julyOnly,
+    });
+    expect(s.ownersOwed).toBe(0);
+  });
+});
+
+describe('the treasury subtracts what left, not just what arrived', () => {
+  const p = (over: Partial<Payment> & { id: string }): Payment => ({
+    bookingId: 'b1', userId: 'u1', userName: 'ضيف', amount: 5000, paymentMethod: 'instapay',
+    paymentStatus: 'approved', paymentDate: '2026-08-01T00:00:00Z', ...over,
+  } as Payment);
+  const po = (over: Partial<Payout> & { id: string }): Payout => ({
+    houseId: 'h1', ownerId: 'o1', amount: 2000, status: 'completed',
+    requestedAt: '2026-08-02', completedAt: '2026-08-03T00:00:00Z', ...over,
+  } as Payout);
+
+  it('nets a transfer out of the account it left from', () => {
+    // Before migration 115 owner_payouts had no account at all, so this card
+    // reported money RECEIVED while reading as money HELD.
+    const r = accountBalances({
+      window: null,
+      payments: [p({ id: 'p1', receivedAccount: 'إنستاباي بيما' })],
+      payouts: [po({ id: 'x1', paidFromAccount: 'إنستاباي بيما' })],
+    });
+    expect(r.accounts[0]).toMatchObject({ received: 5000, paidOut: 2000, net: 3000 });
+  });
+
+  it('shows a transfer with no account recorded rather than hiding it', () => {
+    const r = accountBalances({
+      window: null,
+      payments: [p({ id: 'p1', receivedAccount: 'إنستاباي بيما' })],
+      payouts: [po({ id: 'x1' })],
+    });
+    const unknown = r.accounts.find((a) => a.account === 'غير محدد');
+    expect(unknown?.paidOut).toBe(2000);
+  });
+
+  it('ignores a payout that is not completed', () => {
+    const r = accountBalances({
+      window: null,
+      payments: [p({ id: 'p1', receivedAccount: 'بنك' })],
+      payouts: [po({ id: 'x1', status: 'pending', paidFromAccount: 'بنك' })],
+    });
+    expect(r.accounts[0].net).toBe(5000);
+  });
+});

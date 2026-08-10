@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { arabicDateRange } from '../lib/arabic';
+import { arabicDateRange , arabicTime } from '../lib/arabic';
 import { Loader2, UserPlus, CheckCircle2, CalendarDays, Users, PartyPopper } from 'lucide-react';
 import Logo from './Logo';
 import { getBookingInviteInfo, selfRegisterAttendee, BookingInviteInfo } from '../lib/selfRegister';
@@ -99,6 +99,26 @@ export default function SelfRegisterScreen({ bookingId }: { bookingId: string })
             <span className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5 text-[#C5A059]" /> {arabicDateRange(info.checkIn, info.checkOut)}</span>
             <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5 text-[#C5A059]" /> سُجِّل {info.registeredCount}/{info.guestsCount}</span>
           </div>
+
+          {/* One sentence for forty parents, on a page they already have.
+              Everyone's instinct for «reassure the parents» is a parent
+              account, a photo feed or a location share — three things that
+              should never exist around other people's children. This is
+              defined by what it refuses: no individual is named, counted out,
+              photographed or located, there is no way to ask about a specific
+              child, and there is no reply field, so it opens no route from a
+              stranger to a minor. Two group-level timestamps, live only while
+              the trip is running, and the servant can switch it off. */}
+          {(info.arrivedAt || info.departedAt) && (
+            <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 mt-1">
+              <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" />
+              <span className="text-[11px] font-bold text-white">
+                {info.departedAt
+                  ? `المجموعة رجعت — ${arabicTime(info.departedAt)}`
+                  : `المجموعة وصلت — ${arabicTime(info.arrivedAt!)}`}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="p-5 space-y-3.5">

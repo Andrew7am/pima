@@ -5,8 +5,7 @@ import {
   Star, Send, Clock, FileText, Pencil, Minus, Plus, Building2, Phone, User as UserIcon,
   Mail, MessageSquare, Church, Info, Loader2, Receipt, CreditCard,
   Sparkles, BedDouble, Copy, Home, Bell,
-  Backpack, BookOpen, GraduationCap, Flame, HeartHandshake, Sun, Utensils,
-} from 'lucide-react';
+  Backpack, BookOpen, GraduationCap, Flame, HeartHandshake, Sun, Utensils, Printer } from 'lucide-react';
 import { tapFeedback } from '../../lib/haptics';
 import PimaSheet from '../PimaSheet';
 import { useCountUp } from '../../lib/useCountUp';
@@ -53,6 +52,12 @@ interface BookingFlowProps {
   isMonthlyHousing: boolean;
   /** Before any points are redeemed. */
   originalTotalPrice: number;
+  /** The house discount in force for these dates, 0 when there is none. */
+  discountPct?: number;
+  discountSaving?: number;
+  /** Present only for a signed-in servant with dates chosen — the sheet is
+   *  addressed from his own profile, so there is nothing to render without one. */
+  onPrintPriestQuote?: () => void;
   totalPrice: number;
   depositAmount: number;
   /** Rate bands from lib/pricing — one row per distinct nightly rate. */
@@ -127,6 +132,7 @@ const INPUT = 'w-full bg-white border border-[#EDE7DA] rounded-2xl px-3.5 py-3 t
 export default function BookingFlow({
   house, currentUser, checkIn, checkOut, nights, guestsCount, setGuestsCount,
   isQuoteMode, setIsQuoteMode, isMonthlyHousing, originalTotalPrice, totalPrice,
+  discountPct = 0, discountSaving = 0, onPrintPriestQuote,
   depositAmount, breakdown, datePicker, datesConfirmed, dayUseAvailable, dayUsePrice, onSetStayMode,
   mealPlan, withMeals, onSetWithMeals,
   notices, submitting, onSubmit, onRequireLogin, onExit,
@@ -983,10 +989,34 @@ export default function BookingFlow({
             <span className="text-[12px] font-black text-[#2D2D24]">الإجمالي التقديري</span>
             <span className="text-[14px] font-black text-[#B8944E]">{egp(totalPrice)} ج.م</span>
           </div>
+          {/* Two different savings, said separately. The line below is worded
+              to the guest's points; a house discount is the owner's money, not
+              theirs, and calling it «من نقاطك» would be a lie they could check. */}
+          {discountPct > 0 && discountSaving > 0 && (
+            <p className="text-[9.5px] font-bold text-[#B8944E] text-left">
+              وفّرت {egp(discountSaving)} ج.م — خصم {arabicNumber(Math.round(discountPct * 100))}٪ على البيت
+            </p>
+          )}
           {totalPrice !== originalTotalPrice && (
             <p className="text-[11px] font-medium text-emerald-700 text-left">
               بعد خصم {egp(originalTotalPrice - totalPrice)} ج.م من نقاطك
             </p>
+          )}
+
+          {/* The booking is not his decision. A servant proposes this house to
+              his priest, who asks what it costs per head and what happens if
+              they cancel — and who will never open this app. This turns the
+              screen into the piece of paper that conversation actually needs,
+              addressed from the servant's own profile so he types nothing. */}
+          {onPrintPriestQuote && (
+            <button
+              type="button"
+              onClick={onPrintPriestQuote}
+              className="w-full mt-3 flex items-center justify-center gap-1.5 bg-white border border-[#0A2342]/20 hover:bg-[#F7F5EF] text-[#0A2342] text-[12px] font-bold min-h-11 rounded-xl transition-colors cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              اطبع عرض لأبونا
+            </button>
           )}
         </div>
       </PimaSheet>

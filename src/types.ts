@@ -141,6 +141,14 @@ export interface RetreatHouse {
   // Owner-direct (no admin re-approval), like paymentMethods — see
   // migration 055 and lib/pricing.ts for the night-by-night math.
   seasonalRates?: SeasonalRate[];
+  /** A percentage off, applied to stays whose CHECK-IN falls in the window.
+   *  Set by the admin at the owner's request; the owner carries the cost.
+   *  Owners cannot set it themselves — protect_house_owner_updates (019)
+   *  reverts every house column for a non-admin caller. */
+  discountPct?: number;
+  discountStartsAt?: string;
+  discountEndsAt?: string;
+  discountNote?: string;
   // Owner-submitted edits to an already-approved house wait here for admin
   // review instead of applying immediately — only editable/listing fields.
   pendingEdit?: Partial<RetreatHouse>;
@@ -181,6 +189,15 @@ export interface Booking {
   totalPrice: number;
   depositPaid: boolean;
   depositAmount: number;
+  /** The discount that was agreed when this booking was made — frozen by the
+   *  server at INSERT and never recomputed. Read live instead, every booking
+   *  taken under an offer would jump back to full price in the ledger the
+   *  moment the offer ended, contradicting what the guest actually paid. That
+   *  is the bug commissionRate still has. */
+  discountPctApplied?: number;
+  /** What the stay would have cost without it. Null when there was no
+   *  discount, so the «كان» line only appears when it is true. */
+  priceBeforeDiscount?: number;
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
   // platform = guest booked through the app; manual = owner recorded a
   // phone/walk-in booking himself; temporary = tentative hold the owner
@@ -274,6 +291,17 @@ export interface Review {
   value_rating?: number;
   overall_rating?: number;
   comment: string;
+  /** The stay being reviewed. One review per booking — replaces the old
+   *  one-per-person-per-house rule, which silently overwrote a returning
+   *  church's earlier reviews. See migration 114. */
+  bookingId?: string;
+  /** The shape of that stay, so «١٤ نجمة» can become «٩ مجموعات ثانوي ٤٠–٥٠
+   *  فرد، ٣ ليالي، ذروة أغسطس». A size BAND, never an exact count, and no
+   *  church is named — these stays carry minors. */
+  stayGroup?: string;
+  stayBand?: string;
+  stayNights?: number;
+  stayMonth?: number;
   createdAt: string;
   ownerReply?: string;
   ownerReplyCreatedAt?: string;
@@ -566,6 +594,13 @@ export interface Payout {
    *  which names an amount rather than specific bookings. Without it a payout
    *  could only be explained by an admin reconstructing it from timestamps. */
   bookingIds?: string[];
+  /** The bank or wallet reference. This is what answers an owner who disputes
+   *  a transfer six months later — Pima captures one on every payment IN and
+   *  captured none on the way out until migration 115. */
+  transactionReference?: string;
+  /** Which of Pima's accounts it left from, so الخزنة can subtract it and
+   *  become a cash position rather than a record of money received. */
+  paidFromAccount?: string;
 }
 
 export interface AuditLogEntry {

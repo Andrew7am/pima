@@ -67,6 +67,10 @@ export function mapHouse(r: Record<string, unknown>): RetreatHouse {
     restaurants: (r.restaurants as RetreatHouse['restaurants']) ?? [],
     paymentMethods: (r.payment_methods as RetreatHouse['paymentMethods']) ?? [],
     seasonalRates: (r.seasonal_rates as RetreatHouse['seasonalRates']) ?? [],
+    discountPct: r.discount_pct != null ? Number(r.discount_pct) : undefined,
+    discountStartsAt: (r.discount_starts_at as string) ?? undefined,
+    discountEndsAt: (r.discount_ends_at as string) ?? undefined,
+    discountNote: (r.discount_note as string) ?? undefined,
     status: r.status as RetreatHouse['status'],
     rating: r.rating as number,
     reviewsCount: r.reviews_count as number,
@@ -104,6 +108,8 @@ export function mapBooking(r: Record<string, unknown>): Booking {
     totalPrice: r.total_price as number,
     depositPaid: r.deposit_paid as boolean,
     depositAmount: r.deposit_amount as number,
+    discountPctApplied: r.discount_pct_applied != null ? Number(r.discount_pct_applied) : undefined,
+    priceBeforeDiscount: r.price_before_discount != null ? Number(r.price_before_discount) : undefined,
     status: r.status as Booking['status'],
     source: r.source as Booking['source'] ?? 'platform',
     isLargeConferenceQuote: r.is_large_conference_quote as boolean,
@@ -157,6 +163,11 @@ export function mapReview(r: Record<string, unknown>): Review {
     userName: r.user_name as string,
     userRole: r.user_role as Review['userRole'],
     rating: r.rating as number,
+    bookingId: (r.booking_id as string) ?? undefined,
+    stayGroup: (r.stay_group as string) ?? undefined,
+    stayBand: (r.stay_band as string) ?? undefined,
+    stayNights: r.stay_nights != null ? Number(r.stay_nights) : undefined,
+    stayMonth: r.stay_month != null ? Number(r.stay_month) : undefined,
     food_rating: r.food_rating as number ?? undefined,
     service_rating: r.service_rating as number ?? undefined,
     cleanliness_rating: r.cleanliness_rating as number ?? undefined,
@@ -269,6 +280,8 @@ export function mapPayout(r: Record<string, unknown>): Payout {
     requestedAt: r.requested_at as string,
     completedAt: (r.completed_at as string) ?? undefined,
     bookingIds: (r.booking_ids as string[]) ?? undefined,
+    transactionReference: (r.transaction_reference as string) ?? undefined,
+    paidFromAccount: (r.paid_from_account as string) ?? undefined,
   };
 }
 
@@ -367,7 +380,8 @@ const HOUSE_PUBLIC_COLUMNS =
   'conference_halls,restaurants,seasonal_rates,status,rating,reviews_count,created_at,property_type,' +
   'blocked_dates,sea_proximity,student_housing_gender,distance_from_university,nearby_landmark,monthly_rent,' +
   'day_use_price_per_person,' +
-  'room_capacity,housing_rules,contract_terms,menu,image_descriptions,pending_edit';
+  'room_capacity,housing_rules,contract_terms,menu,image_descriptions,pending_edit,' +
+  'discount_pct,discount_starts_at,discount_ends_at,discount_note';
 
 /**
  * Every house, with ONE photo each.
@@ -544,6 +558,31 @@ export async function claimDailyAdPoints(): Promise<boolean> {
  * when. The DELETE policies are dropped in the same migration, so this is not
  * merely the preferred path — it is the only one left.
  */
+/**
+ * Put a discount on a house, or clear it.
+ *
+ * Admin-only in practice without a line of guarding: protect_house_owner_updates
+ * (migration 019) reverts every house column for a non-admin caller except
+ * pending_edit, blocked_dates and menu — so an owner cannot discount his own
+ * house even though he is the one who pays for it. He asks; the admin sets it.
+ *
+ * pct is a FRACTION (0.25 = 25%), matching commissionRate and depositRate
+ * rather than the number typed in the field.
+ */
+export async function setHouseDiscount(args: {
+  houseId: string; pct: number; startsAt: string | null; endsAt: string | null; note: string | null;
+}): Promise<boolean> {
+  const { error } = await supabase.from('houses').update({
+    discount_pct: args.pct,
+    discount_starts_at: args.startsAt,
+    discount_ends_at: args.endsAt,
+    discount_note: args.note,
+    discount_set_at: new Date().toISOString(),
+  }).eq('id', args.houseId);
+  if (error) { console.error('setHouseDiscount:', error); return false; }
+  return true;
+}
+
 export async function deleteHouse(houseId: string): Promise<boolean> {
   const { error } = await supabase.rpc('archive_house', { p_house_id: houseId });
   if (error) { console.error('archiveHouse:', error); return false; }
@@ -864,12 +903,20 @@ export async function updatePayoutStatus(id: string, status: Payout['status']): 
 // bookingIds with one element => a per-booking transfer; many => a batch.
 export async function settleBookingsPayout(args: {
   houseId: string; ownerId: string; amount: number; bookingIds: string[]; method?: string; note?: string;
+  /** The bank/wallet reference. This is what answers an owner who disputes a
+   *  payment six months later — Pima captures one on every payment IN and
+   *  used to capture none on the way out. */
+  transactionReference?: string;
+  /** Which of Pima's accounts it left from, so الخزنة can subtract it. */
+  paidFromAccount?: string;
 }): Promise<boolean> {
   const now = new Date().toISOString();
   const payoutId = `payout_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
   const { error: pErr } = await supabase.from('owner_payouts').insert({
     id: payoutId, house_id: args.houseId, owner_id: args.ownerId, amount: args.amount,
     status: 'completed', method: args.method ?? null, note: args.note ?? null,
+    transaction_reference: args.transactionReference ?? null,
+    paid_from_account: args.paidFromAccount ?? null,
     requested_at: now, completed_at: now,
     // What this transfer actually paid for. The pairing was previously implicit
     // — the same timestamp on the payout and on each booking — which is exact
@@ -1006,6 +1053,11 @@ function reviewToRow(r: Review): Record<string, unknown> {
     user_name: r.userName,
     user_role: r.userRole,
     rating: r.rating,
+    booking_id: r.bookingId ?? null,
+    stay_group: r.stayGroup ?? null,
+    stay_band: r.stayBand ?? null,
+    stay_nights: r.stayNights ?? null,
+    stay_month: r.stayMonth ?? null,
     food_rating: r.food_rating ?? null,
     service_rating: r.service_rating ?? null,
     cleanliness_rating: r.cleanliness_rating ?? null,
@@ -1073,7 +1125,7 @@ function roomToRow(r: Room): Record<string, unknown> {
  * Returns { ok: false, error: 'INSUFFICIENT_CAPACITY', availableBeds } if the
  * requested guests would exceed remaining capacity for these dates.
  */
-export async function createBooking(b: Booking): Promise<{ ok: boolean; error?: string; availableBeds?: number; booking?: Booking }> {
+export async function createBooking(b: Booking): Promise<{ ok: boolean; error?: string; availableBeds?: number; minimumPrice?: number; booking?: Booking }> {
   const { data, error } = await supabase.from('bookings').insert(bookingToRow(b)).select().single();
   if (error) {
     const msg = error.message || '';
@@ -1081,6 +1133,15 @@ export async function createBooking(b: Booking): Promise<{ ok: boolean; error?: 
       const match = msg.match(/Only (\d+) beds/);
       const availableBeds = match ? parseInt(match[1], 10) : 0;
       return { ok: false, error: 'INSUFFICIENT_CAPACITY', availableBeds };
+    }
+    // validate_booking_price refuses anything below the floor it computes from
+    // the house's own rates. Unmapped, it fell through as a raw Postgres
+    // string into a generic «حاول مرة أخرى» — which is what an owner pricing
+    // a phone booking by hand hits every time, with nothing telling him the
+    // number is the problem.
+    if (msg.includes('PRICE_TOO_LOW')) {
+      const match = msg.match(/expected at least ([\d.]+)/);
+      return { ok: false, error: 'PRICE_TOO_LOW', minimumPrice: match ? Math.ceil(parseFloat(match[1])) : undefined };
     }
     console.error('createBooking:', error);
     return { ok: false, error: msg };
@@ -1129,8 +1190,21 @@ export async function updateBookingFields(id: string, fields: Partial<Booking>):
   return { ok: true };
 }
 
+/**
+ * One review per STAY, not one per person per house.
+ *
+ * This upserted on (user_id, house_id) against the unique index from
+ * migration 028 — so a church returning to a house it liked, which is the
+ * whole business, silently destroyed what it wrote the year before. Three
+ * summers at one house left exactly one review and no trace of the other two.
+ *
+ * 028's intent — stop one person spamming a house — was right; it picked the
+ * wrong unit. The stay is the unit. Migration 114 replaces the index, so this
+ * is a plain insert and what now gets refused is a second review of the SAME
+ * booking.
+ */
 export async function createReview(r: Review): Promise<boolean> {
-  const { error } = await supabase.from('reviews').upsert(reviewToRow(r), { onConflict: 'user_id,house_id' });
+  const { error } = await supabase.from('reviews').insert(reviewToRow(r));
   if (error) console.error('createReview:', error);
   return !error;
 }
@@ -1576,4 +1650,24 @@ export function subscribeToPlatformSettings(onChange: (s: PlatformSettings) => v
     )
     .subscribe();
   return () => { supabase.removeChannel(channel); };
+}
+
+/**
+ * File the cash deposit an owner says he received, and mark the booking.
+ *
+ * The client used to insert the payment row directly with the GUEST's user_id.
+ * payments_insert_user requires auth.uid() = user_id, and protect_payment_write
+ * refuses it again unless the booking belongs to the caller — the owner is
+ * neither, so the row was never written, silently. The booking flip beside it
+ * did persist, so the booking claimed a deposit with no payment behind it and
+ * the payout screen went on offering that deposit for transfer.
+ *
+ * The check "is this the owner of the house this booking is for" cannot be
+ * expressed as an RLS policy on payments, so it lives inside the function.
+ * Idempotent: a second tap after a dropped connection files nothing extra.
+ */
+export async function recordCashDeposit(bookingId: string): Promise<boolean> {
+  const { error } = await supabase.rpc('record_cash_deposit', { p_booking_id: bookingId });
+  if (error) { console.error('recordCashDeposit:', error); return false; }
+  return true;
 }

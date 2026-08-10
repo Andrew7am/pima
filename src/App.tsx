@@ -19,8 +19,9 @@ import {
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
   createWaitlistEntry, notifyWaitlist as notifyWaitlistDb, notifyOwnerDistributionDone as notifyOwnerDistributionDoneDb,
   loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
+  setHouseDiscount,
   loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb, settleBookingsPayout,
-  recordRefund as recordRefundDb, setPaymentAccount,
+  recordRefund as recordRefundDb, setPaymentAccount, recordCashDeposit,
   loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
   createPromoBanner, setPromoBannerActive, deletePromoBanner, updatePromoBanner,
   loadPlatformSettings, updatePlatformSettings, subscribeToPlatformSettings,
@@ -665,8 +666,15 @@ export default function App() {
   // problem.
   useEffect(() => {
     if (!selectedHouse?.id) return;
+    // Not the admin previewing from the content tab, and not an owner looking
+    // at his own listing. This counted every open by anyone, so the figure was
+    // measuring the platform's own staff at work rather than visitor interest
+    // — and the admin inflates it most, because reviewing houses is his job.
+    // A number that goes up when you look at it is worse than no number.
+    const isStaffLook = currentUser?.role === 'admin' || currentUser?.id === selectedHouse.ownerId;
+    if (isStaffLook) return;
     void recordHouseView(selectedHouse.id);
-  }, [selectedHouse?.id]);
+  }, [selectedHouse?.id, selectedHouse?.ownerId, currentUser?.id, currentUser?.role]);
 
   // A page opens at its top.
   //
@@ -834,7 +842,7 @@ export default function App() {
   // records a completed payout (owner gets a realtime "تم تحويل مستحقاتك"
   // notification via trigger 068) and marks those bookings settled so they
   // drop out of the "ready to transfer" list.
-  const handleSettleBookings = async (args: { houseId: string; ownerId: string; amount: number; bookingIds: string[]; note?: string }) => {
+  const handleSettleBookings = async (args: { houseId: string; ownerId: string; amount: number; bookingIds: string[]; note?: string; transactionReference?: string; paidFromAccount?: string }) => {
     const now = new Date().toISOString();
     const ok = await settleBookingsPayout(args);
     if (!ok) { alert('تعذّر تسجيل التحويل. حاول مرة أخرى.'); return; }
@@ -988,6 +996,20 @@ export default function App() {
         alert(avail === 0
           ? 'البيت مكتمل الإشغال في هذه التواريخ.'
           : `لم يتبقَ سوى ${avail} سرير متاح في هذه التواريخ، والحجز يتطلب ${newBooking.guestsCount} فرد.`);
+      } else if (res.error === 'PRICE_TOO_LOW') {
+        // The one error an owner recording a phone booking will actually hit.
+        // validate_booking_price recomputes the stay from the house's own
+        // rates and refuses anything below the floor, and this fell into the
+        // generic branch — so an owner who worked the price out in his head
+        // was told «حاول مرة أخرى» and retried the same number. The booking
+        // simply never existed, and nothing told him why.
+        // The server's OWN floor, parsed from its exception — not a client
+        // recomputation. If the two ever disagree, the number he is told has
+        // to be the one that actually passes.
+        const floor = res.minimumPrice;
+        alert(floor
+          ? `السعر أقل من اللي البيت مسعّر بيه التواريخ دي.\n\nأقل مبلغ مقبول: ${floor.toLocaleString('ar-EG')} ج.م.`
+          : 'السعر أقل من اللي البيت مسعّر بيه التواريخ دي. راجع أسعارك الموسمية.');
       } else {
         alert('حدث خطأ في حفظ الحجز. حاول مرة أخرى.');
       }
@@ -1304,7 +1326,24 @@ export default function App() {
         adminNotes: 'أكد صاحب البيت استلام العربون نقداً',
       };
       setPayments((prev) => [cashPayment, ...prev]);
-      trackWrite(createPayment(cashPayment), 'تسجيل دفعة العربون نقداً');
+      // This row has never actually been written. It was inserted directly
+      // with user_id = the GUEST's id, and payments_insert_user requires
+      // auth.uid() = user_id; protect_payment_write refuses it again unless
+      // the booking belongs to the caller. The owner is neither, and both
+      // refusals were silent to him.
+      //
+      // The booking flip beside it DID persist — owners short-circuit
+      // protect_booking_privileged_columns — so the booking read «العربون
+      // اتدفع» with no payment behind it, and the payout screen, which
+      // excludes a booking only when it FINDS an approved cash payment, found
+      // none. Pima transferred the owner a deposit he was already holding.
+      //
+      // record_cash_deposit (migration 112) does the ownership check the RLS
+      // policies cannot express, files the row and flips the booking in one
+      // place, and is idempotent so a second tap is harmless.
+      trackWrite(recordCashDeposit(bookingId), 'تسجيل دفعة العربون نقداً')
+        .then(() => { if (target && currentUser?.id === target.userId) refreshCurrentUserPoints(target.userId); });
+      return;
     }
 
     trackWrite(updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' }), 'تأكيد استلام العربون')
@@ -1329,6 +1368,24 @@ export default function App() {
       prev.map((b) => (b.id === bookingId ? { ...b, status: 'completed', checkedOutAt } : b))
     );
     trackWrite(updateBookingFields(bookingId, { status: 'completed', checkedOutAt }), 'تسجيل مغادرة الضيف');
+
+    // Flag the rooms that group actually held as needing turnaround.
+    //
+    // Check-out wrote the booking and touched no room, and getRoomBedState
+    // reports a room free the instant a stay ends — so the housekeeping
+    // section printed «كل الغرف جاهزة ✨» while forty people had just walked
+    // out of eleven rooms. Its only input was the owner's own thumb.
+    //
+    // Safe by construction: getRoomFreeBedsForRange ignores status entirely
+    // and availability filters only 'maintenance', so marking a room
+    // 'cleaning' blocks no booking. Both OwnerToday and OwnerRoomsManager
+    // already flip it back.
+    // A room already under maintenance is left alone: that is a state the
+    // owner set deliberately and turnaround does not clear it.
+    const emptied = new Set(allocations.filter((a) => a.bookingId === bookingId).map((a) => a.roomId));
+    rooms
+      .filter((r) => emptied.has(r.id) && r.status !== 'maintenance')
+      .forEach((r) => handleUpdateRoom({ ...r, status: 'cleaning' }));
   };
 
   // --- Egyptian Payment System Operations ---
@@ -1414,6 +1471,19 @@ export default function App() {
   const handleSetPaymentAccount = (paymentId: string, account: string) => {
     setPayments((prev) => prev.map((p) => (p.id === paymentId ? { ...p, receivedAccount: account } : p)));
     trackWrite(setPaymentAccount(paymentId, account), 'تحديد حساب التحصيل');
+  };
+
+  /**
+   * Put a discount on a house. The OWNER asks for it and the owner pays for
+   * it: the commission is a percentage of the discounted price, so a 25% cut
+   * on a 20,000 booking takes the owner from 19,000 to 14,250 and Pima from
+   * 1,000 to 750.
+   */
+  const handleSetHouseDiscount = (args: { houseId: string; pct: number; startsAt: string | null; endsAt: string | null; note: string | null }) => {
+    setHouses((prev) => prev.map((h) => (h.id === args.houseId
+      ? { ...h, discountPct: args.pct, discountStartsAt: args.startsAt ?? undefined, discountEndsAt: args.endsAt ?? undefined, discountNote: args.note ?? undefined }
+      : h)));
+    trackWrite(setHouseDiscount(args), args.pct > 0 ? 'تفعيل خصم على البيت' : 'إلغاء خصم البيت');
   };
 
   // --- Admin Operations ---
@@ -1547,7 +1617,31 @@ export default function App() {
   };
 
   // --- Review Operations ---
-  const handleAddReview = async (newReview: Review) => {
+  const handleAddReview = async (review: Review) => {
+    // Stamp the stay this review is about.
+    //
+    // «١٤ نجمة» tells a servant almost nothing. «٩ مجموعات ثانوي ٤٠–٥٠ فرد،
+    // ٣ ليالي، ذروة أغسطس» tells him whether the house suits HIS trip, and it
+    // is a thing only a platform that processed those bookings can say.
+    //
+    // Size is a BAND, never an exact count, and no church is named — the same
+    // disclosure model migration 111 uses for neighbours, for the same reason:
+    // these are stays carrying minors.
+    const stay = bookings
+      .filter((b) => b.houseId === review.houseId && b.userId === review.userId
+        && (b.status === 'approved' || b.status === 'completed'))
+      .sort((a, b) => b.checkIn.localeCompare(a.checkIn))[0];
+    const band = (n: number) => n <= 10 ? 'أقل من ١٠' : n <= 25 ? 'حوالي ١٠–٢٥' : n <= 50 ? 'حوالي ٢٥–٥٠' : 'أكتر من ٥٠';
+    const newReview: Review = stay ? {
+      ...review,
+      bookingId: stay.id,
+      stayGroup: stay.conferenceDetails?.bookingType || 'standard',
+      stayBand: band(stay.guestsCount),
+      stayNights: Math.max(0, Math.round(
+        (new Date(stay.checkOut).getTime() - new Date(stay.checkIn).getTime()) / 86400000)),
+      stayMonth: Number(stay.checkIn.slice(5, 7)),
+    } : review;
+
     // Optimistic insert; rolled back if the DB rejects it.
     setReviews((prev) => [newReview, ...prev]);
 
@@ -2174,6 +2268,7 @@ export default function App() {
               onRejectHouseEdit={handleRejectHouseEdit}
               onToggleUserRole={handleToggleUserRole}
               onSuspendHouse={handleSuspendHouse}
+              onSetHouseDiscount={handleSetHouseDiscount}
               onBanUser={handleBanUser}
               onReleaseUser={handleReleaseUser}
               onCancelBooking={handleAdminCancelBooking}

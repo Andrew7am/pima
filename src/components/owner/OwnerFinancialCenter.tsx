@@ -26,6 +26,10 @@ interface OwnerFinancialCenterProps {
   totalExpenses: number;
   netProfit: number;
   houseId?: string;
+  /** Where a payout would land — the label of the house payment method.
+   *  Empty means the request would stall at the admin with no way to tell
+   *  the owner, so the button is held until one exists. */
+  payoutDestination?: string;
   owner?: User;
   payouts?: Payout[];
   onRequestPayout?: (payout: Payout) => Promise<boolean>;
@@ -118,7 +122,8 @@ type PeriodKey = typeof PERIODS[number]['key'];
 export default function OwnerFinancialCenter({
   ownerBookings, confirmedBookings, confirmedRevenue, platformCommissionAmount, netOwnerPayout,
   depositReceived, remainingBalance, commissionRate, ownerExpenses, totalExpenses, netProfit,
-  houseId, owner, payouts = [], onRequestPayout, onAddExpense, onDeleteExpense, onNavigateSupport,
+  houseId,
+  payoutDestination, owner, payouts = [], onRequestPayout, onAddExpense, onDeleteExpense, onNavigateSupport,
 }: OwnerFinancialCenterProps) {
   const [period, setPeriod] = useState<PeriodKey>('all');
   const [search, setSearch] = useState('');
@@ -919,9 +924,31 @@ export default function OwnerFinancialCenter({
             )}
             <textarea placeholder="ملاحظة للفريق (اختياري) — مثلاً وسيلة الاستلام المفضّلة" value={transferNote} onChange={(e) => setTransferNote(e.target.value)} rows={2}
               className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[12px] px-3 min-h-11 rounded-xl text-[var(--color-owner-text)] outline-none resize-none" />
-            <button type="button" onClick={submitTransfer} disabled={availableForTransfer <= 0 || transferSubmitting || !onRequestPayout}
+            {/* Where the money would actually go.
+                submitTransfer checks the house, the owner and a positive
+                balance — never whether the house has a payment method on it.
+                So an owner requests a transfer and waits; the admin opens the
+                request, sees «لا توجد وسيلة تحويل مسجّلة لهذا البيت — راسِل
+                صاحبه», and cannot follow that instruction from inside the
+                product: notifications have no client insert path by design,
+                and the messages tab is a read-only viewer over booking
+                threads. Neither side ever learns the other is stuck. Nothing
+                is broken on either screen, which is why it survived. */}
+            {payoutDestination ? (
+              <p className="text-[11px] font-bold text-[var(--color-owner-secondary)]">
+                هيتحوّل على: <span className="text-[var(--color-owner-text)]">{payoutDestination}</span>
+              </p>
+            ) : (
+              <p className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 leading-relaxed">
+                مسجّلتش وسيلة تحويل للبيت ده لسه — ضيف رقم إنستاباي أو محفظة من إعدادات البيت، وإلا الطلب هيقف عند الإدارة من غير ما حد يقولك.
+              </p>
+            )}
+            <button type="button" onClick={submitTransfer} disabled={availableForTransfer <= 0 || transferSubmitting || !onRequestPayout || !payoutDestination}
               className="w-full bg-[var(--color-owner-primary)] disabled:opacity-40 text-white text-[12px] font-black py-3 rounded-2xl">
-              {transferSubmitting ? 'جارٍ الإرسال…' : availableForTransfer <= 0 ? 'لا يوجد رصيد متاح للتحويل' : `طلب تحويل ${arabicNumber(availableForTransfer)} ج.م`}
+              {transferSubmitting ? 'جارٍ الإرسال…'
+                : !payoutDestination ? 'ضيف وسيلة تحويل الأول'
+                : availableForTransfer <= 0 ? 'لا يوجد رصيد متاح للتحويل'
+                : `طلب تحويل ${arabicNumber(availableForTransfer)} ج.م`}
             </button>
             <p className="text-[11px] font-bold text-[var(--color-owner-secondary)] text-center leading-relaxed">المبلغ المتبقي من الحجوزات يُحصَّل نقدًا منك عند وصول الضيوف، وليس جزءًا من التحويل.</p>
           </div>

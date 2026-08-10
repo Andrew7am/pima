@@ -191,3 +191,10 @@ export const ROLE_LABELS: Record<string, string> = {
   owner: 'صاحب بيت',
   admin: 'إدارة',
 };
+
+/** «٦:٤٠ م» — the hour a group arrived, for the parents' page. */
+export function arabicTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit' });
+}
