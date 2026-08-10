@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { MIN_PASSWORD_LENGTH, minPasswordLabel, passwordProblem } from '../lib/password';
 import { UserRole } from '../types';
+import AccountTypeScreen from './AccountTypeScreen';
 import {
   User as UserIcon, BookOpen, Users, Lock, Mail, Phone, MapPin, Church,
   Home, Calendar as CalendarIcon, ShieldCheck, UserPlus, Award, Headphones,
@@ -119,6 +120,10 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [isViewingPrivacy, setIsViewingPrivacy] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>('individual');
+  // Whether the account-type screen has been answered this time through. Reset
+  // on every entry into register mode, so «رجوع» then «إنشاء حساب جديد» asks
+  // again rather than silently reusing the last answer.
+  const [roleChosen, setRoleChosen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -380,6 +385,19 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
     );
   }
 
+  // --- Account type, asked before the form ---------------------------------
+  // The three-way control still exists inside the form below, so this is not a
+  // one-way door — it only makes the choice the first thing asked instead of a
+  // row of chips halfway down a long page. An owner who picks wrong lands in an
+  // account with nowhere to add a house, and never finds out why.
+  if (isRegisterMode && !roleChosen) {
+    return (
+      <AccountTypeScreen
+        onSelect={(role) => { setSelectedRole(role); setRoleChosen(true); setError(''); }}
+      />
+    );
+  }
+
   // --- Fresh landing / login view (matches the current mobile mockup) -----
   // Register + forgot flows keep the older compact wrapper below.
   if (!isRegisterMode && !isForgotMode) {
@@ -563,7 +581,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
             {/* 8 — Create-account row */}
             <button
               type="button"
-              onClick={() => { setIsRegisterMode(true); setError(''); }}
+              onClick={() => { setIsRegisterMode(true); setRoleChosen(false); setError(''); }}
               className="w-full flex items-center justify-between gap-2 bg-white border border-[#EFE8D8] rounded-2xl p-3 hover:bg-[#FAF7F1] transition-colors"
             >
               <div className="w-9 h-9 rounded-full bg-[#FAF7F1] border border-[#EFE8D8] flex items-center justify-center shrink-0">
