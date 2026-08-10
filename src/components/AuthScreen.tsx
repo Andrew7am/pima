@@ -156,6 +156,10 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   const [priestName, setPriestName] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [serviceType, setServiceType] = useState('');
+  // Its own field, not orgName. Wiring it to orgName stored the diocese as the
+  // organisation name, which reads fine on screen and makes every report over
+  // either column wrong.
+  const [diocese, setDiocese] = useState('');
   // Dioceses grouped by governorate, for the servant form's cascade. Loaded
   // once, lazily: a table missing (migration not applied yet) leaves the map
   // empty and the field falls back to free text rather than blocking signup.
@@ -357,6 +361,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
           governorate,
           church_name: isChurchAffiliated ? churchName.trim() : null,
           priest_name: isChurchAffiliated ? priestName.trim() : null,
+          diocese: diocese.trim() || null,
         },
       },
     });
@@ -434,7 +439,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
         error={error}
         values={{
           name, email, phone, birthDate: dateOfBirth, password, passwordConfirm,
-          governorate, diocese: orgName, church: churchName, serviceType,
+          governorate, diocese, church: churchName, serviceType,
           priestName, inviteCode: referralCode,
         }}
         onChange={(p) => {
@@ -445,7 +450,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
           if (p.password !== undefined) setPassword(p.password);
           if (p.passwordConfirm !== undefined) setPasswordConfirm(p.passwordConfirm);
           if (p.governorate !== undefined) setGovernorate(p.governorate);
-          if (p.diocese !== undefined) setOrgName(p.diocese);
+          if (p.diocese !== undefined) setDiocese(p.diocese);
           if (p.church !== undefined) setChurchName(p.church);
           if (p.serviceType !== undefined) setServiceType(p.serviceType);
           if (p.priestName !== undefined) setPriestName(p.priestName);
