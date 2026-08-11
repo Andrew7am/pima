@@ -65,7 +65,11 @@ export function GuestBookingScreen() {
               <div className="text-[20px] font-extrabold tabular-nums" style={{ color: 'var(--ds-text)' }}>
                 ٥٨٬٠٤٥ <span className="text-[14px] font-bold">ج.م</span>
               </div>
-              <div className="text-[11px] mt-0.5" style={{ color: 'var(--ds-text-2)' }}>
+              {/* 12px, not 11: this is money the guest actually paid. 11px is
+                  for metadata — a reference number, a column header — and a
+                  real figure sitting at the smallest size in the card read as
+                  less important than it is. */}
+              <div className="text-[12px] mt-0.5" style={{ color: 'var(--ds-text-2)' }}>
                 العربون المدفوع ٨٬٧٠٦ ج.م
               </div>
             </div>
@@ -146,7 +150,9 @@ function Kpi({ label, value, unit, trend }: { label: string; value: string; unit
       <div className="text-[20px] font-extrabold tabular-nums mt-0.5" style={{ color: 'var(--ds-text)' }}>
         {value}{unit && <span className="text-[12px] font-bold ms-1">{unit}</span>}
       </div>
-      {trend && <div className="text-[11px] mt-0.5" style={{ color: 'var(--ds-success-ink)' }}>{trend}</div>}
+      {/* 12px: the number says how much, the trend says whether that is good
+          or bad. The conclusion should not be the smallest text in the card. */}
+      {trend && <div className="text-[12px] mt-0.5" style={{ color: 'var(--ds-success-ink)' }}>{trend}</div>}
     </Card>
   );
 }
