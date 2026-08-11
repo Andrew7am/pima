@@ -269,7 +269,26 @@ export default function Showcase() {
             </div>
           </Section>
 
-          <Section title="الأزرار" note="٤٤px ارتفاع · ١٦px خط · المضغوط ٤٠px/١٤px للجداول">
+          <Section
+            title="نفس الشارات على لوحة الهوية"
+            note="variant=inverse — بتحلّ من --ds-on-brand، فبتنقلب مع السمة لوحدها"
+          >
+            <div
+              className="rounded-[16px] p-4 flex gap-2 flex-wrap"
+              style={{
+                backgroundImage: 'linear-gradient(to bottom right, var(--ds-brand), var(--ds-brand-2))',
+                color: 'var(--ds-on-brand)',
+              }}
+            >
+              <Badge variant="inverse" tone="success" icon={<Check className="w-3.5 h-3.5" />}>مؤكد</Badge>
+              <Badge variant="inverse" tone="warning" icon={<Clock className="w-3.5 h-3.5" />}>بانتظار الدفع</Badge>
+              <Badge variant="inverse" tone="danger" icon={<X className="w-3.5 h-3.5" />}>ملغي</Badge>
+              <Badge variant="inverse" tone="info">جديد</Badge>
+              <Badge variant="inverse">مستخدم</Badge>
+            </div>
+          </Section>
+
+          <Section title="الأزرار" note="٤٤px ارتفاع · ١٤px/٧٠٠ خط · المضغوط ٤٠px بنفس الخط">
             <div className="flex gap-2 flex-wrap items-start">
               <Button>احجز الآن</Button>
               <Button variant="secondary">إلغاء</Button>

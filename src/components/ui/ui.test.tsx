@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import React from 'react';
 import { Button, Card, Input, Badge, EmptyState, Skeleton, SkeletonGroup } from './index';
 
@@ -20,6 +22,25 @@ describe('Button', () => {
     // The compact variant exists for dense admin tables, not touch screens.
     rerender(<Button compact>احجز</Button>);
     expect(cls(screen.getByRole('button'))).toContain('min-h-10');
+  });
+
+  it('labels at 14px/700 in BOTH densities', () => {
+    // The spec is 44px tall, 14px/700, 16px padding, 12px radius. The default
+    // size had drifted to 16px with nothing depending on it, and that extra
+    // 2px is what pushed a six-word Arabic label onto two lines inside a
+    // half-width button. Density is height and padding; it is never a reason
+    // to add a font size. Nothing here may become 13px either — the scale is
+    // 11/12/14/16/20 and buttons live at 14.
+    const { rerender } = render(<Button>احجز</Button>);
+    let c = cls(screen.getByRole('button'));
+    expect(c).toContain('text-[14px]');
+    expect(c).toContain('font-bold');
+    expect(c).not.toContain('text-[16px]');
+
+    rerender(<Button compact>احجز</Button>);
+    c = cls(screen.getByRole('button'));
+    expect(c).toContain('text-[14px]');
+    expect(c).not.toMatch(/text-\[1[023]px\]/);
   });
 
   it('uses logical horizontal padding so RTL needs no override', () => {
@@ -168,6 +189,46 @@ describe('Badge', () => {
     const style = screen.getByText('ملغي').getAttribute('style') ?? '';
     expect(style).toContain('--ds-danger');
     expect(style).toContain('color-mix');
+  });
+
+  describe('the inverse variant, for badges on the identity panel', () => {
+    it('leaves the light-surface badge exactly as it was', () => {
+      const { unmount } = render(<Badge tone="success">مؤكد</Badge>);
+      const before = screen.getByText('مؤكد').getAttribute('style') ?? '';
+      unmount();
+      render(<Badge tone="success" variant="default">مؤكد</Badge>);
+      // Naming the default explicitly must be a no-op, or the variant has
+      // changed the appearance of every badge already in the app.
+      expect(screen.getByText('مؤكد').getAttribute('style')).toBe(before);
+    });
+
+    it('resolves entirely through --ds-on-brand, so it inverts per theme', () => {
+      render(<Badge variant="inverse">مستخدم</Badge>);
+      const style = screen.getByText('مستخدم').getAttribute('style') ?? '';
+      // Every one of the three expressions reads the same role. That is what
+      // makes it theme-agnostic: whichever colour a theme says is legible on
+      // its panel, the chip is a wash of that colour and the text IS it.
+      expect(style).toContain('--ds-on-brand');
+      // The light-surface inks are tuned for a pale wash on a light page and
+      // disappear on a dark panel, so they must not leak in here.
+      expect(style).not.toContain('--ds-text');
+    });
+
+    it('keeps the tone readable by pulling it toward the panel, not past it', () => {
+      render(<Badge variant="inverse" tone="warning">بانتظار</Badge>);
+      const style = screen.getByText('بانتظار').getAttribute('style') ?? '';
+      // The hue survives in the text; the chip itself stays neutral.
+      expect(style).toContain('--ds-warning');
+      expect(style).toContain('--ds-on-brand');
+    });
+
+    it('contains no theme branching anywhere in the source', () => {
+      const src = readFileSync(join(process.cwd(), 'src', 'components', 'ui', 'Badge.tsx'), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+      expect(src).not.toMatch(/\bdark\b/i);
+      expect(src).not.toMatch(/owner|admin|entertainment|play/i);
+      expect(src).not.toMatch(/#[0-9A-Fa-f]{6}\b/);
+    });
   });
 });
 

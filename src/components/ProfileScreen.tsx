@@ -8,7 +8,7 @@ import RewardsDashboard from './RewardsDashboard';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { setEmailOptOut } from '../lib/db';
 import WebPushToggle from './WebPushToggle';
-import { Button, Card, Input } from './ui';
+import { Badge, Button, Card, Input } from './ui';
 
 /**
  * THE FIRST SCREEN ON THE DESIGN SYSTEM.
@@ -27,10 +27,10 @@ import { Button, Card, Input } from './ui';
  *
  * ON WHAT DID NOT BECOME A COMPONENT: the switch rows, the stat tiles and the
  * back arrow are still hand-built. A stat tile is a tappable figure, not a
- * card; a switch row is a list item, not a button; and Badge has no variant
- * that survives on a dark brand panel, so the role chip in the hero stayed as
- * it was. Forcing any of the three would have meant redesigning the screen to
- * suit the toolkit, which is backwards.
+ * card, and a switch row is a list item, not a button. Forcing either would
+ * have meant redesigning the screen to suit the toolkit, which is backwards.
+ * The role chip in the hero DID become a Badge once the inverse variant
+ * existed — it was the use case that prompted it.
  */
 
 interface ProfileScreenProps {
@@ -456,9 +456,10 @@ export default function ProfileScreen({
         <div className="text-center">
           <h2 className="text-[16px] font-black">{currentUser.name}</h2>
           <p className="text-[11px] mt-0.5 opacity-70">{currentUser.email}</p>
-          {/* Not a Badge: every Badge tone is built for a light surface, and
-              its neutral would disappear into this panel. */}
-          <span className="inline-block mt-2 text-[11px] font-bold bg-white/10 border border-white/15 px-3 py-1 rounded-full">{roleLabel}</span>
+          {/* Was a hand-built pill, because every Badge tone was built for a
+              light surface and its neutral vanished here. Badge now has the
+              inverse variant for exactly this: 10.30:1 on the guest panel. */}
+          <Badge variant="inverse" className="mt-2">{roleLabel}</Badge>
         </div>
         <button
           onClick={() => setView('personal')}

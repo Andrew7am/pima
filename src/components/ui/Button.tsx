@@ -27,8 +27,10 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-quiet';
 
 export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'className'> {
   variant?: Variant;
-  /** 14px/40px instead of 16px/44px. For table rows and dense admin surfaces
-   *  ONLY — never on a touch-first screen, where 44px is the floor. */
+  /** 40px tall with 12px padding instead of 44px with 16px. The LABEL does
+   *  not change — every button in the system is 14px/700. For table rows and
+   *  dense admin surfaces ONLY; never on a touch-first screen, where 44px is
+   *  the floor. */
   compact?: boolean;
   /** Swaps the label for a spinner and blocks the click. Keeps the button's
    *  width so the row does not reflow mid-request. */
@@ -80,9 +82,15 @@ export default function Button({
   style,
   ...rest
 }: ButtonProps) {
+  // 14px/700 in BOTH densities. This was 16px in the default size, which was
+  // drift from the approved spec rather than a decision — nothing depended on
+  // it, and it was what pushed "تأكيد الحذف النهائي" onto two lines inside a
+  // 151px button on a 375px screen. Density is a matter of height and padding;
+  // it is never a reason to add a font size. The scale is 11/12/14/16/20 and
+  // buttons live at 14.
   const size = compact
-    ? 'min-h-10 ps-3 pe-3 text-[14px]'
-    : 'min-h-11 ps-4 pe-4 text-[16px]';
+    ? 'min-h-10 ps-3 pe-3'
+    : 'min-h-11 ps-4 pe-4';
 
   // A destructive button that focuses to a green-olive ring is telling the
   // keyboard user the wrong thing about what they are about to press.
@@ -98,7 +106,8 @@ export default function Button({
       aria-busy={loading || undefined}
       style={{ ...VARIANT_STYLE[variant], ...style }}
       className={[
-        'inline-flex items-center justify-center gap-2 rounded-[12px] font-bold',
+        // The spec, in one line: 12px radius, 8px gap, 14px/700 label.
+        'inline-flex items-center justify-center gap-2 rounded-[12px] font-bold text-[14px]',
         // background-color is deliberately NOT transitioned.
         //
         // Its value comes from var(--ds-primary), and an UNREGISTERED custom

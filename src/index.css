@@ -93,6 +93,15 @@
   --color-owner-warning: #F59E0B;
   --color-owner-danger: #EF4444;
   --color-owner-info: #3B82F6;
+  /* The identity panel, and DELIBERATELY not redefined in the night block.
+     It was first bound to --color-owner-primary, which night mode flips to a
+     bright #4F86E8 — so the one surface that exists to stay recognisable went
+     light exactly when the rest of the UI went dark, and a badge on it dropped
+     to 1.5:1. A branded panel is already dark in day mode; night mode has
+     nothing to invert. */
+  --color-owner-panel: #0F2748;
+  --color-owner-panel-2: #0A1B32;
+  --color-owner-on-panel: #FFFFFF;   /* on #0F2748 — 14.90:1 */
   /* The four above are fills — bright enough to sit behind white text on a
      button, too bright to BE the text on a white card (#F59E0B measures
      2.2:1). The -ink pair is the same four hues at a readable weight, for
@@ -293,12 +302,12 @@
   --ds-accent: var(--color-owner-accent);
   --ds-on-accent: var(--color-owner-on-accent);
 
-  /* The owner's identity panel is its own navy, one step deeper for the
-     gradient. In night mode -primary and -on-primary swap to the light pair
-     automatically, and the panel inverts with them. */
-  --ds-brand: var(--color-owner-primary);
-  --ds-brand-2: var(--color-owner-primary-hover);
-  --ds-on-brand: var(--color-owner-on-primary);
+  /* The owner's identity panel: its navy, one step deeper for the gradient.
+     Bound to the -panel tokens, NOT to -primary, because -primary inverts at
+     night and this must not. See the note beside them. */
+  --ds-brand: var(--color-owner-panel);
+  --ds-brand-2: var(--color-owner-panel-2);
+  --ds-on-brand: var(--color-owner-on-panel);
 
   --ds-success: var(--color-owner-success);
   --ds-on-success: var(--color-owner-on-success);
