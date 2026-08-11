@@ -73,7 +73,27 @@ export default function Button({
       aria-busy={loading || undefined}
       className={[
         'inline-flex items-center justify-center gap-2 rounded-[12px] font-bold',
-        'transition-[transform,background-color,filter] duration-150',
+        // background-color is deliberately NOT transitioned.
+        //
+        // Its value comes from var(--ds-primary), and an UNREGISTERED custom
+        // property cannot be interpolated. When the theme class changes on an
+        // ancestor the variable changes, Chrome starts a background-color
+        // transition it can never resolve, and the button keeps painting the
+        // OLD theme's colour indefinitely — not for 150ms, permanently.
+        //
+        // Found in the showcase: switching themes moved every page, card and
+        // label colour while the primary button stayed olive in all five.
+        // `transition: none` on the element corrected it instantly, which is
+        // what identified the cause. This is not cosmetic — the owner's
+        // dark-mode toggle flips .owner-dark on live elements, so shipping
+        // this would have frozen every button at its pre-toggle colour.
+        //
+        // The cost is that the hover background on secondary/ghost now
+        // changes instantly. transform and filter still animate, and
+        // hover:brightness-110 (a filter) carries the primary's hover feel.
+        // The alternative — registering all 20 roles with @property so they
+        // become interpolatable — is available if the fade is missed.
+        'transition-[transform,filter] duration-150',
         'active:scale-[0.97] cursor-pointer',
         'focus-visible:outline-none focus-visible:ring-2',
         'focus-visible:ring-[var(--ds-primary)] focus-visible:ring-offset-2',

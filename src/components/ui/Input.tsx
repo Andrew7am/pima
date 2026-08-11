@@ -62,7 +62,14 @@ export default function Input({
           'min-h-11 ps-3 pe-3 rounded-[12px] text-[14px] w-full',
           'bg-[var(--ds-surface)] text-[var(--ds-text)]',
           'placeholder:text-[var(--ds-text-faint)]',
-          'border transition-colors duration-150 outline-none',
+          // No transition-colors here, for the same reason Button does not
+          // transition background-color: border-color reads var(--ds-border)
+          // and var(--ds-primary), and a transition on a property fed by an
+          // unregistered custom property never resolves when that property
+          // changes — the field would keep its previous theme's border after
+          // the owner's dark-mode toggle. The focus border now snaps, which
+          // is the correct trade against a permanently stale one.
+          'border outline-none',
           hasError
             ? 'border-[var(--ds-danger)] focus:border-[var(--ds-danger)]'
             : 'border-[var(--ds-border)] focus:border-[var(--ds-primary)]',
