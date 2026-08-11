@@ -29,6 +29,8 @@ export interface ServantSignupValues {
   passwordConfirm: string;
   governorate: string;
   address: string;
+  /** Owner only — the house or company the account represents. */
+  orgName: string;
   diocese: string;
   church: string;
   serviceType: string;
@@ -41,11 +43,11 @@ export interface ServantSignupValues {
  * individual is asked where they live. Step one is identical for both, which
  * is why this is one component and not two files drifting apart.
  */
-export type SignupRole = 'servant' | 'individual';
+export type SignupRole = 'servant' | 'individual' | 'owner';
 
 export const EMPTY_SERVANT_SIGNUP: ServantSignupValues = {
   name: '', email: '', phone: '', birthDate: '', password: '', passwordConfirm: '',
-  governorate: '', address: '', diocese: '', church: '', serviceType: '', priestName: '', inviteCode: '',
+  governorate: '', address: '', orgName: '', diocese: '', church: '', serviceType: '', priestName: '', inviteCode: '',
 };
 
 /** Known and finite — these are the services a Coptic church actually runs. */
@@ -186,8 +188,9 @@ export default function ServantSignupForm({
 }: Props) {
   const [step, setStep] = useState<1 | 2>(1);
   const servant = role === 'servant';
-  const roleWord = servant ? 'خادم' : 'فرد';
-  const stepTwoLabel = servant ? 'بيانات الخدمة' : 'العنوان والإقامة';
+  const owner = role === 'owner';
+  const roleWord = servant ? 'خادم' : owner ? 'مالك أو مسؤول المكان' : 'فرد';
+  const stepTwoLabel = servant ? 'بيانات الخدمة' : owner ? 'بيانات المكان' : 'العنوان والإقامة';
   const set = (k: keyof ServantSignupValues) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => onChange({ [k]: e.target.value } as Partial<ServantSignupValues>);
@@ -236,7 +239,9 @@ export default function ServantSignupForm({
               إنشاء حساب <span style={{ color: GOLD }}>{roleWord}</span>
             </h1>
             <p className="text-[12.5px] mt-1" style={{ color: MUTED }}>
-              {servant ? 'خطوتين بسيطتين لبداية رحلتك معنا' : 'خطوتين بسيطتين ونبدأ رحلتك معنا'}
+              {servant ? 'خطوتين بسيطتين لبداية رحلتك معنا'
+                : owner ? 'خطوتين بسيطتين لبدء إدارة بيتك معنا'
+                : 'خطوتين بسيطتين ونبدأ رحلتك معنا'}
             </p>
             <svg width="120" height="12" viewBox="0 0 150 14" fill="none" aria-hidden="true" className="mx-auto mt-1">
               <path d="M8 7h58M84 7h58" stroke={GOLD} strokeWidth="1" strokeLinecap="round" opacity=".55" />
@@ -255,7 +260,7 @@ export default function ServantSignupForm({
           {step === 1 ? (
             <form className={card} style={{ borderColor: LINE }}
               onSubmit={(e) => { e.preventDefault(); setStep(2); }}>
-              <SectionHead title="معلوماتك الشخصية" icon={IconUser} />
+              <SectionHead title={owner ? 'بيانات مالك أو مسؤول المكان' : 'معلوماتك الشخصية'} icon={IconUser} />
               <TextField label="الاسم بالكامل" required placeholder="الاسم بالكامل كما بظهر في البطاقة"
                 value={values.name} onChange={set('name')} />
               <TextField label="البريد الإلكتروني" type="email" required placeholder="example@church.eg"
@@ -311,16 +316,29 @@ export default function ServantSignupForm({
             <form className={card} style={{ borderColor: LINE }}
               onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
               <SectionHead
-                title={servant ? 'بيانات الخدمة' : 'العنوان والإقامة'}
-                hint={servant ? 'يرجى إدخال بيانات خدمتك الحالية' : 'فين ساكن، وكنيستك — عشان نرشّح لك الأقرب'}
+                title={servant ? 'بيانات الخدمة' : owner ? 'بيانات المكان' : 'العنوان والإقامة'}
+                hint={servant ? 'يرجى إدخال بيانات خدمتك الحالية'
+                  : owner ? undefined
+                  : 'فين ساكن، وكنيستك — عشان نرشّح لك الأقرب'}
                 icon={IconUser} />
+
+              {owner && (
+                <TextField label="اسم بيت المؤتمرات / المكان" required
+                  placeholder="مثال: بيت المؤتمرات مارمرقس"
+                  value={values.orgName} onChange={set('orgName')} />
+              )}
 
               <SelectField label="المحافظة" placeholder="اختر المحافظة" options={governorates} required
                 value={values.governorate}
                 onChange={(e) => onChange({ governorate: e.target.value, diocese: '' })} />
 
               {!servant && (
-                <TextField label="العنوان بالكامل (اختياري)" placeholder="مثال: مدينة شبين الكوم، قرية ميت حبيش"
+                <TextField
+                  label={owner ? 'العنوان بالتفصيل' : 'العنوان بالكامل (اختياري)'}
+                  required={owner}
+                  placeholder={owner
+                    ? 'اكتب العنوان بالتفصيل (الشارع - المنطقة - المعلم القريب)'
+                    : 'مثال: مدينة شبين الكوم، قرية ميت حبيش'}
                   value={values.address} onChange={set('address')} />
               )}
 
@@ -335,9 +353,14 @@ export default function ServantSignupForm({
                   value={values.diocese} onChange={set('diocese')} />
               )}
 
-              <TextField label="الكنيسة" required={servant} placeholder="مثال: كنيسة الأنبا أنطونيوس"
+              <TextField
+                label={owner ? 'اسم الكنيسة / الجهة التابعة (اختياري)' : 'الكنيسة'}
+                required={servant}
+                placeholder={owner ? 'مثال: كنيسة الشهيد مارجرجس' : 'مثال: كنيسة الأنبا أنطونيوس'}
                 value={values.church} onChange={set('church')} />
-              <TextField label="اسم راعي الكنيسة" placeholder="مثال: القس مرقس جرجس"
+              <TextField
+                label={owner ? 'اسم الأب الكاهن المسؤول (اختياري)' : 'اسم راعي الكنيسة'}
+                placeholder={owner ? 'مثال: أبونا يوحنا غالي' : 'مثال: القس مرقس جرجس'}
                 value={values.priestName} onChange={set('priestName')} />
               {servant && (
                 <SelectField label="الخدمة الحالية" placeholder="اختر خدمتك الحالية" options={SERVICE_TYPES} required
@@ -359,13 +382,18 @@ export default function ServantSignupForm({
                   السابق
                 </button>
                 <button type="submit" disabled={submitting}
-                  className="flex-1 rounded-2xl py-3 text-[14px] font-black text-white flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                  className="flex-1 rounded-2xl py-3 text-[13.5px] font-black text-white flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                   style={{ backgroundColor: NAVY }}>
-                  {submitting ? 'جاري الإنشاء…' : 'إنشاء الحساب'}
+                  {submitting ? 'جاري الإنشاء…'
+                    : owner ? 'تسجيل الحساب وإرسال طلب المراجعة' : 'إنشاء الحساب'}
                 </button>
               </div>
-              <p className="text-center text-[10.5px]" style={{ color: MUTED }}>
-                🔒 بياناتك آمنة ولن تتم مشاركتها مع أي جهة خارجية
+              {/* An owner's account is not live on submit — saying so here is
+                  cheaper than an owner waiting on bookings that cannot arrive. */}
+              <p className="text-center text-[10.5px] leading-relaxed" style={{ color: MUTED }}>
+                {owner
+                  ? '🛡️ سيتم مراجعة بيانات بيتك من فريق بيما قبل تفعيل حسابك واستقبال الحجوزات.'
+                  : '🔒 بياناتك آمنة ولن تتم مشاركتها مع أي جهة خارجية'}
               </p>
             </form>
           )}

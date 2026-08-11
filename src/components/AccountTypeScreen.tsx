@@ -274,7 +274,9 @@ function PaginationIndicator({ active = 1, count = 3 }: { active?: number; count
 
 /* ── screen ───────────────────────────────────────────────────────────── */
 
-export default function AccountTypeScreen({ onSelect }: { onSelect: (role: AccountRole) => void }) {
+export default function AccountTypeScreen(
+  { onSelect, onBack }: { onSelect: (role: AccountRole) => void; onBack?: () => void },
+) {
   return (
     <div
       dir="rtl"
@@ -310,7 +312,21 @@ export default function AccountTypeScreen({ onSelect }: { onSelect: (role: Accou
             of the background that sits low enough for them to cover. */}
         <div className="relative flex flex-col gap-6 px-[9.5%] pt-[max(1.25rem,env(safe-area-inset-top))] pb-2">
           {/* start = right under dir="rtl", which is where the reference puts it */}
-          <div className="flex justify-start">
+          {/* This screen had no way out. Arriving here from «إنشاء حساب جديد»
+              left the only exit as the browser's own back button, which on a
+              phone-shaped web app most people never think to reach for. */}
+          <div className="flex items-start justify-between">
+            {onBack ? (
+              <button type="button" onClick={onBack} aria-label="رجوع لتسجيل الدخول"
+                className="w-9 h-9 rounded-full bg-white/85 border grid place-items-center cursor-pointer
+                           focus-visible:outline-2 focus-visible:outline-offset-2"
+                style={{ borderColor: '#D6D6C2', color: NAVY, outlineColor: GOLD }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M14.5 5 8 12l6.5 7" stroke="currentColor" strokeWidth="2.2"
+                        strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            ) : <span />}
             <PimaLogoHeader />
           </div>
           <WelcomeHeader />

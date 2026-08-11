@@ -421,6 +421,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
     return (
       <AccountTypeScreen
         onSelect={(role) => { setSelectedRole(role); setRoleChosen(true); setError(''); }}
+        onBack={() => { setIsRegisterMode(false); setError(''); }}
       />
     );
   }
@@ -430,17 +431,17 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   // only the presentation differs, so nothing about what reaches Supabase
   // changes. The other two roles keep the existing form until they get their
   // own design.
-  if (isRegisterMode && roleChosen && (selectedRole === 'servant' || selectedRole === 'individual') && !confirmEmail) {
+  if (isRegisterMode && roleChosen && !confirmEmail) {
     return (
       <ServantSignupForm
-        role={selectedRole === 'servant' ? 'servant' : 'individual'}
+        role={selectedRole === 'servant' ? 'servant' : selectedRole === 'owner' ? 'owner' : 'individual'}
         governorates={GOVERNORATES}
         diocesesByGovernorate={diocesesByGov}
         submitting={loading}
         error={error}
         values={{
           name, email, phone, birthDate: dateOfBirth, password, passwordConfirm,
-          governorate, address, diocese, church: churchName, serviceType,
+          governorate, address, orgName, diocese, church: churchName, serviceType,
           priestName, inviteCode: referralCode,
         }}
         onChange={(p) => {
@@ -452,6 +453,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
           if (p.passwordConfirm !== undefined) setPasswordConfirm(p.passwordConfirm);
           if (p.governorate !== undefined) setGovernorate(p.governorate);
           if (p.address !== undefined) setAddress(p.address);
+          if (p.orgName !== undefined) setOrgName(p.orgName);
           if (p.diocese !== undefined) setDiocese(p.diocese);
           if (p.church !== undefined) setChurchName(p.church);
           if (p.serviceType !== undefined) setServiceType(p.serviceType);
