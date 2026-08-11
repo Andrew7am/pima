@@ -2,7 +2,15 @@
 @import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
 
-@theme {
+/* `static` because this block is a design-token layer, not just a palette for
+   utility generation. By default @theme tree-shakes: a variable nothing
+   references yet is dropped from the output entirely. That is fine for colours
+   Tailwind turns into classes, but wrong for tokens added ahead of the screens
+   that will consume them — `var(--color-natural-ink)` would resolve to nothing
+   and the rule would silently do nothing. Caught by reading the built CSS:
+   every newly added token was absent while the older ones survived, purely
+   because the old ones happened to be referenced already. */
+@theme static {
   --font-sans: "Cairo", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
@@ -14,6 +22,50 @@
   --color-natural-secondary: #867E65;
   --color-natural-accent: #C5BCA0;
   --color-natural-hover: #E7E2D5;
+
+  /* ── Guest palette, part two: the colours the screens actually use ────────
+     The eight tokens above are real and in use — but only in the app shell
+     (WebLayout, InteractiveMap). The 300+ guest screens were built before
+     them and carry a second, warmer family as literal hex: #4A4A3A for text
+     (429 uses) where the shell says #2D2D24 (113), #D6D6C2 for rules (392)
+     where the shell says #E7E5DB (56), and so on.
+
+     Both families are genuinely in use, so neither is "wrong" and changing
+     the values above would repaint the shell without unifying anything. The
+     honest fix is to NAME the second family too, so the hex→token migration
+     has a correct target for every existing usage rather than one that
+     silently shifts the colour. Nothing above is modified. */
+  --color-natural-ink: #4A4A3A;         /* body text — 429 uses */
+  --color-natural-ink-muted: #8A8A70;   /* secondary text — 581 uses */
+  --color-natural-ink-faint: #B5AF98;   /* de-emphasised text */
+  --color-natural-rule: #D6D6C2;        /* card + divider borders — 392 uses */
+  --color-natural-olive: #5A5A40;       /* primary action — 275 uses */
+  --color-natural-gold: #C5A059;        /* accent / emphasis — 224 uses */
+  --color-natural-surface: #FFFFFF;     /* card surface */
+  --color-natural-raised: #F3F0E8;      /* grouped/inset surface */
+
+  /* ── Semantic status colours for the guest theme ──────────────────────────
+     The owner theme has had these since its own migration; the guest screens
+     have been spelling them out per-component. Same split it uses: the plain
+     token is a FILL (a button background), the -ink pair is the same meaning
+     when the colour is the glyph on a light surface. */
+  --color-natural-success: #2E7D5B;
+  --color-natural-warning: #B4761A;
+  --color-natural-danger: #B4423A;
+  --color-natural-success-ink: #1F5B41;
+  --color-natural-warning-ink: #8A5A14;
+  --color-natural-danger-ink: #8C332C;
+
+  /* ── Foreground pairs — measured, not assumed ─────────────────────────────
+     Every value below is the one that CLEARS 4.5:1 against its fill; the
+     losing option is recorded beside it because "white on the brand colour"
+     is the assumption that fails most often. Gold is the clearest case: white
+     on #C5A059 measures 2.46:1, dark measures 7.11:1. */
+  --color-natural-on-primary: #FFFFFF;  /* on #5A5A40 — 7.07:1 (dark: 2.47) */
+  --color-natural-on-accent: #1A1A14;   /* on #C5A059 — 7.11:1 (white: 2.46) */
+  --color-natural-on-success: #FFFFFF;  /* on #2E7D5B — 5.00:1 (dark: 3.50) */
+  --color-natural-on-warning: #1A1A14;  /* on #B4761A — 4.62:1 (white: 3.79) */
+  --color-natural-on-danger: #FFFFFF;   /* on #B4423A — 5.55:1 (dark: 3.15) */
 
   /* Owner dashboard-only theme (navy/gold) — scoped via the .owner-theme
      wrapper class, never applied to body, so guest-facing screens keep
@@ -49,6 +101,63 @@
   --color-owner-danger-ink: #B91C1C;
   --color-owner-info-ink: #1D4ED8;
   --color-owner-accent-ink: #8A6D28;
+
+  /* ── Owner foreground pairs ───────────────────────────────────────────────
+     on-primary already existed (see the note above it) and was right to. The
+     other four fills never got the same treatment, and measuring them shows
+     why they needed it: white on the owner's own success green is 2.28:1, on
+     its amber 2.15:1, on its gold 2.39:1 — all far under AA. These are the
+     dark counterparts, each measured against its fill.
+
+     Note these are NOT the -ink set above. -ink is the colour AS TEXT on a
+     light card; -on-* is the text ON the colour when the colour is the
+     button. Same four hues, opposite jobs. */
+  --color-owner-on-accent: #1A1A14;   /* on #C8A25A — 7.30:1 (white: 2.39) */
+  --color-owner-on-success: #1A1A14;  /* on #22C55E — 7.67:1 (white: 2.28) */
+  --color-owner-on-warning: #1A1A14;  /* on #F59E0B — 8.14:1 (white: 2.15) */
+  --color-owner-on-danger: #1A1A14;   /* on #EF4444 — 4.64:1 (white: 3.76) */
+
+  /* ── Entertainment ────────────────────────────────────────────────────────
+     Slate/indigo stays — it is the one area that should not feel like
+     booking. Two additions only.
+
+     indigo-action exists because the current #6366F1 cannot legally hold a
+     label: white on it is 4.47:1 and dark is 3.91:1, so BOTH fail AA and no
+     foreground rescues it. #4F46E5 carries white at 6.29:1. The original hue
+     stays available as indigo-glow for text, borders and glows on dark
+     surfaces, where it was always fine.
+
+     Gold is the single thread back to Pima: it is what winning looks like,
+     and it is already legible on these grounds — 7.08:1 on #151A26. */
+  --color-play-surface: #151A26;
+  --color-play-raised: #1E2536;
+  --color-play-border: #2E3852;
+  --color-play-text-muted: #8E9BB5;
+  --color-play-indigo-action: #4F46E5;  /* button fill — white 6.29:1 */
+  --color-play-indigo-glow: #6366F1;    /* text/border/glow on dark only */
+  --color-play-on-indigo: #FFFFFF;
+  --color-play-gold: #C5A059;           /* 7.08:1 on #151A26 */
+  --color-play-gold-bright: #F5C542;    /* 10.72:1 on #151A26 */
+
+  /* ── Spacing · radius · shadow ────────────────────────────────────────────
+     Named so components stop inventing values. The scale is 4px, and these
+     are the six steps the existing screens already cluster around. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Three levels, replacing the eight in circulation. */
+  --shadow-subtle: 0 1px 2px rgba(45, 45, 36, 0.06);
+  --shadow-medium: 0 2px 8px rgba(45, 45, 36, 0.08);
+  --shadow-elevated: 0 8px 24px rgba(45, 45, 36, 0.12);
 }
 
 body {
@@ -138,6 +247,14 @@ body {
   --color-owner-danger-ink: #F87171;
   --color-owner-info-ink: #60A5FA;
   --color-owner-accent-ink: #D4AF37;
+  /* The fills above are all lighter in night mode, so every foreground on
+     them is the page ground rather than white — measured against #0C1424:
+     success 9.57:1, warning 11.02:1, danger 6.65:1, accent 8.75:1. White
+     would give 1.92 / 1.67 / 2.77 / 2.10, i.e. illegible on all four. */
+  --color-owner-on-accent: #0C1424;
+  --color-owner-on-success: #0C1424;
+  --color-owner-on-warning: #0C1424;
+  --color-owner-on-danger: #0C1424;
   background-color: var(--color-owner-bg);
   color: var(--color-owner-text);
 }
