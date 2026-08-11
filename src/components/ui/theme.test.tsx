@@ -47,9 +47,12 @@ const ROLES = [
   // Added by the first real-screen migration: the dark identity panel. A role
   // only one theme binds is not a role, so all four bind it.
   'brand', 'brand-2', 'on-brand',
-  'success', 'on-success', 'success-ink',
-  'warning', 'on-warning', 'warning-ink',
-  'danger', 'on-danger', 'danger-ink',
+  // Added ahead of the bookings migration. -deep is the far end of the gold
+  // gradient and the heading inside a status surface; -soft is the pale rim.
+  'accent-deep', 'accent-soft',
+  'success', 'on-success', 'success-ink', 'success-deep',
+  'warning', 'on-warning', 'warning-ink', 'warning-deep',
+  'danger', 'on-danger', 'danger-ink', 'danger-deep',
 ];
 
 const THEMES = [':root', '.owner-theme', '.admin-theme', '.play-theme'];
@@ -81,7 +84,7 @@ describe('components are theme-agnostic', () => {
 });
 
 describe('every theme binds every role', () => {
-  it.each(THEMES)('%s defines all 23 roles', (selector) => {
+  it.each(THEMES)('%s defines all 28 roles', (selector) => {
     const b = block(selector);
     const missing = ROLES.filter((r) => !b.includes(`--ds-${r}:`));
     expect(missing, `${selector} is missing: ${missing.join(', ')}`).toEqual([]);
@@ -107,6 +110,61 @@ describe('every theme binds every role', () => {
     for (const t of ['.owner-theme', '.admin-theme', '.play-theme']) {
       expect(CSS.indexOf(`\n${t} {`), t).toBeGreaterThan(root);
     }
+  });
+});
+
+describe('the deep tier reverses direction on a dark theme', () => {
+  // The trap this guards: -deep reads as "a darker shade", and on the guest
+  // and owner-day themes it is. On a dark theme the status surface is dark
+  // too, so a darker heading vanishes into it — reusing the light-mode
+  // #14532D measures about 1.2:1 there. Night mode and the games therefore
+  // bind PALE values to the same role. Anyone "tidying up" the duplication by
+  // pointing all four themes at one literal would break exactly this.
+
+  const lum = (hexColour: string) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hexColour.slice(i, i + 2), 16));
+    const ch = (c: number) => {
+      const s = c / 255;
+      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
+  };
+  /** The literal value of a --color-* token, wherever it is declared last. */
+  const value = (token: string) => {
+    const hits = [...CSS_CODE.matchAll(new RegExp(`${token}:\\s*(#[0-9A-Fa-f]{6})`, 'g'))];
+    if (!hits.length) throw new Error(`no value for ${token}`);
+    return hits[hits.length - 1][1];
+  };
+
+  it('goes darker than its base on the light themes', () => {
+    for (const [base, deep] of [
+      ['--color-natural-success', '--color-natural-success-deep'],
+      ['--color-natural-warning', '--color-natural-warning-deep'],
+      ['--color-natural-danger', '--color-natural-danger-deep'],
+    ]) {
+      expect(lum(value(deep)), `${deep} must be darker than ${base}`)
+        .toBeLessThan(lum(value(base)));
+    }
+  });
+
+  it('goes lighter than its base in the games, where the surface is dark', () => {
+    for (const [base, deep] of [
+      ['--color-play-success-deep', '--color-play-text'],
+      ['--color-play-warning-deep', '--color-play-text'],
+    ]) {
+      // Both are pale; the point is simply that they are nowhere near the
+      // dark end, which a copied light-mode value would be.
+      expect(lum(value(base)), `${base} must be a pale value on a dark ground`)
+        .toBeGreaterThan(0.25);
+    }
+  });
+
+  it('never lets -soft be mistaken for a text colour', () => {
+    // -soft is a decorative rim at ~1.5:1. It is in the system on the explicit
+    // condition that nothing reads it as a foreground, so it carries no
+    // measured on-* pair and none should be added.
+    expect(CSS_CODE).not.toMatch(/--ds-on-accent-soft/);
+    expect(CSS_CODE).not.toMatch(/--color-\w+-(gold|accent)-soft-ink/);
   });
 });
 

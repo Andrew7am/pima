@@ -66,6 +66,25 @@
   --color-natural-warning-ink: #8A5A14;
   --color-natural-danger-ink: #8C332C;
 
+  /* A THIRD tier, for the heading INSIDE a status surface. -ink is the colour
+     of a semantic glyph on the page; on a 10% wash of its own hue it is still
+     legible but no longer authoritative, and a card that says "الحجز مؤكّد"
+     over a mint background needs a weight the body text does not have. Guest
+     screens were spelling these out as emerald-900 / amber-900 / rose-950.
+     Measured on their own 10% tint: 10.72 / 9.08 / 10.78. */
+  --color-natural-success-deep: #0F3D2A;
+  --color-natural-warning-deep: #5C3A0A;
+  --color-natural-danger-deep: #5E1F1A;
+
+  /* The gold beyond the flat accent. The booking screen's signature control is
+     a GRADIENT — #C9A96A → #B8944E — and one flat token cannot express it, so
+     the far end becomes a role of its own rather than being averaged away.
+     -soft is the pale gold on the rim of a status surface and under a hover;
+     it is DECORATIVE and must never carry text or be the only signal, which
+     is why it is not held to 4.5:1 (it measures 1.56:1 on white, by design). */
+  --color-natural-gold-deep: #B8944E;   /* dark ink on it — 6.14:1 */
+  --color-natural-gold-soft: #E3CD9F;   /* decorative rim only */
+
   /* ── Foreground pairs — measured, not assumed ─────────────────────────────
      Every value below is the one that CLEARS 4.5:1 against its fill; the
      losing option is recorded beside it because "white on the brand colour"
@@ -93,6 +112,14 @@
   --color-owner-warning: #F59E0B;
   --color-owner-danger: #EF4444;
   --color-owner-info: #3B82F6;
+  /* Third tier + the gold beyond the accent — see the guest block for what
+     each is for. These four ARE redefined for night mode, because a heading
+     on a dark tinted surface has to go lighter, not darker. */
+  --color-owner-success-deep: #14532D;
+  --color-owner-warning-deep: #78350F;
+  --color-owner-danger-deep: #7F1D1D;
+  --color-owner-accent-deep: #A8823E;   /* dark ink on it — 4.93:1 */
+  --color-owner-accent-soft: #E6D2A8;   /* decorative rim only */
   /* The identity panel, and DELIBERATELY not redefined in the night block.
      It was first bound to --color-owner-primary, which night mode flips to a
      bright #4F86E8 — so the one surface that exists to stay recognisable went
@@ -163,6 +190,14 @@
   --color-play-on-gold: #1A1408;        /* 7.45:1 — dark ink, never white */
   --color-play-indigo: #8B8CF7;         /* supporting accent — 5.77:1 */
   --color-play-indigo-glow: #6366F1;    /* decoration only, never text */
+  /* Gold's far end and its rim. Dark room, so -soft is a warm ember lifted
+     off the surface rather than a pale wash. */
+  --color-play-gold-deep: #C99A22;      /* dark ink on it — 7.08:1 */
+  --color-play-gold-soft: #4A3A1E;      /* decorative rim only */
+  /* Deep tier, lighter than its base — same reason as owner night. */
+  --color-play-success-deep: #6EE7B7;
+  --color-play-warning-deep: #FDE68A;
+  --color-play-danger-deep: #FCA5A5;
 
   /* ── Spacing · radius · shadow ────────────────────────────────────────────
      Named so components stop inventing values. The scale is 4px, and these
@@ -258,6 +293,9 @@
   --ds-on-primary: var(--color-natural-on-primary);
   --ds-accent: var(--color-natural-gold);
   --ds-on-accent: var(--color-natural-on-accent);
+  /* The gradient's far end, and the pale rim. See the palette note. */
+  --ds-accent-deep: var(--color-natural-gold-deep);
+  --ds-accent-soft: var(--color-natural-gold-soft);
 
   /* The identity panel: a dark saturated surface that inverts its text and
      carries the brand rather than the page. Every theme already had one and
@@ -270,14 +308,17 @@
   --ds-success: var(--color-natural-success);
   --ds-on-success: var(--color-natural-on-success);
   --ds-success-ink: var(--color-natural-success-ink);
+  --ds-success-deep: var(--color-natural-success-deep);
 
   --ds-warning: var(--color-natural-warning);
   --ds-on-warning: var(--color-natural-on-warning);
   --ds-warning-ink: var(--color-natural-warning-ink);
+  --ds-warning-deep: var(--color-natural-warning-deep);
 
   --ds-danger: var(--color-natural-danger);
   --ds-on-danger: var(--color-natural-on-danger);
   --ds-danger-ink: var(--color-natural-danger-ink);
+  --ds-danger-deep: var(--color-natural-danger-deep);
 }
 
 /* ── Owner: navy and gold ───────────────────────────────────────────────────
@@ -301,6 +342,8 @@
   --ds-on-primary: var(--color-owner-on-primary);
   --ds-accent: var(--color-owner-accent);
   --ds-on-accent: var(--color-owner-on-accent);
+  --ds-accent-deep: var(--color-owner-accent-deep);
+  --ds-accent-soft: var(--color-owner-accent-soft);
 
   /* The owner's identity panel: its navy, one step deeper for the gradient.
      Bound to the -panel tokens, NOT to -primary, because -primary inverts at
@@ -312,14 +355,17 @@
   --ds-success: var(--color-owner-success);
   --ds-on-success: var(--color-owner-on-success);
   --ds-success-ink: var(--color-owner-success-ink);
+  --ds-success-deep: var(--color-owner-success-deep);
 
   --ds-warning: var(--color-owner-warning);
   --ds-on-warning: var(--color-owner-on-warning);
   --ds-warning-ink: var(--color-owner-warning-ink);
+  --ds-warning-deep: var(--color-owner-warning-deep);
 
   --ds-danger: var(--color-owner-danger);
   --ds-on-danger: var(--color-owner-on-danger);
   --ds-danger-ink: var(--color-owner-danger-ink);
+  --ds-danger-deep: var(--color-owner-danger-deep);
 }
 
 /* ── Admin: the owner's language, and later its own density ─────────────────
@@ -348,6 +394,8 @@
   --ds-on-primary: var(--color-natural-on-navy);
   --ds-accent: var(--color-owner-accent);
   --ds-on-accent: var(--color-owner-on-accent);
+  --ds-accent-deep: var(--color-owner-accent-deep);
+  --ds-accent-soft: var(--color-owner-accent-soft);
 
   --ds-brand: var(--color-natural-navy);
   --ds-brand-2: var(--color-natural-navy-deep);
@@ -356,14 +404,17 @@
   --ds-success: var(--color-owner-success);
   --ds-on-success: var(--color-owner-on-success);
   --ds-success-ink: var(--color-owner-success-ink);
+  --ds-success-deep: var(--color-owner-success-deep);
 
   --ds-warning: var(--color-owner-warning);
   --ds-on-warning: var(--color-owner-on-warning);
   --ds-warning-ink: var(--color-owner-warning-ink);
+  --ds-warning-deep: var(--color-owner-warning-deep);
 
   --ds-danger: var(--color-owner-danger);
   --ds-on-danger: var(--color-owner-on-danger);
   --ds-danger-ink: var(--color-owner-danger-ink);
+  --ds-danger-deep: var(--color-owner-danger-deep);
 }
 
 /* ── Entertainment: slate and indigo, with Pima's gold for winning ──────────
@@ -395,6 +446,8 @@
   --ds-on-primary: var(--color-play-on-gold);
   --ds-accent: var(--color-play-gold-bright);
   --ds-on-accent: var(--color-play-on-gold);
+  --ds-accent-deep: var(--color-play-gold-deep);
+  --ds-accent-soft: var(--color-play-gold-soft);
 
   /* Already a dark room, so the identity panel lifts rather than darkens —
      the two warm surfaces above the base, with the ordinary text on top. */
@@ -408,14 +461,17 @@
   --ds-success: #34D399;
   --ds-on-success: #0B1220;
   --ds-success-ink: #34D399;
+  --ds-success-deep: var(--color-play-success-deep);
 
   --ds-warning: #FBBF24;
   --ds-on-warning: #0B1220;
   --ds-warning-ink: #FBBF24;
+  --ds-warning-deep: var(--color-play-warning-deep);
 
   --ds-danger: #F87171;
   --ds-on-danger: #0B1220;
   --ds-danger-ink: #F87171;
+  --ds-danger-deep: var(--color-play-danger-deep);
 }
 
 body {
@@ -495,6 +551,16 @@ body {
   --color-owner-warning: #FBBF24;
   --color-owner-danger: #F87171;
   --color-owner-info: #60A5FA;
+  /* THE DIRECTION REVERSES HERE. In daylight the deep tier is a darker shade
+     for a heading on a pale wash; at night the wash is dark, so the same role
+     has to be LIGHTER than its base or the heading disappears into the card.
+     Reusing the light-mode #14532D would measure about 1.2:1. These are the
+     pale ends of the same hues: 10.39 / 10.65 / 7.47 on their own tints. */
+  --color-owner-success-deep: #A7F3D0;
+  --color-owner-warning-deep: #FDE68A;
+  --color-owner-danger-deep: #FCA5A5;
+  --color-owner-accent-deep: #A88824;   /* dark ink on it — 5.44:1 */
+  --color-owner-accent-soft: #4A3E22;   /* decorative rim, lifted off the dark surface */
   /* On a dark surface the lighter shade is the readable one, so ink and fill
      converge here rather than sitting either side of the surface. */
   /* The page background rather than white: on the lighter dark-mode primary
