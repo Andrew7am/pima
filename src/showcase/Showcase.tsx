@@ -24,6 +24,7 @@ import {
   Check, Clock, X, Gamepad2, Sun, Moon,
 } from 'lucide-react';
 import { Button, Card, Input, Badge, EmptyState, Skeleton, SkeletonGroup } from '../components/ui';
+import { GuestBookingScreen, OwnerBookingScreen, AdminDashboardScreen, GameScreen } from './Screens';
 
 const THEMES = [
   { id: 'guest', cls: '', label: 'الضيف', hint: 'كريمي + زيتي' },
@@ -205,7 +206,48 @@ export default function Showcase() {
             <div className="text-[12px]" style={{ color: 'var(--ds-text-2)' }}>{active.hint}</div>
           </div>
 
-          {/* ── REALISTIC EXAMPLES FIRST ── */}
+          {/* ── REAL PIMA UI PREVIEW ────────────────────────────────────────
+              Four assembled screens, built only from the shared components
+              and the --ds-* roles. Each one shows in the ACTIVE theme, so the
+              guest screen can be viewed under the owner palette and so on —
+              which is the fastest way to find a screen that only works
+              because of one theme's particular contrast. */}
+          <Section
+            title="معاينة شاشات بيما"
+            note="أربع شاشات مركّبة من المكوّنات المشتركة فقط — بتتغيّر مع السمة المختارة فوق"
+          >
+            <div className="space-y-6">
+              <div>
+                <div className="text-[12px] font-bold mb-2" style={{ color: 'var(--ds-text-2)' }}>
+                  ١ · حجز الضيف
+                </div>
+                <GuestBookingScreen />
+              </div>
+
+              <div>
+                <div className="text-[12px] font-bold mb-2" style={{ color: 'var(--ds-text-2)' }}>
+                  ٢ · حجز عند المالك
+                </div>
+                <OwnerBookingScreen />
+              </div>
+
+              <div>
+                <div className="text-[12px] font-bold mb-2" style={{ color: 'var(--ds-text-2)' }}>
+                  ٣ · لوحة الإدارة
+                </div>
+                <AdminDashboardScreen />
+              </div>
+
+              <div>
+                <div className="text-[12px] font-bold mb-2" style={{ color: 'var(--ds-text-2)' }}>
+                  ٤ · الترفيه — اضغط إجابة لتشوف حالتَي الصح والغلط
+                </div>
+                <GameScreen />
+              </div>
+            </div>
+          </Section>
+
+          {/* ── COMPONENT GALLERY ── */}
           <Section title="حجز" note="نفس المكوّنات — الكارت والشارة والزرار">
             <BookingCard />
           </Section>

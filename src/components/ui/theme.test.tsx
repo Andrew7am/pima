@@ -107,16 +107,39 @@ describe('every theme binds every role', () => {
   });
 });
 
-describe('entertainment uses the accessible indigo for fills', () => {
-  it('binds primary to #4F46E5, not the unusable #6366F1', () => {
+describe('entertainment leads with gold, not indigo', () => {
+  // The approved direction changed: entertainment is a WARM dark room where
+  // Pima's gold is the main action and the winning colour, and indigo is a
+  // limited supporting accent. An earlier version of this suite asserted the
+  // opposite — indigo as primary — and failing on that change is exactly what
+  // it was for.
+
+  it('binds primary to Pima gold', () => {
     const play = block('.play-theme');
-    expect(play).toMatch(/--ds-primary:\s*var\(--color-play-indigo-action\)/);
-    // #6366F1 fails against BOTH white (4.47) and dark (3.91), so it can never
-    // be a fill that carries a label — only text/border/glow.
-    expect(play).not.toMatch(/--ds-primary:\s*var\(--color-play-indigo-glow\)/);
+    expect(play).toMatch(/--ds-primary:\s*var\(--color-play-gold\)/);
+    // Indigo must not be the button colour in any form: making the most-used
+    // control indigo is what made the games read as a separate product.
+    expect(play).not.toMatch(/--ds-primary:\s*var\(--color-play-indigo/);
   });
 
-  it('keeps the original hue available for text and borders', () => {
+  it('pairs gold with dark ink, never white', () => {
+    // White on #C5A059 is 2.46:1. Dark ink is 7.45:1.
+    expect(block('.play-theme')).toMatch(/--ds-on-primary:\s*var\(--color-play-on-gold\)/);
+    expect(CSS).toMatch(/--color-play-on-gold:\s*#1A1408/i);
+  });
+
+  it('uses a warm base, not the original cool slate', () => {
+    // #17130F is warm; the #151A26 it replaced was blue-tinted, and a
+    // blue-grey room with an indigo button is a gaming product that happens
+    // to be bundled here rather than Pima's own.
+    expect(CSS).toMatch(/--color-play-surface:\s*#17130F/i);
+  });
+
+  it('lightens the supporting indigo so it clears AA as text', () => {
+    // #6366F1 measures 3.77:1 on the warm surface — under AA even as text,
+    // which is the only role it still has. #8B8CF7 measures 5.77:1.
+    expect(CSS).toMatch(/--color-play-indigo:\s*#8B8CF7/i);
+    // The original stays for decoration only, where contrast does not apply.
     expect(CSS).toMatch(/--color-play-indigo-glow:\s*#6366F1/i);
   });
 });

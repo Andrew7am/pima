@@ -118,26 +118,32 @@
   --color-owner-on-danger: #1A1A14;   /* on #EF4444 — 4.64:1 (white: 3.76) */
 
   /* ── Entertainment ────────────────────────────────────────────────────────
-     Slate/indigo stays — it is the one area that should not feel like
-     booking. Two additions only.
+     A WARM dark base, not the cool slate this started as. The games should
+     read as "gaming inside Pima", and a blue-grey ground with an indigo
+     button on it reads as a gaming product that happens to be bundled here.
+     Warming the neutrals and giving the gold the lead does the opposite: the
+     room is still dark and still not the booking flow, but it belongs.
 
-     indigo-action exists because the current #6366F1 cannot legally hold a
-     label: white on it is 4.47:1 and dark is 3.91:1, so BOTH fail AA and no
-     foreground rescues it. #4F46E5 carries white at 6.29:1. The original hue
-     stays available as indigo-glow for text, borders and glows on dark
-     surfaces, where it was always fine.
+     GOLD LEADS. It is Pima's colour, it is what winning looks like, and it is
+     strong here — 7.52:1 as text on the base, 7.45:1 carrying dark ink as a
+     button. Indigo drops to a supporting accent.
 
-     Gold is the single thread back to Pima: it is what winning looks like,
-     and it is already legible on these grounds — 7.08:1 on #151A26. */
-  --color-play-surface: #151A26;
-  --color-play-raised: #1E2536;
-  --color-play-border: #2E3852;
-  --color-play-text-muted: #8E9BB5;
-  --color-play-indigo-action: #4F46E5;  /* button fill — white 6.29:1 */
-  --color-play-indigo-glow: #6366F1;    /* text/border/glow on dark only */
-  --color-play-on-indigo: #FFFFFF;
-  --color-play-gold: #C5A059;           /* 7.08:1 on #151A26 */
-  --color-play-gold-bright: #F5C542;    /* 10.72:1 on #151A26 */
+     THE INDIGO HAD TO MOVE AGAIN. #6366F1 already could not hold a label
+     (4.47:1 on white, 3.91:1 on dark). On this warmer, darker ground it does
+     not even clear AA as TEXT: 3.77:1 on the surface. #8B8CF7 measures 5.77:1
+     and is what the supporting accent actually is now. The old value is kept
+     only for decorative glow, where contrast does not apply. */
+  --color-play-surface: #17130F;        /* warm near-black base */
+  --color-play-raised: #221C17;         /* warm dark card */
+  --color-play-elevated: #2E2620;       /* warm raised surface */
+  --color-play-border: #3A312A;
+  --color-play-text: #F2EBE1;           /* 15.61:1 on the base */
+  --color-play-text-muted: #B8AA9A;     /* 7.42:1 on the card */
+  --color-play-gold: #C5A059;           /* 7.52:1 as text on the base */
+  --color-play-gold-bright: #F5C542;    /* 10.39:1 on the card — winning */
+  --color-play-on-gold: #1A1408;        /* 7.45:1 — dark ink, never white */
+  --color-play-indigo: #8B8CF7;         /* supporting accent — 5.77:1 */
+  --color-play-indigo-glow: #6366F1;    /* decoration only, never text */
 
   /* ── Spacing · radius · shadow ────────────────────────────────────────────
      Named so components stop inventing values. The scale is 4px, and these
@@ -305,17 +311,20 @@
 .play-theme {
   --ds-bg: var(--color-play-surface);
   --ds-surface: var(--color-play-raised);
-  --ds-raised: var(--color-play-border);
+  --ds-raised: var(--color-play-elevated);
 
-  --ds-text: #E8ECF5;
+  --ds-text: var(--color-play-text);
   --ds-text-2: var(--color-play-text-muted);
   --ds-text-faint: var(--color-play-border);
   --ds-border: var(--color-play-border);
 
-  --ds-primary: var(--color-play-indigo-action);
-  --ds-on-primary: var(--color-play-on-indigo);
+  /* Gold is the primary action here, not indigo. That single binding is what
+     makes the games feel like Pima rather than a separate product: the button
+     you press most often is the brand's own colour. */
+  --ds-primary: var(--color-play-gold);
+  --ds-on-primary: var(--color-play-on-gold);
   --ds-accent: var(--color-play-gold-bright);
-  --ds-on-accent: #151A26;
+  --ds-on-accent: var(--color-play-on-gold);
 
   /* Semantic fills are the dark-surface versions: the light-mode greens and
      ambers measure under 2:1 on this ground, which is a coloured smudge
