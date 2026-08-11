@@ -160,6 +160,179 @@
   --shadow-elevated: 0 8px 24px rgba(45, 45, 36, 0.12);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   THEME BINDING — the layer that lets one component serve five themes.
+
+   The shared components in components/ui read ONLY the --ds-* names below.
+   They never name a palette and never branch on which area of the app they
+   are in; the surrounding theme decides what --ds-primary means. That is the
+   whole point: a Button inside .owner-theme is navy because the binding says
+   so, not because the Button knows it is in the owner panel.
+
+       component  →  --ds-role  →  active theme's palette
+
+   WHY ALIASES RATHER THAN NEW COLOURS: every value here points at a token
+   that already exists and was already verified. Nothing new is invented, so
+   there is nothing new to get wrong — and a palette fix in one place still
+   reaches everything.
+
+   ON SPECIFICITY: `:root` and `.owner-theme` both score (0,1,0), so a tie is
+   broken by source order alone. The theme blocks MUST stay below the default
+   or the guest palette would win inside the owner panel. This is also why the
+   dark block is `.owner-theme.owner-dark` (0,2,0) — it has to outrank the
+   light owner block it sits beside.
+
+   ON THE EXISTING CLASSES: these are additional rule blocks targeting
+   .owner-theme and .owner-dark. The original declarations of both are
+   untouched — nothing was edited, renamed, or removed inside them.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Default binding: the guest theme ───────────────────────────────────────
+   Cream and olive. This is the fallback every unthemed part of the app gets,
+   and the majority of screens are already this palette. */
+:root {
+  --ds-bg: var(--color-natural-bg);
+  --ds-surface: var(--color-natural-surface);
+  --ds-raised: var(--color-natural-raised);
+
+  --ds-text: var(--color-natural-ink);
+  --ds-text-2: var(--color-natural-ink-muted);
+  --ds-text-faint: var(--color-natural-ink-faint);
+  --ds-border: var(--color-natural-rule);
+
+  --ds-primary: var(--color-natural-olive);
+  --ds-on-primary: var(--color-natural-on-primary);
+  --ds-accent: var(--color-natural-gold);
+  --ds-on-accent: var(--color-natural-on-accent);
+
+  --ds-success: var(--color-natural-success);
+  --ds-on-success: var(--color-natural-on-success);
+  --ds-success-ink: var(--color-natural-success-ink);
+
+  --ds-warning: var(--color-natural-warning);
+  --ds-on-warning: var(--color-natural-on-warning);
+  --ds-warning-ink: var(--color-natural-warning-ink);
+
+  --ds-danger: var(--color-natural-danger);
+  --ds-on-danger: var(--color-natural-on-danger);
+  --ds-danger-ink: var(--color-natural-danger-ink);
+}
+
+/* ── Owner: navy and gold ───────────────────────────────────────────────────
+   NIGHT MODE NEEDS NO BLOCK OF ITS OWN. Every binding here points at a
+   --color-owner-* token, and .owner-dark already redefines those tokens. A
+   var() resolves where it is USED, not where it is written, so the moment the
+   dark class is on the wrapper these same aliases resolve to the dark palette.
+   Writing a second copy for dark would be two things to keep in sync, and the
+   one that drifted would be the one nobody looks at. */
+.owner-theme {
+  --ds-bg: var(--color-owner-bg);
+  --ds-surface: var(--color-owner-surface);
+  --ds-raised: var(--color-owner-hover);
+
+  --ds-text: var(--color-owner-text);
+  --ds-text-2: var(--color-owner-secondary);
+  --ds-text-faint: var(--color-owner-secondary);
+  --ds-border: var(--color-owner-border);
+
+  --ds-primary: var(--color-owner-primary);
+  --ds-on-primary: var(--color-owner-on-primary);
+  --ds-accent: var(--color-owner-accent);
+  --ds-on-accent: var(--color-owner-on-accent);
+
+  --ds-success: var(--color-owner-success);
+  --ds-on-success: var(--color-owner-on-success);
+  --ds-success-ink: var(--color-owner-success-ink);
+
+  --ds-warning: var(--color-owner-warning);
+  --ds-on-warning: var(--color-owner-on-warning);
+  --ds-warning-ink: var(--color-owner-warning-ink);
+
+  --ds-danger: var(--color-owner-danger);
+  --ds-on-danger: var(--color-owner-on-danger);
+  --ds-danger-ink: var(--color-owner-danger-ink);
+}
+
+/* ── Admin: the owner's language, and later its own density ─────────────────
+   Deliberately the same palette as the owner: admin is Pima's back office,
+   not a separate product, and the approved direction was that it differ by
+   DENSITY — tighter padding, real tables, a status stripe — rather than by
+   hue. Density is a Phase-8 concern; this block exists now so the binding is
+   in place and the difference has somewhere to live.
+
+   The one deviation is primary, which stays the deeper #0A2342 the admin
+   screens already use rather than the owner's #0F2748. */
+.admin-theme {
+  --ds-bg: var(--color-owner-bg);
+  --ds-surface: var(--color-owner-surface);
+  --ds-raised: var(--color-owner-hover);
+
+  --ds-text: var(--color-owner-text);
+  --ds-text-2: var(--color-owner-secondary);
+  --ds-text-faint: var(--color-owner-secondary);
+  --ds-border: var(--color-owner-border);
+
+  --ds-primary: #0A2342;
+  --ds-on-primary: #FFFFFF;
+  --ds-accent: var(--color-owner-accent);
+  --ds-on-accent: var(--color-owner-on-accent);
+
+  --ds-success: var(--color-owner-success);
+  --ds-on-success: var(--color-owner-on-success);
+  --ds-success-ink: var(--color-owner-success-ink);
+
+  --ds-warning: var(--color-owner-warning);
+  --ds-on-warning: var(--color-owner-on-warning);
+  --ds-warning-ink: var(--color-owner-warning-ink);
+
+  --ds-danger: var(--color-owner-danger);
+  --ds-on-danger: var(--color-owner-on-danger);
+  --ds-danger-ink: var(--color-owner-danger-ink);
+}
+
+/* ── Entertainment: slate and indigo, with Pima's gold for winning ──────────
+   The one area that should NOT feel like booking, so it keeps its dark slate
+   ground. Two bindings carry the reasoning:
+
+   --ds-primary is #4F46E5, not the #6366F1 the games use today, because
+   #6366F1 cannot hold a label at all: 4.47:1 against white and 3.91:1 against
+   dark, so both fail AA and no foreground rescues it. The original hue stays
+   available as --color-play-indigo-glow for text, borders and glows on dark
+   surfaces, where it was always fine.
+
+   --ds-accent is Pima's gold. It is the single thread back to the rest of the
+   product, and it is what winning looks like: 7.08:1 on this ground. */
+.play-theme {
+  --ds-bg: var(--color-play-surface);
+  --ds-surface: var(--color-play-raised);
+  --ds-raised: var(--color-play-border);
+
+  --ds-text: #E8ECF5;
+  --ds-text-2: var(--color-play-text-muted);
+  --ds-text-faint: var(--color-play-border);
+  --ds-border: var(--color-play-border);
+
+  --ds-primary: var(--color-play-indigo-action);
+  --ds-on-primary: var(--color-play-on-indigo);
+  --ds-accent: var(--color-play-gold-bright);
+  --ds-on-accent: #151A26;
+
+  /* Semantic fills are the dark-surface versions: the light-mode greens and
+     ambers measure under 2:1 on this ground, which is a coloured smudge
+     rather than a signal. */
+  --ds-success: #34D399;
+  --ds-on-success: #0B1220;
+  --ds-success-ink: #34D399;
+
+  --ds-warning: #FBBF24;
+  --ds-on-warning: #0B1220;
+  --ds-warning-ink: #FBBF24;
+
+  --ds-danger: #F87171;
+  --ds-on-danger: #0B1220;
+  --ds-danger-ink: #F87171;
+}
+
 body {
   font-family: var(--font-sans);
   direction: rtl;

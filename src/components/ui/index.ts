@@ -5,10 +5,10 @@
  * so the migration can happen one screen at a time, and so the eight spellings
  * of "primary button" now in the codebase have somewhere to converge.
  *
- * They read the guest tokens (--color-natural-*), which is the theme they will
- * be adopted into first and the one the majority of screens already use. The
- * mapping that lets one component serve the owner, admin and play themes lands
- * with those adoptions, when the real requirements are known.
+ * They are THEME-AGNOSTIC: every colour they use is a --ds-* role, and the
+ * surrounding theme decides what that role looks like. None of them contains
+ * an 'if owner' or 'if admin' branch. See the THEME BINDING block in
+ * index.css for the five bindings and why night mode needs no block of its own.
  */
 
 export { default as Button } from './Button';

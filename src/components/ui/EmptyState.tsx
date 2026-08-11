@@ -42,17 +42,17 @@ export default function EmptyState({
       ].filter(Boolean).join(' ')}
     >
       {icon && (
-        <span className="text-[var(--color-natural-ink-faint)] mb-1" aria-hidden="true">
+        <span className="text-[var(--ds-text-faint)] mb-1" aria-hidden="true">
           {icon}
         </span>
       )}
 
-      <h3 className="text-[16px] font-bold text-[var(--color-natural-ink)] text-balance">
+      <h3 className="text-[16px] font-bold text-[var(--ds-text)] text-balance">
         {title}
       </h3>
 
       {description && (
-        <p className="text-[12px] text-[var(--color-natural-ink-muted)] max-w-[38ch] leading-relaxed">
+        <p className="text-[12px] text-[var(--ds-text-2)] max-w-[38ch] leading-relaxed">
           {description}
         </p>
       )}

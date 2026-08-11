@@ -13,19 +13,18 @@ import React from 'react';
  *
  * The fill is the semantic colour at 10% over the surface and the text is its
  * -ink pair, which is the same hue at a weight that stays readable on a light
- * wash. That split already exists in the owner theme; this is the guest-side
- * counterpart, and the reason a badge never uses the plain token as text:
- * #F59E0B on white measures 2.2:1.
+ * wash. Every theme binds both halves, which is why a badge never uses the
+ * plain fill as text: the owner's amber on white measures 2.2:1.
  */
 
 export type BadgeTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 
 const TONE: Record<BadgeTone, { fill: string; ink: string }> = {
-  success: { fill: 'var(--color-natural-success)', ink: 'var(--color-natural-success-ink)' },
-  warning: { fill: 'var(--color-natural-warning)', ink: 'var(--color-natural-warning-ink)' },
-  danger:  { fill: 'var(--color-natural-danger)',  ink: 'var(--color-natural-danger-ink)' },
-  info:    { fill: 'var(--color-natural-olive)',   ink: 'var(--color-natural-olive)' },
-  neutral: { fill: 'var(--color-natural-ink-muted)', ink: 'var(--color-natural-ink)' },
+  success: { fill: 'var(--ds-success)', ink: 'var(--ds-success-ink)' },
+  warning: { fill: 'var(--ds-warning)', ink: 'var(--ds-warning-ink)' },
+  danger:  { fill: 'var(--ds-danger)',  ink: 'var(--ds-danger-ink)' },
+  info:    { fill: 'var(--ds-primary)',   ink: 'var(--ds-primary)' },
+  neutral: { fill: 'var(--ds-text-2)', ink: 'var(--ds-text)' },
 };
 
 export interface BadgeProps {

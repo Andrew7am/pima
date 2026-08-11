@@ -48,7 +48,7 @@ export default function Input({
   return (
     <div className={['flex flex-col gap-1.5', wrapperClassName].filter(Boolean).join(' ')}>
       {label && (
-        <label htmlFor={inputId} className="text-[12px] font-semibold text-[var(--color-natural-ink)]">
+        <label htmlFor={inputId} className="text-[12px] font-semibold text-[var(--ds-text)]">
           {label}
         </label>
       )}
@@ -60,19 +60,19 @@ export default function Input({
         aria-describedby={error || hint ? msgId : undefined}
         className={[
           'min-h-11 ps-3 pe-3 rounded-[12px] text-[14px] w-full',
-          'bg-[var(--color-natural-surface)] text-[var(--color-natural-ink)]',
-          'placeholder:text-[var(--color-natural-ink-faint)]',
+          'bg-[var(--ds-surface)] text-[var(--ds-text)]',
+          'placeholder:text-[var(--ds-text-faint)]',
           'border transition-colors duration-150 outline-none',
           hasError
-            ? 'border-[var(--color-natural-danger)] focus:border-[var(--color-natural-danger)]'
-            : 'border-[var(--color-natural-rule)] focus:border-[var(--color-natural-olive)]',
+            ? 'border-[var(--ds-danger)] focus:border-[var(--ds-danger)]'
+            : 'border-[var(--ds-border)] focus:border-[var(--ds-primary)]',
           'focus-visible:ring-2 focus-visible:ring-offset-1',
           hasError
-            ? 'focus-visible:ring-[var(--color-natural-danger)]'
-            : 'focus-visible:ring-[var(--color-natural-olive)]',
-          'focus-visible:ring-offset-[var(--color-natural-bg)]',
+            ? 'focus-visible:ring-[var(--ds-danger)]'
+            : 'focus-visible:ring-[var(--ds-primary)]',
+          'focus-visible:ring-offset-[var(--ds-bg)]',
           'disabled:opacity-50 disabled:cursor-not-allowed',
-          'disabled:bg-[var(--color-natural-raised)]',
+          'disabled:bg-[var(--ds-raised)]',
           className,
         ].filter(Boolean).join(' ')}
         {...rest}
@@ -83,8 +83,8 @@ export default function Input({
           id={msgId}
           className={`text-[12px] ${
             hasError
-              ? 'text-[var(--color-natural-danger-ink)] font-semibold'
-              : 'text-[var(--color-natural-ink-muted)]'
+              ? 'text-[var(--ds-danger-ink)] font-semibold'
+              : 'text-[var(--ds-text-2)]'
           }`}
         >
           {error || hint}

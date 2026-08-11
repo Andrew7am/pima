@@ -32,7 +32,7 @@ export default function Skeleton({ className = '', circle = false }: SkeletonPro
     <span
       aria-hidden="true"
       className={[
-        'block pima-shimmer bg-[var(--color-natural-raised)]',
+        'block pima-shimmer bg-[var(--ds-raised)]',
         circle ? 'rounded-full' : 'rounded-[8px]',
         className,
       ].filter(Boolean).join(' ')}

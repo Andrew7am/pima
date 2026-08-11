@@ -42,16 +42,16 @@ export default function Card({
   return (
     <Tag
       className={[
-        'bg-[var(--color-natural-surface)]',
-        'border border-[var(--color-natural-rule)]',
+        'bg-[var(--ds-surface)]',
+        'border border-[var(--ds-border)]',
         'rounded-[16px]',
         'shadow-[var(--shadow-subtle)]',
         compact ? 'p-3' : 'p-4',
         interactive
           ? 'cursor-pointer transition-transform duration-150 active:scale-[0.99] ' +
             'focus-visible:outline-none focus-visible:ring-2 ' +
-            'focus-visible:ring-[var(--color-natural-olive)] focus-visible:ring-offset-2 ' +
-            'focus-visible:ring-offset-[var(--color-natural-bg)]'
+            'focus-visible:ring-[var(--ds-primary)] focus-visible:ring-offset-2 ' +
+            'focus-visible:ring-offset-[var(--ds-bg)]'
           : '',
         className,
       ].filter(Boolean).join(' ')}

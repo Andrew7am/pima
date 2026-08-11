@@ -85,8 +85,8 @@ describe('Card', () => {
   it('has a surface, a border and the subtle shadow — not a heavier one', () => {
     const { container } = render(<Card>محتوى</Card>);
     const c = cls(container.firstElementChild);
-    expect(c).toContain('bg-[var(--color-natural-surface)]');
-    expect(c).toContain('border-[var(--color-natural-rule)]');
+    expect(c).toContain('bg-[var(--ds-surface)]');
+    expect(c).toContain('border-[var(--ds-border)]');
     expect(c).toContain('shadow-[var(--shadow-subtle)]');
   });
 
@@ -166,7 +166,7 @@ describe('Badge', () => {
   it('derives tint, border and text from one token per tone', () => {
     render(<Badge tone="danger">ملغي</Badge>);
     const style = screen.getByText('ملغي').getAttribute('style') ?? '';
-    expect(style).toContain('--color-natural-danger');
+    expect(style).toContain('--ds-danger');
     expect(style).toContain('color-mix');
   });
 });
