@@ -44,6 +44,9 @@ function block(selector: string): string {
 const ROLES = [
   'bg', 'surface', 'raised', 'text', 'text-2', 'text-faint', 'border',
   'primary', 'on-primary', 'accent', 'on-accent',
+  // Added by the first real-screen migration: the dark identity panel. A role
+  // only one theme binds is not a role, so all four bind it.
+  'brand', 'brand-2', 'on-brand',
   'success', 'on-success', 'success-ink',
   'warning', 'on-warning', 'warning-ink',
   'danger', 'on-danger', 'danger-ink',
@@ -78,7 +81,7 @@ describe('components are theme-agnostic', () => {
 });
 
 describe('every theme binds every role', () => {
-  it.each(THEMES)('%s defines all 20 roles', (selector) => {
+  it.each(THEMES)('%s defines all 23 roles', (selector) => {
     const b = block(selector);
     const missing = ROLES.filter((r) => !b.includes(`--ds-${r}:`));
     expect(missing, `${selector} is missing: ${missing.join(', ')}`).toEqual([]);

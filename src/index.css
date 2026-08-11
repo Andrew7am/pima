@@ -44,6 +44,16 @@
   --color-natural-surface: #FFFFFF;     /* card surface */
   --color-natural-raised: #F3F0E8;      /* grouped/inset surface */
 
+  /* The brand navy. Added when the first real screen was migrated and it
+     turned out the token layer had no name for the app's SECOND most-used
+     colour: #0A2342 appears 388 times, behind only the two inks. It is the
+     dark identity panel — the profile hero, the section headings — and every
+     one of those 388 spellings was a raw hex because there was nothing to
+     point at. #123E75 (19 uses) is the gradient's far end. */
+  --color-natural-navy: #0A2342;
+  --color-natural-navy-deep: #123E75;
+  --color-natural-on-navy: #FFFFFF;     /* on #0A2342 — 15.79:1 */
+
   /* ── Semantic status colours for the guest theme ──────────────────────────
      The owner theme has had these since its own migration; the guest screens
      have been spelling them out per-component. Same split it uses: the plain
@@ -166,6 +176,35 @@
   --shadow-elevated: 0 8px 24px rgba(45, 45, 36, 0.12);
 }
 
+/* ── The focus indicator, for controls that are not ui/ components ──────────
+   Button and Input carry their own focus ring. Everything a screen builds by
+   hand — a list row, a stat tile, a switch — needs the same indicator, and
+   reaching for Tailwind's utilities to express it went wrong twice in one
+   sitting: `ring-2 ring-inset` is v3 spelling that emits nothing on v4, and
+   `outline-[var(--ds-primary)]` is ambiguous between a width and a colour, so
+   the outline landed at the wrong width and the wrong colour while looking
+   correct in the source.
+
+   A ring is also a box-shadow, so on any element that already has elevation
+   the two fight over one property and the focus indicator is the one that
+   loses. An outline is its own property and cannot be crowded out.
+
+   -inset draws the indicator inside the element, for rows inside a card whose
+   overflow-hidden would clip an outer one. */
+.ds-focus:focus-visible {
+  outline: 2px solid var(--ds-primary);
+  outline-offset: 2px;
+}
+.ds-focus-inset:focus-visible {
+  outline: 2px solid var(--ds-primary);
+  outline-offset: -2px;
+}
+/* On the dark brand panel the olive all but disappears; gold reads. */
+.ds-focus-on-brand:focus-visible {
+  outline: 2px solid var(--ds-accent);
+  outline-offset: 2px;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    THEME BINDING — the layer that lets one component serve five themes.
 
@@ -211,6 +250,14 @@
   --ds-accent: var(--color-natural-gold);
   --ds-on-accent: var(--color-natural-on-accent);
 
+  /* The identity panel: a dark saturated surface that inverts its text and
+     carries the brand rather than the page. Every theme already had one and
+     none of them had a name for it. -brand-2 is the gradient's far end; a
+     theme with a flat panel can bind both to the same value. */
+  --ds-brand: var(--color-natural-navy);
+  --ds-brand-2: var(--color-natural-navy-deep);
+  --ds-on-brand: var(--color-natural-on-navy);
+
   --ds-success: var(--color-natural-success);
   --ds-on-success: var(--color-natural-on-success);
   --ds-success-ink: var(--color-natural-success-ink);
@@ -246,6 +293,13 @@
   --ds-accent: var(--color-owner-accent);
   --ds-on-accent: var(--color-owner-on-accent);
 
+  /* The owner's identity panel is its own navy, one step deeper for the
+     gradient. In night mode -primary and -on-primary swap to the light pair
+     automatically, and the panel inverts with them. */
+  --ds-brand: var(--color-owner-primary);
+  --ds-brand-2: var(--color-owner-primary-hover);
+  --ds-on-brand: var(--color-owner-on-primary);
+
   --ds-success: var(--color-owner-success);
   --ds-on-success: var(--color-owner-on-success);
   --ds-success-ink: var(--color-owner-success-ink);
@@ -278,10 +332,17 @@
   --ds-text-faint: var(--color-owner-secondary);
   --ds-border: var(--color-owner-border);
 
-  --ds-primary: #0A2342;
-  --ds-on-primary: #FFFFFF;
+  /* Was the literal #0A2342 — the same navy the guest screens spell out 388
+     times, hard-coded here inside the token layer itself. Same value, now
+     named. */
+  --ds-primary: var(--color-natural-navy);
+  --ds-on-primary: var(--color-natural-on-navy);
   --ds-accent: var(--color-owner-accent);
   --ds-on-accent: var(--color-owner-on-accent);
+
+  --ds-brand: var(--color-natural-navy);
+  --ds-brand-2: var(--color-natural-navy-deep);
+  --ds-on-brand: var(--color-natural-on-navy);
 
   --ds-success: var(--color-owner-success);
   --ds-on-success: var(--color-owner-on-success);
@@ -325,6 +386,12 @@
   --ds-on-primary: var(--color-play-on-gold);
   --ds-accent: var(--color-play-gold-bright);
   --ds-on-accent: var(--color-play-on-gold);
+
+  /* Already a dark room, so the identity panel lifts rather than darkens —
+     the two warm surfaces above the base, with the ordinary text on top. */
+  --ds-brand: var(--color-play-elevated);
+  --ds-brand-2: var(--color-play-raised);
+  --ds-on-brand: var(--color-play-text);
 
   /* Semantic fills are the dark-surface versions: the light-mode greens and
      ambers measure under 2:1 on this ground, which is a coloured smudge

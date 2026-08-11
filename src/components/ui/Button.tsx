@@ -23,7 +23,7 @@ import { Loader2 } from 'lucide-react';
  * by assumption.
  */
 
-type Variant = 'primary' | 'secondary' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-quiet';
 
 export interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'className'> {
   variant?: Variant;
@@ -48,6 +48,23 @@ const VARIANT: Record<Variant, string> = {
   ghost:
     'bg-transparent text-[var(--ds-primary)] border border-transparent ' +
     'hover:bg-[var(--ds-raised)]',
+  // Destructive, at two weights. The pilot screen needed both: one solid
+  // button that carries out the deletion, and two quiet ones — log out, and
+  // "delete my account" before it is confirmed — that must read as dangerous
+  // without shouting on a screen you visit for ordinary reasons.
+  danger:
+    'bg-[var(--ds-danger)] text-[var(--ds-on-danger)] ' +
+    'hover:brightness-110 border border-transparent',
+  'danger-quiet':
+    'bg-transparent text-[var(--ds-danger-ink)] border ' +
+    'hover:bg-[color-mix(in_srgb,var(--ds-danger)_8%,transparent)]',
+};
+
+// The quiet variant's border is the danger colour at a fraction, which is a
+// derived value rather than a token — same reason Badge computes its tint
+// inline. Everything else is a plain token reference a class can express.
+const VARIANT_STYLE: Partial<Record<Variant, React.CSSProperties>> = {
+  'danger-quiet': { borderColor: 'color-mix(in srgb, var(--ds-danger) 34%, transparent)' },
 };
 
 export default function Button({
@@ -60,17 +77,26 @@ export default function Button({
   children,
   className = '',
   type = 'button',
+  style,
   ...rest
 }: ButtonProps) {
   const size = compact
     ? 'min-h-10 ps-3 pe-3 text-[14px]'
     : 'min-h-11 ps-4 pe-4 text-[16px]';
 
+  // A destructive button that focuses to a green-olive ring is telling the
+  // keyboard user the wrong thing about what they are about to press.
+  const isDestructive = variant === 'danger' || variant === 'danger-quiet';
+  const ring = isDestructive
+    ? 'focus-visible:ring-[var(--ds-danger)]'
+    : 'focus-visible:ring-[var(--ds-primary)]';
+
   return (
     <button
       type={type}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
+      style={{ ...VARIANT_STYLE[variant], ...style }}
       className={[
         'inline-flex items-center justify-center gap-2 rounded-[12px] font-bold',
         // background-color is deliberately NOT transitioned.
@@ -96,8 +122,8 @@ export default function Button({
         'transition-[transform,filter] duration-150',
         'active:scale-[0.97] cursor-pointer',
         'focus-visible:outline-none focus-visible:ring-2',
-        'focus-visible:ring-[var(--ds-primary)] focus-visible:ring-offset-2',
-        'focus-visible:ring-offset-[var(--ds-bg)]',
+        ring,
+        'focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ds-bg)]',
         'disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
         size,
         VARIANT[variant],

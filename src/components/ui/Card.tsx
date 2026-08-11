@@ -28,12 +28,22 @@ export interface CardProps extends React.HTMLAttributes<HTMLElement> {
   /** Renders a <button>-like affordance: pointer, press feedback, focus ring.
    *  Pass onClick with it; without one this is just a box. */
   interactive?: boolean;
+  /** No padding, and clip the corners. For a card whose contents are rows that
+   *  must reach the edges — a settings list, a table.
+   *
+   *  This exists because `className="p-0"` does NOT reliably win against the
+   *  built-in `p-4`: both are padding at the same specificity, so the one
+   *  Tailwind emits later takes it, and that order is not something a caller
+   *  can see. An explicit prop is the difference between a rule and a
+   *  coin-flip. */
+  flush?: boolean;
   as?: 'div' | 'section' | 'article' | 'li';
 }
 
 export default function Card({
   compact = false,
   interactive = false,
+  flush = false,
   as: Tag = 'div',
   children,
   className = '',
@@ -46,7 +56,7 @@ export default function Card({
         'border border-[var(--ds-border)]',
         'rounded-[16px]',
         'shadow-[var(--shadow-subtle)]',
-        compact ? 'p-3' : 'p-4',
+        flush ? 'p-0 overflow-hidden' : compact ? 'p-3' : 'p-4',
         interactive
           ? 'cursor-pointer transition-transform duration-150 active:scale-[0.99] ' +
             'focus-visible:outline-none focus-visible:ring-2 ' +
