@@ -21,6 +21,8 @@ import DepositPayment from './booking/DepositPayment';
 import { downloadBookingIcs } from '../lib/ics';
 import { setAttendeeSharePaid } from '../lib/db';
 import { bookingTypeLabel } from '../lib/bookingGroups';
+import { Badge } from './ui';
+import type { BadgeTone } from './ui';
 
 interface UserBookingsProps {
   bookings: Booking[];
@@ -155,12 +157,12 @@ function daysUntil(iso: string): number {
 function Fact({ icon: Icon, label, value, accent }: { icon: React.ElementType; label: string; value: string; accent?: string }) {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="w-8 h-8 rounded-xl bg-[#0A2342]/5 flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4 text-[#5A5A40]" />
+      <span className="w-8 h-8 rounded-xl bg-[var(--ds-brand)]/5 flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4 text-[var(--ds-primary)]" />
       </span>
       <div className="min-w-0">
-        <div className="text-[11px] text-[#8A8A70] font-bold">{label}</div>
-        <div className={`text-[12px] font-black truncate ${accent ?? 'text-[#4A4A3A]'}`}>{value}</div>
+        <div className="text-[11px] text-[var(--ds-text-2)] font-bold">{label}</div>
+        <div className={`text-[12px] font-black truncate ${accent ?? 'text-[var(--ds-text)]'}`}>{value}</div>
       </div>
     </div>
   );
@@ -529,37 +531,51 @@ export default function UserBookings({
   // Fetch the house owner's contact info (migration 031) the moment a
   // booking becomes eligible for reveal, instead of upfront for every
   // booking — mirrors onOpenRoomDistribution's lazy-load pattern.
-  const getStatusBadge = (status: Booking['status']) => {
+  // `tone` is ADDED here rather than replacing `color`: the two remaining
+  // hand-built chips (the next-booking strip, which sits on the dark brand
+  // panel, and the compact row) still read `color`, and rewriting them would
+  // be a refactor of code this migration is not allowed to touch. The one
+  // chip that is a plain status label on a light card now renders <Badge>.
+  const getStatusBadge = (status: Booking['status']): {
+    label: string; color: string; icon: React.ElementType; tone: BadgeTone;
+  } => {
     switch (status) {
       case 'pending':
         return {
           label: 'قيد المراجعة',
-          color: 'bg-amber-50 text-amber-800 border-amber-200',
+          color: 'bg-[color-mix(in_srgb,var(--ds-warning)_8%,var(--ds-surface))] text-[var(--ds-warning-ink)] border-[color-mix(in_srgb,var(--ds-warning)_30%,var(--ds-surface))]',
           icon: Clock,
+          tone: 'warning',
         };
       case 'approved':
         return {
           label: 'مؤكد ومقبول',
-          color: 'bg-emerald-50 text-emerald-850 border-emerald-200',
+          color: 'bg-[color-mix(in_srgb,var(--ds-success)_8%,var(--ds-surface))] text-[var(--ds-success-deep)] border-[color-mix(in_srgb,var(--ds-success)_30%,var(--ds-surface))]',
           icon: CheckCircle2,
+          tone: 'success',
         };
       case 'rejected':
         return {
           label: 'مرفوض',
-          color: 'bg-red-50 text-red-800 border-red-200',
+          color: 'bg-[color-mix(in_srgb,var(--ds-danger)_8%,var(--ds-surface))] text-[var(--ds-danger-ink)] border-[color-mix(in_srgb,var(--ds-danger)_30%,var(--ds-surface))]',
           icon: XCircle,
+          tone: 'danger',
         };
       case 'completed':
         return {
           label: 'تمت الزيارة',
-          color: 'bg-[#EBEBE0]/30 text-[#4A4A3A] border-[#D6D6C2]',
+          color: 'bg-[var(--ds-raised)]/30 text-[var(--ds-text)] border-[var(--ds-border)]',
           icon: CheckCircle2,
+          // Neutral, not success: the visit is over, which is a fact rather
+          // than good news, and that is how it has always been coloured.
+          tone: 'neutral',
         };
       case 'cancelled':
         return {
           label: 'ملغى',
-          color: 'bg-slate-50 text-slate-600 border-slate-200',
+          color: 'bg-[var(--ds-raised)] text-[var(--ds-text-2)] border-[var(--ds-border)]',
           icon: XCircle,
+          tone: 'neutral',
         };
     }
   };
@@ -682,15 +698,15 @@ export default function UserBookings({
   };
 
   return (
-    <div className="space-y-4 text-right text-[#4A4A3A]">
+    <div className="space-y-4 text-right text-[var(--ds-text)]">
       {userBookings.length === 0 ? (
-        <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-3">
-          <div className="mx-auto w-12 h-12 bg-[#EBEBE0]/30 border border-[#D6D6C2] rounded-full flex items-center justify-center text-[#8A8A70]">
-            <Calendar className="w-5 h-5 text-[#8A8A70]" />
+        <div className="bg-white rounded-3xl p-8 border border-[var(--ds-border)] text-center space-y-3">
+          <div className="mx-auto w-12 h-12 bg-[var(--ds-raised)]/30 border border-[var(--ds-border)] rounded-full flex items-center justify-center text-[var(--ds-text-2)]">
+            <Calendar className="w-5 h-5 text-[var(--ds-text-2)]" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[#4A4A3A]">لا توجد حجوزات حتى الآن</h3>
-            <p className="text-[11px] text-[#8A8A70] mt-1">تصفح بيوت المؤتمرات الرائعة في مصر وابدأ بالحجز لخلوتك القادمة.</p>
+            <h3 className="text-sm font-bold text-[var(--ds-text)]">لا توجد حجوزات حتى الآن</h3>
+            <p className="text-[11px] text-[var(--ds-text-2)] mt-1">تصفح بيوت المؤتمرات الرائعة في مصر وابدأ بالحجز لخلوتك القادمة.</p>
           </div>
         </div>
       ) : (
@@ -699,27 +715,27 @@ export default function UserBookings({
               draws the bell and the avatar, and repeating them here would give
               the screen two headers. */}
           <div className="text-center pt-1">
-            <h2 className="text-lg font-black text-[#2D2D24]">حجوزاتي</h2>
-            <p className="text-[11px] font-bold text-[#8A8A70] mt-0.5">كل رحلتك في مكان واحد</p>
+            <h2 className="text-[20px] font-black text-[var(--ds-text)]">حجوزاتي</h2>
+            <p className="text-[11px] font-bold text-[var(--ds-text-2)] mt-0.5">كل رحلتك في مكان واحد</p>
           </div>
 
           {/* Search — a guest hunting for one booking has the place name or the
               reference, so both match. */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B8B8A0] pointer-events-none" />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ds-text-faint)] pointer-events-none" />
               <input
                 id="bookings-search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="ابحث باسم المكان أو رقم الحجز"
-                className="w-full bg-white border border-[#EDE7DA] rounded-2xl min-h-11 pr-10 pl-3 text-[11px] font-bold text-[#2D2D24] placeholder:text-[#B8B8A0] focus:outline-none focus:border-[#C5A059] shadow-sm"
+                className="w-full bg-white border border-[var(--ds-border)] rounded-2xl min-h-11 pr-10 pl-3 text-[11px] font-bold text-[var(--ds-text)] placeholder:text-[var(--ds-text-faint)] focus:outline-none focus:border-[var(--ds-accent)] shadow-sm"
               />
             </div>
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="shrink-0 flex items-center gap-1.5 bg-white border border-[#EDE7DA] rounded-2xl px-3 py-2.5 text-[11px] font-black text-[#5A5A40] shadow-sm cursor-pointer"
+                className="shrink-0 flex items-center gap-1.5 bg-white border border-[var(--ds-border)] rounded-2xl px-3 py-2.5 text-[11px] font-black text-[var(--ds-primary)] shadow-sm cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>مسح</span>
@@ -737,13 +753,13 @@ export default function UserBookings({
                   onClick={() => setTab(t.key)}
                   className={`shrink-0 flex items-center gap-1.5 px-3.5 min-h-11 rounded-2xl text-[11px] font-black transition-all cursor-pointer border ${
                     active
-                      ? 'bg-[#0A2342] text-white border-[#0A2342] shadow-sm'
-                      : 'bg-white text-[#5A5A40] border-[#D6D6C2] hover:bg-[#FAF8F5]'
+                      ? 'bg-[var(--ds-brand)] text-white border-[var(--ds-brand)] shadow-sm'
+                      : 'bg-white text-[var(--ds-primary)] border-[var(--ds-border)] hover:bg-[var(--ds-bg)]'
                   } ${t.count === 0 && !active ? 'opacity-45' : ''}`}
                 >
                   <span>{t.label}</span>
                   <span className={`min-w-[17px] h-[17px] px-1 rounded-full text-[11px] font-black flex items-center justify-center ${
-                    active ? 'bg-white/20 text-white' : t.key === 'action' && t.count > 0 ? 'bg-rose-500 text-white' : 'bg-[#EBEBE0] text-[#5A5A40]'
+                    active ? 'bg-white/20 text-white' : t.key === 'action' && t.count > 0 ? 'bg-[var(--ds-danger)] text-white' : 'bg-[var(--ds-raised)] text-[var(--ds-primary)]'
                   }`}>
                     {arabicNumber(t.count)}
                   </span>
@@ -754,13 +770,13 @@ export default function UserBookings({
 
           {/* Deposit reminder — only where it's actionable, not on every tab */}
           {(tab === 'all' || tab === 'action') && unpaidApprovedCount > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-4 flex items-start gap-3 text-amber-900 text-xs shadow-sm animate-in fade-in slide-in-from-top duration-300">
-              <div className="p-2 bg-amber-100 rounded-2xl text-amber-800 shrink-0 mt-0.5">
-                <Bell className="w-5 h-5 text-amber-700" />
+            <div className="bg-[color-mix(in_srgb,var(--ds-warning)_8%,var(--ds-surface))] border border-[color-mix(in_srgb,var(--ds-warning)_30%,var(--ds-surface))] rounded-3xl p-4 flex items-start gap-3 text-[var(--ds-warning-deep)] text-xs shadow-sm animate-in fade-in slide-in-from-top duration-300">
+              <div className="p-2 bg-[color-mix(in_srgb,var(--ds-warning)_8%,var(--ds-surface))] rounded-2xl text-[var(--ds-warning-ink)] shrink-0 mt-0.5">
+                <Bell className="w-5 h-5 text-[var(--ds-warning-ink)]" />
               </div>
               <div className="flex-1 space-y-1">
-                <h4 className="font-extrabold text-amber-950">تذكير هام بسداد العربون!</h4>
-                <p className="text-[11px] text-amber-900/90 leading-relaxed">
+                <h4 className="font-extrabold text-[var(--ds-warning-deep)]">تذكير هام بسداد العربون!</h4>
+                <p className="text-[11px] text-[color-mix(in_srgb,var(--ds-warning-deep)_90%,transparent)] leading-relaxed">
                   لديك {unpaidApprovedCount === 1 ? 'حجز مقبول ومؤكد' : `${arabicPlural(unpaidApprovedCount, BOOKING_FORMS)} مقبولة ومؤكدة`} بانتظار سداد عربون الجدية ({arabicPercent(Math.round(settings.depositRate * 100))}) لتثبيت المواعيد والغرف نهائياً وتجنب إلغاء الطلب تلقائياً من بيت المؤتمرات.
                 </p>
               </div>
@@ -778,12 +794,12 @@ export default function UserBookings({
             const d = daysUntil(nextBooking.checkIn);
             return (
               <div className="space-y-0">
-                <div className="relative rounded-3xl overflow-hidden h-52 shadow-md bg-gradient-to-br from-[#0A2342] to-[#123E75] text-white">
+                <div className="relative rounded-3xl overflow-hidden h-52 shadow-md bg-gradient-to-br from-[var(--ds-brand)] to-[var(--ds-brand-2)] text-white">
                   {cover && <img src={cover} alt="" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/25" />
 
-                  <span className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 text-[#2D2D24] text-[11px] font-black px-2.5 py-1 rounded-full shadow-sm">
-                    <Sparkles className="w-3 h-3 text-[#C5A059]" /> الحجز القادم
+                  <span className="absolute top-3 right-3 flex items-center gap-1 bg-white/95 text-[var(--ds-text)] text-[11px] font-black px-2.5 py-1 rounded-full shadow-sm">
+                    <Sparkles className="w-3 h-3 text-[var(--ds-accent)]" /> الحجز القادم
                   </span>
 
                   {d >= 0 && (
@@ -795,7 +811,7 @@ export default function UserBookings({
                   )}
 
                   <div className="absolute inset-x-0 bottom-0 p-4 space-y-1.5">
-                    <h3 className="text-[15px] font-black leading-tight">{nextBooking.houseName}</h3>
+                    <h3 className="text-[14px] font-black leading-tight">{nextBooking.houseName}</h3>
                     {(h?.governorate || h?.address) && (
                       <div className="flex items-center gap-1 text-[11px] font-bold text-white/80">
                         <MapPin className="w-3 h-3 shrink-0" />
@@ -807,14 +823,14 @@ export default function UserBookings({
                       <span className="flex items-center gap-1"><Users className="w-3 h-3" />{nextBooking.guestsCount.toLocaleString('ar-EG')} فرد</span>
                     </div>
                     <div className="flex items-center justify-between gap-2 pt-1.5">
-                      <span className="text-[17px] font-black">{nextBooking.totalPrice.toLocaleString('ar-EG')} <span className="text-[11px]">ج.م</span></span>
+                      <span className="text-[16px] font-black">{nextBooking.totalPrice.toLocaleString('ar-EG')} <span className="text-[11px]">ج.م</span></span>
                       <span className={`flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-full ${badge.color}`}>
                         <BadgeIcon className="w-3 h-3" /> {badge.label}
                       </span>
                     </div>
                     <button
                       onClick={() => setDetailBookingId(nextBooking.id)}
-                      className="mt-1 flex items-center gap-1 bg-white/95 hover:bg-white text-[#2D2D24] text-[11px] font-black px-3 min-h-11 rounded-full shadow-sm cursor-pointer transition-colors"
+                      className="mt-1 flex items-center gap-1 bg-white/95 hover:bg-white text-[var(--ds-text)] text-[11px] font-black px-3 min-h-11 rounded-full shadow-sm cursor-pointer transition-colors"
                     >
                       عرض التفاصيل <ChevronLeft className="w-3 h-3" />
                     </button>
@@ -823,7 +839,7 @@ export default function UserBookings({
 
                 {/* Its journey, straight under the card. Same buildBookingJourney
                     as the detail sheet — one source, drawn compactly. */}
-                <div className="bg-white rounded-b-3xl border border-t-0 border-[#EDE7DA] px-3.5 pt-3 pb-3.5 -mt-3 relative z-10 shadow-sm">
+                <div className="bg-white rounded-b-3xl border border-t-0 border-[var(--ds-border)] px-3.5 pt-3 pb-3.5 -mt-3 relative z-10 shadow-sm">
                   <BookingJourney booking={nextBooking} payments={payments} variant="bar" />
                 </div>
               </div>
@@ -831,9 +847,9 @@ export default function UserBookings({
           })()}
 
           <div className="flex items-center justify-between px-1">
-            <span className="text-[12px] font-black text-[#2D2D24]">جميع الحجوزات</span>
-            <label className="flex items-center gap-1 text-[11px] font-black text-[#5A5A40] cursor-pointer">
-              <ArrowDownWideNarrow className="w-3.5 h-3.5 text-[#B8B8A0]" />
+            <span className="text-[12px] font-black text-[var(--ds-text)]">جميع الحجوزات</span>
+            <label className="flex items-center gap-1 text-[11px] font-black text-[var(--ds-primary)] cursor-pointer">
+              <ArrowDownWideNarrow className="w-3.5 h-3.5 text-[var(--ds-text-faint)]" />
               <select
                 id="bookings-sort"
                 value={sortBy}
@@ -848,11 +864,11 @@ export default function UserBookings({
           </div>
 
           {visibleBookings.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-3">
-              <div className="mx-auto w-12 h-12 bg-[#EBEBE0]/30 border border-[#D6D6C2] rounded-full flex items-center justify-center text-[#8A8A70]">
-                <Sparkles className="w-5 h-5 text-[#8A8A70]" />
+            <div className="bg-white rounded-3xl p-8 border border-[var(--ds-border)] text-center space-y-3">
+              <div className="mx-auto w-12 h-12 bg-[var(--ds-raised)]/30 border border-[var(--ds-border)] rounded-full flex items-center justify-center text-[var(--ds-text-2)]">
+                <Sparkles className="w-5 h-5 text-[var(--ds-text-2)]" />
               </div>
-              <p className="text-[11px] text-[#8A8A70] leading-relaxed max-w-[260px] mx-auto">
+              <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed max-w-[260px] mx-auto">
                 {search ? `مفيش حجز مطابق لـ"${search}".` : EMPTY_HINT[tab]}
               </p>
             </div>
@@ -909,10 +925,10 @@ export default function UserBookings({
 
             // Compact-card teaser for the next step, mirroring primaryAction.
             const nextStep =
-              primaryAction === 'pay' ? { label: 'مطلوب سداد العربون', cls: 'text-rose-700' }
-                : primaryAction === 'distribute' ? { label: 'ابدأ توزيع الغرف', cls: 'text-emerald-700' }
-                  : primaryAction === 'review' ? { label: 'قيّم خلوتك ⭐', cls: 'text-[#9a7b2f]' }
-                    : { label: 'التفاصيل', cls: 'text-[#8A8A70]' };
+              primaryAction === 'pay' ? { label: 'مطلوب سداد العربون', cls: 'text-[var(--ds-danger-ink)]' }
+                : primaryAction === 'distribute' ? { label: 'ابدأ توزيع الغرف', cls: 'text-[var(--ds-success-ink)]' }
+                  : primaryAction === 'review' ? { label: 'قيّم خلوتك ⭐', cls: 'text-[var(--ds-warning-ink)]' }
+                    : { label: 'التفاصيل', cls: 'text-[var(--ds-text-2)]' };
             const dLeftCompact = booking.status === 'approved' ? daysUntil(booking.checkIn) : -1;
             const isOpen = detailBookingId === booking.id;
 
@@ -928,13 +944,13 @@ export default function UserBookings({
                     // (and distribution state) are fresh when the sheet opens.
                     if (booking.status === 'approved' || booking.status === 'completed') onOpenRoomDistribution?.(booking.id);
                   }}
-                  className="w-full bg-white rounded-3xl border border-[#D6D6C2] shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer text-right overflow-hidden"
+                  className="w-full bg-white rounded-3xl border border-[var(--ds-border)] shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer text-right overflow-hidden"
                 >
                   {/* Photo first: a place is recognised by how it looks long
                       before its name is read. Houses with no photo keep the
                       brand gradient rather than an empty grey box. */}
                   <div className="p-3 flex items-center gap-3">
-                    <div className="w-[76px] h-[76px] rounded-2xl overflow-hidden shrink-0 bg-gradient-to-br from-[#0A2342] to-[#123E75] relative">
+                    <div className="w-[76px] h-[76px] rounded-2xl overflow-hidden shrink-0 bg-gradient-to-br from-[var(--ds-brand)] to-[var(--ds-brand-2)] relative">
                       {bookingHouse?.images?.[0] && (
                         <img src={bookingHouse.images[0]} alt="" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />
                       )}
@@ -942,7 +958,7 @@ export default function UserBookings({
 
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-[12px] font-black text-[#2E2E24] truncate">{booking.houseName}</h3>
+                        <h3 className="text-[12px] font-black text-[var(--ds-text)] truncate">{booking.houseName}</h3>
                         <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-black shrink-0 ${badge.color}`}>
                           <StatusIcon className="w-3 h-3 shrink-0" />
                           {badge.label}
@@ -950,23 +966,23 @@ export default function UserBookings({
                       </div>
 
                       {(bookingHouse?.governorate || bookingHouse?.address) && (
-                        <div className="flex items-center gap-1 text-[11px] font-bold text-[#8A8A70]">
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-[var(--ds-text-2)]">
                           <MapPin className="w-3 h-3 shrink-0" />
                           <span className="truncate">{[bookingHouse?.address, bookingHouse?.governorate].filter(Boolean).join(' - ')}</span>
                         </div>
                       )}
 
-                      <div className="flex items-center gap-2.5 text-[11px] font-bold text-[#5A5A40]">
-                        <span className="flex items-center gap-1"><Users className="w-3 h-3 text-[#BCBC9D]" />{booking.guestsCount.toLocaleString('ar-EG')} فرد</span>
-                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-[#BCBC9D]" />{arabicDateRange(booking.checkIn, booking.checkOut)}</span>
+                      <div className="flex items-center gap-2.5 text-[11px] font-bold text-[var(--ds-primary)]">
+                        <span className="flex items-center gap-1"><Users className="w-3 h-3 text-[var(--ds-text-faint)]" />{booking.guestsCount.toLocaleString('ar-EG')} فرد</span>
+                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-[var(--ds-text-faint)]" />{arabicDateRange(booking.checkIn, booking.checkOut)}</span>
                       </div>
 
                       <div className="flex items-center justify-between gap-2 pt-0.5">
                         <div className="min-w-0">
-                          <span className="text-[12px] font-black text-[#0A2342]">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</span>
+                          <span className="text-[12px] font-black text-[var(--ds-brand)]">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</span>
                           {/* What is still owed, or that nothing is — the number
                               a guest scans this row for. */}
-                          <span className={`block text-[11px] font-black ${booking.depositPaid ? 'text-emerald-700' : 'text-[#B8944E]'}`}>
+                          <span className={`block text-[11px] font-black ${booking.depositPaid ? 'text-[var(--ds-success-ink)]' : 'text-[var(--ds-accent-deep)]'}`}>
                             {booking.depositPaid
                               ? 'العربون مدفوع'
                               : `المتبقي ${Math.max(0, booking.totalPrice - (booking.depositPaid ? booking.depositAmount : 0)).toLocaleString('ar-EG')} ج.م`}
@@ -979,7 +995,7 @@ export default function UserBookings({
                       </div>
 
                       {dLeftCompact >= 0 && dLeftCompact <= 7 && (
-                        <span className="inline-block text-[11px] font-black text-[#0A2342] bg-[#0A2342]/5 rounded-full px-2 py-0.5">
+                        <span className="inline-block text-[11px] font-black text-[var(--ds-brand)] bg-[var(--ds-brand)]/5 rounded-full px-2 py-0.5">
                           {dLeftCompact === 0
                             ? 'اليوم 🎉'
                             : `بعد ${arabicPlural(dLeftCompact, { one: 'يوم', two: 'يومين', few: 'أيام', many: 'يوم' })}`}
@@ -995,24 +1011,24 @@ export default function UserBookings({
                   <div className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150" onClick={() => setDetailBookingId(null)} />
                   <div
                     id={`booking-card-${booking.id}`}
-                    className="relative z-10 w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-white rounded-t-3xl sm:rounded-3xl border border-[#D6D6C2] shadow-2xl text-right animate-in slide-in-from-bottom sm:zoom-in-95 duration-200"
+                    className="relative z-10 w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-white rounded-t-3xl sm:rounded-3xl border border-[var(--ds-border)] shadow-2xl text-right animate-in slide-in-from-bottom sm:zoom-in-95 duration-200"
                   >
                     {/* Sheet grabber + close */}
-                    <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-[#D6D6C2]/60 px-4 py-2 flex items-center justify-between">
-                      <span className="text-[11px] font-black text-[#0A2342]">تفاصيل الحجز</span>
+                    <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-[var(--ds-border)]/60 px-4 py-2 flex items-center justify-between">
+                      <span className="text-[11px] font-black text-[var(--ds-brand)]">تفاصيل الحجز</span>
                       <button
                         type="button"
                         onClick={() => setDetailBookingId(null)}
-                        className="grid place-items-center w-11 h-11 rounded-full hover:bg-[#F1EEE6] cursor-pointer"
+                        className="grid place-items-center w-11 h-11 rounded-full hover:bg-[var(--ds-raised)] cursor-pointer"
                         aria-label="إغلاق"
                       >
-                        <X className="w-4 h-4 text-[#4A4A3A]" />
+                        <X className="w-4 h-4 text-[var(--ds-text)]" />
                       </button>
                     </div>
                 {/* ── Hero: the place, its reference, and where it stands ── */}
                 <div className="p-4">
-                  <div className="rounded-[28px] border border-[#EDE7DA] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-3 flex items-start gap-3">
-                    <div className="w-[86px] h-[86px] rounded-2xl overflow-hidden shrink-0 bg-gradient-to-br from-[#0A2342] to-[#123E75] relative">
+                  <div className="rounded-[28px] border border-[var(--ds-border)] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-3 flex items-start gap-3">
+                    <div className="w-[86px] h-[86px] rounded-2xl overflow-hidden shrink-0 bg-gradient-to-br from-[var(--ds-brand)] to-[var(--ds-brand-2)] relative">
                       {bookingHouse?.images?.[0] && (
                         <img src={bookingHouse.images[0]} alt="" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />
                       )}
@@ -1021,20 +1037,23 @@ export default function UserBookings({
                       <button
                         type="button"
                         onClick={() => { navigator.clipboard?.writeText(booking.id); setCopiedBookingId(booking.id); }}
-                        className="inline-flex items-center gap-1.5 min-h-11 -my-2 text-[11px] font-bold text-[#8A8A70] hover:text-[#B8944E] transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 min-h-11 -my-2 text-[11px] font-bold text-[var(--ds-text-2)] hover:text-[var(--ds-accent-deep)] transition-colors cursor-pointer"
                       >
                         <span dir="ltr">#{booking.id.toUpperCase()}</span>
                         {copiedBookingId === booking.id
-                          ? <Check className="w-3 h-3 text-emerald-600" />
-                          : <Copy className="w-3 h-3 text-[#B5AF98]" />}
+                          ? <Check className="w-3 h-3 text-[var(--ds-success)]" />
+                          : <Copy className="w-3 h-3 text-[var(--ds-text-faint)]" />}
                       </button>
-                      <h3 className="text-[14px] font-black text-[#0A2342] leading-tight line-clamp-2">{booking.houseName}</h3>
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-black ${badge.color}`}>
-                        <StatusIcon className="w-3.5 h-3.5 shrink-0" />
+                      <h3 className="text-[14px] font-black text-[var(--ds-brand)] leading-tight line-clamp-2">{booking.houseName}</h3>
+                      {/* The one status chip that is a plain label on a light
+                          card, so it becomes the shared Badge. Same word, same
+                          icon, same meaning — the tint and border now come
+                          from the component instead of a class string. */}
+                      <Badge tone={badge.tone} icon={<StatusIcon className="w-3.5 h-3.5 shrink-0" />}>
                         {badge.label}
-                      </span>
+                      </Badge>
                       {booking.isLargeConferenceQuote && (
-                        <span className="block text-[11px] font-bold text-[#8A8A70]">طلب عرض سعر لمؤتمر كبير</span>
+                        <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">طلب عرض سعر لمؤتمر كبير</span>
                       )}
                     </div>
                   </div>
@@ -1043,7 +1062,7 @@ export default function UserBookings({
                 {/* The booking's journey with Pima (live statuses only) */}
                 {(booking.status === 'pending' || booking.status === 'approved' || booking.status === 'completed') && (
                   <div className="px-4 pb-4">
-                    <div className="rounded-[28px] border border-[#EDE7DA] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4">
+                    <div className="rounded-[28px] border border-[var(--ds-border)] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4">
                       <BookingJourney booking={booking} payments={payments} />
                       {/* Renders nothing unless another group genuinely shares
                           these nights. get_house_neighbours re-checks that the
@@ -1062,8 +1081,8 @@ export default function UserBookings({
                           ? 'خلوتك اليوم! 🎉'
                           : `باقي ${arabicPlural(d, { one: 'يوم واحد', two: 'يومين', few: 'أيام', many: 'يوم' })} على خلوتك`;
                         return (
-                          <div className="mt-3 flex items-center justify-center gap-1.5 bg-[#FBF9F4] border border-[#EDE7DA] text-[#0A2342] rounded-full py-1.5 text-[11px] font-black">
-                            <CalendarCheck className="w-3.5 h-3.5 text-[#C5A059]" />
+                          <div className="mt-3 flex items-center justify-center gap-1.5 bg-[var(--ds-bg)] border border-[var(--ds-border)] text-[var(--ds-brand)] rounded-full py-1.5 text-[11px] font-black">
+                            <CalendarCheck className="w-3.5 h-3.5 text-[var(--ds-accent)]" />
                             <span>{text}</span>
                           </div>
                         );
@@ -1076,12 +1095,12 @@ export default function UserBookings({
                        where the booking actually is. ── */}
                 <div className="px-4 pb-4">
                   {stage === 'review' && (
-                    <div className="rounded-[28px] border border-[#EDE7DA] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 text-center space-y-2">
-                      <span className="inline-flex w-14 h-14 rounded-full bg-[#F6F0E2] items-center justify-center">
-                        <Clock className="w-6 h-6 text-[#C9A24A]" />
+                    <div className="rounded-[28px] border border-[var(--ds-border)] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 text-center space-y-2">
+                      <span className="inline-flex w-14 h-14 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_8%,var(--ds-surface))] items-center justify-center">
+                        <Clock className="w-6 h-6 text-[var(--ds-accent)]" />
                       </span>
-                      <span className="block text-[12px] font-black text-[#0A2342]">بانتظار مراجعة الطلب</span>
-                      <p className="text-[11px] font-medium text-[#8A8A70] leading-relaxed">
+                      <span className="block text-[12px] font-black text-[var(--ds-brand)]">بانتظار مراجعة الطلب</span>
+                      <p className="text-[11px] font-medium text-[var(--ds-text-2)] leading-relaxed">
                         سيتم إشعارك فور مراجعة طلبك من قبل بيت المؤتمرات.
                         <br />لن يُطلب منك أي دفع قبل الموافقة.
                       </p>
@@ -1089,14 +1108,14 @@ export default function UserBookings({
                   )}
 
                   {stage === 'awaiting_deposit' && (
-                    <div className="rounded-[28px] border border-[#EBD9B4] bg-[#FDF9EF] p-4 space-y-3">
+                    <div className="rounded-[28px] border border-[var(--ds-accent-soft)] bg-[color-mix(in_srgb,var(--ds-accent)_5%,var(--ds-surface))] p-4 space-y-3">
                       <div className="flex items-start gap-3">
-                        <span className="w-11 h-11 rounded-full bg-white border border-[#EBD9B4] flex items-center justify-center shrink-0">
-                          <ShieldCheck className="w-5 h-5 text-[#C9A24A]" />
+                        <span className="w-11 h-11 rounded-full bg-white border border-[var(--ds-accent-soft)] flex items-center justify-center shrink-0">
+                          <ShieldCheck className="w-5 h-5 text-[var(--ds-accent)]" />
                         </span>
                         <div className="min-w-0">
-                          <span className="block text-[12px] font-black text-[#0A2342] leading-snug">تمت الموافقة على طلبك 🎉</span>
-                          <span className="block text-[11px] font-medium text-[#8A8A70] leading-relaxed mt-1">
+                          <span className="block text-[12px] font-black text-[var(--ds-brand)] leading-snug">تمت الموافقة على طلبك 🎉</span>
+                          <span className="block text-[11px] font-medium text-[var(--ds-text-2)] leading-relaxed mt-1">
                             وافق بيت المؤتمرات على طلبك. ادفع العربون لتأكيد الحجز النهائي.
                           </span>
                         </div>
@@ -1105,16 +1124,16 @@ export default function UserBookings({
                           unverified account can browse and request; the moment
                           money is involved it waits for a human. */}
                       {awaitingVerification ? (
-                        <div role="status" className="w-full rounded-2xl border border-[#E3CD9F] bg-[#FBF6E9] px-3 py-2.5 text-center">
-                          <p className="text-[11px] font-black text-[#8A6A28]">الدفع مقفول لحد ما نوثّق حسابك</p>
-                          <p className="text-[11px] font-medium text-[#6B6552] mt-0.5 leading-relaxed">
+                        <div role="status" className="w-full rounded-2xl border border-[var(--ds-accent-soft)] bg-[color-mix(in_srgb,var(--ds-accent)_8%,var(--ds-surface))] px-3 py-2.5 text-center">
+                          <p className="text-[11px] font-black text-[var(--ds-warning-ink)]">الدفع مقفول لحد ما نوثّق حسابك</p>
+                          <p className="text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5 leading-relaxed">
                             حجزك محفوظ ومكانك متحجوز. ابعت صورة بطاقتك على واتساب الدعم وهنفتحلك الدفع.
                           </p>
                         </div>
                       ) : platformPayeeMissing ? (
-                        <div role="status" className="w-full rounded-2xl border border-[#E3CD9F] bg-[#FBF6E9] px-3 py-2.5 text-center">
-                          <p className="text-[11px] font-black text-[#8A6A28]">الدفع مش متاح دلوقتي</p>
-                          <p className="text-[11px] font-medium text-[#6B6552] mt-0.5 leading-relaxed">
+                        <div role="status" className="w-full rounded-2xl border border-[var(--ds-accent-soft)] bg-[color-mix(in_srgb,var(--ds-accent)_8%,var(--ds-surface))] px-3 py-2.5 text-center">
+                          <p className="text-[11px] font-black text-[var(--ds-warning-ink)]">الدفع مش متاح دلوقتي</p>
+                          <p className="text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5 leading-relaxed">
                             حجزك محفوظ. كلّم دعم بيما على واتساب وهنكمّل معاك الدفع.
                           </p>
                         </div>
@@ -1122,7 +1141,7 @@ export default function UserBookings({
                         <button
                           type="button"
                           onClick={() => { setIsPaying(booking.id); setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString()); }}
-                          className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
+                          className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[var(--ds-accent)] to-[var(--ds-accent-deep)] text-[var(--ds-on-accent)] font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
                         >
                           <Wallet className="w-4 h-4" />
                           ادفع العربون الآن · {arabicNumber(Math.round(booking.totalPrice * settings.depositRate))} ج.م
@@ -1132,35 +1151,35 @@ export default function UserBookings({
                   )}
 
                   {stage === 'verifying' && (
-                    <div className="rounded-[28px] border border-[#EDE7DA] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 space-y-3">
+                    <div className="rounded-[28px] border border-[var(--ds-border)] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 space-y-3">
                       <div className="flex items-start gap-3">
-                        <span className="w-11 h-11 rounded-full bg-[#F6F0E2] flex items-center justify-center shrink-0">
-                          <FileDown className="w-5 h-5 text-[#C9A24A]" />
+                        <span className="w-11 h-11 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_8%,var(--ds-surface))] flex items-center justify-center shrink-0">
+                          <FileDown className="w-5 h-5 text-[var(--ds-accent)]" />
                         </span>
                         <div className="min-w-0">
-                          <span className="block text-[12px] font-black text-[#0A2342] leading-snug">إثبات الدفع قيد المراجعة</span>
-                          <span className="block text-[11px] font-medium text-[#8A8A70] leading-relaxed mt-1">
+                          <span className="block text-[12px] font-black text-[var(--ds-brand)] leading-snug">إثبات الدفع قيد المراجعة</span>
+                          <span className="block text-[11px] font-medium text-[var(--ds-text-2)] leading-relaxed mt-1">
                             تم استلام إثبات الدفع بنجاح، وسيتم مراجعته خلال ساعات قليلة.
                           </span>
                         </div>
                       </div>
                       {/* Indeterminate: we genuinely do not know how far along a
                           human review is, and a percentage would be invented. */}
-                      <div className="h-1.5 bg-[#F1ECE0] rounded-full overflow-hidden">
-                        <div className="h-full w-1/3 rounded-full bg-gradient-to-l from-[#C9A96A] to-[#B8944E] pima-indeterminate" />
+                      <div className="h-1.5 bg-[var(--ds-raised)] rounded-full overflow-hidden">
+                        <div className="h-full w-1/3 rounded-full bg-gradient-to-l from-[var(--ds-accent)] to-[var(--ds-accent-deep)] pima-indeterminate" />
                       </div>
                     </div>
                   )}
 
                   {stage === 'confirmed' && (
-                    <div className="rounded-[28px] border border-emerald-200 bg-emerald-50/60 p-4 space-y-3">
+                    <div className="rounded-[28px] border border-[color-mix(in_srgb,var(--ds-success)_30%,var(--ds-surface))] bg-[color-mix(in_srgb,var(--ds-success)_5%,var(--ds-surface))] p-4 space-y-3">
                       <div className="flex items-start gap-3">
-                        <span className="w-11 h-11 rounded-full bg-white border border-emerald-200 flex items-center justify-center shrink-0">
-                          <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                        <span className="w-11 h-11 rounded-full bg-white border border-[color-mix(in_srgb,var(--ds-success)_30%,var(--ds-surface))] flex items-center justify-center shrink-0">
+                          <ShieldCheck className="w-5 h-5 text-[var(--ds-success)]" />
                         </span>
                         <div className="min-w-0">
-                          <span className="block text-[12px] font-black text-[#0A2342] leading-snug">الحجز مؤكّد 🎉</span>
-                          <span className="block text-[11px] font-medium text-[#8A8A70] leading-relaxed mt-1">
+                          <span className="block text-[12px] font-black text-[var(--ds-brand)] leading-snug">الحجز مؤكّد 🎉</span>
+                          <span className="block text-[11px] font-medium text-[var(--ds-text-2)] leading-relaxed mt-1">
                             تم تأكيد حجزك بنجاح. نتمنى لك إقامة مباركة.
                           </span>
                         </div>
@@ -1169,15 +1188,15 @@ export default function UserBookings({
                         <button
                           type="button"
                           onClick={() => setActiveReceipt(booking)}
-                          className="flex items-center justify-center gap-1.5 bg-white border border-[#EDE7DA] hover:border-[#E3CD9F] text-[#4A4A3A] font-black text-[11px] min-h-11 rounded-2xl transition-colors cursor-pointer pima-press"
+                          className="flex items-center justify-center gap-1.5 bg-white border border-[var(--ds-border)] hover:border-[var(--ds-accent-soft)] text-[var(--ds-text)] font-black text-[11px] min-h-11 rounded-2xl transition-colors cursor-pointer pima-press"
                         >
-                          <FileDown className="w-3.5 h-3.5 text-[#C9A24A]" />
+                          <FileDown className="w-3.5 h-3.5 text-[var(--ds-accent)]" />
                           عرض سند الحجز
                         </button>
                         <button
                           type="button"
                           onClick={() => downloadBookingIcs(booking, bookingHouse?.address)}
-                          className="flex items-center justify-center gap-1.5 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[11px] min-h-11 rounded-2xl shadow-[0_2px_8px_rgba(184,148,78,0.3)] cursor-pointer pima-press"
+                          className="flex items-center justify-center gap-1.5 bg-gradient-to-b from-[var(--ds-accent)] to-[var(--ds-accent-deep)] text-[var(--ds-on-accent)] font-black text-[11px] min-h-11 rounded-2xl shadow-[0_2px_8px_rgba(184,148,78,0.3)] cursor-pointer pima-press"
                         >
                           <CalendarPlus className="w-3.5 h-3.5" />
                           أضف إلى التقويم
@@ -1195,12 +1214,12 @@ export default function UserBookings({
                     { icon: Users, label: 'عدد الأفراد', value: `${booking.guestsCount.toLocaleString('ar-EG')} فرد` },
                     { icon: Wallet, label: 'إجمالي التكلفة', value: `${booking.totalPrice.toLocaleString('ar-EG')} ج.م` },
                   ].map((f) => (
-                    <div key={f.label} className="rounded-2xl border border-[#EDE7DA] bg-[#FBF9F4] p-3">
-                      <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#8A8A70]">
-                        <f.icon className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
+                    <div key={f.label} className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-bg)] p-3">
+                      <span className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--ds-text-2)]">
+                        <f.icon className="w-3.5 h-3.5 text-[var(--ds-accent)] shrink-0" />
                         {f.label}
                       </span>
-                      <span className="block text-[12px] font-black text-[#0A2342] mt-1.5">{f.value}</span>
+                      <span className="block text-[12px] font-black text-[var(--ds-brand)] mt-1.5">{f.value}</span>
                     </div>
                   ))}
                 </div>
@@ -1212,24 +1231,24 @@ export default function UserBookings({
                   const remaining = Math.max(0, booking.totalPrice - paid);
                   return (
                     <div className="px-4 pb-4">
-                      <div className="rounded-[28px] border border-[#EDE7DA] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 space-y-2">
+                      <div className="rounded-[28px] border border-[var(--ds-border)] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-black text-[#0A2342]">تقدّم السداد</span>
-                          <span className={`text-[11px] font-black ${remaining === 0 ? 'text-emerald-700' : 'text-[#B8944E]'}`}>
+                          <span className="text-[11px] font-black text-[var(--ds-brand)]">تقدّم السداد</span>
+                          <span className={`text-[11px] font-black ${remaining === 0 ? 'text-[var(--ds-success-ink)]' : 'text-[var(--ds-accent-deep)]'}`}>
                             {pct.toLocaleString('ar-EG')}٪
                           </span>
                         </div>
                         {/* Grows from zero on open, so the bar is read as filling
                             rather than as a static state. */}
-                        <div className="h-2 bg-[#F1ECE0] rounded-full overflow-hidden">
+                        <div className="h-2 bg-[var(--ds-raised)] rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full ${remaining === 0 ? 'bg-emerald-500' : 'bg-gradient-to-l from-[#C9A96A] to-[#B8944E]'}`}
+                            className={`h-full rounded-full ${remaining === 0 ? 'bg-[var(--ds-success)]' : 'bg-gradient-to-l from-[var(--ds-accent)] to-[var(--ds-accent-deep)]'}`}
                             style={{ width: `${paymentBarPct(pct)}%`, transition: 'width 800ms var(--motion-ease)' }}
                           />
                         </div>
                         <div className="flex items-center justify-between text-[11px] font-bold">
-                          <span className="text-[#8A8A70]">مدفوع {paid.toLocaleString('ar-EG')} ج.م</span>
-                          <span className={remaining === 0 ? 'text-emerald-700' : 'text-[#B8944E]'}>
+                          <span className="text-[var(--ds-text-2)]">مدفوع {paid.toLocaleString('ar-EG')} ج.م</span>
+                          <span className={remaining === 0 ? 'text-[var(--ds-success-ink)]' : 'text-[var(--ds-accent-deep)]'}>
                             {remaining === 0 ? 'مدفوع بالكامل ✓' : `المتبقي ${remaining.toLocaleString('ar-EG')} ج.م`}
                           </span>
                         </div>
@@ -1241,26 +1260,26 @@ export default function UserBookings({
                 {/* The request's own details. Shown for an ordinary booking too
                     now, since that is where the applicant's notes land. */}
                 {booking.conferenceDetails && (booking.conferenceDetails.extraRequests || booking.conferenceDetails.diocese || booking.conferenceDetails.bookingType) && (
-                  <div className="p-4 bg-[#EBEBE0]/15 border-b border-[#D6D6C2]/60 text-xs text-[#4A4A3A] space-y-1">
-                    <div className="font-bold flex items-center gap-1 text-[#464E3D]">
+                  <div className="p-4 bg-[var(--ds-raised)]/15 border-b border-[var(--ds-border)]/60 text-xs text-[var(--ds-text)] space-y-1">
+                    <div className="font-bold flex items-center gap-1 text-[var(--ds-primary)]">
                       <Building className="w-3.5 h-3.5" />
                       <span>{booking.isLargeConferenceQuote ? 'متطلبات المؤتمر الكنسي:' : 'تفاصيل طلبك:'}</span>
                     </div>
                     {/* Kept out of the four-fact grid above so it stays four
                         equal cards; this block is «what you asked for». */}
                     {booking.conferenceDetails.bookingType && (
-                      <div className="text-[11px] text-[#464E3D] font-medium pt-1">نوع الحجز: {bookingTypeLabel(booking)}</div>
+                      <div className="text-[11px] text-[var(--ds-primary)] font-medium pt-1">نوع الحجز: {bookingTypeLabel(booking)}</div>
                     )}
                     {booking.conferenceDetails.extraRequests && (
-                      <div className="text-[11px] text-[#2D2D24]/80 leading-relaxed bg-white border border-[#E7E5DB] p-2 rounded-xl mt-1 text-right whitespace-pre-line">
+                      <div className="text-[11px] text-[var(--ds-text)]/80 leading-relaxed bg-white border border-[var(--ds-border)] p-2 rounded-xl mt-1 text-right whitespace-pre-line">
                         {booking.conferenceDetails.extraRequests}
                       </div>
                     )}
                     {booking.conferenceDetails.diocese && (
-                      <div className="text-[11px] text-[#464E3D] font-medium pt-1">الإيبارشية: {booking.conferenceDetails.diocese}</div>
+                      <div className="text-[11px] text-[var(--ds-primary)] font-medium pt-1">الإيبارشية: {booking.conferenceDetails.diocese}</div>
                     )}
                     {booking.isLargeConferenceQuote && (
-                      <div className="flex gap-4 text-[11px] text-[#464E3D] font-medium pt-1">
+                      <div className="flex gap-4 text-[11px] text-[var(--ds-primary)] font-medium pt-1">
                         <span>• شامل حجز قاعة الاجتماعات</span>
                         {booking.conferenceDetails.mealsIncluded && <span>• شامل الوجبات اليومية الثلاث كاملة</span>}
                       </div>
@@ -1281,28 +1300,28 @@ export default function UserBookings({
                   const showConfirmed = booking.status === 'approved' && booking.depositPaid;
                   if (!(booking.status === 'pending' || canPayDeposit || showConfirmed)) return null;
                   return (
-                    <div className="px-4 py-3.5 border-b border-[#D6D6C2]/60 space-y-2.5 text-[11px]">
+                    <div className="px-4 py-3.5 border-b border-[var(--ds-border)]/60 space-y-2.5 text-[11px]">
                       {/* Awaiting-deposit prompt (the CTA below performs the action) */}
                       {canPayDeposit && (
-                        <div className="flex items-start gap-2 bg-amber-50/70 border border-amber-200/80 rounded-2xl p-2.5 text-amber-950">
-                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                          <span className="font-bold leading-relaxed">ثبّت حجزك بسداد عربون الجدية <strong className="text-amber-900">{depositAmt.toLocaleString('ar-EG')} ج.م</strong> ({arabicPercent(Math.round(settings.depositRate * 100))}) — استخدم زر السداد بالأسفل.</span>
+                        <div className="flex items-start gap-2 bg-[color-mix(in_srgb,var(--ds-warning)_6%,var(--ds-surface))] border border-[color-mix(in_srgb,var(--ds-warning)_24%,var(--ds-surface))] rounded-2xl p-2.5 text-[var(--ds-warning-deep)]">
+                          <AlertTriangle className="w-4 h-4 text-[var(--ds-warning)] shrink-0 mt-0.5" />
+                          <span className="font-bold leading-relaxed">ثبّت حجزك بسداد عربون الجدية <strong className="text-[var(--ds-warning-deep)]">{depositAmt.toLocaleString('ar-EG')} ج.م</strong> ({arabicPercent(Math.round(settings.depositRate * 100))}) — استخدم زر السداد بالأسفل.</span>
                         </div>
                       )}
 
                       {/* Confirmed: address + coordination hint (+ near-date checklist) */}
                       {showConfirmed && (
-                        <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-2.5 space-y-2 text-emerald-950">
-                          <div className="flex items-center gap-1.5 font-black text-emerald-900"><ShieldCheck className="w-4 h-4 text-emerald-700" /> حجزك مؤكد وجاهز ✓</div>
+                        <div className="bg-[color-mix(in_srgb,var(--ds-success)_6%,var(--ds-surface))] border border-[color-mix(in_srgb,var(--ds-success)_30%,var(--ds-surface))] rounded-2xl p-2.5 space-y-2 text-[var(--ds-success-deep)]">
+                          <div className="flex items-center gap-1.5 font-black text-[var(--ds-success-deep)]"><ShieldCheck className="w-4 h-4 text-[var(--ds-success-ink)]" /> حجزك مؤكد وجاهز ✓</div>
                           {house?.address && (
-                            <div className="flex items-start gap-2 text-emerald-900/90"><MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0 mt-0.5" /><span><strong className="text-emerald-800">العنوان:</strong> {house.address}</span></div>
+                            <div className="flex items-start gap-2 text-[color-mix(in_srgb,var(--ds-success-deep)_90%,transparent)]"><MapPin className="w-3.5 h-3.5 text-[var(--ds-success-ink)] shrink-0 mt-0.5" /><span><strong className="text-[var(--ds-success-ink)]">العنوان:</strong> {house.address}</span></div>
                           )}
-                          <div className="flex items-start gap-2 text-emerald-900/75"><MessageCircle className="w-3.5 h-3.5 text-emerald-700 shrink-0 mt-0.5" /><span>لأي تنسيق قبل الوصول، راسل صاحب البيت من الأسفل — كل الرسائل محفوظة.</span></div>
+                          <div className="flex items-start gap-2 text-[color-mix(in_srgb,var(--ds-success-deep)_75%,transparent)]"><MessageCircle className="w-3.5 h-3.5 text-[var(--ds-success-ink)] shrink-0 mt-0.5" /><span>لأي تنسيق قبل الوصول، راسل صاحب البيت من الأسفل — كل الرسائل محفوظة.</span></div>
                           {nearDate && (remaining > 0 || attCount < booking.guestsCount) && (
-                            <div className="pt-2 border-t border-emerald-200/70 space-y-1">
-                              <div className="flex items-center gap-1.5 font-black text-amber-800"><Bell className="w-3.5 h-3.5" /> خلوتك بعد {dLeft.toLocaleString('ar-EG')} أيام — جهّز:</div>
-                              {remaining > 0 && <div className="text-amber-900/90 font-bold pr-5">• المتبقي للسداد: {remaining.toLocaleString('ar-EG')} ج.م</div>}
-                              {attCount < booking.guestsCount && <div className="text-amber-900/90 font-bold pr-5">• أكمل المشاركين: {attCount.toLocaleString('ar-EG')} من {booking.guestsCount.toLocaleString('ar-EG')}</div>}
+                            <div className="pt-2 border-t border-[color-mix(in_srgb,var(--ds-success)_21%,var(--ds-surface))] space-y-1">
+                              <div className="flex items-center gap-1.5 font-black text-[var(--ds-warning-ink)]"><Bell className="w-3.5 h-3.5" /> خلوتك بعد {dLeft.toLocaleString('ar-EG')} أيام — جهّز:</div>
+                              {remaining > 0 && <div className="text-[color-mix(in_srgb,var(--ds-warning-deep)_90%,transparent)] font-bold pr-5">• المتبقي للسداد: {remaining.toLocaleString('ar-EG')} ج.م</div>}
+                              {attCount < booking.guestsCount && <div className="text-[color-mix(in_srgb,var(--ds-warning-deep)_90%,transparent)] font-bold pr-5">• أكمل المشاركين: {attCount.toLocaleString('ar-EG')} من {booking.guestsCount.toLocaleString('ar-EG')}</div>}
                             </div>
                           )}
                         </div>
@@ -1311,15 +1330,15 @@ export default function UserBookings({
                       {/* Pending: awaiting approval + how you'll pay */}
                       {booking.status === 'pending' && (
                         <>
-                          <div className="flex items-center gap-2 text-[#8A8A70] font-bold"><Clock className="w-3.5 h-3.5 text-[#BCBC9D]" /> بانتظار موافقة صاحب البيت على طلبك.</div>
+                          <div className="flex items-center gap-2 text-[var(--ds-text-2)] font-bold"><Clock className="w-3.5 h-3.5 text-[var(--ds-text-faint)]" /> بانتظار موافقة صاحب البيت على طلبك.</div>
                           {payMethods.length > 0 && (
-                            <div className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl p-2.5 space-y-1.5">
-                              <div className="flex items-center gap-1.5 font-black text-[#4A4A3A]"><Coins className="w-3.5 h-3.5 text-[#867E65]" /> حوّل العربون الآن إلى {payeeLabel} لتأكيد طلبك</div>
+                            <div className="bg-[var(--ds-bg)] border border-[var(--ds-border)] rounded-2xl p-2.5 space-y-1.5">
+                              <div className="flex items-center gap-1.5 font-black text-[var(--ds-text)]"><Coins className="w-3.5 h-3.5 text-[var(--ds-text-2)]" /> حوّل العربون الآن إلى {payeeLabel} لتأكيد طلبك</div>
                               <div className="space-y-1">
                                 {payMethods.map((pm) => (
                                   <div key={pm.id} className="flex justify-between items-center">
-                                    <span className="text-[#867E65] font-bold">{PAYMENT_TYPE_LABELS[pm.type] || pm.label}:</span>
-                                    <span className="font-mono font-extrabold text-[#2D2D24]" dir="ltr">{pm.value}</span>
+                                    <span className="text-[var(--ds-text-2)] font-bold">{PAYMENT_TYPE_LABELS[pm.type] || pm.label}:</span>
+                                    <span className="font-mono font-extrabold text-[var(--ds-text)]" dir="ltr">{pm.value}</span>
                                   </div>
                                 ))}
                               </div>
@@ -1340,15 +1359,15 @@ export default function UserBookings({
                   const paidCount = roster.filter((a) => a.sharePaid).length;
                   const collected = paidCount * share;
                   return (
-                    <div className="px-4 py-3.5 border-b border-[#D6D6C2]/60 space-y-2.5">
+                    <div className="px-4 py-3.5 border-b border-[var(--ds-border)]/60 space-y-2.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-black text-[#0A2342] flex items-center gap-1.5"><Coins className="w-4 h-4 text-[#C5A059]" /> تحصيل المشاركين</span>
-                        <span className="text-[11px] font-black text-[#8A8A70]">نصيب الفرد: {share.toLocaleString('ar-EG')} ج.م</span>
+                        <span className="text-[11px] font-black text-[var(--ds-brand)] flex items-center gap-1.5"><Coins className="w-4 h-4 text-[var(--ds-accent)]" /> تحصيل المشاركين</span>
+                        <span className="text-[11px] font-black text-[var(--ds-text-2)]">نصيب الفرد: {share.toLocaleString('ar-EG')} ج.م</span>
                       </div>
-                      <div className="h-2 bg-[#EBEBE0] rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${Math.round((paidCount / roster.length) * 100)}%` }} />
+                      <div className="h-2 bg-[var(--ds-raised)] rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-[var(--ds-success)] transition-all" style={{ width: `${Math.round((paidCount / roster.length) * 100)}%` }} />
                       </div>
-                      <div className="text-[11px] font-bold text-[#8A8A70]">دفع {paidCount.toLocaleString('ar-EG')} من {roster.length.toLocaleString('ar-EG')} — محصَّل {collected.toLocaleString('ar-EG')} ج.م</div>
+                      <div className="text-[11px] font-bold text-[var(--ds-text-2)]">دفع {paidCount.toLocaleString('ar-EG')} من {roster.length.toLocaleString('ar-EG')} — محصَّل {collected.toLocaleString('ar-EG')} ج.م</div>
                       <div className="max-h-44 overflow-y-auto space-y-1 pr-0.5">
                         {roster.map((a) => (
                           <button
@@ -1357,11 +1376,11 @@ export default function UserBookings({
                             onClick={() => toggleSharePaid(booking, a)}
                             disabled={togglingShareId === a.id}
                             className={`w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 min-h-11 text-right transition-all cursor-pointer disabled:opacity-50 ${
-                              a.sharePaid ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-[#D6D6C2] hover:bg-[#FAF8F5]'
+                              a.sharePaid ? 'bg-[color-mix(in_srgb,var(--ds-success)_8%,var(--ds-surface))] border-[color-mix(in_srgb,var(--ds-success)_30%,var(--ds-surface))]' : 'bg-white border-[var(--ds-border)] hover:bg-[var(--ds-bg)]'
                             }`}
                           >
-                            <span className={`text-[11px] font-bold truncate ${a.sharePaid ? 'text-emerald-900' : 'text-[#4A4A3A]'}`}>{a.name || 'بدون اسم'}</span>
-                            <span className={`shrink-0 flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-full ${a.sharePaid ? 'bg-emerald-500 text-white' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>
+                            <span className={`text-[11px] font-bold truncate ${a.sharePaid ? 'text-[var(--ds-success-deep)]' : 'text-[var(--ds-text)]'}`}>{a.name || 'بدون اسم'}</span>
+                            <span className={`shrink-0 flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-full ${a.sharePaid ? 'bg-[var(--ds-success)] text-white' : 'bg-[var(--ds-raised)] text-[var(--ds-text-2)]'}`}>
                               {a.sharePaid ? <><Check className="w-3 h-3" /> دفع</> : 'لسه'}
                             </span>
                           </button>
@@ -1373,36 +1392,36 @@ export default function UserBookings({
 
                 {/* Footer — payment status, room guidance, then a clear action
                     hierarchy: one prominent primary CTA + uniform secondary pills. */}
-                <div className="p-4 bg-[#FAF8F5] border-b border-[#E7E5DB] space-y-3">
+                <div className="p-4 bg-[var(--ds-bg)] border-b border-[var(--ds-border)] space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[11px] font-bold text-[#867E65]">حالة السداد والمالية:</span>
+                    <span className="text-[11px] font-bold text-[var(--ds-text-2)]">حالة السداد والمالية:</span>
                     {(() => {
                       const payStatus = booking.paymentStatus || 'unpaid';
                       if (payStatus === 'pending_verification') {
                         return (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-full shadow-sm">
-                            <Clock className="w-3 h-3 text-amber-600 animate-pulse" />
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[color-mix(in_srgb,var(--ds-warning)_8%,var(--ds-surface))] text-[var(--ds-warning-deep)] border border-[color-mix(in_srgb,var(--ds-warning)_30%,var(--ds-surface))] px-2.5 py-1 rounded-full shadow-sm">
+                            <Clock className="w-3 h-3 text-[var(--ds-warning)] animate-pulse" />
                             <span>بانتظار مراجعة الإدارة والتحقق ⏳</span>
                           </span>
                         );
                       } else if (payStatus === 'paid_deposit') {
                         return (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-extrabold bg-emerald-50 text-emerald-950 border border-emerald-200 px-2.5 py-1 rounded-full shadow-sm">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                          <span className="inline-flex items-center gap-1 text-[11px] font-extrabold bg-[color-mix(in_srgb,var(--ds-success)_8%,var(--ds-surface))] text-[var(--ds-success-deep)] border border-[color-mix(in_srgb,var(--ds-success)_30%,var(--ds-surface))] px-2.5 py-1 rounded-full shadow-sm">
+                            <CheckCircle2 className="w-3 h-3 text-[var(--ds-success-ink)]" />
                             <span>تم تأكيد دفع العربون ({arabicPercent(Math.round(settings.depositRate * 100))}) 🎉</span>
                           </span>
                         );
                       } else if (payStatus === 'paid_full') {
                         return (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-300 px-2.5 py-1 rounded-full shadow-sm">
-                            <ShieldCheck className="w-3 h-3 text-emerald-700" />
+                          <span className="inline-flex items-center gap-1 text-[11px] font-extrabold bg-[color-mix(in_srgb,var(--ds-success)_8%,var(--ds-surface))] text-[var(--ds-success-deep)] border border-[color-mix(in_srgb,var(--ds-success)_30%,var(--ds-surface))] px-2.5 py-1 rounded-full shadow-sm">
+                            <ShieldCheck className="w-3 h-3 text-[var(--ds-success-ink)]" />
                             <span>مدفوع بالكامل كلياً ✅</span>
                           </span>
                         );
                       } else {
                         return (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-rose-50 text-rose-950 border border-rose-200 px-2.5 py-1 rounded-full shadow-sm">
-                            <Coins className="w-3 h-3 text-rose-600" />
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[color-mix(in_srgb,var(--ds-danger)_8%,var(--ds-surface))] text-[var(--ds-danger-deep)] border border-[color-mix(in_srgb,var(--ds-danger)_30%,var(--ds-surface))] px-2.5 py-1 rounded-full shadow-sm">
+                            <Coins className="w-3 h-3 text-[var(--ds-danger)]" />
                             <span>بانتظار سداد العربون (لم يُدفع) 💸</span>
                           </span>
                         );
@@ -1412,15 +1431,15 @@ export default function UserBookings({
 
                   {/* Room-distribution guidance — its own row, not crammed among buttons */}
                   {booking.status === 'approved' && !roomsAssigned && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-right">
-                      <div className="text-[11px] font-black text-amber-900 flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> بانتظار تخصيص الغرف من صاحب البيت</div>
-                      <div className="text-[11px] text-amber-800 font-bold mt-1 leading-relaxed">أول ما صاحب البيت يبعت غرف مجموعتك، هتقدر تكتب أسماء المشاركين وتوزّعهم من هنا.</div>
+                    <div className="bg-[color-mix(in_srgb,var(--ds-warning)_8%,var(--ds-surface))] border border-[color-mix(in_srgb,var(--ds-warning)_30%,var(--ds-surface))] rounded-2xl p-3 text-right">
+                      <div className="text-[11px] font-black text-[var(--ds-warning-deep)] flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> بانتظار تخصيص الغرف من صاحب البيت</div>
+                      <div className="text-[11px] text-[var(--ds-warning-ink)] font-bold mt-1 leading-relaxed">أول ما صاحب البيت يبعت غرف مجموعتك، هتقدر تكتب أسماء المشاركين وتوزّعهم من هنا.</div>
                     </div>
                   )}
                   {booking.status === 'approved' && roomsReady && (
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-right space-y-1.5">
-                      <div className="text-[11px] font-black text-emerald-900 flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> صاحب البيت خصّص لك {booking.assignedRoomIds?.length ?? 0} غرفة — ابدأ التوزيع 🎉</div>
-                      <div className="text-[11px] text-emerald-800 font-bold leading-relaxed">١) اضغط «توزيع الغرف» ٢) اكتب أسماء المشاركين ٣) وزّعهم على الغرف (تلقائي أو يدوي) ٤) اطبع الكشف.</div>
+                    <div className="bg-[color-mix(in_srgb,var(--ds-success)_8%,var(--ds-surface))] border border-[color-mix(in_srgb,var(--ds-success)_30%,var(--ds-surface))] rounded-2xl p-3 text-right space-y-1.5">
+                      <div className="text-[11px] font-black text-[var(--ds-success-deep)] flex items-center gap-1.5"><Building className="w-3.5 h-3.5" /> صاحب البيت خصّص لك {booking.assignedRoomIds?.length ?? 0} غرفة — ابدأ التوزيع 🎉</div>
+                      <div className="text-[11px] text-[var(--ds-success-ink)] font-bold leading-relaxed">١) اضغط «توزيع الغرف» ٢) اكتب أسماء المشاركين ٣) وزّعهم على الغرف (تلقائي أو يدوي) ٤) اطبع الكشف.</div>
                     </div>
                   )}
 
@@ -1431,7 +1450,7 @@ export default function UserBookings({
                     <button
                       id={`booking-allocation-btn-${booking.id}`}
                       onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
-                      className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
+                      className="w-full flex items-center justify-center gap-2 bg-[var(--ds-success)] hover:bg-[var(--ds-success-ink)] text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
                     >
                       <Building className="w-4 h-4" />
                       <span>ابدأ توزيع الغرف</span>
@@ -1440,7 +1459,7 @@ export default function UserBookings({
                   {primaryAction === 'review' && (
                     <button
                       onClick={() => setReviewingBooking(booking)}
-                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-l from-[#C5A059] to-[#D8B877] hover:from-[#b8925090] text-[#3a2e12] px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-l from-[var(--ds-accent)] to-[var(--ds-accent-deep)] hover:from-[color-mix(in_srgb,var(--ds-accent-deep)_90%,transparent)] text-[var(--ds-on-accent)] px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
                     >
                       <Star className="w-4 h-4 fill-current" />
                       <span>قيّم خلوتك وساعد غيرك ⭐</span>
@@ -1450,7 +1469,7 @@ export default function UserBookings({
                     <button
                       id={`booking-chat-btn-${booking.id}`}
                       onClick={() => setChatOpenBookingId(chatOpenBookingId === booking.id ? null : booking.id)}
-                      className="w-full flex items-center justify-center gap-2 bg-[#0A2342] hover:bg-[#123E75] text-white px-4 min-h-11 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
+                      className="w-full flex items-center justify-center gap-2 bg-[var(--ds-brand)] hover:bg-[var(--ds-brand-2)] text-white px-4 min-h-11 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
                     >
                       <MessageCircle className="w-4 h-4" />
                       <span>{chatOpenBookingId === booking.id ? 'إغلاق المحادثة' : 'راسل صاحب البيت'}</span>
@@ -1463,9 +1482,9 @@ export default function UserBookings({
                       <button
                         id={`booking-allocation-btn-${booking.id}`}
                         onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-white hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
-                        <Building className="w-3.5 h-3.5 text-[#867E65]" />
+                        <Building className="w-3.5 h-3.5 text-[var(--ds-text-2)]" />
                         <span>توزيع الغرف</span>
                       </button>
                     )}
@@ -1473,7 +1492,7 @@ export default function UserBookings({
                       <button
                         onClick={async () => { const ok = await onNotifyOwnerDistribution!(booking.id); if (ok) { setNotifiedOwner((p) => new Set(p).add(booking.id)); } }}
                         disabled={notifiedOwner.has(booking.id)}
-                        className="flex items-center gap-1.5 bg-[#464E3D] hover:bg-[#333A2C] disabled:opacity-60 text-white px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-[var(--ds-primary)] hover:bg-[color-mix(in_srgb,var(--ds-primary)_82%,black)] disabled:opacity-60 text-white px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>{notifiedOwner.has(booking.id) ? 'تم إبلاغ صاحب البيت ✓' : 'أبلغ صاحب البيت إني خلّصت'}</span>
@@ -1493,18 +1512,18 @@ export default function UserBookings({
                             setCustomActivities(prev => ({ ...prev, [booking.id]: getThemeActivities('growth') }));
                           }
                         }}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-white hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
-                        <Calendar className="w-3.5 h-3.5 text-emerald-700" />
+                        <Calendar className="w-3.5 h-3.5 text-[var(--ds-success-ink)]" />
                         <span>برنامج الخلوة</span>
                       </button>
                     )}
                     {(booking.status === 'approved' || booking.status === 'completed') && (
                       <button
                         onClick={() => downloadBookingIcs(booking, bookingHouse?.address)}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-white hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
-                        <CalendarPlus className="w-3.5 h-3.5 text-[#867E65]" />
+                        <CalendarPlus className="w-3.5 h-3.5 text-[var(--ds-text-2)]" />
                         <span>أضف لتقويمك</span>
                       </button>
                     )}
@@ -1516,9 +1535,9 @@ export default function UserBookings({
                           const msg = `سلام ونعمة 🙏\nانضم لقائمة مشاركين خلوة «${booking.houseName}» (${arabicDateRange(booking.checkIn, booking.checkOut)}) واكتب اسمك من هنا:\n${link}`;
                           void shareToWhatsApp(msg);
                         }}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-white hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
-                        <UserPlus className="w-3.5 h-3.5 text-emerald-700" />
+                        <UserPlus className="w-3.5 h-3.5 text-[var(--ds-success-ink)]" />
                         <span>ادعُ المشاركين</span>
                       </button>
                     )}
@@ -1526,18 +1545,18 @@ export default function UserBookings({
                       <button
                         id={`booking-chat-btn-${booking.id}`}
                         onClick={() => setChatOpenBookingId(chatOpenBookingId === booking.id ? null : booking.id)}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-white hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
-                        <MessageCircle className="w-3.5 h-3.5 text-sky-700" />
+                        <MessageCircle className="w-3.5 h-3.5 text-[var(--ds-brand-2)]" />
                         <span>راسل صاحب البيت</span>
                       </button>
                     )}
                     <button
                       id={`booking-receipt-btn-${booking.id}`}
                       onClick={() => setActiveReceipt(booking)}
-                      className="flex items-center gap-1.5 bg-white hover:bg-[#F1EEE6] text-[#4A4A3A] border border-[#D6D6C2] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 bg-white hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                     >
-                      <FileText className="w-3.5 h-3.5 text-[#867E65]" />
+                      <FileText className="w-3.5 h-3.5 text-[var(--ds-text-2)]" />
                       <span>سند التأكيد</span>
                     </button>
                     {canCancel && (
@@ -1553,9 +1572,9 @@ export default function UserBookings({
                                 : `باقي ${daysLeft} يوم فقط على الوصول — وفقاً لسياسة الإلغاء لا يوجد استرداد للمبلغ المدفوع (${paid.toLocaleString('ar-EG')} ج.م).`;
                           if (confirm(`هل أنت متأكد من إلغاء هذا الحجز؟\n\n🛡️ سياسة الإلغاء: ${policyLine}`)) onCancelBooking?.(booking.id);
                         }}
-                        className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-800 border border-red-200 px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-[color-mix(in_srgb,var(--ds-danger)_8%,var(--ds-surface))] hover:bg-[color-mix(in_srgb,var(--ds-danger)_8%,var(--ds-surface))] text-[var(--ds-danger-ink)] border border-[color-mix(in_srgb,var(--ds-danger)_30%,var(--ds-surface))] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
-                        <XCircle className="w-3.5 h-3.5 text-red-600" />
+                        <XCircle className="w-3.5 h-3.5 text-[var(--ds-danger)]" />
                         <span>إلغاء الحجز</span>
                       </button>
                     )}
@@ -1629,17 +1648,17 @@ export default function UserBookings({
                     to carry the same lock, or the block above is decoration —
                     which is exactly what the test caught. */}
                 {stage === 'awaiting_deposit' && isPaying !== booking.id && !awaitingVerification && !platformPayeeMissing && (
-                  <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm border-t border-[#EDE7DA] px-4 py-3 flex items-center gap-3">
+                  <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm border-t border-[var(--ds-border)] px-4 py-3 flex items-center gap-3">
                     <div className="shrink-0 leading-tight">
-                      <span className="block text-[11px] font-bold text-[#8A8A70]">المتبقي للدفع</span>
-                      <span className="block text-[15px] font-black text-[#0A2342]">
+                      <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">المتبقي للدفع</span>
+                      <span className="block text-[14px] font-black text-[var(--ds-brand)]">
                         {Math.round(booking.totalPrice * settings.depositRate).toLocaleString('ar-EG')} ج.م
                       </span>
                     </div>
                     <button
                       type="button"
                       onClick={() => { setIsPaying(booking.id); setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString()); }}
-                      className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
+                      className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-b from-[var(--ds-accent)] to-[var(--ds-accent-deep)] text-[var(--ds-on-accent)] font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
                     >
                       <Wallet className="w-4 h-4" />
                       ادفع العربون الآن
@@ -1667,9 +1686,9 @@ export default function UserBookings({
             <div className="relative z-10 w-full max-w-md max-h-[90dvh] overflow-y-auto animate-in zoom-in-95 duration-200">
               <button aria-label="إغلاق التقييم"
                 onClick={() => setReviewingBooking(null)}
-                className="absolute top-2 left-2 z-20 p-1.5 bg-white/90 hover:bg-white rounded-full border border-[#D6D6C2] cursor-pointer shadow-sm"
+                className="absolute top-2 left-2 z-20 p-1.5 bg-white/90 hover:bg-white rounded-full border border-[var(--ds-border)] cursor-pointer shadow-sm"
               >
-                <X className="w-4 h-4 text-[#4A4A3A]" />
+                <X className="w-4 h-4 text-[var(--ds-text)]" />
               </button>
               <ReviewWizard
                 house={house}
@@ -1686,61 +1705,61 @@ export default function UserBookings({
       {activeReceipt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setActiveReceipt(null)} />
-          <div className="bg-white rounded-3xl max-w-md w-full border border-[#D6D6C2] shadow-2xl overflow-hidden relative z-10 animate-in zoom-in-95 duration-200 text-right text-[#4A4A3A]">
+          <div className="bg-white rounded-3xl max-w-md w-full border border-[var(--ds-border)] shadow-2xl overflow-hidden relative z-10 animate-in zoom-in-95 duration-200 text-right text-[var(--ds-text)]">
             
             <div id="receipt-pdf-container" className="bg-white relative">
               {/* Stamp styling */}
-              <div className="absolute top-4 left-4 border-4 border-[#5A5A40]/30 text-[#5A5A40]/40 rounded-full w-14 h-14 flex items-center justify-center rotate-12 font-black text-[11px] uppercase pointer-events-none">
+              <div className="absolute top-4 left-4 border-4 border-[var(--ds-primary)]/30 text-[var(--ds-primary)]/40 rounded-full w-14 h-14 flex items-center justify-center rotate-12 font-black text-[11px] uppercase pointer-events-none">
                 CONFIRMED
               </div>
 
               {/* Receipt Header */}
-              <div className="bg-gradient-to-r from-[#4A4A3A] to-[#5A5A40] text-white p-5 text-center space-y-1">
+              <div className="bg-gradient-to-r from-[var(--ds-text)] to-[var(--ds-primary)] text-white p-5 text-center space-y-1">
                 <h3 className="text-sm font-extrabold tracking-wide">سند تأكيد حجز رسمي كنسي</h3>
                 <p className="text-[11px] text-white/80">تطبيق حجز بيوت المؤتمرات والفنادق المسيحية بمصر</p>
               </div>
 
               {/* Receipt Content */}
               <div className="p-5 space-y-4">
-                <div className="text-center pb-2 border-b border-dashed border-[#D6D6C2]">
-                  <span className="text-[11px] text-[#8A8A70]">رقم الحجز: {activeReceipt.id.toUpperCase()}</span>
-                  <div className="text-xs font-extrabold text-[#4A4A3A] mt-0.5">سند تأكيد {activeReceipt.userName}</div>
+                <div className="text-center pb-2 border-b border-dashed border-[var(--ds-border)]">
+                  <span className="text-[11px] text-[var(--ds-text-2)]">رقم الحجز: {activeReceipt.id.toUpperCase()}</span>
+                  <div className="text-xs font-extrabold text-[var(--ds-text)] mt-0.5">سند تأكيد {activeReceipt.userName}</div>
                   {activeReceipt.organizationName && (
-                    <div className="text-[11px] text-[#8A8A70] mt-0.5">{activeReceipt.organizationName}</div>
+                    <div className="text-[11px] text-[var(--ds-text-2)] mt-0.5">{activeReceipt.organizationName}</div>
                   )}
                 </div>
 
                 {/* Grid with info */}
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-[#8A8A70]">اسم بيت المؤتمرات:</span>
-                    <span className="font-bold text-[#4A4A3A] text-left">{activeReceipt.houseName}</span>
+                    <span className="text-[var(--ds-text-2)]">اسم بيت المؤتمرات:</span>
+                    <span className="font-bold text-[var(--ds-text)] text-left">{activeReceipt.houseName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#8A8A70]">تاريخ الوصول:</span>
-                    <span className="font-semibold text-[#4A4A3A]">{arabicDate(activeReceipt.checkIn)}</span>
+                    <span className="text-[var(--ds-text-2)]">تاريخ الوصول:</span>
+                    <span className="font-semibold text-[var(--ds-text)]">{arabicDate(activeReceipt.checkIn)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#8A8A70]">تاريخ المغادرة:</span>
-                    <span className="font-semibold text-[#4A4A3A]">{arabicDate(activeReceipt.checkOut)}</span>
+                    <span className="text-[var(--ds-text-2)]">تاريخ المغادرة:</span>
+                    <span className="font-semibold text-[var(--ds-text)]">{arabicDate(activeReceipt.checkOut)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#8A8A70]">عدد الأفراد المحجوز لهم:</span>
-                    <span className="font-bold text-[#4A4A3A]">{activeReceipt.guestsCount} فرد</span>
+                    <span className="text-[var(--ds-text-2)]">عدد الأفراد المحجوز لهم:</span>
+                    <span className="font-bold text-[var(--ds-text)]">{activeReceipt.guestsCount} فرد</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#8A8A70]">قيمة الدفع الكلية:</span>
-                    <span className="font-extrabold text-[#4A4A3A]">{arabicNumber(activeReceipt.totalPrice)} ج.م</span>
+                    <span className="text-[var(--ds-text-2)]">قيمة الدفع الكلية:</span>
+                    <span className="font-extrabold text-[var(--ds-text)]">{arabicNumber(activeReceipt.totalPrice)} ج.م</span>
                   </div>
-                  <div className="flex justify-between pt-2 border-t border-[#D6D6C2]">
-                    <span className="text-[#8A8A70]">العربون المدفوع:</span>
-                    <span className="font-bold text-emerald-700">
+                  <div className="flex justify-between pt-2 border-t border-[var(--ds-border)]">
+                    <span className="text-[var(--ds-text-2)]">العربون المدفوع:</span>
+                    <span className="font-bold text-[var(--ds-success-ink)]">
                       {activeReceipt.depositPaid ? `${activeReceipt.depositAmount} ج.م` : 'لم يتم دفع عربون'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#8A8A70]">المبلغ المتبقي للدفع بالبيت:</span>
-                    <span className="font-bold text-[#5A5A40]">
+                    <span className="text-[var(--ds-text-2)]">المبلغ المتبقي للدفع بالبيت:</span>
+                    <span className="font-bold text-[var(--ds-primary)]">
                       {activeReceipt.depositPaid 
                         ? `${activeReceipt.totalPrice - activeReceipt.depositAmount} ج.م` 
                         : `${activeReceipt.totalPrice} ج.م`}
@@ -1748,22 +1767,22 @@ export default function UserBookings({
                   </div>
                 </div>
 
-                <div className="bg-[#EBEBE0]/30 rounded-2xl p-3 border border-[#D6D6C2] text-[11px] text-[#8A8A70] leading-relaxed text-center space-y-1">
+                <div className="bg-[var(--ds-raised)]/30 rounded-2xl p-3 border border-[var(--ds-border)] text-[11px] text-[var(--ds-text-2)] leading-relaxed text-center space-y-1">
                   <p>يرجى تقديم هذا السند المطبوع أو عبر الموبايل لمسؤول الاستقبال عند الوصول للبيت لتسهيل عملية التسكين واستلام الغرف.</p>
-                  <p className="font-semibold text-[#4A4A3A]">نتمنى لكم فترة خلوة مباركة ومثمرة روحيًا!</p>
+                  <p className="font-semibold text-[var(--ds-text)]">نتمنى لكم فترة خلوة مباركة ومثمرة روحيًا!</p>
                 </div>
               </div>
             </div>
 
             {/* Receipt Footer */}
-            <div className="bg-slate-50 p-4 border-t border-[#D6D6C2] flex gap-2 justify-end">
+            <div className="bg-[var(--ds-raised)] p-4 border-t border-[var(--ds-border)] flex gap-2 justify-end">
               <button
                 id="receipt-pdf-btn"
                 disabled={isExportingPDF}
                 onClick={() => exportReceiptAsPDF(activeReceipt)}
-                className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-950 border border-rose-200 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-1.5 bg-[color-mix(in_srgb,var(--ds-danger)_8%,var(--ds-surface))] hover:bg-[color-mix(in_srgb,var(--ds-danger)_8%,var(--ds-surface))] text-[var(--ds-danger-deep)] border border-[color-mix(in_srgb,var(--ds-danger)_30%,var(--ds-surface))] px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
               >
-                <FileDown className="w-4 h-4 text-rose-700" />
+                <FileDown className="w-4 h-4 text-[var(--ds-danger-ink)]" />
                 <span>{isExportingPDF ? 'جاري التصدير...' : 'تصدير كـ PDF 📄'}</span>
               </button>
               <button
@@ -1771,7 +1790,7 @@ export default function UserBookings({
                 onClick={() => {
                   window.print();
                 }}
-                className="flex items-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 bg-[var(--ds-raised)] hover:bg-[var(--ds-border)] text-[var(--ds-text)] px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
                 <span>طباعة السند</span>
@@ -1779,7 +1798,7 @@ export default function UserBookings({
               <button
                 id="receipt-close-btn"
                 onClick={() => setActiveReceipt(null)}
-                className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
               >
                 إغلاق
               </button>
@@ -1800,11 +1819,11 @@ export default function UserBookings({
         if (assignedIds.length === 0) {
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setActiveAllocationBooking(null)}>
-              <div className="bg-white rounded-3xl border border-[#D6D6C2] p-6 max-w-sm text-center space-y-2" dir="rtl" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-white rounded-3xl border border-[var(--ds-border)] p-6 max-w-sm text-center space-y-2" dir="rtl" onClick={(e) => e.stopPropagation()}>
                 <div className="text-3xl">🛏️</div>
-                <h3 className="text-sm font-black text-[#2D2D24]">بانتظار تخصيص الغرف</h3>
-                <p className="text-[11px] text-[#8A8A70] leading-relaxed">لسه صاحب البيت ماخصّصش غرف لمجموعتك. بمجرد ما يبعت الغرف، هتقدر تكتب أسماء المشاركين وتوزّعهم عليها من هنا.</p>
-                <button type="button" onClick={() => setActiveAllocationBooking(null)} className="mt-2 bg-[#5A5A40] text-white text-xs font-black px-5 py-2.5 rounded-2xl">تمام</button>
+                <h3 className="text-sm font-black text-[var(--ds-text)]">بانتظار تخصيص الغرف</h3>
+                <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">لسه صاحب البيت ماخصّصش غرف لمجموعتك. بمجرد ما يبعت الغرف، هتقدر تكتب أسماء المشاركين وتوزّعهم عليها من هنا.</p>
+                <button type="button" onClick={() => setActiveAllocationBooking(null)} className="mt-2 bg-[var(--ds-primary)] text-white text-xs font-black px-5 py-2.5 rounded-2xl">تمام</button>
               </div>
             </div>
           );
@@ -1849,14 +1868,14 @@ export default function UserBookings({
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 text-right">
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setActivePlannerBooking(null)} />
             
-            <div className="bg-[#FAF8F5] rounded-3xl w-full max-w-lg max-h-[88vh] flex flex-col shadow-2xl overflow-hidden border border-[#D6D6C2] relative z-10 animate-scale-up text-[#4A4A3A]">
+            <div className="bg-[var(--ds-bg)] rounded-3xl w-full max-w-lg max-h-[88vh] flex flex-col shadow-2xl overflow-hidden border border-[var(--ds-border)] relative z-10 animate-scale-up text-[var(--ds-text)]">
               {/* Header */}
-              <div className="bg-gradient-to-r from-[#4A4A3A] to-[#5A5A40] text-white px-5 py-4 flex items-center justify-between shadow-md">
+              <div className="bg-gradient-to-r from-[var(--ds-text)] to-[var(--ds-primary)] text-white px-5 py-4 flex items-center justify-between shadow-md">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                  <Sparkles className="w-4 h-4 text-[color-mix(in_srgb,var(--ds-warning)_30%,var(--ds-surface))] animate-pulse" />
                   <div className="text-right">
                     <h3 className="text-xs font-black">مخطط برنامج الخلوة والتحضيرات 📅</h3>
-                    <p className="text-[11px] text-amber-100 font-medium">بيت {activePlannerBooking.houseName} • {activePlannerBooking.guestsCount} فرد</p>
+                    <p className="text-[11px] text-[color-mix(in_srgb,var(--ds-warning)_8%,var(--ds-surface))] font-medium">بيت {activePlannerBooking.houseName} • {activePlannerBooking.guestsCount} فرد</p>
                   </div>
                 </div>
                 <button aria-label="إغلاق مخطط الرحلة"
@@ -1868,13 +1887,13 @@ export default function UserBookings({
               </div>
 
               {/* Tab Selector */}
-              <div className="bg-[#EBEBE0]/50 border-b border-[#D6D6C2] p-1.5 flex gap-1">
+              <div className="bg-[var(--ds-raised)]/50 border-b border-[var(--ds-border)] p-1.5 flex gap-1">
                 <button
                   onClick={() => setPlannerTab('schedule')}
                   className={`flex-1 py-2 text-center text-[11px] font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     plannerTab === 'schedule'
-                      ? 'bg-white text-[#4A4A3A] shadow-xs border border-[#D6D6C2]'
-                      : 'text-[#8A8A70] hover:text-[#4A4A3A]'
+                      ? 'bg-white text-[var(--ds-text)] shadow-xs border border-[var(--ds-border)]'
+                      : 'text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
                   }`}
                 >
                   <Calendar className="w-3.5 h-3.5" />
@@ -1884,8 +1903,8 @@ export default function UserBookings({
                   onClick={() => setPlannerTab('packing')}
                   className={`flex-1 py-2 text-center text-[11px] font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     plannerTab === 'packing'
-                      ? 'bg-white text-[#4A4A3A] shadow-xs border border-[#D6D6C2]'
-                      : 'text-[#8A8A70] hover:text-[#4A4A3A]'
+                      ? 'bg-white text-[var(--ds-text)] shadow-xs border border-[var(--ds-border)]'
+                      : 'text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
                   }`}
                 >
                   <ListTodo className="w-3.5 h-3.5" />
@@ -1900,16 +1919,16 @@ export default function UserBookings({
                 {plannerTab === 'schedule' && (
                   <div className="space-y-4">
                     {/* Theme selector info */}
-                    <div className="bg-amber-50/70 border border-amber-200/60 p-3 rounded-2xl text-[11px] leading-relaxed">
-                      <span className="font-extrabold text-[#5A5A40] block mb-1">💡 اختر الطابع الروحي المناسب لخدمتكم لتوليد برنامج تلقائي:</span>
+                    <div className="bg-[color-mix(in_srgb,var(--ds-warning)_6%,var(--ds-surface))] border border-[color-mix(in_srgb,var(--ds-warning)_18%,var(--ds-surface))] p-3 rounded-2xl text-[11px] leading-relaxed">
+                      <span className="font-extrabold text-[var(--ds-primary)] block mb-1">💡 اختر الطابع الروحي المناسب لخدمتكم لتوليد برنامج تلقائي:</span>
                       
                       <div className="grid grid-cols-3 gap-1.5 mt-2">
                         <button
                           onClick={() => changeThemeTemplate(bookingId, 'growth')}
                           className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all cursor-pointer border ${
                             plannerTheme === 'growth'
-                              ? 'bg-[#5A5A40] border-[#5A5A40] text-white shadow-xs'
-                              : 'bg-white border-[#D6D6C2] text-[#8A8A70] hover:text-[#4A4A3A]'
+                              ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-white shadow-xs'
+                              : 'bg-white border-[var(--ds-border)] text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
                           }`}
                         >
                           🌟 روحي وعقيدي
@@ -1918,8 +1937,8 @@ export default function UserBookings({
                           onClick={() => changeThemeTemplate(bookingId, 'fellowship')}
                           className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all cursor-pointer border ${
                             plannerTheme === 'fellowship'
-                              ? 'bg-[#5A5A40] border-[#5A5A40] text-white shadow-xs'
-                              : 'bg-white border-[#D6D6C2] text-[#8A8A70] hover:text-[#4A4A3A]'
+                              ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-white shadow-xs'
+                              : 'bg-white border-[var(--ds-border)] text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
                           }`}
                         >
                           🎉 تعارف ومحبة
@@ -1928,8 +1947,8 @@ export default function UserBookings({
                           onClick={() => changeThemeTemplate(bookingId, 'saints')}
                           className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all cursor-pointer border ${
                             plannerTheme === 'saints'
-                              ? 'bg-[#5A5A40] border-[#5A5A40] text-white shadow-xs'
-                              : 'bg-white border-[#D6D6C2] text-[#8A8A70] hover:text-[#4A4A3A]'
+                              ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-white shadow-xs'
+                              : 'bg-white border-[var(--ds-border)] text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
                           }`}
                         >
                           ⛪ آباء وقديسين
@@ -1938,15 +1957,15 @@ export default function UserBookings({
                     </div>
 
                     {/* Meal Fasting Suggestion Card */}
-                    <div className="bg-emerald-50/60 border border-emerald-200/50 p-2.5 rounded-2xl flex items-center justify-between text-[11px]">
-                      <div className="flex items-center gap-1.5 text-[#3D5E4E]">
-                        <BookOpen className="w-4 h-4 shrink-0 text-emerald-700" />
+                    <div className="bg-[color-mix(in_srgb,var(--ds-success)_5%,var(--ds-surface))] border border-[color-mix(in_srgb,var(--ds-success)_15%,var(--ds-surface))] p-2.5 rounded-2xl flex items-center justify-between text-[11px]">
+                      <div className="flex items-center gap-1.5 text-[var(--ds-success-ink)]">
+                        <BookOpen className="w-4 h-4 shrink-0 text-[var(--ds-success-ink)]" />
                         <div>
                           <span className="font-extrabold block text-[11px]">قائمة الطعام والوجبات المقترحة للمجموعة:</span>
-                          <span className="font-medium text-[#5A7E6E]">بناءً على أيام الأسبوع، نقترح تجهيز وجبات كنسية خفيفة وسهلة التحضير.</span>
+                          <span className="font-medium text-[var(--ds-success-ink)]">بناءً على أيام الأسبوع، نقترح تجهيز وجبات كنسية خفيفة وسهلة التحضير.</span>
                         </div>
                       </div>
-                      <span className="bg-emerald-200/50 text-emerald-950 font-black px-2 py-1 rounded-md shrink-0">صيامي / فطاري 🍲</span>
+                      <span className="bg-[color-mix(in_srgb,var(--ds-success)_15%,var(--ds-surface))] text-[var(--ds-success-deep)] font-black px-2 py-1 rounded-md shrink-0">صيامي / فطاري 🍲</span>
                     </div>
 
                     {/* Daily Activities Schedule list */}
@@ -1954,16 +1973,16 @@ export default function UserBookings({
                       {dayNumbers.map((dayNum) => {
                         const dayActs = bookingActs.filter(a => a.day === dayNum);
                         return (
-                          <div key={dayNum} className="bg-white rounded-2xl border border-[#D6D6C2] p-3 space-y-2.5 shadow-xs">
-                            <div className="flex justify-between items-center border-b border-[#EBEBE0] pb-1.5">
-                              <span className="text-xs font-black text-[#5A5A40] flex items-center gap-1">
-                                <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                          <div key={dayNum} className="bg-white rounded-2xl border border-[var(--ds-border)] p-3 space-y-2.5 shadow-xs">
+                            <div className="flex justify-between items-center border-b border-[var(--ds-raised)] pb-1.5">
+                              <span className="text-xs font-black text-[var(--ds-primary)] flex items-center gap-1">
+                                <Calendar className="w-3.5 h-3.5 text-[var(--ds-warning)]" />
                                 <span>اليوم ال{dayNum === 1 ? 'أول' : dayNum === 2 ? 'ثاني' : dayNum === 3 ? 'ثالث' : dayNum}</span>
                               </span>
                               
                               <button
                                 onClick={() => addActivity(bookingId, dayNum)}
-                                className="text-[#5A5A40] hover:text-emerald-700 text-[11px] font-black hover:underline flex items-center gap-0.5 cursor-pointer"
+                                className="text-[var(--ds-primary)] hover:text-[var(--ds-success-ink)] text-[11px] font-black hover:underline flex items-center gap-0.5 cursor-pointer"
                               >
                                 <Plus className="w-3 h-3" />
                                 <span>إضافة فقرة للبرنامج</span>
@@ -1972,17 +1991,17 @@ export default function UserBookings({
 
                             {/* Activities Rows */}
                             {dayActs.length === 0 ? (
-                              <p className="text-[11px] text-[#8A8A70] text-center py-2 font-bold">لا توجد فقرات مسجلة لبرنامج هذا اليوم حالياً.</p>
+                              <p className="text-[11px] text-[var(--ds-text-2)] text-center py-2 font-bold">لا توجد فقرات مسجلة لبرنامج هذا اليوم حالياً.</p>
                             ) : (
                               <div className="space-y-1.5">
                                 {dayActs.map((act) => (
-                                  <div key={act.id} className="flex gap-1.5 items-center bg-[#FAF8F5] p-1.5 rounded-xl border border-[#D6D6C2]/35">
+                                  <div key={act.id} className="flex gap-1.5 items-center bg-[var(--ds-bg)] p-1.5 rounded-xl border border-[var(--ds-border)]/35">
                                     {/* Time Input */}
                                     <input
                                       type="text"
                                       value={act.time}
                                       onChange={(e) => updateActivity(bookingId, act.id, 'time', e.target.value)}
-                                      className="w-16 bg-white border border-[#D6D6C2] rounded-lg px-1.5 py-1 text-[11px] text-center font-bold text-[#4A4A3A] focus:ring-1 focus:ring-[#5A5A40] focus:outline-none"
+                                      className="w-16 bg-white border border-[var(--ds-border)] rounded-lg px-1.5 py-1 text-[11px] text-center font-bold text-[var(--ds-text)] focus:ring-1 focus:ring-[var(--ds-primary)] focus:outline-none"
                                       title="وقت الفقرة"
                                     />
                                     
@@ -1991,14 +2010,14 @@ export default function UserBookings({
                                       type="text"
                                       value={act.activity}
                                       onChange={(e) => updateActivity(bookingId, act.id, 'activity', e.target.value)}
-                                      className="flex-1 bg-white border border-[#D6D6C2] rounded-lg px-2 py-1 text-[11px] font-semibold text-[#4A4A3A] focus:ring-1 focus:ring-[#5A5A40] focus:outline-none"
+                                      className="flex-1 bg-white border border-[var(--ds-border)] rounded-lg px-2 py-1 text-[11px] font-semibold text-[var(--ds-text)] focus:ring-1 focus:ring-[var(--ds-primary)] focus:outline-none"
                                       title="تفاصيل ومسمى النشاط"
                                     />
 
                                     {/* Delete slot button */}
                                     <button
                                       onClick={() => deleteActivity(bookingId, act.id)}
-                                      className="p-1 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                      className="p-1 text-[var(--ds-danger)] hover:text-[var(--ds-danger-ink)] hover:bg-[color-mix(in_srgb,var(--ds-danger)_8%,var(--ds-surface))] rounded-lg transition-colors cursor-pointer"
                                       title="حذف هذه الفقرة"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
@@ -2018,24 +2037,24 @@ export default function UserBookings({
                 {plannerTab === 'packing' && (
                   <div className="space-y-4">
                     {/* Progress indicator */}
-                    <div className="bg-white rounded-2xl border border-[#D6D6C2] p-3 shadow-xs space-y-1.5">
+                    <div className="bg-white rounded-2xl border border-[var(--ds-border)] p-3 shadow-xs space-y-1.5">
                       <div className="flex justify-between text-[11px] font-black">
                         <span>معدل جاهزية تحضير الرحلة كنسيًا وشخصيًا:</span>
-                        <span className="text-amber-700">{progressPercentage}% ({totalCheckedCount} من أصل {totalItemsCount})</span>
+                        <span className="text-[var(--ds-warning-ink)]">{progressPercentage}% ({totalCheckedCount} من أصل {totalItemsCount})</span>
                       </div>
-                      <div className="w-full bg-[#EBEBE0] h-2 rounded-full overflow-hidden">
+                      <div className="w-full bg-[var(--ds-raised)] h-2 rounded-full overflow-hidden">
                         <div 
-                          className="bg-gradient-to-r from-amber-500 to-emerald-600 h-full transition-all duration-300"
+                          className="bg-gradient-to-r from-[var(--ds-warning)] to-[var(--ds-success)] h-full transition-all duration-300"
                           style={{ width: `${progressPercentage}%` }}
                         />
                       </div>
-                      <p className="text-[11px] text-[#8A8A70] leading-relaxed">تجهيز الأغراض يضمن عدم نسيان الأساسيات والاحتياجات الطقسية للخدام والمخدومين.</p>
+                      <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">تجهيز الأغراض يضمن عدم نسيان الأساسيات والاحتياجات الطقسية للخدام والمخدومين.</p>
                     </div>
 
                     {/* Group Items Section (للخدام) */}
                     <div className="space-y-2">
-                      <h4 className="text-[11px] font-black text-[#5A5A40] flex items-center gap-1 pl-2">
-                        <Users className="w-3.5 h-3.5 text-amber-600" />
+                      <h4 className="text-[11px] font-black text-[var(--ds-primary)] flex items-center gap-1 pl-2">
+                        <Users className="w-3.5 h-3.5 text-[var(--ds-warning)]" />
                         <span>الأغراض وتجهيزات الخدمة المشتركة (للخدام):</span>
                       </h4>
 
@@ -2046,45 +2065,45 @@ export default function UserBookings({
                           value={newGroupText}
                           onChange={(e) => setNewGroupText(e.target.value)}
                           placeholder="إضافة غرض خدمة مشترك (مثل: قربان، هدايا...)"
-                          className="flex-1 bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 text-[11px] font-bold focus:ring-1 focus:ring-[#5A5A40] focus:outline-none"
+                          className="flex-1 bg-white border border-[var(--ds-border)] rounded-xl px-2.5 py-1.5 text-[11px] font-bold focus:ring-1 focus:ring-[var(--ds-primary)] focus:outline-none"
                         />
                         <button
                           onClick={() => {
                             addChecklistItem(bookingId, newGroupText, 'group');
                             setNewGroupText('');
                           }}
-                          className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-black px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                          className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-white text-[11px] font-black px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
                         >
                           إضافة
                         </button>
                       </div>
 
                       {/* Group list */}
-                      <div className="bg-white rounded-2xl border border-[#D6D6C2] overflow-hidden shadow-xs divide-y divide-[#EBEBE0]/60">
+                      <div className="bg-white rounded-2xl border border-[var(--ds-border)] overflow-hidden shadow-xs divide-y divide-[var(--ds-raised)]/60">
                         {groupItems.length === 0 ? (
-                          <p className="p-3 text-[11px] text-[#8A8A70] text-center font-bold">لا توجد أغراض مسجلة هنا.</p>
+                          <p className="p-3 text-[11px] text-[var(--ds-text-2)] text-center font-bold">لا توجد أغراض مسجلة هنا.</p>
                         ) : (
                           groupItems.map(item => (
-                            <div key={item.id} className="p-2.5 flex items-center justify-between hover:bg-[#FAF8F5] transition-colors gap-2">
+                            <div key={item.id} className="p-2.5 flex items-center justify-between hover:bg-[var(--ds-bg)] transition-colors gap-2">
                               <button
                                 onClick={() => toggleChecklistItem(bookingId, item.id)}
                                 className="flex-1 text-right flex items-start gap-2 cursor-pointer"
                               >
                                 <span className={`w-4.5 h-4.5 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                                   item.checked 
-                                    ? 'bg-emerald-600 border-emerald-600 text-white' 
-                                    : 'border-[#D6D6C2] bg-white'
+                                    ? 'bg-[var(--ds-success)] border-[var(--ds-success)] text-white' 
+                                    : 'border-[var(--ds-border)] bg-white'
                                 }`}>
                                   {item.checked && <Check className="w-3 h-3 stroke-[3]" />}
                                 </span>
-                                <span className={`text-[11px] font-bold leading-relaxed ${item.checked ? 'line-through text-[#8A8A70]' : 'text-[#4A4A3A]'}`}>
+                                <span className={`text-[11px] font-bold leading-relaxed ${item.checked ? 'line-through text-[var(--ds-text-2)]' : 'text-[var(--ds-text)]'}`}>
                                   {item.text}
                                 </span>
                               </button>
 
                               <button
                                 onClick={() => deleteChecklistItem(bookingId, item.id)}
-                                className="text-[#8A8A70] hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
+                                className="text-[var(--ds-text-2)] hover:text-[var(--ds-danger)] p-1 rounded-md hover:bg-[color-mix(in_srgb,var(--ds-danger)_8%,var(--ds-surface))] transition-colors cursor-pointer"
                                 title="حذف"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -2097,8 +2116,8 @@ export default function UserBookings({
 
                     {/* Personal Items Section (للأفراد) */}
                     <div className="space-y-2">
-                      <h4 className="text-[11px] font-black text-[#5A5A40] flex items-center gap-1 pl-2">
-                        <BookOpen className="w-3.5 h-3.5 text-[#5A5A40]" />
+                      <h4 className="text-[11px] font-black text-[var(--ds-primary)] flex items-center gap-1 pl-2">
+                        <BookOpen className="w-3.5 h-3.5 text-[var(--ds-primary)]" />
                         <span>الأغراض الشخصية الفردية (لكل مخدوم وخادم):</span>
                       </h4>
 
@@ -2109,45 +2128,45 @@ export default function UserBookings({
                           value={newPersonalText}
                           onChange={(e) => setNewPersonalText(e.target.value)}
                           placeholder="إضافة غرض شخصي فردي (مثل: كاب للشمس، أدوية...)"
-                          className="flex-1 bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 text-[11px] font-bold focus:ring-1 focus:ring-[#5A5A40] focus:outline-none"
+                          className="flex-1 bg-white border border-[var(--ds-border)] rounded-xl px-2.5 py-1.5 text-[11px] font-bold focus:ring-1 focus:ring-[var(--ds-primary)] focus:outline-none"
                         />
                         <button
                           onClick={() => {
                             addChecklistItem(bookingId, newPersonalText, 'personal');
                             setNewPersonalText('');
                           }}
-                          className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-black px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                          className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-white text-[11px] font-black px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
                         >
                           إضافة
                         </button>
                       </div>
 
                       {/* Personal list */}
-                      <div className="bg-white rounded-2xl border border-[#D6D6C2] overflow-hidden shadow-xs divide-y divide-[#EBEBE0]/60">
+                      <div className="bg-white rounded-2xl border border-[var(--ds-border)] overflow-hidden shadow-xs divide-y divide-[var(--ds-raised)]/60">
                         {personalItems.length === 0 ? (
-                          <p className="p-3 text-[11px] text-[#8A8A70] text-center font-bold">لا توجد أغراض فردية مسجلة هنا.</p>
+                          <p className="p-3 text-[11px] text-[var(--ds-text-2)] text-center font-bold">لا توجد أغراض فردية مسجلة هنا.</p>
                         ) : (
                           personalItems.map(item => (
-                            <div key={item.id} className="p-2.5 flex items-center justify-between hover:bg-[#FAF8F5] transition-colors gap-2">
+                            <div key={item.id} className="p-2.5 flex items-center justify-between hover:bg-[var(--ds-bg)] transition-colors gap-2">
                               <button
                                 onClick={() => toggleChecklistItem(bookingId, item.id)}
                                 className="flex-1 text-right flex items-start gap-2 cursor-pointer"
                               >
                                 <span className={`w-4.5 h-4.5 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                                   item.checked 
-                                    ? 'bg-[#5A5A40] border-[#5A5A40] text-white' 
-                                    : 'border-[#D6D6C2] bg-white'
+                                    ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-white' 
+                                    : 'border-[var(--ds-border)] bg-white'
                                 }`}>
                                   {item.checked && <Check className="w-3 h-3 stroke-[3]" />}
                                 </span>
-                                <span className={`text-[11px] font-bold leading-relaxed ${item.checked ? 'line-through text-[#8A8A70]' : 'text-[#4A4A3A]'}`}>
+                                <span className={`text-[11px] font-bold leading-relaxed ${item.checked ? 'line-through text-[var(--ds-text-2)]' : 'text-[var(--ds-text)]'}`}>
                                   {item.text}
                                 </span>
                               </button>
 
                               <button
                                 onClick={() => deleteChecklistItem(bookingId, item.id)}
-                                className="text-[#8A8A70] hover:text-rose-600 p-1 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
+                                className="text-[var(--ds-text-2)] hover:text-[var(--ds-danger)] p-1 rounded-md hover:bg-[color-mix(in_srgb,var(--ds-danger)_8%,var(--ds-surface))] transition-colors cursor-pointer"
                                 title="حذف"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -2162,20 +2181,20 @@ export default function UserBookings({
               </div>
 
               {/* Footer */}
-              <div className="bg-[#EBEBE0] p-3 text-center border-t border-[#D6D6C2] flex justify-between items-center gap-2">
+              <div className="bg-[var(--ds-raised)] p-3 text-center border-t border-[var(--ds-border)] flex justify-between items-center gap-2">
                 <button
                   onClick={() => {
                     window.print();
                   }}
-                  className="bg-white border border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#FAF8F5] text-[11px] font-black px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                  className="bg-white border border-[var(--ds-border)] text-[var(--ds-text)] hover:bg-[var(--ds-bg)] text-[11px] font-black px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-xs"
                 >
-                  <Printer className="w-4 h-4 text-slate-700" />
+                  <Printer className="w-4 h-4 text-[var(--ds-text)]" />
                   <span>طباعة البرنامج والتحضيرات 🖨️</span>
                 </button>
 
                 <button
                   onClick={() => setActivePlannerBooking(null)}
-                  className="bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-black px-5 py-2 rounded-xl transition-all cursor-pointer"
+                  className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-white text-[11px] font-black px-5 py-2 rounded-xl transition-all cursor-pointer"
                 >
                   إغلاق التخطيط
                 </button>
@@ -2196,11 +2215,11 @@ export default function UserBookings({
         if (assignedIds.length === 0) {
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setActiveAllocationBooking(null)}>
-              <div className="bg-white rounded-3xl border border-[#D6D6C2] p-6 max-w-sm text-center space-y-2" dir="rtl" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-white rounded-3xl border border-[var(--ds-border)] p-6 max-w-sm text-center space-y-2" dir="rtl" onClick={(e) => e.stopPropagation()}>
                 <div className="text-3xl">🛏️</div>
-                <h3 className="text-sm font-black text-[#2D2D24]">بانتظار تخصيص الغرف</h3>
-                <p className="text-[11px] text-[#8A8A70] leading-relaxed">لسه صاحب البيت ماخصّصش غرف لمجموعتك. بمجرد ما يبعت الغرف، هتقدر تكتب أسماء المشاركين وتوزّعهم عليها من هنا.</p>
-                <button type="button" onClick={() => setActiveAllocationBooking(null)} className="mt-2 bg-[#5A5A40] text-white text-xs font-black px-5 py-2.5 rounded-2xl">تمام</button>
+                <h3 className="text-sm font-black text-[var(--ds-text)]">بانتظار تخصيص الغرف</h3>
+                <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">لسه صاحب البيت ماخصّصش غرف لمجموعتك. بمجرد ما يبعت الغرف، هتقدر تكتب أسماء المشاركين وتوزّعهم عليها من هنا.</p>
+                <button type="button" onClick={() => setActiveAllocationBooking(null)} className="mt-2 bg-[var(--ds-primary)] text-white text-xs font-black px-5 py-2.5 rounded-2xl">تمام</button>
               </div>
             </div>
           );
