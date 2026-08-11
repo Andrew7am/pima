@@ -927,7 +927,10 @@ export default function UserBookings({
             const nextStep =
               primaryAction === 'pay' ? { label: 'مطلوب سداد العربون', cls: 'text-[var(--ds-danger-ink)]' }
                 : primaryAction === 'distribute' ? { label: 'ابدأ توزيع الغرف', cls: 'text-[var(--ds-success-ink)]' }
-                  : primaryAction === 'review' ? { label: 'قيّم خلوتك ⭐', cls: 'text-[var(--ds-warning-ink)]' }
+                  // Gold, not amber-as-warning: inviting a review is the one
+                  // cheerful item in this set, and it only wore warning-ink
+                  // because no gold-as-text role existed yet.
+                  : primaryAction === 'review' ? { label: 'قيّم خلوتك ⭐', cls: 'text-[var(--ds-accent-ink)]' }
                     : { label: 'التفاصيل', cls: 'text-[var(--ds-text-2)]' };
             const dLeftCompact = booking.status === 'approved' ? daysUntil(booking.checkIn) : -1;
             const isOpen = detailBookingId === booking.id;

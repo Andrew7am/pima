@@ -49,7 +49,9 @@ const ROLES = [
   'brand', 'brand-2', 'on-brand',
   // Added ahead of the bookings migration. -deep is the far end of the gold
   // gradient and the heading inside a status surface; -soft is the pale rim.
-  'accent-deep', 'accent-soft',
+  // -ink is gold as TEXT, which neither of the other two can be: -deep is
+  // 2.84:1 on white and -soft is decorative.
+  'accent-deep', 'accent-soft', 'accent-ink',
   'success', 'on-success', 'success-ink', 'success-deep',
   'warning', 'on-warning', 'warning-ink', 'warning-deep',
   'danger', 'on-danger', 'danger-ink', 'danger-deep',
@@ -84,7 +86,7 @@ describe('components are theme-agnostic', () => {
 });
 
 describe('every theme binds every role', () => {
-  it.each(THEMES)('%s defines all 28 roles', (selector) => {
+  it.each(THEMES)('%s defines all 29 roles', (selector) => {
     const b = block(selector);
     const missing = ROLES.filter((r) => !b.includes(`--ds-${r}:`));
     expect(missing, `${selector} is missing: ${missing.join(', ')}`).toEqual([]);

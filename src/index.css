@@ -84,6 +84,12 @@
      is why it is not held to 4.5:1 (it measures 1.56:1 on white, by design). */
   --color-natural-gold-deep: #B8944E;   /* dark ink on it — 6.14:1 */
   --color-natural-gold-soft: #E3CD9F;   /* decorative rim only */
+  /* Gold AS TEXT. Neither of the two above can be: -deep is 2.84:1 on white
+     and -soft is a rim. Without this role a gold label had nowhere to go but
+     --ds-warning-ink, which coloured "قيّم خلوتك ⭐" as a warning. The literal
+     it replaces, #9A7B2F, measured 4.00:1 and was already under AA; this is
+     5.14:1 on white and 4.85:1 on the page. */
+  --color-natural-gold-ink: #856A22;
 
   /* ── Foreground pairs — measured, not assumed ─────────────────────────────
      Every value below is the one that CLEARS 4.5:1 against its fill; the
@@ -120,6 +126,12 @@
   --color-owner-danger-deep: #7F1D1D;
   --color-owner-accent-deep: #A8823E;   /* dark ink on it — 4.93:1 */
   --color-owner-accent-soft: #E6D2A8;   /* decorative rim only */
+  /* NOTE: --color-owner-accent-ink is NOT declared here. The owner theme has
+     had one since its own migration, further down beside the other -ink pairs
+     (#8A6D28, and #D4AF37 at night). A second declaration up here was dead —
+     the later one wins on source order — and would have been a value nobody
+     could see in the rendered app. Measured: 4.89:1 on white, 7.70:1 at
+     night. Both clear AA, so there is nothing to replace. */
   /* The identity panel, and DELIBERATELY not redefined in the night block.
      It was first bound to --color-owner-primary, which night mode flips to a
      bright #4F86E8 — so the one surface that exists to stay recognisable went
@@ -194,6 +206,7 @@
      off the surface rather than a pale wash. */
   --color-play-gold-deep: #C99A22;      /* dark ink on it — 7.08:1 */
   --color-play-gold-soft: #4A3A1E;      /* decorative rim only */
+  --color-play-gold-ink: #F0D28C;       /* gold as text — 11.47:1 on the card */
   /* Deep tier, lighter than its base — same reason as owner night. */
   --color-play-success-deep: #6EE7B7;
   --color-play-warning-deep: #FDE68A;
@@ -295,6 +308,7 @@
   --ds-on-accent: var(--color-natural-on-accent);
   /* The gradient's far end, and the pale rim. See the palette note. */
   --ds-accent-deep: var(--color-natural-gold-deep);
+  --ds-accent-ink: var(--color-natural-gold-ink);
   --ds-accent-soft: var(--color-natural-gold-soft);
 
   /* The identity panel: a dark saturated surface that inverts its text and
@@ -343,6 +357,7 @@
   --ds-accent: var(--color-owner-accent);
   --ds-on-accent: var(--color-owner-on-accent);
   --ds-accent-deep: var(--color-owner-accent-deep);
+  --ds-accent-ink: var(--color-owner-accent-ink);
   --ds-accent-soft: var(--color-owner-accent-soft);
 
   /* The owner's identity panel: its navy, one step deeper for the gradient.
@@ -395,6 +410,7 @@
   --ds-accent: var(--color-owner-accent);
   --ds-on-accent: var(--color-owner-on-accent);
   --ds-accent-deep: var(--color-owner-accent-deep);
+  --ds-accent-ink: var(--color-owner-accent-ink);
   --ds-accent-soft: var(--color-owner-accent-soft);
 
   --ds-brand: var(--color-natural-navy);
@@ -447,6 +463,7 @@
   --ds-accent: var(--color-play-gold-bright);
   --ds-on-accent: var(--color-play-on-gold);
   --ds-accent-deep: var(--color-play-gold-deep);
+  --ds-accent-ink: var(--color-play-gold-ink);
   --ds-accent-soft: var(--color-play-gold-soft);
 
   /* Already a dark room, so the identity panel lifts rather than darkens —
@@ -561,6 +578,7 @@ body {
   --color-owner-danger-deep: #FCA5A5;
   --color-owner-accent-deep: #A88824;   /* dark ink on it — 5.44:1 */
   --color-owner-accent-soft: #4A3E22;   /* decorative rim, lifted off the dark surface */
+  /* accent-ink is already overridden for night mode further down (#D4AF37). */
   /* On a dark surface the lighter shade is the readable one, so ink and fill
      converge here rather than sitting either side of the surface. */
   /* The page background rather than white: on the lighter dark-mode primary

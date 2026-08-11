@@ -28,3 +28,24 @@ export type { EmptyStateProps } from './EmptyState';
 
 export { default as Skeleton, SkeletonGroup } from './Skeleton';
 export type { SkeletonProps } from './Skeleton';
+
+/* ── BACKLOG: gaps found by real screens, NOT to be built speculatively ──────
+ *
+ * Recorded here rather than fixed, because a variant invented before a second
+ * caller exists is a guess. Both came out of the bookings migration, where the
+ * production code was left as-is rather than bent around the toolkit.
+ *
+ * 1. Input has no LEADING-ICON slot.
+ *    UserBookings' search field puts a magnifier in an absolutely positioned
+ *    slot (`right-3` with `pr-10` on the field). Input is `ps-3 pe-3` with no
+ *    API for it, so the field stayed hand-built. Whoever adds this: the slot
+ *    must be logical, or the icon lands on the wrong side in Arabic.
+ *
+ * 2. Button has no ACCENT-GRADIENT variant.
+ *    Three of the bookings CTAs are a gold gradient — --ds-accent to
+ *    --ds-accent-deep — which is the screen's signature and was explicitly
+ *    ruled out of being flattened to a flat accent. Button's variants are all
+ *    single-fill, so those three stayed hand-built too. Note when building it
+ *    that the label must be --ds-on-accent: white on that gradient measures
+ *    2.46–2.84:1, which is how it shipped for a while.
+ */
