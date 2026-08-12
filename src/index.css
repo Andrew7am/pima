@@ -91,6 +91,43 @@
      5.14:1 on white and 4.85:1 on the page. */
   --color-natural-gold-ink: #856A22;
 
+  /* ── The media surface ────────────────────────────────────────────────────
+     The ground BEHIND a photograph. Browse's house cards are deliberately dark
+     on a cream page — the photo is the whole card and the detail panels float
+     over it — so this is not --ds-surface (a card on the page), not --ds-bg,
+     and not --ds-brand (the identity panel, which is navy and means something
+     else). It is the one surface whose darkness is decided by the picture
+     rather than by the theme, which is why it does NOT invert in night mode
+     the way the -deep tier does: a photograph needs a dark ground whatever the
+     page is doing.
+
+     -accent is a LIGHTER gold than --ds-accent on purpose. It sits on an
+     uncontrolled image, where the safe choice is the one that survives a pale
+     photo as well as a dark one; darkening it to reuse --ds-accent is exactly
+     the trade this role exists to refuse. */
+  --color-natural-media: #2A2A20;
+  --color-natural-media-border: #3C3C2E;
+  --color-natural-on-media: #FFFFFF;    /* 14.48:1 on the ground */
+  --color-natural-media-accent: #E8C88A; /* 9.00:1 on the ground */
+
+  /* ── Categories ───────────────────────────────────────────────────────────
+     A qualitative scale, NOT a status one. Browse labels three kinds of
+     accommodation — women's student housing, men's student housing, staff —
+     and none of them is success, warning or danger. Mapping a category onto a
+     status colour tells the reader something untrue about it.
+
+     They separate by HUE, not by lightness (1.08–1.22 between any pair), which
+     is what a categorical scale should do — and is also why every chip using
+     them carries a word as well. Colour is never the only signal.
+
+     Theme-invariant on purpose: each is a filled pill carrying white text, and
+     that job does not change when the page gets darker. Add a fourth only when
+     a fourth real category exists. */
+  --color-category-1: #9C4B64;          /* white — 5.83:1 */
+  --color-category-2: #4B6B9C;          /* white — 5.41:1 */
+  --color-category-3: #4B7C6B;          /* white — 4.78:1 */
+  --color-on-category: #FFFFFF;
+
   /* ── Foreground pairs — measured, not assumed ─────────────────────────────
      Every value below is the one that CLEARS 4.5:1 against its fill; the
      losing option is recorded beside it because "white on the brand colour"
@@ -126,6 +163,15 @@
   --color-owner-danger-deep: #7F1D1D;
   --color-owner-accent-deep: #A8823E;   /* dark ink on it — 4.93:1 */
   --color-owner-accent-soft: #E6D2A8;   /* decorative rim only */
+  /* Media ground, cool to match this theme's navy. NOT redefined for night:
+     see the note in the guest block for why this one does not invert. */
+  --color-owner-media: #141A24;
+  --color-owner-media-border: #26303F;
+  --color-owner-on-media: #FFFFFF;      /* 17.46:1 */
+  --color-owner-media-accent: #E8C88A;  /* 10.86:1 — same literal as guest,
+                                           because "legible gold on someone
+                                           else's photograph" is the same
+                                           requirement in both themes. */
   /* NOTE: --color-owner-accent-ink is NOT declared here. The owner theme has
      had one since its own migration, further down beside the other -ink pairs
      (#8A6D28, and #D4AF37 at night). A second declaration up here was dead —
@@ -207,6 +253,11 @@
   --color-play-gold-deep: #C99A22;      /* dark ink on it — 7.08:1 */
   --color-play-gold-soft: #4A3A1E;      /* decorative rim only */
   --color-play-gold-ink: #F0D28C;       /* gold as text — 11.47:1 on the card */
+  /* Media ground, warm like the rest of this room. */
+  --color-play-media: #221C17;
+  --color-play-media-border: #3A312A;
+  --color-play-on-media: #F2EBE1;       /* 14.24:1 */
+  --color-play-media-accent: #F0D28C;   /* 11.47:1 */
   /* Deep tier, lighter than its base — same reason as owner night. */
   --color-play-success-deep: #6EE7B7;
   --color-play-warning-deep: #FDE68A;
@@ -309,6 +360,16 @@
   /* The gradient's far end, and the pale rim. See the palette note. */
   --ds-accent-deep: var(--color-natural-gold-deep);
   --ds-accent-ink: var(--color-natural-gold-ink);
+
+  /* The ground behind a photograph — see the palette note. */
+  --ds-media: var(--color-natural-media);
+  --ds-media-border: var(--color-natural-media-border);
+  --ds-on-media: var(--color-natural-on-media);
+  --ds-media-accent: var(--color-natural-media-accent);
+  --ds-category-1: var(--color-category-1);
+  --ds-category-2: var(--color-category-2);
+  --ds-category-3: var(--color-category-3);
+  --ds-on-category: var(--color-on-category);
   --ds-accent-soft: var(--color-natural-gold-soft);
 
   /* The identity panel: a dark saturated surface that inverts its text and
@@ -358,6 +419,16 @@
   --ds-on-accent: var(--color-owner-on-accent);
   --ds-accent-deep: var(--color-owner-accent-deep);
   --ds-accent-ink: var(--color-owner-accent-ink);
+
+  /* The ground behind a photograph — see the palette note. */
+  --ds-media: var(--color-owner-media);
+  --ds-media-border: var(--color-owner-media-border);
+  --ds-on-media: var(--color-owner-on-media);
+  --ds-media-accent: var(--color-owner-media-accent);
+  --ds-category-1: var(--color-category-1);
+  --ds-category-2: var(--color-category-2);
+  --ds-category-3: var(--color-category-3);
+  --ds-on-category: var(--color-on-category);
   --ds-accent-soft: var(--color-owner-accent-soft);
 
   /* The owner's identity panel: its navy, one step deeper for the gradient.
@@ -411,6 +482,16 @@
   --ds-on-accent: var(--color-owner-on-accent);
   --ds-accent-deep: var(--color-owner-accent-deep);
   --ds-accent-ink: var(--color-owner-accent-ink);
+
+  /* The ground behind a photograph — see the palette note. */
+  --ds-media: var(--color-owner-media);
+  --ds-media-border: var(--color-owner-media-border);
+  --ds-on-media: var(--color-owner-on-media);
+  --ds-media-accent: var(--color-owner-media-accent);
+  --ds-category-1: var(--color-category-1);
+  --ds-category-2: var(--color-category-2);
+  --ds-category-3: var(--color-category-3);
+  --ds-on-category: var(--color-on-category);
   --ds-accent-soft: var(--color-owner-accent-soft);
 
   --ds-brand: var(--color-natural-navy);
@@ -464,6 +545,16 @@
   --ds-on-accent: var(--color-play-on-gold);
   --ds-accent-deep: var(--color-play-gold-deep);
   --ds-accent-ink: var(--color-play-gold-ink);
+
+  /* The ground behind a photograph — see the palette note. */
+  --ds-media: var(--color-play-media);
+  --ds-media-border: var(--color-play-media-border);
+  --ds-on-media: var(--color-play-on-media);
+  --ds-media-accent: var(--color-play-media-accent);
+  --ds-category-1: var(--color-category-1);
+  --ds-category-2: var(--color-category-2);
+  --ds-category-3: var(--color-category-3);
+  --ds-on-category: var(--color-on-category);
   --ds-accent-soft: var(--color-play-gold-soft);
 
   /* Already a dark room, so the identity panel lifts rather than darkens —

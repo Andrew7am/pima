@@ -52,6 +52,10 @@ const ROLES = [
   // -ink is gold as TEXT, which neither of the other two can be: -deep is
   // 2.84:1 on white and -soft is decorative.
   'accent-deep', 'accent-soft', 'accent-ink',
+  // Found by the Guest Browse migration: the ground behind a photograph, and
+  // a qualitative scale that must not borrow the status colours.
+  'media', 'media-border', 'on-media', 'media-accent',
+  'category-1', 'category-2', 'category-3', 'on-category',
   'success', 'on-success', 'success-ink', 'success-deep',
   'warning', 'on-warning', 'warning-ink', 'warning-deep',
   'danger', 'on-danger', 'danger-ink', 'danger-deep',
@@ -86,7 +90,7 @@ describe('components are theme-agnostic', () => {
 });
 
 describe('every theme binds every role', () => {
-  it.each(THEMES)('%s defines all 29 roles', (selector) => {
+  it.each(THEMES)('%s defines all 37 roles', (selector) => {
     const b = block(selector);
     const missing = ROLES.filter((r) => !b.includes(`--ds-${r}:`));
     expect(missing, `${selector} is missing: ${missing.join(', ')}`).toEqual([]);
@@ -111,6 +115,122 @@ describe('every theme binds every role', () => {
     expect(root).toBeGreaterThan(-1);
     for (const t of ['.owner-theme', '.admin-theme', '.play-theme']) {
       expect(CSS.indexOf(`\n${t} {`), t).toBeGreaterThan(root);
+    }
+  });
+});
+
+describe('no token is declared twice inside one block', () => {
+  it('catches the duplicate that source order silently swallows', () => {
+    // This is here because it already happened once: a second
+    // --color-owner-accent-ink was added above the existing one inside
+    // @theme static, lost on source order, and defined a value nothing could
+    // ever render. Two declarations in DIFFERENT blocks are fine and
+    // deliberate — that is how night mode overrides. Two in the SAME block
+    // are always a mistake.
+    const blocks = [...CSS_CODE.matchAll(/(^|\n)([^{}\n][^{}]*)\{([^{}]*)\}/g)];
+    const dupes: string[] = [];
+    for (const [, , selector, body] of blocks) {
+      const seen = new Map<string, number>();
+      for (const [, name] of body.matchAll(/(--[\w-]+)\s*:/g)) {
+        seen.set(name, (seen.get(name) ?? 0) + 1);
+      }
+      for (const [name, n] of seen) if (n > 1) dupes.push(`${selector.trim()} declares ${name} ${n}×`);
+    }
+    expect(dupes).toEqual([]);
+  });
+});
+
+describe('the media surface, which does NOT invert', () => {
+  // The opposite property to the -deep tier, and the reason it needs saying:
+  // -deep flips because the SURFACE under it flips with the theme. A media
+  // ground is dark because a photograph is under it, and that does not change
+  // when the page does. Anyone applying the -deep lesson here would break it.
+
+  const lum = (hexColour: string) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hexColour.slice(i, i + 2), 16));
+    const ch = (c: number) => {
+      const s = c / 255;
+      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
+  };
+  const value = (token: string) => {
+    const hits = [...CSS_CODE.matchAll(new RegExp(`${token}:\\s*(#[0-9A-Fa-f]{6})`, 'g'))];
+    if (!hits.length) throw new Error(`no value for ${token}`);
+    return hits[hits.length - 1][1];
+  };
+  const contrast = (a: string, b: string) => {
+    const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+    return (x + 0.05) / (y + 0.05);
+  };
+
+  const FAMILIES = ['natural', 'owner', 'play'] as const;
+
+  it('is dark in every theme, including the light ones', () => {
+    for (const f of FAMILIES) {
+      expect(lum(value(`--color-${f}-media`)), `${f} media must be dark`).toBeLessThan(0.06);
+    }
+  });
+
+  it('carries its foreground and its accent at AA or better', () => {
+    for (const f of FAMILIES) {
+      const ground = value(`--color-${f}-media`);
+      expect(contrast(value(`--color-${f}-on-media`), ground), `${f} on-media`).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(value(`--color-${f}-media-accent`), ground), `${f} media-accent`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('keeps the accent LIGHTER than --ds-accent, which is the whole point', () => {
+    // It sits on an uncontrolled photograph. Darkening it to reuse the flat
+    // accent is the trade this role exists to refuse.
+    expect(lum(value('--color-natural-media-accent')))
+      .toBeGreaterThan(lum(value('--color-natural-gold')));
+  });
+
+  it('gives the card edge enough separation to be seen', () => {
+    for (const f of FAMILIES) {
+      expect(contrast(value(`--color-${f}-media-border`), value(`--color-${f}-media`)), f)
+        .toBeGreaterThan(1.15);
+    }
+  });
+});
+
+describe('categories are a qualitative scale, not a status one', () => {
+  const lum = (h: string) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const ch = (c: number) => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4); };
+    return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
+  };
+  const value = (t: string) => {
+    const hits = [...CSS_CODE.matchAll(new RegExp(`${t}:\\s*(#[0-9A-Fa-f]{6})`, 'g'))];
+    if (!hits.length) throw new Error(`no value for ${t}`);
+    return hits[hits.length - 1][1];
+  };
+  const contrast = (a: string, b: string) => {
+    const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+    return (x + 0.05) / (y + 0.05);
+  };
+  const CATS = ['--color-category-1', '--color-category-2', '--color-category-3'];
+
+  it('carries its label at AA on every category', () => {
+    for (const c of CATS) {
+      expect(contrast(value('--color-on-category'), value(c)), c).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('never borrows a status colour', () => {
+    // A category is not success, warning or danger. Reusing one of those
+    // values would tell the reader something untrue about the thing labelled.
+    const status = ['success', 'warning', 'danger'].flatMap((s) =>
+      ['natural', 'owner'].map((f) => value(`--color-${f}-${s}`)));
+    for (const c of CATS) expect(status, c).not.toContain(value(c));
+  });
+
+  it('is bound identically in every theme, which is deliberate', () => {
+    // Unlike -deep, a filled pill carrying white text does the same job
+    // whatever the page's lightness. One definition, four bindings.
+    for (const t of [':root', '.owner-theme', '.admin-theme', '.play-theme']) {
+      expect(block(t)).toMatch(/--ds-category-1:\s*var\(--color-category-1\)/);
     }
   });
 });
