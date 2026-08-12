@@ -7,7 +7,7 @@ interface HouseLocationTrustProps {
   announcements: Announcement[];
 }
 
-const CARD = 'bg-white rounded-3xl border border-[#EDE7DA] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]';
+const CARD = 'bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]';
 
 /* Brand marks, drawn rather than fetched: a strict CSP and an offline-capable
    app both rule out hotlinking three logos from three CDNs. */
@@ -66,8 +66,8 @@ export default function HouseLocationTrust({ house, announcements }: HouseLocati
       {/* Anything the owner has posted stays at the top of this stack — a
           notice about the pool being closed is no use below the guarantees. */}
       {liveAnnouncements.map((a) => (
-        <div key={a.id} className="p-3 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-2 text-[11px] text-amber-900 font-bold">
-          <span className="text-sm">📢</span>
+        <div key={a.id} className="p-3 rounded-2xl bg-[color-mix(in_srgb,var(--ds-warning)_10%,transparent)] border border-[color-mix(in_srgb,var(--ds-warning)_30%,transparent)] flex items-start gap-2 text-[11px] text-[var(--ds-warning-deep)] font-bold">
+          <span className="text-[14px]">📢</span>
           <span>{a.message}</span>
         </div>
       ))}
@@ -75,12 +75,12 @@ export default function HouseLocationTrust({ house, announcements }: HouseLocati
       {/* ── Where it is ── */}
       <div className={`${CARD} p-5 space-y-4`}>
         <div className="flex items-center gap-3">
-          <span className="w-14 h-14 rounded-full bg-[#F6F0E2] flex items-center justify-center shrink-0">
-            <MapPin className="w-7 h-7 text-[#C5A059]" />
+          <span className="w-14 h-14 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] flex items-center justify-center shrink-0">
+            <MapPin className="w-7 h-7 text-[var(--ds-accent)]" />
           </span>
           <div className="min-w-0">
-            <p className="text-[14px] font-black text-[#0A2342] leading-snug">{house.address}</p>
-            <p className="text-[11px] font-medium text-[#8A8A70] mt-0.5">الموقع على الخريطة</p>
+            <p className="text-[14px] font-black text-[var(--ds-brand)] leading-snug">{house.address}</p>
+            <p className="text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">الموقع على الخريطة</p>
           </div>
         </div>
 
@@ -92,7 +92,7 @@ export default function HouseLocationTrust({ house, announcements }: HouseLocati
                 href={m.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-1.5 rounded-2xl bg-white border border-[#EDE7DA] px-2 py-3 shadow-[0_2px_8px_rgba(45,45,36,0.05)] hover:bg-[#FBF9F4] hover:border-[#E3CD9F] transition-colors pima-press"
+                className="flex items-center justify-center gap-1.5 rounded-2xl bg-[var(--ds-surface)] border border-[var(--ds-border)] px-2 py-3 shadow-[0_2px_8px_rgba(45,45,36,0.05)] hover:bg-[var(--ds-surface)] hover:border-[var(--ds-accent-soft)] transition-colors pima-press"
               >
                 {m.mark}
                 <span className="text-[11px] font-bold text-[#2D2D24] truncate" dir="ltr">{m.label}</span>
@@ -105,24 +105,24 @@ export default function HouseLocationTrust({ house, announcements }: HouseLocati
       {/* ── Why it is safe ── */}
       <div className={`${CARD} p-5`}>
         <div className="text-center space-y-1">
-          <h3 className="text-[17px] font-black text-[#0A2342] flex items-center justify-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-[#C5A059]" />
+          <h3 className="text-[17px] font-black text-[var(--ds-brand)] flex items-center justify-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-[var(--ds-accent)]" />
             ضمانات بيما
           </h3>
-          <p className="text-[11px] font-medium text-[#8A8A70]">احجز بثقة وأمان معنا</p>
+          <p className="text-[11px] font-medium text-[var(--ds-text-2)]">احجز بثقة وأمان معنا</p>
         </div>
 
         <div className="mt-5 grid grid-cols-4">
           {guarantees.map((g, i) => (
             <div
               key={g.title}
-              className={`flex flex-col items-center text-center gap-1.5 px-1 ${i > 0 ? 'border-l border-[#EDE7DA]' : ''}`}
+              className={`flex flex-col items-center text-center gap-1.5 px-1 ${i > 0 ? 'border-l border-[var(--ds-border)]' : ''}`}
             >
-              <span className="w-11 h-11 rounded-full bg-[#F6F0E2] flex items-center justify-center">
-                <g.icon className="w-5 h-5 text-[#C5A059]" />
+              <span className="w-11 h-11 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] flex items-center justify-center">
+                <g.icon className="w-5 h-5 text-[var(--ds-accent)]" />
               </span>
               <span className="text-[11px] font-black text-[#2D2D24] leading-tight">{g.title}</span>
-              <span className="text-[11px] font-medium text-[#8A8A70] leading-snug">{g.body}</span>
+              <span className="text-[11px] font-medium text-[var(--ds-text-2)] leading-snug">{g.body}</span>
             </div>
           ))}
         </div>

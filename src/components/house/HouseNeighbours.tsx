@@ -40,18 +40,18 @@ export default function HouseNeighbours({ bookingId }: { bookingId: string }) {
     BOOKING_GROUPS.find((g) => g.key === key)?.label ?? 'مجموعة';
 
   return (
-    <div className="bg-[#F7F5EF] border border-[#E7E5DB] rounded-2xl p-3 space-y-1.5">
-      <div className="flex items-center gap-1.5 text-[11px] font-black text-[#0A2342]">
-        <Users className="w-3.5 h-3.5 text-[#C5A059]" />
+    <div className="bg-[var(--ds-raised)] border border-[var(--ds-border)] rounded-2xl p-3 space-y-1.5">
+      <div className="flex items-center gap-1.5 text-[11px] font-black text-[var(--ds-brand)]">
+        <Users className="w-3.5 h-3.5 text-[var(--ds-accent)]" />
         في البيت معاكم
       </div>
       {rows.map((n, i) => (
-        <div key={i} className="text-[11px] text-[#4A4A3A] font-bold">
+        <div key={i} className="text-[11px] text-[var(--ds-text)] font-bold">
           {label(n.bookingType)} · {n.sizeBand} فرد
-          <span className="text-[#8A8A70] font-medium"> · {arabicDateRange(n.checkIn, n.checkOut)}</span>
+          <span className="text-[var(--ds-text-2)] font-medium"> · {arabicDateRange(n.checkIn, n.checkOut)}</span>
         </div>
       ))}
-      <p className="text-[10px] text-[#8A8A70] leading-relaxed">
+      <p className="text-[10px] text-[var(--ds-text-2)] leading-relaxed">
         بنقولك ده علشان تظبط الأدوار والإشراف بالليل. مفيش أي بيانات عن المجموعة التانية غير ده.
       </p>
     </div>

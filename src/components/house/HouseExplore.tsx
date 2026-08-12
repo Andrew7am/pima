@@ -16,14 +16,14 @@ export function ExploreSection({ children }: { children: React.ReactNode }) {
   return (
     <div className="space-y-4">
       <div className="text-center space-y-1">
-        <h3 className="text-[16px] font-black text-[#0A2342] flex items-center justify-center gap-2.5">
-          <span aria-hidden="true" className="w-8 h-px bg-[#C9A24A]/50" />
-          <span aria-hidden="true" className="w-1 h-1 rounded-full bg-[#C9A24A]" />
+        <h3 className="text-[16px] font-black text-[var(--ds-brand)] flex items-center justify-center gap-2.5">
+          <span aria-hidden="true" className="w-8 h-px bg-[color-mix(in_srgb,var(--ds-accent)_50%,transparent)]" />
+          <span aria-hidden="true" className="w-1 h-1 rounded-full bg-[var(--ds-accent)]" />
           استكشف المكان
-          <span aria-hidden="true" className="w-1 h-1 rounded-full bg-[#C9A24A]" />
-          <span aria-hidden="true" className="w-8 h-px bg-[#C9A24A]/50" />
+          <span aria-hidden="true" className="w-1 h-1 rounded-full bg-[var(--ds-accent)]" />
+          <span aria-hidden="true" className="w-8 h-px bg-[color-mix(in_srgb,var(--ds-accent)_50%,transparent)]" />
         </h3>
-        <p className="text-[11px] font-medium text-[#8A8A70]">اكتشف كل ما يقدمه هذا المكان</p>
+        <p className="text-[11px] font-medium text-[var(--ds-text-2)]">اكتشف كل ما يقدمه هذا المكان</p>
       </div>
 
       {/* Two columns, placed explicitly rather than left to flow: the menu
@@ -78,8 +78,8 @@ const DELAY: Record<number, string> = { 0: '', 1: 'pima-rise-1', 2: 'pima-rise-2
 // The two card papers. The fade at a photo's edge must end in the paper's own
 // colour, so each tone carries its hex for the gradient stop.
 const TONES = {
-  white: { bg: 'bg-white', hex: '#FFFFFF', border: 'border-[#EDE7DA]', disc: 'bg-[#F6F0E2]' },
-  cream: { bg: 'bg-[#FBF6EC]', hex: '#FBF6EC', border: 'border-[#EBD9B4]/60', disc: 'bg-white' },
+  white: { bg: 'bg-[var(--ds-surface)]', hex: 'var(--ds-surface)', border: 'border-[var(--ds-border)]', disc: 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))]' },
+  cream: { bg: 'bg-[var(--ds-raised)]', hex: 'var(--ds-raised)', border: 'border-[color-mix(in_srgb,var(--ds-accent-soft)_60%,transparent)]', disc: 'bg-[var(--ds-surface)]' },
 } as const;
 
 export function ExploreCard({
@@ -101,7 +101,7 @@ export function ExploreCard({
         id={`explore-card-${id}`}
         type="button"
         onClick={() => { tapFeedback(); setOpen(true); }}
-        className={`${PLACE[place]} ${DELAY[delay]} ${t.bg} ${t.border} pima-rise relative flex text-right rounded-[30px] border overflow-hidden shadow-[0_10px_28px_rgba(45,45,36,0.07),0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_16px_38px_rgba(201,162,74,0.18),0_3px_10px_rgba(45,45,36,0.05)] hover:border-[#E3CD9F] active:scale-[0.98] transition-[transform,box-shadow,border-color] duration-200 ease-out cursor-pointer ${
+        className={`${PLACE[place]} ${DELAY[delay]} ${t.bg} ${t.border} pima-rise relative flex text-right rounded-[30px] border overflow-hidden shadow-[0_10px_28px_rgba(45,45,36,0.07),0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_16px_38px_rgba(201,162,74,0.18),0_3px_10px_rgba(45,45,36,0.05)] hover:border-[var(--ds-accent-soft)] active:scale-[0.98] transition-[transform,box-shadow,border-color] duration-200 ease-out cursor-pointer ${
           horizontal ? 'flex-col gap-2.5 p-4' : 'flex-col justify-between'
         }`}
       >
@@ -131,14 +131,14 @@ export function ExploreCard({
         {horizontal ? (
           <>
             <span className="relative flex items-center gap-3 w-full">
-              <span className={`${t.disc} w-11 h-11 rounded-full border border-[#EBD9B4]/70 shadow-[0_2px_6px_rgba(184,148,78,0.12)] flex items-center justify-center shrink-0`}>
-                <Icon className="w-5 h-5 text-[#C9A24A]" />
+              <span className={`${t.disc} w-11 h-11 rounded-full border border-[color-mix(in_srgb,var(--ds-accent-soft)_70%,transparent)] shadow-[0_2px_6px_rgba(184,148,78,0.12)] flex items-center justify-center shrink-0`}>
+                <Icon className="w-5 h-5 text-[var(--ds-accent)]" />
               </span>
               <span className="flex-1 min-w-0 leading-tight">
-                <span className="block text-[14px] font-black text-[#0A2342]">{title}</span>
-                {showSubtitle && <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5 leading-snug truncate">{subtitle}</span>}
+                <span className="block text-[14px] font-black text-[var(--ds-brand)]">{title}</span>
+                {showSubtitle && <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5 leading-snug truncate">{subtitle}</span>}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-[#D9BC85] bg-white text-[#B8944E] px-3.5 py-2 text-[11px] font-black shadow-[0_2px_8px_rgba(184,148,78,0.15)] shrink-0">
+              <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-[var(--ds-accent-soft)] bg-[var(--ds-surface)] text-[var(--ds-accent-deep)] px-3.5 py-2 text-[11px] font-black shadow-[0_2px_8px_rgba(184,148,78,0.15)] shrink-0">
                 <ChevronLeft className="w-3.5 h-3.5" />
                 {cta}
               </span>
@@ -150,16 +150,16 @@ export function ExploreCard({
           {image && imageMode === 'thumb' ? (
             // The photograph earns the icon's place: on a card this narrow it
             // says more about the house than the glyph does.
-            <span className="block w-11 h-12 rounded-2xl overflow-hidden border border-[#EBD9B4]/70 shadow-[0_2px_6px_rgba(184,148,78,0.12)] mb-2.5">
+            <span className="block w-11 h-12 rounded-2xl overflow-hidden border border-[color-mix(in_srgb,var(--ds-accent-soft)_70%,transparent)] shadow-[0_2px_6px_rgba(184,148,78,0.12)] mb-2.5">
               <img src={image} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover pima-ken-burns" />
             </span>
           ) : (
-          <span className={`${t.disc} w-11 h-11 rounded-full border border-[#EBD9B4]/70 shadow-[0_2px_6px_rgba(184,148,78,0.12)] flex items-center justify-center mb-3 ${image && imageMode === 'side' ? 'me-auto' : ''}`}>
-            <Icon className="w-5 h-5 text-[#C9A24A]" />
+          <span className={`${t.disc} w-11 h-11 rounded-full border border-[color-mix(in_srgb,var(--ds-accent-soft)_70%,transparent)] shadow-[0_2px_6px_rgba(184,148,78,0.12)] flex items-center justify-center mb-3 ${image && imageMode === 'side' ? 'me-auto' : ''}`}>
+            <Icon className="w-5 h-5 text-[var(--ds-accent)]" />
           </span>
           )}
-          <span className={`block font-black text-[#0A2342] leading-tight ${big ? 'text-[17px]' : 'text-[15px]'}`}>{title}</span>
-          {showSubtitle && <span className="block text-[11px] font-medium text-[#8A8A70] mt-1 leading-snug">{subtitle}</span>}
+          <span className={`block font-black text-[var(--ds-brand)] leading-tight ${big ? 'text-[17px]' : 'text-[15px]'}`}>{title}</span>
+          {showSubtitle && <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-1 leading-snug">{subtitle}</span>}
           {preview && <div className={`mt-2.5 ${image && imageMode === 'side' ? 'max-w-[62%] me-auto' : ''}`}>{preview}</div>}
         </div>
         )}
@@ -180,7 +180,7 @@ export function ExploreCard({
           // The card is itself the button; the pill is the affordance, not a
           // second control, so it does not need a padded block of its own.
           <div className="relative px-4 pb-4 pt-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-[#D9BC85] bg-white text-[#B8944E] px-3.5 py-1.5 text-[11px] font-black shadow-[0_2px_8px_rgba(184,148,78,0.15)]">
+            <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-[var(--ds-accent-soft)] bg-[var(--ds-surface)] text-[var(--ds-accent-deep)] px-3.5 py-1.5 text-[11px] font-black shadow-[0_2px_8px_rgba(184,148,78,0.15)]">
               <ChevronLeft className="w-3.5 h-3.5" />
               {cta}
             </span>
@@ -193,7 +193,7 @@ export function ExploreCard({
         onClose={() => setOpen(false)}
         title={title}
         subtitle={subtitle}
-        icon={<Icon className="w-4 h-4 text-[#C9A24A]" />}
+        icon={<Icon className="w-4 h-4 text-[var(--ds-accent)]" />}
       >
         {children}
       </PimaSheet>
