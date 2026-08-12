@@ -617,6 +617,38 @@ export default function OwnerOnboardingWizard({
                 <textarea id="ob-house-desc" placeholder="إيه اللي يميّز البيت؟" value={houseDesc} onChange={(e) => setHouseDesc(e.target.value)} rows={3}
                   className={`${FIELD_CLS} resize-none`} />
               </div>
+              {isMonthly ? (
+                <div>
+                  <label htmlFor="ob-monthly-rent" className={LABEL_CLS}>الإيجار الشهري (جنيه)</label>
+                  <input id="ob-monthly-rent" type="number" min={1} placeholder="اكتب الإيجار" value={monthlyRent ?? ''} onChange={(e) => setMonthlyRent(e.target.value === '' ? null : Number(e.target.value))}
+                    className={FIELD_CLS} />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label htmlFor="onboarding-price-night" className={LABEL_CLS}>السعر لليلة للفرد (جنيه)</label>
+                    <input id="onboarding-price-night" type="number" min={1} placeholder="اكتب السعر" value={pricePerNight ?? ''} onChange={(e) => setPricePerNight(e.target.value === '' ? null : Number(e.target.value))}
+                      className={FIELD_CLS} />
+                  </div>
+                  {/* «يوم روحي» — arrive and leave the same day. Asked here
+                      beside the nightly rate, as on the dashboard, because a
+                      house registered without it simply cannot take day
+                      bookings: offersDayUse() needs a rate above zero, and
+                      the guest's filter and booking form both key off that.
+                      Left blank means the house does not offer them. */}
+                  <div>
+                    <label htmlFor="onboarding-price-dayuse" className={LABEL_CLS}>سعر اليوم بدون مبيت (اختياري)</label>
+                    <input
+                      id="onboarding-price-dayuse"
+                      type="number"
+                      min={0}
+                      placeholder="اتركه فارغاً"
+                      value={dayUsePrice === null ? '' : dayUsePrice}
+                      onChange={(e) => setDayUsePrice(e.target.value === '' ? null : (parseInt(e.target.value, 10) || 0))}
+                      className={FIELD_CLS} />
+                  </div>
+                </div>
+              )}
               <div>
                 <label htmlFor="ob-house-gov" className={LABEL_CLS}>المحافظة</label>
                 <select id="ob-house-gov" value={houseGov} onChange={(e) => setHouseGov(e.target.value)}
@@ -682,38 +714,6 @@ export default function OwnerOnboardingWizard({
                   claiming a capacity its own room list contradicted. The
                   rooms step answers this now, and the review screen shows
                   the totals it arrived at. */}
-              {isMonthly ? (
-                <div>
-                  <label htmlFor="ob-monthly-rent" className={LABEL_CLS}>الإيجار الشهري (جنيه)</label>
-                  <input id="ob-monthly-rent" type="number" min={1} placeholder="اكتب الإيجار" value={monthlyRent ?? ''} onChange={(e) => setMonthlyRent(e.target.value === '' ? null : Number(e.target.value))}
-                    className={FIELD_CLS} />
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label htmlFor="onboarding-price-night" className={LABEL_CLS}>السعر لليلة للفرد (جنيه)</label>
-                    <input id="onboarding-price-night" type="number" min={1} placeholder="اكتب السعر" value={pricePerNight ?? ''} onChange={(e) => setPricePerNight(e.target.value === '' ? null : Number(e.target.value))}
-                      className={FIELD_CLS} />
-                  </div>
-                  {/* «يوم روحي» — arrive and leave the same day. Asked here
-                      beside the nightly rate, as on the dashboard, because a
-                      house registered without it simply cannot take day
-                      bookings: offersDayUse() needs a rate above zero, and
-                      the guest's filter and booking form both key off that.
-                      Left blank means the house does not offer them. */}
-                  <div>
-                    <label htmlFor="onboarding-price-dayuse" className={LABEL_CLS}>سعر اليوم بدون مبيت (اختياري)</label>
-                    <input
-                      id="onboarding-price-dayuse"
-                      type="number"
-                      min={0}
-                      placeholder="اتركه فارغاً"
-                      value={dayUsePrice === null ? '' : dayUsePrice}
-                      onChange={(e) => setDayUsePrice(e.target.value === '' ? null : (parseInt(e.target.value, 10) || 0))}
-                      className={FIELD_CLS} />
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
