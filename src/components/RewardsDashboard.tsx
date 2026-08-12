@@ -45,7 +45,7 @@ const REWARDS = [
 ] as const;
 
 const PASSPORT_TARGET = 15;
-const CARD = 'bg-white rounded-3xl border border-[#EDE7DA] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]';
+const CARD = 'bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]';
 
 function txIcon(tx: PointsTransaction) {
   if (tx.type === 'redeemed') return <Wallet className="w-3.5 h-3.5" />;
@@ -154,20 +154,20 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
     <div className="space-y-4 text-right animate-in fade-in duration-200">
 
       {/* Header */}
-      <div className="flex items-center gap-2 pb-1 border-b border-[#EDE7DA]">
+      <div className="flex items-center gap-2 pb-1 border-b border-[var(--ds-border)]">
         <button onClick={onBack} aria-label="رجوع"
-          className="w-10 h-10 rounded-xl border border-[#EDE7DA] bg-white hover:bg-[#F1ECE0] text-[#4A4A3A] transition-colors flex items-center justify-center cursor-pointer pima-press">
+          className="w-10 h-10 rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] hover:bg-[#F1ECE0] text-[var(--ds-text)] transition-colors flex items-center justify-center cursor-pointer pima-press">
           <ChevronRight className="w-4 h-4" />
         </button>
-        <h2 className="text-sm font-black text-[#0A2342]">المكافآت</h2>
+        <h2 className="text-sm font-black text-[var(--ds-brand)]">المكافآت</h2>
       </div>
 
       {/* ── Hero: tier right, balance left, gap line, bar, journey ── */}
       <div className={`${CARD} p-4 space-y-4 relative overflow-hidden pima-rise`}>
         {/* Warm light pooling behind the badge — depth without a gradient wash. */}
-        <span aria-hidden="true" className="absolute -top-14 right-2 w-40 h-40 rounded-full bg-[#C5A059]/[0.09] blur-2xl pointer-events-none" />
-        <Sparkles aria-hidden="true" className="absolute top-4 left-14 w-3 h-3 text-[#E3CD9F] pima-twinkle" />
-        <Sparkles aria-hidden="true" className="absolute top-16 left-6 w-2.5 h-2.5 text-[#E3CD9F] pima-twinkle" style={{ animationDelay: '1.3s' }} />
+        <span aria-hidden="true" className="absolute -top-14 right-2 w-40 h-40 rounded-full bg-[var(--ds-accent)]/[0.09] blur-2xl pointer-events-none" />
+        <Sparkles aria-hidden="true" className="absolute top-4 left-14 w-3 h-3 text-[var(--ds-accent-soft)] pima-twinkle" />
+        <Sparkles aria-hidden="true" className="absolute top-16 left-6 w-2.5 h-2.5 text-[var(--ds-accent-soft)] pima-twinkle" style={{ animationDelay: '1.3s' }} />
 
         <div className="relative flex justify-between items-start gap-3">
           <div className="flex flex-col items-center gap-1.5 shrink-0">
@@ -175,26 +175,26 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
               <TierMedal metal={tier.metal} size={62} />
             </span>
             <div className="text-center leading-tight">
-              <span className="text-[8.5px] font-bold text-[#8A8A70] block">مستواك الحالي</span>
-              <span className="text-[13px] font-black text-[#B8944E]">{tier.name}</span>
+              <span className="text-[8.5px] font-bold text-[var(--ds-text-2)] block">مستواك الحالي</span>
+              <span className="text-[13px] font-black text-[var(--ds-accent-deep)]">{tier.name}</span>
             </div>
           </div>
 
           <div className="text-left space-y-1.5">
-            <span className="text-[9.5px] text-[#8A8A70] font-bold block text-left">رصيدك الحالي</span>
+            <span className="text-[9.5px] text-[var(--ds-text-2)] font-bold block text-left">رصيدك الحالي</span>
             {/* tabular-nums keeps the digits from jittering while they count. */}
             <div className="flex items-baseline gap-1.5 justify-end" dir="ltr">
-              <span className="text-[32px] leading-none font-black text-[#0A2342] [font-variant-numeric:tabular-nums]">
+              <span className="text-[32px] leading-none font-black text-[var(--ds-brand)] [font-variant-numeric:tabular-nums]">
                 {arabicNumber(shownPoints)}
               </span>
             </div>
-            <span className="text-[10px] text-[#8A8A70] font-bold block text-left">نقطة</span>
+            <span className="text-[10px] text-[var(--ds-text-2)] font-bold block text-left">نقطة</span>
             <button
               type="button"
               onClick={() => { tapFeedback(); activityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
-              className="inline-flex items-center gap-1 rounded-full border border-[#EDE7DA] bg-white px-3 h-8 text-[9.5px] font-black text-[#4A4A3A] hover:bg-[#F1ECE0] hover:border-[#E3CD9F] transition-colors cursor-pointer pima-press"
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--ds-border)] bg-[var(--ds-surface)] px-3 h-8 text-[9.5px] font-black text-[var(--ds-text)] hover:bg-[#F1ECE0] hover:border-[var(--ds-accent-soft)] transition-colors cursor-pointer pima-press"
             >
-              <BarChart3 className="w-3 h-3 text-[#B8944E]" />
+              <BarChart3 className="w-3 h-3 text-[var(--ds-accent-deep)]" />
               سجل النقاط
             </button>
           </div>
@@ -202,18 +202,18 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
 
         {nextTier ? (
           <>
-            <p className="text-[12px] font-bold text-[#4A4A3A] text-center leading-relaxed">
-              تبقى لك <span className="text-[#B8944E] font-black">{arabicNumber(nextTier.at - points)} نقطة</span>
+            <p className="text-[12px] font-bold text-[var(--ds-text)] text-center leading-relaxed">
+              تبقى لك <span className="text-[var(--ds-accent-deep)] font-black">{arabicNumber(nextTier.at - points)} نقطة</span>
               <br />للوصول إلى المستوى {nextTier.name}
             </p>
             <div className="space-y-1">
               <div className="w-full bg-[#F1ECE0] rounded-full h-2 overflow-hidden">
                 <div
-                  className="bg-gradient-to-l from-[#C9A96A] to-[#B8944E] h-full rounded-full pima-foil"
+                  className="bg-gradient-to-l from-[#C9A96A] to-[var(--ds-accent-deep)] h-full rounded-full pima-foil"
                   style={{ width: `${tierBarWidth}%`, transition: 'width 1100ms var(--motion-ease)' }}
                 />
               </div>
-              <div className="flex justify-between text-[8.5px] font-bold text-[#B5AF98]">
+              <div className="flex justify-between text-[8.5px] font-bold text-[var(--ds-text-faint)]">
                 <span>{arabicNumber(nextTier.at)} نقطة</span>
                 <span>{arabicNumber(tier.at)} نقطة</span>
               </div>
@@ -242,8 +242,8 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
             return (
               <div key={t.name} className="relative flex flex-col items-center gap-1">
                 <span
-                  className={`w-12 h-12 rounded-full flex items-center justify-center border-2 bg-white transition-colors pima-medal-in ${
-                    isCurrent ? 'border-[#C5A059] shadow-[0_0_0_4px_rgba(197,160,89,0.15)] pima-halo' : reached ? 'border-[#E3CD9F]' : 'border-[#EDE7DA]'
+                  className={`w-12 h-12 rounded-full flex items-center justify-center border-2 bg-[var(--ds-surface)] transition-colors pima-medal-in ${
+                    isCurrent ? 'border-[var(--ds-accent)] shadow-[0_0_0_4px_rgba(197,160,89,0.15)] pima-halo' : reached ? 'border-[var(--ds-accent-soft)]' : 'border-[var(--ds-border)]'
                   }`}
                   style={{ animationDelay: `${140 + i * 90}ms` }}
                 >
@@ -251,8 +251,8 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
                       the shape is a promise, the metal is the reward. */}
                   <TierMedal metal={t.metal} size={42} className={reached ? '' : 'opacity-40 saturate-0'} />
                 </span>
-                <span className={`text-[9px] font-black ${isCurrent ? 'text-[#B8944E]' : 'text-[#4A4A3A]'}`}>{t.short}</span>
-                <span className="text-[8px] font-bold text-[#B5AF98] leading-none">
+                <span className={`text-[9px] font-black ${isCurrent ? 'text-[var(--ds-accent-deep)]' : 'text-[var(--ds-text)]'}`}>{t.short}</span>
+                <span className="text-[8px] font-bold text-[var(--ds-text-faint)] leading-none">
                   {isCurrent ? 'الحالي' : i === TIERS.length - 1 ? `${arabicNumber(t.at)}+ نقطة` : i === 0 ? '' : `${arabicNumber(t.at)} نقطة`}
                 </span>
               </div>
@@ -264,7 +264,7 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
       {/* ── Passport (right) + next reward (left) ── */}
       <div className="grid grid-cols-2 gap-3 pima-rise pima-rise-1">
         {/* Pima Passport — navy card */}
-        <div className="rounded-3xl bg-gradient-to-b from-[#132A52] to-[#0A2342] text-white p-3.5 space-y-2.5 shadow-[0_8px_24px_rgba(10,35,66,0.35)]">
+        <div className="rounded-3xl bg-gradient-to-b from-[#132A52] to-[var(--ds-brand)] text-white p-3.5 space-y-2.5 shadow-[0_8px_24px_rgba(10,35,66,0.35)]">
           <div className="flex items-center gap-1.5">
             <PassportBook size={22} className="shrink-0" />
             <span className="text-[12.5px] font-black">جواز بيما</span>
@@ -276,8 +276,8 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
             <span className="text-[8.5px] font-bold text-slate-300">أختام جمعتها</span>
           </div>
 
-          <div className="w-full bg-white/15 rounded-full h-1.5 overflow-hidden">
-            <div className="bg-gradient-to-l from-[#C9A96A] to-[#C5A059] h-full rounded-full pima-foil"
+          <div className="w-full bg-[var(--ds-surface)]/15 rounded-full h-1.5 overflow-hidden">
+            <div className="bg-gradient-to-l from-[#C9A96A] to-[var(--ds-accent)] h-full rounded-full pima-foil"
               style={{ width: `${stampBarWidth}%`, transition: 'width 1100ms var(--motion-ease)' }} />
           </div>
 
@@ -285,9 +285,9 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
           <div className="flex items-center justify-between gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <span key={i} className={`w-8 h-8 rounded-full flex items-center justify-center border ${
-                i < Math.min(stamps.length, 5) ? 'border-[#C5A059] bg-[#C5A059]/15' : 'border-dashed border-white/30'
+                i < Math.min(stamps.length, 5) ? 'border-[var(--ds-accent)] bg-[color-mix(in_srgb,var(--ds-accent)_15%,transparent)]' : 'border-dashed border-white/30'
               }`}>
-                {i < Math.min(stamps.length, 5) && <Church className="w-3.5 h-3.5 text-[#E3CD9F]" />}
+                {i < Math.min(stamps.length, 5) && <Church className="w-3.5 h-3.5 text-[var(--ds-accent-soft)]" />}
               </span>
             ))}
           </div>
@@ -295,7 +295,7 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
           <button
             type="button"
             onClick={() => { tapFeedback(); setShowPassport(true); }}
-            className="w-full flex items-center justify-center gap-1 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white rounded-xl h-9 text-[10.5px] font-black shadow-[0_2px_8px_rgba(0,0,0,0.25)] cursor-pointer pima-press"
+            className="w-full flex items-center justify-center gap-1 bg-gradient-to-b from-[#C9A96A] to-[var(--ds-accent-deep)] text-white rounded-xl h-9 text-[10.5px] font-black shadow-[0_2px_8px_rgba(0,0,0,0.25)] cursor-pointer pima-press"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
             افتح الجواز
@@ -306,23 +306,23 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
         {/* Next reward — gift + ring */}
         <div className={`${CARD} p-3.5 flex flex-col items-center text-center gap-2`}>
           <div className="flex items-center gap-1.5 self-end">
-            <Gift className="w-4 h-4 text-[#B8944E]" />
-            <span className="text-[12.5px] font-black text-[#0A2342]">المكافأة القادمة</span>
+            <Gift className="w-4 h-4 text-[var(--ds-accent-deep)]" />
+            <span className="text-[12.5px] font-black text-[var(--ds-brand)]">المكافأة القادمة</span>
           </div>
 
           <GiftBox size={58} />
 
           {nextReward ? (
             <>
-              <p className="text-[10px] font-bold text-[#4A4A3A] leading-relaxed">
-                تبقى لك <span className="text-[#B8944E] font-black">{arabicNumber(nextReward.points - points)} نقطة</span>
+              <p className="text-[10px] font-bold text-[var(--ds-text)] leading-relaxed">
+                تبقى لك <span className="text-[var(--ds-accent-deep)] font-black">{arabicNumber(nextReward.points - points)} نقطة</span>
                 <br />للحصول على {nextReward.label}
               </p>
               <div className="w-full bg-[#F1ECE0] rounded-full h-1.5 overflow-hidden">
-                <div className="bg-gradient-to-l from-[#C9A96A] to-[#B8944E] h-full rounded-full pima-foil"
+                <div className="bg-gradient-to-l from-[#C9A96A] to-[var(--ds-accent-deep)] h-full rounded-full pima-foil"
                   style={{ width: `${rewardBarWidth}%`, transition: 'width 1100ms var(--motion-ease)' }} />
               </div>
-              <span className="text-[8px] font-bold text-[#B5AF98]" dir="ltr">{arabicNumber(points)} / {arabicNumber(nextReward.points)} نقطة</span>
+              <span className="text-[8px] font-bold text-[var(--ds-text-faint)]" dir="ltr">{arabicNumber(points)} / {arabicNumber(nextReward.points)} نقطة</span>
 
               {/* Percent ring — the arc draws itself by transitioning the dash
                   offset, so it sweeps round rather than appearing complete. */}
@@ -337,18 +337,18 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
                   />
                 </svg>
                 <span className="absolute inset-0 flex flex-col items-center justify-center leading-none">
-                  <span className="text-[11px] font-black text-[#B8944E] [font-variant-numeric:tabular-nums]">٪{arabicNumber(Math.round(rewardBarWidth))}</span>
+                  <span className="text-[11px] font-black text-[var(--ds-accent-deep)] [font-variant-numeric:tabular-nums]">٪{arabicNumber(Math.round(rewardBarWidth))}</span>
                 </span>
               </span>
               {rewardPct >= 50 && (
-                <span className="text-[9px] font-black text-[#B8944E] inline-flex items-center gap-1">
+                <span className="text-[9px] font-black text-[var(--ds-accent-deep)] inline-flex items-center gap-1">
                   <Sparkles className="w-2.5 h-2.5 pima-twinkle" />
                   اقتربت!
                 </span>
               )}
             </>
           ) : (
-            <p className="text-[10px] font-bold text-[#4A4A3A] leading-relaxed">
+            <p className="text-[10px] font-bold text-[var(--ds-text)] leading-relaxed">
               رصيدك يغطي أكبر خصم — {REWARDS[REWARDS.length - 1].label}
               <br /><span className="text-emerald-700 font-black">يُطبق تلقائيًا عند حجزك القادم</span>
             </p>
@@ -358,7 +358,7 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
 
       {/* ── Ways to earn ── */}
       <div className="space-y-2 pima-rise pima-rise-2">
-        <h3 className="text-[11.5px] font-black text-[#0A2342] px-1 flex items-center gap-1.5">
+        <h3 className="text-[11.5px] font-black text-[var(--ds-brand)] px-1 flex items-center gap-1.5">
           <CoinStack size={18} />
           طرق جمع النقاط
         </h3>
@@ -375,17 +375,17 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
               disabled={!c.onClick}
               onClick={c.onClick}
               className={`${CARD} relative shrink-0 w-[104px] p-3 flex flex-col items-center gap-1.5 text-center transition-[transform,border-color,box-shadow] duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${
-                c.onClick ? 'cursor-pointer pima-press hover:-translate-y-1 hover:border-[#E3CD9F] hover:shadow-[0_12px_28px_rgba(184,148,78,0.18)]' : 'cursor-default opacity-90'
+                c.onClick ? 'cursor-pointer pima-press hover:-translate-y-1 hover:border-[var(--ds-accent-soft)] hover:shadow-[0_12px_28px_rgba(184,148,78,0.18)]' : 'cursor-default opacity-90'
               }`}
             >
               {'badge' in c && c.badge && (
                 <span className="absolute -top-1.5 left-2 text-[7.5px] font-black text-white bg-rose-500 rounded-full px-1.5 py-0.5">{c.badge}</span>
               )}
-              <span className="w-11 h-11 rounded-xl bg-[#FBF9F4] border border-[#EDE7DA] flex items-center justify-center">
+              <span className="w-11 h-11 rounded-xl bg-[#FBF9F4] border border-[var(--ds-border)] flex items-center justify-center">
                 <c.Art size={30} />
               </span>
-              <span className="text-[9.5px] font-black text-[#0A2342] leading-tight">{c.label}</span>
-              <span className="text-[8.5px] font-black text-[#B8944E]">{c.pts}</span>
+              <span className="text-[9.5px] font-black text-[var(--ds-brand)] leading-tight">{c.label}</span>
+              <span className="text-[8.5px] font-black text-[var(--ds-accent-deep)]">{c.pts}</span>
             </button>
           ))}
         </div>
@@ -394,8 +394,8 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
       {/* ── Achievements + daily ad, side by side like the mock ── */}
       <div className="grid grid-cols-5 gap-3 pima-rise pima-rise-3">
         <div className={`${CARD} col-span-3 p-3 space-y-2`}>
-          <h3 className="text-[11px] font-black text-[#0A2342] flex items-center gap-1">
-            <Trophy className="w-3.5 h-3.5 text-[#C5A059]" />
+          <h3 className="text-[11px] font-black text-[var(--ds-brand)] flex items-center gap-1">
+            <Trophy className="w-3.5 h-3.5 text-[var(--ds-accent)]" />
             إنجازاتك
           </h3>
           <div className="grid grid-cols-3 gap-1.5">
@@ -409,8 +409,8 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
                 >
                   <Rosette size={38} locked={!a.done} />
                 </span>
-                <span className={`text-[8px] font-black leading-tight ${a.done ? 'text-[#0A2342]' : 'text-[#8A8A70]'}`}>{a.label}</span>
-                <span className={`text-[7.5px] font-bold ${a.done ? 'text-emerald-700' : 'text-[#B5AF98]'}`}>{a.done ? '✓ تم الإنجاز' : a.progress}</span>
+                <span className={`text-[8px] font-black leading-tight ${a.done ? 'text-[var(--ds-brand)]' : 'text-[var(--ds-text-2)]'}`}>{a.label}</span>
+                <span className={`text-[7.5px] font-bold ${a.done ? 'text-emerald-700' : 'text-[var(--ds-text-faint)]'}`}>{a.done ? '✓ تم الإنجاز' : a.progress}</span>
               </div>
             ))}
           </div>
@@ -430,7 +430,7 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
             <button
               type="button"
               onClick={() => { tapFeedback(); setAdOpen(true); }}
-              className="mt-1 w-full flex items-center justify-center gap-1 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl h-9 text-[10px] font-black transition-colors cursor-pointer pima-press"
+              className="mt-1 w-full flex items-center justify-center gap-1 bg-[var(--ds-surface)]/15 hover:bg-[var(--ds-surface)]/25 border border-white/25 rounded-xl h-9 text-[10px] font-black transition-colors cursor-pointer pima-press"
             >
               <PlayCircle className="w-3.5 h-3.5" />
               شاهد الآن
@@ -442,15 +442,15 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
       {/* ── Recent activity ── */}
       <div ref={activityRef} className={`${CARD} p-4 space-y-3 scroll-mt-4`}>
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-black text-[#0A2342] flex items-center gap-1.5">
-            <History className="w-4 h-4 text-[#C5A059]" />
+          <h3 className="text-xs font-black text-[var(--ds-brand)] flex items-center gap-1.5">
+            <History className="w-4 h-4 text-[var(--ds-accent)]" />
             آخر النشاط
           </h3>
           {history.length > 3 && (
             <button
               type="button"
               onClick={() => { tapFeedback(); setShowAllActivity((v) => !v); }}
-              className="text-[9.5px] font-black text-[#B8944E] hover:underline cursor-pointer"
+              className="text-[9.5px] font-black text-[var(--ds-accent-deep)] hover:underline cursor-pointer"
             >
               {showAllActivity ? 'أقل' : 'عرض الكل'}
             </button>
@@ -459,27 +459,27 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
 
         {history.length === 0 ? (
           <div className="text-center py-6 space-y-2">
-            <span className="inline-flex w-12 h-12 rounded-full bg-[#F6F0E2] items-center justify-center">
-              <Coins className="w-5 h-5 text-[#C5A059]" />
+            <span className="inline-flex w-12 h-12 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] items-center justify-center">
+              <Coins className="w-5 h-5 text-[var(--ds-accent)]" />
             </span>
-            <p className="text-[11px] font-bold text-[#4A4A3A]">لا توجد حركات مسجلة بعد</p>
-            <p className="text-[9.5px] text-[#8A8A70]">أول حجز مدفوع يبدأ رصيدك.</p>
+            <p className="text-[11px] font-bold text-[var(--ds-text)]">لا توجد حركات مسجلة بعد</p>
+            <p className="text-[9.5px] text-[var(--ds-text-2)]">أول حجز مدفوع يبدأ رصيدك.</p>
           </div>
         ) : (
-          <div className="divide-y divide-[#EDE7DA]/60">
+          <div className="divide-y divide-[color-mix(in_srgb,var(--ds-border)_60%,transparent)]">
             {shownActivity.map((tx) => {
               const isEarned = tx.type === 'earned';
               return (
                 <div key={tx.id} className="py-2.5 flex justify-between items-center gap-2 text-xs">
                   <div className="flex items-start gap-2 min-w-0">
                     <span className={`w-7 h-7 rounded-lg shrink-0 flex items-center justify-center ${
-                      isEarned ? 'bg-[#F6F0E2] text-[#B8944E]' : 'bg-rose-50 text-rose-600'
+                      isEarned ? 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] text-[var(--ds-accent-deep)]' : 'bg-rose-50 text-rose-600'
                     }`}>
                       {txIcon(tx)}
                     </span>
                     <div className="space-y-0.5 text-right min-w-0">
-                      <span className="font-bold text-[#4A4A3A] block truncate">{tx.description}</span>
-                      <span className="text-[9px] text-[#8A8A70] font-medium">
+                      <span className="font-bold text-[var(--ds-text)] block truncate">{tx.description}</span>
+                      <span className="text-[9px] text-[var(--ds-text-2)] font-medium">
                         {new Date(tx.date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' })}
                         {' · '}
                         {new Date(tx.date).toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit' })}
