@@ -239,17 +239,17 @@ const DEFAULT_FASTING_MENU = [
 const getWeatherIcon = (iconName: string) => {
   switch (iconName) {
     case 'sun':
-      return <Sun className="w-4 h-4 text-amber-500 fill-amber-100 animate-pulse shrink-0" />;
+      return <Sun className="w-4 h-4 text-[var(--ds-warning)] fill-[color-mix(in_srgb,var(--ds-warning)_16%,transparent)] animate-pulse shrink-0" />;
     case 'cloud-sun':
-      return <CloudSun className="w-4 h-4 text-amber-500 shrink-0" />;
+      return <CloudSun className="w-4 h-4 text-[var(--ds-warning)] shrink-0" />;
     case 'cloud':
-      return <Cloud className="w-4 h-4 text-slate-400 shrink-0" />;
+      return <Cloud className="w-4 h-4 text-[var(--ds-text-faint)] shrink-0" />;
     case 'cloud-rain':
       return <CloudRain className="w-4 h-4 text-blue-500 shrink-0" />;
     case 'wind':
       return <Wind className="w-4 h-4 text-teal-500 shrink-0" />;
     default:
-      return <Sun className="w-4 h-4 text-amber-500 shrink-0" />;
+      return <Sun className="w-4 h-4 text-[var(--ds-warning)] shrink-0" />;
   }
 };
 
@@ -448,14 +448,14 @@ const DateRangePicker = ({
   // straight into the sheet; the standalone mode wraps it in the modal below.
   const calendar = (
     <>
-            <div className="grid grid-cols-2 gap-2 bg-[#FDFBF7] p-2.5 rounded-2xl border border-[#D6D6C2]/50 text-[11px]">
+            <div className="grid grid-cols-2 gap-2 bg-[var(--ds-surface)] p-2.5 rounded-2xl border border-[var(--ds-border)]/50 text-[11px]">
               <div>
-                <span className="text-[#8A8A70] block font-bold mb-0.5">من تاريخ (الوصول):</span>
-                <span className="text-[#0A2342] font-black">{checkIn ? formatDateToShow(checkIn) : 'لم يحدد'}</span>
+                <span className="text-[var(--ds-text-2)] block font-bold mb-0.5">من تاريخ (الوصول):</span>
+                <span className="text-[var(--ds-brand)] font-black">{checkIn ? formatDateToShow(checkIn) : 'لم يحدد'}</span>
               </div>
               <div>
-                <span className="text-[#8A8A70] block font-bold mb-0.5">إلى تاريخ (المغادرة):</span>
-                <span className="text-[#0A2342] font-black">{checkOut ? formatDateToShow(checkOut) : 'لم يحدد'}</span>
+                <span className="text-[var(--ds-text-2)] block font-bold mb-0.5">إلى تاريخ (المغادرة):</span>
+                <span className="text-[var(--ds-brand)] font-black">{checkOut ? formatDateToShow(checkOut) : 'لم يحدد'}</span>
               </div>
             </div>
 
@@ -463,23 +463,23 @@ const DateRangePicker = ({
               <button aria-label="الشهر السابق"
                 type="button"
                 onClick={prevMonth}
-                className="w-8 h-8 rounded-full border border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#EBEBE0] flex items-center justify-center text-xs font-bold cursor-pointer transition-all"
+                className="w-8 h-8 rounded-full border border-[var(--ds-border)] text-[var(--ds-text)] hover:bg-[var(--ds-raised)] flex items-center justify-center text-[12px] font-bold cursor-pointer transition-all"
               >
                 ◀
               </button>
-              <span className="text-xs font-extrabold text-[#0A2342]">
+              <span className="text-[12px] font-extrabold text-[var(--ds-brand)]">
                 {MONTH_NAMES_AR[month]} {year}
               </span>
               <button aria-label="الشهر التالي"
                 type="button"
                 onClick={nextMonth}
-                className="w-8 h-8 rounded-full border border-[#D6D6C2] text-[#4A4A3A] hover:bg-[#EBEBE0] flex items-center justify-center text-xs font-bold cursor-pointer transition-all"
+                className="w-8 h-8 rounded-full border border-[var(--ds-border)] text-[var(--ds-text)] hover:bg-[var(--ds-raised)] flex items-center justify-center text-[12px] font-bold cursor-pointer transition-all"
               >
                 ▶
               </button>
             </div>
 
-            <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-black text-[#8A8A70] border-b border-[#D6D6C2]/20 pb-1.5">
+            <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-black text-[var(--ds-text-2)] border-b border-[var(--ds-border)]/20 pb-1.5">
               {WEEKDAYS_AR.map((day) => (
                 <div key={day} className="py-1">{day}</div>
               ))}
@@ -500,20 +500,20 @@ const DateRangePicker = ({
                 const isPast = dStr < today;
                 const isUnavailable = isApproved || isPast;
 
-                let dayStyle = "text-xs font-semibold rounded-xl py-1.5 transition-all text-center ";
+                let dayStyle = "text-[12px] font-semibold rounded-xl py-1.5 transition-all text-center ";
 
                 if (isSelectedStart || isSelectedEnd) {
-                  dayStyle += "bg-[#0A2342] text-[#C5A059] shadow-sm font-bold cursor-pointer";
+                  dayStyle += "bg-[var(--ds-brand)] text-[var(--ds-accent)] shadow-sm font-bold cursor-pointer";
                 } else if (isApproved) {
-                  dayStyle += "bg-red-100 text-red-400 line-through cursor-not-allowed";
+                  dayStyle += "bg-[color-mix(in_srgb,var(--ds-danger)_16%,transparent)] text-[var(--ds-danger)] line-through cursor-not-allowed";
                 } else if (isPast) {
-                  dayStyle += "text-gray-300 cursor-not-allowed";
+                  dayStyle += "text-[var(--ds-text-faint)] cursor-not-allowed";
                 } else if (isPending) {
-                  dayStyle += "bg-amber-100 text-amber-600 cursor-pointer";
+                  dayStyle += "bg-[color-mix(in_srgb,var(--ds-warning)_16%,transparent)] text-[var(--ds-warning)] cursor-pointer";
                 } else if (isInRange) {
-                  dayStyle += "bg-[#C5A059]/20 text-[#0A2342] cursor-pointer";
+                  dayStyle += "bg-[var(--ds-accent)]/20 text-[var(--ds-brand)] cursor-pointer";
                 } else {
-                  dayStyle += "text-[#4A4A3A] hover:bg-[#EBEBE0]/50 cursor-pointer";
+                  dayStyle += "text-[var(--ds-text)] hover:bg-[var(--ds-raised)]/50 cursor-pointer";
                 }
 
                 return (
@@ -531,19 +531,19 @@ const DateRangePicker = ({
             </div>
 
             {/* Legend */}
-            <div className="flex flex-wrap gap-3 text-[11px] border-t border-[#D6D6C2]/20 pt-2">
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-100 inline-block" />محجوز</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-100 inline-block" />قيد المراجعة</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[#C5A059]/20 inline-block" />الفترة المختارة</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[#0A2342] inline-block" />بداية / نهاية</span>
+            <div className="flex flex-wrap gap-3 text-[11px] border-t border-[var(--ds-border)]/20 pt-2">
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[color-mix(in_srgb,var(--ds-danger)_16%,transparent)] inline-block" />محجوز</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[color-mix(in_srgb,var(--ds-warning)_16%,transparent)] inline-block" />قيد المراجعة</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[var(--ds-accent)]/20 inline-block" />الفترة المختارة</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[var(--ds-brand)] inline-block" />بداية / نهاية</span>
             </div>
 
-            <div className="flex gap-2 border-t border-[#D6D6C2]/40 pt-3">
+            <div className="flex gap-2 border-t border-[var(--ds-border)]/40 pt-3">
               <button
                 type="button"
                 onClick={() => (inline ? onDone?.() : setIsOpen(false))}
                 disabled={!checkIn || !checkOut}
-                className="flex-1 bg-[#0A2342] disabled:opacity-50 hover:bg-[#071930] text-white text-xs font-bold py-2 rounded-xl text-center shadow-md transition-colors cursor-pointer"
+                className="flex-1 bg-[var(--ds-brand)] disabled:opacity-50 hover:bg-[color-mix(in_srgb,var(--ds-brand)_82%,black)] text-[var(--ds-on-brand)] text-[12px] font-bold py-2 rounded-xl text-center shadow-md transition-colors cursor-pointer"
               >
                 {singleDay ? 'تأكيد اليوم' : 'تأكيد فترة الإقامة'}
               </button>
@@ -553,7 +553,7 @@ const DateRangePicker = ({
                   setCheckIn('');
                   setCheckOut('');
                 }}
-                className="px-3 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold py-2 rounded-xl border border-red-200 transition-colors cursor-pointer"
+                className="px-3 bg-[color-mix(in_srgb,var(--ds-danger)_10%,transparent)] hover:bg-[color-mix(in_srgb,var(--ds-danger)_16%,transparent)] text-[var(--ds-danger)] text-[12px] font-bold py-2 rounded-xl border border-[color-mix(in_srgb,var(--ds-danger)_30%,transparent)] transition-colors cursor-pointer"
               >
                 مسح
               </button>
@@ -570,23 +570,23 @@ const DateRangePicker = ({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="w-full bg-white border border-[#D6D6C2] hover:border-[#C5A059] transition-all text-xs px-3 py-2.5 rounded-xl text-[#4A4A3A] flex items-center justify-between text-right cursor-pointer"
+        className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] hover:border-[var(--ds-accent)] transition-all text-[12px] px-3 py-2.5 rounded-xl text-[var(--ds-text)] flex items-center justify-between text-right cursor-pointer"
       >
         <span className="font-bold">{formattedRange}</span>
-        <Calendar className="w-4 h-4 text-[#C5A059] shrink-0" />
+        <Calendar className="w-4 h-4 text-[var(--ds-accent)] shrink-0" />
       </button>
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
           <div className="absolute inset-0" onClick={() => setIsOpen(false)} />
 
-          <div className="relative bg-white rounded-3xl border border-[#D6D6C2] shadow-xl w-full max-w-sm overflow-hidden z-10 p-5 text-right space-y-4" dir="rtl">
-            <div className="flex items-center justify-between border-b border-[#D6D6C2]/40 pb-3">
-              <span className="text-xs font-black text-[#0A2342]">تحديد فترة الإقامة والتعاقد</span>
+          <div className="relative bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] shadow-xl w-full max-w-sm overflow-hidden z-10 p-5 text-right space-y-4" dir="rtl">
+            <div className="flex items-center justify-between border-b border-[var(--ds-border)]/40 pb-3">
+              <span className="text-[12px] font-black text-[var(--ds-brand)]">تحديد فترة الإقامة والتعاقد</span>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="text-[#8A8A70] hover:text-[#4A4A3A] text-xs font-bold p-1"
+                className="text-[var(--ds-text-2)] hover:text-[var(--ds-text)] text-[12px] font-bold p-1"
               >
                 إغلاق ✕
               </button>
@@ -996,7 +996,7 @@ export default function HouseDetail({
     <div className="space-y-1.5">
       {menuFacts.map((f) => (
         <span key={f} className="flex items-center gap-1.5 text-[11px] font-bold text-[#2D2D24]">
-          <span aria-hidden="true" className="w-1 h-1 rounded-full bg-[#C9A24A] shrink-0" />
+          <span aria-hidden="true" className="w-1 h-1 rounded-full bg-[var(--ds-accent)] shrink-0" />
           {f}
         </span>
       ))}
@@ -1020,16 +1020,16 @@ export default function HouseDetail({
       {namedFacilities.map(({ label, Glyph }, i) => (
         <span
           key={label}
-          className="pima-rise shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full border border-[#EDE7DA] bg-white px-3 py-1.5 text-[11px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]"
+          className="pima-rise shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full border border-[var(--ds-border)] bg-[var(--ds-surface)] px-3 py-1.5 text-[11px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]"
           style={{ animationDelay: `${240 + i * 80}ms` }}
         >
-          <Glyph className="w-3.5 h-3.5 text-[#C9A24A]" />
+          <Glyph className="w-3.5 h-3.5 text-[var(--ds-accent)]" />
           {label}
         </span>
       ))}
       {facilitiesTotal > namedFacilities.length && (
         <span
-          className="pima-rise shrink-0 whitespace-nowrap inline-flex items-center rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[11px] font-black text-[#B8944E]"
+          className="pima-rise shrink-0 whitespace-nowrap inline-flex items-center rounded-full border border-[var(--ds-accent-soft)] bg-[var(--ds-surface)] px-3 py-1.5 text-[11px] font-black text-[var(--ds-accent-deep)]"
           style={{ animationDelay: `${240 + namedFacilities.length * 80}ms` }}
         >
           <Sparkles className="w-3 h-3 ml-1 pima-twinkle" />
@@ -1043,7 +1043,7 @@ export default function HouseDetail({
   // information. aria-hidden and 6% gold, so it reads as texture.
   const facilityDecor = (
     <span aria-hidden="true" className="absolute -bottom-6 -left-6 pointer-events-none">
-      <Users className="w-36 h-36 text-[#C9A24A] opacity-[0.06]" />
+      <Users className="w-36 h-36 text-[var(--ds-accent)] opacity-[0.06]" />
     </span>
   );
 
@@ -1055,10 +1055,10 @@ export default function HouseDetail({
         { n: house.roomsCount, unit: 'غرفة', Glyph: DoorOpen },
         { n: house.bedsCount, unit: 'سرير', Glyph: BedDouble },
       ].map(({ n, unit, Glyph }) => (
-        <span key={unit} className="flex-1 min-w-0 flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-[#EDE7DA] bg-white px-1.5 py-1.5 shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
-          <Glyph className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
-          <span className="text-[14px] font-black text-[#0A2342] leading-none [font-variant-numeric:tabular-nums]">{arabicNumber(n)}</span>
-          <span className="text-[11px] font-bold text-[#8A8A70]">{unit}</span>
+        <span key={unit} className="flex-1 min-w-0 flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] px-1.5 py-1.5 shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
+          <Glyph className="w-3.5 h-3.5 text-[var(--ds-accent)] shrink-0" />
+          <span className="text-[14px] font-black text-[var(--ds-brand)] leading-none [font-variant-numeric:tabular-nums]">{arabicNumber(n)}</span>
+          <span className="text-[11px] font-bold text-[var(--ds-text-2)]">{unit}</span>
         </span>
       ))}
     </div>
@@ -1072,10 +1072,10 @@ export default function HouseDetail({
   };
   const aboutPreview = (
     <div className="space-y-2">
-      <p className="text-[11px] font-bold text-[#4A4A3A] leading-relaxed line-clamp-2">{house.description}</p>
+      <p className="text-[11px] font-bold text-[var(--ds-text)] leading-relaxed line-clamp-2">{house.description}</p>
       <div className="flex flex-wrap gap-1.5">
         {house.suitability.slice(0, 2).map((s) => (
-          <span key={s} className="inline-flex items-center whitespace-nowrap rounded-full border border-[#EBD9B4] bg-white px-2.5 py-1 text-[11px] font-black text-[#B8944E]">
+          <span key={s} className="inline-flex items-center whitespace-nowrap rounded-full border border-[var(--ds-accent-soft)] bg-[var(--ds-surface)] px-2.5 py-1 text-[11px] font-black text-[var(--ds-accent-deep)]">
             {SUITABILITY_SHORT[s]}
           </span>
         ))}
@@ -1089,22 +1089,22 @@ export default function HouseDetail({
       <div className="flex items-center gap-3 shrink-0">
         {getWeatherIcon(cardWeather.forecast?.[0]?.icon || 'cloudSun')}
         <span className="leading-none">
-          <span className="block text-[36px] font-black text-[#0A2342] [font-variant-numeric:tabular-nums]">
+          <span className="block text-[36px] font-black text-[var(--ds-brand)] [font-variant-numeric:tabular-nums]">
             {arabicNumber(cardWeather.currentTemp)}°
           </span>
           <span className="block text-[11px] font-black text-[#2D2D24] mt-1.5">{house.governorate}</span>
-          <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">{cardWeather.conditionText}</span>
+          <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">{cardWeather.conditionText}</span>
         </span>
       </div>
-      <span aria-hidden="true" className="w-px self-stretch bg-[#EBD9B4]/60" />
+      <span aria-hidden="true" className="w-px self-stretch bg-[var(--ds-accent-soft)]/60" />
       <div className="flex-1 min-w-0 space-y-1.5">
         {[
           { label: 'درجة الحرارة', Glyph: Thermometer },
           { label: 'توقعات الأيام القادمة', Glyph: CalendarDays },
           { label: 'نصائح للرحلة', Glyph: Lightbulb },
         ].map(({ label, Glyph }) => (
-          <span key={label} className="flex items-center gap-2 rounded-xl bg-white border border-[#EDE7DA] px-3 py-2 text-[11px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
-            <Glyph className="w-4 h-4 text-[#C9A24A] shrink-0" />
+          <span key={label} className="flex items-center gap-2 rounded-xl bg-[var(--ds-surface)] border border-[var(--ds-border)] px-3 py-2 text-[11px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
+            <Glyph className="w-4 h-4 text-[var(--ds-accent)] shrink-0" />
             {label}
           </span>
         ))}
@@ -1206,7 +1206,7 @@ export default function HouseDetail({
   // page is not rendered at all, so the reader is on one thing at a time.
   if (bookingOpen) {
     return (
-      <div className="pb-6 text-right text-[#4A4A3A]">
+      <div className="pb-6 text-right text-[var(--ds-text)]">
           {/* The reservation request, as its own three-screen journey. Pricing,
               capacity and dates stay here; the flow owns the walk through them. */}
           <BookingFlow
@@ -1267,16 +1267,16 @@ export default function HouseDetail({
                 {/* Points redemption — only worth offering when the guest has
                     enough for it to change the number. */}
                 {!isMonthlyHousing && maxRedeemablePoints > 0 && (
-                  <label className="flex items-center gap-3 bg-white rounded-[28px] border border-[#EDE7DA] p-3 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
+                  <label className="flex items-center gap-3 bg-[var(--ds-surface)] rounded-[28px] border border-[var(--ds-border)] p-3 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
                     <input
                       type="checkbox"
                       checked={usePoints}
                       onChange={(e) => setUsePoints(e.target.checked)}
-                      className="w-4 h-4 accent-[#C9A24A] shrink-0 cursor-pointer"
+                      className="w-4 h-4 accent-[var(--ds-accent)] shrink-0 cursor-pointer"
                     />
                     <span className="flex-1 min-w-0">
                       <span className="block text-[12px] font-black text-[#2D2D24]">استخدم نقاطي في هذا الحجز</span>
-                      <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">
+                      <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">
                         {usePoints && redemptionDiscount > 0
                           ? `خصم ${redemptionDiscount.toLocaleString('ar-EG')} ج.م من ${maxRedeemablePoints.toLocaleString('ar-EG')} نقطة`
                           : `لديك ${maxRedeemablePoints.toLocaleString('ar-EG')} نقطة قابلة للاستخدام`}
@@ -1288,22 +1288,22 @@ export default function HouseDetail({
                 {/* Capacity. Two different problems: a group larger than the
                     house can never be waitlisted, a full week can. */}
                 {exceedsHouseCapacity && (
-                  <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-3 space-y-2">
-                    <p className="text-[11px] font-bold text-amber-900 leading-relaxed text-center">
+                  <div className="rounded-[28px] border border-[color-mix(in_srgb,var(--ds-warning)_30%,transparent)] bg-[color-mix(in_srgb,var(--ds-warning)_10%,transparent)] p-3 space-y-2">
+                    <p className="text-[11px] font-bold text-[var(--ds-warning-deep)] leading-relaxed text-center">
                       هذا البيت يتسع لـ <strong>{arabicNumber(house.bedsCount)}</strong> فرد كحد أقصى، وأنت طلبت <strong>{arabicNumber(guestsCount)}</strong>.
                     </p>
                     <button
                       type="button"
                       onClick={() => { tapFeedback(); setGuestsCount(house.bedsCount || 1); }}
-                      className="w-full bg-amber-600 hover:bg-amber-700 text-white text-[12px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
+                      className="w-full bg-[var(--ds-warning)] hover:bg-[var(--ds-warning)] text-white text-[12px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
                     >
                       اضبط العدد على {arabicNumber(house.bedsCount)} فرد
                     </button>
                   </div>
                 )}
                 {isFullOnDates && (
-                  <div className="rounded-[28px] border border-amber-200 bg-amber-50 p-3 space-y-2">
-                    <p className="text-[11px] font-bold text-amber-900 text-center">
+                  <div className="rounded-[28px] border border-[color-mix(in_srgb,var(--ds-warning)_30%,transparent)] bg-[color-mix(in_srgb,var(--ds-warning)_10%,transparent)] p-3 space-y-2">
+                    <p className="text-[11px] font-bold text-[var(--ds-warning-deep)] text-center">
                       البيت مكتمل الإشغال في هذه التواريخ لعدد الأفراد المطلوب.
                     </p>
                     <button
@@ -1311,7 +1311,7 @@ export default function HouseDetail({
                       type="button"
                       disabled={alreadyOnWaitlist}
                       onClick={handleJoinWaitlistClick}
-                      className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-[12px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
+                      className="w-full bg-[var(--ds-warning)] hover:bg-[var(--ds-warning)] disabled:opacity-50 disabled:cursor-not-allowed text-white text-[12px] font-black py-3 rounded-2xl transition-colors cursor-pointer pima-press"
                     >
                       {alreadyOnWaitlist ? 'أنت مسجل بالفعل في قائمة الانتظار ⏳' : 'انضم لقائمة الانتظار ⏳'}
                     </button>
@@ -1319,12 +1319,12 @@ export default function HouseDetail({
                 )}
 
                 {/* Cancellation terms, stated before anything is committed. */}
-                <div className="rounded-[28px] border border-[#EDE7DA] bg-white p-3 space-y-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
-                  <span className="flex items-center gap-1.5 text-[12px] font-black text-[#0A2342]">
-                    <ShieldCheck className="w-4 h-4 text-[#C9A24A]" />
+                <div className="rounded-[28px] border border-[var(--ds-border)] bg-[var(--ds-surface)] p-3 space-y-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
+                  <span className="flex items-center gap-1.5 text-[12px] font-black text-[var(--ds-brand)]">
+                    <ShieldCheck className="w-4 h-4 text-[var(--ds-accent)]" />
                     سياسة الإلغاء والاسترداد
                   </span>
-                  <ul className="space-y-1 text-[11px] font-medium text-[#4A4A3A] pr-4 list-disc marker:text-[#C9A24A]">
+                  <ul className="space-y-1 text-[11px] font-medium text-[var(--ds-text)] pr-4 list-disc marker:text-[var(--ds-accent)]">
                     <li>قبل الوصول بـ<strong> {arabicNumber(settings.freeCancelDays)} أيام</strong> أو أكثر: استرداد <strong>كامل</strong>.</li>
                     <li>قبل الوصول بـ<strong> {arabicNumber(settings.partialRefundDays)} أيام</strong> أو أكثر: استرداد <strong>{arabicNumber(Math.round(settings.partialRefundPct * 100))}٪</strong>.</li>
                     <li>أقل من ذلك: لا يوجد استرداد.</li>
@@ -1338,7 +1338,7 @@ export default function HouseDetail({
     );
   }
 
-  return (    <div className="space-y-4 pb-6 text-right text-[#4A4A3A]">
+  return (    <div className="space-y-4 pb-6 text-right text-[var(--ds-text)]">
       
       {/* Hero — gallery, headline facts and the page's own controls. Kept in
           its own component so the sections below are untouched by changes
@@ -1374,14 +1374,14 @@ export default function HouseDetail({
         preview={aboutPreview}
       >
         <div className="space-y-3 text-right">
-          <p className="text-xs text-[#4A4A3A] leading-relaxed font-medium">{house.description}</p>
+          <p className="text-[12px] text-[var(--ds-text)] leading-relaxed font-medium">{house.description}</p>
 
           {house.suitability.length > 0 && (
             <div className="space-y-2">
-              <span className="block text-[11px] font-extrabold text-[#0A2342]">يناسب:</span>
+              <span className="block text-[11px] font-extrabold text-[var(--ds-brand)]">يناسب:</span>
               <div className="flex flex-wrap gap-2">
                 {house.suitability.map((s) => (
-                  <span key={s} className="inline-flex items-center rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[11px] font-bold text-[#B8944E]">
+                  <span key={s} className="inline-flex items-center rounded-full border border-[var(--ds-accent-soft)] bg-[var(--ds-surface)] px-3 py-1.5 text-[11px] font-bold text-[var(--ds-accent-deep)]">
                     {SUITABILITY_MAP[s]}
                   </span>
                 ))}
@@ -1390,7 +1390,7 @@ export default function HouseDetail({
           )}
 
           {house.propertyType === 'student' && house.distanceFromUniversity && (
-            <div className="bg-amber-50/70 border border-amber-200/50 p-3 rounded-2xl text-xs font-bold text-amber-900 mt-2">
+            <div className="bg-[color-mix(in_srgb,var(--ds-warning)_7%,transparent)] border border-[color-mix(in_srgb,var(--ds-warning)_15%,transparent)] p-3 rounded-2xl text-[12px] font-bold text-[var(--ds-warning-deep)] mt-2">
               🏫 القرب من الجامعة والمواصلات: {house.distanceFromUniversity}
             </div>
           )}
@@ -1411,18 +1411,18 @@ export default function HouseDetail({
             preview={menuPreview}
           >
             {(!house.menu && !isOwnerOrAdmin) ? (
-            <div className="bg-white rounded-3xl p-5 border border-[#D6D6C2] shadow-sm text-center py-8 space-y-3">
-              <Utensils className="w-8 h-8 text-[#BCBC9D] mx-auto" />
+            <div className="bg-[var(--ds-surface)] rounded-3xl p-5 border border-[var(--ds-border)] shadow-sm text-center py-8 space-y-3">
+              <Utensils className="w-8 h-8 text-[var(--ds-text-faint)] mx-auto" />
               {/* No heading here: the section header above already says it. */}
-              <p className="text-xs text-[#8A8A70]">لم يتم تحديد قائمة وجبات طعام مخصصة لهذا البيت بعد.</p>
+              <p className="text-[12px] text-[var(--ds-text-2)]">لم يتم تحديد قائمة وجبات طعام مخصصة لهذا البيت بعد.</p>
             </div>
           ) : (
-            <div className="bg-white rounded-3xl p-5 border border-[#D6D6C2] shadow-sm space-y-4">
+            <div className="bg-[var(--ds-surface)] rounded-3xl p-5 border border-[var(--ds-border)] shadow-sm space-y-4">
               {/* Header */}
               <div className="flex items-center gap-2 justify-between flex-wrap">
                 <div className="flex items-center gap-2">
-                  <Utensils className="w-5 h-5 text-[#5A5A40]" />
-                  <h3 className="text-xs font-extrabold text-[#4A4A3A]">المنيو والوجبات الأسبوعية والأسعار:</h3>
+                  <Utensils className="w-5 h-5 text-[var(--ds-primary)]" />
+                  <h3 className="text-[12px] font-extrabold text-[var(--ds-text)]">المنيو والوجبات الأسبوعية والأسعار:</h3>
                 </div>
                 <div className="flex gap-1.5 items-center">
                   {!isEditingMenu && house.menu && (
@@ -1430,7 +1430,7 @@ export default function HouseDetail({
                       id="toggle-menu-view"
                       type="button"
                       onClick={() => setShowFullMenu(!showFullMenu)}
-                      className="text-[11px] font-bold bg-[#5A5A40]/10 text-[#5A5A40] hover:bg-[#5A5A40]/20 px-2.5 py-1 rounded-xl transition-all cursor-pointer"
+                      className="text-[11px] font-bold bg-[var(--ds-primary)]/10 text-[var(--ds-primary)] hover:bg-[var(--ds-primary)]/20 px-2.5 py-1 rounded-xl transition-all cursor-pointer"
                     >
                       {showFullMenu ? 'عرض يومي تفاعلي' : 'عرض الأسبوع كاملاً'}
                     </button>
@@ -1442,8 +1442,8 @@ export default function HouseDetail({
                       onClick={isEditingMenu ? handleSaveMenuChanges : handleStartEditing}
                       className={`text-[11px] font-extrabold px-2.5 py-1 rounded-xl transition-all cursor-pointer flex items-center gap-1 ${
                         isEditingMenu 
-                          ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
-                          : 'bg-[#5A5A40] text-white hover:bg-[#4A4A32]'
+                          ? 'bg-[var(--ds-success)] text-[var(--ds-on-success)] hover:bg-[var(--ds-success)]' 
+                          : 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] hover:bg-[color-mix(in_srgb,var(--ds-primary)_85%,black)]'
                       }`}
                     >
                       {isEditingMenu ? '💾 حفظ التعديلات' : '✏️ تعديل المنيو والأسعار'}
@@ -1454,7 +1454,7 @@ export default function HouseDetail({
                       id="cancel-edit-menu-btn"
                       type="button"
                       onClick={() => setIsEditingMenu(false)}
-                      className="text-[11px] font-extrabold bg-slate-100 text-slate-700 hover:bg-slate-200 px-2.5 py-1 rounded-xl transition-all cursor-pointer"
+                      className="text-[11px] font-extrabold bg-[var(--ds-raised)] text-[var(--ds-text)] hover:bg-[var(--ds-border)] px-2.5 py-1 rounded-xl transition-all cursor-pointer"
                     >
                       إلغاء
                     </button>
@@ -1464,48 +1464,48 @@ export default function HouseDetail({
 
               {isEditingMenu ? (
                 /* --- MENU EDITOR VIEW --- */
-                <div className="space-y-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-200 text-right animate-fade-in" dir="rtl">
-                  <div className="text-xs font-extrabold text-slate-800 mb-2 border-b border-slate-200 pb-1.5 flex justify-between items-center">
+                <div className="space-y-4 bg-[color-mix(in_srgb,var(--ds-raised)_50%,transparent)] p-4 rounded-2xl border border-[var(--ds-border)] text-right animate-fade-in" dir="rtl">
+                  <div className="text-[12px] font-extrabold text-[var(--ds-text)] mb-2 border-b border-[var(--ds-border)] pb-1.5 flex justify-between items-center">
                     <span>⚙️ إعدادات المنيو والأسعار لبيت {house.name}</span>
-                    <span className="text-[11px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded">لوحة التحكم</span>
+                    <span className="text-[11px] bg-[var(--ds-border)] text-[var(--ds-text)] px-2 py-0.5 rounded">لوحة التحكم</span>
                   </div>
 
                   {/* General settings */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <label className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200 cursor-pointer text-[11px] font-bold select-none">
+                    <label className="flex items-center gap-2 bg-[var(--ds-surface)] p-2.5 rounded-xl border border-[var(--ds-border)] cursor-pointer text-[11px] font-bold select-none">
                       <input 
                         type="checkbox" 
                         checked={editIsIncluded} 
                         onChange={(e) => setEditIsIncluded(e.target.checked)}
-                        className="rounded text-[#5A5A40] focus:ring-[#5A5A40] w-4 h-4"
+                        className="rounded text-[var(--ds-primary)] focus:ring-[var(--ds-primary)] w-4 h-4"
                       />
                       <span>الوجبات مشمولة في السعر الأساسي للإقامة</span>
                     </label>
 
-                    <div className="bg-white p-2 rounded-xl border border-slate-200 flex flex-col justify-between">
-                      <span className="text-[11px] text-slate-500 font-bold block mb-1">تكلفة الوجبة الإضافية (ج.م):</span>
+                    <div className="bg-[var(--ds-surface)] p-2 rounded-xl border border-[var(--ds-border)] flex flex-col justify-between">
+                      <span className="text-[11px] text-[var(--ds-text-2)] font-bold block mb-1">تكلفة الوجبة الإضافية (ج.م):</span>
                       <input 
                         type="number" 
                         value={editExtraMealPrice} 
                         onChange={(e) => setEditExtraMealPrice(Number(e.target.value))}
-                        className="w-full text-xs font-bold border-none p-0 focus:ring-0 text-[#4A4A3A]"
+                        className="w-full text-[12px] font-bold border-none p-0 focus:ring-0 text-[var(--ds-text)]"
                         placeholder="مثال: 50"
                       />
                     </div>
 
-                    <label className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200 cursor-pointer text-[11px] font-bold select-none">
+                    <label className="flex items-center gap-2 bg-[var(--ds-surface)] p-2.5 rounded-xl border border-[var(--ds-border)] cursor-pointer text-[11px] font-bold select-none">
                       <input 
                         type="checkbox" 
                         checked={editAllowsSpecial} 
                         onChange={(e) => setEditAllowsSpecial(e.target.checked)}
-                        className="rounded text-[#5A5A40] focus:ring-[#5A5A40] w-4 h-4"
+                        className="rounded text-[var(--ds-primary)] focus:ring-[var(--ds-primary)] w-4 h-4"
                       />
                       <span>توفير بدائل وأنظمة غذائية (صيامي/نباتي)</span>
                     </label>
                   </div>
 
                   {/* Editor Menu Type Selector */}
-                  <div className="flex bg-slate-200/60 p-1 rounded-xl gap-1">
+                  <div className="flex bg-[color-mix(in_srgb,var(--ds-border)_60%,transparent)] p-1 rounded-xl gap-1">
                     <button
                       type="button"
                       onClick={() => {
@@ -1514,8 +1514,8 @@ export default function HouseDetail({
                       }}
                       className={`flex-1 py-1.5 text-center text-[11px] font-extrabold rounded-lg transition-all cursor-pointer ${
                         !editorIsFasting
-                          ? 'bg-[#5A5A40] text-white shadow-sm'
-                          : 'text-slate-700 hover:bg-slate-300'
+                          ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-sm'
+                          : 'text-[var(--ds-text)] hover:bg-[var(--ds-border)]'
                       }`}
                     >
                       🥩 تعديل وجبات المنيو الفطاري
@@ -1528,8 +1528,8 @@ export default function HouseDetail({
                       }}
                       className={`flex-1 py-1.5 text-center text-[11px] font-extrabold rounded-lg transition-all cursor-pointer ${
                         editorIsFasting
-                          ? 'bg-emerald-700 text-white shadow-sm'
-                          : 'text-slate-700 hover:bg-slate-300'
+                          ? 'bg-[var(--ds-success)] text-[var(--ds-on-success)] shadow-sm'
+                          : 'text-[var(--ds-text)] hover:bg-[var(--ds-border)]'
                       }`}
                     >
                       🌿 تعديل وجبات المنيو الصيامي
@@ -1548,9 +1548,9 @@ export default function HouseDetail({
                           className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 cursor-pointer border ${
                             isSelected
                               ? editorIsFasting
-                                ? 'bg-emerald-700 text-white border-emerald-700'
-                                : 'bg-[#5A5A40] text-white border-[#5A5A40]'
-                              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                                ? 'bg-[var(--ds-success)] text-[var(--ds-on-success)] border-[var(--ds-success)]'
+                                : 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] border-[var(--ds-primary)]'
+                              : 'bg-[var(--ds-surface)] text-[var(--ds-text)] border-[var(--ds-border)] hover:bg-[var(--ds-raised)]'
                           }`}
                         >
                           {day}
@@ -1567,8 +1567,8 @@ export default function HouseDetail({
                     };
 
                     return (
-                      <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3 animate-fade-in text-right">
-                        <div className="text-[11px] font-extrabold text-[#5A5A40] border-b pb-1 flex justify-between items-center">
+                      <div className="bg-[var(--ds-surface)] p-4 rounded-xl border border-[var(--ds-border)] space-y-3 animate-fade-in text-right">
+                        <div className="text-[11px] font-extrabold text-[var(--ds-primary)] border-b pb-1 flex justify-between items-center">
                           <span>📝 وجبات وأسعار يوم ({editorSelectedDay}) - {editorIsFasting ? 'النظام الصيامي' : 'النظام الفطاري'}</span>
                           <span className="text-[11px] text-amber-600">يرجى كتابة الوجبة بدقة بالتفصيل</span>
                         </div>
@@ -1576,45 +1576,45 @@ export default function HouseDetail({
                         <div className="space-y-2.5">
                           {/* Breakfast */}
                           <div className="flex flex-col gap-1">
-                            <span className="text-[11px] font-extrabold text-slate-600">🍳 وجبة الإفطار:</span>
+                            <span className="text-[11px] font-extrabold text-[var(--ds-text-2)]">🍳 وجبة الإفطار:</span>
                             <textarea
                               rows={2}
                               value={activeDayData.breakfast || ''}
                               onChange={(e) => handleDayMealChange(editorSelectedDay, 'breakfast', e.target.value)}
-                              className="w-full text-xs font-semibold rounded-lg border-slate-200 focus:border-[#5A5A40] focus:ring-1 focus:ring-[#5A5A40] p-2"
+                              className="w-full text-[12px] font-semibold rounded-lg border-[var(--ds-border)] focus:border-[var(--ds-primary)] focus:ring-1 focus:ring-[var(--ds-primary)] p-2"
                               placeholder="اكتب مكونات وجبة الإفطار هنا..."
                             />
                           </div>
 
                           {/* Lunch */}
                           <div className="flex flex-col gap-1">
-                            <span className="text-[11px] font-extrabold text-slate-600">🍖 وجبة الغداء:</span>
+                            <span className="text-[11px] font-extrabold text-[var(--ds-text-2)]">🍖 وجبة الغداء:</span>
                             <textarea
                               rows={2}
                               value={activeDayData.lunch || ''}
                               onChange={(e) => handleDayMealChange(editorSelectedDay, 'lunch', e.target.value)}
-                              className="w-full text-xs font-semibold rounded-lg border-slate-200 focus:border-[#5A5A40] focus:ring-1 focus:ring-[#5A5A40] p-2"
+                              className="w-full text-[12px] font-semibold rounded-lg border-[var(--ds-border)] focus:border-[var(--ds-primary)] focus:ring-1 focus:ring-[var(--ds-primary)] p-2"
                               placeholder="اكتب مكونات وجبة الغداء بالتفصيل..."
                             />
                           </div>
 
                           {/* Dinner */}
                           <div className="flex flex-col gap-1">
-                            <span className="text-[11px] font-extrabold text-slate-600">🍲 وجبة العشاء:</span>
+                            <span className="text-[11px] font-extrabold text-[var(--ds-text-2)]">🍲 وجبة العشاء:</span>
                             <textarea
                               rows={2}
                               value={activeDayData.dinner || ''}
                               onChange={(e) => handleDayMealChange(editorSelectedDay, 'dinner', e.target.value)}
-                              className="w-full text-xs font-semibold rounded-lg border-slate-200 focus:border-[#5A5A40] focus:ring-1 focus:ring-[#5A5A40] p-2"
+                              className="w-full text-[12px] font-semibold rounded-lg border-[var(--ds-border)] focus:border-[var(--ds-primary)] focus:ring-1 focus:ring-[var(--ds-primary)] p-2"
                               placeholder="اكتب مكونات وجبة العشاء..."
                             />
                           </div>
 
                           {/* Day Price - This is exactly what the user wanted: "اضافة الاسعار الخاصه بكل يوم" */}
-                          <div className="bg-amber-50/50 p-3 rounded-lg border border-amber-200/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                          <div className="bg-[color-mix(in_srgb,var(--ds-warning)_5%,transparent)] p-3 rounded-lg border border-[color-mix(in_srgb,var(--ds-warning)_18%,transparent)] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                             <div className="space-y-0.5">
-                              <span className="text-[11px] font-extrabold text-amber-950 block">💰 سعر طعام اليوم ({editorSelectedDay}):</span>
-                              <span className="text-[11px] text-amber-800 font-semibold block">سعر الوجبات الثلاث الإجمالي لهذا اليوم تحديداً للفرد</span>
+                              <span className="text-[11px] font-extrabold text-[var(--ds-warning-deep)] block">💰 سعر طعام اليوم ({editorSelectedDay}):</span>
+                              <span className="text-[11px] text-[var(--ds-warning-ink)] font-semibold block">سعر الوجبات الثلاث الإجمالي لهذا اليوم تحديداً للفرد</span>
                             </div>
                             <div className="flex items-center gap-1 shrink-0 w-full sm:w-auto">
                               <input
@@ -1622,10 +1622,10 @@ export default function HouseDetail({
                                 min={0}
                                 value={activeDayData.price || ''}
                                 onChange={(e) => handleDayMealChange(editorSelectedDay, 'price', Number(e.target.value))}
-                                className="w-24 text-xs font-bold rounded-lg border-amber-200 focus:border-[#5A5A40] focus:ring-1 focus:ring-[#5A5A40] p-1 text-center text-[#5A5A40]"
+                                className="w-24 text-[12px] font-bold rounded-lg border-[color-mix(in_srgb,var(--ds-warning)_30%,transparent)] focus:border-[var(--ds-primary)] focus:ring-1 focus:ring-[var(--ds-primary)] p-1 text-center text-[var(--ds-primary)]"
                                 placeholder="مثال: 120"
                               />
-                              <span className="text-[11px] font-extrabold text-amber-900">ج.م / فرد</span>
+                              <span className="text-[11px] font-extrabold text-[var(--ds-warning-deep)]">ج.م / فرد</span>
                             </div>
                           </div>
                         </div>
@@ -1634,18 +1634,18 @@ export default function HouseDetail({
                   })()}
 
                   {/* Save button footer inside form */}
-                  <div className="flex gap-2 justify-end pt-2 border-t border-slate-200">
+                  <div className="flex gap-2 justify-end pt-2 border-t border-[var(--ds-border)]">
                     <button
                       type="button"
                       onClick={handleSaveMenuChanges}
-                      className="bg-emerald-600 text-white text-xs font-extrabold px-5 py-2 rounded-xl hover:bg-emerald-700 transition-all cursor-pointer shadow-sm"
+                      className="bg-[var(--ds-success)] text-[var(--ds-on-success)] text-[12px] font-extrabold px-5 py-2 rounded-xl hover:bg-[var(--ds-success)] transition-all cursor-pointer shadow-sm"
                     >
                       💾 حفظ التعديلات وحفظ المنيو بالكامل
                     </button>
                     <button
                       type="button"
                       onClick={() => setIsEditingMenu(false)}
-                      className="bg-slate-200 text-slate-700 text-xs font-extrabold px-4 py-2 rounded-xl hover:bg-slate-300 transition-all cursor-pointer"
+                      className="bg-[var(--ds-border)] text-[var(--ds-text)] text-[12px] font-extrabold px-4 py-2 rounded-xl hover:bg-[var(--ds-border)] transition-all cursor-pointer"
                     >
                       إلغاء التعديل
                     </button>
@@ -1656,24 +1656,24 @@ export default function HouseDetail({
                 <>
                   {/* Diet preferences & pricing cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <div className="bg-[#FBFBFA] p-2.5 rounded-2xl border border-[#D6D6C2]/40 flex flex-col justify-between text-right">
-                      <span className="text-[11px] text-[#8A8A70] font-bold block mb-0.5">توفير الطعام والوجبات:</span>
-                      <span className="text-[11px] font-extrabold text-[#4A4A3A]">
+                    <div className="bg-[var(--ds-surface)] p-2.5 rounded-2xl border border-[var(--ds-border)]/40 flex flex-col justify-between text-right">
+                      <span className="text-[11px] text-[var(--ds-text-2)] font-bold block mb-0.5">توفير الطعام والوجبات:</span>
+                      <span className="text-[11px] font-extrabold text-[var(--ds-text)]">
                         {house.menu?.isIncluded ? 'مشمول في قيمة الحجز الأساسي' : 'غير مشمول (اختياري)'}
                       </span>
                     </div>
 
-                    <div className="bg-[#FBFBFA] p-2.5 rounded-2xl border border-[#D6D6C2]/40 flex flex-col justify-between text-right">
-                      <span className="text-[11px] text-[#8A8A70] font-bold block mb-0.5">تكلفة الوجبة الإضافية:</span>
-                      <span className="text-[11px] font-extrabold text-[#4A4A3A]">
+                    <div className="bg-[var(--ds-surface)] p-2.5 rounded-2xl border border-[var(--ds-border)]/40 flex flex-col justify-between text-right">
+                      <span className="text-[11px] text-[var(--ds-text-2)] font-bold block mb-0.5">تكلفة الوجبة الإضافية:</span>
+                      <span className="text-[11px] font-extrabold text-[var(--ds-text)]">
                         {house.menu?.extraMealPrice ? `${house.menu.extraMealPrice} ج.م / فرد` : 'غير متوفر'}
                       </span>
                     </div>
 
-                    <div className="bg-[#FBFBFA] p-2.5 rounded-2xl border border-[#D6D6C2]/40 flex flex-col justify-between text-right">
-                      <span className="text-[11px] text-[#8A8A70] font-bold block mb-0.5">أنظمة غذائية خاصة:</span>
+                    <div className="bg-[var(--ds-surface)] p-2.5 rounded-2xl border border-[var(--ds-border)]/40 flex flex-col justify-between text-right">
+                      <span className="text-[11px] text-[var(--ds-text-2)] font-bold block mb-0.5">أنظمة غذائية خاصة:</span>
                       <div className="flex gap-1 mt-0.5">
-                        <span className="text-[11px] font-extrabold bg-emerald-100/70 text-emerald-800 px-1.5 py-0.5 rounded-md">
+                        <span className="text-[11px] font-extrabold bg-[color-mix(in_srgb,var(--ds-success)_11%,transparent)] text-[var(--ds-success-ink)] px-1.5 py-0.5 rounded-md">
                           🌿 صيامي
                         </span>
                         <span className="text-[11px] font-extrabold bg-teal-100/70 text-teal-800 px-1.5 py-0.5 rounded-md">
@@ -1684,7 +1684,7 @@ export default function HouseDetail({
                   </div>
 
                   {/* Fasting vs Regular Menu Selector */}
-                  <div className="flex bg-[#F1F1E8] p-1 rounded-2xl gap-1" dir="rtl">
+                  <div className="flex bg-[var(--ds-surface)] p-1 rounded-2xl gap-1" dir="rtl">
                     <button
                       type="button"
                       onClick={() => {
@@ -1694,8 +1694,8 @@ export default function HouseDetail({
                       }}
                       className={`flex-1 py-2 text-center text-[11px] font-extrabold rounded-xl transition-all cursor-pointer ${
                         !isFastingMenu
-                          ? 'bg-[#5A5A40] text-white shadow-sm'
-                          : 'text-[#5A5A40] hover:bg-[#EBEBE0]'
+                          ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-sm'
+                          : 'text-[var(--ds-primary)] hover:bg-[var(--ds-raised)]'
                       }`}
                     >
                       🥩 نظام الوجبات الفطاري المعتاد
@@ -1710,8 +1710,8 @@ export default function HouseDetail({
                       }}
                       className={`flex-1 py-2 text-center text-[11px] font-extrabold rounded-xl transition-all cursor-pointer ${
                         isFastingMenu
-                          ? 'bg-emerald-700 text-white shadow-sm'
-                          : 'text-emerald-800 hover:bg-emerald-50'
+                          ? 'bg-[var(--ds-success)] text-[var(--ds-on-success)] shadow-sm'
+                          : 'text-[var(--ds-success-ink)] hover:bg-[color-mix(in_srgb,var(--ds-success)_10%,transparent)]'
                       }`}
                     >
                       🌿 نظام الوجبات الصيامي (نباتي/أسماك)
@@ -1748,14 +1748,14 @@ export default function HouseDetail({
                                   className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all shrink-0 cursor-pointer border flex flex-col items-center ${
                                     isSelected
                                       ? isFastingMenu 
-                                        ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm'
-                                        : 'bg-[#5A5A40] text-white border-[#5A5A40] shadow-sm'
-                                      : 'bg-white text-[#4A4A3A] border-[#D6D6C2] hover:bg-[#F9F9F6]'
+                                        ? 'bg-[var(--ds-success)] text-[var(--ds-on-success)] border-[var(--ds-success)] shadow-sm'
+                                        : 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] border-[var(--ds-primary)] shadow-sm'
+                                      : 'bg-[var(--ds-surface)] text-[var(--ds-text)] border-[var(--ds-border)] hover:bg-[var(--ds-surface)]'
                                   }`}
                                 >
                                   <span>{menuDay.day}</span>
                                   {menuDay.price && (
-                                    <span className={`text-[11px] font-bold mt-0.5 ${isSelected ? 'text-white/90' : 'text-slate-500'}`}>
+                                    <span className={`text-[11px] font-bold mt-0.5 ${isSelected ? 'text-[color-mix(in_srgb,var(--ds-on-primary)_90%,transparent)]' : 'text-[var(--ds-text-2)]'}`}>
                                       {menuDay.price} ج.م
                                     </span>
                                   )}
@@ -1767,7 +1767,7 @@ export default function HouseDetail({
                           {/* Selected Day's Meals */}
                           {(() => {
                             const currentDay = activeMenu.find(m => m.day === selectedMenuDay) || activeMenu[0];
-                            if (!currentDay) return <p className="text-xs text-center text-[#8A8A70]">لا توجد وجبات متاحة</p>;
+                            if (!currentDay) return <p className="text-[12px] text-center text-[var(--ds-text-2)]">لا توجد وجبات متاحة</p>;
                             return (
                               <div className="space-y-2.5 animate-fade-in text-right">
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -1781,7 +1781,7 @@ export default function HouseDetail({
                                   </div>
 
                                   {/* Lunch */}
-                                  <div className={`${isFastingMenu ? 'bg-emerald-50/40 border-emerald-200/50' : 'bg-[#5A5A40]/5 border-[#5A5A40]/10'} border rounded-2xl p-3 space-y-1.5`}>
+                                  <div className={`${isFastingMenu ? 'bg-emerald-50/40 border-emerald-200/50' : 'bg-[var(--ds-primary)]/5 border-[var(--ds-primary)]/10'} border rounded-2xl p-3 space-y-1.5`}>
                                     <div className="flex items-center gap-1.5">
                                       <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-[11px]">{isFastingMenu ? '🐟' : '🍖'}</span>
                                       <span className="text-[11px] font-extrabold text-emerald-950">وجبة الغداء {isFastingMenu && ' (صيامي)'}</span>
@@ -1800,9 +1800,9 @@ export default function HouseDetail({
                                 </div>
 
                                 {currentDay.price && (
-                                  <div className="bg-[#FBFBFA] border border-[#D6D6C2]/60 p-2.5 rounded-2xl flex justify-between items-center text-[11px] font-bold text-[#4A4A3A]">
-                                    <span className="text-[#8A8A70]">💰 سعر الوجبات المخصصة لهذا اليوم ({currentDay.day}):</span>
-                                    <span className="text-[#5A5A40] text-xs font-extrabold bg-[#5A5A40]/5 px-3 py-1 rounded-lg">
+                                  <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)]/60 p-2.5 rounded-2xl flex justify-between items-center text-[11px] font-bold text-[var(--ds-text)]">
+                                    <span className="text-[var(--ds-text-2)]">💰 سعر الوجبات المخصصة لهذا اليوم ({currentDay.day}):</span>
+                                    <span className="text-[var(--ds-primary)] text-[12px] font-extrabold bg-[var(--ds-primary)]/5 px-3 py-1 rounded-lg">
                                       {currentDay.price} ج.م / للفرد
                                     </span>
                                   </div>
@@ -1815,32 +1815,32 @@ export default function HouseDetail({
                     } else {
                       return (
                         // Full Weekly Grid/List View
-                        <div className="space-y-2 max-h-80 overflow-y-auto pr-1 border border-[#D6D6C2]/50 p-2.5 rounded-2xl bg-[#FBFBFA] divide-y divide-[#D6D6C2]/30">
+                        <div className="space-y-2 max-h-80 overflow-y-auto pr-1 border border-[var(--ds-border)]/50 p-2.5 rounded-2xl bg-[var(--ds-surface)] divide-y divide-[var(--ds-border)]/30">
                           {activeMenu.map((menuDay) => (
                             <div key={menuDay.day} className="py-2.5 first:pt-0 last:pb-0 text-right">
-                              <div className="font-extrabold text-[#5A5A40] text-[11px] mb-1.5 flex items-center justify-between">
+                              <div className="font-extrabold text-[var(--ds-primary)] text-[11px] mb-1.5 flex items-center justify-between">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#5A5A40]" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--ds-primary)]" />
                                   {menuDay.day}
                                 </div>
                                 {menuDay.price && (
-                                  <span className="text-[11px] bg-[#5A5A40]/10 text-[#5A5A40] px-2 py-0.5 rounded-lg font-black">
+                                  <span className="text-[11px] bg-[var(--ds-primary)]/10 text-[var(--ds-primary)] px-2 py-0.5 rounded-lg font-black">
                                     سعر اليوم: {menuDay.price} ج.م / فرد
                                   </span>
                                 )}
                               </div>
                               <div className="grid grid-cols-3 gap-2 text-right">
-                                <div className="bg-white p-2 rounded-xl border border-[#D6D6C2]/30">
+                                <div className="bg-[var(--ds-surface)] p-2 rounded-xl border border-[var(--ds-border)]/30">
                                   <span className="text-[11px] text-amber-800 font-bold block mb-0.5">🍳 إفطار {isFastingMenu && 'صيامي'}</span>
-                                  <p className="text-[11px] text-[#4A4A3A] font-semibold leading-relaxed">{menuDay.breakfast || 'غير محدد'}</p>
+                                  <p className="text-[11px] text-[var(--ds-text)] font-semibold leading-relaxed">{menuDay.breakfast || 'غير محدد'}</p>
                                 </div>
-                                <div className="bg-white p-2 rounded-xl border border-[#D6D6C2]/30">
+                                <div className="bg-[var(--ds-surface)] p-2 rounded-xl border border-[var(--ds-border)]/30">
                                   <span className="text-[11px] text-emerald-800 font-bold block mb-0.5">{isFastingMenu ? '🐟' : '🍖'} غداء {isFastingMenu && 'صيامي'}</span>
-                                  <p className="text-[11px] text-[#4A4A3A] font-semibold leading-relaxed">{menuDay.lunch || 'غير محدد'}</p>
+                                  <p className="text-[11px] text-[var(--ds-text)] font-semibold leading-relaxed">{menuDay.lunch || 'غير محدد'}</p>
                                 </div>
-                                <div className="bg-white p-2 rounded-xl border border-[#D6D6C2]/30">
+                                <div className="bg-[var(--ds-surface)] p-2 rounded-xl border border-[var(--ds-border)]/30">
                                   <span className="text-[11px] text-purple-800 font-bold block mb-0.5">🍲 عشاء {isFastingMenu && 'صيامي'}</span>
-                                  <p className="text-[11px] text-[#4A4A3A] font-semibold leading-relaxed">{menuDay.dinner || 'غير محدد'}</p>
+                                  <p className="text-[11px] text-[var(--ds-text)] font-semibold leading-relaxed">{menuDay.dinner || 'غير محدد'}</p>
                                 </div>
                               </div>
                             </div>
@@ -1851,8 +1851,8 @@ export default function HouseDetail({
                   })()}
 
                   {/* Special Note */}
-                  <div className="bg-amber-50/50 border border-amber-200/50 p-2.5 rounded-xl flex items-start gap-2 text-[11px] text-amber-900 leading-relaxed text-right" dir="rtl">
-                    <span className="text-xs shrink-0">💡</span>
+                  <div className="bg-[color-mix(in_srgb,var(--ds-warning)_5%,transparent)] border border-[color-mix(in_srgb,var(--ds-warning)_15%,transparent)] p-2.5 rounded-xl flex items-start gap-2 text-[11px] text-[var(--ds-warning-deep)] leading-relaxed text-right" dir="rtl">
+                    <span className="text-[12px] shrink-0">💡</span>
                     <p className="font-bold">
                       ملحوظة: يمكنك طلب تعديل النظام الغذائي للجروب بالكامل بالتنسيق مع مالك البيت مسبقاً قبل التسكين، لضمان تلبية خيارات الوجبات الصيامي والأطعمة النباتية والصحية للمخدومين.
                     </p>
@@ -1878,26 +1878,26 @@ export default function HouseDetail({
           >
             {/* One totals line, not the two identical ones that were here. */}
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-black bg-[#F6F0E2] text-[#B8944E] px-3 py-1 rounded-full">
+              <span className="text-[11px] font-black bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] text-[var(--ds-accent-deep)] px-3 py-1 rounded-full">
                 {arabicNumber(house.roomsCount)} غرفة
               </span>
-              <span className="text-[11px] font-black bg-[#F6F0E2] text-[#B8944E] px-3 py-1 rounded-full">
+              <span className="text-[11px] font-black bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] text-[var(--ds-accent-deep)] px-3 py-1 rounded-full">
                 {arabicNumber(house.bedsCount)} سرير
               </span>
             </div>
             
-            <p className="text-xs text-[#8A8A70] leading-relaxed font-medium">{house.roomsDescription}</p>
+            <p className="text-[12px] text-[var(--ds-text-2)] leading-relaxed font-medium">{house.roomsDescription}</p>
 
             {/* Actual rooms added by the owner (real availability, not the illustrative grid below) */}
             {rooms.length > 0 && (
               <div className="space-y-2 pt-1">
-                <span className="text-[11px] font-extrabold text-[#4A4A3A]">حالة الغرف المتاحة فعلياً:</span>
+                <span className="text-[11px] font-extrabold text-[var(--ds-text)]">حالة الغرف المتاحة فعلياً:</span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {rooms.map((room) => (
-                    <div key={room.id} className="flex items-center justify-between bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl px-3 py-2">
+                    <div key={room.id} className="flex items-center justify-between bg-[var(--ds-bg)] border border-[var(--ds-border)] rounded-xl px-3 py-2">
                       <div>
-                        <span className="text-[11px] font-bold text-[#4A4A3A] block">{room.name}</span>
-                        <span className="text-[11px] text-[#8A8A70]">
+                        <span className="text-[11px] font-bold text-[var(--ds-text)] block">{room.name}</span>
+                        <span className="text-[11px] text-[var(--ds-text-2)]">
                           {arabicNumber(room.bedsCount)} سرير{room.pricePerNight ? ` · ${arabicNumber(room.pricePerNight)} ج.م/ليلة` : ''}
                         </span>
                       </div>
@@ -1912,7 +1912,7 @@ export default function HouseDetail({
                           has no dates to answer it for, so it now says nothing
                           rather than something false. */}
                       {(room.status === 'maintenance' || room.status === 'cleaning') && (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 bg-rose-50 text-rose-800 border border-rose-200">
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 bg-[color-mix(in_srgb,var(--ds-danger)_10%,transparent)] text-[var(--ds-danger-ink)] border border-[color-mix(in_srgb,var(--ds-danger)_30%,transparent)]">
                           {room.status === 'maintenance' ? 'صيانة' : 'تحضير'}
                         </span>
                       )}
@@ -1938,8 +1938,8 @@ export default function HouseDetail({
                 const offerings = buildRoomOfferings(house, rooms ?? [], roomTypes ?? []);
                 if (offerings.length === 0) {
                   return (
-                    <div className="md:col-span-3 bg-[#EBEBE0]/30 border border-[#D6D6C2] rounded-2xl p-4 text-center">
-                      <p className="text-[11px] text-[#8A8A70] font-bold leading-relaxed">
+                    <div className="md:col-span-3 bg-[var(--ds-raised)]/30 border border-[var(--ds-border)] rounded-2xl p-4 text-center">
+                      <p className="text-[11px] text-[var(--ds-text-2)] font-bold leading-relaxed">
                         صاحب البيت لسه ما أضافش تفاصيل الغرف. تقدر تسأله عن الأنواع والأسعار من خلال طلب الحجز.
                       </p>
                     </div>
@@ -1950,16 +1950,16 @@ export default function HouseDetail({
                   return (
                     <div
                       key={room.id}
-                      className={`group bg-white rounded-2xl border transition-all duration-300 overflow-hidden flex flex-col justify-between ${
+                      className={`group bg-[var(--ds-surface)] rounded-2xl border transition-all duration-300 overflow-hidden flex flex-col justify-between ${
                         isSelected
-                          ? 'border-[#5A5A40] shadow-md ring-1 ring-[#5A5A40]'
-                          : 'border-[#D6D6C2] hover:border-[#8A8A70] hover:shadow-sm'
+                          ? 'border-[var(--ds-primary)] shadow-md ring-1 ring-[var(--ds-primary)]'
+                          : 'border-[var(--ds-border)] hover:border-[var(--ds-text-2)] hover:shadow-sm'
                       }`}
                     >
                       {/* The owner's own photograph, or nothing. A stock
                           picture of a room that is not this one is worse
                           than no picture. */}
-                      <div className="relative h-28 w-full overflow-hidden bg-[#EBEBE0]/50">
+                      <div className="relative h-28 w-full overflow-hidden bg-[var(--ds-raised)]/50">
                         {room.image ? (
                           <img
                             src={room.image}
@@ -1969,37 +1969,37 @@ export default function HouseDetail({
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <BedDouble className="w-7 h-7 text-[#BCBC9D]" />
+                            <BedDouble className="w-7 h-7 text-[var(--ds-text-faint)]" />
                           </div>
                         )}
-                        <div className="absolute top-2 right-2 bg-[#5A5A40] text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                        <div className="absolute top-2 right-2 bg-[var(--ds-primary)] text-[var(--ds-on-primary)] text-[11px] font-black px-2 py-0.5 rounded-full shadow-sm">
                           👤 {room.capacityLabel}
                         </div>
                       </div>
 
                       <div className="p-3.5 space-y-2 text-right flex-1 flex flex-col justify-between">
                         <div>
-                          <h4 className="text-[11px] font-extrabold text-[#4A4A3A] group-hover:text-[#5A5A40] transition-colors">
+                          <h4 className="text-[11px] font-extrabold text-[var(--ds-text)] group-hover:text-[var(--ds-primary)] transition-colors">
                             {room.name}
                           </h4>
                           {/* Real counts instead of a written-in blurb. */}
-                          <p className="text-[11px] text-[#8A8A70] leading-relaxed font-semibold mt-1">
+                          <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed font-semibold mt-1">
                             {room.count > 0
                               ? <>{arabicNumber(room.count)} غرفة من النوع ده{room.outOfServiceCount > 0 ? ` · ${arabicNumber(room.outOfServiceCount)} خارج الخدمة` : ''}</>
                               : 'غرفة متاحة للحجز'}
                           </p>
                           {room.description && (
-                            <p className="text-[11px] text-[#8A8A70] leading-relaxed font-semibold mt-1 line-clamp-2">
+                            <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed font-semibold mt-1 line-clamp-2">
                               {room.description}
                             </p>
                           )}
                         </div>
 
-                        <div className="pt-2 border-t border-[#D6D6C2]/40 mt-2 space-y-2">
+                        <div className="pt-2 border-t border-[var(--ds-border)]/40 mt-2 space-y-2">
                           <div className="flex justify-between items-baseline">
-                            <span className="text-[11px] text-[#8A8A70] font-bold">السعر:</span>
-                            <span className="text-xs font-black text-[#5A5A40]">
-                              {arabicNumber(room.price)} ج.م <span className="text-[11px] text-[#8A8A70] font-bold">/ {room.priceUnit}</span>
+                            <span className="text-[11px] text-[var(--ds-text-2)] font-bold">السعر:</span>
+                            <span className="text-[12px] font-black text-[var(--ds-primary)]">
+                              {arabicNumber(room.price)} ج.م <span className="text-[11px] text-[var(--ds-text-2)] font-bold">/ {room.priceUnit}</span>
                             </span>
                           </div>
 
@@ -2009,7 +2009,7 @@ export default function HouseDetail({
                               type="button"
                               onClick={() => setSelectedRoomId(isSelected ? null : room.id)}
                               className={`w-full py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer text-center ${
-                                isSelected ? 'bg-[#5A5A40] text-white' : 'bg-[#EBEBE0]/40 text-[#5A5A40] hover:bg-[#EBEBE0]'
+                                isSelected ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)]' : 'bg-[var(--ds-raised)]/40 text-[var(--ds-primary)] hover:bg-[var(--ds-raised)]'
                               }`}
                             >
                               {isSelected ? 'إخفاء التجهيزات' : 'عرض التجهيزات'}
@@ -2019,12 +2019,12 @@ export default function HouseDetail({
                       </div>
 
                       {isSelected && room.features.length > 0 && (
-                        <div className="bg-[#FBFBFA] border-t border-[#D6D6C2] p-3.5 text-right space-y-1.5 animate-fade-in text-[11px]">
-                          <span className="font-extrabold text-[#5A5A40] text-[11px]">التجهيزات:</span>
+                        <div className="bg-[var(--ds-surface)] border-t border-[var(--ds-border)] p-3.5 text-right space-y-1.5 animate-fade-in text-[11px]">
+                          <span className="font-extrabold text-[var(--ds-primary)] text-[11px]">التجهيزات:</span>
                           <div className="grid grid-cols-2 gap-1.5 text-right">
                             {room.features.map((feature, idx) => (
-                              <div key={idx} className="flex items-center gap-1 text-[11px] text-[#4A4A3A] font-bold">
-                                <span className="text-emerald-600 text-xs shrink-0">✓</span>
+                              <div key={idx} className="flex items-center gap-1 text-[11px] text-[var(--ds-text)] font-bold">
+                                <span className="text-[var(--ds-success)] text-[12px] shrink-0">✓</span>
                                 <span>{feature}</span>
                               </div>
                             ))}
@@ -2054,29 +2054,29 @@ export default function HouseDetail({
             <div className="space-y-4">
               {/* Conference Halls (القاعات) */}
               <div className="space-y-3 text-right">
-                <span className="font-extrabold text-[#0A2342] text-[11px] block">قاعات الاجتماعات والمؤتمرات:</span>
+                <span className="font-extrabold text-[var(--ds-brand)] text-[11px] block">قاعات الاجتماعات والمؤتمرات:</span>
                 {house.conferenceHalls.length === 0 ? (
-                  <p className="text-[11px] text-[#8A8A70]">لا تتوفر قاعات اجتماعات خاصة، الاجتماعات تقام بالساحات الخارجية.</p>
+                  <p className="text-[11px] text-[var(--ds-text-2)]">لا تتوفر قاعات اجتماعات خاصة، الاجتماعات تقام بالساحات الخارجية.</p>
                 ) : (
                   <div className="space-y-2.5">
                     {house.conferenceHalls.map((hall) => (
-                      <div key={hall.id} className="bg-[#EBEBE0]/30 border border-[#D6D6C2] p-3 rounded-2xl flex justify-between items-center text-xs">
+                      <div key={hall.id} className="bg-[var(--ds-raised)]/30 border border-[var(--ds-border)] p-3 rounded-2xl flex justify-between items-center text-[12px]">
                         <div>
-                          <div className="font-bold text-[#4A4A3A]">{hall.name}</div>
-                          <div className="text-[11px] text-[#8A8A70] font-semibold mt-0.5">تتسع لـ: {arabicNumber(hall.capacity)} فرد</div>
+                          <div className="font-bold text-[var(--ds-text)]">{hall.name}</div>
+                          <div className="text-[11px] text-[var(--ds-text-2)] font-semibold mt-0.5">تتسع لـ: {arabicNumber(hall.capacity)} فرد</div>
                           {hall.price !== undefined && (
-                            <div className="text-[11px] text-[#5A5A40] font-bold mt-0.5">{arabicNumber(hall.price)} جنيه / اليوم</div>
+                            <div className="text-[11px] text-[var(--ds-primary)] font-bold mt-0.5">{arabicNumber(hall.price)} جنيه / اليوم</div>
                           )}
                         </div>
                         <div className="flex gap-2">
                           {hall.hasSoundSystem && (
-                            <span className="p-1 bg-white border border-[#D6D6C2] rounded-lg text-[#5A5A40]" title="أنظمة صوت مدمجة">
-                              <Volume2 className="w-3.5 h-3.5 text-[#5A5A40]" />
+                            <span className="p-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-lg text-[var(--ds-primary)]" title="أنظمة صوت مدمجة">
+                              <Volume2 className="w-3.5 h-3.5 text-[var(--ds-primary)]" />
                             </span>
                           )}
                           {hall.hasProjector && (
-                            <span className="p-1 bg-white border border-[#D6D6C2] rounded-lg text-[#8A8A70]" title="بروجيكتور وشاشات عرض">
-                              <Monitor className="w-3.5 h-3.5 text-[#8A8A70]" />
+                            <span className="p-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-lg text-[var(--ds-text-2)]" title="بروجيكتور وشاشات عرض">
+                              <Monitor className="w-3.5 h-3.5 text-[var(--ds-text-2)]" />
                             </span>
                           )}
                         </div>
@@ -2087,15 +2087,15 @@ export default function HouseDetail({
               </div>
 
               {/* Amenities checklist */}
-              <div className="space-y-3 pt-3 border-t border-[#D6D6C2]/30 text-right">
-                <span className="font-extrabold text-[#0A2342] text-[11px] block">المرافق والخدمات المتوفرة:</span>
-                <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="space-y-3 pt-3 border-t border-[var(--ds-border)]/30 text-right">
+                <span className="font-extrabold text-[var(--ds-brand)] text-[11px] block">المرافق والخدمات المتوفرة:</span>
+                <div className="grid grid-cols-2 gap-2 text-[12px]">
                   {house.services.map((srv) => (
-                    <div key={srv} className="flex items-center gap-2 text-[#4A4A3A] bg-[#EBEBE0]/20 p-1.5 rounded-xl border border-[#D6D6C2]">
-                      <span className="w-4 h-4 rounded-full bg-[#EBEBE0] border border-[#BCBC9D] text-[#5A5A40] flex items-center justify-center shrink-0">
+                    <div key={srv} className="flex items-center gap-2 text-[var(--ds-text)] bg-[var(--ds-raised)]/20 p-1.5 rounded-xl border border-[var(--ds-border)]">
+                      <span className="w-4 h-4 rounded-full bg-[var(--ds-raised)] border border-[var(--ds-text-faint)] text-[var(--ds-primary)] flex items-center justify-center shrink-0">
                         <Check className="w-2.5 h-2.5" />
                       </span>
-                      <span className="font-semibold text-[11px] text-[#4A4A3A]">{srv}</span>
+                      <span className="font-semibold text-[11px] text-[var(--ds-text)]">{srv}</span>
                     </div>
                   ))}
                 </div>
@@ -2126,18 +2126,18 @@ export default function HouseDetail({
                   {/* The section header already names the place and the
                       purpose; all that is left to say here is how fresh it is. */}
                   <div className="flex items-center justify-end">
-                    <span className="text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200/50 px-2 py-0.5 rounded-full font-bold">
+                    <span className="text-[11px] bg-[color-mix(in_srgb,var(--ds-success)_10%,transparent)] text-[var(--ds-success-ink)] border border-[color-mix(in_srgb,var(--ds-success)_15%,transparent)] px-2 py-0.5 rounded-full font-bold">
                       مباشر ومحدث
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-center">
                     {/* Current conditions */}
-                    <div className="bg-[#EBEBE0]/20 border border-[#D6D6C2] p-3 rounded-2xl flex items-center justify-between">
+                    <div className="bg-[var(--ds-raised)]/20 border border-[var(--ds-border)] p-3 rounded-2xl flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <span className="text-[11px] font-bold text-[#8A8A70]">الطقس الحالي</span>
-                        <div className="text-xs font-black text-[#4A4A3A]">{weather.conditionText}</div>
-                        <div className="flex gap-2 text-[11px] text-[#8A8A70] pt-1">
+                        <span className="text-[11px] font-bold text-[var(--ds-text-2)]">الطقس الحالي</span>
+                        <div className="text-[12px] font-black text-[var(--ds-text)]">{weather.conditionText}</div>
+                        <div className="flex gap-2 text-[11px] text-[var(--ds-text-2)] pt-1">
                           <span className="flex items-center gap-0.5">
                             <Droplets className="w-3 h-3 text-blue-400" />
                             رطوبة: {arabicNumber(weather.humidity)}٪
@@ -2148,23 +2148,23 @@ export default function HouseDetail({
                           </span>
                         </div>
                       </div>
-                      <div className="flex flex-col items-center justify-center bg-white border border-[#D6D6C2] rounded-xl px-2.5 py-1.5 shadow-sm">
-                        <span className="text-lg font-black text-[#5A5A40] tracking-tight">{arabicNumber(weather.currentTemp)}°م</span>
-                        <Thermometer className="w-4 h-4 text-rose-500 fill-rose-100" />
+                      <div className="flex flex-col items-center justify-center bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl px-2.5 py-1.5 shadow-sm">
+                        <span className="text-lg font-black text-[var(--ds-primary)] tracking-tight">{arabicNumber(weather.currentTemp)}°م</span>
+                        <Thermometer className="w-4 h-4 text-[var(--ds-danger)] fill-[color-mix(in_srgb,var(--ds-danger)_16%,transparent)]" />
                       </div>
                     </div>
 
                     {/* 3-day short forecast */}
                     <div className="space-y-1.5">
-                      <span className="block text-[11px] font-extrabold text-[#8A8A70]">توقعات الأيام الثلاثة القادمة:</span>
+                      <span className="block text-[11px] font-extrabold text-[var(--ds-text-2)]">توقعات الأيام الثلاثة القادمة:</span>
                       <div className="grid grid-cols-3 gap-1.5 text-center">
                         {weather.forecast.map((day, idx) => (
-                          <div key={idx} className="bg-[#FBFBFA] border border-[#D6D6C2]/60 p-2 rounded-xl space-y-1">
-                            <div className="text-[11px] font-extrabold text-[#8A8A70]">{day.dayName}</div>
+                          <div key={idx} className="bg-[var(--ds-surface)] border border-[var(--ds-border)]/60 p-2 rounded-xl space-y-1">
+                            <div className="text-[11px] font-extrabold text-[var(--ds-text-2)]">{day.dayName}</div>
                             <div className="flex justify-center py-0.5">
                               {getWeatherIcon(day.icon)}
                             </div>
-                            <div className="text-[11px] font-black text-[#4A4A3A]">{arabicNumber(day.tempHigh)}° / {arabicNumber(day.tempLow)}°</div>
+                            <div className="text-[11px] font-black text-[var(--ds-text)]">{arabicNumber(day.tempHigh)}° / {arabicNumber(day.tempLow)}°</div>
                           </div>
                         ))}
                       </div>
@@ -2172,12 +2172,12 @@ export default function HouseDetail({
                   </div>
 
                   {/* Recommendation and Planning tip */}
-                  <div className="bg-amber-50/50 border border-amber-200/60 rounded-2xl p-3.5 space-y-1.5">
-                    <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-amber-950">
-                      <span className="text-xs">💡</span>
+                  <div className="bg-[color-mix(in_srgb,var(--ds-warning)_5%,transparent)] border border-[color-mix(in_srgb,var(--ds-warning)_18%,transparent)] rounded-2xl p-3.5 space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-[var(--ds-warning-deep)]">
+                      <span className="text-[12px]">💡</span>
                       <span>توصية التخطيط للرحلة والأنشطة:</span>
                     </div>
-                    <p className="text-[11px] font-medium text-amber-900 leading-relaxed">
+                    <p className="text-[11px] font-medium text-[var(--ds-warning-deep)] leading-relaxed">
                       {weather.recommendation}
                     </p>
                   </div>
@@ -2199,45 +2199,45 @@ export default function HouseDetail({
             type="button"
             onClick={() => { tapFeedback(); setBookingOpen(true); }}
             aria-label="احجز الآن"
-            className="group block w-full text-right rounded-[30px] overflow-hidden bg-[#FAF8F4] border border-[#C9A24A]/10 shadow-[0_10px_30px_rgba(45,45,36,0.07),0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_14px_36px_rgba(201,162,74,0.18),0_3px_10px_rgba(45,45,36,0.06)] active:scale-[0.98] transition-[transform,box-shadow] duration-200 ease-in-out cursor-pointer"
+            className="group block w-full text-right rounded-[30px] overflow-hidden bg-[var(--ds-bg)] border border-[var(--ds-accent)]/10 shadow-[0_10px_30px_rgba(45,45,36,0.07),0_2px_8px_rgba(45,45,36,0.04)] hover:shadow-[0_14px_36px_rgba(201,162,74,0.18),0_3px_10px_rgba(45,45,36,0.06)] active:scale-[0.98] transition-[transform,box-shadow] duration-200 ease-in-out cursor-pointer"
           >
             <div className="flex items-stretch gap-4 p-5">
               {/* Zone one: the number carries the card. */}
               <div className="basis-[35%] shrink-0 text-center leading-none">
-                <span className="block text-[11px] font-black text-[#C9A24A]">ابتداءً من</span>
+                <span className="block text-[11px] font-black text-[var(--ds-accent)]">ابتداءً من</span>
                 <span className="flex items-baseline justify-center gap-1 my-2">
-                  <span className="text-[40px] font-black text-[#0A2342] [font-variant-numeric:tabular-nums]">
+                  <span className="text-[40px] font-black text-[var(--ds-brand)] [font-variant-numeric:tabular-nums]">
                     {arabicNumber(isMonthlyHousing ? (house.monthlyRent || 0) : house.pricePerNightPerPerson)}
                   </span>
-                  <span className="text-[12px] font-black text-[#0A2342]">ج.م</span>
+                  <span className="text-[12px] font-black text-[var(--ds-brand)]">ج.م</span>
                 </span>
-                <span className="block text-[11px] font-medium text-[#8A8A70]">
+                <span className="block text-[11px] font-medium text-[var(--ds-text-2)]">
                   {isMonthlyHousing ? 'لكل فرد / شهر' : 'لكل فرد / ليلة'}
                 </span>
                 {/* The other rate this house sells, where it sells one. Under
                     the nightly figure rather than beside it: it is the second
                     answer to the same question, not a competing headline. */}
                 {offersDayUse(house) && (
-                  <span className="block text-[11px] font-bold text-[#B8944E] mt-2 leading-snug">
+                  <span className="block text-[11px] font-bold text-[var(--ds-accent-deep)] mt-2 leading-snug">
                     أو {arabicNumber(house.dayUsePricePerPerson as number)} ج.م
                     <br />
-                    <span className="font-medium text-[#8A8A70]">لليوم بدون مبيت</span>
+                    <span className="font-medium text-[var(--ds-text-2)]">لليوم بدون مبيت</span>
                   </span>
                 )}
-                <span aria-hidden="true" className="block w-12 h-0.5 rounded-full bg-[#C9A24A]/30 mx-auto mt-3" />
+                <span aria-hidden="true" className="block w-12 h-0.5 rounded-full bg-[var(--ds-accent)]/30 mx-auto mt-3" />
               </div>
 
-              <span aria-hidden="true" className="w-px self-stretch bg-[#C9A24A]/15" />
+              <span aria-hidden="true" className="w-px self-stretch bg-[var(--ds-accent)]/15" />
 
               {/* Zone two: the reassurance, compact and beside the price rather
                   than stacked under it — no empty middle. */}
               <div className="flex-1 min-w-0 flex items-center gap-3">
-                <span className="w-11 h-11 rounded-full bg-[#F4EDDD] flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-5 h-5 text-[#C9A24A]" />
+                <span className="w-11 h-11 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_16%,var(--ds-surface))] flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-5 h-5 text-[var(--ds-accent)]" />
                 </span>
                 <span className="min-w-0 leading-snug">
-                  <span className="block text-[12px] font-black text-[#0A2342]">لن يتم خصم أي مبلغ الآن</span>
-                  <span className="block text-[11px] font-medium text-[#8A8A70] mt-1">
+                  <span className="block text-[12px] font-black text-[var(--ds-brand)]">لن يتم خصم أي مبلغ الآن</span>
+                  <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-1">
                     سيتم مراجعة طلبك من إدارة المكان أولاً قبل تأكيد الحجز.
                   </span>
                 </span>
@@ -2246,9 +2246,9 @@ export default function HouseDetail({
 
             {/* Zone three: the bottom edge of the card, and the action. It
                 inherits the card's radius because the card clips it. */}
-            <span className="flex items-center h-14 px-5 bg-gradient-to-l from-[#B8944E] via-[#C9A24A] to-[#D6AE5C] text-white transition-[filter] duration-200 ease-in-out group-active:brightness-95">
+            <span className="flex items-center h-14 px-5 bg-gradient-to-l from-[var(--ds-accent-deep)] via-[var(--ds-accent)] to-[#D6AE5C] text-white transition-[filter] duration-200 ease-in-out group-active:brightness-95">
               <CalendarDays className="w-5 h-5 shrink-0" />
-              <span className="flex-1 text-center text-[15px] font-black">احجز الآن</span>
+              <span className="flex-1 text-center text-[16px] font-black">احجز الآن</span>
               <ChevronLeft className="w-5 h-5 shrink-0 transition-transform duration-200 ease-in-out group-active:-translate-x-1" />
             </span>
           </button>
@@ -2260,20 +2260,20 @@ export default function HouseDetail({
       <button
         type="button"
         onClick={() => { tapFeedback(); setAvailabilityOpen(true); }}
-        className="w-full bg-white rounded-3xl p-5 border border-[#EDE7DA] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)] flex items-center gap-3 text-right cursor-pointer pima-press hover:border-[#E3CD9F] transition-colors"
+        className="w-full bg-[var(--ds-surface)] rounded-3xl p-5 border border-[var(--ds-border)] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)] flex items-center gap-3 text-right cursor-pointer pima-press hover:border-[var(--ds-accent-soft)] transition-colors"
       >
-        <span className="w-12 h-12 rounded-full bg-[#F6F0E2] flex items-center justify-center shrink-0">
-          <Calendar className="w-5 h-5 text-[#C9A24A]" />
+        <span className="w-12 h-12 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] flex items-center justify-center shrink-0">
+          <Calendar className="w-5 h-5 text-[var(--ds-accent)]" />
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block text-[12px] font-black text-[#0A2342]">جدول الإشغال</span>
-          <span className="block text-[11px] font-medium text-[#8A8A70] leading-snug mt-0.5">
+          <span className="block text-[12px] font-black text-[var(--ds-brand)]">جدول الإشغال</span>
+          <span className="block text-[11px] font-medium text-[var(--ds-text-2)] leading-snug mt-0.5">
             {freeCalendarDays > 0
               ? <>{arabicNumber(freeCalendarDays)} من {arabicNumber(CALENDAR_DAYS.length)} يوم متاحة في {calendarMonthLabel}</>
               : <>لا توجد أيام متاحة في {calendarMonthLabel}</>}
           </span>
         </span>
-        <ChevronLeft className="w-4 h-4 text-[#B5AF98] shrink-0" />
+        <ChevronLeft className="w-4 h-4 text-[var(--ds-text-faint)] shrink-0" />
       </button>
 
       <PimaSheet
@@ -2281,7 +2281,7 @@ export default function HouseDetail({
         onClose={() => setAvailabilityOpen(false)}
         title="جدول الإشغال"
         subtitle={`تقويم إشغال البيت — ${calendarMonthLabel}`}
-        icon={<Calendar className="w-4 h-4 text-[#C9A24A]" />}
+        icon={<Calendar className="w-4 h-4 text-[var(--ds-accent)]" />}
       >
           <div className="space-y-3">
             {/* Visual Calendar Grid */}
@@ -2290,7 +2290,7 @@ export default function HouseDetail({
                   الأربعاء missing entirely, and no offset before the 1st, so
                   every date sat under the wrong weekday. */}
               {WEEKDAY_INITIALS.map((d, i) => (
-                <div key={i} className="text-[#8A8A70] py-1">{d}</div>
+                <div key={i} className="text-[var(--ds-text-2)] py-1">{d}</div>
               ))}
               {Array.from({ length: calendarLeadingBlanks }, (_, i) => (
                 <div key={`blank-${i}`} aria-hidden="true" />
@@ -2303,10 +2303,10 @@ export default function HouseDetail({
                     key={day}
                     className={`py-1.5 rounded-lg border text-center transition-all ${
                       past
-                        ? 'bg-[#F4F2EC] border-[#E5E1D6] text-[#B5AF98]'
+                        ? 'bg-[var(--ds-raised)] border-[var(--ds-raised)] text-[var(--ds-text-faint)]'
                         : booked
-                          ? 'bg-rose-50 border-rose-100 text-rose-700 font-extrabold'
-                          : 'bg-emerald-50 border-emerald-100 text-emerald-850'
+                          ? 'bg-[color-mix(in_srgb,var(--ds-danger)_10%,transparent)] border-[color-mix(in_srgb,var(--ds-danger)_16%,transparent)] text-[var(--ds-danger-ink)] font-extrabold'
+                          : 'bg-[color-mix(in_srgb,var(--ds-success)_10%,transparent)] border-[color-mix(in_srgb,var(--ds-success)_16%,transparent)] text-emerald-850'
                     }`}
                     title={past ? 'تاريخ مضى' : booked ? 'محجوز بالكامل' : 'متاح للحجز'}
                   >
@@ -2316,17 +2316,17 @@ export default function HouseDetail({
               })}
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-[#8A8A70] pt-2 border-t border-[#EDE7DA]">
+            <div className="flex items-center justify-between text-[11px] text-[var(--ds-text-2)] pt-2 border-t border-[var(--ds-border)]">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span className="w-2 h-2 rounded-full bg-[var(--ds-danger)]" />
                 <span>محجوز لمؤتمرات أخرى</span>
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="w-2 h-2 rounded-full bg-[var(--ds-success)]" />
                 <span>متاح لخلوتكم</span>
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#D6D2C4]" />
+                <span className="w-2 h-2 rounded-full bg-[var(--ds-border)]" />
                 <span>تاريخ مضى</span>
               </span>
             </div>
@@ -2339,16 +2339,16 @@ export default function HouseDetail({
       <button
         type="button"
         onClick={() => { tapFeedback(); setBudgetOpen(true); }}
-        className="w-full bg-white rounded-3xl p-5 border border-[#EDE7DA] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)] flex items-center gap-3 text-right cursor-pointer pima-press hover:border-[#E3CD9F] transition-colors"
+        className="w-full bg-[var(--ds-surface)] rounded-3xl p-5 border border-[var(--ds-border)] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)] flex items-center gap-3 text-right cursor-pointer pima-press hover:border-[var(--ds-accent-soft)] transition-colors"
       >
-        <span className="w-12 h-12 rounded-full bg-[#F6F0E2] flex items-center justify-center shrink-0">
-          <Calculator className="w-5 h-5 text-[#C9A24A]" />
+        <span className="w-12 h-12 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] flex items-center justify-center shrink-0">
+          <Calculator className="w-5 h-5 text-[var(--ds-accent)]" />
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block text-[12px] font-black text-[#0A2342]">مساعد ميزانية الخلوة</span>
-          <span className="block text-[11px] font-medium text-[#8A8A70] leading-snug mt-0.5">احسب تكلفة الفرد وميزانية الرحلة بالكامل</span>
+          <span className="block text-[12px] font-black text-[var(--ds-brand)]">مساعد ميزانية الخلوة</span>
+          <span className="block text-[11px] font-medium text-[var(--ds-text-2)] leading-snug mt-0.5">احسب تكلفة الفرد وميزانية الرحلة بالكامل</span>
         </span>
-        <ChevronLeft className="w-4 h-4 text-[#B5AF98] shrink-0" />
+        <ChevronLeft className="w-4 h-4 text-[var(--ds-text-faint)] shrink-0" />
       </button>
 
       <PimaSheet
@@ -2356,7 +2356,7 @@ export default function HouseDetail({
         onClose={() => setBudgetOpen(false)}
         title="مساعد ميزانية الخلوة"
         subtitle="أداة لأمين الرحلة: احسب تكلفة الفرد وميزانية المؤتمر بالكامل"
-        icon={<Calculator className="w-4 h-4 text-[#C9A24A]" />}
+        icon={<Calculator className="w-4 h-4 text-[var(--ds-accent)]" />}
       >
         {/* The title and blurb the card used to carry now live in the sheet's
             own header, so they are not repeated here. */}
@@ -2364,26 +2364,26 @@ export default function HouseDetail({
               {/* Bus Costs */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[11px] text-[#8A8A70] mb-1">تكلفة إيجار الأتوبيس:</label>
+                  <label className="block text-[11px] text-[var(--ds-text-2)] mb-1">تكلفة إيجار الأتوبيس:</label>
                   <div className="relative">
                     <input
                       type="number"
                       min={0}
                       value={calcBusPrice}
                       onChange={(e) => setCalcBusPrice(Number(e.target.value) || 0)}
-                      className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-lg px-2 py-1 text-center font-bold text-[#4A4A3A]"
+                      className="w-full bg-[var(--ds-bg)] border border-[var(--ds-border)] rounded-lg px-2 py-1 text-center font-bold text-[var(--ds-text)]"
                     />
-                    <span className="absolute left-1.5 top-1 text-[11px] text-[#8A8A70]">ج.م</span>
+                    <span className="absolute left-1.5 top-1 text-[11px] text-[var(--ds-text-2)]">ج.م</span>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[11px] text-[#8A8A70] mb-1">عدد الأتوبيسات:</label>
+                  <label className="block text-[11px] text-[var(--ds-text-2)] mb-1">عدد الأتوبيسات:</label>
                   <input
                     type="number"
                     min={0}
                     value={calcBusesCount}
                     onChange={(e) => setCalcBusesCount(Number(e.target.value) || 0)}
-                    className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-lg px-2 py-1 text-center font-bold text-[#4A4A3A]"
+                    className="w-full bg-[var(--ds-bg)] border border-[var(--ds-border)] rounded-lg px-2 py-1 text-center font-bold text-[var(--ds-text)]"
                   />
                 </div>
               </div>
@@ -2391,29 +2391,29 @@ export default function HouseDetail({
               {/* Misc Expenses & Registration Target */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[11px] text-[#8A8A70] mb-1">مصاريف أخرى وأنشطة:</label>
+                  <label className="block text-[11px] text-[var(--ds-text-2)] mb-1">مصاريف أخرى وأنشطة:</label>
                   <div className="relative">
                     <input
                       type="number"
                       min={0}
                       value={calcMiscExpenses}
                       onChange={(e) => setCalcMiscExpenses(Number(e.target.value) || 0)}
-                      className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-lg px-2 py-1 text-center font-bold text-[#4A4A3A]"
+                      className="w-full bg-[var(--ds-bg)] border border-[var(--ds-border)] rounded-lg px-2 py-1 text-center font-bold text-[var(--ds-text)]"
                     />
-                    <span className="absolute left-1.5 top-1 text-[11px] text-[#8A8A70]">ج.م</span>
+                    <span className="absolute left-1.5 top-1 text-[11px] text-[var(--ds-text-2)]">ج.م</span>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[11px] text-[#8A8A70] mb-1">قيمة اشتراك الفرد المقترح:</label>
+                  <label className="block text-[11px] text-[var(--ds-text-2)] mb-1">قيمة اشتراك الفرد المقترح:</label>
                   <div className="relative">
                     <input
                       type="number"
                       min={0}
                       value={calcTargetSubscription}
                       onChange={(e) => setCalcTargetSubscription(Number(e.target.value) || 0)}
-                      className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-lg px-2 py-1 text-center font-bold text-[#4A4A3A] border-amber-300 focus:border-amber-500"
+                      className="w-full bg-[var(--ds-bg)] border border-[var(--ds-border)] rounded-lg px-2 py-1 text-center font-bold text-[var(--ds-text)] border-[color-mix(in_srgb,var(--ds-warning)_38%,transparent)] focus:border-[var(--ds-warning)]"
                     />
-                    <span className="absolute left-1.5 top-1 text-[11px] text-amber-700">ج.م</span>
+                    <span className="absolute left-1.5 top-1 text-[11px] text-[var(--ds-warning)]">ج.م</span>
                   </div>
                 </div>
               </div>
@@ -2427,40 +2427,40 @@ export default function HouseDetail({
                 const balance = totalRevenue - totalTripCost;
 
                 return (
-                  <div className="bg-[#FAF8F5] rounded-2xl p-3 border border-[#E7E5DB] space-y-2 mt-2">
-                    <div className="flex justify-between text-[#8A8A70]">
+                  <div className="bg-[var(--ds-bg)] rounded-2xl p-3 border border-[var(--ds-border)] space-y-2 mt-2">
+                    <div className="flex justify-between text-[var(--ds-text-2)]">
                       <span>إجمالي حجز البيت:</span>
-                      <span className="text-[#4A4A3A] font-extrabold">{arabicNumber(originalTotalPrice)} ج.م</span>
+                      <span className="text-[var(--ds-text)] font-extrabold">{arabicNumber(originalTotalPrice)} ج.م</span>
                     </div>
-                    <div className="flex justify-between text-[#8A8A70]">
+                    <div className="flex justify-between text-[var(--ds-text-2)]">
                       <span>إجمالي تكلفة الانتقالات:</span>
-                      <span className="text-[#4A4A3A] font-extrabold">{arabicNumber(totalBusCost)}  ج.م</span>
+                      <span className="text-[var(--ds-text)] font-extrabold">{arabicNumber(totalBusCost)}  ج.م</span>
                     </div>
-                    <div className="flex justify-between text-[#8A8A70]">
+                    <div className="flex justify-between text-[var(--ds-text-2)]">
                       <span>إجمالي التكلفة الكلية للرحلة:</span>
-                      <span className="text-[#4A4A3A] font-extrabold">{arabicNumber(totalTripCost)} ج.م</span>
+                      <span className="text-[var(--ds-text)] font-extrabold">{arabicNumber(totalTripCost)} ج.م</span>
                     </div>
 
-                    <div className="pt-2 border-t border-[#E7E5DB] flex justify-between font-black text-xs text-[#2D2D24]">
+                    <div className="pt-2 border-t border-[var(--ds-border)] flex justify-between font-black text-[12px] text-[#2D2D24]">
                       <span>التكلفة الفعلية للفرد الواحد:</span>
-                      <span className="text-[#5A5A40] text-sm underline decoration-[#BCBC9D] decoration-2">{arabicNumber(actualCostPerPerson)} ج.م</span>
+                      <span className="text-[var(--ds-primary)] text-[14px] underline decoration-[var(--ds-text-faint)] decoration-2">{arabicNumber(actualCostPerPerson)} ج.م</span>
                     </div>
 
-                    <div className="flex justify-between text-[#8A8A70] pt-1">
+                    <div className="flex justify-between text-[var(--ds-text-2)] pt-1">
                       <span>الاشتراكات المجمعة ({guestsCount} فرد):</span>
-                      <span className="text-[#4A4A3A] font-black">{arabicNumber(totalRevenue)} ج.م</span>
+                      <span className="text-[var(--ds-text)] font-black">{arabicNumber(totalRevenue)} ج.م</span>
                     </div>
 
                     {/* Budget Profit/Loss Status */}
                     <div className="pt-2">
                       {balance >= 0 ? (
-                        <div className="bg-emerald-50 text-emerald-800 text-[11px] font-extrabold p-2 rounded-xl text-center border border-emerald-150 flex items-center justify-center gap-1">
-                          <Coins className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <div className="bg-[color-mix(in_srgb,var(--ds-success)_10%,transparent)] text-[var(--ds-success-ink)] text-[11px] font-extrabold p-2 rounded-xl text-center border border-emerald-150 flex items-center justify-center gap-1">
+                          <Coins className="w-3.5 h-3.5 text-[var(--ds-success)] shrink-0" />
                           <span>ميزانية رابحة: فائض قدره +{arabicNumber(balance)} ج.م ✅</span>
                         </div>
                       ) : (
-                        <div className="bg-rose-50 text-rose-800 text-[11px] font-extrabold p-2 rounded-xl text-center border border-rose-150 flex items-center justify-center gap-1">
-                          <TrendingDown className="w-3.5 h-3.5 text-rose-600 shrink-0 animate-bounce" />
+                        <div className="bg-[color-mix(in_srgb,var(--ds-danger)_10%,transparent)] text-[var(--ds-danger-ink)] text-[11px] font-extrabold p-2 rounded-xl text-center border border-rose-150 flex items-center justify-center gap-1">
+                          <TrendingDown className="w-3.5 h-3.5 text-[var(--ds-danger)] shrink-0 animate-bounce" />
                           <span>عجز في الميزانية: قدره {arabicNumber(Math.abs(balance))} ج.م ⚠️</span>
                         </div>
                       )}
@@ -2483,11 +2483,11 @@ export default function HouseDetail({
           // Logged-out visitor: reviews require an account (and a real
           // booking — enforced server-side), so prompt login instead.
           <div className="text-center space-y-2">
-            <p className="text-[11px] font-medium text-[#8A8A70]">سجّل دخولك لكتابة تقييم بعد إقامتك.</p>
+            <p className="text-[11px] font-medium text-[var(--ds-text-2)]">سجّل دخولك لكتابة تقييم بعد إقامتك.</p>
             <button
               type="button"
               onClick={() => onRequireLogin?.()}
-              className="bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12px] px-6 py-2.5 rounded-2xl shadow-[0_2px_8px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
+              className="bg-gradient-to-b from-[#C9A96A] to-[var(--ds-accent-deep)] text-white font-black text-[12px] px-6 py-2.5 rounded-2xl shadow-[0_2px_8px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
             >
               تسجيل الدخول
             </button>
