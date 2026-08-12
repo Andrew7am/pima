@@ -20,6 +20,9 @@ export type { CardProps } from './Card';
 export { default as Input } from './Input';
 export type { InputProps } from './Input';
 
+export { default as SearchInput } from './SearchInput';
+export type { SearchInputProps } from './SearchInput';
+
 export { default as Badge } from './Badge';
 export type { BadgeProps, BadgeTone, BadgeVariant } from './Badge';
 
@@ -35,11 +38,9 @@ export type { SkeletonProps } from './Skeleton';
  * caller exists is a guess. Both came out of the bookings migration, where the
  * production code was left as-is rather than bent around the toolkit.
  *
- * 1. Input has no LEADING-ICON slot.
- *    UserBookings' search field puts a magnifier in an absolutely positioned
- *    slot (`right-3` with `pr-10` on the field). Input is `ps-3 pe-3` with no
- *    API for it, so the field stayed hand-built. Whoever adds this: the slot
- *    must be logical, or the icon lands on the wrong side in Arabic.
+ * 1. DONE — Input has no leading-icon slot. Resolved by SearchInput rather
+ *    than by changing Input: see the note at the top of SearchInput.tsx for
+ *    why it matches Input's contract instead of wrapping it.
  *
  * 2. Button has no ACCENT-GRADIENT variant.
  *    Three of the bookings CTAs are a gold gradient — --ds-accent to

@@ -23,7 +23,7 @@ import {
   Search, SlidersHorizontal, CalendarX, CalendarDays, Users, MapPin,
   Check, Clock, X, Gamepad2, Sun, Moon,
 } from 'lucide-react';
-import { Button, Card, Input, Badge, EmptyState, Skeleton, SkeletonGroup } from '../components/ui';
+import { Button, Card, Input, SearchInput, Badge, EmptyState, Skeleton, SkeletonGroup } from '../components/ui';
 import { GuestBookingScreen, OwnerBookingScreen, AdminDashboardScreen, GameScreen } from './Screens';
 
 const THEMES = [
@@ -310,6 +310,21 @@ export default function Showcase() {
               <Input label="عدد الأفراد" placeholder="٤٢" hint="أقصى عدد ٦٠ فرد" />
               <Input label="البريد الإلكتروني" defaultValue="not-an-email" error="اكتب بريدًا صحيحًا" />
               <Input label="رقم الحجز" defaultValue="#A4F2C1" disabled />
+            </div>
+          </Section>
+
+          <Section
+            title="حقل البحث"
+            note="نفس صندوق Input — الأيقونة على start-3 فبتتبع اتجاه الكتابة لوحدها"
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <SearchInput id="sc-search" label="ابحث عن بيت" placeholder="ابحث باسم المكان أو رقم الحجز" />
+              <SearchInput aria-label="بحث معطّل" placeholder="غير متاح الآن" disabled />
+            </div>
+            {/* The same component under an LTR ancestor. Nothing is passed
+                differently — the icon moves because the class is logical. */}
+            <div dir="ltr" className="mt-3 max-w-sm">
+              <SearchInput id="sc-search-ltr" label="Search houses" placeholder="Search by name or reference" />
             </div>
           </Section>
 
