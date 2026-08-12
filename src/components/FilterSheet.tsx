@@ -136,7 +136,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
       sub: draft.amenities.length ? `${draft.amenities.length} خدمات محددة` : 'واي فاي، مسبح، جراج...' },
   ];
 
-  const goldCta = 'w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black rounded-2xl py-3.5 text-[13px] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press';
+  const goldCta = 'w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[var(--ds-accent-deep)] text-white font-black rounded-2xl py-3.5 text-[13px] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press';
 
   // ── Calendar ────────────────────────────────────────────────────────────
   const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -167,7 +167,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
           <div className="flex items-center justify-between px-5 pt-3 pb-2">
             {isWizard || step === 'done' ? (
               <button onClick={() => go(step === 'done' ? 'menu' : 'menu')} aria-label="رجوع" className="p-1.5 -mr-1.5 rounded-full hover:bg-[#F1ECE0] pima-press">
-                <ChevronRight className="w-5 h-5 text-[#4A4A3A]" />
+                <ChevronRight className="w-5 h-5 text-[var(--ds-text)]" />
               </button>
             ) : <span className="w-8" />}
             <h2 className="text-[15px] font-black text-[#2D2D24]">
@@ -180,17 +180,17 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                 : 'تم ضبط الفلتر'}
             </h2>
             <button onClick={onClose} aria-label="إغلاق" className="p-1.5 -ml-1.5 rounded-full hover:bg-[#F1ECE0] pima-press">
-              <X className="w-5 h-5 text-[#4A4A3A]" />
+              <X className="w-5 h-5 text-[var(--ds-text)]" />
             </button>
           </div>
 
           {isWizard && (
             <div className="px-5 pb-3">
-              <div className="flex items-center justify-between text-[9.5px] font-bold text-[#8A8A70] mb-1.5">
+              <div className="flex items-center justify-between text-[9.5px] font-bold text-[var(--ds-text-2)] mb-1.5">
                 <span>خطوة {stepIndex + 1} من {WIZARD.length}</span>
               </div>
-              <div className="h-1 rounded-full bg-[#EDE7DA] overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-l from-[#C9A96A] to-[#B8944E] transition-[width] duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)]"
+              <div className="h-1 rounded-full bg-[var(--ds-border)] overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-l from-[#C9A96A] to-[var(--ds-accent-deep)] transition-[width] duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)]"
                   style={{ width: `${((stepIndex + 1) / WIZARD.length) * 100}%` }} />
               </div>
             </div>
@@ -202,31 +202,31 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             <>
               {rows.map((r) => (
                 <button key={r.step} onClick={() => go(r.step)}
-                  className="w-full flex items-center gap-3 bg-white border border-[#EDE7DA] rounded-2xl px-3.5 py-3 text-right shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press">
-                  <span className="shrink-0 w-9 h-9 rounded-xl bg-[#F6F0E2] flex items-center justify-center text-[#C5A059]">{r.icon}</span>
+                  className="w-full flex items-center gap-3 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-3.5 py-3 text-right shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press">
+                  <span className="shrink-0 w-9 h-9 rounded-xl bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] flex items-center justify-center text-[var(--ds-accent)]">{r.icon}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[12.5px] font-black text-[#2D2D24] leading-tight">{r.title}</span>
-                    <span className="block text-[10px] font-bold text-[#8A8A70] truncate mt-0.5">{r.sub}</span>
+                    <span className="block text-[10px] font-bold text-[var(--ds-text-2)] truncate mt-0.5">{r.sub}</span>
                   </span>
-                  <ChevronLeft aria-hidden="true" className="w-4 h-4 text-[#B5AF98] shrink-0" />
+                  <ChevronLeft aria-hidden="true" className="w-4 h-4 text-[var(--ds-text-faint)] shrink-0" />
                 </button>
               ))}
 
-              <div className="bg-white border border-[#EDE7DA] rounded-2xl p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
                 <div className="flex items-center justify-between mb-2.5">
                   <span className="text-[11.5px] font-black text-[#2D2D24]">ملخص بحثك</span>
-                  <button onClick={reset} className="flex items-center gap-1 text-[10px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] pima-press">
+                  <button onClick={reset} className="flex items-center gap-1 text-[10px] font-bold text-[var(--ds-text-2)] hover:text-[var(--ds-text)] pima-press">
                     <RotateCcw className="w-3 h-3" />
                     إعادة تعيين
                   </button>
                 </div>
                 {chips.length === 0 ? (
-                  <p className="text-[10px] font-bold text-[#8A8A70]">لسه مفيش فلاتر — اختر من فوق وهيظهر ملخصك هنا.</p>
+                  <p className="text-[10px] font-bold text-[var(--ds-text-2)]">لسه مفيش فلاتر — اختر من فوق وهيظهر ملخصك هنا.</p>
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
                     {chips.map((c, i) => (
-                      <span key={i} className="flex items-center gap-1 bg-[#FBF9F4] border border-[#EDE7DA] rounded-full px-2.5 py-1 text-[10px] font-bold text-[#4A4A3A]">
-                        <span className="text-[#C5A059]">{c.icon}</span>{c.label}
+                      <span key={i} className="flex items-center gap-1 bg-[#FBF9F4] border border-[var(--ds-border)] rounded-full px-2.5 py-1 text-[10px] font-bold text-[var(--ds-text)]">
+                        <span className="text-[var(--ds-accent)]">{c.icon}</span>{c.label}
                       </span>
                     ))}
                   </div>
@@ -245,9 +245,9 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                     return (
                       <button key={g} onClick={() => { tapFeedback(); patch({ governorate: on ? '' : g }); }}
                         className={`flex items-center justify-between gap-1 rounded-xl border px-3 py-2.5 text-[11px] font-bold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press ${
-                          on ? 'bg-[#F6F0E2] border-[#C9A96A] text-[#2D2D24]' : 'bg-white border-[#EDE7DA] text-[#4A4A3A]'}`}>
+                          on ? 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] border-[#C9A96A] text-[#2D2D24]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)] text-[var(--ds-text)]'}`}>
                         <span className="truncate">{g}</span>
-                        {on && <Check className="w-3.5 h-3.5 text-[#B8944E] shrink-0" />}
+                        {on && <Check className="w-3.5 h-3.5 text-[var(--ds-accent-deep)] shrink-0" />}
                       </button>
                     );
                   })}
@@ -255,14 +255,14 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
               </div>
               <div>
                 <span className="block text-[11.5px] font-black text-[#2D2D24] mb-2 mt-1">الموقع بالنسبة للبحر</span>
-                <div className="bg-white border border-[#EDE7DA] rounded-2xl divide-y divide-[#EDE7DA] overflow-hidden">
+                <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl divide-y divide-[var(--ds-border)] overflow-hidden">
                   {SEA_OPTIONS.map((o) => (
                     <button key={o.key} onClick={() => { tapFeedback(); patch({ seaProximity: o.key }); }}
-                      className="w-full flex items-center justify-between px-3.5 py-2.5 text-[11px] font-bold text-[#4A4A3A] pima-press">
+                      className="w-full flex items-center justify-between px-3.5 py-2.5 text-[11px] font-bold text-[var(--ds-text)] pima-press">
                       <span>{o.label}</span>
                       <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-[250ms] ${
-                        draft.seaProximity === o.key ? 'border-[#B8944E]' : 'border-[#D9D2C2]'}`}>
-                        {draft.seaProximity === o.key && <span className="w-2 h-2 rounded-full bg-[#B8944E]" />}
+                        draft.seaProximity === o.key ? 'border-[var(--ds-accent-deep)]' : 'border-[#D9D2C2]'}`}>
+                        {draft.seaProximity === o.key && <span className="w-2 h-2 rounded-full bg-[var(--ds-accent-deep)]" />}
                       </span>
                     </button>
                   ))}
@@ -272,46 +272,46 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
           )}
 
           {step === 'guests' && (
-            <div className="bg-white border border-[#EDE7DA] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
-              <span className="block text-[11px] font-bold text-[#8A8A70] mb-3">كم فرد في مجموعتك؟</span>
+            <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <span className="block text-[11px] font-bold text-[var(--ds-text-2)] mb-3">كم فرد في مجموعتك؟</span>
               <div className="flex items-center justify-center gap-5">
                 <button aria-label="أقل" onClick={() => { tapFeedback(); patch({ guestCount: Math.max(0, (Number(draft.guestCount) || 0) - 5) || '' }); }}
-                  className="w-11 h-11 rounded-full bg-[#F6F0E2] text-[#B8944E] text-xl font-black pima-press">−</button>
+                  className="w-11 h-11 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] text-[var(--ds-accent-deep)] text-xl font-black pima-press">−</button>
                 <span className="text-[34px] font-black text-[#2D2D24] leading-none min-w-[3ch]">{draft.guestCount || '—'}</span>
                 <button aria-label="أكثر" onClick={() => { tapFeedback(); patch({ guestCount: (Number(draft.guestCount) || 0) + 5 }); }}
-                  className="w-11 h-11 rounded-full bg-[#F6F0E2] text-[#B8944E] text-xl font-black pima-press">+</button>
+                  className="w-11 h-11 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] text-[var(--ds-accent-deep)] text-xl font-black pima-press">+</button>
               </div>
-              <span className="block text-[10px] font-bold text-[#8A8A70] mt-3">فرد</span>
+              <span className="block text-[10px] font-bold text-[var(--ds-text-2)] mt-3">فرد</span>
               <div className="flex flex-wrap justify-center gap-1.5 mt-4">
                 {[5, 10, 25, 50, 100].map((v) => (
                   <button key={v} onClick={() => { tapFeedback(); patch({ guestCount: v }); }}
                     className={`rounded-full border px-3 py-1 text-[10px] font-bold transition-all duration-[250ms] pima-press ${
-                      draft.guestCount === v ? 'bg-[#F6F0E2] border-[#C9A96A] text-[#2D2D24]' : 'bg-white border-[#EDE7DA] text-[#4A4A3A]'}`}>{v}</button>
+                      draft.guestCount === v ? 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] border-[#C9A96A] text-[#2D2D24]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)] text-[var(--ds-text)]'}`}>{v}</button>
                 ))}
               </div>
             </div>
           )}
 
           {step === 'dates' && (
-            <div className="bg-white border border-[#EDE7DA] rounded-2xl p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+            <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {[{ l: 'تاريخ الوصول', v: draft.checkIn }, { l: 'تاريخ المغادرة', v: draft.checkOut }].map((f) => (
-                  <div key={f.l} className={`rounded-xl border px-3 py-2 text-center ${f.v ? 'bg-[#F6F0E2] border-[#C9A96A]' : 'bg-[#FBF9F4] border-[#EDE7DA]'}`}>
-                    <span className="block text-[9px] font-bold text-[#8A8A70]">{f.l}</span>
+                  <div key={f.l} className={`rounded-xl border px-3 py-2 text-center ${f.v ? 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] border-[#C9A96A]' : 'bg-[#FBF9F4] border-[var(--ds-border)]'}`}>
+                    <span className="block text-[9px] font-bold text-[var(--ds-text-2)]">{f.l}</span>
                     <span className="block text-[15px] font-black text-[#2D2D24] leading-tight mt-0.5">{f.v ? new Date(`${f.v}T00:00:00`).getDate() : '—'}</span>
-                    <span className="block text-[9px] font-bold text-[#8A8A70]">{f.v ? `${MONTHS[new Date(`${f.v}T00:00:00`).getMonth()]} ${new Date(`${f.v}T00:00:00`).getFullYear()}` : ''}</span>
+                    <span className="block text-[9px] font-bold text-[var(--ds-text-2)]">{f.v ? `${MONTHS[new Date(`${f.v}T00:00:00`).getMonth()]} ${new Date(`${f.v}T00:00:00`).getFullYear()}` : ''}</span>
                   </div>
                 ))}
               </div>
 
               <div className="flex items-center justify-between mb-2">
-                <button aria-label="الشهر السابق" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="p-1 rounded-full hover:bg-[#F1ECE0] pima-press"><ChevronRight className="w-4 h-4 text-[#4A4A3A]" /></button>
+                <button aria-label="الشهر السابق" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="p-1 rounded-full hover:bg-[#F1ECE0] pima-press"><ChevronRight className="w-4 h-4 text-[var(--ds-text)]" /></button>
                 <span className="text-[11.5px] font-black text-[#2D2D24]">{MONTHS[month.getMonth()]} {month.getFullYear()}</span>
-                <button aria-label="الشهر التالي" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="p-1 rounded-full hover:bg-[#F1ECE0] pima-press"><ChevronLeft className="w-4 h-4 text-[#4A4A3A]" /></button>
+                <button aria-label="الشهر التالي" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="p-1 rounded-full hover:bg-[#F1ECE0] pima-press"><ChevronLeft className="w-4 h-4 text-[var(--ds-text)]" /></button>
               </div>
 
               <div className="grid grid-cols-7 gap-1 text-center">
-                {WEEKDAYS.map((d) => <span key={d} className="text-[8.5px] font-bold text-[#B5AF98] py-1">{d.charAt(0)}</span>)}
+                {WEEKDAYS.map((d) => <span key={d} className="text-[8.5px] font-bold text-[var(--ds-text-faint)] py-1">{d.charAt(0)}</span>)}
                 {Array.from({ length: lead }).map((_, i) => <span key={`lead-${i}`} />)}
                 {Array.from({ length: daysInMonth }).map((_, i) => {
                   const day = i + 1;
@@ -324,15 +324,15 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                     <button key={day} disabled={past} onClick={() => pickDay(day)}
                       className={`h-8 rounded-lg text-[11px] font-bold transition-colors duration-[250ms] ${
                         past ? 'text-[#D9D2C2] cursor-not-allowed'
-                          : isStart || isEnd ? 'bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white'
-                          : inRange ? 'bg-[#F6F0E2] text-[#2D2D24]'
-                          : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'}`}>{day}</button>
+                          : isStart || isEnd ? 'bg-gradient-to-b from-[#C9A96A] to-[var(--ds-accent-deep)] text-white'
+                          : inRange ? 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] text-[#2D2D24]'
+                          : 'text-[var(--ds-text)] hover:bg-[#F1ECE0]'}`}>{day}</button>
                   );
                 })}
               </div>
 
               {n > 0 && (
-                <p className="mt-3 text-center text-[10px] font-bold text-[#8A8A70] bg-[#FBF9F4] border border-[#EDE7DA] rounded-xl py-2">
+                <p className="mt-3 text-center text-[10px] font-bold text-[var(--ds-text-2)] bg-[#FBF9F4] border border-[var(--ds-border)] rounded-xl py-2">
                   المدة: {n} {n === 1 ? 'ليلة' : n === 2 ? 'ليلتين' : 'ليالٍ'}
                 </p>
               )}
@@ -340,15 +340,15 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
           )}
 
           {step === 'budget' && (
-            <div className="bg-white border border-[#EDE7DA] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
-              <span className="block text-[11px] font-bold text-[#8A8A70]">اختر الحد الأقصى للسعر لليلة الواحدة</span>
+            <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">اختر الحد الأقصى للسعر لليلة الواحدة</span>
               <span className="block text-[32px] font-black text-[#2D2D24] leading-none mt-2">
-                {draft.maxPrice} <span className="text-[13px] font-bold text-[#8A8A70]">ج.م</span>
+                {draft.maxPrice} <span className="text-[13px] font-bold text-[var(--ds-text-2)]">ج.م</span>
               </span>
               <input type="range" min={100} max={700} step={10} value={draft.maxPrice}
                 onChange={(e) => patch({ maxPrice: parseInt(e.target.value) })}
-                className="w-full mt-5 accent-[#B8944E] cursor-pointer" />
-              <div className="flex justify-between text-[8.5px] font-bold text-[#B5AF98] mt-1">
+                className="w-full mt-5 accent-[var(--ds-accent-deep)] cursor-pointer" />
+              <div className="flex justify-between text-[8.5px] font-bold text-[var(--ds-text-faint)] mt-1">
                 {[100, 200, 300, 400, 500, 600, '+700'].map((t) => <span key={String(t)}>{t}</span>)}
               </div>
 
@@ -357,14 +357,14 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
               <button type="button" onClick={() => { tapFeedback(); patch({ dayUseOnly: !draft.dayUseOnly }); }}
                 aria-pressed={draft.dayUseOnly}
                 className={`w-full mt-5 flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-right transition-colors duration-200 pima-press ${
-                  draft.dayUseOnly ? 'bg-[#FDF9EF] border-[#C9A24A]' : 'bg-white border-[#EDE7DA]'}`}>
+                  draft.dayUseOnly ? 'bg-[#FDF9EF] border-[#C9A24A]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)]'}`}>
                 <span className={`w-9 h-9 rounded-full border flex items-center justify-center shrink-0 ${
-                  draft.dayUseOnly ? 'bg-white border-[#EBD9B4]' : 'bg-[#F6F0E2] border-[#EDE7DA]'}`}>
-                  <Sun className={`w-4 h-4 ${draft.dayUseOnly ? 'text-[#B8944E]' : 'text-[#8A8A70]'}`} />
+                  draft.dayUseOnly ? 'bg-[var(--ds-surface)] border-[var(--ds-accent-soft)]' : 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] border-[var(--ds-border)]'}`}>
+                  <Sun className={`w-4 h-4 ${draft.dayUseOnly ? 'text-[var(--ds-accent-deep)]' : 'text-[var(--ds-text-2)]'}`} />
                 </span>
                 <span className="min-w-0 flex-1 leading-tight">
-                  <span className={`block text-[11.5px] font-black ${draft.dayUseOnly ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>يوم روحي بدون مبيت</span>
-                  <span className="block text-[9.5px] font-medium text-[#8A8A70] mt-0.5">البيوت التي تستقبل مجموعات ليوم واحد</span>
+                  <span className={`block text-[11.5px] font-black ${draft.dayUseOnly ? 'text-[var(--ds-accent-deep)]' : 'text-[#2D2D24]'}`}>يوم روحي بدون مبيت</span>
+                  <span className="block text-[9.5px] font-medium text-[var(--ds-text-2)] mt-0.5">البيوت التي تستقبل مجموعات ليوم واحد</span>
                 </span>
                 <span className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
                   draft.dayUseOnly ? 'bg-[#C9A24A] border-[#C9A24A]' : 'border-[#DED6C4]'}`}>
@@ -377,9 +377,9 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
           {step === 'amenities' && (
             <>
               <div className="relative">
-                <Search className="absolute top-1/2 -translate-y-1/2 right-3 w-4 h-4 text-[#B5AF98] pointer-events-none" />
+                <Search className="absolute top-1/2 -translate-y-1/2 right-3 w-4 h-4 text-[var(--ds-text-faint)] pointer-events-none" />
                 <input value={amenityQuery} onChange={(e) => setAmenityQuery(e.target.value)} placeholder="ابحث عن خدمة"
-                  className="w-full bg-white border border-[#EDE7DA] rounded-2xl py-2.5 pr-9 pl-3 text-[11px] text-[#2D2D24] placeholder:text-[#B5AF98] focus:outline-none" />
+                  className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl py-2.5 pr-9 pl-3 text-[11px] text-[#2D2D24] placeholder:text-[var(--ds-text-faint)] focus:outline-none" />
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {AMENITIES_LIST.filter((a) => a.includes(amenityQuery.trim())).map((a) => {
@@ -387,17 +387,17 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                   return (
                     <button key={a} onClick={() => { tapFeedback(); patch({ amenities: on ? draft.amenities.filter((x) => x !== a) : [...draft.amenities, a] }); }}
                       className={`relative rounded-2xl border px-2 py-3 text-[9.5px] font-bold leading-tight transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press ${
-                        on ? 'bg-[#F6F0E2] border-[#C9A96A] text-[#2D2D24]' : 'bg-white border-[#EDE7DA] text-[#4A4A3A]'}`}>
-                      {on && <Check aria-hidden="true" className="absolute top-1.5 left-1.5 w-3.5 h-3.5 text-[#0A2342] bg-[#B8944E] rounded-full p-0.5" />}
+                        on ? 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] border-[#C9A96A] text-[#2D2D24]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)] text-[var(--ds-text)]'}`}>
+                      {on && <Check aria-hidden="true" className="absolute top-1.5 left-1.5 w-3.5 h-3.5 text-[var(--ds-brand)] bg-[var(--ds-accent-deep)] rounded-full p-0.5" />}
                       {a}
                     </button>
                   );
                 })}
               </div>
               {draft.amenities.length > 0 && (
-                <div className="flex items-center justify-between bg-white border border-[#EDE7DA] rounded-2xl px-3.5 py-2.5">
+                <div className="flex items-center justify-between bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-3.5 py-2.5">
                   <button onClick={() => { tapFeedback(); patch({ amenities: [] }); }} className="text-[10px] font-black text-rose-600 pima-press">مسح الكل</button>
-                  <span className="text-[10px] font-bold text-[#8A8A70]">{draft.amenities.length} خدمات محددة</span>
+                  <span className="text-[10px] font-bold text-[var(--ds-text-2)]">{draft.amenities.length} خدمات محددة</span>
                 </div>
               )}
             </>
@@ -409,14 +409,14 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                 <Check className="w-7 h-7 text-emerald-600" />
               </span>
               <p className="text-[14px] font-black text-[#2D2D24]">تم ضبط الفلتر</p>
-              <p className="text-[11px] font-bold text-[#8A8A70] mt-1">
-                وجدنا <span className="text-[#C5A059] font-black">{matchCount}</span> بيتًا يناسب بحثك
+              <p className="text-[11px] font-bold text-[var(--ds-text-2)] mt-1">
+                وجدنا <span className="text-[var(--ds-accent)] font-black">{matchCount}</span> بيتًا يناسب بحثك
               </p>
               {chips.length > 0 && (
                 <div className="flex flex-wrap justify-center gap-1.5 mt-4">
                   {chips.map((c, i) => (
-                    <span key={i} className="flex items-center gap-1 bg-white border border-[#EDE7DA] rounded-full px-2.5 py-1 text-[10px] font-bold text-[#4A4A3A]">
-                      <span className="text-[#C5A059]">{c.icon}</span>{c.label}
+                    <span key={i} className="flex items-center gap-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-full px-2.5 py-1 text-[10px] font-bold text-[var(--ds-text)]">
+                      <span className="text-[var(--ds-accent)]">{c.icon}</span>{c.label}
                     </span>
                   ))}
                 </div>
