@@ -3,6 +3,7 @@ import { arabicNumber } from '../lib/arabic';
 import { RetreatHouse, Room, RoomType, RoomFacility, ConferenceHall, OwnerPaymentMethod, User } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import PhotoPickerButtons from './PhotoPickerButtons';
+import LocationPicker from './LocationPicker';
 import Logo from './Logo';
 import {
   ChevronRight, ChevronLeft, Check, Plus, Minus, Trash2, MapPin, Home,
@@ -636,6 +637,28 @@ export default function OwnerOnboardingWizard({
                 {geoLoading ? 'جاري تحديد الموقع...' : houseLat ? 'تم تحديد الموقع ✓' : 'استخدم موقعي الحالي'}
               </button>
               {geoError && <p className="text-[11px] text-red-500">{geoError}</p>}
+
+              {/* The button alone gave an owner one shot at the location and no
+                  way to correct it, and it is no use at all to someone
+                  registering a house they are not standing in — or who denied
+                  the permission. The map is the fallback that always works:
+                  tap to place, tap again to move. Centred on Cairo until the
+                  first tap so there is something to aim at. */}
+              <div>
+                <label className={LABEL_CLS}>موقع البيت على الخريطة</label>
+                <div className="rounded-xl overflow-hidden border border-[#D6D6C2] h-64">
+                  <LocationPicker
+                    lat={houseLat ?? 30.0444}
+                    lng={houseLng ?? 31.2357}
+                    onChange={(la, ln) => { setHouseLat(la); setHouseLng(ln); setGeoError(''); }}
+                  />
+                </div>
+                <p className="text-[11px] text-[#8A8A70] mt-1.5">
+                  {houseLat
+                    ? 'دوس على الخريطة في أي وقت لتعديل مكان الدبوس.'
+                    : 'دوس على مكان البيت على الخريطة — ده اللي هيوصّل الضيوف لعندك.'}
+                </p>
+              </div>
 
               {/* The «عدد الغرف» and «عدد الأسرّة» boxes used to sit here.
                   They were asked before the rooms step and never reconciled
