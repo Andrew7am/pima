@@ -121,14 +121,14 @@ export default function HouseHero({
   // photograph — no wash, no badge, no text — so the gallery reads as a gallery.
   const showOverlay = index === 0;
   const roundStars = Math.round(house.rating);
-  const glassBtn = 'w-11 h-11 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center transition-colors hover:bg-white/30 cursor-pointer pima-press';
+  const glassBtn = 'w-11 h-11 rounded-full bg-[color-mix(in_srgb,var(--ds-on-media)_20%,transparent)] backdrop-blur-md border border-[color-mix(in_srgb,var(--ds-on-media)_30%,transparent)] flex items-center justify-center transition-colors hover:bg-[color-mix(in_srgb,var(--ds-on-media)_30%,transparent)] cursor-pointer pima-press';
 
   return (
     // Full bleed: the app's main element pads its children by 16px (24px from
     // sm up), and the hero has to reach the edges of the screen through it.
     <div className="-mx-4 sm:-mx-6 -mt-4 sm:-mt-6 mb-4">
       <div
-        className="relative overflow-hidden rounded-b-[32px] bg-slate-900 select-none h-[56dvh] min-h-[430px] max-h-[600px] shadow-[0_16px_40px_-12px_rgba(45,45,36,0.35)]"
+        className="relative overflow-hidden rounded-b-[32px] bg-[var(--ds-media)] select-none h-[56dvh] min-h-[430px] max-h-[600px] shadow-[0_16px_40px_-12px_rgba(45,45,36,0.35)]"
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
@@ -156,7 +156,7 @@ export default function HouseHero({
 
         {/* Governorate on the reading side; the page's own controls opposite. */}
         {showOverlay && (
-          <span className="absolute top-4 left-4 flex items-center gap-1.5 bg-black/35 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-[11px] font-black">
+          <span className="absolute top-4 left-4 flex items-center gap-1.5 bg-black/35 backdrop-blur-md text-[var(--ds-on-media)] px-3 py-1.5 rounded-full text-[11px] font-black">
             <MapPin className="w-3.5 h-3.5" />
             {house.governorate}
           </span>
@@ -169,7 +169,7 @@ export default function HouseHero({
             id="detail-back-btn"
             onClick={() => { tapFeedback(); onBack(); }}
             aria-label="رجوع"
-            className={`${glassBtn} text-white`}
+            className={`${glassBtn} text-[var(--ds-on-media)]`}
           >
             <ArrowRight className="w-4 h-4" />
           </button>
@@ -177,7 +177,7 @@ export default function HouseHero({
             id={`share-detail-${house.id}`}
             onClick={() => { tapFeedback(); onShare(); }}
             aria-label={isCopied ? 'تم نسخ الرابط' : 'مشاركة'}
-            className={`${glassBtn} ${isCopied ? 'text-emerald-300' : 'text-white'}`}
+            className={`${glassBtn} ${isCopied ? 'text-emerald-300' : 'text-[var(--ds-on-media)]'}`}
           >
             <Share2 className="w-4 h-4" />
           </button>
@@ -188,7 +188,7 @@ export default function HouseHero({
             aria-pressed={isFavorited}
             className={glassBtn}
           >
-            <Heart className={`w-4 h-4 transition-colors ${isFavorited ? 'fill-rose-400 text-rose-400' : 'text-white'}`} />
+            <Heart className={`w-4 h-4 transition-colors ${isFavorited ? 'fill-rose-400 text-rose-400' : 'text-[var(--ds-on-media)]'}`} />
           </button>
         </div>
 
@@ -196,13 +196,13 @@ export default function HouseHero({
           <>
             <button
               type="button" onClick={() => step(1)} aria-label="الصورة التالية"
-              className="absolute top-[38%] right-3 w-11 h-11 rounded-full bg-black/30 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/50 transition-colors cursor-pointer pima-press"
+              className="absolute top-[38%] right-3 w-11 h-11 rounded-full bg-black/30 backdrop-blur-md text-[var(--ds-on-media)] flex items-center justify-center hover:bg-black/50 transition-colors cursor-pointer pima-press"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
             <button
               type="button" onClick={() => step(-1)} aria-label="الصورة السابقة"
-              className="absolute top-[38%] left-3 w-11 h-11 rounded-full bg-black/30 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/50 transition-colors cursor-pointer pima-press"
+              className="absolute top-[38%] left-3 w-11 h-11 rounded-full bg-black/30 backdrop-blur-md text-[var(--ds-on-media)] flex items-center justify-center hover:bg-black/50 transition-colors cursor-pointer pima-press"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -218,20 +218,20 @@ export default function HouseHero({
               {/* The house name keeps the reading side — it is the longest
                   Arabic run on the screen, and left-aligning it would break
                   the eye's line down the page. */}
-              <h1 className="text-[21px] leading-tight font-black text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)] max-w-[82%]">
+              <h1 className="text-[21px] leading-tight font-black text-[var(--ds-on-media)] drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)] max-w-[82%]">
                 {house.name}
               </h1>
               <div className="mt-1.5 flex items-center gap-2">
-                <span className="text-[15px] font-black text-white">{arabicDecimal(house.rating)}</span>
+                <span className="text-[15px] font-black text-[var(--ds-on-media)]">{arabicDecimal(house.rating)}</span>
                 <span className="flex items-center gap-0.5" aria-hidden="true">
                   {[0, 1, 2, 3, 4].map((i) => (
                     // Lighter than the brand gold but still saturated — going
                     // pale drains the colour out of it and it stops reading
                     // as gold at all.
-                    <Star key={i} className={`w-4 h-4 ${i < roundStars ? 'fill-[#F0C560] text-[#F0C560]' : 'text-white/35'}`} />
+                    <Star key={i} className={`w-4 h-4 ${i < roundStars ? 'fill-[#F0C560] text-[#F0C560]' : 'text-[color-mix(in_srgb,var(--ds-on-media)_35%,transparent)]'}`} />
                   ))}
                 </span>
-                <span className="text-[12px] font-bold text-white/85">({reviewsCount} تقييم)</span>
+                <span className="text-[12px] font-bold text-[color-mix(in_srgb,var(--ds-on-media)_85%,transparent)]">({reviewsCount} تقييم)</span>
               </div>
 
               {/* Amenities: dividers only, no panel. The wash below already
@@ -241,12 +241,12 @@ export default function HouseHero({
                 <div className="mt-3 flex items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {amenities.map((a, i) => (
                     <React.Fragment key={a.label}>
-                      {i > 0 && <span aria-hidden="true" className="w-px self-stretch bg-white/30 shrink-0 my-0.5" />}
+                      {i > 0 && <span aria-hidden="true" className="w-px self-stretch bg-[color-mix(in_srgb,var(--ds-on-media)_30%,transparent)] shrink-0 my-0.5" />}
                       <span className="flex-1 min-w-[68px] flex flex-col items-center gap-1 px-1.5">
                         {/* Shadows do the work the panel used to: the strip has
                             to stay readable straight over a photograph. */}
-                        <span className="text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">{a.icon}</span>
-                        <span className="text-[11px] font-bold text-white whitespace-nowrap drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">{a.label}</span>
+                        <span className="text-[var(--ds-on-media)] drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">{a.icon}</span>
+                        <span className="text-[11px] font-bold text-[var(--ds-on-media)] whitespace-nowrap drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">{a.label}</span>
                       </span>
                     </React.Fragment>
                   ))}
@@ -259,7 +259,7 @@ export default function HouseHero({
             <>
               <div className="mt-3 flex items-center justify-center gap-1.5">
                 {!interacted && (
-                  <span className="flex items-center gap-1 text-[11px] font-bold text-white/75 ml-2 drop-shadow-[0_1px_3px_rgba(0,0,0,0.65)]">
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-[color-mix(in_srgb,var(--ds-on-media)_75%,transparent)] ml-2 drop-shadow-[0_1px_3px_rgba(0,0,0,0.65)]">
                     <MoveHorizontal className="w-3 h-3" />
                     اسحب للتنقل بين الصور
                   </span>
@@ -275,7 +275,7 @@ export default function HouseHero({
                   <span
                     key={i} aria-hidden="true"
                     className={`rounded-full transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] drop-shadow-[0_1px_3px_rgba(0,0,0,0.55)] ${
-                      i === index ? 'w-6 h-1.5 bg-[#E3CD9F]' : 'w-1.5 h-1.5 bg-white/75'
+                      i === index ? 'w-6 h-1.5 bg-[var(--ds-accent-soft)]' : 'w-1.5 h-1.5 bg-[color-mix(in_srgb,var(--ds-on-media)_75%,transparent)]'
                     }`}
                   />
                 ))}
@@ -294,8 +294,8 @@ export default function HouseHero({
                     aria-current={i === index}
                     className={`shrink-0 basis-[calc((100%-1.5rem)/4)] aspect-[16/11] rounded-xl overflow-hidden border-2 transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] cursor-pointer ${
                       i === index
-                        ? 'border-[#E3CD9F] shadow-[0_4px_14px_rgba(0,0,0,0.45)]'
-                        : 'border-white/25 opacity-80 hover:opacity-100'
+                        ? 'border-[var(--ds-accent-soft)] shadow-[0_4px_14px_rgba(0,0,0,0.45)]'
+                        : 'border-[color-mix(in_srgb,var(--ds-on-media)_25%,transparent)] opacity-80 hover:opacity-100'
                     }`}
                   >
                     <img src={img} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
