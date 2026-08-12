@@ -4,6 +4,7 @@ import { RetreatHouse, Room, RoomType, RoomFacility, ConferenceHall, OwnerPaymen
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import LocationPicker from './LocationPicker';
+import LocationSearch from './LocationSearch';
 import Logo from './Logo';
 import {
   ChevronRight, ChevronLeft, Check, Plus, Minus, Trash2, MapPin, Home,
@@ -149,6 +150,9 @@ export default function OwnerOnboardingWizard({
   // ── Basic info ──────────────────────────────────────────────
   const [houseName, setHouseName] = useState('');
   const [houseDesc, setHouseDesc] = useState('');
+  // Human-readable label of the place chosen from search, shown back under the
+  // field so the owner can see what the pin actually landed on.
+  const [pickedPlace, setPickedPlace] = useState('');
   const [propertyType, setPropertyType] = useState<'conference' | 'student' | 'staff'>('conference');
   const [houseGov, setHouseGov] = useState(GOVERNORATES[0]);
   const [houseAddress, setHouseAddress] = useState('');
@@ -638,12 +642,23 @@ export default function OwnerOnboardingWizard({
               </button>
               {geoError && <p className="text-[11px] text-red-500">{geoError}</p>}
 
-              {/* The button alone gave an owner one shot at the location and no
-                  way to correct it, and it is no use at all to someone
-                  registering a house they are not standing in — or who denied
-                  the permission. The map is the fallback that always works:
-                  tap to place, tap again to move. Centred on Cairo until the
-                  first tap so there is something to aim at. */}
+              {/* Search first, map second. «استخدم موقعي الحالي» only helps an
+                  owner standing in the house, and most are not — it drops the
+                  pin on wherever they happen to be, which is worse than an
+                  empty field because it looks answered. Typing the address
+                  works from anywhere; the map is how the pin gets nudged once
+                  the search has landed nearby. */}
+              <LocationSearch
+                chosen={pickedPlace}
+                onPick={(pl) => {
+                  setHouseLat(pl.lat); setHouseLng(pl.lng);
+                  setPickedPlace(pl.label); setGeoError('');
+                  // Fill the address only if it is still empty — never
+                  // overwrite what the owner typed themselves.
+                  if (!houseAddress.trim()) setHouseAddress(pl.label);
+                }}
+              />
+
               <div>
                 <label className={LABEL_CLS}>موقع البيت على الخريطة</label>
                 <div className="rounded-xl overflow-hidden border border-[#D6D6C2] h-64">
