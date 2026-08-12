@@ -11,7 +11,7 @@ interface LandingPageProps {
 
 export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingPageProps) {
   return (
-    <div className="min-h-screen bg-[#FBFBFA] overflow-x-hidden" dir="rtl">
+    <div className="min-h-screen bg-[var(--ds-bg)] overflow-x-hidden" dir="rtl">
       {/* Hero */}
       <section className="relative bg-gradient-to-bl from-[#3A6B4C] via-[#4A7C5C] to-[#2D5A3F] text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10">
@@ -46,7 +46,7 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
             </button>
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#FBFBFA] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--ds-bg)] to-transparent" />
       </section>
 
       {/* Features */}
@@ -59,19 +59,19 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
             { icon: Star, title: 'تقييمات حقيقية', desc: 'كل بيت عليه تقييمات من خدام ومؤتمرات سابقة تساعدك تختار.' },
             { icon: Shield, title: 'أسعار شفافة', desc: 'شوف السعر الإجمالي قبل ما تحجز. بدون مفاجآت أو رسوم مخفية.' },
           ].map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="bg-white border border-[#D6D6C2]/50 rounded-2xl p-5 hover:shadow-md transition-shadow">
+            <div key={title} className="bg-white border border-[color-mix(in_srgb,var(--ds-border)_50%,transparent)] rounded-2xl p-5 hover:shadow-md transition-shadow">
               <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center mb-3">
                 <Icon className="w-5 h-5 text-[#3A6B4C]" />
               </div>
-              <h3 className="font-black text-[13px] text-[#2D2D1F] mb-1">{title}</h3>
-              <p className="text-[11px] text-[#8A8A70] leading-relaxed">{desc}</p>
+              <h3 className="font-black text-[14px] text-[#2D2D1F] mb-1">{title}</h3>
+              <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="bg-[#F0F0E6] py-12 sm:py-20">
+      <section className="bg-[var(--ds-raised)] py-12 sm:py-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-8">
           <h2 className="text-xl sm:text-2xl font-black text-[#2D2D1F] text-center mb-10">إزاي تحجز؟</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -84,8 +84,8 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
                 <div className="w-14 h-14 bg-[#3A6B4C] text-white rounded-2xl flex items-center justify-center mx-auto mb-4 text-xl font-black shadow-lg">
                   {step}
                 </div>
-                <h3 className="font-black text-[13px] text-[#2D2D1F] mb-1">{title}</h3>
-                <p className="text-[11px] text-[#8A8A70] leading-relaxed max-w-[220px] mx-auto">{desc}</p>
+                <h3 className="font-black text-[14px] text-[#2D2D1F] mb-1">{title}</h3>
+                <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed max-w-[220px] mx-auto">{desc}</p>
               </div>
             ))}
           </div>
@@ -111,8 +111,8 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-[#D6D6C2]/50 bg-[#F5F5ED] py-8">
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-[#8A8A70]">
+      <footer className="border-t border-[color-mix(in_srgb,var(--ds-border)_50%,transparent)] bg-[var(--ds-raised)] py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-[var(--ds-text-2)]">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-[#3A6B4C] rounded-lg flex items-center justify-center text-white text-[10px] font-black">ب</div>
             <span className="font-bold text-[#2D2D1F]">بيما</span>
