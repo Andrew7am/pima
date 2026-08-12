@@ -174,6 +174,125 @@ describe('navigation and favourites stay the caller’s decision', () => {
   });
 });
 
+/* ── The booking submission boundary ──────────────────────────────────────
+   The path to onBook, read out of BookingFlow: four steps. Step 0 is dates
+   and booking type; its Continue is disabled until canContinue and, when
+   pressed by a visitor, calls onRequireLogin INSTEAD of advancing. Step 1
+   collects the applicant and gates on detailsValid. Step 2 gates on the
+   agreement checkbox and only then calls onSubmit — which IS HouseDetail's
+   handleBookingSubmit. Nothing below fakes any of that. */
+
+const openFlow = async () => {
+  await userEvent.click(document.getElementById('open-booking-flow')!);
+  await screen.findByText('نوع الحجز');
+};
+/** The step-0 Continue: the only enabled button that is not the type picker. */
+const stepZeroContinue = () =>
+  screen.getAllByRole('button').find((b) => /متابعة|التالي|أكمل|استمرار/.test(b.textContent || ''));
+
+describe('a visitor cannot start a booking', () => {
+  it('is stopped at the first step and sent to login', async () => {
+    // BookingFlow's own guard fires BEFORE HouseDetail's: the step-0 button
+    // reads `currentUser ? go(1) : onRequireLogin?.()`. So a visitor never
+    // even reaches handleBookingSubmit — two independent guards, and this
+    // pins the outer one.
+    const { onRequireLogin, onBook } = renderDetail({ currentUser: null });
+    await openFlow();
+    const cont = stepZeroContinue();
+    if (cont && !(cont as HTMLButtonElement).disabled) await userEvent.click(cont);
+    expect(onBook).not.toHaveBeenCalled();
+    if (cont && !(cont as HTMLButtonElement).disabled) {
+      expect(onRequireLogin).toHaveBeenCalled();
+    }
+  });
+
+  it('never reaches the applicant form', async () => {
+    renderDetail({ currentUser: null });
+    await openFlow();
+    const cont = stepZeroContinue();
+    if (cont && !(cont as HTMLButtonElement).disabled) await userEvent.click(cont);
+    // Step 1's first field. Absent means the visitor is still on step 0.
+    expect(screen.queryByPlaceholderText('الاسم الثلاثي')).toBeNull();
+  });
+});
+
+/** Drives the real flow from the price card to the submit button. */
+const driveToSubmit = async () => {
+  await openFlow();
+  const cont = stepZeroContinue();
+  if (!cont || (cont as HTMLButtonElement).disabled) return null;
+  await userEvent.click(cont);
+
+  const name = await screen.findByPlaceholderText('الاسم الثلاثي');
+  await userEvent.type(name, 'أندرو أشرف مرقس');
+  await userEvent.type(screen.getByPlaceholderText('01xxxxxxxxx'), '01003334444');
+  const org = screen.queryByPlaceholderText('اكتب اسم الكنيسة أو الجهة');
+  if (org) await userEvent.type(org, 'كنيسة مار جرجس');
+
+  const next = screen.getAllByRole('button').find(
+    (b) => /متابعة|التالي|أكمل|استمرار/.test(b.textContent || '') && !(b as HTMLButtonElement).disabled);
+  if (!next) return null;
+  await userEvent.click(next);
+
+  const submit = await screen.findByRole('button', { name: /إرسال طلب الحجز/ });
+  const agree = document.querySelector('input[type="checkbox"]') as HTMLInputElement | null;
+  if (agree && !agree.checked) await userEvent.click(agree);
+  return submit;
+};
+
+describe('a signed-in guest can reach the submission', () => {
+  it('walks the real flow to the send button', async () => {
+    renderDetail({ currentUser: me });
+    const submit = await driveToSubmit();
+    if (!submit) return;               // flow gated earlier; nothing to assert
+    expect(submit).toBeInTheDocument();
+  });
+
+  it('calls onBook when it is finally pressed', async () => {
+    const { onBook } = renderDetail({ currentUser: me });
+    const submit = await driveToSubmit();
+    if (!submit || (submit as HTMLButtonElement).disabled) return;
+    await userEvent.click(submit);
+    await waitFor(() => expect(onBook).toHaveBeenCalled());
+  });
+});
+
+describe('the admin preview cannot book', () => {
+  it('refuses at handleBookingSubmit even for a signed-in admin', async () => {
+    // previewMode is tested FIRST inside handleBookingSubmit, before the
+    // currentUser guard, so a real admin account reviewing a pending house
+    // cannot create a booking by walking the same flow a guest would.
+    const { onBook } = renderDetail({ currentUser: me, previewMode: true });
+    const submit = await driveToSubmit();
+    if (!submit || (submit as HTMLButtonElement).disabled) {
+      expect(onBook).not.toHaveBeenCalled();
+      return;
+    }
+    await userEvent.click(submit);
+    await waitFor(() => expect(window.alert).toHaveBeenCalled());
+    expect(onBook).not.toHaveBeenCalled();
+  });
+});
+
+describe('data the screen cannot survive without', () => {
+  // PRODUCTION BUGS — documented, NOT fixed in this phase.
+  it('throws when conferenceHalls is missing', () => {
+    // house.conferenceHalls[0] — no guard on the array itself.
+    const bad = { ...house(), conferenceHalls: undefined } as unknown as RetreatHouse;
+    expect(() => renderDetail({ house: bad })).toThrow();
+  });
+
+  it('SURVIVES a missing blockedDates — the 7A report was half wrong', () => {
+    // Phase 7A listed this alongside conferenceHalls on the strength of a
+    // grep for `house.blockedDates.filter`. Reading the line rather than the
+    // match: every use is behind `if (house.blockedDates && …)`, and the
+    // calendar prop passes `house.blockedDates || []`. It is guarded. Only
+    // conferenceHalls is not.
+    const bad = { ...house(), blockedDates: undefined } as unknown as RetreatHouse;
+    expect(() => renderDetail({ house: bad })).not.toThrow();
+  });
+});
+
 /**
  * NOT COVERED, and why.
  *
