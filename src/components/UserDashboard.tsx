@@ -15,6 +15,7 @@ import { useHeroParallax } from '../lib/useHeroParallax';
 import FilterSheet from './FilterSheet';
 import type { FilterDraft } from './FilterSheet';
 import type { BannerLiveData } from './banner/BannerCanvas';
+import { Card, EmptyState } from './ui';
 
 /**
  * One rate on a listing card.
@@ -45,7 +46,7 @@ function PriceBox({ icon: Icon, label, value }: {
           of white is not a reliable 70% of anything. */}
       <span className="block text-[11px] font-black text-white mt-0.5">{label}</span>
       <span className="flex items-baseline justify-center gap-0.5 mt-1">
-        <span className="text-[15px] font-black text-[#E8C88A] leading-none [font-variant-numeric:tabular-nums]">{arabicNumber(value)}</span>
+        <span className="text-[14px] font-black text-[#E8C88A] leading-none [font-variant-numeric:tabular-nums]">{arabicNumber(value)}</span>
         <span className="text-[11px] font-bold text-white/70">ج.م</span>
       </span>
     </div>
@@ -92,13 +93,13 @@ interface UserDashboardProps {
 // would remount every comparison row instead of updating it. Band takes the
 // column template as a prop since it can no longer close over it.
 function Win() {
-  return <span className="bg-emerald-600 text-white text-[11px] font-black px-1 py-0.5 rounded-full">الأفضل</span>;
+  return <span className="bg-[var(--ds-success)] text-white text-[11px] font-black px-1 py-0.5 rounded-full">الأفضل</span>;
 }
 
 function Band({ label, cols, children }: { label: string; cols: React.CSSProperties; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
-      <span className="text-[11px] text-[#8A8A70] font-black block border-b border-[#EDE7DA] pb-0.5">{label}</span>
+      <span className="text-[11px] text-[var(--ds-text-2)] font-black block border-b border-[var(--ds-border)] pb-0.5">{label}</span>
       <div className="grid gap-2" style={cols}>{children}</div>
     </div>
   );
@@ -420,7 +421,7 @@ export default function UserDashboard({
     // Full-bleed on purpose: a capped, centred column left big empty margins on
     // a wide screen and read as a shrunken page. Desktop is handled by giving
     // the CONTENT more columns (see the house grid), not by narrowing the page.
-    <div className="min-h-screen bg-gradient-to-b from-[#FBF9F4] via-[#F7F3EA] to-[#F3EFE4] text-[#2D2D24] -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl px-4 py-5 space-y-5 text-right">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--ds-bg)] via-[color-mix(in_srgb,var(--ds-bg)_50%,var(--ds-raised))] to-[var(--ds-raised)] text-[var(--ds-text)] -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl px-4 py-5 space-y-5 text-right">
 
       {/* Follows the Coptic calendar on its own — no one has to remember to
           switch it on, and it disappears outside the fasts and feasts. */}
@@ -428,8 +429,8 @@ export default function UserDashboard({
         const s = copticSeason();
         if (s.season === 'ordinary') return null;
         return (
-          <div className="flex items-center justify-center gap-2 bg-gradient-to-l from-[#0A2342] to-[#123E75] text-white rounded-2xl px-4 py-2.5 shadow-sm">
-            <span className="text-[11px] font-black text-[#C5A059]">{s.label}</span>
+          <div className="flex items-center justify-center gap-2 bg-gradient-to-l from-[var(--ds-brand)] to-[var(--ds-brand-2)] text-white rounded-2xl px-4 py-2.5 shadow-sm">
+            <span className="text-[11px] font-black text-[var(--ds-accent)]">{s.label}</span>
             <span className="w-1 h-1 rounded-full bg-white/40" />
             <span className="text-[11px] font-bold">{s.greeting}</span>
           </div>
@@ -478,36 +479,45 @@ export default function UserDashboard({
                   id="open-map-btn"
                   type="button"
                   onClick={onOpenMap}
-                  className="shrink-0 flex items-center gap-1 rounded-full px-3 min-h-11 text-[11px] font-black text-[#4A4A3A] hover:bg-[#F1ECE0] transition-all cursor-pointer"
+                  className="shrink-0 flex items-center gap-1 rounded-full px-3 min-h-11 text-[11px] font-black text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-all cursor-pointer"
                   title="عرض البيوت على الخريطة"
                   aria-label="عرض البيوت على الخريطة"
                 >
                   <MapPin className="w-4 h-4" />
                   <span>الخريطة</span>
                 </button>
-                <span aria-hidden="true" className="w-px h-6 bg-[#E3DCCC] shrink-0" />
+                <span aria-hidden="true" className="w-px h-6 bg-[var(--ds-border)] shrink-0" />
               </>
             )}
 
+            {/* NOT <SearchInput/>. That component is a self-contained field —
+                its own opaque surface, border and 12px radius — and this is a
+                SEGMENT of a frosted pill that shares one border with the map
+                and filter buttons either side of it. Dropping it in here would
+                nest a solid box inside the glass and put a second border
+                around a third of the bar. What SearchInput exists to fix is
+                applied directly instead: the icon and padding are logical, so
+                they follow the writing direction rather than assuming Arabic.
+                Reported as a design-system gap. */}
             <div className="relative flex-1 min-w-0">
-              <Search className="absolute top-1/2 -translate-y-1/2 right-2.5 w-4 h-4 text-[#B5AF98] pointer-events-none" />
+              <Search className="absolute top-1/2 -translate-y-1/2 start-2.5 w-4 h-4 text-[var(--ds-text-faint)] pointer-events-none" />
               <input
                 id="user-search-query"
                 type="text"
                 placeholder="ابحث باسم البيت، المحافظة، الكلمات المفتاحية..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent min-h-11 pl-2 pr-9 text-[11px] text-[#2D2D24] placeholder:text-[#B5AF98] focus:outline-none"
+                className="w-full bg-transparent min-h-11 pe-2 ps-9 text-[11px] text-[var(--ds-text)] placeholder:text-[var(--ds-text-faint)] focus:outline-none"
               />
             </div>
 
-            <span aria-hidden="true" className="w-px h-6 bg-[#E3DCCC] shrink-0" />
+            <span aria-hidden="true" className="w-px h-6 bg-[var(--ds-border)] shrink-0" />
 
             <button
               id="toggle-filters-btn"
               onClick={() => { tapFeedback(); setShowFilters(!showFilters); }}
               className={`shrink-0 flex items-center gap-1 rounded-full px-3 min-h-11 text-[11px] font-black transition-all cursor-pointer ${
-                showFilters ? 'bg-[#5A5A40] text-white' : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
+                showFilters ? 'bg-[var(--ds-primary)] text-white' : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
               }`}
               title="فلاتر متقدمة"
               aria-label="فلاتر متقدمة"
@@ -528,54 +538,54 @@ export default function UserDashboard({
             id="loyalty-card-trigger"
             type="button"
             onClick={onSelectRewards}
-            className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-2.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] transition-shadow duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press text-right cursor-pointer"
+            className="flex items-center gap-2 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-2.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] transition-shadow duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press text-right cursor-pointer"
           >
-            <span className="shrink-0 w-9 h-9 rounded-xl bg-[#F6F0E2] flex items-center justify-center">
-              <Award className="w-4 h-4 text-[#C5A059]" />
+            <span className="shrink-0 w-9 h-9 rounded-xl bg-[var(--ds-raised)] flex items-center justify-center">
+              <Award className="w-4 h-4 text-[var(--ds-accent)]" />
             </span>
             <span className="min-w-0">
-              <span className="block text-[11px] font-black text-[#2D2D24] leading-tight">برنامج الولاء والنقاط</span>
-              <span className="block text-[11px] font-bold text-[#8A8A70]">
-                رصيدك: <span className="text-[#C5A059] font-black">{(currentUser.points || 0).toLocaleString('ar-EG')}</span> نقطة
+              <span className="block text-[11px] font-black text-[var(--ds-text)] leading-tight">برنامج الولاء والنقاط</span>
+              <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">
+                رصيدك: <span className="text-[var(--ds-accent)] font-black">{(currentUser.points || 0).toLocaleString('ar-EG')}</span> نقطة
               </span>
             </span>
-            <ChevronLeft aria-hidden="true" className="w-3.5 h-3.5 text-[#B5AF98] shrink-0 mr-auto transition-colors" />
+            <ChevronLeft aria-hidden="true" className="w-3.5 h-3.5 text-[var(--ds-text-faint)] shrink-0 mr-auto transition-colors" />
           </button>
         ) : (
-          <div className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-2.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
-            <span className="shrink-0 w-9 h-9 rounded-xl bg-[#F6F0E2] flex items-center justify-center">
-              <Award className="w-4 h-4 text-[#C5A059]" />
+          <div className="flex items-center gap-2 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-2.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+            <span className="shrink-0 w-9 h-9 rounded-xl bg-[var(--ds-raised)] flex items-center justify-center">
+              <Award className="w-4 h-4 text-[var(--ds-accent)]" />
             </span>
             <span className="min-w-0">
-              <span className="block text-[11px] font-black text-[#2D2D24] leading-tight">برنامج الولاء والنقاط</span>
-              <span className="block text-[11px] font-bold text-[#8A8A70]">سجّل واكسب نقاط</span>
+              <span className="block text-[11px] font-black text-[var(--ds-text)] leading-tight">برنامج الولاء والنقاط</span>
+              <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">سجّل واكسب نقاط</span>
             </span>
           </div>
         )}
 
         <a
           href="/dalil/"
-          className="flex items-center gap-2 bg-white border border-[#EDE7DA] rounded-2xl px-2.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] transition-shadow duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press group"
+          className="flex items-center gap-2 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-2.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] transition-shadow duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press group"
         >
-          <span className="shrink-0 w-9 h-9 rounded-xl bg-[#F6F0E2] flex items-center justify-center">
-            <BookOpen className="w-4 h-4 text-[#C5A059]" />
+          <span className="shrink-0 w-9 h-9 rounded-xl bg-[var(--ds-raised)] flex items-center justify-center">
+            <BookOpen className="w-4 h-4 text-[var(--ds-accent)]" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-[11px] font-black text-[#2D2D24] leading-tight">دليل المستخدم</span>
-            <span className="block text-[11px] font-bold text-[#8A8A70]">تعرف على كل المزايا</span>
+            <span className="block text-[11px] font-black text-[var(--ds-text)] leading-tight">دليل المستخدم</span>
+            <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">تعرف على كل المزايا</span>
           </span>
-          <ChevronLeft aria-hidden="true" className="w-3.5 h-3.5 text-[#B5AF98] shrink-0 mr-auto group-hover:text-[#C5A059] transition-colors" />
+          <ChevronLeft aria-hidden="true" className="w-3.5 h-3.5 text-[var(--ds-text-faint)] shrink-0 mr-auto group-hover:text-[var(--ds-accent)] transition-colors" />
         </a>
       </div>
 
       {/* Category Tabs Selection */}
-      <div className="grid grid-cols-5 gap-1.5 p-1.5 bg-white border border-[#EDE7DA] rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] animate-in fade-in duration-500">
+      <div className="grid grid-cols-5 gap-1.5 p-1.5 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] animate-in fade-in duration-500">
         <button
           onClick={() => { tapFeedback(); setSelectedType('all'); }}
           className={`py-2.5 px-1 rounded-xl text-[11px] font-extrabold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] flex flex-col items-center justify-center gap-1.5 cursor-pointer pima-press ${
             selectedType === 'all'
-              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]'
-              : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
+              ? 'bg-gradient-to-b from-[var(--ds-accent-soft)] to-[var(--ds-accent)] text-[var(--ds-on-accent)] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]'
+              : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
           }`}
         >
           <Home className="w-4 h-4" />
@@ -585,8 +595,8 @@ export default function UserDashboard({
           onClick={() => { tapFeedback(); setSelectedType('conference'); }}
           className={`py-2.5 px-1 rounded-xl text-[11px] font-extrabold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] flex flex-col items-center justify-center gap-1.5 cursor-pointer pima-press ${
             selectedType === 'conference'
-              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]'
-              : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
+              ? 'bg-gradient-to-b from-[var(--ds-accent-soft)] to-[var(--ds-accent)] text-[var(--ds-on-accent)] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]'
+              : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
           }`}
         >
           <Building className="w-4 h-4" />
@@ -596,8 +606,8 @@ export default function UserDashboard({
           onClick={() => { tapFeedback(); setSelectedType('student'); }}
           className={`py-2.5 px-1 rounded-xl text-[11px] font-extrabold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] flex flex-col items-center justify-center gap-1.5 cursor-pointer pima-press ${
             selectedType === 'student'
-              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]'
-              : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
+              ? 'bg-gradient-to-b from-[var(--ds-accent-soft)] to-[var(--ds-accent)] text-[var(--ds-on-accent)] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]'
+              : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
           }`}
         >
           <GraduationCap className="w-4 h-4" />
@@ -607,8 +617,8 @@ export default function UserDashboard({
           onClick={() => { tapFeedback(); setSelectedType('staff'); }}
           className={`py-2.5 px-1 rounded-xl text-[11px] font-extrabold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] flex flex-col items-center justify-center gap-1.5 cursor-pointer pima-press ${
             selectedType === 'staff'
-              ? 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#2D2D24] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]'
-              : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
+              ? 'bg-gradient-to-b from-[var(--ds-accent-soft)] to-[var(--ds-accent)] text-[var(--ds-on-accent)] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]'
+              : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
           }`}
         >
           <Briefcase className="w-4 h-4" />
@@ -621,7 +631,7 @@ export default function UserDashboard({
             className={`py-2.5 px-1 rounded-xl text-[11px] font-extrabold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] flex flex-col items-center justify-center gap-1.5 cursor-pointer pima-press ${
               selectedType === 'favorites'
                 ? 'bg-rose-600 text-white shadow-sm'
-                : 'text-[#4A4A3A] hover:bg-[#F1ECE0]'
+                : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
             }`}
           >
             <Heart className={`w-3.5 h-3.5 ${selectedType === 'favorites' ? 'fill-white text-white' : 'text-rose-500 fill-rose-500'}`} />
@@ -632,7 +642,7 @@ export default function UserDashboard({
           <button
             id="tab-favorites"
             onClick={() => onToggleFavorite('')}
-            className="py-2.5 px-1 rounded-xl text-[11px] font-extrabold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] flex flex-col items-center justify-center gap-1.5 cursor-pointer pima-press text-[#4A4A3A] hover:bg-[#F1ECE0]"
+            className="py-2.5 px-1 rounded-xl text-[11px] font-extrabold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] flex flex-col items-center justify-center gap-1.5 cursor-pointer pima-press text-[var(--ds-text)] hover:bg-[var(--ds-raised)]"
           >
             <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
             <span>المفضلة</span>
@@ -654,7 +664,7 @@ export default function UserDashboard({
         const cover = filteredHouses.find((h) => h.images[0])?.images[0];
 
         return (
-          <div className="relative bg-white border border-[#EDE7DA] rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden animate-in fade-in duration-500">
+          <div className="relative bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden animate-in fade-in duration-500">
             {/* Photo anchors the right edge, the cells run leftwards from it —
                 price, count, rating — matching the approved strip. */}
             {cover && (
@@ -664,28 +674,28 @@ export default function UserDashboard({
                 <div className="absolute inset-y-0 right-0 w-36 bg-gradient-to-r from-white via-white/85 to-transparent" />
               </>
             )}
-            <div className="relative flex items-stretch justify-start divide-x divide-x-reverse divide-[#EDE7DA] py-2.5 pl-3 pr-24">
+            <div className="relative flex items-stretch justify-start divide-x divide-x-reverse divide-[var(--ds-border)] py-2.5 pl-3 pr-24">
               {from !== null && (
                 <div className="flex flex-col items-center gap-0.5 px-2.5">
-                  <span className="text-[11px] font-bold text-[#8A8A70] leading-none">ابتداءً من</span>
-                  <span className="text-[12px] font-black text-[#C5A059] leading-none">{arabicNumber(from)} <span className="text-[11px] text-[#8A8A70]">ج.م</span></span>
-                  <span className="text-[11px] font-bold text-[#8A8A70]">لليلة للفرد</span>
+                  <span className="text-[11px] font-bold text-[var(--ds-text-2)] leading-none">ابتداءً من</span>
+                  <span className="text-[12px] font-black text-[var(--ds-accent)] leading-none">{arabicNumber(from)} <span className="text-[11px] text-[var(--ds-text-2)]">ج.م</span></span>
+                  <span className="text-[11px] font-bold text-[var(--ds-text-2)]">لليلة للفرد</span>
                 </div>
               )}
               <div className="flex flex-col items-center justify-center gap-0.5 px-2.5">
-                <span className="flex items-center gap-1 text-[12px] font-black text-[#2D2D24] leading-none">
-                  <Home className="w-3.5 h-3.5 text-[#5A5A40]" />
+                <span className="flex items-center gap-1 text-[12px] font-black text-[var(--ds-text)] leading-none">
+                  <Home className="w-3.5 h-3.5 text-[var(--ds-primary)]" />
                   {arabicNumber(filteredHouses.length)}
                 </span>
-                <span className="text-[11px] font-bold text-[#8A8A70]">{arabicUnit(filteredHouses.length, HOUSE_FORMS)} متاح</span>
+                <span className="text-[11px] font-bold text-[var(--ds-text-2)]">{arabicUnit(filteredHouses.length, HOUSE_FORMS)} متاح</span>
               </div>
               {avg && (
                 <div className="flex flex-col items-center justify-center gap-0.5 px-2.5">
-                  <span className="flex items-center gap-1 text-[12px] font-black text-[#2D2D24] leading-none">
+                  <span className="flex items-center gap-1 text-[12px] font-black text-[var(--ds-text)] leading-none">
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                     {avg}
                   </span>
-                  <span className="text-[11px] font-bold text-[#8A8A70]">متوسط التقييم</span>
+                  <span className="text-[11px] font-bold text-[var(--ds-text-2)]">متوسط التقييم</span>
                 </div>
               )}
             </div>
@@ -716,13 +726,13 @@ export default function UserDashboard({
         }}
       />
       {/* Houses Feed List */}
-      <div id="house-list-anchor" className="space-y-3.5 text-[#2D2D24]">
+      <div id="house-list-anchor" className="space-y-3.5 text-[var(--ds-text)]">
         {/* Result count and sort. The filter control is not repeated here — it
             lives in the floating search bar, and one entry point is enough. */}
         <div className="flex justify-between items-center px-1 gap-2">
           {/* Start of the row in RTL: the label for the control that follows. */}
-          <label htmlFor="sort-houses-select" className="shrink-0 flex items-center gap-1 bg-white border border-[#EDE7DA] rounded-full px-3 min-h-11 text-[11px] font-black text-[#4A4A3A] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] cursor-pointer">
-            <SlidersHorizontal aria-hidden="true" className="w-3.5 h-3.5 text-[#8A8A70]" />
+          <label htmlFor="sort-houses-select" className="shrink-0 flex items-center gap-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-full px-3 min-h-11 text-[11px] font-black text-[var(--ds-text)] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] cursor-pointer">
+            <SlidersHorizontal aria-hidden="true" className="w-3.5 h-3.5 text-[var(--ds-text-2)]" />
             <span>ترتيب</span>
           </label>
 
@@ -733,8 +743,8 @@ export default function UserDashboard({
             // house — which then ran past the slot and was clipped mid-word.
             const empty = filteredHouses.length === 0;
             return (
-              <span className={`text-[12px] font-black text-[#2D2D24] text-center flex-1 min-w-0 ${empty ? 'leading-tight' : 'truncate'}`}>
-                {empty ? noun : <>وجدنا {count && <span className="text-[#C5A059]">{count}</span>} {noun}</>}
+              <span className={`text-[12px] font-black text-[var(--ds-text)] text-center flex-1 min-w-0 ${empty ? 'leading-tight' : 'truncate'}`}>
+                {empty ? noun : <>وجدنا {count && <span className="text-[var(--ds-accent)]">{count}</span>} {noun}</>}
               </span>
             );
           })()}
@@ -745,21 +755,26 @@ export default function UserDashboard({
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
               aria-label="ترتيب النتائج"
-              className="appearance-none bg-white border border-[#EDE7DA] rounded-full pr-3 pl-7 min-h-11 text-[11px] font-bold text-[#4A4A3A] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] focus:outline-none cursor-pointer"
+              className="appearance-none bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-full pr-3 pl-7 min-h-11 text-[11px] font-bold text-[var(--ds-text)] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] focus:outline-none cursor-pointer"
             >
               <option value="rating">الأفضل تقييماً</option>
               <option value="price_asc">الأقل سعراً</option>
               <option value="price_desc">الأعلى سعراً</option>
             </select>
-            <ChevronLeft aria-hidden="true" className="absolute top-1/2 -translate-y-1/2 left-2 w-3 h-3 text-[#8A8A70] pointer-events-none -rotate-90" />
+            <ChevronLeft aria-hidden="true" className="absolute top-1/2 -translate-y-1/2 left-2 w-3 h-3 text-[var(--ds-text-2)] pointer-events-none -rotate-90" />
           </div>
         </div>
 
         {filteredHouses.length === 0 ? (
-          <div className="bg-[#FFFFFF] rounded-3xl p-8 border border-[#EDE7DA] text-center space-y-2">
-            <p className="text-xs font-bold text-[#2D2D24]">عذراً، لم نجد بيوت مؤتمرات تطابق معايير بحثك الحالية.</p>
-            <p className="text-[11px] text-[#8A8A70]">جرب البحث بكلمات أبسط أو تخفيف فلاتر التصفية.</p>
-          </div>
+          // Both strings are unchanged; only the surface and type come from
+          // the system now. No action is offered because there is nothing to
+          // offer — the reader already has the filters that produced this.
+          <Card>
+            <EmptyState
+              title="عذراً، لم نجد بيوت مؤتمرات تطابق معايير بحثك الحالية."
+              description="جرب البحث بكلمات أبسط أو تخفيف فلاتر التصفية."
+            />
+          </Card>
         ) : (
           // One card per row was fine on a phone but wasted a desktop: each
           // card stretched to the full width and its photo was cropped to a
@@ -782,7 +797,7 @@ export default function UserDashboard({
                 // pima-reveal is an entrance only — the observer adds .is-in as
                 // the card scrolls in and then stops watching it. Nothing about
                 // the card's own layout, colour or type is touched.
-                className="pima-reveal relative bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A059] cursor-pointer group"
+                className="pima-reveal relative bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ds-accent)] cursor-pointer group"
               >
                 {/* The photo is the whole card; the details panel floats over it. */}
                 <div className="absolute inset-0 overflow-hidden">
@@ -804,7 +819,7 @@ export default function UserDashboard({
                 {/* Rating, and real popularity beside it (top-3 by confirmed
                     bookings over the last year — see mostBookedIds) */}
                 <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                  <span className="bg-white/95 backdrop-blur-sm text-[#4A4A3A] text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                  <span className="bg-white/95 backdrop-blur-sm text-[var(--ds-text)] text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                     <span>{arabicDecimal(house.rating)}</span>
                   </span>
@@ -820,7 +835,7 @@ export default function UserDashboard({
                       last screen. hasLiveDiscount checks the window against
                       today, the same way the booking price will. */}
                   {hasLiveDiscount(house) && (
-                    <span className="bg-[#B8944E] text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                    <span className="bg-[var(--ds-accent-deep)] text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
                       <Sparkles className="w-3 h-3" />
                       خصم {arabicNumber(Math.round((house.discountPct ?? 0) * 100))}٪
                     </span>
@@ -832,7 +847,7 @@ export default function UserDashboard({
                     truncates — owners write this freely, and a long one would
                     otherwise slide under the panel. */}
                 <div className="absolute bottom-3 left-3 flex items-center gap-1.5 max-w-[47%]">
-                  <span className="bg-[#5A5A40]/90 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
+                  <span className="bg-[var(--ds-primary)]/90 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
                     <MapPin className="w-3 h-3" />
                     {house.governorate}
                   </span>
@@ -857,11 +872,11 @@ export default function UserDashboard({
                       tapFeedback();
                       onToggleFavorite(house.id);
                     }}
-                    className="bg-white/95 hover:bg-white text-rose-500 hover:text-rose-600 w-11 h-11 rounded-full grid place-items-center shadow transition-all duration-200 cursor-pointer"
+                    className="bg-white/95 hover:bg-[var(--ds-surface)] text-rose-500 hover:text-rose-600 w-11 h-11 rounded-full grid place-items-center shadow transition-all duration-200 cursor-pointer"
                     title={currentUser?.favorites?.includes(house.id) ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
                     aria-label={currentUser?.favorites?.includes(house.id) ? `إزالة ${house.name} من المفضلة` : `إضافة ${house.name} للمفضلة`}
                   >
-                    <Heart className={`w-3.5 h-3.5 ${currentUser?.favorites?.includes(house.id) ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+                    <Heart className={`w-3.5 h-3.5 ${currentUser?.favorites?.includes(house.id) ? 'fill-rose-500 text-rose-500' : 'text-[var(--ds-text-faint)]'}`} />
                   </button>
 
                   <button
@@ -871,7 +886,7 @@ export default function UserDashboard({
                     className={`w-11 h-11 rounded-full grid place-items-center shadow transition-all duration-200 cursor-pointer ${
                       comparedHouseIds.includes(house.id)
                         ? 'bg-amber-600 text-white hover:bg-amber-700'
-                        : 'bg-white/95 text-slate-400 hover:text-[#5A5A40] hover:bg-white'
+                        : 'bg-white/95 text-[var(--ds-text-faint)] hover:text-[var(--ds-primary)] hover:bg-[var(--ds-surface)]'
                     }`}
                     title={comparedHouseIds.includes(house.id) ? 'إزالة من المقارنة' : 'إضافة للمقارنة والمفاضلة'}
                     aria-label={comparedHouseIds.includes(house.id) ? `إزالة ${house.name} من المقارنة` : `إضافة ${house.name} للمقارنة`}
@@ -886,12 +901,12 @@ export default function UserDashboard({
                     different kind of place. Amenities stay inside. */}
                 <div className="absolute top-11 left-3 flex flex-col gap-1 items-start">
                   {availability !== null && (
-                    <span className="bg-emerald-600/95 backdrop-blur-sm text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+                    <span className="bg-[var(--ds-success)]/95 backdrop-blur-sm text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
                       ✓ متاح في تواريخك
                     </span>
                   )}
                   {bookedBeforeIds.has(house.id) && (
-                    <span className="bg-[#0A2342]/90 backdrop-blur-sm text-[#C5A059] text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+                    <span className="bg-[var(--ds-brand)]/90 backdrop-blur-sm text-[var(--ds-accent)] text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
                       ⭐ حجزتم هنا قبل كده
                     </span>
                   )}
@@ -1068,7 +1083,7 @@ export default function UserDashboard({
                       );
                     })()}
 
-                    <div className="relative flex items-center justify-center bg-gradient-to-l from-[#B8944E] to-[#E0C48A] text-white rounded-full py-2 mt-1">
+                    <div className="relative flex items-center justify-center bg-gradient-to-l from-[var(--ds-accent-deep)] to-[var(--ds-accent)] text-white rounded-full py-2 mt-1">
                       <span className="text-[11px] font-extrabold">عرض التفاصيل</span>
                       <span className="absolute right-1.5 w-5 h-5 rounded-full bg-black/25 flex items-center justify-center">
                         <ArrowLeft className="w-3 h-3" />
@@ -1088,7 +1103,7 @@ export default function UserDashboard({
       {/* Compare Floating Bar — the thumbnails matter: after scrolling past a
           dozen cards nobody remembers which three they ticked. */}
       {comparedHouseIds.length > 0 && (
-        <div className="sticky bottom-2 z-35 bg-[#FFFFFF] border border-[#EDE7DA] rounded-2xl p-3 shadow-lg flex items-center justify-between gap-2 animate-bounce-once">
+        <div className="sticky bottom-2 z-35 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-3 shadow-lg flex items-center justify-between gap-2 animate-bounce-once">
           <div className="flex items-center gap-2 min-w-0">
             <div className="flex items-center gap-1 shrink-0">
               {comparedHouseIds.map((id) => {
@@ -1101,7 +1116,7 @@ export default function UserDashboard({
                     onClick={(e) => handleToggleCompare(id, e)}
                     title={`إزالة ${picked.name} من المقارنة`}
                     aria-label={`إزالة ${picked.name} من المقارنة`}
-                    className="relative w-8 h-8 rounded-xl overflow-hidden border border-[#EDE7DA] group/thumb cursor-pointer"
+                    className="relative w-8 h-8 rounded-xl overflow-hidden border border-[var(--ds-border)] group/thumb cursor-pointer"
                   >
                     <img referrerPolicy="no-referrer" src={picked.images[0]} alt="" className="w-full h-full object-cover" />
                     <span className="absolute inset-0 bg-black/45 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity">
@@ -1112,10 +1127,10 @@ export default function UserDashboard({
               })}
             </div>
             <div className="text-right min-w-0">
-              <span className="text-[11px] font-extrabold text-[#2D2D24] block">
+              <span className="text-[11px] font-extrabold text-[var(--ds-text)] block">
                 {comparedHouseIds.length} من ٣ للمقارنة
               </span>
-              <span className="text-[11px] text-[#8A8A70] font-bold">
+              <span className="text-[11px] text-[var(--ds-text-2)] font-bold">
                 {comparedHouseIds.length < 2 ? 'اختر بيتًا آخر على الأقل' : 'اضغط على صورة لإزالتها'}
               </span>
             </div>
@@ -1123,14 +1138,14 @@ export default function UserDashboard({
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => setComparedHouseIds([])}
-              className="text-[#8A8A70] hover:text-rose-300 text-[11px] font-bold px-2 py-1.5 rounded-xl hover:bg-rose-900/20 transition-all cursor-pointer"
+              className="text-[var(--ds-text-2)] hover:text-rose-300 text-[11px] font-bold px-2 py-1.5 rounded-xl hover:bg-rose-900/20 transition-all cursor-pointer"
             >
               مسح
             </button>
             <button
               onClick={() => setShowComparisonModal(true)}
               disabled={comparedHouseIds.length < 2}
-              className="bg-[#5A5A40] hover:bg-[#4A4A3A] disabled:bg-[#3F3F33] disabled:text-[#8A8570] disabled:cursor-not-allowed text-white text-[11px] font-extrabold px-3.5 py-1.5 rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer"
+              className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] disabled:bg-[color-mix(in_srgb,var(--ds-primary)_70%,black)] disabled:text-[var(--ds-text-2)] disabled:cursor-not-allowed text-white text-[11px] font-extrabold px-3.5 py-1.5 rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer"
             >
               <Scale className="w-3.5 h-3.5" />
               <span>قارن</span>
@@ -1143,9 +1158,9 @@ export default function UserDashboard({
           capped panel, so it still covers the whole viewport. */}
       {showComparisonModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 text-right">
-          <div className="bg-[#FBF9F4] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-[#EDE7DA] animate-scale-up">
+          <div className="bg-[var(--ds-bg)] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-[var(--ds-border)] animate-scale-up">
             {/* Header */}
-            <div className="bg-[#5A5A40] text-white px-5 py-4 flex items-center justify-between">
+            <div className="bg-[var(--ds-primary)] text-white px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Scale className="w-4 h-4 text-amber-200" />
                 <h3 className="text-xs font-extrabold">مقارنة بيوت الخلوة والمؤتمرات 📊</h3>
@@ -1191,17 +1206,17 @@ export default function UserDashboard({
                   <div className="grid gap-2" style={cols}>
                     {picked.map((h) => (
                       <div key={h.id} className="text-center space-y-1">
-                        <div className="h-14 bg-[#2A2A20] rounded-xl overflow-hidden border border-[#EDE7DA]">
+                        <div className="h-14 bg-[#2A2A20] rounded-xl overflow-hidden border border-[var(--ds-border)]">
                           <img referrerPolicy="no-referrer" loading="lazy" src={h.images[0]} alt={h.name} className="w-full h-full object-cover" />
                         </div>
-                        <h4 className="font-extrabold text-[#2D2D24] line-clamp-2 leading-tight text-[11px]">{h.name}</h4>
+                        <h4 className="font-extrabold text-[var(--ds-text)] line-clamp-2 leading-tight text-[11px]">{h.name}</h4>
                       </div>
                     ))}
                   </div>
 
                   <Band cols={cols} label="الموقع">
                     {picked.map((h) => (
-                      <span key={h.id} className="font-bold text-[#2D2D24] text-center block">{h.governorate}</span>
+                      <span key={h.id} className="font-bold text-[var(--ds-text)] text-center block">{h.governorate}</span>
                     ))}
                   </Band>
 
@@ -1215,7 +1230,7 @@ export default function UserDashboard({
                           {priceOf(h)} ج.م
                         </span>
                         {!sameBasis && (
-                          <span className="text-[11px] text-[#8A8A70] font-bold">{isMonthly(h) ? 'شهريًا' : 'لليلة للفرد'}</span>
+                          <span className="text-[11px] text-[var(--ds-text-2)] font-bold">{isMonthly(h) ? 'شهريًا' : 'لليلة للفرد'}</span>
                         )}
                         {cheapest !== null && priceOf(h) === cheapest && <Win />}
                       </div>
@@ -1225,11 +1240,11 @@ export default function UserDashboard({
                   <Band cols={cols} label={!sameBasis ? 'السعة' : picked.every(isMonthly) ? 'سعة الغرفة' : 'عدد الأسرّة'}>
                     {picked.map((h) => (
                       <div key={h.id} className="flex flex-col items-center gap-0.5">
-                        <span className={`font-black ${roomiest !== null && capacityOf(h) === roomiest ? 'text-emerald-300' : 'text-[#2D2D24]'}`}>
+                        <span className={`font-black ${roomiest !== null && capacityOf(h) === roomiest ? 'text-emerald-300' : 'text-[var(--ds-text)]'}`}>
                           {capacityOf(h)}
                         </span>
                         {!sameBasis && (
-                          <span className="text-[11px] text-[#8A8A70] font-bold">{isMonthly(h) ? 'بالغرفة' : 'سرير'}</span>
+                          <span className="text-[11px] text-[var(--ds-text-2)] font-bold">{isMonthly(h) ? 'بالغرفة' : 'سرير'}</span>
                         )}
                         {roomiest !== null && capacityOf(h) === roomiest && <Win />}
                       </div>
@@ -1252,7 +1267,7 @@ export default function UserDashboard({
                     {picked.map((h) => (
                       <div key={h.id} className="flex flex-wrap gap-0.5 justify-center content-start">
                         {h.suitability.map((s) => (
-                          <span key={s} className="bg-[#8A8A70]/25 text-[#4A4A3A] text-[11px] px-1 py-0.5 rounded-sm font-semibold">
+                          <span key={s} className="bg-[var(--ds-text-2)]/25 text-[var(--ds-text)] text-[11px] px-1 py-0.5 rounded-sm font-semibold">
                             {SUITABILITY_MAP[s]}
                           </span>
                         ))}
@@ -1269,14 +1284,14 @@ export default function UserDashboard({
                           </span>
                         ))}
                         {h.services.length > 2 && (
-                          <span className="text-[11px] text-[#8A8A70] font-bold px-1 py-0.5">+{h.services.length - 2}</span>
+                          <span className="text-[11px] text-[var(--ds-text-2)] font-bold px-1 py-0.5">+{h.services.length - 2}</span>
                         )}
                       </div>
                     ))}
                   </Band>
 
                   {!sameBasis && (
-                    <p className="text-[11px] text-[#8A8A70] font-bold text-center bg-[#F3EFE4] rounded-xl p-2">
+                    <p className="text-[11px] text-[var(--ds-text-2)] font-bold text-center bg-[var(--ds-raised)] rounded-xl p-2">
                       البيوت المختارة أسعارها محسوبة بطرق مختلفة (ليلة للفرد مقابل إيجار شهري)، فمفيش مقارنة مباشرة للسعر أو السعة.
                     </p>
                   )}
@@ -1289,7 +1304,7 @@ export default function UserDashboard({
                           onSelectHouse(h);
                           setShowComparisonModal(false);
                         }}
-                        className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-bold py-1.5 rounded-xl transition-all text-center cursor-pointer"
+                        className="w-full bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-white text-[11px] font-bold py-1.5 rounded-xl transition-all text-center cursor-pointer"
                       >
                         عرض التفاصيل
                       </button>
@@ -1300,10 +1315,10 @@ export default function UserDashboard({
             })()}
 
             {/* Footer */}
-            <div className="bg-[#2A2A20] p-3 text-center border-t border-[#EDE7DA]">
+            <div className="bg-[#2A2A20] p-3 text-center border-t border-[var(--ds-border)]">
               <button
                 onClick={() => setShowComparisonModal(false)}
-                className="bg-[#FFFFFF] border border-[#EDE7DA] text-[#2D2D24] hover:bg-[#F3EFE4] text-[11px] font-bold px-4 py-1.5 rounded-xl transition-all cursor-pointer"
+                className="bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[var(--ds-text)] hover:bg-[var(--ds-raised)] text-[11px] font-bold px-4 py-1.5 rounded-xl transition-all cursor-pointer"
               >
                 إغلاق المقارنة
               </button>
