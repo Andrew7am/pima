@@ -91,7 +91,7 @@ interface BookingFlowProps {
   onGoHome?: () => void;
 }
 
-const CARD = 'bg-white rounded-[28px] border border-[#EDE7DA] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]';
+const CARD = 'bg-[var(--ds-surface)] rounded-[28px] border border-[var(--ds-border)] shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]';
 const STEPS = ['مراجعة الحجز', 'بياناتك', 'تأكيد الطلب'];
 
 const egp = arabicNumber;
@@ -112,12 +112,12 @@ function Field({ icon, label, hint, children }: { icon: React.ReactNode; label: 
         {label}
       </span>
       {children}
-      {hint && <span className="block text-[11px] font-medium text-[#8A8A70] mt-1">{hint}</span>}
+      {hint && <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-1">{hint}</span>}
     </label>
   );
 }
 
-const INPUT = 'w-full bg-white border border-[#EDE7DA] rounded-2xl px-3.5 py-3 text-[12px] font-bold text-[#2D2D24] placeholder:text-[#B5AF98] placeholder:font-medium focus:outline-none focus:border-[#C9A24A] transition-colors';
+const INPUT = 'w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-3.5 py-3 text-[12px] font-bold text-[#2D2D24] placeholder:text-[#B5AF98] placeholder:font-medium focus:outline-none focus:border-[#C9A24A] transition-colors';
 
 /**
  * The reservation request, as three screens.
@@ -255,12 +255,12 @@ export default function BookingFlow({
             <svg viewBox="0 0 100 100" className="relative w-full h-full -rotate-90" aria-hidden="true">
               <circle cx="50" cy="50" r="40" fill="none" stroke="#F2EBDC" strokeWidth="4" />
               <circle cx="50" cy="50" r="40" fill="none" stroke="#C9A24A" strokeWidth="4" strokeLinecap="round" className="pima-ring-draw" />
-              <path d="M33 51 L45 63 L68 39" fill="none" stroke="#B8944E" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" className="pima-check-draw" transform="rotate(90 50 50)" />
+              <path d="M33 51 L45 63 L68 39" fill="none" stroke="var(--ds-accent-deep)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" className="pima-check-draw" transform="rotate(90 50 50)" />
             </svg>
           </span>
 
-          <h3 className="text-[19px] font-black text-[#0A2342] mt-4 pima-rise pima-rise-1">تم إرسال طلب الحجز بنجاح</h3>
-          <p className="text-[11px] font-medium text-[#8A8A70] leading-relaxed mt-2 pima-rise pima-rise-2">
+          <h3 className="text-[19px] font-black text-[var(--ds-brand)] mt-4 pima-rise pima-rise-1">تم إرسال طلب الحجز بنجاح</h3>
+          <p className="text-[11px] font-medium text-[var(--ds-text-2)] leading-relaxed mt-2 pima-rise pima-rise-2">
             تم استلام طلبك وسيتم مراجعته من قبل بيت المؤتمرات.
             <br />سيصلك إشعار فور وجود أي تحديث.
           </p>
@@ -271,7 +271,7 @@ export default function BookingFlow({
           {nextSteps.map((s, i) => (
             <div
               key={s.label}
-              className={`pima-rise flex flex-col items-center text-center gap-2 px-1 ${i > 0 ? 'border-l border-[#EDE7DA]' : ''}`}
+              className={`pima-rise flex flex-col items-center text-center gap-2 px-1 ${i > 0 ? 'border-l border-[var(--ds-border)]' : ''}`}
               style={{ animationDelay: `${1000 + i * 80}ms` }}
             >
               <span className="w-10 h-10 rounded-full bg-[#F6F0E2] flex items-center justify-center">
@@ -289,34 +289,34 @@ export default function BookingFlow({
               <img src={house.images[0]} alt="" referrerPolicy="no-referrer" className="w-[86px] h-[86px] rounded-2xl object-cover shrink-0" />
             )}
             <div className="min-w-0 flex-1 space-y-1.5">
-              <span className="flex items-center gap-1.5 text-[12px] font-black text-[#0A2342]">
+              <span className="flex items-center gap-1.5 text-[12px] font-black text-[var(--ds-brand)]">
                 <Building2 className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
                 <span className="truncate">{house.name}</span>
               </span>
-              <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#4A4A3A]">
+              <span className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--ds-text)]">
                 <CalendarDays className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
                 {shortDate(checkIn)} — {shortDate(checkOut)}
               </span>
-              <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#4A4A3A]">
+              <span className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--ds-text)]">
                 <Users className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
                 {egp(guestsCount)} فرد
               </span>
-              <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#4A4A3A]">
+              <span className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--ds-text)]">
                 <BedDouble className="w-3.5 h-3.5 text-[#C9A24A] shrink-0" />
                 {egp(house.roomsCount)} غرفة
               </span>
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[#EDE7DA]">
-            <span className="text-[11px] font-bold text-[#8A8A70]">رقم الطلب</span>
+          <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[var(--ds-border)]">
+            <span className="text-[11px] font-bold text-[var(--ds-text-2)]">رقم الطلب</span>
             <button
               type="button"
               onClick={() => { tapFeedback(); navigator.clipboard?.writeText(requestId).then(() => setCopiedId(true)); }}
-              className="flex items-center gap-1.5 text-[11px] font-black text-[#0A2342] cursor-pointer hover:text-[#B8944E] transition-colors"
+              className="flex items-center gap-1.5 text-[11px] font-black text-[var(--ds-brand)] cursor-pointer hover:text-[var(--ds-accent-deep)] transition-colors"
             >
               <span dir="ltr">#{requestId}</span>
-              {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#B5AF98]" />}
+              {copiedId ? <Check className="w-3.5 h-3.5 text-[var(--ds-success)]" /> : <Copy className="w-3.5 h-3.5 text-[#B5AF98]" />}
             </button>
           </div>
         </div>
@@ -324,16 +324,16 @@ export default function BookingFlow({
         {/* Where it stands, and how long the wait usually is */}
         <div className={`${CARD} p-3 flex items-stretch gap-3 pima-rise pima-rise-3`}>
           <div className="flex-1 text-center">
-            <span className="block text-[11px] font-bold text-[#8A8A70] mb-1.5">متوسط وقت الرد</span>
-            <span className="flex items-center justify-center gap-1.5 text-[12px] font-black text-[#0A2342]">
+            <span className="block text-[11px] font-bold text-[var(--ds-text-2)] mb-1.5">متوسط وقت الرد</span>
+            <span className="flex items-center justify-center gap-1.5 text-[12px] font-black text-[var(--ds-brand)]">
               <Clock className="w-3.5 h-3.5 text-[#C9A24A]" />
               من يوم إلى {egp(3)} أيام
             </span>
           </div>
-          <span aria-hidden="true" className="w-px bg-[#EDE7DA]" />
+          <span aria-hidden="true" className="w-px bg-[var(--ds-border)]" />
           <div className="flex-1 text-center">
-            <span className="block text-[11px] font-bold text-[#8A8A70] mb-1.5">الحالة الحالية</span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[11px] font-black text-[#B8944E]">
+            <span className="block text-[11px] font-bold text-[var(--ds-text-2)] mb-1.5">الحالة الحالية</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#EBD9B4] bg-[#FDF9EF] px-3 py-1.5 text-[11px] font-black text-[var(--ds-accent-deep)]">
               <span aria-hidden="true" className="pima-status-dot w-1.5 h-1.5 rounded-full bg-[#C9A24A]" />
               قيد المراجعة
             </span>
@@ -343,7 +343,7 @@ export default function BookingFlow({
         <button
           type="button"
           onClick={() => { tapFeedback(); (onTrackBooking ?? onExit)(); }}
-          className="pima-pop-once w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
+          className="pima-pop-once w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[var(--ds-accent-deep)] text-white font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
         >
           <ChevronLeft className="w-4 h-4" />
           متابعة الطلب
@@ -352,17 +352,17 @@ export default function BookingFlow({
         <button
           type="button"
           onClick={() => { tapFeedback(); (onGoHome ?? onExit)(); }}
-          className="w-full flex items-center justify-center gap-2 bg-white border border-[#EDE7DA] hover:border-[#E3CD9F] text-[#4A4A3A] font-black text-[12px] py-3.5 rounded-2xl transition-colors cursor-pointer pima-press"
+          className="w-full flex items-center justify-center gap-2 bg-[var(--ds-surface)] border border-[var(--ds-border)] hover:border-[var(--ds-accent-soft)] text-[var(--ds-text)] font-black text-[12px] py-3.5 rounded-2xl transition-colors cursor-pointer pima-press"
         >
           <Home className="w-4 h-4 text-[#C9A24A]" />
           العودة للرئيسية
         </button>
 
         <div className="pima-rise pima-rise-3 flex items-center gap-3 rounded-[28px] border border-[#EBD9B4] bg-[#FDF9EF] p-3.5">
-          <span className="w-10 h-10 rounded-full bg-white border border-[#EBD9B4] flex items-center justify-center shrink-0">
+          <span className="w-10 h-10 rounded-full bg-[var(--ds-surface)] border border-[#EBD9B4] flex items-center justify-center shrink-0">
             <Bell className="w-[18px] h-[18px] text-[#C9A24A]" />
           </span>
-          <p className="text-[11px] font-medium text-[#4A4A3A] leading-relaxed">
+          <p className="text-[11px] font-medium text-[var(--ds-text)] leading-relaxed">
             يمكنك متابعة حالة طلبك من قائمة «حجوزاتي» في أي وقت.
           </p>
         </div>
@@ -382,18 +382,18 @@ export default function BookingFlow({
     <div id="pima-booking-flow" className="space-y-4 scroll-mt-4">
       {/* This is a screen of its own, not a panel on the place page, so it
           carries its own way back. */}
-      <div className="flex items-center gap-2 pb-2 border-b border-[#EDE7DA]">
+      <div className="flex items-center gap-2 pb-2 border-b border-[var(--ds-border)]">
         <button
           type="button"
           onClick={() => { tapFeedback(); onExit(); }}
           aria-label="رجوع"
-          className="w-9 h-9 rounded-xl border border-[#EDE7DA] bg-white hover:bg-[#F1ECE0] text-[#4A4A3A] flex items-center justify-center transition-colors cursor-pointer pima-press"
+          className="w-9 h-9 rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] hover:bg-[#F1ECE0] text-[var(--ds-text)] flex items-center justify-center transition-colors cursor-pointer pima-press"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
         <div className="min-w-0 leading-tight">
-          <h2 className="text-[12px] font-black text-[#0A2342]">طلب حجز جديد</h2>
-          <p className="text-[11px] text-[#8A8A70] truncate">{house.name}</p>
+          <h2 className="text-[12px] font-black text-[var(--ds-brand)]">طلب حجز جديد</h2>
+          <p className="text-[11px] text-[var(--ds-text-2)] truncate">{house.name}</p>
         </div>
       </div>
 
@@ -415,13 +415,13 @@ export default function BookingFlow({
                 )}
                 <span className="flex flex-col items-center gap-0.5 shrink-0">
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black transition-colors duration-[250ms] ${
-                    done ? 'bg-[#C9A24A] text-[#0A2342]'
-                      : current ? 'bg-[#C9A24A] text-[#0A2342] ring-[3px] ring-[#C9A24A]/15'
+                    done ? 'bg-[#C9A24A] text-[var(--ds-brand)]'
+                      : current ? 'bg-[#C9A24A] text-[var(--ds-brand)] ring-[3px] ring-[#C9A24A]/15'
                       : 'bg-[#F4EFE3] text-[#B5AF98]'
                   }`}>
                     {done ? <Check className="w-3 h-3" strokeWidth={3} /> : egp(i + 1)}
                   </span>
-                  <span className={`text-[11px] font-black leading-none ${current ? 'text-[#B8944E]' : 'text-[#B5AF98]'}`}>{label}</span>
+                  <span className={`text-[11px] font-black leading-none ${current ? 'text-[var(--ds-accent-deep)]' : 'text-[#B5AF98]'}`}>{label}</span>
                 </span>
               </React.Fragment>
             );
@@ -433,8 +433,8 @@ export default function BookingFlow({
       {step === 0 && (
         <div className="space-y-4 pima-rise">
           <div className="px-1 leading-tight">
-            <h3 className="text-[14px] font-black text-[#0A2342]">مراجعة تفاصيل الحجز</h3>
-            <p className="text-[11px] font-medium text-[#8A8A70]">راجع التفاصيل قبل إدخال بياناتك</p>
+            <h3 className="text-[14px] font-black text-[var(--ds-brand)]">مراجعة تفاصيل الحجز</h3>
+            <p className="text-[11px] font-medium text-[var(--ds-text-2)]">راجع التفاصيل قبل إدخال بياناتك</p>
           </div>
 
           {/* House — the badge sits with the name rather than a line below it. */}
@@ -444,13 +444,13 @@ export default function BookingFlow({
             )}
             <div className="min-w-0 flex-1 leading-tight">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[12px] font-black text-[#0A2342]">{house.name}</span>
-                <span className="inline-flex items-center gap-1 text-[11px] font-black text-[#B8944E] bg-[#FDF9EF] border border-[#EBD9B4] rounded-full px-1.5 py-0.5">
+                <span className="text-[12px] font-black text-[var(--ds-brand)]">{house.name}</span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-black text-[var(--ds-accent-deep)] bg-[#FDF9EF] border border-[#EBD9B4] rounded-full px-1.5 py-0.5">
                   <ShieldCheck className="w-2.5 h-2.5" />
                   حجز آمن
                 </span>
               </div>
-              <span className="block text-[11px] font-medium text-[#8A8A70] mt-1">{house.governorate}</span>
+              <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-1">{house.governorate}</span>
             </div>
           </div>
 
@@ -474,14 +474,14 @@ export default function BookingFlow({
                     aria-checked={o.on}
                     onClick={() => onSetStayMode?.(o.mode)}
                     className={`rounded-2xl border px-2.5 py-2 text-right transition-colors duration-200 cursor-pointer pima-press ${
-                      o.on ? 'bg-[#FDF9EF] border-[#C9A24A]' : 'bg-white border-[#EDE7DA] hover:border-[#E3CD9F]'
+                      o.on ? 'bg-[#FDF9EF] border-[#C9A24A]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)] hover:border-[var(--ds-accent-soft)]'
                     }`}
                   >
                     <span className="flex items-center gap-1.5">
-                      <o.Icon className={`w-3.5 h-3.5 shrink-0 ${o.on ? 'text-[#B8944E]' : 'text-[#8A8A70]'}`} />
-                      <span className={`text-[11px] font-black truncate ${o.on ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>{o.label}</span>
+                      <o.Icon className={`w-3.5 h-3.5 shrink-0 ${o.on ? 'text-[var(--ds-accent-deep)]' : 'text-[var(--ds-text-2)]'}`} />
+                      <span className={`text-[11px] font-black truncate ${o.on ? 'text-[var(--ds-accent-deep)]' : 'text-[#2D2D24]'}`}>{o.label}</span>
                     </span>
-                    <span className="block text-[11px] font-bold text-[#8A8A70] mt-1">
+                    <span className="block text-[11px] font-bold text-[var(--ds-text-2)] mt-1">
                       {egp(o.rate ?? 0)} ج.م {o.unit} للفرد
                     </span>
                   </button>
@@ -497,7 +497,7 @@ export default function BookingFlow({
               <button
                 type="button"
                 onClick={() => { tapFeedback(); setDatesOpen(true); }}
-                className="text-[11px] font-black text-[#B8944E] border border-[#EBD9B4] rounded-full px-3 py-0.5 hover:bg-[#FDF9EF] transition-colors cursor-pointer pima-press"
+                className="text-[11px] font-black text-[var(--ds-accent-deep)] border border-[#EBD9B4] rounded-full px-3 py-0.5 hover:bg-[#FDF9EF] transition-colors cursor-pointer pima-press"
               >
                 تغيير
               </button>
@@ -505,28 +505,28 @@ export default function BookingFlow({
             {/* A day has one date. Printing «من ٢٢ يوليو إلى ٢٢ يوليو» is
                 arithmetically true and reads as a bug. */}
             {dayUse ? (
-              <div className="flex items-center gap-2 rounded-2xl bg-[#FBF9F4] border border-[#EDE7DA] px-3 py-2">
+              <div className="flex items-center gap-2 rounded-2xl bg-[#FBF9F4] border border-[var(--ds-border)] px-3 py-2">
                 <span className="w-8 h-8 rounded-full bg-[#F6F0E2] border border-[#EBD9B4] flex items-center justify-center shrink-0">
                   <Sun className="w-4 h-4 text-[#C9A24A]" />
                 </span>
                 <div className="flex-1 min-w-0 leading-tight">
-                  <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkIn)}</span>
-                  <span className="block text-[11px] font-bold text-[#8A8A70] mt-0.5">{weekday(checkIn)} · وصول ومغادرة في نفس اليوم</span>
+                  <span className="block text-[11px] font-black text-[var(--ds-brand)] truncate">{shortDate(checkIn)}</span>
+                  <span className="block text-[11px] font-bold text-[var(--ds-text-2)] mt-0.5">{weekday(checkIn)} · وصول ومغادرة في نفس اليوم</span>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 rounded-2xl bg-[#FBF9F4] border border-[#EDE7DA] px-3 py-2">
+              <div className="flex items-center gap-2 rounded-2xl bg-[#FBF9F4] border border-[var(--ds-border)] px-3 py-2">
                 <div className="flex-1 min-w-0 leading-tight">
-                  <span className="block text-[11px] font-bold text-[#8A8A70]">من</span>
-                  <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkIn)}</span>
+                  <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">من</span>
+                  <span className="block text-[11px] font-black text-[var(--ds-brand)] truncate">{shortDate(checkIn)}</span>
                 </div>
-                <div className="shrink-0 text-center px-2 border-x border-[#EDE7DA] leading-tight">
-                  <span className="block text-[12px] font-black text-[#B8944E]">{egp(nights)}</span>
-                  <span className="block text-[11px] font-bold text-[#8A8A70]">{nightsWord(nights)}</span>
+                <div className="shrink-0 text-center px-2 border-x border-[var(--ds-border)] leading-tight">
+                  <span className="block text-[12px] font-black text-[var(--ds-accent-deep)]">{egp(nights)}</span>
+                  <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">{nightsWord(nights)}</span>
                 </div>
                 <div className="flex-1 min-w-0 leading-tight text-left">
-                  <span className="block text-[11px] font-bold text-[#8A8A70]">إلى</span>
-                  <span className="block text-[11px] font-black text-[#0A2342] truncate">{shortDate(checkOut)}</span>
+                  <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">إلى</span>
+                  <span className="block text-[11px] font-black text-[var(--ds-brand)] truncate">{shortDate(checkOut)}</span>
                 </div>
               </div>
             )}
@@ -540,7 +540,7 @@ export default function BookingFlow({
                   <Users className="w-4 h-4 text-[#C9A24A]" />
                   عدد الأفراد
                 </span>
-                <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">الحد الأقصى {egp(maxGuests)} فرد</span>
+                <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">الحد الأقصى {egp(maxGuests)} فرد</span>
               </span>
               <div className="flex items-center gap-3 shrink-0">
                 <button
@@ -548,7 +548,7 @@ export default function BookingFlow({
                   onClick={() => { tapFeedback(); setGuestsCount(Math.max(1, guestsCount - 1)); }}
                   disabled={guestsCount <= 1}
                   aria-label="إنقاص"
-                  className="w-9 h-9 rounded-xl border border-[#EDE7DA] bg-white text-[#4A4A3A] flex items-center justify-center disabled:opacity-40 hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press"
+                  className="w-9 h-9 rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] text-[var(--ds-text)] flex items-center justify-center disabled:opacity-40 hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
@@ -576,14 +576,14 @@ export default function BookingFlow({
                     setGuestsDraft(null);
                   }}
                   onFocus={(e) => e.currentTarget.select()}
-                  className="w-[56px] bg-transparent text-[22px] font-black text-[#0A2342] text-center [font-variant-numeric:tabular-nums] border-b-2 border-transparent focus:border-[#C9A24A] focus:outline-none transition-colors rounded-none"
+                  className="w-[56px] bg-transparent text-[22px] font-black text-[var(--ds-brand)] text-center [font-variant-numeric:tabular-nums] border-b-2 border-transparent focus:border-[#C9A24A] focus:outline-none transition-colors rounded-none"
                 />
                 <button
                   type="button"
                   onClick={() => { tapFeedback(); setGuestsCount(Math.min(maxGuests, guestsCount + 1)); }}
                   disabled={guestsCount >= maxGuests}
                   aria-label="زيادة"
-                  className="w-9 h-9 rounded-xl border border-[#EDE7DA] bg-white text-[#4A4A3A] flex items-center justify-center disabled:opacity-40 hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press"
+                  className="w-9 h-9 rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] text-[var(--ds-text)] flex items-center justify-center disabled:opacity-40 hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -597,16 +597,16 @@ export default function BookingFlow({
           <button
             type="button"
             onClick={() => { tapFeedback(); setGroupOpen(true); }}
-            className={`${CARD} w-full p-3 flex items-center gap-3 text-right cursor-pointer hover:border-[#E3CD9F] transition-colors pima-press`}
+            className={`${CARD} w-full p-3 flex items-center gap-3 text-right cursor-pointer hover:border-[var(--ds-accent-soft)] transition-colors pima-press`}
           >
             <span className="w-9 h-9 rounded-full bg-[#F6F0E2] border border-[#EBD9B4] flex items-center justify-center shrink-0">
               <GroupIcon className="w-4 h-4 text-[#C9A24A]" />
             </span>
             <span className="min-w-0 flex-1 leading-tight">
-              <span className="block text-[11px] font-bold text-[#8A8A70]">نوع الحجز</span>
-              <span className="block text-[12px] font-black text-[#0A2342] mt-0.5">{group.label}</span>
+              <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">نوع الحجز</span>
+              <span className="block text-[12px] font-black text-[var(--ds-brand)] mt-0.5">{group.label}</span>
             </span>
-            <span className="flex items-center gap-1 text-[11px] font-black text-[#B8944E] shrink-0">
+            <span className="flex items-center gap-1 text-[11px] font-black text-[var(--ds-accent-deep)] shrink-0">
               تغيير
               <ChevronLeft className="w-3.5 h-3.5" />
             </span>
@@ -623,7 +623,7 @@ export default function BookingFlow({
                   </span>
                   <span className="min-w-0 leading-tight">
                     <span className="block text-[12px] font-black text-[#2D2D24]">الوجبات مشمولة في السعر</span>
-                    <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">
+                    <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">
                       ٣ وجبات يوميًا داخل قيمة الإقامة — لا يُضاف شيء على الإجمالي.
                     </span>
                   </span>
@@ -637,7 +637,7 @@ export default function BookingFlow({
                     <span className="block text-[12px] font-black text-[#2D2D24]">الوجبات غير مشمولة</span>
                     {/* Reported, not multiplied: how many meals a group eats in
                         a day is theirs to say, not ours to assume. */}
-                    <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">
+                    <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">
                       سعر الوجبة {egp(mealPlan.perMealPrice ?? 0)} ج.م للفرد — تُتفق تفاصيلها مع إدارة المكان.
                     </span>
                   </span>
@@ -649,19 +649,19 @@ export default function BookingFlow({
                   aria-checked={Boolean(withMeals)}
                   onClick={() => onSetWithMeals?.(!withMeals)}
                   className={`w-full flex items-center gap-3 rounded-2xl border px-3 py-2.5 text-right transition-colors duration-200 cursor-pointer pima-press ${
-                    withMeals ? 'bg-[#FDF9EF] border-[#C9A24A]' : 'bg-white border-[#EDE7DA] hover:border-[#E3CD9F]'
+                    withMeals ? 'bg-[#FDF9EF] border-[#C9A24A]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)] hover:border-[var(--ds-accent-soft)]'
                   }`}
                 >
                   <span className={`w-9 h-9 rounded-full border flex items-center justify-center shrink-0 ${
-                    withMeals ? 'bg-white border-[#EBD9B4]' : 'bg-[#F6F0E2] border-[#EDE7DA]'
+                    withMeals ? 'bg-[var(--ds-surface)] border-[#EBD9B4]' : 'bg-[#F6F0E2] border-[var(--ds-border)]'
                   }`}>
-                    <Utensils className={`w-4 h-4 ${withMeals ? 'text-[#B8944E]' : 'text-[#8A8A70]'}`} />
+                    <Utensils className={`w-4 h-4 ${withMeals ? 'text-[var(--ds-accent-deep)]' : 'text-[var(--ds-text-2)]'}`} />
                   </span>
                   <span className="min-w-0 flex-1 leading-tight">
-                    <span className={`block text-[12px] font-black ${withMeals ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>
+                    <span className={`block text-[12px] font-black ${withMeals ? 'text-[var(--ds-accent-deep)]' : 'text-[#2D2D24]'}`}>
                       أضف الإعاشة الكاملة
                     </span>
-                    <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">
+                    <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">
                       ٣ وجبات يوميًا · {egp(mealPlan.total)} ج.م لكل المجموعة
                     </span>
                   </span>
@@ -679,15 +679,15 @@ export default function BookingFlow({
           <div className={`${CARD} p-3`}>
             <div className="flex items-start justify-between">
               <div className="leading-tight">
-                <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#8A8A70]">
+                <span className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--ds-text-2)]">
                   <Wallet className="w-4 h-4 text-[#C9A24A]" />
                   التكلفة التقديرية
                 </span>
-                <span className="block text-[22px] font-black text-[#0A2342] mt-0.5 [font-variant-numeric:tabular-nums]">
+                <span className="block text-[22px] font-black text-[var(--ds-brand)] mt-0.5 [font-variant-numeric:tabular-nums]">
                   {egp(shownTotal)} <span className="text-[12px]">ج.م</span>
                 </span>
                 {!isMonthlyHousing && perPerson > 0 && (
-                  <span className="block text-[11px] font-medium text-[#8A8A70]">
+                  <span className="block text-[11px] font-medium text-[var(--ds-text-2)]">
                     {stayLabel} · {egp(guestsCount)} فرد × {egp(perPerson)} ج.م
                   </span>
                 )}
@@ -696,7 +696,7 @@ export default function BookingFlow({
                 <button
                   type="button"
                   onClick={() => { tapFeedback(); setCostOpen(true); }}
-                  className="flex items-center gap-1 text-[11px] font-black text-[#B8944E] hover:underline cursor-pointer shrink-0"
+                  className="flex items-center gap-1 text-[11px] font-black text-[var(--ds-accent-deep)] hover:underline cursor-pointer shrink-0"
                 >
                   عرض التفاصيل
                   <ChevronLeft className="w-3.5 h-3.5" />
@@ -708,14 +708,14 @@ export default function BookingFlow({
           {/* Reward */}
           {pointsToEarn > 0 && (
             <div className="rounded-[28px] border border-[#EBD9B4] bg-[#FDF9EF] p-3 flex items-center gap-3">
-              <span className="w-9 h-9 rounded-full bg-white border border-[#EBD9B4] flex items-center justify-center shrink-0">
+              <span className="w-9 h-9 rounded-full bg-[var(--ds-surface)] border border-[#EBD9B4] flex items-center justify-center shrink-0">
                 <Star className="w-4 h-4 fill-[#E0A82E] text-[#E0A82E] pima-pulse-slow" />
               </span>
               <div className="min-w-0 flex-1 leading-tight">
                 <span className="block text-[11px] font-black text-[#2D2D24]">
-                  ستحصل على <span className="text-[#B8944E]">{egp(shownPoints)} نقطة</span> بيما
+                  ستحصل على <span className="text-[var(--ds-accent-deep)]">{egp(shownPoints)} نقطة</span> بيما
                 </span>
-                <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">تُضاف لحسابك بعد إتمام الإقامة</span>
+                <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">تُضاف لحسابك بعد إتمام الإقامة</span>
               </div>
             </div>
           )}
@@ -725,7 +725,7 @@ export default function BookingFlow({
           {/* Trust — two columns, so five short promises cost one block of
               height instead of five rows of it. */}
           <div className={`${CARD} p-3 space-y-2`}>
-            <span className="flex items-center gap-1.5 text-[11px] font-black text-[#0A2342]">
+            <span className="flex items-center gap-1.5 text-[11px] font-black text-[var(--ds-brand)]">
               <ShieldCheck className="w-4 h-4 text-[#C9A24A]" />
               لماذا تحجز عبر بيما؟
             </span>
@@ -737,8 +737,8 @@ export default function BookingFlow({
                 'حماية كاملة لبياناتك',
                 'دعم بيما طوال رحلة الحجز',
               ].map((line) => (
-                <li key={line} className="flex items-start gap-1.5 text-[11px] font-medium text-[#4A4A3A] leading-snug">
-                  <Check className="w-3 h-3 text-emerald-600 shrink-0 mt-0.5" strokeWidth={3} />
+                <li key={line} className="flex items-start gap-1.5 text-[11px] font-medium text-[var(--ds-text)] leading-snug">
+                  <Check className="w-3 h-3 text-[var(--ds-success)] shrink-0 mt-0.5" strokeWidth={3} />
                   {line}
                 </li>
               ))}
@@ -749,13 +749,13 @@ export default function BookingFlow({
             type="button"
             disabled={!canContinue}
             onClick={() => (currentUser ? go(1) : onRequireLogin?.())}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[var(--ds-accent-deep)] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
           >
             متابعة
             <ChevronLeft className="w-4 h-4" />
           </button>
           {!canContinue && (
-            <p className="text-[11px] font-medium text-[#8A8A70] text-center -mt-2">اختر التواريخ وعدد الأفراد أولًا.</p>
+            <p className="text-[11px] font-medium text-[var(--ds-text-2)] text-center -mt-2">اختر التواريخ وعدد الأفراد أولًا.</p>
           )}
         </div>
       )}
@@ -764,8 +764,8 @@ export default function BookingFlow({
       {step === 1 && (
         <div className="space-y-4 pima-rise">
           <div className="px-1">
-            <h3 className="text-[15px] font-black text-[#0A2342]">بيانات مقدم الطلب</h3>
-            <p className="text-[11px] font-medium text-[#8A8A70] mt-0.5">يرجى إدخال بياناتك للتواصل معك بخصوص الطلب</p>
+            <h3 className="text-[15px] font-black text-[var(--ds-brand)]">بيانات مقدم الطلب</h3>
+            <p className="text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">يرجى إدخال بياناتك للتواصل معك بخصوص الطلب</p>
           </div>
 
           {/* Pinned summary */}
@@ -774,16 +774,16 @@ export default function BookingFlow({
               <img src={house.images[0]} alt="" referrerPolicy="no-referrer" className="w-14 h-14 rounded-2xl object-cover shrink-0" />
             )}
             <div className="min-w-0 flex-1">
-              <span className="block text-[12px] font-black text-[#0A2342] truncate">{house.name}</span>
-              <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">
+              <span className="block text-[12px] font-black text-[var(--ds-brand)] truncate">{house.name}</span>
+              <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">
                 {shortDate(checkIn)} — {shortDate(checkOut)} · {egp(guestsCount)} فرد
               </span>
-              <span className="block text-[12px] font-black text-[#B8944E] mt-0.5">{egp(totalPrice)} ج.م</span>
+              <span className="block text-[12px] font-black text-[var(--ds-accent-deep)] mt-0.5">{egp(totalPrice)} ج.م</span>
             </div>
             <button
               type="button"
               onClick={() => go(0)}
-              className="flex items-center gap-1 text-[11px] font-black text-[#B8944E] border border-[#EBD9B4] rounded-full px-3 py-1.5 hover:bg-[#FDF9EF] transition-colors cursor-pointer shrink-0 pima-press"
+              className="flex items-center gap-1 text-[11px] font-black text-[var(--ds-accent-deep)] border border-[#EBD9B4] rounded-full px-3 py-1.5 hover:bg-[#FDF9EF] transition-colors cursor-pointer shrink-0 pima-press"
             >
               <Pencil className="w-3 h-3" />
               تعديل
@@ -815,12 +815,12 @@ export default function BookingFlow({
             type="button"
             disabled={!detailsValid}
             onClick={() => go(2)}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[12px] py-4 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[var(--ds-accent-deep)] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[12px] py-4 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
           >
             مراجعة الطلب
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <button type="button" onClick={() => go(0)} className="w-full flex items-center justify-center gap-1 text-[11px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] transition-colors cursor-pointer">
+          <button type="button" onClick={() => go(0)} className="w-full flex items-center justify-center gap-1 text-[11px] font-bold text-[var(--ds-text-2)] hover:text-[var(--ds-text)] transition-colors cursor-pointer">
             <ChevronRight className="w-3.5 h-3.5" />
             رجوع
           </button>
@@ -831,17 +831,17 @@ export default function BookingFlow({
       {step === 2 && (
         <div className="space-y-4 pima-rise">
           <div className="px-1">
-            <h3 className="text-[15px] font-black text-[#0A2342]">مراجعة وتأكيد الطلب</h3>
-            <p className="text-[11px] font-medium text-[#8A8A70] mt-0.5">يرجى مراجعة طلبك قبل الإرسال</p>
+            <h3 className="text-[15px] font-black text-[var(--ds-brand)]">مراجعة وتأكيد الطلب</h3>
+            <p className="text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">يرجى مراجعة طلبك قبل الإرسال</p>
           </div>
 
-          <div className={`${CARD} divide-y divide-[#EDE7DA]`}>
+          <div className={`${CARD} divide-y divide-[var(--ds-border)]`}>
             {summaryRows.map((r) => (
               <div key={r.label} className="flex items-center gap-3 p-3.5">
                 <span className="w-9 h-9 rounded-full bg-[#F6F0E2] text-[#C9A24A] flex items-center justify-center shrink-0">{r.icon}</span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[11px] font-bold text-[#8A8A70]">{r.label}</span>
-                  <span className="block text-[12px] font-black text-[#0A2342] mt-0.5">{r.value}</span>
+                  <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">{r.label}</span>
+                  <span className="block text-[12px] font-black text-[var(--ds-brand)] mt-0.5">{r.value}</span>
                   {r.sub && <span className="block text-[11px] font-medium text-[#B5AF98]">{r.sub}</span>}
                 </span>
               </div>
@@ -849,16 +849,16 @@ export default function BookingFlow({
             <div className="flex items-center gap-3 p-3.5">
               <span className="w-9 h-9 rounded-full bg-[#F6F0E2] text-[#C9A24A] flex items-center justify-center shrink-0"><Receipt className="w-4 h-4" /></span>
               <span className="flex-1 min-w-0">
-                <span className="block text-[11px] font-bold text-[#8A8A70]">التكلفة التقديرية</span>
-                <span className="block text-[12px] font-black text-[#B8944E] mt-0.5">{egp(totalPrice)} ج.م</span>
+                <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">التكلفة التقديرية</span>
+                <span className="block text-[12px] font-black text-[var(--ds-accent-deep)] mt-0.5">{egp(totalPrice)} ج.م</span>
               </span>
             </div>
             {pointsToEarn > 0 && (
               <div className="flex items-center gap-3 p-3.5">
                 <span className="w-9 h-9 rounded-full bg-[#F6F0E2] flex items-center justify-center shrink-0"><Star className="w-4 h-4 fill-[#E0A82E] text-[#E0A82E]" /></span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[11px] font-bold text-[#8A8A70]">النقاط التي ستحصل عليها</span>
-                  <span className="block text-[12px] font-black text-[#0A2342] mt-0.5">{egp(pointsToEarn)} نقطة بيما</span>
+                  <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">النقاط التي ستحصل عليها</span>
+                  <span className="block text-[12px] font-black text-[var(--ds-brand)] mt-0.5">{egp(pointsToEarn)} نقطة بيما</span>
                   <span className="block text-[11px] font-medium text-[#B5AF98]">تُضاف بعد إتمام الإقامة</span>
                 </span>
               </div>
@@ -868,8 +868,8 @@ export default function BookingFlow({
           <div className="rounded-[28px] border border-[#EBD9B4] bg-[#FDF9EF] p-4 flex items-start gap-3">
             <Info className="w-4 h-4 text-[#C9A24A] shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <span className="block text-[12px] font-black text-[#B8944E]">لن يتم خصم أي مبلغ الآن</span>
-              <p className="text-[11px] font-medium text-[#4A4A3A] leading-relaxed">
+              <span className="block text-[12px] font-black text-[var(--ds-accent-deep)]">لن يتم خصم أي مبلغ الآن</span>
+              <p className="text-[11px] font-medium text-[var(--ds-text)] leading-relaxed">
                 سيتم مراجعة طلبك أولًا من قبل إدارة المكان. بعد الموافقة ستتلقى إشعارًا لدفع العربون
                 {depositAmount > 0 && <> ({egp(depositAmount)} ج.م)</>}، ويُدفع باقي المبلغ وفقًا للاتفاق مع إدارة المكان.
               </p>
@@ -879,8 +879,8 @@ export default function BookingFlow({
           <div className={`${CARD} p-3.5 flex items-center gap-3`}>
             <span className="w-9 h-9 rounded-full bg-[#F1F5FB] text-[#4A6FA5] flex items-center justify-center shrink-0"><Clock className="w-4 h-4" /></span>
             <span className="flex-1">
-              <span className="block text-[11px] font-bold text-[#8A8A70]">متوسط وقت الرد</span>
-              <span className="block text-[12px] font-black text-[#0A2342] mt-0.5">خلال ٦ ساعات</span>
+              <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">متوسط وقت الرد</span>
+              <span className="block text-[12px] font-black text-[var(--ds-brand)] mt-0.5">خلال ٦ ساعات</span>
             </span>
             <span className="text-[11px] font-medium text-[#B5AF98]">آخر ٣٠ يوم</span>
           </div>
@@ -892,7 +892,7 @@ export default function BookingFlow({
               onChange={(e) => setAgreed(e.target.checked)}
               className="mt-0.5 w-4 h-4 accent-[#C9A24A] shrink-0 cursor-pointer"
             />
-            <span className="text-[11px] font-medium text-[#4A4A3A] leading-relaxed">
+            <span className="text-[11px] font-medium text-[var(--ds-text)] leading-relaxed">
               أوافق على سياسة الحجز والإلغاء والشروط والأحكام
             </span>
           </label>
@@ -901,16 +901,16 @@ export default function BookingFlow({
             type="button"
             disabled={!agreed || submitting}
             onClick={handleSubmit}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[#B8944E] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[12px] py-4 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[#C9A96A] to-[var(--ds-accent-deep)] disabled:from-[#D9D3C4] disabled:to-[#D9D3C4] text-white font-black text-[12px] py-4 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] disabled:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed pima-press"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             {submitting ? 'جارٍ الإرسال...' : 'إرسال طلب الحجز'}
           </button>
-          <p className="flex items-center justify-center gap-1.5 text-[11px] font-medium text-[#8A8A70] -mt-2">
+          <p className="flex items-center justify-center gap-1.5 text-[11px] font-medium text-[var(--ds-text-2)] -mt-2">
             <CreditCard className="w-3.5 h-3.5" />
             لن يتم تحصيل أي مبلغ الآن
           </p>
-          <button type="button" onClick={() => go(1)} className="w-full flex items-center justify-center gap-1 text-[11px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] transition-colors cursor-pointer">
+          <button type="button" onClick={() => go(1)} className="w-full flex items-center justify-center gap-1 text-[11px] font-bold text-[var(--ds-text-2)] hover:text-[var(--ds-text)] transition-colors cursor-pointer">
             <ChevronRight className="w-3.5 h-3.5" />
             رجوع
           </button>
@@ -939,17 +939,17 @@ export default function BookingFlow({
                 aria-checked={on}
                 onClick={() => chooseGroup(g.key)}
                 className={`w-full flex items-center gap-2.5 rounded-2xl border px-3 py-2 text-right transition-colors duration-200 cursor-pointer pima-press ${
-                  on ? 'bg-[#FDF9EF] border-[#C9A24A]' : 'bg-white border-[#EDE7DA] hover:border-[#E3CD9F]'
+                  on ? 'bg-[#FDF9EF] border-[#C9A24A]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)] hover:border-[var(--ds-accent-soft)]'
                 }`}
               >
                 <span className={`w-8 h-8 rounded-full border flex items-center justify-center shrink-0 ${
-                  on ? 'bg-white border-[#EBD9B4]' : 'bg-[#F6F0E2] border-[#EDE7DA]'
+                  on ? 'bg-[var(--ds-surface)] border-[#EBD9B4]' : 'bg-[#F6F0E2] border-[var(--ds-border)]'
                 }`}>
-                  <Glyph className={`w-3.5 h-3.5 ${on ? 'text-[#B8944E]' : 'text-[#8A8A70]'}`} />
+                  <Glyph className={`w-3.5 h-3.5 ${on ? 'text-[var(--ds-accent-deep)]' : 'text-[var(--ds-text-2)]'}`} />
                 </span>
                 <span className="min-w-0 flex-1 leading-tight">
-                  <span className={`block text-[12px] font-black ${on ? 'text-[#B8944E]' : 'text-[#2D2D24]'}`}>{g.label}</span>
-                  {g.hint && <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">{g.hint}</span>}
+                  <span className={`block text-[12px] font-black ${on ? 'text-[var(--ds-accent-deep)]' : 'text-[#2D2D24]'}`}>{g.label}</span>
+                  {g.hint && <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">{g.hint}</span>}
                 </span>
                 <span className={`w-4.5 h-4.5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
                   on ? 'bg-[#C9A24A] border-[#C9A24A]' : 'border-[#DED6C4]'
@@ -975,30 +975,30 @@ export default function BookingFlow({
       >
         <div className="space-y-1.5">
           {breakdown.map((row, i) => (
-            <div key={`${row.label ?? 'base'}-${i}`} className="flex items-center justify-between bg-white border border-[#EDE7DA] rounded-xl px-3 py-2.5">
-              <span className="text-[11px] font-bold text-[#4A4A3A]">
+            <div key={`${row.label ?? 'base'}-${i}`} className="flex items-center justify-between bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl px-3 py-2.5">
+              <span className="text-[11px] font-bold text-[var(--ds-text)]">
                 {row.label ?? 'السعر الأساسي'}
-                <span className="text-[11px] font-medium text-[#8A8A70] mr-1.5">
+                <span className="text-[11px] font-medium text-[var(--ds-text-2)] mr-1.5">
                   {row.nights === 0 ? 'يوم واحد' : `${egp(row.nights)} ${nightsWord(row.nights)}`} × {egp(guestsCount)} فرد × {egp(row.rate)} ج.م
                 </span>
               </span>
-              <span className="text-[11px] font-black text-[#0A2342] shrink-0">{egp(row.rate * row.nights * guestsCount)} ج.م</span>
+              <span className="text-[11px] font-black text-[var(--ds-brand)] shrink-0">{egp(row.rate * row.nights * guestsCount)} ج.م</span>
             </div>
           ))}
-          <div className="flex items-center justify-between pt-2 mt-1 border-t border-[#EDE7DA]">
+          <div className="flex items-center justify-between pt-2 mt-1 border-t border-[var(--ds-border)]">
             <span className="text-[12px] font-black text-[#2D2D24]">الإجمالي التقديري</span>
-            <span className="text-[14px] font-black text-[#B8944E]">{egp(totalPrice)} ج.م</span>
+            <span className="text-[14px] font-black text-[var(--ds-accent-deep)]">{egp(totalPrice)} ج.م</span>
           </div>
           {/* Two different savings, said separately. The line below is worded
               to the guest's points; a house discount is the owner's money, not
               theirs, and calling it «من نقاطك» would be a lie they could check. */}
           {discountPct > 0 && discountSaving > 0 && (
-            <p className="text-[9.5px] font-bold text-[#B8944E] text-left">
+            <p className="text-[9.5px] font-bold text-[var(--ds-accent-deep)] text-left">
               وفّرت {egp(discountSaving)} ج.م — خصم {arabicNumber(Math.round(discountPct * 100))}٪ على البيت
             </p>
           )}
           {totalPrice !== originalTotalPrice && (
-            <p className="text-[11px] font-medium text-emerald-700 text-left">
+            <p className="text-[11px] font-medium text-[var(--ds-success-ink)] text-left">
               بعد خصم {egp(originalTotalPrice - totalPrice)} ج.م من نقاطك
             </p>
           )}
@@ -1012,7 +1012,7 @@ export default function BookingFlow({
             <button
               type="button"
               onClick={onPrintPriestQuote}
-              className="w-full mt-3 flex items-center justify-center gap-1.5 bg-white border border-[#0A2342]/20 hover:bg-[#F7F5EF] text-[#0A2342] text-[12px] font-bold min-h-11 rounded-xl transition-colors cursor-pointer"
+              className="w-full mt-3 flex items-center justify-center gap-1.5 bg-[var(--ds-surface)] border border-[color-mix(in_srgb,var(--ds-brand)_20%,transparent)] hover:bg-[#F7F5EF] text-[var(--ds-brand)] text-[12px] font-bold min-h-11 rounded-xl transition-colors cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               اطبع عرض لأبونا
