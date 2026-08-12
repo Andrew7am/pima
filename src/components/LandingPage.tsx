@@ -13,7 +13,7 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
   return (
     <div className="min-h-screen bg-[var(--ds-bg)] overflow-x-hidden" dir="rtl">
       {/* Hero */}
-      <section className="relative bg-gradient-to-bl from-[#3A6B4C] via-[#4A7C5C] to-[#2D5A3F] text-white overflow-hidden">
+      <section className="relative bg-gradient-to-bl from-[var(--ds-brand)] via-[var(--ds-brand-2)] to-[var(--ds-brand)] text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-white/20 blur-3xl" />
           <div className="absolute bottom-10 left-10 w-56 h-56 rounded-full bg-white/15 blur-2xl" />
@@ -30,14 +30,14 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-8 pt-8 pb-16 sm:pt-12 sm:pb-24 text-center">
           <h1 className="text-3xl sm:text-5xl font-black leading-tight mb-4">
             احجز بيت مؤتمراتك<br />
-            <span className="text-emerald-200">في ثوانٍ</span>
+            <span className="text-[var(--ds-accent)]">في ثوانٍ</span>
           </h1>
           <p className="text-white/80 text-sm sm:text-base max-w-lg mx-auto mb-8 leading-relaxed">
             أكبر منصة لحجز بيوت المؤتمرات والخلوات القبطية في مصر.
             {housesCount > 0 && <> تصفّح <strong className="text-white">{housesCount}+</strong> بيت مؤتمرات بأسعار واضحة وتقييمات حقيقية.</>}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button onClick={onBrowse} className="bg-white text-[#3A6B4C] font-black text-sm px-8 py-3 rounded-2xl hover:bg-emerald-50 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] flex items-center gap-2">
+            <button onClick={onBrowse} className="bg-gradient-to-b from-[#C9A96A] to-[var(--ds-accent-deep)] text-white font-black text-sm px-8 py-3 rounded-2xl hover:brightness-105 transition-all shadow-[0_4px_14px_rgba(184,148,78,0.35)] hover:shadow-xl hover:scale-[1.02] flex items-center gap-2">
               <span>ابدأ التصفح مجاناً</span>
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -51,7 +51,7 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
 
       {/* Features */}
       <section className="max-w-5xl mx-auto px-4 sm:px-8 py-12 sm:py-20">
-        <h2 className="text-xl sm:text-2xl font-black text-[#2D2D1F] text-center mb-10">ليه بيما؟</h2>
+        <h2 className="text-xl sm:text-2xl font-black text-[var(--ds-brand)] text-center mb-10">ليه بيما؟</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { icon: Home, title: 'بيوت مؤتمرات متنوعة', desc: 'خلوات، مصايف، سكن طلبة — كل الخيارات في مكان واحد.' },
@@ -60,10 +60,10 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
             { icon: Shield, title: 'أسعار شفافة', desc: 'شوف السعر الإجمالي قبل ما تحجز. بدون مفاجآت أو رسوم مخفية.' },
           ].map(({ icon: Icon, title, desc }) => (
             <div key={title} className="bg-white border border-[color-mix(in_srgb,var(--ds-border)_50%,transparent)] rounded-2xl p-5 hover:shadow-md transition-shadow">
-              <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center mb-3">
-                <Icon className="w-5 h-5 text-[#3A6B4C]" />
+              <div className="w-10 h-10 bg-[color-mix(in_srgb,var(--ds-accent)_14%,var(--ds-surface))] rounded-xl flex items-center justify-center mb-3">
+                <Icon className="w-5 h-5 text-[var(--ds-accent-deep)]" />
               </div>
-              <h3 className="font-black text-[14px] text-[#2D2D1F] mb-1">{title}</h3>
+              <h3 className="font-black text-[14px] text-[var(--ds-brand)] mb-1">{title}</h3>
               <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">{desc}</p>
             </div>
           ))}
@@ -73,7 +73,7 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
       {/* How It Works */}
       <section className="bg-[var(--ds-raised)] py-12 sm:py-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-8">
-          <h2 className="text-xl sm:text-2xl font-black text-[#2D2D1F] text-center mb-10">إزاي تحجز؟</h2>
+          <h2 className="text-xl sm:text-2xl font-black text-[var(--ds-brand)] text-center mb-10">إزاي تحجز؟</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
               { step: '1', icon: MapPin, title: 'تصفّح البيوت', desc: 'ابحث بالمحافظة أو التاريخ أو نوع البيت واختار اللي يناسبك.' },
@@ -81,10 +81,10 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
               { step: '3', icon: MessageCircle, title: 'أكّد الحجز', desc: 'قدّم طلب الحجز وتواصل مع صاحب البيت مباشرة من داخل التطبيق.' },
             ].map(({ step, icon: Icon, title, desc }) => (
               <div key={step} className="text-center">
-                <div className="w-14 h-14 bg-[#3A6B4C] text-white rounded-2xl flex items-center justify-center mx-auto mb-4 text-xl font-black shadow-lg">
+                <div className="w-14 h-14 bg-[var(--ds-brand)] text-white rounded-2xl flex items-center justify-center mx-auto mb-4 text-xl font-black shadow-lg">
                   {step}
                 </div>
-                <h3 className="font-black text-[14px] text-[#2D2D1F] mb-1">{title}</h3>
+                <h3 className="font-black text-[14px] text-[var(--ds-brand)] mb-1">{title}</h3>
                 <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed max-w-[220px] mx-auto">{desc}</p>
               </div>
             ))}
@@ -94,12 +94,12 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
 
       {/* For Owners */}
       <section className="max-w-5xl mx-auto px-4 sm:px-8 py-12 sm:py-20">
-        <div className="bg-gradient-to-bl from-[#3A6B4C] to-[#2D5A3F] rounded-3xl p-6 sm:p-10 text-white text-center">
+        <div className="bg-gradient-to-bl from-[var(--ds-brand)] to-[var(--ds-brand-2)] rounded-3xl p-6 sm:p-10 text-white text-center">
           <h2 className="text-xl sm:text-2xl font-black mb-3">عندك بيت مؤتمرات؟</h2>
           <p className="text-white/80 text-[12px] sm:text-sm max-w-md mx-auto mb-6 leading-relaxed">
             سجّل بيتك على بيما مجاناً واوصل لآلاف الخدام والكنائس. لوحة تحكم متكاملة لإدارة الحجوزات والغرف والتقييمات.
           </p>
-          <button onClick={onLogin} className="bg-white text-[#3A6B4C] font-black text-sm px-8 py-3 rounded-2xl hover:bg-emerald-50 transition-all shadow-lg">
+          <button onClick={onLogin} className="bg-gradient-to-b from-[#C9A96A] to-[var(--ds-accent-deep)] text-white font-black text-sm px-8 py-3 rounded-2xl hover:brightness-105 transition-all shadow-[0_4px_14px_rgba(184,148,78,0.35)]">
             سجّل بيتك الآن
           </button>
         </div>
@@ -114,13 +114,13 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
       <footer className="border-t border-[color-mix(in_srgb,var(--ds-border)_50%,transparent)] bg-[var(--ds-raised)] py-8">
         <div className="max-w-5xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-[var(--ds-text-2)]">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[#3A6B4C] rounded-lg flex items-center justify-center text-white text-[10px] font-black">ب</div>
-            <span className="font-bold text-[#2D2D1F]">بيما</span>
+            <div className="w-6 h-6 bg-[var(--ds-brand)] rounded-lg flex items-center justify-center text-white text-[10px] font-black">ب</div>
+            <span className="font-bold text-[var(--ds-brand)]">بيما</span>
             <span>— بيوت الخلوات والمصايف</span>
           </div>
           <div className="flex items-center gap-4">
-            <a href="/dalil/" className="hover:text-[#3A6B4C] transition-colors">الدليل والنصائح</a>
-            <a href={supportWhatsAppUrl('')} target="_blank" rel="noreferrer" className="hover:text-[#3A6B4C] transition-colors">تواصل معنا</a>
+            <a href="/dalil/" className="hover:text-[var(--ds-brand)] transition-colors">الدليل والنصائح</a>
+            <a href={supportWhatsAppUrl('')} target="_blank" rel="noreferrer" className="hover:text-[var(--ds-brand)] transition-colors">تواصل معنا</a>
             <span>© {new Date().getFullYear()}</span>
           </div>
         </div>
