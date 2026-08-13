@@ -41,7 +41,14 @@
                                            --ds-text-2 uses in 14 files. #767660
                                            is 4.64:1, same olive, guest theme only:
                                            owner and play bind their own values. */
-  --color-natural-ink-faint: #B5AF98;   /* de-emphasised text */
+  --color-natural-ink-faint: #948D72;   /* de-emphasised. Was #B5AF98 at 2.20:1.
+                                           Of 38 --ds-text-faint uses, ~18 are icons
+                                           and 3 are placeholders — WCAG 1.4.11 puts
+                                           those at 3:1, not 4.5:1. #948D72 is 3.33:1
+                                           and stays clearly lighter than --ds-text-2
+                                           (4.64:1), so the faint tier survives.
+                                           The ~8 genuine small-text uses at 7.5-8.5px
+                                           are a SIZE problem, not a colour one. */
   --color-natural-rule: #D6D6C2;        /* card + divider borders — 392 uses */
   --color-natural-olive: #5A5A40;       /* primary action — 275 uses */
   --color-natural-gold: #C5A059;        /* accent / emphasis — 224 uses */
