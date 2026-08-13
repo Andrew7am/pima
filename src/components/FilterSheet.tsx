@@ -240,7 +240,18 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
               <div className="flex items-center justify-center gap-5">
                 <button aria-label="أقل" onClick={() => { tapFeedback(); patch({ guestCount: Math.max(0, (Number(draft.guestCount) || 0) - 5) || '' }); }}
                   className="w-11 h-11 rounded-full bg-[#F6F0E2] text-[#B8944E] text-xl font-black pima-press">−</button>
-                <span className="text-[34px] font-black text-[#2D2D24] leading-none min-w-[3ch]">{draft.guestCount || '—'}</span>
+                {/* Typeable. The steppers move in fives, so a group of 76 was
+                    sixteen taps away and a group of 3 was unreachable. */}
+                <input
+                  type="number" inputMode="numeric" min={0} max={999}
+                  aria-label="عدد الأفراد"
+                  value={draft.guestCount === '' ? '' : draft.guestCount}
+                  placeholder="—"
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^\d]/g, '');
+                    patch({ guestCount: v === '' ? '' : Math.min(999, parseInt(v, 10)) });
+                  }}
+                  className="w-[4ch] bg-transparent text-center text-[34px] font-black text-[#2D2D24] leading-none border-0 border-b border-transparent focus:border-[#C9A96A] focus:outline-none p-0" />
                 <button aria-label="أكثر" onClick={() => { tapFeedback(); patch({ guestCount: (Number(draft.guestCount) || 0) + 5 }); }}
                   className="w-11 h-11 rounded-full bg-[#F6F0E2] text-[#B8944E] text-xl font-black pima-press">+</button>
               </div>
@@ -307,8 +318,19 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
           {(
             <div className="bg-white border border-[#EDE7DA] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
               <span className="block text-[11px] font-bold text-[#8A8A70]">اختر الحد الأقصى للسعر لليلة الواحدة</span>
-              <span className="block text-[32px] font-black text-[#2D2D24] leading-none mt-2">
-                {draft.maxPrice} <span className="text-[13px] font-bold text-[#8A8A70]">ج.م</span>
+              {/* Typeable too. Dragging a slider to an exact budget is fiddly,
+                  and 700 is its ceiling — a house above that was unaskable. */}
+              <span className="flex items-baseline justify-center gap-1 mt-2">
+                <input
+                  type="number" inputMode="numeric" min={100} max={5000} step={10}
+                  aria-label="أقصى سعر لليلة للفرد"
+                  value={draft.maxPrice}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^\d]/g, '');
+                    patch({ maxPrice: v === '' ? 100 : Math.min(5000, Math.max(0, parseInt(v, 10))) });
+                  }}
+                  className="w-[5ch] bg-transparent text-center text-[32px] font-black text-[#2D2D24] leading-none border-0 border-b border-transparent focus:border-[#C9A96A] focus:outline-none p-0" />
+                <span className="text-[13px] font-bold text-[#8A8A70]">ج.م</span>
               </span>
               <input type="range" min={100} max={700} step={10} value={draft.maxPrice}
                 onChange={(e) => patch({ maxPrice: parseInt(e.target.value) })}
