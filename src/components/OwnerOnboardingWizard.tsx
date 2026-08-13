@@ -3,6 +3,8 @@ import { arabicNumber } from '../lib/arabic';
 import { RetreatHouse, Room, RoomType, RoomFacility, ConferenceHall, OwnerPaymentMethod, User } from '../types';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import PhotoPickerButtons from './PhotoPickerButtons';
+import LocationPicker from './LocationPicker';
+import LocationSearch from './LocationSearch';
 import Logo from './Logo';
 import {
   ChevronRight, ChevronLeft, Check, Plus, Minus, Trash2, MapPin, Home,
@@ -148,6 +150,9 @@ export default function OwnerOnboardingWizard({
   // ── Basic info ──────────────────────────────────────────────
   const [houseName, setHouseName] = useState('');
   const [houseDesc, setHouseDesc] = useState('');
+  // Human-readable label of the place chosen from search, shown back under the
+  // field so the owner can see what the pin actually landed on.
+  const [pickedPlace, setPickedPlace] = useState('');
   const [propertyType, setPropertyType] = useState<'conference' | 'student' | 'staff'>('conference');
   const [houseGov, setHouseGov] = useState(GOVERNORATES[0]);
   const [houseAddress, setHouseAddress] = useState('');
@@ -612,38 +617,6 @@ export default function OwnerOnboardingWizard({
                 <textarea id="ob-house-desc" placeholder="إيه اللي يميّز البيت؟" value={houseDesc} onChange={(e) => setHouseDesc(e.target.value)} rows={3}
                   className={`${FIELD_CLS} resize-none`} />
               </div>
-              <div>
-                <label htmlFor="ob-house-gov" className={LABEL_CLS}>المحافظة</label>
-                <select id="ob-house-gov" value={houseGov} onChange={(e) => setHouseGov(e.target.value)}
-                  className={FIELD_CLS}>
-                  {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="ob-house-address" className={LABEL_CLS}>العنوان التفصيلي</label>
-                <input id="ob-house-address" type="text" placeholder="القرية أو المدينة والشارع" value={houseAddress} onChange={(e) => setHouseAddress(e.target.value)}
-                  className={FIELD_CLS} />
-              </div>
-              <button type="button" onClick={() => {
-                if (!navigator.geolocation) { setGeoError('المتصفح لا يدعم تحديد الموقع.'); return; }
-                setGeoLoading(true); setGeoError('');
-                navigator.geolocation.getCurrentPosition(
-                  (pos) => { setHouseLat(pos.coords.latitude); setHouseLng(pos.coords.longitude); setGeoLoading(false); },
-                  () => { setGeoError('تعذر تحديد الموقع.'); setGeoLoading(false); },
-                );
-              }} className="flex items-center gap-2 text-sm font-semibold px-4 min-h-11 rounded-xl border border-[#5A5A40] text-[#5A5A40] bg-white hover:bg-[#F7F4EB] transition-colors">
-                <MapPin className="w-3.5 h-3.5" />
-                {geoLoading ? 'جاري تحديد الموقع...' : houseLat ? 'تم تحديد الموقع ✓' : 'استخدم موقعي الحالي'}
-              </button>
-              {geoError && <p className="text-[11px] text-red-500">{geoError}</p>}
-
-              {/* The «عدد الغرف» and «عدد الأسرّة» boxes used to sit here.
-                  They were asked before the rooms step and never reconciled
-                  with it — the default range makes twenty rooms while these
-                  defaulted to five and ten — so the house was published
-                  claiming a capacity its own room list contradicted. The
-                  rooms step answers this now, and the review screen shows
-                  the totals it arrived at. */}
               {isMonthly ? (
                 <div>
                   <label htmlFor="ob-monthly-rent" className={LABEL_CLS}>الإيجار الشهري (جنيه)</label>
@@ -676,6 +649,71 @@ export default function OwnerOnboardingWizard({
                   </div>
                 </div>
               )}
+              <div>
+                <label htmlFor="ob-house-gov" className={LABEL_CLS}>المحافظة</label>
+                <select id="ob-house-gov" value={houseGov} onChange={(e) => setHouseGov(e.target.value)}
+                  className={FIELD_CLS}>
+                  {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="ob-house-address" className={LABEL_CLS}>العنوان التفصيلي</label>
+                <input id="ob-house-address" type="text" placeholder="القرية أو المدينة والشارع" value={houseAddress} onChange={(e) => setHouseAddress(e.target.value)}
+                  className={FIELD_CLS} />
+              </div>
+              <button type="button" onClick={() => {
+                if (!navigator.geolocation) { setGeoError('المتصفح لا يدعم تحديد الموقع.'); return; }
+                setGeoLoading(true); setGeoError('');
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => { setHouseLat(pos.coords.latitude); setHouseLng(pos.coords.longitude); setGeoLoading(false); },
+                  () => { setGeoError('تعذر تحديد الموقع.'); setGeoLoading(false); },
+                );
+              }} className="flex items-center gap-2 text-sm font-semibold px-4 min-h-11 rounded-xl border border-[#5A5A40] text-[#5A5A40] bg-white hover:bg-[#F7F4EB] transition-colors">
+                <MapPin className="w-3.5 h-3.5" />
+                {geoLoading ? 'جاري تحديد الموقع...' : houseLat ? 'تم تحديد الموقع ✓' : 'استخدم موقعي الحالي'}
+              </button>
+              {geoError && <p className="text-[11px] text-red-500">{geoError}</p>}
+
+              {/* Search first, map second. «استخدم موقعي الحالي» only helps an
+                  owner standing in the house, and most are not — it drops the
+                  pin on wherever they happen to be, which is worse than an
+                  empty field because it looks answered. Typing the address
+                  works from anywhere; the map is how the pin gets nudged once
+                  the search has landed nearby. */}
+              <LocationSearch
+                chosen={pickedPlace}
+                onPick={(pl) => {
+                  setHouseLat(pl.lat); setHouseLng(pl.lng);
+                  setPickedPlace(pl.label); setGeoError('');
+                  // Fill the address only if it is still empty — never
+                  // overwrite what the owner typed themselves.
+                  if (!houseAddress.trim()) setHouseAddress(pl.label);
+                }}
+              />
+
+              <div>
+                <label className={LABEL_CLS}>موقع البيت على الخريطة</label>
+                <div className="rounded-xl overflow-hidden border border-[#D6D6C2] h-64">
+                  <LocationPicker
+                    lat={houseLat ?? 30.0444}
+                    lng={houseLng ?? 31.2357}
+                    onChange={(la, ln) => { setHouseLat(la); setHouseLng(ln); setGeoError(''); }}
+                  />
+                </div>
+                <p className="text-[11px] text-[#8A8A70] mt-1.5">
+                  {houseLat
+                    ? 'دوس على الخريطة في أي وقت لتعديل مكان الدبوس.'
+                    : 'دوس على مكان البيت على الخريطة — ده اللي هيوصّل الضيوف لعندك.'}
+                </p>
+              </div>
+
+              {/* The «عدد الغرف» and «عدد الأسرّة» boxes used to sit here.
+                  They were asked before the rooms step and never reconciled
+                  with it — the default range makes twenty rooms while these
+                  defaulted to five and ten — so the house was published
+                  claiming a capacity its own room list contradicted. The
+                  rooms step answers this now, and the review screen shows
+                  the totals it arrived at. */}
             </div>
           )}
 

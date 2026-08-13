@@ -64,6 +64,10 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
   const panelRef = useDialogFocus<HTMLDivElement>(open, onClose);
   const [step, setStep] = useState<Step>('menu');
   const [draft, setDraft] = useState<FilterDraft>(value);
+  // The calendar is a whole month grid. As its own wizard step that was the
+  // screen; stacked with four other sections it is the tallest thing on the
+  // page and pushes everything under it out of sight. Closed until asked for.
+  const [calOpen, setCalOpen] = useState(false);
   const [month, setMonth] = useState(() => new Date());
   const [amenityQuery, setAmenityQuery] = useState('');
 
@@ -198,60 +202,22 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-5 space-y-3">
-          {step === 'menu' && (
-            <>
-              {rows.map((r) => (
-                <button key={r.step} onClick={() => go(r.step)}
-                  className="w-full flex items-center gap-3 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-3.5 py-3 text-right shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press">
-                  <span className="shrink-0 w-9 h-9 rounded-xl bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] flex items-center justify-center text-[var(--ds-accent)]">{r.icon}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[12.5px] font-black text-[var(--ds-text-strong)] leading-tight">{r.title}</span>
-                    <span className="block text-[10px] font-bold text-[var(--ds-text-2)] truncate mt-0.5">{r.sub}</span>
-                  </span>
-                  <ChevronLeft aria-hidden="true" className="w-4 h-4 text-[var(--ds-text-faint)] shrink-0" />
-                </button>
-              ))}
-
-              <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-[11.5px] font-black text-[var(--ds-text-strong)]">ملخص بحثك</span>
-                  <button onClick={reset} className="flex items-center gap-1 text-[10px] font-bold text-[var(--ds-text-2)] hover:text-[var(--ds-text)] pima-press">
-                    <RotateCcw className="w-3 h-3" />
-                    إعادة تعيين
-                  </button>
-                </div>
-                {chips.length === 0 ? (
-                  <p className="text-[10px] font-bold text-[var(--ds-text-2)]">لسه مفيش فلاتر — اختر من فوق وهيظهر ملخصك هنا.</p>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {chips.map((c, i) => (
-                      <span key={i} className="flex items-center gap-1 bg-[#FBF9F4] border border-[var(--ds-border)] rounded-full px-2.5 py-1 text-[10px] font-bold text-[var(--ds-text)]">
-                        <span className="text-[var(--ds-accent)]">{c.icon}</span>{c.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {step === 'place' && (
+          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">المكان</h3>
+          {(
             <>
               <div>
-                <span className="block text-[11.5px] font-black text-[var(--ds-text-strong)] mb-2">اختر المحافظة</span>
-                <div className="grid grid-cols-2 gap-2">
-                  {GOVERNORATES.map((g) => {
-                    const on = draft.governorate === g;
-                    return (
-                      <button key={g} onClick={() => { tapFeedback(); patch({ governorate: on ? '' : g }); }}
-                        className={`flex items-center justify-between gap-1 rounded-xl border px-3 py-2.5 text-[11px] font-bold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press ${
-                          on ? 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] border-[#C9A96A] text-[var(--ds-text-strong)]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)] text-[var(--ds-text)]'}`}>
-                        <span className="truncate">{g}</span>
-                        {on && <Check className="w-3.5 h-3.5 text-[var(--ds-accent-deep)] shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
+                <span className="block text-[11.5px] font-black text-[#2D2D24] mb-2">المحافظة</span>
+                {/* A closed select, not twenty-seven chips. As its own wizard
+                    step the grid filled the screen and read fine; stacked with
+                    four other sections it is a wall of buttons that pushes
+                    everything else past the fold before any filtering starts. */}
+                <select
+                  value={draft.governorate}
+                  onChange={(e) => { tapFeedback(); patch({ governorate: e.target.value }); }}
+                  className="w-full bg-white border border-[#EDE7DA] rounded-xl px-3 py-3 text-[12.5px] font-bold text-[#4A4A3A] min-h-11 focus:outline-none focus:border-[#C9A96A]">
+                  <option value="">كل المحافظات</option>
+                  {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+                </select>
               </div>
               <div>
                 <span className="block text-[11.5px] font-black text-[var(--ds-text-strong)] mb-2 mt-1">الموقع بالنسبة للبحر</span>
@@ -271,13 +237,25 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             </>
           )}
 
-          {step === 'guests' && (
-            <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
-              <span className="block text-[11px] font-bold text-[var(--ds-text-2)] mb-3">كم فرد في مجموعتك؟</span>
+          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">عدد الأفراد</h3>
+          {(
+            <div className="bg-white border border-[#EDE7DA] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <span className="block text-[11px] font-bold text-[#8A8A70] mb-3">كم فرد في مجموعتك؟</span>
               <div className="flex items-center justify-center gap-5">
                 <button aria-label="أقل" onClick={() => { tapFeedback(); patch({ guestCount: Math.max(0, (Number(draft.guestCount) || 0) - 5) || '' }); }}
-                  className="w-11 h-11 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] text-[var(--ds-accent-deep)] text-xl font-black pima-press">−</button>
-                <span className="text-[34px] font-black text-[var(--ds-text-strong)] leading-none min-w-[3ch]">{draft.guestCount || '—'}</span>
+                  className="w-11 h-11 rounded-full bg-[#F6F0E2] text-[#B8944E] text-xl font-black pima-press">−</button>
+                {/* Typeable. The steppers move in fives, so a group of 76 was
+                    sixteen taps away and a group of 3 was unreachable. */}
+                <input
+                  type="number" inputMode="numeric" min={0} max={999}
+                  aria-label="عدد الأفراد"
+                  value={draft.guestCount === '' ? '' : draft.guestCount}
+                  placeholder="—"
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^\d]/g, '');
+                    patch({ guestCount: v === '' ? '' : Math.min(999, parseInt(v, 10)) });
+                  }}
+                  className="w-[4ch] bg-transparent text-center text-[34px] font-black text-[#2D2D24] leading-none border-0 border-b border-transparent focus:border-[#C9A96A] focus:outline-none p-0" />
                 <button aria-label="أكثر" onClick={() => { tapFeedback(); patch({ guestCount: (Number(draft.guestCount) || 0) + 5 }); }}
                   className="w-11 h-11 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] text-[var(--ds-accent-deep)] text-xl font-black pima-press">+</button>
               </div>
@@ -292,18 +270,28 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             </div>
           )}
 
-          {step === 'dates' && (
-            <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">التواريخ</h3>
+          {(
+            <div className="bg-white border border-[#EDE7DA] rounded-2xl p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {[{ l: 'تاريخ الوصول', v: draft.checkIn }, { l: 'تاريخ المغادرة', v: draft.checkOut }].map((f) => (
-                  <div key={f.l} className={`rounded-xl border px-3 py-2 text-center ${f.v ? 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] border-[#C9A96A]' : 'bg-[#FBF9F4] border-[var(--ds-border)]'}`}>
-                    <span className="block text-[9px] font-bold text-[var(--ds-text-2)]">{f.l}</span>
-                    <span className="block text-[15px] font-black text-[var(--ds-text-strong)] leading-tight mt-0.5">{f.v ? new Date(`${f.v}T00:00:00`).getDate() : '—'}</span>
-                    <span className="block text-[9px] font-bold text-[var(--ds-text-2)]">{f.v ? `${MONTHS[new Date(`${f.v}T00:00:00`).getMonth()]} ${new Date(`${f.v}T00:00:00`).getFullYear()}` : ''}</span>
-                  </div>
+                  <button type="button" key={f.l} onClick={() => { tapFeedback(); setCalOpen(true); }}
+                    className={`rounded-xl border px-3 py-2 text-center min-h-11 pima-press ${f.v ? 'bg-[#F6F0E2] border-[#C9A96A]' : 'bg-[#FBF9F4] border-[#EDE7DA]'}`}>
+                    <span className="block text-[9px] font-bold text-[#8A8A70]">{f.l}</span>
+                    <span className="block text-[15px] font-black text-[#2D2D24] leading-tight mt-0.5">{f.v ? new Date(`${f.v}T00:00:00`).getDate() : '—'}</span>
+                    <span className="block text-[9px] font-bold text-[#8A8A70]">{f.v ? `${MONTHS[new Date(`${f.v}T00:00:00`).getMonth()]} ${new Date(`${f.v}T00:00:00`).getFullYear()}` : ''}</span>
+                  </button>
                 ))}
               </div>
 
+              {!calOpen && (
+                <button type="button" onClick={() => { tapFeedback(); setCalOpen(true); }}
+                  className="w-full min-h-11 rounded-xl border border-[#EDE7DA] bg-white text-[11.5px] font-bold text-[#4A4A3A] pima-press">
+                  اختر التواريخ من التقويم
+                </button>
+              )}
+
+              {calOpen && (<>
               <div className="flex items-center justify-between mb-2">
                 <button aria-label="الشهر السابق" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="p-1 rounded-full hover:bg-[#F1ECE0] pima-press"><ChevronRight className="w-4 h-4 text-[var(--ds-text)]" /></button>
                 <span className="text-[11.5px] font-black text-[var(--ds-text-strong)]">{MONTHS[month.getMonth()]} {month.getFullYear()}</span>
@@ -330,6 +318,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                   );
                 })}
               </div>
+              </>)}
 
               {n > 0 && (
                 <p className="mt-3 text-center text-[10px] font-bold text-[var(--ds-text-2)] bg-[#FBF9F4] border border-[var(--ds-border)] rounded-xl py-2">
@@ -339,11 +328,23 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             </div>
           )}
 
-          {step === 'budget' && (
-            <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
-              <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">اختر الحد الأقصى للسعر لليلة الواحدة</span>
-              <span className="block text-[32px] font-black text-[var(--ds-text-strong)] leading-none mt-2">
-                {draft.maxPrice} <span className="text-[13px] font-bold text-[var(--ds-text-2)]">ج.م</span>
+          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">الميزانية</h3>
+          {(
+            <div className="bg-white border border-[#EDE7DA] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <span className="block text-[11px] font-bold text-[#8A8A70]">اختر الحد الأقصى للسعر لليلة الواحدة</span>
+              {/* Typeable too. Dragging a slider to an exact budget is fiddly,
+                  and 700 is its ceiling — a house above that was unaskable. */}
+              <span className="flex items-baseline justify-center gap-1 mt-2">
+                <input
+                  type="number" inputMode="numeric" min={100} max={5000} step={10}
+                  aria-label="أقصى سعر لليلة للفرد"
+                  value={draft.maxPrice}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^\d]/g, '');
+                    patch({ maxPrice: v === '' ? 100 : Math.min(5000, Math.max(0, parseInt(v, 10))) });
+                  }}
+                  className="w-[5ch] bg-transparent text-center text-[32px] font-black text-[#2D2D24] leading-none border-0 border-b border-transparent focus:border-[#C9A96A] focus:outline-none p-0" />
+                <span className="text-[13px] font-bold text-[#8A8A70]">ج.م</span>
               </span>
               <input type="range" min={100} max={700} step={10} value={draft.maxPrice}
                 onChange={(e) => patch({ maxPrice: parseInt(e.target.value) })}
@@ -374,7 +375,8 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             </div>
           )}
 
-          {step === 'amenities' && (
+          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">الخدمات والمرافق</h3>
+          {(
             <>
               <div className="relative">
                 <Search className="absolute top-1/2 -translate-y-1/2 right-3 w-4 h-4 text-[var(--ds-text-faint)] pointer-events-none" />
@@ -424,6 +426,23 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             </div>
           )}
         </div>
+
+        {/* «ملخص بحثك». These chips used to sit inside the step menu, which a
+            single page no longer has — so a filter you set at the top scrolled
+            out of sight and there was nothing left saying what you had chosen.
+            Above the button is where it can still be read when you press it. */}
+        {chips.length > 0 && (
+          <div className="shrink-0 px-5 pb-2">
+            <div className="flex items-center gap-1.5 flex-wrap bg-white border border-[#EDE7DA] rounded-2xl px-3 py-2.5">
+              <span className="text-[10px] font-black text-[#8A8A70] ml-1">ملخص بحثك</span>
+              {chips.map((c, i) => (
+                <span key={i} className="flex items-center gap-1 text-[10.5px] font-bold text-[#4A4A3A] bg-[#F6F0E2] rounded-full px-2 py-1">
+                  <span className="text-[#B8944E]">{c.icon}</span>{c.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="shrink-0 px-5 pb-4 pt-1 bg-gradient-to-t from-[#FBF9F4] via-[#FBF9F4] to-transparent">
           {step === 'menu' || step === 'done' ? (

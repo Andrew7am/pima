@@ -20,6 +20,7 @@ import { depositDue } from '../lib/paymentLedger';
 import DepositPayment from './booking/DepositPayment';
 import { downloadBookingIcs } from '../lib/ics';
 import { setAttendeeSharePaid } from '../lib/db';
+import ParticipantsSheet, { ParticipantsCard, tally } from './ParticipantsSheet';
 import { bookingTypeLabel } from '../lib/bookingGroups';
 import { Badge } from './ui';
 import type { BadgeTone } from './ui';
@@ -223,6 +224,10 @@ export default function UserBookings({
   // persisted with its own targeted update, then mirrored into App state via
   // the normal roster channel (whose upsert doesn't carry the flag column).
   const [togglingShareId, setTogglingShareId] = useState<string | null>(null);
+  // Which booking's participants sheet is open, keyed by booking id. The page
+  // lists several bookings and each renders its own sheet, so a boolean would
+  // open all of them at once.
+  const [participantsFor, setParticipantsFor] = useState<string | null>(null);
   const toggleSharePaid = async (booking: Booking, attendee: Attendee) => {
     if (togglingShareId) return;
     const next = !attendee.sharePaid;
@@ -1371,24 +1376,23 @@ export default function UserBookings({
                         <div className="h-full rounded-full bg-[var(--ds-success)] transition-all" style={{ width: `${Math.round((paidCount / roster.length) * 100)}%` }} />
                       </div>
                       <div className="text-[11px] font-bold text-[var(--ds-text-2)]">دفع {paidCount.toLocaleString('ar-EG')} من {roster.length.toLocaleString('ar-EG')} — محصَّل {collected.toLocaleString('ar-EG')} ج.م</div>
-                      <div className="max-h-44 overflow-y-auto space-y-1 pr-0.5">
-                        {roster.map((a) => (
-                          <button
-                            key={a.id}
-                            type="button"
-                            onClick={() => toggleSharePaid(booking, a)}
-                            disabled={togglingShareId === a.id}
-                            className={`w-full flex items-center justify-between gap-2 rounded-xl border px-2.5 min-h-11 text-right transition-all cursor-pointer disabled:opacity-50 ${
-                              a.sharePaid ? 'bg-[color-mix(in_srgb,var(--ds-success)_8%,var(--ds-surface))] border-[color-mix(in_srgb,var(--ds-success)_30%,var(--ds-surface))]' : 'bg-white border-[var(--ds-border)] hover:bg-[var(--ds-bg)]'
-                            }`}
-                          >
-                            <span className={`text-[11px] font-bold truncate ${a.sharePaid ? 'text-[var(--ds-success-deep)]' : 'text-[var(--ds-text)]'}`}>{a.name || 'بدون اسم'}</span>
-                            <span className={`shrink-0 flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-full ${a.sharePaid ? 'bg-[var(--ds-success)] text-white' : 'bg-[var(--ds-raised)] text-[var(--ds-text-2)]'}`}>
-                              {a.sharePaid ? <><Check className="w-3 h-3" /> دفع</> : 'لسه'}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
+                      {/* The roster used to sit here as a scrolling list. At
+                          seventy-six people it pushed «توزيع الغرف» and
+                          «برنامج الخلوة» past where anyone scrolled. The counts
+                          stay; the names move into a sheet, and tapping one
+                          still toggles their share exactly as it did. */}
+                      <ParticipantsCard
+                        t={tally(roster, booking.guestsCount)}
+                        onOpen={() => setParticipantsFor(booking.id)}
+                      />
+                      <ParticipantsSheet
+                        open={participantsFor === booking.id}
+                        onClose={() => setParticipantsFor(null)}
+                        houseName={booking.houseName}
+                        attendees={roster}
+                        seats={booking.guestsCount}
+                        onSelect={(a) => toggleSharePaid(booking, a)}
+                      />
                     </div>
                   );
                 })()}

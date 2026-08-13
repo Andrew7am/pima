@@ -490,7 +490,11 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
             <img
               src="/pima-hero.png"
               alt="بيما - بيوت المؤتمرات المسيحية"
-              className="w-full h-64 object-cover object-center block"
+              // contain, not cover. A fixed 16rem box with object-cover cropped
+              // the artwork to a band — on a phone the top and bottom of it
+              // simply were not there. Letterboxing onto the cream the card
+              // already uses shows the whole image and reads as deliberate.
+              className="w-full h-64 object-contain object-center block bg-[#FDFBF7]"
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
             />
             {/* Convex wave — white content bulges up into the image */}

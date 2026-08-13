@@ -113,26 +113,53 @@ describe('FilterSheet — the result count drives the CTA', () => {
   });
 });
 
-describe('FilterSheet — reset', () => {
-  it('offers «إعادة تعيين» on the menu', () => {
-    mount({ value: filled });
-    expect(screen.getByText('إعادة تعيين')).toBeInTheDocument();
+/**
+ * The six-sheet flow became one page (origin/main: «The search filters become
+ * one page instead of six»), so the tests below describe the page that exists
+ * now, not the menu that used to.
+ *
+ * The whole-sheet «إعادة تعيين» control went with the redesign — origin/main's
+ * own FilterSheet contains no such string. Its `reset()` handler survives in
+ * the file but nothing references it. That is recorded in the merge commit as a
+ * finding for the product owner; restoring a control the redesign deliberately
+ * dropped is not a decision this test file should make, so the three tests that
+ * drove it are replaced by tests for the controls that are actually there.
+ */
+describe('FilterSheet — the single page edits one draft', () => {
+  it('groups every filter onto one page rather than a menu of steps', () => {
+    mount({ value: empty });
+    for (const heading of ['المكان', 'عدد الأفراد', 'التواريخ', 'الميزانية', 'الخدمات والمرافق']) {
+      expect(screen.getByText(heading)).toBeInTheDocument();
+    }
   });
 
-  it('clears the draft and tells the parent to recount', () => {
-    const { props } = mount({ value: filled });
-    fireEvent.click(screen.getByText('إعادة تعيين'));
+  it('closes the governorate into a select and reports the choice upward', () => {
+    const { props } = mount({ value: empty });
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'الإسكندرية' } });
     expect(props.onPreview).toHaveBeenCalled();
-    const last = props.onPreview.mock.calls.at(-1)![0];
-    expect(last.governorate).toBe('');
-    expect(last.amenities).toEqual([]);
+    expect(props.onPreview.mock.calls.at(-1)![0].governorate).toBe('الإسكندرية');
   });
 
-  it('applies the cleared draft, not the old one, after a reset', () => {
-    const { props } = mount({ value: filled });
-    fireEvent.click(screen.getByText('إعادة تعيين'));
+  it('carries that choice through to onApply, not just to the preview', () => {
+    const { props } = mount({ value: empty });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'الإسكندرية' } });
     fireEvent.click(cta());
-    expect(props.onApply.mock.calls[0][0].governorate).toBe('');
+    expect(props.onApply).toHaveBeenCalledTimes(1);
+    expect(props.onApply.mock.calls[0][0].governorate).toBe('الإسكندرية');
+  });
+
+  it('shows the chosen governorate as the select’s value, so the state is visible', () => {
+    mount({ value: filled });
+    expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('الإسكندرية');
+  });
+
+  it('clears only the amenities when «مسح الكل» is pressed, leaving the rest alone', () => {
+    const { props } = mount({ value: filled });
+    fireEvent.click(screen.getByText('مسح الكل'));
+    const last = props.onPreview.mock.calls.at(-1)![0];
+    expect(last.amenities).toEqual([]);
+    expect(last.governorate).toBe('الإسكندرية');   // untouched
   });
 });
 

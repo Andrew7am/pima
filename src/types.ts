@@ -319,6 +319,14 @@ export interface Attendee {
   gender: 'male' | 'female';
   groupType: 'youth' | 'family' | 'child' | 'other';
   sharePaid?: boolean; // has this member paid their share to the group leader? (migration 080)
+  // Migration 119. Optional because an attendee added before those columns
+  // existed has neither a phone nor a stated arrival, and the list has to say
+  // «غير محدد» rather than pick one for them.
+  phone?: string;
+  arrivalMethod?: 'with_trip' | 'own_car' | 'independent';
+  /** Three states, not a boolean — unpaid and pending read differently to a servant. */
+  paymentStatus?: 'unpaid' | 'pending' | 'paid';
+  registeredAt?: string;
 }
 
 export interface RoomAllocation {

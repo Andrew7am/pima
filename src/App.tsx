@@ -406,14 +406,27 @@ export default function App() {
       supabase.from('users').select('*').eq('id', userId).single(),
       loadPointsHistory(userId),
     ]);
-    if (data) {
-      const user: User = { ...mapUser(data), pointsHistory };
-      setCurrentUser(user);
-      if (user.role === 'owner') setActiveScreen('owner_panel');
-      else if (user.role === 'admin') setActiveScreen('admin_panel');
-      else setActiveScreen('explore');
-      loadAppData(user.id);
+    // A session outlives its account. Deleting or releasing a user server-side
+    // does not invalidate the JWT already sitting in the browser, so the app
+    // kept booting as that user — profile row either gone, or wearing its
+    // «مستخدم محذوف» tombstone — and asked them to complete their details.
+    // There was no way out from inside it: no logout on that screen, and every
+    // reload landed back on the same place. The only escape was another browser.
+    const released = !!(data as { released_at?: string | null } | null)?.released_at;
+    if (!data || released) {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      setActiveScreen('explore');
+      setIsAuthLoading(false);
+      return;
     }
+
+    const user: User = { ...mapUser(data), pointsHistory };
+    setCurrentUser(user);
+    if (user.role === 'owner') setActiveScreen('owner_panel');
+    else if (user.role === 'admin') setActiveScreen('admin_panel');
+    else setActiveScreen('explore');
+    loadAppData(user.id);
     setIsAuthLoading(false);
   }, [loadAppData]);
 
