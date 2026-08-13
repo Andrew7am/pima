@@ -820,6 +820,22 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
             </div>
           </div>
         ) : (
+          /* UNREACHABLE — kept deliberately, pending a product decision.
+           *
+           * Proven by case analysis over the guards above, not by grep:
+           *   :420  isRegisterMode && !roleChosen        -> AccountTypeScreen
+           *   :434  isRegisterMode && roleChosen && !confirmEmail -> ServantSignupForm
+           *   :478  !isRegisterMode && !isForgotMode     -> the login form
+           * Reaching this branch needs !isForgotMode (so isRegisterMode, from
+           * :478) and !confirmEmail (from :787). For :434 not to have fired,
+           * roleChosen must be false — but then :420 already returned. No state
+           * satisfies all of them, so nothing renders this form.
+           *
+           * It is the older single-page registration UI that ServantSignupForm
+           * replaced for every role. Deleting it is safe; whether to delete or
+           * restore it is a product call, so it stays until that is made. Note
+           * handleRegisterSubmit is NOT dead — ServantSignupForm still uses it.
+           */
           <form onSubmit={handleRegisterSubmit} className="space-y-4">
             <div className="space-y-1">
               <button type="button" onClick={() => { setIsRegisterMode(false); setError(''); }}
