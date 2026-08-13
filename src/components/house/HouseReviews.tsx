@@ -85,14 +85,31 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const count = reviews.length;
-  const overallOf = (r: Review) => r.overall_rating ?? r.rating;
+  /**
+   * A review's headline score, or undefined when it carries none.
+   *
+   * Review.rating is REQUIRED by the type, so an unrated review is impossible
+   * by contract — but the column is the only thing standing between us and a
+   * NaN average, and a row that predates the wizard (or arrives null from the
+   * database) used to render `arabicDecimal(undefined)` and throw, taking the
+   * whole reviews section down with it. So the boundary is defended here
+   * rather than trusted: unrated reviews are EXCLUDED from the aggregates
+   * instead of being counted as zero, because a missing score is not a bad
+   * score and must not drag a house's average down.
+   */
+  const overallOf = (r: Review): number | undefined => r.overall_rating ?? r.rating;
 
   const stats = useMemo(() => {
     if (count === 0) return null;
-    const avg = reviews.reduce((s, r) => s + overallOf(r), 0) / count;
+    const rated = reviews.map(overallOf).filter((n): n is number => typeof n === 'number');
+    // Every review unrated: there is no average to show, so say so rather than
+    // rendering NaN.
+    if (rated.length === 0) return null;
+    const avg = rated.reduce((s, n) => s + n, 0) / rated.length;
     // "Recommends" is derived, not asked: the share of guests who rated the
     // stay 4 or better. Nothing in the record is a recommendation as such.
-    const recommends = Math.round((reviews.filter((r) => overallOf(r) >= 4).length / count) * 100);
+    // Denominator is the RATED count, so unrated rows neither help nor hurt.
+    const recommends = Math.round((rated.filter((n) => n >= 4).length / rated.length) * 100);
     const dim = (pick: (r: Review) => number | undefined) => {
       const vals = reviews.map((r) => pick(r) ?? r.rating).filter((n) => typeof n === 'number');
       return vals.length ? vals.reduce((s, n) => s + n, 0) / vals.length : 0;
@@ -113,8 +130,10 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
   const sorted = useMemo(() => {
     const list = [...reviews];
     switch (sort) {
-      case 'highest': return list.sort((a, b) => overallOf(b) - overallOf(a));
-      case 'lowest':  return list.sort((a, b) => overallOf(a) - overallOf(b));
+      // An unrated review sorts last in both directions — it has no score to
+      // rank, and NaN would leave the whole list in an arbitrary order.
+      case 'highest': return list.sort((a, b) => (overallOf(b) ?? -1) - (overallOf(a) ?? -1));
+      case 'lowest':  return list.sort((a, b) => (overallOf(a) ?? 6) - (overallOf(b) ?? 6));
       case 'newest':  return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       default:        return list;
     }
@@ -287,10 +306,12 @@ export default function HouseReviews({ reviews, children }: HouseReviewsProps) {
                     <span className="block text-[12px] font-black text-[var(--ds-brand)] truncate">{name}</span>
                     <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">{relativeDate(rev.createdAt)}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  {/* An unrated review still shows its comment; it just has no
+                      score to display, rather than rendering NaN or throwing. */}
+                  {typeof overall === 'number' && <div className="flex items-center gap-1.5 shrink-0">
                     <span className="text-[12px] font-black text-[var(--ds-brand)]">{arabicDecimal(overall)}</span>
                     <Stars value={overall} />
-                  </div>
+                  </div>}
                 </div>
 
                 {rev.comment && (

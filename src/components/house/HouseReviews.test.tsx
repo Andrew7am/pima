@@ -114,13 +114,38 @@ describe('HouseReviews — the children slot', () => {
 });
 
 describe('HouseReviews — data the component must survive', () => {
-  it('CRASHES when a review carries neither overall_rating nor rating', () => {
-    // PRODUCTION BUG — NOT FIXED IN PHASE 9.
-    // overallOf() is `r.overall_rating ?? r.rating`, so both missing yields
-    // undefined, and the per-review render then reads through it. Pinned as a
-    // failing-shape test so the migration cannot quietly change the symptom.
-    const bad = { ...review({}), rating: undefined } as unknown as Review;
-    expect(() => render(<HouseReviews reviews={[bad]} />)).toThrow();
+  // This used to be pinned as `.toThrow()` — a documented production crash.
+  // overallOf() is `r.overall_rating ?? r.rating`, so a row carrying neither
+  // yielded undefined and the render read straight through it, taking the whole
+  // reviews section down. Review.rating is REQUIRED by the type, so the state
+  // is impossible by contract, but the contract is the only thing between us
+  // and a null column, and this is the public house page.
+  const unrated = () => ({ ...review({}), rating: undefined }) as unknown as Review;
+
+  it('renders a review that carries neither overall_rating nor rating', () => {
+    expect(() => render(<HouseReviews reviews={[unrated()]} />)).not.toThrow();
+  });
+
+  it('still shows that review’s comment rather than dropping it', () => {
+    render(<HouseReviews reviews={[unrated()]} />);
+    expect(screen.getByText('تعليق')).toBeInTheDocument();
+  });
+
+  it('never prints NaN when every review is unrated', () => {
+    const { container } = render(<HouseReviews reviews={[unrated()]} />);
+    expect(container.textContent).not.toContain('NaN');
+  });
+
+  it('excludes an unrated review from the average instead of scoring it zero', () => {
+    // The important half: a missing score is not a bad score. Two 4-star
+    // reviews plus one unrated must still read as 4, not 2.67.
+    const rated = [review({ id: 'a', rating: 4 }), review({ id: 'b', rating: 4 })];
+    const withHole = render(<HouseReviews reviews={[...rated, unrated()]} />);
+    const withHoleText = withHole.container.textContent;
+    withHole.unmount();
+    const clean = render(<HouseReviews reviews={rated} />);
+    expect(withHoleText).toContain('٤');
+    expect(clean.container.textContent).toContain('٤');
   });
 
   it('survives a review with no comment', () => {
