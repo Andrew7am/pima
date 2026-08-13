@@ -413,6 +413,23 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
           )}
         </div>
 
+        {/* «ملخص بحثك». These chips used to sit inside the step menu, which a
+            single page no longer has — so a filter you set at the top scrolled
+            out of sight and there was nothing left saying what you had chosen.
+            Above the button is where it can still be read when you press it. */}
+        {chips.length > 0 && (
+          <div className="shrink-0 px-5 pb-2">
+            <div className="flex items-center gap-1.5 flex-wrap bg-white border border-[#EDE7DA] rounded-2xl px-3 py-2.5">
+              <span className="text-[10px] font-black text-[#8A8A70] ml-1">ملخص بحثك</span>
+              {chips.map((c, i) => (
+                <span key={i} className="flex items-center gap-1 text-[10.5px] font-bold text-[#4A4A3A] bg-[#F6F0E2] rounded-full px-2 py-1">
+                  <span className="text-[#B8944E]">{c.icon}</span>{c.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="shrink-0 px-5 pb-4 pt-1 bg-gradient-to-t from-[#FBF9F4] via-[#FBF9F4] to-transparent">
           {step === 'menu' || step === 'done' ? (
             <button onClick={() => { tapFeedback(); onApply(draft); }} className={goldCta} disabled={matchCount === 0}
