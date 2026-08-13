@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
 /**
  * Servant signup, in two steps.
@@ -73,30 +73,42 @@ interface Props {
 
 /* ── shared field chrome ─────────────────────────────────────────────────── */
 
-function Label({ children }: { children: React.ReactNode }) {
-  return <label className="block text-[11px] font-bold mb-1" style={{ color: MUTED }}>{children}</label>;
+/**
+ * `htmlFor` is required, not optional. Every field on this form used to render
+ * a visible <label> as a plain sibling of its control, so a screen reader
+ * announced the control with no name at all — and on the date and select
+ * fields there was no placeholder to fall back on either. Clicking the label
+ * also did not focus the field. TextField/SelectField below generate the id
+ * with useId and pass it to both halves, so the association cannot drift.
+ */
+function Label({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) {
+  return <label htmlFor={htmlFor} className="block text-[11px] font-bold mb-1" style={{ color: MUTED }}>{children}</label>;
 }
 
 const fieldClass =
   'w-full bg-white border rounded-xl py-2.5 px-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#C5A059]/40';
 
-function TextField({ label, ...rest }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function TextField({ label, id, ...rest }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+  const auto = useId();
+  const fieldId = id ?? auto;
   return (
     <div>
-      <Label>{label}</Label>
-      <input {...rest} className={fieldClass} style={{ borderColor: LINE, color: INK }} />
+      <Label htmlFor={fieldId}>{label}</Label>
+      <input id={fieldId} {...rest} className={fieldClass} style={{ borderColor: LINE, color: INK }} />
     </div>
   );
 }
 
 function SelectField(
-  { label, options, placeholder, ...rest }:
+  { label, options, placeholder, id, ...rest }:
   { label: string; options: string[]; placeholder: string } & React.SelectHTMLAttributes<HTMLSelectElement>,
 ) {
+  const auto = useId();
+  const fieldId = id ?? auto;
   return (
     <div>
-      <Label>{label}</Label>
-      <select {...rest} className={`${fieldClass} appearance-none`} style={{ borderColor: LINE, color: rest.value ? INK : '#B6B4A2' }}>
+      <Label htmlFor={fieldId}>{label}</Label>
+      <select id={fieldId} {...rest} className={`${fieldClass} appearance-none`} style={{ borderColor: LINE, color: rest.value ? INK : '#B6B4A2' }}>
         <option value="">{placeholder}</option>
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
@@ -105,15 +117,17 @@ function SelectField(
 }
 
 function PasswordField(
-  { label, value, onChange, ...rest }:
+  { label, value, onChange, id, ...rest }:
   { label: string } & React.InputHTMLAttributes<HTMLInputElement>,
 ) {
   const [shown, setShown] = useState(false);
+  const auto = useId();
+  const fieldId = id ?? auto;
   return (
     <div>
-      <Label>{label}</Label>
+      <Label htmlFor={fieldId}>{label}</Label>
       <div className="relative">
-        <input {...rest} type={shown ? 'text' : 'password'} value={value} onChange={onChange}
+        <input id={fieldId} {...rest} type={shown ? 'text' : 'password'} value={value} onChange={onChange}
           className={`${fieldClass} pl-10`} style={{ borderColor: LINE, color: INK }} />
         <button type="button" onClick={() => setShown((s) => !s)}
           aria-label={shown ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
@@ -266,11 +280,11 @@ export default function ServantSignupForm({
               <TextField label="البريد الإلكتروني" type="email" required placeholder="example@church.eg"
                 value={values.email} onChange={set('email')} />
               <div>
-                <Label>رقم الهاتف المحمول</Label>
+                <Label htmlFor="signup-phone">رقم الهاتف المحمول</Label>
                 <div className="flex gap-2">
                   <span className="shrink-0 grid place-items-center px-3 rounded-xl border bg-white text-[13px] font-bold"
                     style={{ borderColor: LINE, color: INK }} dir="ltr">🇪🇬 +20</span>
-                  <input type="tel" required placeholder="01234567890" value={values.phone} onChange={set('phone')}
+                  <input id="signup-phone" type="tel" required placeholder="01234567890" value={values.phone} onChange={set('phone')}
                     className={fieldClass} style={{ borderColor: LINE, color: INK }} />
                 </div>
               </div>

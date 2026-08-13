@@ -198,6 +198,49 @@ describe('AuthScreen — rate limiting', () => {
   });
 });
 
+describe('AuthScreen — the sign-up fields are programmatically labelled', () => {
+  // Every one of these had a visible <label> sitting beside it with no htmlFor
+  // and no id on the control. Sighted users saw a label; screen-reader users
+  // got the placeholder at best, and nothing at all on «تاريخ الميلاد» (a date
+  // input, no placeholder) and «المحافظة» (a select, which cannot have one).
+  // Clicking the label also did not focus the field. getByLabelText only
+  // resolves through a real association, so these fail if it is undone.
+  // Sign-up is two steps: «إنشاء حساب» opens AccountTypeScreen, and only after
+  // a role is chosen does the form itself mount.
+  const openSignUp = () => {
+    const view = render(<AuthScreen />);
+    fireEvent.click(screen.getByText(/إنشاء حساب/).closest('button')!);
+    fireEvent.click(screen.getByText('فرد').closest('button')!);
+    return view;
+  };
+
+  it('associates the field that had no other accessible name at all', () => {
+    // «تاريخ الميلاد» is <input type="date"> — no placeholder is possible, so
+    // before this it was announced as an unnamed date field.
+    openSignUp();
+    expect(screen.getByLabelText(/تاريخ الميلاد/)).toBeInTheDocument();
+  });
+
+  it('associates the rest of step one', () => {
+    openSignUp();
+    for (const label of [/الاسم بالكامل/, /البريد الإلكتروني/, /رقم الهاتف المحمول/, /كلمة المرور/]) {
+      expect(screen.getAllByLabelText(label).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('points each label at a control that exists, with no duplicate ids', () => {
+    const { container } = openSignUp();
+    const seen = new Set<string>();
+    container.querySelectorAll<HTMLLabelElement>('label[for]').forEach((l) => {
+      const id = l.getAttribute('for')!;
+      expect(container.querySelector(`#${CSS.escape(id)}`)).not.toBeNull();
+      expect(seen.has(id)).toBe(false);
+      seen.add(id);
+    });
+    expect(seen.size).toBeGreaterThan(0);
+  });
+});
+
 describe('AuthScreen — the guest escape hatch', () => {
   it('offers a way back to browsing when the parent supplied one', () => {
     const onBackToBrowse = vi.fn();
