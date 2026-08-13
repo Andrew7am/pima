@@ -202,11 +202,11 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-5 space-y-3">
-          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">المكان</h3>
+          <h3 className="text-[13px] font-black text-[var(--ds-text)] pt-2">المكان</h3>
           {(
             <>
               <div>
-                <span className="block text-[11.5px] font-black text-[#2D2D24] mb-2">المحافظة</span>
+                <span className="block text-[11.5px] font-black text-[var(--ds-text-strong)] mb-2">المحافظة</span>
                 {/* A closed select, not twenty-seven chips. As its own wizard
                     step the grid filled the screen and read fine; stacked with
                     four other sections it is a wall of buttons that pushes
@@ -214,7 +214,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                 <select
                   value={draft.governorate}
                   onChange={(e) => { tapFeedback(); patch({ governorate: e.target.value }); }}
-                  className="w-full bg-white border border-[#EDE7DA] rounded-xl px-3 py-3 text-[12.5px] font-bold text-[#4A4A3A] min-h-11 focus:outline-none focus:border-[#C9A96A]">
+                  className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl px-3 py-3 text-[12.5px] font-bold text-[var(--ds-text)] min-h-11 focus:outline-none focus:border-[#C9A96A]">
                   <option value="">كل المحافظات</option>
                   {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
@@ -237,13 +237,13 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             </>
           )}
 
-          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">عدد الأفراد</h3>
+          <h3 className="text-[13px] font-black text-[var(--ds-text)] pt-2">عدد الأفراد</h3>
           {(
-            <div className="bg-white border border-[#EDE7DA] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
-              <span className="block text-[11px] font-bold text-[#8A8A70] mb-3">كم فرد في مجموعتك؟</span>
+            <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <span className="block text-[11px] font-bold text-[var(--ds-text-2)] mb-3">كم فرد في مجموعتك؟</span>
               <div className="flex items-center justify-center gap-5">
                 <button aria-label="أقل" onClick={() => { tapFeedback(); patch({ guestCount: Math.max(0, (Number(draft.guestCount) || 0) - 5) || '' }); }}
-                  className="w-11 h-11 rounded-full bg-[#F6F0E2] text-[#B8944E] text-xl font-black pima-press">−</button>
+                  className="w-11 h-11 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] text-[var(--ds-accent-deep)] text-xl font-black pima-press">−</button>
                 {/* Typeable. The steppers move in fives, so a group of 76 was
                     sixteen taps away and a group of 3 was unreachable. */}
                 <input
@@ -255,7 +255,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                     const v = e.target.value.replace(/[^\d]/g, '');
                     patch({ guestCount: v === '' ? '' : Math.min(999, parseInt(v, 10)) });
                   }}
-                  className="w-[4ch] bg-transparent text-center text-[34px] font-black text-[#2D2D24] leading-none border-0 border-b border-transparent focus:border-[#C9A96A] focus:outline-none p-0" />
+                  className="w-[4ch] bg-transparent text-center text-[34px] font-black text-[var(--ds-text-strong)] leading-none border-0 border-b border-transparent focus:border-[#C9A96A] focus:outline-none p-0" />
                 <button aria-label="أكثر" onClick={() => { tapFeedback(); patch({ guestCount: (Number(draft.guestCount) || 0) + 5 }); }}
                   className="w-11 h-11 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] text-[var(--ds-accent-deep)] text-xl font-black pima-press">+</button>
               </div>
@@ -270,23 +270,23 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             </div>
           )}
 
-          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">التواريخ</h3>
+          <h3 className="text-[13px] font-black text-[var(--ds-text)] pt-2">التواريخ</h3>
           {(
-            <div className="bg-white border border-[#EDE7DA] rounded-2xl p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+            <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {[{ l: 'تاريخ الوصول', v: draft.checkIn }, { l: 'تاريخ المغادرة', v: draft.checkOut }].map((f) => (
                   <button type="button" key={f.l} onClick={() => { tapFeedback(); setCalOpen(true); }}
-                    className={`rounded-xl border px-3 py-2 text-center min-h-11 pima-press ${f.v ? 'bg-[#F6F0E2] border-[#C9A96A]' : 'bg-[#FBF9F4] border-[#EDE7DA]'}`}>
-                    <span className="block text-[9px] font-bold text-[#8A8A70]">{f.l}</span>
-                    <span className="block text-[15px] font-black text-[#2D2D24] leading-tight mt-0.5">{f.v ? new Date(`${f.v}T00:00:00`).getDate() : '—'}</span>
-                    <span className="block text-[9px] font-bold text-[#8A8A70]">{f.v ? `${MONTHS[new Date(`${f.v}T00:00:00`).getMonth()]} ${new Date(`${f.v}T00:00:00`).getFullYear()}` : ''}</span>
+                    className={`rounded-xl border px-3 py-2 text-center min-h-11 pima-press ${f.v ? 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] border-[#C9A96A]' : 'bg-[#FBF9F4] border-[var(--ds-border)]'}`}>
+                    <span className="block text-[9px] font-bold text-[var(--ds-text-2)]">{f.l}</span>
+                    <span className="block text-[15px] font-black text-[var(--ds-text-strong)] leading-tight mt-0.5">{f.v ? new Date(`${f.v}T00:00:00`).getDate() : '—'}</span>
+                    <span className="block text-[9px] font-bold text-[var(--ds-text-2)]">{f.v ? `${MONTHS[new Date(`${f.v}T00:00:00`).getMonth()]} ${new Date(`${f.v}T00:00:00`).getFullYear()}` : ''}</span>
                   </button>
                 ))}
               </div>
 
               {!calOpen && (
                 <button type="button" onClick={() => { tapFeedback(); setCalOpen(true); }}
-                  className="w-full min-h-11 rounded-xl border border-[#EDE7DA] bg-white text-[11.5px] font-bold text-[#4A4A3A] pima-press">
+                  className="w-full min-h-11 rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] text-[11.5px] font-bold text-[var(--ds-text)] pima-press">
                   اختر التواريخ من التقويم
                 </button>
               )}
@@ -328,10 +328,10 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             </div>
           )}
 
-          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">الميزانية</h3>
+          <h3 className="text-[13px] font-black text-[var(--ds-text)] pt-2">الميزانية</h3>
           {(
-            <div className="bg-white border border-[#EDE7DA] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
-              <span className="block text-[11px] font-bold text-[#8A8A70]">اختر الحد الأقصى للسعر لليلة الواحدة</span>
+            <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+              <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">اختر الحد الأقصى للسعر لليلة الواحدة</span>
               {/* Typeable too. Dragging a slider to an exact budget is fiddly,
                   and 700 is its ceiling — a house above that was unaskable. */}
               <span className="flex items-baseline justify-center gap-1 mt-2">
@@ -343,8 +343,8 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                     const v = e.target.value.replace(/[^\d]/g, '');
                     patch({ maxPrice: v === '' ? 100 : Math.min(5000, Math.max(0, parseInt(v, 10))) });
                   }}
-                  className="w-[5ch] bg-transparent text-center text-[32px] font-black text-[#2D2D24] leading-none border-0 border-b border-transparent focus:border-[#C9A96A] focus:outline-none p-0" />
-                <span className="text-[13px] font-bold text-[#8A8A70]">ج.م</span>
+                  className="w-[5ch] bg-transparent text-center text-[32px] font-black text-[var(--ds-text-strong)] leading-none border-0 border-b border-transparent focus:border-[#C9A96A] focus:outline-none p-0" />
+                <span className="text-[13px] font-bold text-[var(--ds-text-2)]">ج.م</span>
               </span>
               <input type="range" min={100} max={700} step={10} value={draft.maxPrice}
                 onChange={(e) => patch({ maxPrice: parseInt(e.target.value) })}
@@ -375,7 +375,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             </div>
           )}
 
-          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">الخدمات والمرافق</h3>
+          <h3 className="text-[13px] font-black text-[var(--ds-text)] pt-2">الخدمات والمرافق</h3>
           {(
             <>
               <div className="relative">
@@ -433,11 +433,11 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             Above the button is where it can still be read when you press it. */}
         {chips.length > 0 && (
           <div className="shrink-0 px-5 pb-2">
-            <div className="flex items-center gap-1.5 flex-wrap bg-white border border-[#EDE7DA] rounded-2xl px-3 py-2.5">
-              <span className="text-[10px] font-black text-[#8A8A70] ml-1">ملخص بحثك</span>
+            <div className="flex items-center gap-1.5 flex-wrap bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-3 py-2.5">
+              <span className="text-[10px] font-black text-[var(--ds-text-2)] ml-1">ملخص بحثك</span>
               {chips.map((c, i) => (
-                <span key={i} className="flex items-center gap-1 text-[10.5px] font-bold text-[#4A4A3A] bg-[#F6F0E2] rounded-full px-2 py-1">
-                  <span className="text-[#B8944E]">{c.icon}</span>{c.label}
+                <span key={i} className="flex items-center gap-1 text-[10.5px] font-bold text-[var(--ds-text)] bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] rounded-full px-2 py-1">
+                  <span className="text-[var(--ds-accent-deep)]">{c.icon}</span>{c.label}
                 </span>
               ))}
             </div>
