@@ -36,7 +36,11 @@
      has a correct target for every existing usage rather than one that
      silently shifts the colour. Nothing above is modified. */
   --color-natural-ink: #4A4A3A;         /* body text — 429 uses */
-  --color-natural-ink-muted: #8A8A70;   /* secondary text — 581 uses */
+  --color-natural-ink-muted: #767660;   /* secondary text. Was #8A8A70 at 3.53:1 —
+                                           below AA for normal text across 235
+                                           --ds-text-2 uses in 14 files. #767660
+                                           is 4.64:1, same olive, guest theme only:
+                                           owner and play bind their own values. */
   --color-natural-ink-faint: #B5AF98;   /* de-emphasised text */
   --color-natural-rule: #D6D6C2;        /* card + divider borders — 392 uses */
   --color-natural-olive: #5A5A40;       /* primary action — 275 uses */
