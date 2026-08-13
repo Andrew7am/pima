@@ -357,7 +357,7 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
       </div>
 
       {/* ── Ways to earn ── */}
-      <div className="space-y-2 pima-rise pima-rise-2">
+      <div className="space-y-2 overflow-x-clip pima-rise pima-rise-2">
         <h3 className="text-[11.5px] font-black text-[var(--ds-brand)] px-1 flex items-center gap-1.5">
           <CoinStack size={18} />
           طرق جمع النقاط
