@@ -228,7 +228,7 @@ export default function HouseHero({
                     // Lighter than the brand gold but still saturated — going
                     // pale drains the colour out of it and it stops reading
                     // as gold at all.
-                    <Star key={i} className={`w-4 h-4 ${i < roundStars ? 'fill-[#F0C560] text-[#F0C560]' : 'text-[color-mix(in_srgb,var(--ds-on-media)_35%,transparent)]'}`} />
+                    <Star key={i} className={`w-4 h-4 ${i < roundStars ? 'fill-[#E0A82E] text-[#E0A82E]' : 'text-[color-mix(in_srgb,var(--ds-on-media)_35%,transparent)]'}`} />
                   ))}
                 </span>
                 <span className="text-[12px] font-bold text-[color-mix(in_srgb,var(--ds-on-media)_85%,transparent)]">({reviewsCount} تقييم)</span>
