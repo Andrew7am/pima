@@ -198,44 +198,8 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
         </div>
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-5 space-y-3">
-          {step === 'menu' && (
-            <>
-              {rows.map((r) => (
-                <button key={r.step} onClick={() => go(r.step)}
-                  className="w-full flex items-center gap-3 bg-white border border-[#EDE7DA] rounded-2xl px-3.5 py-3 text-right shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press">
-                  <span className="shrink-0 w-9 h-9 rounded-xl bg-[#F6F0E2] flex items-center justify-center text-[#C5A059]">{r.icon}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[12.5px] font-black text-[#2D2D24] leading-tight">{r.title}</span>
-                    <span className="block text-[10px] font-bold text-[#8A8A70] truncate mt-0.5">{r.sub}</span>
-                  </span>
-                  <ChevronLeft aria-hidden="true" className="w-4 h-4 text-[#B5AF98] shrink-0" />
-                </button>
-              ))}
-
-              <div className="bg-white border border-[#EDE7DA] rounded-2xl p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-[11.5px] font-black text-[#2D2D24]">ملخص بحثك</span>
-                  <button onClick={reset} className="flex items-center gap-1 text-[10px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] pima-press">
-                    <RotateCcw className="w-3 h-3" />
-                    إعادة تعيين
-                  </button>
-                </div>
-                {chips.length === 0 ? (
-                  <p className="text-[10px] font-bold text-[#8A8A70]">لسه مفيش فلاتر — اختر من فوق وهيظهر ملخصك هنا.</p>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {chips.map((c, i) => (
-                      <span key={i} className="flex items-center gap-1 bg-[#FBF9F4] border border-[#EDE7DA] rounded-full px-2.5 py-1 text-[10px] font-bold text-[#4A4A3A]">
-                        <span className="text-[#C5A059]">{c.icon}</span>{c.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {step === 'place' && (
+          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">المكان</h3>
+          {(
             <>
               <div>
                 <span className="block text-[11.5px] font-black text-[#2D2D24] mb-2">اختر المحافظة</span>
@@ -271,7 +235,8 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             </>
           )}
 
-          {step === 'guests' && (
+          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">عدد الأفراد</h3>
+          {(
             <div className="bg-white border border-[#EDE7DA] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
               <span className="block text-[11px] font-bold text-[#8A8A70] mb-3">كم فرد في مجموعتك؟</span>
               <div className="flex items-center justify-center gap-5">
@@ -292,7 +257,8 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             </div>
           )}
 
-          {step === 'dates' && (
+          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">التواريخ</h3>
+          {(
             <div className="bg-white border border-[#EDE7DA] rounded-2xl p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {[{ l: 'تاريخ الوصول', v: draft.checkIn }, { l: 'تاريخ المغادرة', v: draft.checkOut }].map((f) => (
@@ -339,7 +305,8 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             </div>
           )}
 
-          {step === 'budget' && (
+          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">الميزانية</h3>
+          {(
             <div className="bg-white border border-[#EDE7DA] rounded-2xl p-5 text-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
               <span className="block text-[11px] font-bold text-[#8A8A70]">اختر الحد الأقصى للسعر لليلة الواحدة</span>
               <span className="block text-[32px] font-black text-[#2D2D24] leading-none mt-2">
@@ -374,7 +341,8 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             </div>
           )}
 
-          {step === 'amenities' && (
+          <h3 className="text-[13px] font-black text-[#4A4A3A] pt-2">الخدمات والمرافق</h3>
+          {(
             <>
               <div className="relative">
                 <Search className="absolute top-1/2 -translate-y-1/2 right-3 w-4 h-4 text-[#B5AF98] pointer-events-none" />
