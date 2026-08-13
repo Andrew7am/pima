@@ -64,6 +64,10 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
   const panelRef = useDialogFocus<HTMLDivElement>(open, onClose);
   const [step, setStep] = useState<Step>('menu');
   const [draft, setDraft] = useState<FilterDraft>(value);
+  // The calendar is a whole month grid. As its own wizard step that was the
+  // screen; stacked with four other sections it is the tallest thing on the
+  // page and pushes everything under it out of sight. Closed until asked for.
+  const [calOpen, setCalOpen] = useState(false);
   const [month, setMonth] = useState(() => new Date());
   const [amenityQuery, setAmenityQuery] = useState('');
 
@@ -271,14 +275,23 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
             <div className="bg-white border border-[#EDE7DA] rounded-2xl p-3.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {[{ l: 'تاريخ الوصول', v: draft.checkIn }, { l: 'تاريخ المغادرة', v: draft.checkOut }].map((f) => (
-                  <div key={f.l} className={`rounded-xl border px-3 py-2 text-center ${f.v ? 'bg-[#F6F0E2] border-[#C9A96A]' : 'bg-[#FBF9F4] border-[#EDE7DA]'}`}>
+                  <button type="button" key={f.l} onClick={() => { tapFeedback(); setCalOpen(true); }}
+                    className={`rounded-xl border px-3 py-2 text-center min-h-11 pima-press ${f.v ? 'bg-[#F6F0E2] border-[#C9A96A]' : 'bg-[#FBF9F4] border-[#EDE7DA]'}`}>
                     <span className="block text-[9px] font-bold text-[#8A8A70]">{f.l}</span>
                     <span className="block text-[15px] font-black text-[#2D2D24] leading-tight mt-0.5">{f.v ? new Date(`${f.v}T00:00:00`).getDate() : '—'}</span>
                     <span className="block text-[9px] font-bold text-[#8A8A70]">{f.v ? `${MONTHS[new Date(`${f.v}T00:00:00`).getMonth()]} ${new Date(`${f.v}T00:00:00`).getFullYear()}` : ''}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
 
+              {!calOpen && (
+                <button type="button" onClick={() => { tapFeedback(); setCalOpen(true); }}
+                  className="w-full min-h-11 rounded-xl border border-[#EDE7DA] bg-white text-[11.5px] font-bold text-[#4A4A3A] pima-press">
+                  اختر التواريخ من التقويم
+                </button>
+              )}
+
+              {calOpen && (<>
               <div className="flex items-center justify-between mb-2">
                 <button aria-label="الشهر السابق" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="p-1 rounded-full hover:bg-[#F1ECE0] pima-press"><ChevronRight className="w-4 h-4 text-[#4A4A3A]" /></button>
                 <span className="text-[11.5px] font-black text-[#2D2D24]">{MONTHS[month.getMonth()]} {month.getFullYear()}</span>
@@ -305,6 +318,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                   );
                 })}
               </div>
+              </>)}
 
               {n > 0 && (
                 <p className="mt-3 text-center text-[10px] font-bold text-[#8A8A70] bg-[#FBF9F4] border border-[#EDE7DA] rounded-xl py-2">
