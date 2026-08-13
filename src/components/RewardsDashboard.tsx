@@ -156,7 +156,7 @@ export default function RewardsDashboard({ currentUser, onBack, bookings = [], r
       {/* Header */}
       <div className="flex items-center gap-2 pb-1 border-b border-[var(--ds-border)]">
         <button onClick={onBack} aria-label="رجوع"
-          className="w-10 h-10 rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] hover:bg-[#F1ECE0] text-[var(--ds-text)] transition-colors flex items-center justify-center cursor-pointer pima-press">
+          className="pima-tap w-10 h-10 rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] hover:bg-[#F1ECE0] text-[var(--ds-text)] transition-colors flex items-center justify-center cursor-pointer pima-press">
           <ChevronRight className="w-4 h-4" />
         </button>
         <h2 className="text-sm font-black text-[var(--ds-brand)]">المكافآت</h2>

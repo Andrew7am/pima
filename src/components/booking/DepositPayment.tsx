@@ -166,12 +166,12 @@ export default function DepositPayment({
     <div className="shrink-0 px-4 pt-4 pb-3 flex items-center gap-2">
       {step === 1 ? (
         <button type="button" onClick={() => { tapFeedback(); onClose(); }} aria-label="رجوع"
-          className="w-9 h-9 rounded-xl border border-[#EDE7DA] bg-white flex items-center justify-center text-[#4A4A3A] hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press">
+          className="pima-tap w-9 h-9 rounded-xl border border-[#EDE7DA] bg-white flex items-center justify-center text-[#4A4A3A] hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press">
           <ChevronRight className="w-4 h-4" />
         </button>
       ) : step === 2 ? (
         <button type="button" onClick={() => { tapFeedback(); setStep(1); }} aria-label="رجوع"
-          className="w-9 h-9 rounded-xl border border-[#EDE7DA] bg-white flex items-center justify-center text-[#4A4A3A] hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press">
+          className="pima-tap w-9 h-9 rounded-xl border border-[#EDE7DA] bg-white flex items-center justify-center text-[#4A4A3A] hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press">
           <ChevronRight className="w-4 h-4" />
         </button>
       ) : <span className="w-9" />}
@@ -186,7 +186,7 @@ export default function DepositPayment({
       </div>
 
       <button type="button" onClick={() => { tapFeedback(); onClose(); }} aria-label="إغلاق"
-        className="w-9 h-9 rounded-xl border border-[#EDE7DA] bg-white flex items-center justify-center text-[#4A4A3A] hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press">
+        className="pima-tap w-9 h-9 rounded-xl border border-[#EDE7DA] bg-white flex items-center justify-center text-[#4A4A3A] hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press">
         {step === 3 ? <X className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4 text-[#C9A24A]" />}
       </button>
     </div>

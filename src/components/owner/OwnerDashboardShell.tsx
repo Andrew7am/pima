@@ -1572,7 +1572,7 @@ export default function OwnerDashboardShell({
               <div className="bg-[var(--color-owner-surface)] rounded-3xl border border-[var(--color-owner-border)] p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-[var(--color-owner-text)]">إضافة حجز يدوي / مؤقت</span>
-                  <button aria-label="إغلاق نموذج الحجز اليدوي" type="button" onClick={() => setShowAddBooking(false)} className="text-[var(--color-owner-secondary)] cursor-pointer"><X className="w-4 h-4" /></button>
+                  <button aria-label="إغلاق نموذج الحجز اليدوي" type="button" onClick={() => setShowAddBooking(false)} className="pima-tap text-[var(--color-owner-secondary)] cursor-pointer"><X className="w-4 h-4" /></button>
                 </div>
                 <p className="text-[11px] text-[var(--color-owner-secondary)]">للحجوزات اللي بتوصلك بالتليفون أو الحضور المباشر. الحجز المؤقت بيحجز السعة لحد ما المجموعة تأكد، وتقدر ترفضه في أي وقت لإلغائه.</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">

@@ -166,7 +166,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
           <div aria-hidden="true" className="w-10 h-1 rounded-full bg-[#D9D2C2] mx-auto" />
           <div className="flex items-center justify-between px-5 pt-3 pb-2">
             {isWizard || step === 'done' ? (
-              <button onClick={() => go(step === 'done' ? 'menu' : 'menu')} aria-label="رجوع" className="p-1.5 -mr-1.5 rounded-full hover:bg-[#F1ECE0] pima-press">
+              <button onClick={() => go(step === 'done' ? 'menu' : 'menu')} aria-label="رجوع" className="pima-tap p-1.5 -mr-1.5 rounded-full hover:bg-[#F1ECE0] pima-press">
                 <ChevronRight className="w-5 h-5 text-[var(--ds-text)]" />
               </button>
             ) : <span className="w-8" />}
@@ -179,7 +179,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                 : step === 'amenities' ? 'الخدمات والمرافق'
                 : 'تم ضبط الفلتر'}
             </h2>
-            <button onClick={onClose} aria-label="إغلاق" className="p-1.5 -ml-1.5 rounded-full hover:bg-[#F1ECE0] pima-press">
+            <button onClick={onClose} aria-label="إغلاق" className="pima-tap p-1.5 -ml-1.5 rounded-full hover:bg-[#F1ECE0] pima-press">
               <X className="w-5 h-5 text-[var(--ds-text)]" />
             </button>
           </div>

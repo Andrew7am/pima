@@ -1186,3 +1186,26 @@ body {
   .pima-splash-word { animation: none; opacity: 1; transform: translate(-50%, 0); }
   .pima-splash-out { animation: pima-splash-out 200ms linear both; }
 }
+
+/* Touch-target expansion for icon-only controls.
+ *
+ * Measured at 375px, several icon buttons render 28–40px square: the owner
+ * sheet's close, the deposit screen's back/close, the filter sheet's close,
+ * the rewards back arrow. They are the right SIZE visually — a 44px painted
+ * circle would be a different design — but the hit area is below the 44px
+ * minimum, and the deposit ones sit on a payment screen.
+ *
+ * This grows only the hit area, via a centred pseudo-element. Nothing painted
+ * moves, so the visual design is unchanged; `max()` means a control already
+ * larger than 44px keeps its own size rather than being shrunk.
+ */
+.pima-tap { position: relative; }
+.pima-tap::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+}

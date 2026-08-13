@@ -612,7 +612,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
                 </div>
                 <button aria-label={showPass ? 'إخفاء كلمة السر' : 'إظهار كلمة السر'}
                   type="button" onClick={() => setShowPass((s) => !s)}
-                  className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#BCBC9D] hover:text-[#4A4A3A]"
+                  className="pima-tap absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#BCBC9D] hover:text-[#4A4A3A]"
                 >
                   {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
