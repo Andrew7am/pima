@@ -36,6 +36,10 @@
      has a correct target for every existing usage rather than one that
      silently shifts the colour. Nothing above is modified. */
   --color-natural-ink: #4A4A3A;         /* body text — 429 uses */
+  --color-natural-ink-strong: #2D2D24; /* emphasis above body ink. 111 of its
+                                           112 uses in the tree are text-, so this
+                                           is one role, not a coincidence. 13.88:1
+                                           on white. */
   --color-natural-ink-muted: #767660;   /* secondary text. Was #8A8A70 at 3.53:1 —
                                            below AA for normal text across 235
                                            --ds-text-2 uses in 14 files. #767660
@@ -360,6 +364,7 @@
   --ds-raised: var(--color-natural-raised);
 
   --ds-text: var(--color-natural-ink);
+  --ds-text-strong: var(--color-natural-ink-strong);
   --ds-text-2: var(--color-natural-ink-muted);
   --ds-text-faint: var(--color-natural-ink-faint);
   --ds-border: var(--color-natural-rule);
@@ -420,6 +425,8 @@
   --ds-raised: var(--color-owner-hover);
 
   --ds-text: var(--color-owner-text);
+
+  --ds-text-strong: var(--color-owner-text);
   --ds-text-2: var(--color-owner-secondary);
   --ds-text-faint: var(--color-owner-secondary);
   --ds-border: var(--color-owner-border);
@@ -480,6 +487,8 @@
   --ds-raised: var(--color-owner-hover);
 
   --ds-text: var(--color-owner-text);
+
+  --ds-text-strong: var(--color-owner-text);
   --ds-text-2: var(--color-owner-secondary);
   --ds-text-faint: var(--color-owner-secondary);
   --ds-border: var(--color-owner-border);
@@ -543,6 +552,8 @@
   --ds-raised: var(--color-play-elevated);
 
   --ds-text: var(--color-play-text);
+
+  --ds-text-strong: var(--color-play-text);
   --ds-text-2: var(--color-play-text-muted);
   --ds-text-faint: var(--color-play-border);
   --ds-border: var(--color-play-border);

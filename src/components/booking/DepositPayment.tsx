@@ -238,7 +238,7 @@ export default function DepositPayment({
                     <Gem className="w-[18px] h-[18px] text-[#C9A24A]" />
                   </span>
                   <div className="min-w-0 flex-1 leading-tight">
-                    <span className="block text-[11px] font-black text-[#2D2D24]">
+                    <span className="block text-[11px] font-black text-[var(--ds-text-strong)]">
                       رصيدك: {arabicNumber(currentUser.points ?? 0)} نقطة بيما
                     </span>
                     <span className="block text-[11px] font-medium text-[#8A8A70] mt-0.5">
@@ -360,7 +360,7 @@ export default function DepositPayment({
                     }`}
                   >
                     <UploadCloud className="w-8 h-8 text-[#C9A24A]" />
-                    <span className="text-[11px] font-black text-[#2D2D24]">اسحب وأفلت الصورة هنا</span>
+                    <span className="text-[11px] font-black text-[var(--ds-text-strong)]">اسحب وأفلت الصورة هنا</span>
                     <span className="text-[11px] font-medium text-[#8A8A70]">أو اختر من جهازك</span>
                     <span className="text-[11px] font-medium text-[#B5AF98]">JPG, PNG, PDF · الحد الأقصى ١٠ ميجابايت</span>
                   </button>
@@ -396,7 +396,7 @@ export default function DepositPayment({
                     value={reference}
                     onChange={(e) => setReference(e.target.value)}
                     placeholder="أدخل رقم المرجع إن وجد"
-                    className="flex-1 bg-transparent py-3 text-[12px] font-bold text-[#2D2D24] placeholder:text-[#B5AF98] placeholder:font-medium focus:outline-none"
+                    className="flex-1 bg-transparent py-3 text-[12px] font-bold text-[var(--ds-text-strong)] placeholder:text-[#B5AF98] placeholder:font-medium focus:outline-none"
                   />
                 </div>
               </div>
@@ -460,7 +460,7 @@ export default function DepositPayment({
               ].map((s) => (
                 <div key={s.label} className="flex items-center justify-between gap-2">
                   <s.icon className={`w-4 h-4 shrink-0 ${s.done ? 'text-emerald-600' : 'text-[#B5AF98]'}`} />
-                  <span className={`flex-1 text-[11px] font-bold ${s.done ? 'text-[#2D2D24]' : 'text-[#8A8A70]'}`}>{s.label}</span>
+                  <span className={`flex-1 text-[11px] font-bold ${s.done ? 'text-[var(--ds-text-strong)]' : 'text-[#8A8A70]'}`}>{s.label}</span>
                 </div>
               ))}
             </div>

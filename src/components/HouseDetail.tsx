@@ -995,7 +995,7 @@ export default function HouseDetail({
   const menuPreview = (
     <div className="space-y-1.5">
       {menuFacts.map((f) => (
-        <span key={f} className="flex items-center gap-1.5 text-[11px] font-bold text-[#2D2D24]">
+        <span key={f} className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--ds-text-strong)]">
           <span aria-hidden="true" className="w-1 h-1 rounded-full bg-[var(--ds-accent)] shrink-0" />
           {f}
         </span>
@@ -1020,7 +1020,7 @@ export default function HouseDetail({
       {namedFacilities.map(({ label, Glyph }, i) => (
         <span
           key={label}
-          className="pima-rise shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full border border-[var(--ds-border)] bg-[var(--ds-surface)] px-3 py-1.5 text-[11px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]"
+          className="pima-rise shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 rounded-full border border-[var(--ds-border)] bg-[var(--ds-surface)] px-3 py-1.5 text-[11px] font-bold text-[var(--ds-text-strong)] shadow-[0_1px_4px_rgba(45,45,36,0.05)]"
           style={{ animationDelay: `${240 + i * 80}ms` }}
         >
           <Glyph className="w-3.5 h-3.5 text-[var(--ds-accent)]" />
@@ -1092,7 +1092,7 @@ export default function HouseDetail({
           <span className="block text-[36px] font-black text-[var(--ds-brand)] [font-variant-numeric:tabular-nums]">
             {arabicNumber(cardWeather.currentTemp)}°
           </span>
-          <span className="block text-[11px] font-black text-[#2D2D24] mt-1.5">{house.governorate}</span>
+          <span className="block text-[11px] font-black text-[var(--ds-text-strong)] mt-1.5">{house.governorate}</span>
           <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">{cardWeather.conditionText}</span>
         </span>
       </div>
@@ -1103,7 +1103,7 @@ export default function HouseDetail({
           { label: 'توقعات الأيام القادمة', Glyph: CalendarDays },
           { label: 'نصائح للرحلة', Glyph: Lightbulb },
         ].map(({ label, Glyph }) => (
-          <span key={label} className="flex items-center gap-2 rounded-xl bg-[var(--ds-surface)] border border-[var(--ds-border)] px-3 py-2 text-[11px] font-bold text-[#2D2D24] shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
+          <span key={label} className="flex items-center gap-2 rounded-xl bg-[var(--ds-surface)] border border-[var(--ds-border)] px-3 py-2 text-[11px] font-bold text-[var(--ds-text-strong)] shadow-[0_1px_4px_rgba(45,45,36,0.05)]">
             <Glyph className="w-4 h-4 text-[var(--ds-accent)] shrink-0" />
             {label}
           </span>
@@ -1275,7 +1275,7 @@ export default function HouseDetail({
                       className="w-4 h-4 accent-[var(--ds-accent)] shrink-0 cursor-pointer"
                     />
                     <span className="flex-1 min-w-0">
-                      <span className="block text-[12px] font-black text-[#2D2D24]">استخدم نقاطي في هذا الحجز</span>
+                      <span className="block text-[12px] font-black text-[var(--ds-text-strong)]">استخدم نقاطي في هذا الحجز</span>
                       <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">
                         {usePoints && redemptionDiscount > 0
                           ? `خصم ${redemptionDiscount.toLocaleString('ar-EG')} ج.م من ${maxRedeemablePoints.toLocaleString('ar-EG')} نقطة`
@@ -2441,7 +2441,7 @@ export default function HouseDetail({
                       <span className="text-[var(--ds-text)] font-extrabold">{arabicNumber(totalTripCost)} ج.م</span>
                     </div>
 
-                    <div className="pt-2 border-t border-[var(--ds-border)] flex justify-between font-black text-[12px] text-[#2D2D24]">
+                    <div className="pt-2 border-t border-[var(--ds-border)] flex justify-between font-black text-[12px] text-[var(--ds-text-strong)]">
                       <span>التكلفة الفعلية للفرد الواحد:</span>
                       <span className="text-[var(--ds-primary)] text-[14px] underline decoration-[var(--ds-text-faint)] decoration-2">{arabicNumber(actualCostPerPerson)} ج.م</span>
                     </div>

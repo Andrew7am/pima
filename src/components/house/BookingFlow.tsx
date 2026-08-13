@@ -107,7 +107,7 @@ const nightsWord = (n: number) => (n === 1 ? 'ليلة' : n === 2 ? 'ليلتا�
 function Field({ icon, label, hint, children }: { icon: React.ReactNode; label: string; hint?: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="flex items-center gap-1.5 text-[12px] font-black text-[#2D2D24] mb-1.5">
+      <span className="flex items-center gap-1.5 text-[12px] font-black text-[var(--ds-text-strong)] mb-1.5">
         <span className="text-[#C9A24A]">{icon}</span>
         {label}
       </span>
@@ -117,7 +117,7 @@ function Field({ icon, label, hint, children }: { icon: React.ReactNode; label: 
   );
 }
 
-const INPUT = 'w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-3.5 py-3 text-[12px] font-bold text-[#2D2D24] placeholder:text-[#B5AF98] placeholder:font-medium focus:outline-none focus:border-[#C9A24A] transition-colors';
+const INPUT = 'w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-3.5 py-3 text-[12px] font-bold text-[var(--ds-text-strong)] placeholder:text-[#B5AF98] placeholder:font-medium focus:outline-none focus:border-[#C9A24A] transition-colors';
 
 /**
  * The reservation request, as three screens.
@@ -277,7 +277,7 @@ export default function BookingFlow({
               <span className="w-10 h-10 rounded-full bg-[#F6F0E2] flex items-center justify-center">
                 <s.icon className="w-[18px] h-[18px] text-[#C9A24A]" />
               </span>
-              <span className="text-[11px] font-black text-[#2D2D24] leading-tight">{s.label}</span>
+              <span className="text-[11px] font-black text-[var(--ds-text-strong)] leading-tight">{s.label}</span>
             </div>
           ))}
         </div>
@@ -479,7 +479,7 @@ export default function BookingFlow({
                   >
                     <span className="flex items-center gap-1.5">
                       <o.Icon className={`w-3.5 h-3.5 shrink-0 ${o.on ? 'text-[var(--ds-accent-deep)]' : 'text-[var(--ds-text-2)]'}`} />
-                      <span className={`text-[11px] font-black truncate ${o.on ? 'text-[var(--ds-accent-deep)]' : 'text-[#2D2D24]'}`}>{o.label}</span>
+                      <span className={`text-[11px] font-black truncate ${o.on ? 'text-[var(--ds-accent-deep)]' : 'text-[var(--ds-text-strong)]'}`}>{o.label}</span>
                     </span>
                     <span className="block text-[11px] font-bold text-[var(--ds-text-2)] mt-1">
                       {egp(o.rate ?? 0)} ج.م {o.unit} للفرد
@@ -490,7 +490,7 @@ export default function BookingFlow({
             )}
 
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-[11px] font-black text-[#2D2D24]">
+              <span className="flex items-center gap-1.5 text-[11px] font-black text-[var(--ds-text-strong)]">
                 <CalendarDays className="w-4 h-4 text-[#C9A24A]" />
                 {dayUse ? 'تاريخ اليوم' : 'تاريخ الإقامة'}
               </span>
@@ -536,7 +536,7 @@ export default function BookingFlow({
           <div className={`${CARD} p-3`}>
             <div className="flex items-center justify-between gap-3">
               <span className="leading-tight">
-                <span className="flex items-center gap-1.5 text-[11px] font-black text-[#2D2D24]">
+                <span className="flex items-center gap-1.5 text-[11px] font-black text-[var(--ds-text-strong)]">
                   <Users className="w-4 h-4 text-[#C9A24A]" />
                   عدد الأفراد
                 </span>
@@ -622,7 +622,7 @@ export default function BookingFlow({
                     <Utensils className="w-4 h-4 text-emerald-700" />
                   </span>
                   <span className="min-w-0 leading-tight">
-                    <span className="block text-[12px] font-black text-[#2D2D24]">الوجبات مشمولة في السعر</span>
+                    <span className="block text-[12px] font-black text-[var(--ds-text-strong)]">الوجبات مشمولة في السعر</span>
                     <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">
                       ٣ وجبات يوميًا داخل قيمة الإقامة — لا يُضاف شيء على الإجمالي.
                     </span>
@@ -634,7 +634,7 @@ export default function BookingFlow({
                     <Utensils className="w-4 h-4 text-[#C9A24A]" />
                   </span>
                   <span className="min-w-0 leading-tight">
-                    <span className="block text-[12px] font-black text-[#2D2D24]">الوجبات غير مشمولة</span>
+                    <span className="block text-[12px] font-black text-[var(--ds-text-strong)]">الوجبات غير مشمولة</span>
                     {/* Reported, not multiplied: how many meals a group eats in
                         a day is theirs to say, not ours to assume. */}
                     <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">
@@ -658,7 +658,7 @@ export default function BookingFlow({
                     <Utensils className={`w-4 h-4 ${withMeals ? 'text-[var(--ds-accent-deep)]' : 'text-[var(--ds-text-2)]'}`} />
                   </span>
                   <span className="min-w-0 flex-1 leading-tight">
-                    <span className={`block text-[12px] font-black ${withMeals ? 'text-[var(--ds-accent-deep)]' : 'text-[#2D2D24]'}`}>
+                    <span className={`block text-[12px] font-black ${withMeals ? 'text-[var(--ds-accent-deep)]' : 'text-[var(--ds-text-strong)]'}`}>
                       أضف الإعاشة الكاملة
                     </span>
                     <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">
@@ -712,7 +712,7 @@ export default function BookingFlow({
                 <Star className="w-4 h-4 fill-[#E0A82E] text-[#E0A82E] pima-pulse-slow" />
               </span>
               <div className="min-w-0 flex-1 leading-tight">
-                <span className="block text-[11px] font-black text-[#2D2D24]">
+                <span className="block text-[11px] font-black text-[var(--ds-text-strong)]">
                   ستحصل على <span className="text-[var(--ds-accent-deep)]">{egp(shownPoints)} نقطة</span> بيما
                 </span>
                 <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">تُضاف لحسابك بعد إتمام الإقامة</span>
@@ -948,7 +948,7 @@ export default function BookingFlow({
                   <Glyph className={`w-3.5 h-3.5 ${on ? 'text-[var(--ds-accent-deep)]' : 'text-[var(--ds-text-2)]'}`} />
                 </span>
                 <span className="min-w-0 flex-1 leading-tight">
-                  <span className={`block text-[12px] font-black ${on ? 'text-[var(--ds-accent-deep)]' : 'text-[#2D2D24]'}`}>{g.label}</span>
+                  <span className={`block text-[12px] font-black ${on ? 'text-[var(--ds-accent-deep)]' : 'text-[var(--ds-text-strong)]'}`}>{g.label}</span>
                   {g.hint && <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">{g.hint}</span>}
                 </span>
                 <span className={`w-4.5 h-4.5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
@@ -986,7 +986,7 @@ export default function BookingFlow({
             </div>
           ))}
           <div className="flex items-center justify-between pt-2 mt-1 border-t border-[var(--ds-border)]">
-            <span className="text-[12px] font-black text-[#2D2D24]">الإجمالي التقديري</span>
+            <span className="text-[12px] font-black text-[var(--ds-text-strong)]">الإجمالي التقديري</span>
             <span className="text-[14px] font-black text-[var(--ds-accent-deep)]">{egp(totalPrice)} ج.م</span>
           </div>
           {/* Two different savings, said separately. The line below is worded

@@ -95,7 +95,7 @@ export default function HouseLocationTrust({ house, announcements }: HouseLocati
                 className="flex items-center justify-center gap-1.5 rounded-2xl bg-[var(--ds-surface)] border border-[var(--ds-border)] px-2 py-3 shadow-[0_2px_8px_rgba(45,45,36,0.05)] hover:bg-[var(--ds-surface)] hover:border-[var(--ds-accent-soft)] transition-colors pima-press"
               >
                 {m.mark}
-                <span className="text-[11px] font-bold text-[#2D2D24] truncate" dir="ltr">{m.label}</span>
+                <span className="text-[11px] font-bold text-[var(--ds-text-strong)] truncate" dir="ltr">{m.label}</span>
               </a>
             ))}
           </div>
@@ -121,7 +121,7 @@ export default function HouseLocationTrust({ house, announcements }: HouseLocati
               <span className="w-11 h-11 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] flex items-center justify-center">
                 <g.icon className="w-5 h-5 text-[var(--ds-accent)]" />
               </span>
-              <span className="text-[11px] font-black text-[#2D2D24] leading-tight">{g.title}</span>
+              <span className="text-[11px] font-black text-[var(--ds-text-strong)] leading-tight">{g.title}</span>
               <span className="text-[11px] font-medium text-[var(--ds-text-2)] leading-snug">{g.body}</span>
             </div>
           ))}
