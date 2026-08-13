@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
@@ -14,10 +14,17 @@ import { join } from 'node:path';
  * it is supposed to be checking against the SQL.
  */
 
-const SQL = readFileSync(
-  join(process.cwd(), 'supabase/migrations/105_audit_details_in_arabic.sql'),
-  'utf8',
-);
+/**
+ * Located by SUFFIX, not by version number. The migrations were renumbered to
+ * 0001-0126 to remove six duplicate versions that made `supabase db reset`
+ * impossible, and a hardcoded `105_...` path broke this file. The name after
+ * the version is the stable part.
+ */
+const MIGRATION_SUFFIX = '_audit_details_in_arabic.sql';
+const MIGRATIONS = join(process.cwd(), 'supabase', 'migrations');
+const match = readdirSync(MIGRATIONS).find((f) => f.endsWith(MIGRATION_SUFFIX));
+if (!match) throw new Error(`no migration ending in ${MIGRATION_SUFFIX}`);
+const SQL = readFileSync(join(MIGRATIONS, match), 'utf8');
 
 /** Pull one `WHEN 'kind' THEN CASE value ... END` block out of the helper. */
 function mappedValues(kind: string): string[] {
