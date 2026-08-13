@@ -202,20 +202,18 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
           {(
             <>
               <div>
-                <span className="block text-[11.5px] font-black text-[#2D2D24] mb-2">اختر المحافظة</span>
-                <div className="grid grid-cols-2 gap-2">
-                  {GOVERNORATES.map((g) => {
-                    const on = draft.governorate === g;
-                    return (
-                      <button key={g} onClick={() => { tapFeedback(); patch({ governorate: on ? '' : g }); }}
-                        className={`flex items-center justify-between gap-1 rounded-xl border px-3 py-2.5 text-[11px] font-bold transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press ${
-                          on ? 'bg-[#F6F0E2] border-[#C9A96A] text-[#2D2D24]' : 'bg-white border-[#EDE7DA] text-[#4A4A3A]'}`}>
-                        <span className="truncate">{g}</span>
-                        {on && <Check className="w-3.5 h-3.5 text-[#B8944E] shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
+                <span className="block text-[11.5px] font-black text-[#2D2D24] mb-2">المحافظة</span>
+                {/* A closed select, not twenty-seven chips. As its own wizard
+                    step the grid filled the screen and read fine; stacked with
+                    four other sections it is a wall of buttons that pushes
+                    everything else past the fold before any filtering starts. */}
+                <select
+                  value={draft.governorate}
+                  onChange={(e) => { tapFeedback(); patch({ governorate: e.target.value }); }}
+                  className="w-full bg-white border border-[#EDE7DA] rounded-xl px-3 py-3 text-[12.5px] font-bold text-[#4A4A3A] min-h-11 focus:outline-none focus:border-[#C9A96A]">
+                  <option value="">كل المحافظات</option>
+                  {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+                </select>
               </div>
               <div>
                 <span className="block text-[11.5px] font-black text-[#2D2D24] mb-2 mt-1">الموقع بالنسبة للبحر</span>
