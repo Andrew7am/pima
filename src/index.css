@@ -1209,3 +1209,33 @@ body {
   width: max(100%, 44px);
   height: max(100%, 44px);
 }
+
+/* Entertainment content containers.
+ *
+ * Measured cause of the "half the screen" desktop complaint: the hub's inner
+ * column was `max-w-2xl mx-auto` — a hard 672px cap. At a 1280px window that
+ * rendered 672px of content with 297px of dead space on EACH side, 53% of the
+ * viewport. It was never a breakpoint-coverage problem; it was one class.
+ *
+ * Three tiers, because entertainment screens are not one shape. Widening a 1v1
+ * duel board the way a hub grid wants to be widened would wreck its
+ * composition, so game boards are deliberately NOT on these.
+ *
+ * Targets: ~16px side padding at 375; ~88-94% at 800; 1120-1180px at 1280;
+ * 1280-1360px at 1440. The 1440 tier is an arbitrary variant because Tailwind's
+ * 2xl is 1536 — too late to help a 1440 monitor.
+ */
+.pima-play-wide {   /* hub, catalog — responsive card grids */
+  width: 100%;
+  margin-inline: auto;
+  max-width: 42rem;
+}
+.pima-play-mid {    /* lists, leaderboard, lobby, achievements */
+  width: 100%;
+  margin-inline: auto;
+  max-width: 42rem;
+}
+@media (min-width: 768px)  { .pima-play-wide { max-width: 48rem; } .pima-play-mid { max-width: 48rem; } }
+@media (min-width: 1024px) { .pima-play-wide { max-width: 64rem; } .pima-play-mid { max-width: 56rem; } }
+@media (min-width: 1280px) { .pima-play-wide { max-width: 1160px; } .pima-play-mid { max-width: 1040px; } }
+@media (min-width: 1440px) { .pima-play-wide { max-width: 1320px; } .pima-play-mid { max-width: 1160px; } }

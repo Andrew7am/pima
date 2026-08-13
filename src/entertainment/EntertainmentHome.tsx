@@ -121,7 +121,7 @@ export default function EntertainmentHome({
     };
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
-        <div className="max-w-2xl mx-auto px-4 pt-5 pb-12">
+        <div className="pima-play-wide px-4 pt-5 pb-12">
           <button type="button" onClick={() => setSection('menu')} className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors mb-4">
             <ChevronRight className="w-4 h-4" /><span>رجوع للقائمة</span>
           </button>
@@ -255,7 +255,7 @@ export default function EntertainmentHome({
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className={`w-full max-w-2xl mx-auto pb-24 text-right min-h-screen px-4 pt-6 -mx-4 -my-6 sm:mx-auto sm:my-0 transition-colors duration-500 ${dark ? 'bg-[#081326] text-white' : 'bg-[#FAFAFA] text-slate-900'}`}
+      className={`w-full pima-play-wide pb-24 text-right min-h-screen px-4 pt-6 -mx-4 -my-6 sm:mx-auto sm:my-0 transition-colors duration-500 ${dark ? 'bg-[#081326] text-white' : 'bg-[#FAFAFA] text-slate-900'}`}
       dir="rtl"
     >
       {/* Title + toggles */}
