@@ -1247,20 +1247,81 @@ body {
  * 1280-1360px at 1440. The 1440 tier is an arbitrary variant because Tailwind's
  * 2xl is 1536 — too late to help a 1440 monitor.
  */
-.pima-play-wide {   /* hub, catalog — responsive card grids */
+/* ══ PIMA PAGE CONTAINERS — the app-wide responsive architecture ═══════════
+ *
+ * An audit of the whole app found 163 max-width declarations across 38 distinct
+ * tokens, of which only 9 (5.5%) were responsive. The most common container in
+ * the product was `max-w-md` — 448px, a phone width — used 35 times including
+ * on desktop. Entertainment was the only area with tiers, and it had to invent
+ * them locally. These four generalise that proven work.
+ *
+ * They are SEMANTIC tiers, not four mandatory widths. A screen is put on a tier
+ * because of what kind of screen it is, never to make a number match. A
+ * `max-w-md` on a focused form is correct and should stay; the same class on a
+ * dashboard is the defect.
+ *
+ * Width only — no padding. Screens keep their own px-*, exactly as the
+ * Entertainment tiers already work, so adopting a tier never doubles a gutter.
+ * `margin-inline` centres, which is direction-agnostic and therefore RTL-safe.
+ *
+ *   narrow   forms, authentication, checkout, onboarding, single-task
+ *   content  detail pages, reading — holds a sane text measure
+ *   wide     dashboards, catalogs, multi-column information
+ *   full     tables, maps, presentation; deliberately uncapped
+ */
+
+/* ── narrow: 520–640 ─────────────────────────────────────────────────────── */
+.pima-page-narrow {
+  width: 100%;
+  margin-inline: auto;
+}
+@media (min-width: 640px)  { .pima-page-narrow { max-width: 34rem; } }   /* 544 */
+@media (min-width: 1024px) { .pima-page-narrow { max-width: 40rem; } }   /* 640 */
+
+/* ── content: 720–860, reading measure ───────────────────────────────────── */
+.pima-page-content {
+  width: 100%;
+  margin-inline: auto;
+}
+@media (min-width: 768px)  { .pima-page-content { max-width: 45rem; } }     /* 720 */
+@media (min-width: 1280px) { .pima-page-content { max-width: 53.75rem; } }  /* 860 */
+
+/* ── wide: the Entertainment architecture, generalised ────────────────────
+ *
+ * .pima-play-wide is an ALIAS, not a copy — it shares this selector list, so
+ * the two cannot drift apart by construction. Its measured behaviour (1160 at
+ * 1280, 1320 at 1440) is preserved exactly because these are the same rules. */
+.pima-page-wide,
+.pima-play-wide {
   width: 100%;
   margin-inline: auto;
   max-width: 42rem;
 }
-.pima-play-mid {    /* lists, leaderboard, lobby, achievements */
+@media (min-width: 768px)  { .pima-page-wide, .pima-play-wide { max-width: 48rem; } }
+@media (min-width: 1024px) { .pima-page-wide, .pima-play-wide { max-width: 64rem; } }
+@media (min-width: 1280px) { .pima-page-wide, .pima-play-wide { max-width: 1160px; } }
+@media (min-width: 1440px) { .pima-page-wide, .pima-play-wide { max-width: 1320px; } }
+
+/* ── full: uncapped ──────────────────────────────────────────────────────── */
+.pima-page-full {
+  width: 100%;
+  margin-inline: auto;
+}
+
+/* .pima-play-mid is Entertainment's LIST tier — 1040 at 1280, 1160 at 1440.
+ * It is deliberately NOT folded into the four: it sits between `content` and
+ * `wide` and none of the global tiers carries its numbers. Inventing a fifth
+ * global tier to absorb one area's list width would be a token created for
+ * tidiness rather than for a role. It stays local, and stays documented. */
+.pima-play-mid {
   width: 100%;
   margin-inline: auto;
   max-width: 42rem;
 }
-@media (min-width: 768px)  { .pima-play-wide { max-width: 48rem; } .pima-play-mid { max-width: 48rem; } }
-@media (min-width: 1024px) { .pima-play-wide { max-width: 64rem; } .pima-play-mid { max-width: 56rem; } }
-@media (min-width: 1280px) { .pima-play-wide { max-width: 1160px; } .pima-play-mid { max-width: 1040px; } }
-@media (min-width: 1440px) { .pima-play-wide { max-width: 1320px; } .pima-play-mid { max-width: 1160px; } }
+@media (min-width: 768px)  { .pima-play-mid { max-width: 48rem; } }
+@media (min-width: 1024px) { .pima-play-mid { max-width: 56rem; } }
+@media (min-width: 1280px) { .pima-play-mid { max-width: 1040px; } }
+@media (min-width: 1440px) { .pima-play-mid { max-width: 1160px; } }
 
 /* ── Entertainment semantic surfaces ──────────────────────────────────────
    Derived from measured usage across the 77 files in src/entertainment, not
