@@ -2952,7 +2952,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   const content = getSpiritualMaterial(selectedLecture.title);
                   return (
                     <div 
-                      className="max-w-2xl mx-auto space-y-8 pb-10"
+                      className="pima-play-mid space-y-8 pb-10"
                       style={{ fontSize: `${readingFontSize}px`, lineHeight: 1.8 }}
                     >
                       {/* Section: Intro Contemplation */}

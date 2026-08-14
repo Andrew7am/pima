@@ -246,7 +246,7 @@ export default function GamesCatalog({ currentUser, onBack, onUserUpdated, onAch
         onReward={() => { setActiveId(pendingId); setPendingId(null); }}
         onClose={() => setPendingId(null)}
       />
-      <div className="max-w-4xl mx-auto px-4 pt-5 pb-10">
+      <div className="pima-play-wide px-4 pt-5 pb-10">
         <button
           type="button"
           onClick={onBack}

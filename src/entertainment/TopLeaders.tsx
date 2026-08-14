@@ -108,7 +108,7 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
   const topPercent = Math.max(1, Math.min(100, Math.round((userRank || 1) / totalPlayers * 100)));
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-8">
+    <div className="w-full pima-play-mid px-4 py-8">
       <style>{`
         .leaderboard-scroll::-webkit-scrollbar { width: 4px; }
         .leaderboard-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 10px; }
