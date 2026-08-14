@@ -607,8 +607,18 @@ export default function OwnerDashboardShell({
     );
   };
 
+  // Wide tier on the whole [sidebar][content] composition, not on the content
+  // column alone — the sidebar is part of this page, so the page ceiling has
+  // to include it. Below 1440 this is nearly inert (the 240px sidebar already
+  // holds the content column under the tier's ceiling); it earns its place on
+  // larger displays, where the column otherwise ran 1612px at 1920 and left
+  // the start-aligned KPI and money cells filled to 14–19% of their width.
+  // Capping here reproduces the proven 1440 composition instead of stretching
+  // it. `pima-page-wide` beats the existing `max-w-full` in the cascade —
+  // verified in the browser — so that utility stays as the overflow guard it
+  // has always been. No wrapper, so no child moves and no gap shifts.
   return (
-    <div className={`owner-theme ${darkMode ? 'owner-dark' : ''} text-right text-[var(--color-owner-text)] w-full max-w-full overflow-x-hidden lg:flex lg:gap-5 lg:items-start pb-24 lg:pb-0`}>
+    <div className={`owner-theme ${darkMode ? 'owner-dark' : ''} pima-page-wide text-right text-[var(--color-owner-text)] w-full max-w-full overflow-x-hidden lg:flex lg:gap-5 lg:items-start pb-24 lg:pb-0`}>
       {/* Desktop sidebar (right side in RTL — first in DOM) */}
       <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-0 bg-[var(--color-owner-primary)] text-white rounded-3xl p-4 gap-1 max-h-[calc(100vh-2rem)] overflow-y-auto">
         <div className="pb-3 mb-2 border-b border-white/10">
