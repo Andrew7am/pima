@@ -43,7 +43,7 @@ export type Section = 'menu' | 'games' | 'seasons' | 'community' | 'stats' | 'se
 // A compact stat tile used by the الإحصائيات section.
 function StatTile({ icon, value, label, tint }: { icon: React.ReactNode; value: React.ReactNode; label: string; tint: string }) {
   return (
-    <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-2xl p-4 flex flex-col items-center text-center gap-1.5">
+    <div className="bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-white/10 rounded-2xl p-4 flex flex-col items-center text-center gap-1.5">
       <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border ${tint}`}>{icon}</div>
       <span className="text-xl font-black text-white leading-none">{value}</span>
       <span className="text-[10px] font-bold text-slate-400 leading-tight">{label}</span>
@@ -55,8 +55,8 @@ function StatTile({ icon, value, label, tint }: { icon: React.ReactNode; value: 
 // content behind the "المواسم" section (the live conference companion sits above).
 const SPIRITUAL_SEASONS = [
   { emoji: '✝️', name: 'الصوم الكبير المقدس', tint: 'from-[#2a0c3a] to-[#1a0826] border-fuchsia-500/25', challenge: 'صلاة الساعات وقراءة سفر من العهد القديم أسبوعياً.' },
-  { emoji: '🌟', name: 'صوم الميلاد المجيد', tint: 'from-[#0b2a44] to-[#0d1b3b] border-cyan-500/25', challenge: 'تأمل يومي في نبوات ميلاد المسيح وأعمال رحمة.' },
-  { emoji: '🕊️', name: 'الخماسين المقدسة', tint: 'from-[#0f2a1e] to-[#0d1b3b] border-emerald-500/25', challenge: 'ترديد "المسيح قام" ومشاركة فرح القيامة مع محتاج.' },
+  { emoji: '🌟', name: 'صوم الميلاد المجيد', tint: 'from-[#0b2a44] to-[var(--color-play-tile-deep)] border-cyan-500/25', challenge: 'تأمل يومي في نبوات ميلاد المسيح وأعمال رحمة.' },
+  { emoji: '🕊️', name: 'الخماسين المقدسة', tint: 'from-[#0f2a1e] to-[var(--color-play-tile-deep)] border-emerald-500/25', challenge: 'ترديد "المسيح قام" ومشاركة فرح القيامة مع محتاج.' },
   { emoji: '⚓', name: 'صوم الرسل الأطهار', tint: 'from-[#2a1f0c] to-[#1a1206] border-amber-500/25', challenge: 'قراءة أعمال الرسل والصلاة من أجل الخدمة والكرازة.' },
   { emoji: '👑', name: 'صوم السيدة العذراء', tint: 'from-[#2a0c1a] to-[#1a0612] border-rose-500/25', challenge: 'تسبحة يومية وقراءة عن حياة القديسة مريم البتول.' },
 ] as const;
@@ -70,7 +70,7 @@ function HubCard({ icon, title, badge, badgeCls, desc, onClick, borderHover, che
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 ${borderHover} rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer`}
+      className={`w-full text-right bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-white/10 ${borderHover} rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer`}
     >
       <div className="w-14 h-14 rounded-2xl bg-play-bg/60 border border-white/10 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
         {icon}
@@ -134,7 +134,7 @@ export default function EntertainmentHome({
       games: 'مركز الألعاب التفاعلي', seasons: 'المؤتمرات والمواسم', community: 'شركة الصلوات المباركة', stats: 'إحصائياتي التفصيلية', settings: 'إعدادات التجربة',
     };
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
         <div className="pima-play-wide px-4 pt-5 pb-12">
           <button type="button" onClick={() => setSection('menu')} className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors mb-4">
             <ChevronRight className="w-4 h-4" /><span>رجوع للقائمة</span>
@@ -160,7 +160,7 @@ export default function EntertainmentHome({
               <HubCard icon={<CalendarDays className="w-6 h-6 text-sky-300" />} title="مركز المؤتمر" badge="⛪ رفيق المؤتمر" badgeCls="bg-sky-500/15 text-sky-300 border-sky-500/30" desc="جدول المؤتمر، الإعلانات، البث المباشر، بطاقة المشارك والمذكرة الروحية." onClick={onOpenConference} borderHover="hover:border-sky-500/40" chevronHover="group-hover:text-sky-400" />
 
               {/* Live recordings placeholder — activates during active conferences */}
-              <div className="bg-gradient-to-br from-[#0b2a44] to-[#0d1b3b] border border-cyan-500/20 rounded-3xl p-4 flex items-center gap-4">
+              <div className="bg-gradient-to-br from-[#0b2a44] to-[var(--color-play-tile-deep)] border border-cyan-500/20 rounded-3xl p-4 flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0">
                   <Radio className="w-6 h-6 text-cyan-300" />
                 </div>
@@ -201,7 +201,7 @@ export default function EntertainmentHome({
               return (
                 <div className="space-y-4">
                   {/* Level + XP banner */}
-                  <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-play-reward/25 rounded-3xl p-5 flex items-center justify-between">
+                  <div className="bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-play-reward/25 rounded-3xl p-5 flex items-center justify-between">
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 mb-1">المستوى الحالي</p>
                       <p className="text-3xl font-black text-white leading-none">المستوى {currentLevel}</p>
@@ -222,7 +222,7 @@ export default function EntertainmentHome({
                   </div>
 
                   {/* Glory + achievements */}
-                  <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-3xl p-4 flex items-center justify-between">
+                  <div className="bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-white/10 rounded-3xl p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center"><Flame className="w-5 h-5 text-amber-300 fill-current" /></div>
                       <div><h4 className="text-sm font-black text-white">نقاط المجد</h4><p className="text-[10.5px] text-slate-400">رصيدك من نقاط الولاء.</p></div>
@@ -242,14 +242,14 @@ export default function EntertainmentHome({
 
             {section === 'settings' && (
               <div className="space-y-3">
-                <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-3xl p-4 flex items-center justify-between">
+                <div className="bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-white/10 rounded-3xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-11 h-11 rounded-2xl bg-play-reward/10 border border-play-reward/20 flex items-center justify-center">{isSoundEnabled ? <Volume2 className="w-5 h-5 text-[var(--color-play-reward)]" /> : <VolumeX className="w-5 h-5 text-slate-400" />}</div>
                     <div><h4 className="text-sm font-black text-white">الأصوات</h4><p className="text-[10.5px] text-slate-400">مؤثّرات صوتية داخل الألعاب.</p></div>
                   </div>
                   <button type="button" onClick={() => setIsSoundEnabled((v) => !v)} className={`px-4 py-2 rounded-xl text-[11px] font-black ${isSoundEnabled ? 'bg-[var(--color-play-reward)] text-slate-950' : 'bg-white/10 text-slate-300'}`}>{isSoundEnabled ? 'مفعّل' : 'مكتوم'}</button>
                 </div>
-                <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-3xl p-4 flex items-center justify-between">
+                <div className="bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-white/10 rounded-3xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-11 h-11 rounded-2xl bg-play-reward/10 border border-play-reward/20 flex items-center justify-center">{isDarkMode ? <Moon className="w-5 h-5 fill-current text-[var(--color-play-reward)]" /> : <Sun className="w-5 h-5 fill-current text-amber-400" />}</div>
                     <div><h4 className="text-sm font-black text-white">الوضع الليلي</h4><p className="text-[10.5px] text-slate-400">حماية العين والاستمتاع بالتجربة.</p></div>

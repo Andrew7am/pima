@@ -71,7 +71,7 @@ export default function OrderingGame({ currentUser, onBack, onUserUpdated, onAch
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
       <div className="max-w-lg mx-auto px-4 pt-5 pb-10">
         <button type="button" onClick={onBack} className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors mb-4">
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
@@ -91,7 +91,7 @@ export default function OrderingGame({ currentUser, onBack, onUserUpdated, onAch
               <div
                 key={it.id}
                 className={`flex items-center gap-3 rounded-2xl p-3 border transition-all ${
-                  rightSpot ? 'bg-emerald-500/15 border-emerald-400/50' : wrongSpot ? 'bg-red-500/10 border-red-400/40' : 'bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border-white/10'
+                  rightSpot ? 'bg-emerald-500/15 border-emerald-400/50' : wrongSpot ? 'bg-red-500/10 border-red-400/40' : 'bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border-white/10'
                 }`}
               >
                 <span className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center text-[11px] font-black text-slate-300 shrink-0">{i + 1}</span>

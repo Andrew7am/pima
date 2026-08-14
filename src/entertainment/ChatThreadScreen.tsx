@@ -74,7 +74,7 @@ export default function ChatThreadScreen({ currentUser, friendId, friendName, on
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden flex flex-col">
       <div className="max-w-2xl w-full mx-auto px-4 sm:px-6 py-4 flex flex-col flex-1 min-h-screen" dir="rtl">
 
         <div className="flex items-center justify-between shrink-0 pb-3 border-b border-white/10">

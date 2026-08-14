@@ -94,7 +94,7 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
   return (
     <div className="space-y-5">
       {/* Submit a new prayer request */}
-      <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-[#C5A059]/30 rounded-3xl p-5 space-y-3">
+      <div className="bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-[#C5A059]/30 rounded-3xl p-5 space-y-3">
         <div>
           <h4 className="text-xs font-black text-white flex items-center gap-1.5">
             <Heart className="w-4 h-4 text-rose-400" />
@@ -184,7 +184,7 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
       </div>
 
       {/* Coptic fathers' meditations */}
-      <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-3xl p-5 space-y-3.5">
+      <div className="bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-white/10 rounded-3xl p-5 space-y-3.5">
         <h3 className="text-xs font-black text-white flex items-center gap-1.5">
           <Award className="w-4 h-4 text-[var(--ds-accent)]" />
           <span>من تأملات آباء الكنيسة الأطهار:</span>

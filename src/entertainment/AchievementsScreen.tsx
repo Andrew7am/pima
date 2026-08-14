@@ -17,7 +17,7 @@ export default function AchievementsScreen({ currentUser, onBack }: Achievements
   const unlockedCount = ACHIEVEMENTS.filter((a) => unlocked.has(a.id)).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
       <div className="pima-play-mid px-4 sm:px-6 py-5 space-y-5" dir="rtl">
 
         <div className="flex items-center justify-between">
@@ -60,7 +60,7 @@ export default function AchievementsScreen({ currentUser, onBack }: Achievements
                 className={`rounded-3xl p-4 flex items-center gap-4 border shadow-lg transition-all ${
                   isUnlocked
                     ? 'bg-gradient-to-br from-[#1E3A20] to-[#0F2410] border-emerald-500/40'
-                    : 'bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border-white/10'
+                    : 'bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border-white/10'
                 }`}
               >
                 <div

@@ -126,7 +126,7 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
   const convoByUser = new Map(conversations.map((c) => [c.otherUserId, c]));
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
       <div className="pima-play-mid px-4 sm:px-6 py-5 space-y-5" dir="rtl">
 
         <div className="flex items-center justify-between">
@@ -204,7 +204,7 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
               <div className="space-y-2.5">
                 <h3 className="text-xs font-black text-slate-300 px-1">طلبات صداقة واردة ({incoming.length})</h3>
                 {incoming.map((r) => (
-                  <div key={r.id} className="flex items-center gap-3 bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-amber-500/30 rounded-2xl p-3">
+                  <div key={r.id} className="flex items-center gap-3 bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-amber-500/30 rounded-2xl p-3">
                     <Avatar name={r.requesterName} url={avatars[r.requesterId]} />
                     <span className="flex-1 min-w-0 text-sm font-bold text-white truncate">{r.requesterName}</span>
                     <button aria-label={`قبول طلب صداقة ${r.requesterName}`}
@@ -269,7 +269,7 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
                       type="button"
                       key={f.id}
                       onClick={() => onOpenChat(f.id, f.name)}
-                      className="w-full text-right flex items-center gap-3 bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-amber-500/30 rounded-2xl p-3 transition-all group"
+                      className="w-full text-right flex items-center gap-3 bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-white/10 hover:border-amber-500/30 rounded-2xl p-3 transition-all group"
                     >
                       <Avatar name={f.name} url={avatars[f.id]} size="w-10 h-10" />
                       <div className="flex-1 min-w-0">

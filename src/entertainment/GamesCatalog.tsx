@@ -238,7 +238,7 @@ export default function GamesCatalog({ currentUser, onBack, onUserUpdated, onAch
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
       <AdGateModal
         open={pendingId !== null}
         title="شاهد الإعلان لبدء اللعبة"
@@ -272,7 +272,7 @@ export default function GamesCatalog({ currentUser, onBack, onUserUpdated, onAch
               key={g.id}
               type="button"
               onClick={() => setPendingId(g.id)}
-              className={`w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 ${g.borderHover} rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer`}
+              className={`w-full text-right bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-white/10 ${g.borderHover} rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer`}
             >
               <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${g.gradient} flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform`}>
                 {g.icon}

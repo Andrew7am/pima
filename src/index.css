@@ -1304,4 +1304,22 @@ body {
      lightened indigo for text contrast and is not used by these screens. */
   --color-play-conference: #1E1B4B;
   --color-play-conference-violet: #2E1065;
+
+  /* The two ramps the games are actually built out of. Measured, not guessed:
+   *
+   *   24x  from-[--color-play-bg] via-[#0E1A33] to-[#08101F]   14 files
+   *   22x  from-[#152A55] to-[#0D1B3B]                         12 files
+   *
+   * An earlier pass left these raw on the reasoning that a colour appearing
+   * under exactly one gradient prefix "carries no role beyond this stop of
+   * this ramp". That conflated a narrow prefix with a narrow role. A stop
+   * repeated identically in twelve files IS the role — it is what makes every
+   * game tile look like the same tile — and naming it is what stops the
+   * thirteenth from drifting.
+   *
+   * --page-* is the full-screen ground; --tile-* is the raised card. */
+  --color-play-page-mid: #0E1A33;
+  --color-play-page-deep: #08101F;
+  --color-play-tile: #152A55;
+  --color-play-tile-deep: #0D1B3B;
 }

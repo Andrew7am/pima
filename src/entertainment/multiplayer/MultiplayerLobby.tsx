@@ -76,7 +76,7 @@ export default function MultiplayerLobby({ currentUser, onBack, onEnterMatch }: 
 
   // ── LOBBY ────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
       <div className="pima-play-mid px-4 sm:px-6 py-5 space-y-5" dir="rtl">
 
         <div className="flex items-center justify-between">
@@ -168,7 +168,7 @@ export default function MultiplayerLobby({ currentUser, onBack, onEnterMatch }: 
             type="button"
             disabled={action !== null}
             onClick={handleCreatePrivate}
-            className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-amber-500/40 disabled:opacity-60 rounded-3xl p-4 flex items-center gap-3 transition-colors cursor-pointer"
+            className="bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-white/10 hover:border-amber-500/40 disabled:opacity-60 rounded-3xl p-4 flex items-center gap-3 transition-colors cursor-pointer"
           >
             <div className="w-11 h-11 rounded-2xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center shrink-0">
               <KeyRound className="w-5 h-5 text-purple-300" />
@@ -179,7 +179,7 @@ export default function MultiplayerLobby({ currentUser, onBack, onEnterMatch }: 
             </div>
           </button>
 
-          <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-3xl p-4 space-y-2">
+          <div className="bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-white/10 rounded-3xl p-4 space-y-2">
             <label className="flex items-center gap-2 text-[10px] text-slate-400 font-bold">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               الانضمام بكود

@@ -144,7 +144,7 @@ export default function WhoAmIGame({ currentUser, onBack, onUserUpdated, onAchie
       'لا بأس، جرب مرة أخرى 🙏';
 
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
         <div className="max-w-lg mx-auto px-4 sm:px-6 py-8 space-y-5 text-center" dir="rtl">
           <div className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-2xl mb-2">
             <span className="text-4xl font-black text-white">{correctCount}/{round.length}</span>
@@ -200,7 +200,7 @@ export default function WhoAmIGame({ currentUser, onBack, onUserUpdated, onAchie
   const potentialCoins = COINS_BY_CLUES_USED[cluesIdx];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
       <div className="max-w-lg mx-auto px-4 sm:px-6 py-5 space-y-4" dir="rtl">
 
         <div className="flex items-center justify-between">

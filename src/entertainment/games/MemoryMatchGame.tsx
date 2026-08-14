@@ -111,7 +111,7 @@ export default function MemoryMatchGame({ currentUser, onBack, onUserUpdated, on
   }, [cards, done, rewardApplied, moves, onUserUpdated, onAchievementsUnlocked]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
       <div className="max-w-lg mx-auto px-4 pt-5 pb-10">
         <div className="flex items-center justify-between mb-4">
           <button type="button" onClick={onBack} className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors">
@@ -127,7 +127,7 @@ export default function MemoryMatchGame({ currentUser, onBack, onUserUpdated, on
         </div>
 
         {done ? (
-          <div className="text-center bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-emerald-500/30 rounded-3xl p-8 space-y-3">
+          <div className="text-center bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-emerald-500/30 rounded-3xl p-8 space-y-3">
             <Trophy className="w-12 h-12 text-amber-400 mx-auto" />
             <h3 className="text-lg font-black text-white">أحسنت! أكملت التطابق 🎉</h3>
             <p className="text-[12px] text-slate-300">{awarding ? 'جارٍ احتساب المكافأة…' : 'تم إضافة نقاط الخبرة إلى حسابك.'}</p>
@@ -153,7 +153,7 @@ export default function MemoryMatchGame({ currentUser, onBack, onUserUpdated, on
                       ? card.isMatched
                         ? 'bg-emerald-500/20 border border-emerald-400/50'
                         : 'bg-[#1B356A] border border-sky-400/40'
-                      : 'bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 hover:border-white/25'
+                      : 'bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-white/10 hover:border-white/25'
                   }`}
                 >
                   {revealed ? card.symbol : '✦'}

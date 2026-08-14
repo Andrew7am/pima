@@ -96,7 +96,7 @@ export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAc
   const conic = `conic-gradient(${WHEEL.map((w, i) => `${w.color} ${i * SEG}deg ${(i + 1) * SEG}deg`).join(', ')})`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
       <AdGateModal open={adOpen} title="شاهد الإعلان لتدوير العجلة" rewardLabel="أدر العجلة" onReward={runSpin} onClose={() => setAdOpen(false)} />
 
       <div className="max-w-lg mx-auto px-4 pt-5 pb-10">
@@ -147,7 +147,7 @@ export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAc
         </div>
 
         {/* Daily challenge */}
-        <div className="mt-4 bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-3xl p-4">
+        <div className="mt-4 bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-white/10 rounded-3xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Gift className="w-5 h-5 text-fuchsia-400" />
             <h3 className="text-sm font-black text-white">التحدي الروحي اليومي</h3>
