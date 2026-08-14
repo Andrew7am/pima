@@ -3,6 +3,7 @@ import { MIN_PASSWORD_LENGTH, minPasswordLabel, passwordProblem } from '../lib/p
 import { UserRole } from '../types';
 import AccountTypeScreen from './AccountTypeScreen';
 import ServantSignupForm from './ServantSignupForm';
+import ConfirmEmailScreen from './ConfirmEmailScreen';
 import {
   User as UserIcon, BookOpen, Users, Lock, Mail, Phone, MapPin, Church,
   Home, Calendar as CalendarIcon, ShieldCheck, UserPlus, Award, Headphones,
@@ -137,6 +138,8 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   // «افتح بريدك» screen; without it a confirmations-on signup succeeds in
   // total silence and people press تسجيل again into the rate limit.
   const [confirmEmail, setConfirmEmail] = useState('');
+  // Set while «تحققت من بريدي» is asking the server whether the link was used.
+  const [rechecking, setRechecking] = useState(false);
 
   // Forgot-password fields
   const [forgotEmail, setForgotEmail] = useState('');
@@ -809,37 +812,27 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
           /* Sign-up worked; the account is waiting in their inbox. This screen
              exists so success LOOKS like success — its absence had people
              re-submitting a form that had already done its job. */
-          <div className="space-y-4 text-center py-2">
-            <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
-              <Mail className="w-6 h-6 text-emerald-700" />
-            </div>
-            <div className="space-y-1">
-              <h2 className="text-sm font-black text-[#0A2342]">افتح بريدك لتفعيل الحساب</h2>
-              <p className="text-[11px] text-[#4A4A3A] leading-relaxed">
-                أرسلنا رابط تفعيل إلى
-                <span dir="ltr" className="block font-black text-[#0A2342] mt-0.5">{confirmEmail}</span>
-              </p>
-              <p className="text-[10px] text-[#8A8A70] leading-relaxed">
-                اضغط الرابط في الرسالة ثم ارجع وسجّل الدخول. لو مش لاقيها، بُص في الرسائل غير المرغوب فيها (Spam).
-              </p>
-            </div>
-            <button type="button" onClick={handleResendConfirmation} disabled={loading || cooldown > 0}
-              className="w-full bg-[#0A2342] hover:bg-[#071930] disabled:opacity-60 text-white text-xs font-bold py-2.5 rounded-xl shadow-md transition-colors">
-              {cooldown > 0 ? retryInLabel(cooldown) : loading ? 'جارٍ الإرسال...' : 'أعد إرسال رابط التفعيل'}
-            </button>
-            <div className="flex items-center justify-center gap-4">
-              <button type="button"
-                onClick={() => { setConfirmEmail(''); setIsRegisterMode(false); setError(''); setSignInEmail(confirmEmail); }}
-                className="text-[10px] text-[#8A8A70] hover:text-[#4A4A3A] font-bold underline">
-                فعّلت الحساب؟ سجّل الدخول
-              </button>
-              <button type="button"
-                onClick={() => { setConfirmEmail(''); setError(''); }}
-                className="text-[10px] text-[#8A8A70] hover:text-[#4A4A3A] font-bold underline">
-                استخدم بريدًا آخر
-              </button>
-            </div>
-          </div>
+          <ConfirmEmailScreen
+            email={confirmEmail}
+            sending={loading}
+            cooldown={cooldown}
+            cooldownLabel={retryInLabel(cooldown)}
+            checking={rechecking}
+            onResend={handleResendConfirmation}
+            onRecheck={async () => {
+              // Clicking the link in another tab does not tell this one. Ask
+              // the server whether the account is live yet; App's auth listener
+              // takes over the moment a session exists.
+              setRechecking(true); setError('');
+              const { data } = await supabase.auth.refreshSession();
+              if (!data.session) {
+                const { data: s } = await supabase.auth.getSession();
+                if (!s.session) setError('الحساب لسه مش مفعّل. افتح الرابط في الرسالة الأول.');
+              }
+              setRechecking(false);
+            }}
+            onUseAnotherEmail={() => { setConfirmEmail(''); setError(''); }}
+          />
         ) : (
           /* UNREACHABLE — kept deliberately, pending a product decision.
            *
