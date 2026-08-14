@@ -115,16 +115,32 @@ export default function EntertainmentHome({
    * hop and discover nothing. Tokens here are earned by cross-file reuse (see
    * --color-play-conference, which spans three files); these have none.
    *
-   * KNOWN DESIGN ISSUE, deliberately not "fixed" here: 'seasons' (#00E5FF) and
-   * 'stats' (#22D3EE) are both cyan. Two of the five categories are therefore
-   * near-indistinguishable at a glance, which weakens the point of a per-
-   * category accent. Changing one is a design decision about what the category
-   * should mean, not a migration, so it is left for the product owner. */
+   * RESOLVED — 'stats' was #22D3EE, a second cyan almost identical to
+   * 'seasons' (#00E5FF). Measured rather than eyeballed, in CIEDE2000:
+   *
+   *   at full strength (the icon)      seasons vs stats  dE  4.3
+   *   as the chip (bg/10 over the card) seasons vs stats  dE  1.3
+   *
+   * Every other pair of accents measures dE 46-83 at full strength and 6.6-12.9
+   * as a chip. So these two were an order of magnitude closer than any other
+   * pair, and at the size the accent is actually rendered — a 10% tint — dE 1.3
+   * is below the ~2.3 just-noticeable difference. The colour cue was not weak,
+   * it was absent: two of five categories carried no distinguishing colour.
+   *
+   * 'stats' now takes #8B8CF7, the value of the existing --color-play-indigo,
+   * chosen because it is the best-separated candidate already in the
+   * Entertainment palette (min dE 35.7 against the other three accents, versus
+   * 24.0 / 19.5 / 10.2 for the success, danger and warning ramps). Contrast on
+   * the card is 5.38:1, well past the 3:1 that icons need.
+   *
+   * Written as a literal, not a token, for the same reason as the rest of this
+   * array: the array is the source of truth and these accents have no cross-
+   * file reuse. The VALUE is borrowed from the palette; the binding is local. */
   const CATEGORIES = [
     { id: 'games' as Section, label: 'مركز الألعاب التفاعلي 🎮', sub: 'تحديات كنسية فردية، مباريات مباشرة وألعاب جماعية حماسية', icon: <Gamepad2 className="w-7 h-7 text-[var(--color-play-reward)]" strokeWidth={1.5} />, box: 'from-[var(--color-play-card-raised)] to-[#1C142E] border-blue-500/25', iconBg: 'bg-play-reward/10 border-play-reward/30' },
     { id: 'seasons' as Section, label: 'المؤتمرات والمواسم الروحية 📖', sub: 'الفعاليات المباركة، التحديات الموسمية والتسجيلات المباشرة', icon: <BookOpen className="w-7 h-7 text-[#00E5FF]" strokeWidth={1.5} />, box: 'from-[#0b1b36] to-[#0d315c] border-cyan-500/20', iconBg: 'bg-[#00E5FF]/10 border-[#00E5FF]/30' },
     { id: 'community' as Section, label: 'شركة الصلوات المباركة ❤️', sub: 'الأصدقاء، تأملات الآباء وطلبات الصلاة المتبادلة', icon: <Heart className="w-7 h-7 text-[#FF3D71]" strokeWidth={1.5} />, box: 'from-[#1a0826] to-[#2c0c3a] border-fuchsia-500/20', iconBg: 'bg-[#FF3D71]/10 border-[#FF3D71]/30' },
-    { id: 'stats' as Section, label: 'إحصائياتي التفصيلية 📊', sub: 'مستواك، خبرتك، دقتك، انتصاراتك وإنجازاتك الروحية', icon: <BarChart3 className="w-7 h-7 text-[#22D3EE]" strokeWidth={1.5} />, box: 'from-[#0b1b36] to-[#08243f] border-sky-500/20', iconBg: 'bg-[#22D3EE]/10 border-[#22D3EE]/30' },
+    { id: 'stats' as Section, label: 'إحصائياتي التفصيلية 📊', sub: 'مستواك، خبرتك، دقتك، انتصاراتك وإنجازاتك الروحية', icon: <BarChart3 className="w-7 h-7 text-[#8B8CF7]" strokeWidth={1.5} />, box: 'from-[#0b1b36] to-[#08243f] border-sky-500/20', iconBg: 'bg-[#8B8CF7]/10 border-[#8B8CF7]/30' },
     { id: 'settings' as Section, label: 'إعدادات التجربة ⚙️', sub: 'التحكم في الصوت والمظهر وتخصيص الواجهة الترفيهية', icon: <Sparkles className="w-7 h-7 text-slate-400" strokeWidth={1.5} />, box: 'from-[#1a1a1a] to-[#262626] border-slate-500/20', iconBg: 'bg-white/5 border-white/10' },
   ];
 
