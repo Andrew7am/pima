@@ -43,8 +43,8 @@ function DemoBar({ label, count, pct, tint }: { label: string; count: number; pc
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-bold text-[#4A4A3A] truncate">{label}</span>
-        <span className="text-[11px] font-bold text-[#8A8A70] shrink-0 tabular-nums">
+        <span className="text-[11px] font-bold text-[var(--ds-text)] truncate">{label}</span>
+        <span className="text-[11px] font-bold text-[var(--ds-text-2)] shrink-0 tabular-nums">
           {arabicNumber(count)} · {arabicNumber(pct)}٪
         </span>
       </div>
@@ -120,20 +120,20 @@ function KpiCard({ title, value, delta, suffix }: {
   const isUp = !!delta && delta.startsWith('+') && !delta.startsWith('+٠');
   const isDown = !!delta && delta.startsWith('−');
   return (
-    <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-1">
-      <div className="text-[12px] text-[#8A8A70] font-bold">{title}</div>
-      <div className="text-xl font-black text-[#4A4A3A]">
+    <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-4 shadow-sm space-y-1">
+      <div className="text-[12px] text-[var(--ds-text-2)] font-bold">{title}</div>
+      <div className="text-xl font-black text-[var(--ds-text)]">
         {typeof value === 'number' ? value.toLocaleString('ar-EG') : value}
         {/* An explicit space: the currency was rendering flush against the
             number (٠ج.م) because a margin utility alone does not separate
             two inline runs reliably in RTL. */}
-        {suffix && <span className="text-[12px] text-[#8A8A70] font-bold">{' '}{suffix}</span>}
+        {suffix && <span className="text-[12px] text-[var(--ds-text-2)] font-bold">{' '}{suffix}</span>}
       </div>
-      <div className={`text-[12px] font-extrabold ${isUp ? 'text-emerald-700' : isDown ? 'text-rose-700' : 'text-[#8A8A70]'}`}>
+      <div className={`text-[12px] font-extrabold ${isUp ? 'text-emerald-700' : isDown ? 'text-rose-700' : 'text-[var(--ds-text-2)]'}`}>
         {delta === null
-          ? <span className="text-[#8A8A70] font-medium">لا يوجد أسبوع سابق للمقارنة</span>
+          ? <span className="text-[var(--ds-text-2)] font-medium">لا يوجد أسبوع سابق للمقارنة</span>
           : <>{isUp ? '↗' : isDown ? '↘' : '→'} {delta}{' '}
-              <span className="text-[#8A8A70] font-medium">عن الأسبوع السابق</span></>}
+              <span className="text-[var(--ds-text-2)] font-medium">عن الأسبوع السابق</span></>}
       </div>
     </div>
   );
@@ -856,16 +856,16 @@ export default function AdminDashboard({
   // `position: sticky`. The seven `fixed inset-0` modals are out of flow and
   // unaffected. No wrapper, so `space-y-4` keeps the same children.
   return (
-    <div className="pima-page-wide space-y-4 text-right text-[#4A4A3A]">
+    <div className="pima-page-wide space-y-4 text-right text-[var(--ds-text)]">
 
       {/* Admin header — says at a glance whether anything needs the admin */}
-      <div className="bg-gradient-to-r from-[#0A2342] to-[#123E75] text-white rounded-3xl p-4 flex items-center justify-between gap-3">
+      <div className="bg-gradient-to-r from-[var(--ds-brand)] to-[var(--ds-brand-2)] text-white rounded-3xl p-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <span className="w-10 h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shrink-0">
-            <Shield className="w-5 h-5 text-[#C5A059]" />
+            <Shield className="w-5 h-5 text-[var(--ds-accent)]" />
           </span>
           <div className="min-w-0">
-            <span className="text-[11px] text-[#C5A059] font-black block">لوحة الإدارة</span>
+            <span className="text-[11px] text-[var(--ds-accent)] font-black block">لوحة الإدارة</span>
             <h2 className="text-sm font-extrabold truncate">{currentUser.name}</h2>
           </div>
         </div>
@@ -886,13 +886,13 @@ export default function AdminDashboard({
       {/* The five sections moved to a floating bar pinned at the bottom of the
           screen — see the end of this component. Sub-tabs stay here, beside
           the content they filter. */}
-      <div className="bg-white border border-[#D6D6C2] rounded-2xl overflow-hidden">
+      <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl overflow-hidden">
         {/* Sub-tabs: natural width and scrollable, so labels aren't squeezed */}
         <div className="flex gap-1.5 p-1.5 overflow-x-auto">
           {NAV_GROUPS.find((g) => g.key === navSection)!.tabs.map((t) => (
             <button key={t.key} id={`admin-tab-${t.key}`} onClick={() => setActiveTab(t.key)}
               className={`shrink-0 flex items-center gap-1.5 min-h-11 px-3 rounded-xl text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === t.key ? 'bg-[#5A5A40] text-white shadow-sm' : 'text-[#5A5A40] bg-[#FAF8F5] hover:bg-[#EBEBE0]/60'
+                activeTab === t.key ? 'bg-[var(--ds-primary)] text-white shadow-sm' : 'text-[var(--ds-primary)] bg-[var(--ds-bg)] hover:bg-[#EBEBE0]/60'
               }`}>
               {t.label}
               {(t.badge ?? 0) > 0 && (
@@ -907,16 +907,16 @@ export default function AdminDashboard({
 
       {/* Needs-action inbox — every pending item in the system, one tap away */}
       {navSection === 'home' && actionQueue.length > 0 && (
-        <div className="bg-white border border-[#D6D6C2] rounded-2xl overflow-hidden">
-          <div className="px-3.5 py-2.5 border-b border-[#D6D6C2]/60 flex items-center gap-1.5">
+        <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl overflow-hidden">
+          <div className="px-3.5 py-2.5 border-b border-[var(--ds-border)]/60 flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-            <span className="text-[11px] font-black text-[#0A2342]">محتاج إجراء منك</span>
-            <span className="text-[11px] font-bold text-[#8A8A70]">({totalPending.toLocaleString('ar-EG')})</span>
+            <span className="text-[11px] font-black text-[var(--ds-brand)]">محتاج إجراء منك</span>
+            <span className="text-[11px] font-bold text-[var(--ds-text-2)]">({totalPending.toLocaleString('ar-EG')})</span>
           </div>
-          <div className="divide-y divide-[#D6D6C2]/50">
+          <div className="divide-y divide-[var(--ds-border)]/50">
             {actionQueue.map((a) => (
               <button key={a.key} type="button" onClick={() => goTo(a.section, a.key)}
-                className="w-full flex items-center gap-2.5 px-3.5 min-h-11.5 hover:bg-[#FAF8F5] transition-colors cursor-pointer text-right">
+                className="w-full flex items-center gap-2.5 px-3.5 min-h-11.5 hover:bg-[var(--ds-bg)] transition-colors cursor-pointer text-right">
                 <span className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
                   <a.Icon className="w-4 h-4 text-rose-600" />
                 </span>
@@ -1014,26 +1014,26 @@ export default function AdminDashboard({
             </div>
 
             {/* 14-day bookings sparkline */}
-            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-3">
+            <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-4 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-[#4A4A3A]">الحجوزات آخر ١٤ يوم</span>
-                <span className="text-[12px] font-bold text-[#8A8A70]">{arabicPlural(days.reduce((s, d) => s + d.count, 0), BOOKING_FORMS)}</span>
+                <span className="text-xs font-black text-[var(--ds-text)]">الحجوزات آخر ١٤ يوم</span>
+                <span className="text-[12px] font-bold text-[var(--ds-text-2)]">{arabicPlural(days.reduce((s, d) => s + d.count, 0), BOOKING_FORMS)}</span>
               </div>
               <div className="flex items-end gap-1 h-24" dir="ltr">
                 {days.map((d) => (
                   <div key={d.ts} className="flex-1 flex flex-col items-center gap-1 group">
                     <div className="flex-1 w-full flex items-end">
-                      <div className="w-full bg-[#5A5A40] rounded-t-md group-hover:bg-[#4A4A3A] transition-colors" style={{ height: `${(d.count / maxDay) * 100}%`, minHeight: d.count > 0 ? '4px' : '0' }} title={`${new Date(d.ts).toLocaleDateString('ar-EG')} · ${arabicPlural(d.count, BOOKING_FORMS)}`} />
+                      <div className="w-full bg-[var(--ds-primary)] rounded-t-md group-hover:bg-[var(--ds-text)] transition-colors" style={{ height: `${(d.count / maxDay) * 100}%`, minHeight: d.count > 0 ? '4px' : '0' }} title={`${new Date(d.ts).toLocaleDateString('ar-EG')} · ${arabicPlural(d.count, BOOKING_FORMS)}`} />
                     </div>
-                    <span className="text-[11px] font-bold text-[#8A8A70]">{arabicNumber(new Date(d.ts).getDate())}</span>
+                    <span className="text-[11px] font-bold text-[var(--ds-text-2)]">{arabicNumber(new Date(d.ts).getDate())}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Conversion funnel */}
-            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-3">
-              <span className="text-xs font-black text-[#4A4A3A]">مسار التحويل (كل الوقت)</span>
+            <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-4 shadow-sm space-y-3">
+              <span className="text-xs font-black text-[var(--ds-text)]">مسار التحويل (كل الوقت)</span>
               <div className="space-y-2">
                 {([
                   { label: 'التسجيلات (أفراد وخدام)', value: funnelSignups, pct: 100 },
@@ -1041,42 +1041,42 @@ export default function AdminDashboard({
                   { label: 'اللي دفعوا فعلاً', value: funnelPaid, pct: pct(funnelPaid, funnelSignups) },
                 ]).map((step) => (
                   <div key={step.label} className="space-y-0.5">
-                    <div className="flex justify-between items-center text-[12px] font-bold text-[#4A4A3A]">
+                    <div className="flex justify-between items-center text-[12px] font-bold text-[var(--ds-text)]">
                       <span>{step.label}</span>
-                      <span>{step.value.toLocaleString('ar-EG')} <span className="text-[#8A8A70] font-medium">({arabicNumber(step.pct)}٪)</span></span>
+                      <span>{step.value.toLocaleString('ar-EG')} <span className="text-[var(--ds-text-2)] font-medium">({arabicNumber(step.pct)}٪)</span></span>
                     </div>
                     <div className="h-2 bg-[#EBEBE0]/50 rounded-full overflow-hidden">
-                      <div className="h-full bg-[#5A5A40] rounded-full transition-all" style={{ width: `${step.pct}%` }} />
+                      <div className="h-full bg-[var(--ds-primary)] rounded-full transition-all" style={{ width: `${step.pct}%` }} />
                     </div>
                   </div>
                 ))}
               </div>
               {funnelSignups > 0 && (
-                <p className="text-[11px] text-[#8A8A70] font-medium">
+                <p className="text-[11px] text-[var(--ds-text-2)] font-medium">
                   💡 {pct(funnelBooked, funnelSignups) < 20 ? 'أقل من ٢٠٪ من المسجّلين بيبدأوا حجز — فرصة تحسين في التصفح وسهولة الحجز.' : 'التحويل من التسجيل للحجز في نطاق صحي.'}
                 </p>
               )}
             </div>
 
             {/* Top houses this month */}
-            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-2">
-              <span className="text-xs font-black text-[#4A4A3A]">أكتر ٥ بيوت حجزاً هذا الشهر</span>
+            <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-4 shadow-sm space-y-2">
+              <span className="text-xs font-black text-[var(--ds-text)]">أكتر ٥ بيوت حجزاً هذا الشهر</span>
               {busiestHouses.length === 0 ? (
-                <p className="text-[12px] text-[#8A8A70] text-center py-3">لا يوجد حجوزات مؤكدة هذا الشهر بعد.</p>
+                <p className="text-[12px] text-[var(--ds-text-2)] text-center py-3">لا يوجد حجوزات مؤكدة هذا الشهر بعد.</p>
               ) : (
                 <div className="space-y-1.5">
                   {busiestHouses.map((row, i) => (
-                    <div key={row.house!.id} className="flex items-center gap-2 bg-[#FAF8F5] border border-[#D6D6C2] rounded-2xl p-2.5">
-                      <span className="w-6 h-6 rounded-full bg-[#5A5A40] text-white text-[12px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
+                    <div key={row.house!.id} className="flex items-center gap-2 bg-[var(--ds-bg)] border border-[var(--ds-border)] rounded-2xl p-2.5">
+                      <span className="w-6 h-6 rounded-full bg-[var(--ds-primary)] text-white text-[12px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[11px] font-bold text-[#4A4A3A] truncate">{row.house!.name}</div>
-                        <div className="text-[11px] text-[#8A8A70]">{row.house!.governorate}</div>
+                        <div className="text-[11px] font-bold text-[var(--ds-text)] truncate">{row.house!.name}</div>
+                        <div className="text-[11px] text-[var(--ds-text-2)]">{row.house!.governorate}</div>
                       </div>
                       <div className="text-left shrink-0">
-                        <div className="text-[11px] font-black text-[#4A4A3A]">{arabicPlural(row.count, BOOKING_FORMS)}</div>
+                        <div className="text-[11px] font-black text-[var(--ds-text)]">{arabicPlural(row.count, BOOKING_FORMS)}</div>
                         {/* Booked, not collected — التقارير is where money in
                             hand is reported, and it ranks a different list. */}
-                        <div className="text-[11px] text-[#8A8A70]">{arabicNumber(row.bookedValue)} ج.م محجوزة</div>
+                        <div className="text-[11px] text-[var(--ds-text-2)]">{arabicNumber(row.bookedValue)} ج.م محجوزة</div>
                       </div>
                     </div>
                   ))}
@@ -1085,21 +1085,21 @@ export default function AdminDashboard({
             </div>
 
             {/* Recent activity feed */}
-            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 shadow-sm space-y-2">
-              <span className="text-xs font-black text-[#4A4A3A]">آخر نشاط (٧ أيام)</span>
+            <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-4 shadow-sm space-y-2">
+              <span className="text-xs font-black text-[var(--ds-text)]">آخر نشاط (٧ أيام)</span>
               {recentActivity.length === 0 ? (
-                <p className="text-[12px] text-[#8A8A70] text-center py-3">لا يوجد نشاط في آخر أسبوع.</p>
+                <p className="text-[12px] text-[var(--ds-text-2)] text-center py-3">لا يوجد نشاط في آخر أسبوع.</p>
               ) : (
                 <div className="space-y-1">
                   {recentActivity.map((a, i) => {
                     return (
-                      <div key={i} className="flex items-center gap-2 text-[12px] text-[#4A4A3A] py-1 border-b border-[#EBEBE0]/60 last:border-0">
+                      <div key={i} className="flex items-center gap-2 text-[12px] text-[var(--ds-text)] py-1 border-b border-[#EBEBE0]/60 last:border-0">
                         <span className="text-sm">{a.icon}</span>
                         <span className="flex-1 min-w-0 truncate">{a.text}</span>
                         {/* lib/timeAgo already does this, with Arabic-Indic digits
                             and real plural agreement. This built its own with a
                             template literal and printed "منذ 21 د". */}
-                        <span className="text-[11px] text-[#8A8A70] font-bold shrink-0">{timeAgo(new Date(a.ts).toISOString())}</span>
+                        <span className="text-[11px] text-[var(--ds-text-2)] font-bold shrink-0">{timeAgo(new Date(a.ts).toISOString())}</span>
                       </div>
                     );
                   })}
@@ -1117,7 +1117,7 @@ export default function AdminDashboard({
               bottom of the reports page, which is the one screen where it
               had nothing to do with anything above it. It belongs here,
               where someone is about to approve or reject a house. */}
-          <div className="bg-[#5A5A40] text-white rounded-2xl p-3 flex gap-2.5 items-start leading-relaxed">
+          <div className="bg-[var(--ds-primary)] text-white rounded-2xl p-3 flex gap-2.5 items-start leading-relaxed">
             <Shield className="w-5 h-5 text-amber-200 shrink-0 mt-0.5" />
             <div>
               <span className="text-[12px] font-bold text-amber-200 block">رقابة المحتوى والبيوت القبطية:</span>
@@ -1125,36 +1125,36 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          <div className="text-xs font-bold text-[#8A8A70] px-1">البيوت الجديدة المرسلة بانتظار الاعتماد للظهور:</div>
+          <div className="text-xs font-bold text-[var(--ds-text-2)] px-1">البيوت الجديدة المرسلة بانتظار الاعتماد للظهور:</div>
 
           {pendingHouses.length === 0 && pendingHouseEdits.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-2">
+            <div className="bg-[var(--ds-surface)] rounded-3xl p-8 border border-[var(--ds-border)] text-center space-y-2">
               <Building className="w-8 h-8 text-[#BCBC9D] mx-auto" />
-              <p className="text-sm font-bold text-[#4A4A3A]">لا توجد أي بيوت أو تعديلات معلقة حالياً</p>
-              <p className="text-[11px] text-[#8A8A70]">كافة بيوت المؤتمرات والفنادق مراجعة ومقرة بنجاح.</p>
+              <p className="text-sm font-bold text-[var(--ds-text)]">لا توجد أي بيوت أو تعديلات معلقة حالياً</p>
+              <p className="text-[11px] text-[var(--ds-text-2)]">كافة بيوت المؤتمرات والفنادق مراجعة ومقرة بنجاح.</p>
             </div>
           ) : (
             <>
               {pendingHouses.length > 0 && (
                 <div className="space-y-3">
                   {pendingHouses.map((house) => (
-                    <div key={house.id} className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden text-right">
+                    <div key={house.id} className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] shadow-sm overflow-hidden text-right">
                       <div className="h-24 bg-[#EBEBE0] relative">
                         {house.images[0] && <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-full h-full object-cover" />}
-                        <span className="absolute top-2 right-2 bg-[#5A5A40]/90 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[11px] font-bold">
+                        <span className="absolute top-2 right-2 bg-[var(--ds-primary)]/90 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[11px] font-bold">
                           {house.governorate}
                         </span>
                       </div>
 
                       <div className="p-4 space-y-2.5">
                         <div>
-                          <h3 className="text-xs font-bold text-[#4A4A3A]">{house.name}</h3>
-                          <p className="text-[12px] text-[#8A8A70] mt-0.5">صاحب البيت: {house.ownerName}</p>
+                          <h3 className="text-xs font-bold text-[var(--ds-text)]">{house.name}</h3>
+                          <p className="text-[12px] text-[var(--ds-text-2)] mt-0.5">صاحب البيت: {house.ownerName}</p>
                         </div>
 
-                        <p className="text-[11px] text-[#4A4A3A] leading-relaxed line-clamp-2">{house.description}</p>
+                        <p className="text-[11px] text-[var(--ds-text)] leading-relaxed line-clamp-2">{house.description}</p>
 
-                        <div className="bg-[#EBEBE0]/30 rounded-2xl p-2.5 grid grid-cols-3 gap-1.5 text-center text-[12px] text-[#4A4A3A] font-bold border border-[#D6D6C2]">
+                        <div className="bg-[#EBEBE0]/30 rounded-2xl p-2.5 grid grid-cols-3 gap-1.5 text-center text-[12px] text-[var(--ds-text)] font-bold border border-[var(--ds-border)]">
                           <div>الغرف: {house.roomsCount}</div>
                           <div>الأسرة: {house.bedsCount}</div>
                           <div>سعر الفرد: {house.pricePerNightPerPerson} ج.م</div>
@@ -1165,7 +1165,7 @@ export default function AdminDashboard({
                           <button
                             id={`preview-house-${house.id}`}
                             onClick={() => setPreviewHouseId(house.id)}
-                            className="flex items-center gap-1 bg-white border border-[#D6D6C2] hover:bg-[#F0EDE6] text-[#4A4A3A] px-3 min-h-11.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                            className="flex items-center gap-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] hover:bg-[#F0EDE6] text-[var(--ds-text)] px-3 min-h-11.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             <span>معاينة كاملة</span>
@@ -1201,33 +1201,33 @@ export default function AdminDashboard({
 
               {pendingHouseEdits.length > 0 && (
                 <div className="space-y-3">
-                  <div className="text-xs font-bold text-[#8A8A70] px-1 border-t border-[#D6D6C2] pt-3">
+                  <div className="text-xs font-bold text-[var(--ds-text-2)] px-1 border-t border-[var(--ds-border)] pt-3">
                     طلبات تعديل بيانات بيوت قائمة (بانتظار الموافقة):
                   </div>
                   {pendingHouseEdits.map((house) => {
                     const { rows, arrayFieldsChanged } = getHouseEditDiff(house);
                     return (
-                      <div key={house.id} className="bg-white rounded-3xl border border-amber-200 shadow-sm p-4 space-y-2.5 text-right">
+                      <div key={house.id} className="bg-[var(--ds-surface)] rounded-3xl border border-amber-200 shadow-sm p-4 space-y-2.5 text-right">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-xs font-bold text-[#4A4A3A]">{house.name}</h3>
+                          <h3 className="text-xs font-bold text-[var(--ds-text)]">{house.name}</h3>
                           <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
                             تعديل قيد المراجعة
                           </span>
                         </div>
-                        <p className="text-[12px] text-[#8A8A70]">صاحب البيت: {house.ownerName}</p>
+                        <p className="text-[12px] text-[var(--ds-text-2)]">صاحب البيت: {house.ownerName}</p>
 
                         {rows.length === 0 && arrayFieldsChanged.length === 0 ? (
-                          <p className="text-[12px] text-[#8A8A70]">لا توجد تغييرات ظاهرة في الحقول الأساسية.</p>
+                          <p className="text-[12px] text-[var(--ds-text-2)]">لا توجد تغييرات ظاهرة في الحقول الأساسية.</p>
                         ) : (
                           <div className="space-y-1.5">
                             {rows.map((f) => (
-                              <div key={f.key as string} className="bg-[#EBEBE0]/30 rounded-xl p-2 text-[12px] border border-[#D6D6C2]">
-                                <span className="font-bold text-[#4A4A3A] block mb-0.5">{f.label}:</span>
+                              <div key={f.key as string} className="bg-[#EBEBE0]/30 rounded-xl p-2 text-[12px] border border-[var(--ds-border)]">
+                                <span className="font-bold text-[var(--ds-text)] block mb-0.5">{f.label}:</span>
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-rose-600 line-through">
                                     {f.format ? f.format(house[f.key]) : `${String(house[f.key] ?? '-')}${f.suffix || ''}`}
                                   </span>
-                                  <span className="text-[#8A8A70]">←</span>
+                                  <span className="text-[var(--ds-text-2)]">←</span>
                                   <span className="text-emerald-700 font-bold">
                                     {f.format ? f.format(house.pendingEdit?.[f.key]) : `${String(house.pendingEdit?.[f.key] ?? '-')}${f.suffix || ''}`}
                                   </span>
@@ -1235,9 +1235,9 @@ export default function AdminDashboard({
                               </div>
                             ))}
                             {arrayFieldsChanged.length > 0 && (
-                              <div className="bg-[#EBEBE0]/30 rounded-xl p-2 text-[12px] border border-[#D6D6C2]">
-                                <span className="font-bold text-[#4A4A3A]">تم أيضاً تعديل: </span>
-                                <span className="text-[#5A5A40]">{arrayFieldsChanged.join('، ')}</span>
+                              <div className="bg-[#EBEBE0]/30 rounded-xl p-2 text-[12px] border border-[var(--ds-border)]">
+                                <span className="font-bold text-[var(--ds-text)]">تم أيضاً تعديل: </span>
+                                <span className="text-[var(--ds-primary)]">{arrayFieldsChanged.join('، ')}</span>
                               </div>
                             )}
                           </div>
@@ -1280,28 +1280,28 @@ export default function AdminDashboard({
       {/* Pending servant/owner account approvals */}
       {activeTab === 'accounts' && (
         <div className="space-y-3">
-          <div className="text-xs font-bold text-[#8A8A70] px-1">حسابات الخدام وأصحاب البيوت بانتظار المراجعة والاعتماد:</div>
+          <div className="text-xs font-bold text-[var(--ds-text-2)] px-1">حسابات الخدام وأصحاب البيوت بانتظار المراجعة والاعتماد:</div>
 
           {pendingAccounts.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-2">
+            <div className="bg-[var(--ds-surface)] rounded-3xl p-8 border border-[var(--ds-border)] text-center space-y-2">
               <IdCard className="w-8 h-8 text-[#BCBC9D] mx-auto" />
-              <p className="text-sm font-bold text-[#4A4A3A]">لا توجد حسابات معلقة حالياً</p>
-              <p className="text-[11px] text-[#8A8A70]">كافة حسابات الخدام وأصحاب البيوت تمت مراجعتها.</p>
+              <p className="text-sm font-bold text-[var(--ds-text)]">لا توجد حسابات معلقة حالياً</p>
+              <p className="text-[11px] text-[var(--ds-text-2)]">كافة حسابات الخدام وأصحاب البيوت تمت مراجعتها.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {pendingAccounts.map((acc) => (
-                <div key={acc.id} className="bg-white rounded-3xl border border-[#D6D6C2] shadow-sm overflow-hidden text-right p-4 space-y-2.5">
+                <div key={acc.id} className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] shadow-sm overflow-hidden text-right p-4 space-y-2.5">
                   <div>
-                    <h3 className="text-xs font-bold text-[#4A4A3A]">{acc.name}</h3>
-                    <p className="text-[12px] text-[#8A8A70] mt-0.5">
+                    <h3 className="text-xs font-bold text-[var(--ds-text)]">{acc.name}</h3>
+                    <p className="text-[12px] text-[var(--ds-text-2)] mt-0.5">
                       {ROLE_LABELS[acc.role] ?? 'خادم'} · {acc.email} · {acc.phone}
                     </p>
                     {acc.organizationName && (
-                      <p className="text-[12px] text-[#8A8A70] mt-0.5">الجهة: {acc.organizationName}</p>
+                      <p className="text-[12px] text-[var(--ds-text-2)] mt-0.5">الجهة: {acc.organizationName}</p>
                     )}
                     {acc.churchName && (
-                      <p className="text-[12px] text-[#8A8A70] mt-0.5">الكنيسة: {acc.churchName} — الأب الكاهن: {acc.priestName}</p>
+                      <p className="text-[12px] text-[var(--ds-text-2)] mt-0.5">الكنيسة: {acc.churchName} — الأب الكاهن: {acc.priestName}</p>
                     )}
                   </div>
 
@@ -1348,22 +1348,22 @@ export default function AdminDashboard({
               on payments and new bookings the moment they arrive, so hearing
               about them with the tab closed matters here as much as anywhere. */}
           <WebPushToggle userId={currentUser.id} render={(p) => (
-            <div className="bg-white p-4 rounded-3xl border border-[#D6D6C2] flex items-center gap-3 text-right">
+            <div className="bg-[var(--ds-surface)] p-4 rounded-3xl border border-[var(--ds-border)] flex items-center gap-3 text-right">
               <span className="w-9 h-9 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-700">{p.icon}</span>
               <div className="flex-1 min-w-0">
-                <span className="text-xs font-black text-[#4A4A3A] block">{p.label}</span>
-                <span className="text-[11px] text-[#8A8A70] block">{p.sublabel}</span>
+                <span className="text-xs font-black text-[var(--ds-text)] block">{p.label}</span>
+                <span className="text-[11px] text-[var(--ds-text-2)] block">{p.sublabel}</span>
               </div>
               <button type="button" role="switch" aria-checked={p.checked} aria-label={p.label}
                 disabled={p.busy || p.disabled} onClick={() => p.onChange(!p.checked)}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 cursor-pointer ${p.checked ? 'bg-emerald-600' : 'bg-[#D6D6C2]'}`}>
-                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${p.checked ? 'right-0.5' : 'right-[22px]'}`} />
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 cursor-pointer ${p.checked ? 'bg-emerald-600' : 'bg-[var(--ds-border)]'}`}>
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-[var(--ds-surface)] shadow transition-all ${p.checked ? 'right-0.5' : 'right-[22px]'}`} />
               </button>
             </div>
           )} />
 
-          <div className="text-xs font-bold text-[#8A8A70] px-1">التحكم في اقتصاد المنصة — يُطبَّق فوراً على الحسابات والأسعار:</div>
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-4">
+          <div className="text-xs font-bold text-[var(--ds-text-2)] px-1">التحكم في اقتصاد المنصة — يُطبَّق فوراً على الحسابات والأسعار:</div>
+          <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-4 space-y-4">
             {([
               { key: 'commissionRate', label: 'نسبة عمولة المنصة', suffix: '%', factor: 100, hint: 'حصتك من كل حجز (على المستحقات والتقارير).' },
               { key: 'depositRate', label: 'نسبة العربون المقدّم', suffix: '%', factor: 100, hint: 'النسبة اللي يدفعها العميل مقدماً لتأكيد الحجز.' },
@@ -1376,7 +1376,7 @@ export default function AdminDashboard({
               { key: 'maxBookingsPerDay', label: 'أقصى عدد حجوزات للحساب الواحد', suffix: 'حجز / ٢٤ ساعة', factor: 1, hint: 'يمنع حساب واحد من إغراق البيوت بحجوزات وهمية. صاحب البيت والأدمن مستثنيين، فالمالك يقدر يسجّل حجوزات التليفون براحته.' },
             ] as const).map((f) => (
               <div key={f.key} className="space-y-1">
-                <label className="block text-[11px] font-bold text-[#4A4A3A]">{f.label}</label>
+                <label className="block text-[11px] font-bold text-[var(--ds-text)]">{f.label}</label>
                 <div className="flex items-center gap-2">
                   <input
                     id={`setting-${f.key}`}
@@ -1388,11 +1388,11 @@ export default function AdminDashboard({
                       const raw = parseFloat(e.target.value) || 0;
                       setSettingsDraft((prev) => ({ ...prev, [f.key]: f.factor === 100 ? raw / 100 : Math.round(raw) }));
                     }}
-                    className="w-28 bg-white border border-[#D6D6C2] text-xs px-3 min-h-11 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40]"
+                    className="w-28 bg-[var(--ds-surface)] border border-[var(--ds-border)] text-xs px-3 min-h-11 rounded-xl text-[var(--ds-text)] focus:outline-none focus:border-[var(--ds-primary)]"
                   />
-                  <span className="text-[12px] text-[#8A8A70] font-bold">{f.suffix}</span>
+                  <span className="text-[12px] text-[var(--ds-text-2)] font-bold">{f.suffix}</span>
                 </div>
-                <p className="text-[11px] text-[#8A8A70]">{f.hint}</p>
+                <p className="text-[11px] text-[var(--ds-text-2)]">{f.hint}</p>
               </div>
             ))}
 
@@ -1401,7 +1401,7 @@ export default function AdminDashboard({
                 user and an owner waiting for approval. It used to be a
                 hardcoded placeholder that nobody answered. */}
             <div className="border-t border-[#EBEBE0] pt-3 space-y-1">
-              <label className="block text-[11px] font-black text-[#4A4A3A]" htmlFor="setting-supportWhatsApp">
+              <label className="block text-[11px] font-black text-[var(--ds-text)]" htmlFor="setting-supportWhatsApp">
                 رقم واتساب الدعم
               </label>
               <input
@@ -1412,9 +1412,9 @@ export default function AdminDashboard({
                 value={settingsDraft.supportWhatsApp}
                 onChange={(e) => setSettingsDraft((prev) => ({ ...prev, supportWhatsApp: e.target.value.replace(/\D/g, '') }))}
                 placeholder="201096126259"
-                className="w-48 bg-white border border-[#D6D6C2] text-xs px-3 min-h-11 rounded-xl text-[#4A4A3A] focus:outline-none focus:border-[#5A5A40] font-mono"
+                className="w-48 bg-[var(--ds-surface)] border border-[var(--ds-border)] text-xs px-3 min-h-11 rounded-xl text-[var(--ds-text)] focus:outline-none focus:border-[var(--ds-primary)] font-mono"
               />
-              <p className="text-[11px] text-[#8A8A70]">
+              <p className="text-[11px] text-[var(--ds-text-2)]">
                 بكود الدولة وبدون + أو مسافات — كده بالظبط زي ما واتساب عايزه. مثال: 201096126259
               </p>
               {!/^\d{8,15}$/.test(settingsDraft.supportWhatsApp) && (
@@ -1427,29 +1427,29 @@ export default function AdminDashboard({
             {/* Platform collection accounts — where guests send the deposit (migration 069) */}
             <div className="border-t border-[#EBEBE0] pt-3 space-y-2">
               <div>
-                <div className="text-[11px] font-black text-[#4A4A3A]">أرقام تحصيل المنصة (يدفع عليها العميل العربون):</div>
-                <p className="text-[11px] text-[#8A8A70]">دي أرقامك إنت (بيما). لو سيبتها فاضية، العميل هيدفع لصاحب البيت مباشرة زي النظام القديم.</p>
+                <div className="text-[11px] font-black text-[var(--ds-text)]">أرقام تحصيل المنصة (يدفع عليها العميل العربون):</div>
+                <p className="text-[11px] text-[var(--ds-text-2)]">دي أرقامك إنت (بيما). لو سيبتها فاضية، العميل هيدفع لصاحب البيت مباشرة زي النظام القديم.</p>
               </div>
               {(settingsDraft.paymentMethods ?? []).map((m, i) => (
                 <div key={m.id} className="flex flex-wrap items-center gap-1.5 bg-[#FBFBFA] border border-[#EBEBE0] rounded-xl p-2">
                   <select value={m.type}
                     onChange={(e) => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.map((x, j) => (j === i ? { ...x, type: e.target.value as OwnerPaymentMethod['type'] } : x)) }))}
-                    className="bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg text-[#4A4A3A]">
+                    className="bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[12px] px-2 min-h-11 rounded-lg text-[var(--ds-text)]">
                     {PLATFORM_PM_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                   <input placeholder="الاسم (مثلاً: إنستاباي بيما)" value={m.label}
                     onChange={(e) => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) }))}
-                    className="flex-1 min-w-[110px] bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg text-[#4A4A3A]" />
+                    className="flex-1 min-w-[110px] bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[12px] px-2 min-h-11 rounded-lg text-[var(--ds-text)]" />
                   <input placeholder="الرقم / الحساب" dir="ltr" value={m.value}
                     onChange={(e) => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)) }))}
-                    className="flex-1 min-w-[110px] bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg text-[#4A4A3A] font-mono" />
+                    className="flex-1 min-w-[110px] bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[12px] px-2 min-h-11 rounded-lg text-[var(--ds-text)] font-mono" />
                   <button type="button" onClick={() => setSettingsDraft((prev) => ({ ...prev, paymentMethods: prev.paymentMethods.filter((_, j) => j !== i) }))}
                     className="text-rose-600 text-[12px] font-bold px-2 min-h-11.5 cursor-pointer">حذف</button>
                 </div>
               ))}
               <button type="button"
                 onClick={() => setSettingsDraft((prev) => ({ ...prev, paymentMethods: [...(prev.paymentMethods ?? []), { id: `ppm_${Date.now()}`, type: 'instapay', label: '', value: '' }] }))}
-                className="text-[12px] font-bold bg-[#EBEBE0] hover:bg-[#DDD] text-[#4A4A3A] px-3 min-h-11 rounded-lg cursor-pointer transition-colors">+ إضافة رقم تحصيل</button>
+                className="text-[12px] font-bold bg-[#EBEBE0] hover:bg-[#DDD] text-[var(--ds-text)] px-3 min-h-11 rounded-lg cursor-pointer transition-colors">+ إضافة رقم تحصيل</button>
             </div>
 
             {settingsSaved && (
@@ -1466,13 +1466,13 @@ export default function AdminDashboard({
                   setSettingsSaved(true);
                   setTimeout(() => setSettingsSaved(false), 3000);
                 }}
-                className="flex-1 bg-[#0A2342] hover:bg-[#071930] text-white text-xs font-bold min-h-11.5 rounded-xl transition-colors cursor-pointer"
+                className="flex-1 bg-[var(--ds-brand)] hover:bg-[#071930] text-white text-xs font-bold min-h-11.5 rounded-xl transition-colors cursor-pointer"
               >
                 💾 حفظ وتطبيق
               </button>
               <button
                 onClick={() => setSettingsDraft(settings)}
-                className="bg-[#EBEBE0] text-[#4A4A3A] text-xs font-bold min-h-11.5 px-4 rounded-xl cursor-pointer"
+                className="bg-[#EBEBE0] text-[var(--ds-text)] text-xs font-bold min-h-11.5 px-4 rounded-xl cursor-pointer"
               >
                 تراجع
               </button>
@@ -1485,21 +1485,21 @@ export default function AdminDashboard({
           {/* ── Maintenance: move the pre-Storage photos out of the database ──
               One-off, resumable, and safe to run again: each house is saved as
               soon as it finishes, and anything already on Storage is skipped. */}
-          <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-3">
+          <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-4 space-y-3">
             <div className="flex items-center gap-1.5 pb-2 border-b border-[#EBEBE0]">
-              <ImageIcon className="w-4 h-4 text-[#5A5A40]" />
-              <h3 className="text-xs font-black text-[#0A2342]">نقل صور البيوت القديمة للتخزين</h3>
+              <ImageIcon className="w-4 h-4 text-[var(--ds-primary)]" />
+              <h3 className="text-xs font-black text-[var(--ds-brand)]">نقل صور البيوت القديمة للتخزين</h3>
             </div>
-            <p className="text-[11px] text-[#8A8A70] leading-relaxed">
+            <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">
               الصور القديمة متخزنة جوه الداتابيز نفسها، وده اللي بيستهلك الـEgress.
               الزرار ده بيرفعها على Supabase Storage مضغوطة ويسيب رابط بدلها.
               الصور اللي اترفعت بعد التحديث بتتخطى. تقدر توقف وتكمّل بعدين —
               كل بيت بيتحفظ أول ما يخلص.
             </p>
             {imgMigrationLog.length > 0 && (
-              <div className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl p-2.5 space-y-1 max-h-40 overflow-y-auto">
+              <div className="bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-2xl p-2.5 space-y-1 max-h-40 overflow-y-auto">
                 {imgMigrationLog.map((line, i) => (
-                  <div key={i} className="text-[11px] font-bold text-[#4A4A3A]">{line}</div>
+                  <div key={i} className="text-[11px] font-bold text-[var(--ds-text)]">{line}</div>
                 ))}
               </div>
             )}
@@ -1545,7 +1545,7 @@ export default function AdminDashboard({
                   + ` · ${arabicNumber(skipped)} بيت مكانش محتاج`]);
                 setImgMigrationBusy(false);
               }}
-              className="w-full flex items-center justify-center gap-1.5 bg-[#5A5A40] hover:bg-[#4A4A35] text-white text-[12px] font-bold min-h-11 rounded-xl cursor-pointer disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-1.5 bg-[var(--ds-primary)] hover:bg-[#4A4A35] text-white text-[12px] font-bold min-h-11 rounded-xl cursor-pointer disabled:opacity-60"
             >
               {imgMigrationBusy
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري النقل…</>
@@ -1559,12 +1559,12 @@ export default function AdminDashboard({
       {activeTab === 'audit' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-2 px-1">
-            <div className="text-xs font-bold text-[#8A8A70]">
+            <div className="text-xs font-bold text-[var(--ds-text-2)]">
               سجل قرارات الإدارة (آخر {arabicNumber(auditLog.length)} إجراء) — مين وافق أو رفض أو حظر إيه وإمتى:
             </div>
             {auditLog.length > 0 && (
               <button type="button" onClick={exportAudit}
-                className="shrink-0 flex items-center gap-1 text-[11px] font-black text-[#0A2342] bg-white border border-[#D6D6C2] rounded-xl px-2.5 min-h-11 cursor-pointer hover:bg-[#F0EDE6]">
+                className="shrink-0 flex items-center gap-1 text-[11px] font-black text-[var(--ds-brand)] bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl px-2.5 min-h-11 cursor-pointer hover:bg-[#F0EDE6]">
                 <Download className="w-3.5 h-3.5" /> تصدير CSV
               </button>
             )}
@@ -1573,14 +1573,14 @@ export default function AdminDashboard({
           {auditLog.length > 0 && (
             <div className="space-y-2">
               <div className="relative">
-                <Search className="w-4 h-4 text-[#8A8A70] absolute right-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-[var(--ds-text-2)] absolute right-3 top-1/2 -translate-y-1/2" />
                 <input
                   id="admin-audit-search"
                   type="text"
                   value={auditSearch}
                   onChange={(e) => setAuditSearch(e.target.value)}
                   placeholder="ابحث بالإجراء أو التفاصيل أو مين عمله..."
-                  className="w-full bg-white border border-[#D6D6C2] rounded-xl pr-9 pl-3 min-h-11 text-[12px] text-[#2D2D24] outline-none focus:border-[#5A5A40] text-right"
+                  className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl pr-9 pl-3 min-h-11 text-[12px] text-[var(--ds-text-strong)] outline-none focus:border-[var(--ds-primary)] text-right"
                 />
               </div>
               <div className="flex gap-1.5 overflow-x-auto pb-0.5">
@@ -1592,10 +1592,10 @@ export default function AdminDashboard({
                 ]).map((f) => (
                   <button key={f.key} type="button" onClick={() => setAuditKind(f.key)}
                     className={`shrink-0 flex items-center gap-1 text-[11px] font-black px-3 min-h-11 rounded-xl border transition-colors cursor-pointer ${
-                      auditKind === f.key ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white text-[#4A4A3A] border-[#D6D6C2] hover:bg-[#F0EDE6]'
+                      auditKind === f.key ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] text-[var(--ds-text)] border-[var(--ds-border)] hover:bg-[#F0EDE6]'
                     }`}>
                     {f.label}
-                    <span className={`text-[11px] font-black ${auditKind === f.key ? 'text-white/80' : 'text-[#8A8A70]'}`}>{arabicNumber(f.n)}</span>
+                    <span className={`text-[11px] font-black ${auditKind === f.key ? 'text-white/80' : 'text-[var(--ds-text-2)]'}`}>{arabicNumber(f.n)}</span>
                   </button>
                 ))}
               </div>
@@ -1603,16 +1603,16 @@ export default function AdminDashboard({
           )}
 
           {auditLog.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70]">
+            <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-6 text-center text-xs text-[var(--ds-text-2)]">
               لا توجد إجراءات إدارية مسجلة بعد.
             </div>
           ) : filteredAudit.length === 0 ? (
             // "Nothing matched" and "nothing happened" are different answers,
             // and only one of them is the admin's own filter talking.
-            <div className="bg-white rounded-3xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70] space-y-2">
+            <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-6 text-center text-xs text-[var(--ds-text-2)] space-y-2">
               <div>مفيش إجراءات مطابقة للبحث.</div>
               <button type="button" onClick={() => { setAuditSearch(''); setAuditKind('all'); }}
-                className="inline-flex items-center min-h-11 px-3 text-[11px] font-black text-[#0A2342] underline cursor-pointer">
+                className="inline-flex items-center min-h-11 px-3 text-[11px] font-black text-[var(--ds-brand)] underline cursor-pointer">
                 امسح البحث والفلترة
               </button>
             </div>
@@ -1626,16 +1626,16 @@ export default function AdminDashboard({
                   || entry.action === 'payout_status_changed'
                   || entry.action === 'settings_changed';
                 return (
-                  <div key={entry.id} className={`bg-white rounded-2xl border p-3 text-[12px] space-y-1 ${isMoney ? 'border-[#D4AF37]' : 'border-[#D6D6C2]'}`}>
+                  <div key={entry.id} className={`bg-[var(--ds-surface)] rounded-2xl border p-3 text-[12px] space-y-1 ${isMoney ? 'border-[#D4AF37]' : 'border-[var(--ds-border)]'}`}>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-[#0A2342] flex items-center gap-1.5">
+                      <span className="font-bold text-[var(--ds-brand)] flex items-center gap-1.5">
                         {isMoney && <Wallet className="w-3.5 h-3.5 text-[#B8912B] shrink-0" />}
                         {actionLabels[entry.action] || entry.action}
                       </span>
-                      <span className="text-[#8A8A70] shrink-0">{arabicDateTime(entry.createdAt)}</span>
+                      <span className="text-[var(--ds-text-2)] shrink-0">{arabicDateTime(entry.createdAt)}</span>
                     </div>
-                    <div className="text-[#4A4A3A]">{entry.details}</div>
-                    <div className="text-[#8A8A70]">
+                    <div className="text-[var(--ds-text)]">{entry.details}</div>
+                    <div className="text-[var(--ds-text-2)]">
                       {/* A role with no Arabic name printed its English key mid-sentence. */}
                       بواسطة: {entry.actorName || 'غير معروف'} ({ROLE_LABELS[entry.actorRole ?? ''] ?? 'غير معروف'})
                     </div>
@@ -1653,24 +1653,24 @@ export default function AdminDashboard({
 
           {/* Title and what this screen is for. */}
           <div className="px-1">
-            <h3 className="text-[16px] font-black text-[#4A4A3A]">إدارة البيوت</h3>
-            <p className="text-[12px] text-[#8A8A70] mt-0.5">عرض وإدارة كل بيوت المؤتمرات المسجّلة على بيما.</p>
+            <h3 className="text-[16px] font-black text-[var(--ds-text)]">إدارة البيوت</h3>
+            <p className="text-[12px] text-[var(--ds-text-2)] mt-0.5">عرض وإدارة كل بيوت المؤتمرات المسجّلة على بيما.</p>
           </div>
 
           {/* Four figures, each counted from the houses themselves. */}
           <div className="grid grid-cols-2 gap-2.5">
             {([
-              { label: 'إجمالي البيوت', value: houseStats.total, Icon: Home, tint: 'text-[#0A2342]' },
+              { label: 'إجمالي البيوت', value: houseStats.total, Icon: Home, tint: 'text-[var(--ds-brand)]' },
               { label: 'نشطة', value: houseStats.active, Icon: CheckCircle2, tint: 'text-emerald-700' },
               { label: 'قيد المراجعة', value: houseStats.pending, Icon: Clock, tint: 'text-amber-700' },
               { label: 'موقوفة', value: houseStats.suspended, Icon: XCircle, tint: 'text-rose-700' },
             ] as const).map((k) => (
-              <div key={k.label} className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+              <div key={k.label} className="bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[20px] p-3.5">
                 <k.Icon className={`w-4 h-4 ${k.tint}`} />
-                <div className="text-[22px] font-black text-[#4A4A3A] leading-tight mt-1.5 tabular-nums">
+                <div className="text-[22px] font-black text-[var(--ds-text)] leading-tight mt-1.5 tabular-nums">
                   {arabicNumber(k.value)}
                 </div>
-                <div className="text-[11px] font-bold text-[#8A8A70]">{k.label}</div>
+                <div className="text-[11px] font-bold text-[var(--ds-text-2)]">{k.label}</div>
               </div>
             ))}
           </div>
@@ -1685,14 +1685,14 @@ export default function AdminDashboard({
                 onChange={(e) => { setHouseQuery(e.target.value); setHousePage(1); }}
                 placeholder="ابحث باسم البيت أو المحافظة أو المالك…"
                 aria-label="ابحث في البيوت"
-                className="w-full bg-white border border-[#EBEBE0] rounded-[20px] text-[12px] min-h-11 pr-9 pl-3 text-[#4A4A3A] placeholder-[#BCBC9D] focus:outline-none focus:border-[#756B42] transition-colors"
+                className="w-full bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[20px] text-[12px] min-h-11 pr-9 pl-3 text-[var(--ds-text)] placeholder-[#BCBC9D] focus:outline-none focus:border-[#756B42] transition-colors"
               />
             </div>
             <select
               value={houseSort}
               onChange={(e) => setHouseSort(e.target.value as typeof houseSort)}
               aria-label="ترتيب البيوت"
-              className="shrink-0 bg-white border border-[#EBEBE0] rounded-[20px] text-[12px] font-bold min-h-11 px-3 text-[#4A4A3A] focus:outline-none focus:border-[#756B42] cursor-pointer"
+              className="shrink-0 bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[20px] text-[12px] font-bold min-h-11 px-3 text-[var(--ds-text)] focus:outline-none focus:border-[#756B42] cursor-pointer"
             >
               <option value="name">الاسم</option>
               <option value="rating">التقييم</option>
@@ -1713,7 +1713,7 @@ export default function AdminDashboard({
                               ]),
                             )}
               aria-label="تصدير البيوت"
-              className="shrink-0 flex items-center gap-1.5 bg-white border border-[#EBEBE0] rounded-[20px] text-[12px] font-bold min-h-11 px-3 text-[#4A4A3A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+              className="shrink-0 flex items-center gap-1.5 bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[20px] text-[12px] font-bold min-h-11 px-3 text-[var(--ds-text)] hover:bg-[var(--ds-bg)] transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               تصدير
@@ -1737,7 +1737,7 @@ export default function AdminDashboard({
                   className={`shrink-0 flex items-center gap-1.5 min-h-11 px-3.5 rounded-full text-[12px] font-bold border transition-all duration-200 cursor-pointer ${
                     on
                       ? 'bg-[#756B42] border-[#756B42] text-white'
-                      : 'bg-white border-[#EBEBE0] text-[#8A8A70] hover:border-[#D6D6C2]'
+                      : 'bg-[var(--ds-surface)] border-[#EBEBE0] text-[var(--ds-text-2)] hover:border-[var(--ds-border)]'
                   }`}
                 >
                   {f.label}
@@ -1750,9 +1750,9 @@ export default function AdminDashboard({
           </div>
 
           {filteredHouses.length === 0 ? (
-            <div className="bg-white rounded-[24px] p-10 border border-[#EBEBE0] text-center">
+            <div className="bg-[var(--ds-surface)] rounded-[24px] p-10 border border-[#EBEBE0] text-center">
               <Home className="w-8 h-8 text-[#BCBC9D] mx-auto mb-2" />
-              <p className="text-[12px] font-bold text-[#4A4A3A]">
+              <p className="text-[12px] font-bold text-[var(--ds-text)]">
                 {houses.length === 0 ? 'لا توجد بيوت مسجلة بعد' : 'مفيش بيوت مطابقة للبحث'}
               </p>
               {houses.length > 0 && (
@@ -1782,7 +1782,7 @@ export default function AdminDashboard({
                 const menuOpen = openHouseMenu === house.id;
 
                 return (
-                  <div key={house.id} className="bg-white rounded-[24px] border border-[#EBEBE0] p-3 shadow-[0_1px_3px_rgba(16,43,92,0.04)]">
+                  <div key={house.id} className="bg-[var(--ds-surface)] rounded-[24px] border border-[#EBEBE0] p-3 shadow-[0_1px_3px_rgba(16,43,92,0.04)]">
                     <div className="flex items-start gap-3">
 
                       {/* Actions first in the DOM, which in RTL puts them on
@@ -1796,7 +1796,7 @@ export default function AdminDashboard({
                         <button
                           type="button"
                           onClick={() => setPreviewHouseId(house.id)}
-                          className="flex items-center justify-center gap-1.5 min-h-11 rounded-[14px] border border-[#EBEBE0] text-[12px] font-bold text-[#4A4A3A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                          className="flex items-center justify-center gap-1.5 min-h-11 rounded-[14px] border border-[#EBEBE0] text-[12px] font-bold text-[var(--ds-text)] hover:bg-[var(--ds-bg)] transition-colors cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           عرض
@@ -1807,7 +1807,7 @@ export default function AdminDashboard({
                             onClick={() => setOpenHouseMenu(menuOpen ? null : house.id)}
                             aria-expanded={menuOpen}
                             aria-label={`إجراءات ${house.name}`}
-                            className="w-full flex items-center justify-center gap-1.5 min-h-11 rounded-[14px] border border-[#EBEBE0] text-[12px] font-bold text-[#4A4A3A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                            className="w-full flex items-center justify-center gap-1.5 min-h-11 rounded-[14px] border border-[#EBEBE0] text-[12px] font-bold text-[var(--ds-text)] hover:bg-[var(--ds-bg)] transition-colors cursor-pointer"
                           >
                             <MoreHorizontal className="w-4 h-4" />
                             المزيد
@@ -1833,7 +1833,7 @@ export default function AdminDashboard({
                                   z-40 clears the sticky section bar at the
                                   bottom, which is z-20 and comes later in the
                                   DOM, so at equal z it painted over the menu. */}
-                              <div className="absolute right-0 top-full mt-1 z-40 w-40 bg-white border border-[#EBEBE0] rounded-[16px] shadow-[0_8px_24px_rgba(16,43,92,0.12)] overflow-hidden">
+                              <div className="absolute right-0 top-full mt-1 z-40 w-40 bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[16px] shadow-[0_8px_24px_rgba(16,43,92,0.12)] overflow-hidden">
                               {(house.status === 'approved' || house.status === 'suspended') && onSuspendHouse && (
                                 <button
                                   type="button"
@@ -1844,7 +1844,7 @@ export default function AdminDashboard({
                                     }
                                     setOpenHouseMenu(null);
                                   }}
-                                  className="w-full text-right px-3 min-h-11 text-[12px] font-bold text-[#4A4A3A] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                                  className="w-full text-right px-3 min-h-11 text-[12px] font-bold text-[var(--ds-text)] hover:bg-[var(--ds-bg)] transition-colors cursor-pointer"
                                 >
                                   {house.status === 'approved' ? 'إيقاف البيت' : 'إعادة التفعيل'}
                                 </button>
@@ -1881,7 +1881,7 @@ export default function AdminDashboard({
                                     });
                                     setOpenHouseMenu(null);
                                   }}
-                                  className="w-full text-right px-3 min-h-11 text-[12px] font-bold text-[#B8944E] hover:bg-[#FAF6EC] transition-colors cursor-pointer border-t border-[#EBEBE0]"
+                                  className="w-full text-right px-3 min-h-11 text-[12px] font-bold text-[var(--ds-accent-deep)] hover:bg-[#FAF6EC] transition-colors cursor-pointer border-t border-[#EBEBE0]"
                                 >
                                   {house.discountPct ? 'تعديل الخصم' : 'حط خصم'}
                                 </button>
@@ -1895,23 +1895,23 @@ export default function AdminDashboard({
                       {/* Name, where it is, what it is, and the three numbers
                           the platform can actually count. */}
                       <div className="flex-1 min-w-0 py-0.5">
-                        <div className="text-[13px] font-black text-[#4A4A3A] truncate">{house.name}</div>
-                        <div className="text-[11px] text-[#8A8A70] mt-1 flex items-center gap-1.5 flex-wrap">
+                        <div className="text-[13px] font-black text-[var(--ds-text)] truncate">{house.name}</div>
+                        <div className="text-[11px] text-[var(--ds-text-2)] mt-1 flex items-center gap-1.5 flex-wrap">
                           <span className="flex items-center gap-1">
                             <MapPin className="w-3 h-3 shrink-0" />
                             {house.governorate}
                           </span>
-                          <span className="text-[#D6D6C2]">·</span>
+                          <span className="text-[var(--ds-border)]">·</span>
                           <span>{typeLabel}</span>
                         </div>
                         <div className="flex items-center gap-3 mt-2.5">
-                          <span className="flex items-center gap-1 text-[11px] font-bold text-[#4A4A3A]">
-                            <Star className="w-3.5 h-3.5 text-[#C5A059]" />
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--ds-text)]">
+                            <Star className="w-3.5 h-3.5 text-[var(--ds-accent)]" />
                             <span className="tabular-nums">{house.rating ? house.rating.toFixed(1) : '—'}</span>
                             <span className="text-[#BCBC9D] font-normal">({arabicNumber(house.reviewsCount ?? 0)})</span>
                           </span>
-                          <span className="flex items-center gap-1 text-[11px] font-bold text-[#4A4A3A]">
-                            <CalendarDays className="w-3.5 h-3.5 text-[#8A8A70]" />
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--ds-text)]">
+                            <CalendarDays className="w-3.5 h-3.5 text-[var(--ds-text-2)]" />
                             <span className="tabular-nums">{arabicNumber(bookingCount)}</span>
                             <span className="text-[#BCBC9D] font-normal">حجز</span>
                           </span>
@@ -1927,8 +1927,8 @@ export default function AdminDashboard({
                             // «none yet», which is exactly how it was reported:
                             // «the eye shows without the count».
                             return (
-                              <span className="flex items-center gap-1 text-[11px] font-bold text-[#4A4A3A]">
-                                <Eye className="w-3.5 h-3.5 text-[#8A8A70]" />
+                              <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--ds-text)]">
+                                <Eye className="w-3.5 h-3.5 text-[var(--ds-text-2)]" />
                                 {seen === 0 ? (
                                   <span className="text-[#BCBC9D] font-normal">لسه مفيش مشاهدات</span>
                                 ) : (
@@ -1953,7 +1953,7 @@ export default function AdminDashboard({
                         />
                       ) : (
                         <div className="w-[88px] h-[88px] rounded-[18px] bg-[#F4F2EC] shrink-0 flex items-center justify-center">
-                          <Home className="w-6 h-6 text-[#D6D6C2]" />
+                          <Home className="w-6 h-6 text-[var(--ds-border)]" />
                         </div>
                       )}
                     </div>
@@ -1963,45 +1963,45 @@ export default function AdminDashboard({
                         behind the menu that set it. */}
                     {(house.discountPct ?? 0) > 0 && (
                       <div className="mt-2 flex items-center justify-between gap-2 bg-[#FAF6EC] border border-[#E8DCC0] rounded-xl px-3 py-2">
-                        <span className="text-[11px] font-black text-[#B8944E]">
+                        <span className="text-[11px] font-black text-[var(--ds-accent-deep)]">
                           خصم {arabicNumber(Math.round((house.discountPct ?? 0) * 100))}٪
                           {house.discountStartsAt && house.discountEndsAt &&
                             ` · ${arabicDateRange(house.discountStartsAt, house.discountEndsAt)}`}
                         </span>
                         {house.discountNote && (
-                          <span className="text-[11px] text-[#8A8A70] truncate">{house.discountNote}</span>
+                          <span className="text-[11px] text-[var(--ds-text-2)] truncate">{house.discountNote}</span>
                         )}
                       </div>
                     )}
 
                     {/* The discount editor, inline under its card. */}
                     {discountHouseId === house.id && onSetHouseDiscount && (
-                      <div className="mt-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl p-3 space-y-2">
+                      <div className="mt-2 bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-2xl p-3 space-y-2">
                         <label className="space-y-1 block">
-                          <span className="text-[11px] font-bold text-[#8A8A70]">نسبة الخصم ٪ (من ١ لـ٦٠)</span>
+                          <span className="text-[11px] font-bold text-[var(--ds-text-2)]">نسبة الخصم ٪ (من ١ لـ٦٠)</span>
                           <input type="number" min={0} max={60} value={discountDraft.pct}
                             onChange={(e) => setDiscountDraft((d) => ({ ...d, pct: e.target.value }))}
-                            className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                            className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                           <label className="space-y-1">
-                            <span className="text-[11px] font-bold text-[#8A8A70]">من (تاريخ الدخول)</span>
+                            <span className="text-[11px] font-bold text-[var(--ds-text-2)]">من (تاريخ الدخول)</span>
                             <input type="date" value={discountDraft.from}
                               onChange={(e) => setDiscountDraft((d) => ({ ...d, from: e.target.value }))}
-                              className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                              className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
                           </label>
                           <label className="space-y-1">
-                            <span className="text-[11px] font-bold text-[#8A8A70]">إلى</span>
+                            <span className="text-[11px] font-bold text-[var(--ds-text-2)]">إلى</span>
                             <input type="date" value={discountDraft.to}
                               onChange={(e) => setDiscountDraft((d) => ({ ...d, to: e.target.value }))}
-                              className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                              className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
                           </label>
                         </div>
                         <label className="space-y-1 block">
-                          <span className="text-[11px] font-bold text-[#8A8A70]">مين طلبه؟ (المالك بيتحمّل تمنه — سجّل طلبه)</span>
+                          <span className="text-[11px] font-bold text-[var(--ds-text-2)]">مين طلبه؟ (المالك بيتحمّل تمنه — سجّل طلبه)</span>
                           <input type="text" value={discountDraft.note} placeholder="مثلاً: طلب أ. مينا تليفونياً ٨/٨"
                             onChange={(e) => setDiscountDraft((d) => ({ ...d, note: e.target.value }))}
-                            className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                            className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
                         </label>
                         {/* What it does to the money, before it is saved. */}
                         {(() => {
@@ -2010,7 +2010,7 @@ export default function AdminDashboard({
                           const nightly = house.pricePerNightPerPerson || 0;
                           const after = Math.round(nightly * (1 - pct / 100));
                           return (
-                            <p className="text-[11px] text-[#8A8A70] leading-relaxed">
+                            <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">
                               الليلة هتبقى {arabicNumber(after)} بدل {arabicNumber(nightly)} ج.م.
                               المالك بيتحمّل الفرق، وعمولتك بتتحسب على السعر بعد الخصم.
                             </p>
@@ -2032,11 +2032,11 @@ export default function AdminDashboard({
                               });
                               setDiscountHouseId(null);
                             }}
-                            className="flex-1 bg-[#B8944E] hover:bg-[#A5843F] text-white text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+                            className="flex-1 bg-[var(--ds-accent-deep)] hover:bg-[#A5843F] text-white text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
                             {parseInt(discountDraft.pct, 10) > 0 ? 'فعّل الخصم' : 'شيل الخصم'}
                           </button>
                           <button type="button" onClick={() => setDiscountHouseId(null)}
-                            className="bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 px-4 rounded-xl cursor-pointer">
+                            className="bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold min-h-11 px-4 rounded-xl cursor-pointer">
                             إلغاء
                           </button>
                         </div>
@@ -2055,7 +2055,7 @@ export default function AdminDashboard({
                 value={housePerPage}
                 onChange={(e) => { setHousePerPage(Number(e.target.value)); setHousePage(1); }}
                 aria-label="عدد البيوت في الصفحة"
-                className="bg-white border border-[#EBEBE0] rounded-[16px] text-[12px] font-bold min-h-11 px-2.5 text-[#4A4A3A] focus:outline-none focus:border-[#756B42] cursor-pointer"
+                className="bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[16px] text-[12px] font-bold min-h-11 px-2.5 text-[var(--ds-text)] focus:outline-none focus:border-[#756B42] cursor-pointer"
               >
                 {[10, 25, 50].map((n) => (
                   <option key={n} value={n}>{arabicNumber(n)} لكل صفحة</option>
@@ -2068,11 +2068,11 @@ export default function AdminDashboard({
                   onClick={() => setHousePage((p) => Math.max(1, p - 1))}
                   disabled={houseSafePage === 1}
                   aria-label="الصفحة السابقة"
-                  className="w-11 h-11 flex items-center justify-center rounded-[14px] border border-[#EBEBE0] text-[#4A4A3A] disabled:opacity-30 hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                  className="w-11 h-11 flex items-center justify-center rounded-[14px] border border-[#EBEBE0] text-[var(--ds-text)] disabled:opacity-30 hover:bg-[var(--ds-bg)] transition-colors cursor-pointer"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
-                <span className="text-[12px] font-bold text-[#8A8A70] px-2 tabular-nums">
+                <span className="text-[12px] font-bold text-[var(--ds-text-2)] px-2 tabular-nums">
                   {arabicNumber(houseSafePage)} / {arabicNumber(housePageCount)}
                 </span>
                 <button
@@ -2080,7 +2080,7 @@ export default function AdminDashboard({
                   onClick={() => setHousePage((p) => Math.min(housePageCount, p + 1))}
                   disabled={houseSafePage === housePageCount}
                   aria-label="الصفحة التالية"
-                  className="w-11 h-11 flex items-center justify-center rounded-[14px] border border-[#EBEBE0] text-[#4A4A3A] disabled:opacity-30 hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                  className="w-11 h-11 flex items-center justify-center rounded-[14px] border border-[#EBEBE0] text-[var(--ds-text)] disabled:opacity-30 hover:bg-[var(--ds-bg)] transition-colors cursor-pointer"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -2096,57 +2096,57 @@ export default function AdminDashboard({
           {/* Review statistics */}
           {reviews.length > 0 && (
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-2">
-                <div className="text-[12px] text-[#8A8A70] font-bold">متوسط تقييم المنصة</div>
+              <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-4 space-y-2">
+                <div className="text-[12px] text-[var(--ds-text-2)] font-bold">متوسط تقييم المنصة</div>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl font-black text-[#4A4A3A]">{arabicDecimal(avgRating)}</span>
+                  <span className="text-2xl font-black text-[var(--ds-text)]">{arabicDecimal(avgRating)}</span>
                   <div className="flex gap-0.5">
                     {[1,2,3,4,5].map((s) => (
-                      <Star key={s} className={`w-4 h-4 ${s <= Math.round(avgRating) ? 'fill-amber-500 text-amber-500' : 'text-[#D6D6C2]'}`} />
+                      <Star key={s} className={`w-4 h-4 ${s <= Math.round(avgRating) ? 'fill-amber-500 text-amber-500' : 'text-[var(--ds-border)]'}`} />
                     ))}
                   </div>
                 </div>
-                <div className="text-[11px] text-[#8A8A70]">{arabicPlural(reviews.length, REVIEW_FORMS)}</div>
+                <div className="text-[11px] text-[var(--ds-text-2)]">{arabicPlural(reviews.length, REVIEW_FORMS)}</div>
               </div>
-              <div className="bg-white rounded-3xl border border-[#D6D6C2] p-4 space-y-1.5">
-                <div className="text-[12px] text-[#8A8A70] font-bold">توزيع النجوم</div>
+              <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-4 space-y-1.5">
+                <div className="text-[12px] text-[var(--ds-text-2)] font-bold">توزيع النجوم</div>
                 {starDist.map((s) => (
                   <div key={s.star} className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-[#4A4A3A] w-3">{s.star}</span>
+                    <span className="text-[11px] font-bold text-[var(--ds-text)] w-3">{s.star}</span>
                     <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                     <div className="flex-1 h-2 bg-[#EBEBE0]/50 rounded-full overflow-hidden">
                       <div className="h-full bg-amber-500 rounded-full" style={{ width: `${reviews.length > 0 ? (s.count / reviews.length) * 100 : 0}%` }} />
                     </div>
-                    <span className="text-[11px] text-[#8A8A70] w-6 text-left">{s.count}</span>
+                    <span className="text-[11px] text-[var(--ds-text-2)] w-6 text-left">{s.count}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="text-xs font-bold text-[#8A8A70] px-1">مراجعة وحذف التقييمات المسيئة أو الوهمية:</div>
+          <div className="text-xs font-bold text-[var(--ds-text-2)] px-1">مراجعة وحذف التقييمات المسيئة أو الوهمية:</div>
           {reviews.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center">
+            <div className="bg-[var(--ds-surface)] rounded-3xl p-8 border border-[var(--ds-border)] text-center">
               <Star className="w-8 h-8 text-[#BCBC9D] mx-auto mb-2" />
-              <p className="text-sm font-bold text-[#4A4A3A]">لا توجد مراجعات بعد</p>
+              <p className="text-sm font-bold text-[var(--ds-text)]">لا توجد مراجعات بعد</p>
             </div>
           ) : (
             <div className="space-y-2">
               {[...reviews].sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1)).map((rev) => {
                 const house = houses.find((h) => h.id === rev.houseId);
                 return (
-                  <div key={rev.id} className="bg-white p-3 rounded-2xl border border-[#D6D6C2] text-right space-y-1.5">
+                  <div key={rev.id} className="bg-[var(--ds-surface)] p-3 rounded-2xl border border-[var(--ds-border)] text-right space-y-1.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="text-[11px] font-bold text-[#4A4A3A]">{rev.userName}</div>
-                        <div className="text-[11px] text-[#8A8A70]">في: {house?.name || rev.houseName || rev.houseId}</div>
+                        <div className="text-[11px] font-bold text-[var(--ds-text)]">{rev.userName}</div>
+                        <div className="text-[11px] text-[var(--ds-text-2)]">في: {house?.name || rev.houseName || rev.houseId}</div>
                       </div>
                       <span className="flex items-center gap-0.5 text-[12px] font-bold text-amber-600 shrink-0">
                         <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                         {arabicDecimal(rev.overall_rating ?? rev.rating)}
                       </span>
                     </div>
-                    {rev.comment && <p className="text-[12px] text-[#4A4A3A] leading-relaxed bg-[#FAF8F5] rounded-xl p-2 border border-[#E7E5DB]">{rev.comment}</p>}
+                    {rev.comment && <p className="text-[12px] text-[var(--ds-text)] leading-relaxed bg-[var(--ds-bg)] rounded-xl p-2 border border-[#E7E5DB]">{rev.comment}</p>}
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] text-[#BCBC9D]">{new Date(rev.createdAt).toLocaleDateString('ar-EG')}</span>
                       <button
@@ -2170,21 +2170,21 @@ export default function AdminDashboard({
       {activeTab === 'announcements' && (
         <div className="space-y-3 mt-4">
           {/* Section header + sub-navigation */}
-          <div className="bg-white p-4 rounded-2xl border border-[#D6D6C2] space-y-3">
+          <div className="bg-[var(--ds-surface)] p-4 rounded-2xl border border-[var(--ds-border)] space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="w-9 h-9 rounded-2xl bg-[#C5A059]/15 flex items-center justify-center shrink-0">
-                  <Megaphone className="w-4.5 h-4.5 text-[#C5A059]" />
+                <span className="w-9 h-9 rounded-2xl bg-[var(--ds-accent)]/15 flex items-center justify-center shrink-0">
+                  <Megaphone className="w-4.5 h-4.5 text-[var(--ds-accent)]" />
                 </span>
                 <div className="min-w-0">
-                  <h3 className="text-[13px] font-black text-[#0A2342]">إدارة البانرات</h3>
-                  <p className="text-[11px] font-bold text-[#8A8A70]">البنرات الرسمية الظاهرة داخل تطبيق بيما</p>
+                  <h3 className="text-[13px] font-black text-[var(--ds-brand)]">إدارة البانرات</h3>
+                  <p className="text-[11px] font-bold text-[var(--ds-text-2)]">البنرات الرسمية الظاهرة داخل تطبيق بيما</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => { pbResetForm(); setPbView('form'); }}
-                className="flex items-center gap-1.5 bg-[#0A2342] hover:bg-[#123E75] text-white text-[12px] font-black px-3.5 min-h-11 rounded-xl shadow-sm transition-all cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 bg-[var(--ds-brand)] hover:bg-[var(--ds-brand-2)] text-white text-[12px] font-black px-3.5 min-h-11 rounded-xl shadow-sm transition-all cursor-pointer shrink-0"
               >
                 + إنشاء بانر جديد
               </button>
@@ -2202,8 +2202,8 @@ export default function AdminDashboard({
                   onClick={() => setPbView(key)}
                   className={`px-3.5 min-h-11 rounded-xl text-[12px] font-black border transition-all cursor-pointer ${
                     pbView === key
-                      ? 'bg-[#5A5A40] text-white border-[#5A5A40] shadow-sm'
-                      : 'bg-[#FAF8F5] text-[#5A5A40] border-[#E7E5DB] hover:bg-white'
+                      ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)] shadow-sm'
+                      : 'bg-[var(--ds-bg)] text-[var(--ds-primary)] border-[#E7E5DB] hover:bg-[var(--ds-surface)]'
                   }`}
                 >
                   {label}
@@ -2213,43 +2213,43 @@ export default function AdminDashboard({
           </div>
 
           {pbView === 'form' && (
-          <div className="bg-white p-4 rounded-2xl border border-[#D6D6C2] space-y-2.5">
-            <div className="flex items-center justify-between gap-2 text-[#4A4A3A]">
+          <div className="bg-[var(--ds-surface)] p-4 rounded-2xl border border-[var(--ds-border)] space-y-2.5">
+            <div className="flex items-center justify-between gap-2 text-[var(--ds-text)]">
               <h3 className="text-xs font-black">{pbEditingId ? 'تعديل البانر' : 'بانر جديد'}</h3>
-              <button type="button" onClick={() => { pbResetForm(); setPbView('list'); }} className="text-[11px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] cursor-pointer shrink-0">
+              <button type="button" onClick={() => { pbResetForm(); setPbView('list'); }} className="text-[11px] font-bold text-[var(--ds-text-2)] hover:text-[var(--ds-text)] cursor-pointer shrink-0">
                 إلغاء ✕
               </button>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <select value={pbPlacement} onChange={(e) => setPbPlacement(e.target.value as 'carousel' | 'countdown')} disabled={!!pbEditingId} className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-[#2D2D24] focus:outline-none text-right disabled:opacity-60">
+              <select value={pbPlacement} onChange={(e) => setPbPlacement(e.target.value as 'carousel' | 'countdown')} disabled={!!pbEditingId} className="col-span-2 bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-[var(--ds-text-strong)] focus:outline-none text-right disabled:opacity-60">
                 <option value="carousel">شريحة في الكاروسيل العلوي 🖼️</option>
                 <option value="countdown">بانر العدّاد السفلي ⏳</option>
               </select>
-              <input value={pbBadge} onChange={(e) => setPbBadge(e.target.value)} placeholder="الشارة (مثال: عرض خاص)" className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
-              <input value={pbCta} onChange={(e) => setPbCta(e.target.value)} placeholder="نص الزر (مثال: احجز الآن)" className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
-              <input value={pbTitle} onChange={(e) => setPbTitle(e.target.value)} placeholder={pbPlacement === 'countdown' ? 'نص الخصم (مثال: خصم ٢٠٪)' : 'العنوان (مثال: عرض الصيف)'} className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
+              <input value={pbBadge} onChange={(e) => setPbBadge(e.target.value)} placeholder="الشارة (مثال: عرض خاص)" className="bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
+              <input value={pbCta} onChange={(e) => setPbCta(e.target.value)} placeholder="نص الزر (مثال: احجز الآن)" className="bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
+              <input value={pbTitle} onChange={(e) => setPbTitle(e.target.value)} placeholder={pbPlacement === 'countdown' ? 'نص الخصم (مثال: خصم ٢٠٪)' : 'العنوان (مثال: عرض الصيف)'} className="col-span-2 bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
               {pbPlacement === 'carousel' && (
-                <input value={pbSubtitle} onChange={(e) => setPbSubtitle(e.target.value)} placeholder="الوصف (مثال: خصومات تصل ٣٠٪ على الساحل)" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
+                <input value={pbSubtitle} onChange={(e) => setPbSubtitle(e.target.value)} placeholder="الوصف (مثال: خصومات تصل ٣٠٪ على الساحل)" className="col-span-2 bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
               )}
               <div className="col-span-2 space-y-1.5">
-                <input value={pbImage} onChange={(e) => setPbImage(e.target.value)} placeholder="رابط الصورة (https://...)" className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" dir="ltr" />
+                <input value={pbImage} onChange={(e) => setPbImage(e.target.value)} placeholder="رابط الصورة (https://...)" className="w-full bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" dir="ltr" />
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-[#8A8A70] shrink-0">أو ارفع صورة:</span>
+                  <span className="text-[11px] font-bold text-[var(--ds-text-2)] shrink-0">أو ارفع صورة:</span>
                   <PhotoPickerButtons idPrefix="promo-banner" folder="banners" onSelect={(url) => setPbImage(url)} className="flex-1" />
                 </div>
               </div>
               {pbPlacement === 'countdown' && (
-                <label className="col-span-2 text-[12px] font-bold text-[#8A8A70]">ينتهي العرض في:
-                  <input type="datetime-local" value={pbEndsAt} onChange={(e) => setPbEndsAt(e.target.value)} className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
+                <label className="col-span-2 text-[12px] font-bold text-[var(--ds-text-2)]">ينتهي العرض في:
+                  <input type="datetime-local" value={pbEndsAt} onChange={(e) => setPbEndsAt(e.target.value)} className="w-full mt-1 bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
                 </label>
               )}
 
               {/* Destination: a house inside the app beats any external link */}
               <div className="col-span-2 space-y-1.5 border-t border-[#E7E5DB] pt-2.5">
-                <span className="text-[12px] font-black text-[#4A4A3A]">وجهة الزر</span>
+                <span className="text-[12px] font-black text-[var(--ds-text)]">وجهة الزر</span>
                 <select value={pbHouseId} onChange={(e) => setPbHouseId(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right cursor-pointer">
+                  className="w-full bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right cursor-pointer">
                   <option value="">بدون — استخدم رابط خارجي</option>
                   {houses.filter((h) => h.status === 'approved').map((h) => (
                     <option key={h.id} value={h.id}>🏠 {h.name}</option>
@@ -2258,30 +2258,30 @@ export default function AdminDashboard({
                 {pbHouseId ? (
                   <p className="text-[11px] font-bold text-emerald-700">الضغط على الزر هيفتح صفحة البيت جوّه التطبيق.</p>
                 ) : (
-                  <input value={pbLinkUrl} onChange={(e) => setPbLinkUrl(e.target.value)} placeholder="رابط خارجي (اختياري — مثال: instagram.com/pima_app)" className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" dir="ltr" />
+                  <input value={pbLinkUrl} onChange={(e) => setPbLinkUrl(e.target.value)} placeholder="رابط خارجي (اختياري — مثال: instagram.com/pima_app)" className="w-full bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" dir="ltr" />
                 )}
               </div>
 
               {/* Publish state */}
               <div className="col-span-2 space-y-1.5 border-t border-[#E7E5DB] pt-2.5">
-                <span className="text-[12px] font-black text-[#4A4A3A]">النشر</span>
+                <span className="text-[12px] font-black text-[var(--ds-text)]">النشر</span>
                 <div className="flex gap-1.5">
                   {([['draft', 'مسودة'], ['published', 'نشر الآن'], ['scheduled', 'جدولة']] as const).map(([v, label]) => (
                     <button key={v} type="button" onClick={() => setPbStatus(v)}
                       className={`flex-1 min-h-11 rounded-xl text-[12px] font-black border transition-all cursor-pointer ${
-                        pbStatus === v ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white text-[#5A5A40] border-[#D6D6C2]'
+                        pbStatus === v ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] text-[var(--ds-primary)] border-[var(--ds-border)]'
                       }`}>{label}</button>
                   ))}
                 </div>
                 {pbStatus === 'scheduled' && (
                   <div className="grid grid-cols-2 gap-2">
-                    <label className="text-[11px] font-bold text-[#8A8A70]">يبدأ في:
+                    <label className="text-[11px] font-bold text-[var(--ds-text-2)]">يبدأ في:
                       <input type="datetime-local" value={pbStartsAt} onChange={(e) => setPbStartsAt(e.target.value)}
-                        className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-2 min-h-11 text-right" />
+                        className="w-full mt-1 bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[11px] px-2 min-h-11 text-right" />
                     </label>
-                    <label className="text-[11px] font-bold text-[#8A8A70]">ينتهي في:
+                    <label className="text-[11px] font-bold text-[var(--ds-text-2)]">ينتهي في:
                       <input type="datetime-local" value={pbEndsAt} onChange={(e) => setPbEndsAt(e.target.value)}
-                        className="w-full mt-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-2 min-h-11 text-right" />
+                        className="w-full mt-1 bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[11px] px-2 min-h-11 text-right" />
                     </label>
                   </div>
                 )}
@@ -2289,7 +2289,7 @@ export default function AdminDashboard({
 
               {/* Audience — empty means everyone, which is what every old banner is */}
               <div className="col-span-2 space-y-2 border-t border-[#E7E5DB] pt-2.5">
-                <span className="text-[12px] font-black text-[#4A4A3A]">
+                <span className="text-[12px] font-black text-[var(--ds-text)]">
                   الجمهور {pbRoles.length + pbGovs.length === 0 && pbBooked === 'any' ? '— الكل' : '— مُستهدف 🎯'}
                 </span>
                 <div className="flex gap-1.5 flex-wrap">
@@ -2297,7 +2297,7 @@ export default function AdminDashboard({
                     <button key={r} type="button"
                       onClick={() => setPbRoles((p) => p.includes(r) ? p.filter((x) => x !== r) : [...p, r])}
                       className={`px-2.5 min-h-11.5 rounded-xl text-[12px] font-bold border cursor-pointer transition-all ${
-                        pbRoles.includes(r) ? 'bg-[#0A2342] text-white border-[#0A2342]' : 'bg-white text-[#5A5A40] border-[#D6D6C2]'
+                        pbRoles.includes(r) ? 'bg-[var(--ds-brand)] text-white border-[var(--ds-brand)]' : 'bg-[var(--ds-surface)] text-[var(--ds-primary)] border-[var(--ds-border)]'
                       }`}>{label}</button>
                   ))}
                 </div>
@@ -2305,12 +2305,12 @@ export default function AdminDashboard({
                   {([['any', 'حجز أو لا'], ['yes', 'حجز قبل كده'], ['no', 'لسه ما حجزش']] as const).map(([v, label]) => (
                     <button key={v} type="button" onClick={() => setPbBooked(v)}
                       className={`flex-1 min-h-11.5 rounded-xl text-[11px] font-bold border cursor-pointer transition-all ${
-                        pbBooked === v ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white text-[#5A5A40] border-[#D6D6C2]'
+                        pbBooked === v ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] text-[var(--ds-primary)] border-[var(--ds-border)]'
                       }`}>{label}</button>
                   ))}
                 </div>
                 <select value="" onChange={(e) => { if (e.target.value) setPbGovs((p) => p.includes(e.target.value) ? p : [...p, e.target.value]); }}
-                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[12px] px-3 min-h-11 text-right cursor-pointer">
+                  className="w-full bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[12px] px-3 min-h-11 text-right cursor-pointer">
                   <option value="">+ أضف محافظة (اختياري)</option>
                   {GOVERNORATES.filter((g) => !pbGovs.includes(g)).map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
@@ -2318,7 +2318,7 @@ export default function AdminDashboard({
                   <div className="flex gap-1 flex-wrap">
                     {pbGovs.map((g) => (
                       <button key={g} type="button" onClick={() => setPbGovs((p) => p.filter((x) => x !== g))}
-                        className="text-[11px] font-bold bg-[#EBEBE0] text-[#4A4A3A] px-2 min-h-11 rounded-lg cursor-pointer">{g} ✕</button>
+                        className="text-[11px] font-bold bg-[#EBEBE0] text-[var(--ds-text)] px-2 min-h-11 rounded-lg cursor-pointer">{g} ✕</button>
                     ))}
                   </div>
                 )}
@@ -2329,35 +2329,35 @@ export default function AdminDashboard({
 
               {/* Split test */}
               <div className="col-span-2 space-y-1.5 border-t border-[#E7E5DB] pt-2.5">
-                <span className="text-[12px] font-black text-[#4A4A3A]">تجربة A/B (اختياري)</span>
-                <p className="text-[11px] font-bold text-[#8A8A70]">اكتب نفس اسم التجربة في بانرين، والنظام يوزّعهم على الزوار ويقارن نتايجهم.</p>
+                <span className="text-[12px] font-black text-[var(--ds-text)]">تجربة A/B (اختياري)</span>
+                <p className="text-[11px] font-bold text-[var(--ds-text-2)]">اكتب نفس اسم التجربة في بانرين، والنظام يوزّعهم على الزوار ويقارن نتايجهم.</p>
                 <div className="grid grid-cols-3 gap-2">
-                  <input value={pbExperiment} onChange={(e) => setPbExperiment(e.target.value)} placeholder="اسم التجربة" className="col-span-2 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
-                  <input value={pbVariant} onChange={(e) => setPbVariant(e.target.value)} placeholder="أ / ب" className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-center" />
+                  <input value={pbExperiment} onChange={(e) => setPbExperiment(e.target.value)} placeholder="اسم التجربة" className="col-span-2 bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-right" />
+                  <input value={pbVariant} onChange={(e) => setPbVariant(e.target.value)} placeholder="أ / ب" className="bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[11px] px-3 min-h-11 text-center" />
                 </div>
               </div>
 
               {/* Icon links shown inside the banner (social accounts, site, phone…) */}
               <div className="col-span-2 space-y-1.5 pt-1 border-t border-[#E7E5DB]">
                 <div className="flex items-center justify-between gap-2 pt-1.5">
-                  <span className="text-[12px] font-black text-[#4A4A3A]">أيقونات داخل البانر ({arabicNumber(pbLinks.length)})</span>
+                  <span className="text-[12px] font-black text-[var(--ds-text)]">أيقونات داخل البانر ({arabicNumber(pbLinks.length)})</span>
                   <button
                     type="button"
                     onClick={() => setPbLinks((p) => [...p, { id: `pl_${Date.now()}`, platform: 'instagram', url: '' }])}
-                    className="text-[11px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 min-h-11 rounded-lg cursor-pointer shrink-0"
+                    className="text-[11px] font-bold text-[var(--ds-primary)] border border-[var(--ds-border)] hover:bg-[var(--ds-bg)] px-2 min-h-11 rounded-lg cursor-pointer shrink-0"
                   >
                     + إضافة أيقونة
                   </button>
                 </div>
                 {pbLinks.length === 0 ? (
-                  <p className="text-[11px] text-[#8A8A70] font-bold">مثال: أضف إنستجرام وفيسبوك وواتساب في نفس البانر — كل أيقونة بلينكها.</p>
+                  <p className="text-[11px] text-[var(--ds-text-2)] font-bold">مثال: أضف إنستجرام وفيسبوك وواتساب في نفس البانر — كل أيقونة بلينكها.</p>
                 ) : (
                   pbLinks.map((l, i) => (
                     <div key={l.id} className="flex items-center gap-1.5">
                       <select
                         value={l.platform}
                         onChange={(e) => setPbLinks((p) => p.map((x, j) => (j === i ? { ...x, platform: e.target.value as PromoLinkPlatform } : x)))}
-                        className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[12px] px-2 min-h-11 text-[#2D2D24] focus:outline-none shrink-0"
+                        className="bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[12px] px-2 min-h-11 text-[var(--ds-text-strong)] focus:outline-none shrink-0"
                       >
                         {PROMO_PLATFORMS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                       </select>
@@ -2365,7 +2365,7 @@ export default function AdminDashboard({
                         value={l.url}
                         onChange={(e) => setPbLinks((p) => p.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))}
                         placeholder="الرابط (أو الرقم لواتساب/الاتصال)"
-                        className="flex-1 min-w-0 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-[12px] px-2 min-h-11 text-right"
+                        className="flex-1 min-w-0 bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-[12px] px-2 min-h-11 text-right"
                         dir="ltr"
                       />
                       <button
@@ -2401,8 +2401,8 @@ export default function AdminDashboard({
               };
               return (
                 <div className="space-y-1.5 pt-1">
-                  <span className="text-[11px] font-black text-[#8A8A70] flex items-center gap-1"><Eye className="w-3 h-3" /> معاينة (زي ما الزائر هيشوفها)</span>
-                  <div className="bg-[#FAF8F5] border border-dashed border-[#D6D6C2] rounded-2xl p-2" dir="rtl">
+                  <span className="text-[11px] font-black text-[var(--ds-text-2)] flex items-center gap-1"><Eye className="w-3 h-3" /> معاينة (زي ما الزائر هيشوفها)</span>
+                  <div className="bg-[var(--ds-bg)] border border-dashed border-[var(--ds-border)] rounded-2xl p-2" dir="rtl">
                     {pbPlacement === 'carousel'
                       ? <SummerOfferCarousel slides={[draft]} />
                       : <CountdownOfferBanner banner={draft} />}
@@ -2464,7 +2464,7 @@ export default function AdminDashboard({
                 pbResetForm();
                 setPbView('list');
               }}
-              className="w-full bg-[#5A5A40] hover:bg-[#4A4A3A] text-white text-[11px] font-black min-h-11 rounded-xl transition-all cursor-pointer"
+              className="w-full bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-white text-[11px] font-black min-h-11 rounded-xl transition-all cursor-pointer"
             >
               {pbEditingId ? 'حفظ التعديل' : 'إضافة البانر'}
             </button>
@@ -2490,11 +2490,11 @@ export default function AdminDashboard({
           {pbView === 'list' && (
           <div className="space-y-2">
             {promoBanners.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-dashed border-[#D6D6C2] p-8 text-center space-y-2">
+              <div className="bg-[var(--ds-surface)] rounded-2xl border border-dashed border-[var(--ds-border)] p-8 text-center space-y-2">
                 <Megaphone className="w-7 h-7 text-[#C9C5B4] mx-auto" />
-                <p className="text-[11px] text-[#8A8A70] font-bold">لا توجد بانرات بعد — سيظهر التصميم الافتراضي للزوار.</p>
+                <p className="text-[11px] text-[var(--ds-text-2)] font-bold">لا توجد بانرات بعد — سيظهر التصميم الافتراضي للزوار.</p>
                 <button type="button" onClick={() => { pbResetForm(); setPbView('form'); }}
-                  className="text-[12px] font-black text-[#0A2342] underline cursor-pointer">أنشئ أول بانر</button>
+                  className="text-[12px] font-black text-[var(--ds-brand)] underline cursor-pointer">أنشئ أول بانر</button>
               </div>
             ) : (
               // Sorted by the same key the reorder arrows write, so a move is
@@ -2508,15 +2508,15 @@ export default function AdminDashboard({
                 const isLast = group.every((x) => x.id === b.id || x.sort <= b.sort);
                 const expired = !!b.endsAt && new Date(b.endsAt).getTime() < Date.now();
                 return (
-                <div key={b.id} className={`bg-white p-3 rounded-2xl border flex items-center gap-2.5 ${pbEditingId === b.id ? 'border-[#5A5A40] ring-1 ring-[#5A5A40]/30' : 'border-[#D6D6C2]'}`}>
+                <div key={b.id} className={`bg-[var(--ds-surface)] p-3 rounded-2xl border flex items-center gap-2.5 ${pbEditingId === b.id ? 'border-[var(--ds-primary)] ring-1 ring-[var(--ds-primary)]/30' : 'border-[var(--ds-border)]'}`}>
                   {/* Reorder (carousel order matters; harmless for countdown) */}
                   <div className="flex flex-col gap-0.5 shrink-0">
                     <button type="button" disabled={isFirst} onClick={() => pbMove(b, -1)} title="لأعلى"
-                      className="grid place-items-center w-11 h-11 shrink-0 rounded border border-[#E7E5DB] text-[#5A5A40] hover:bg-[#FAF8F5] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+                      className="grid place-items-center w-11 h-11 shrink-0 rounded border border-[#E7E5DB] text-[var(--ds-primary)] hover:bg-[var(--ds-bg)] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
                       <ChevronUp className="w-3 h-3" />
                     </button>
                     <button type="button" disabled={isLast} onClick={() => pbMove(b, 1)} title="لأسفل"
-                      className="grid place-items-center w-11 h-11 shrink-0 rounded border border-[#E7E5DB] text-[#5A5A40] hover:bg-[#FAF8F5] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
+                      className="grid place-items-center w-11 h-11 shrink-0 rounded border border-[#E7E5DB] text-[var(--ds-primary)] hover:bg-[var(--ds-bg)] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">
                       <ChevronDown className="w-3 h-3" />
                     </button>
                   </div>
@@ -2540,31 +2540,31 @@ export default function AdminDashboard({
                       {(() => {
                         const s = bannerStateLabel(b);
                         const tone = s.tone === 'live' ? 'bg-emerald-100 text-emerald-700'
-                          : s.tone === 'warn' ? 'bg-amber-100 text-amber-800' : 'bg-[#EBEBE0] text-[#8A8A70]';
+                          : s.tone === 'warn' ? 'bg-amber-100 text-amber-800' : 'bg-[#EBEBE0] text-[var(--ds-text-2)]';
                         return <span className={`text-[11px] font-black px-2 py-0.5 rounded-full shrink-0 ${tone}`}>{s.label}</span>;
                       })()}
-                      {b.linkedHouseId && <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-[#0A2342]/10 text-[#0A2342] shrink-0">🏠 مرتبط ببيت</span>}
+                      {b.linkedHouseId && <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-[var(--ds-brand)]/10 text-[var(--ds-brand)] shrink-0">🏠 مرتبط ببيت</span>}
                     </div>
-                    <p className="text-[11px] font-black text-[#4A4A3A] truncate mt-0.5">{b.title || b.badge || '—'}</p>
-                    {b.subtitle && <p className="text-[11px] text-[#8A8A70] truncate">{b.subtitle}</p>}
+                    <p className="text-[11px] font-black text-[var(--ds-text)] truncate mt-0.5">{b.title || b.badge || '—'}</p>
+                    {b.subtitle && <p className="text-[11px] text-[var(--ds-text-2)] truncate">{b.subtitle}</p>}
                     {b.endsAt && (
-                      <p className="text-[11px] font-bold text-[#8A8A70] mt-0.5">
+                      <p className="text-[11px] font-bold text-[var(--ds-text-2)] mt-0.5">
                         ينتهي: {new Date(b.endsAt).toLocaleString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     )}
                   </div>
 
                   <div className="flex flex-col items-stretch gap-1 shrink-0">
-                    <button type="button" onClick={() => { pbStartEdit(b); setPbView('form'); }} className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 min-h-11 rounded-lg cursor-pointer">
+                    <button type="button" onClick={() => { pbStartEdit(b); setPbView('form'); }} className="flex items-center justify-center gap-1 text-[11px] font-bold text-[var(--ds-primary)] border border-[var(--ds-border)] hover:bg-[var(--ds-bg)] px-2 min-h-11 rounded-lg cursor-pointer">
                       <Pencil className="w-3 h-3" /> تعديل
                     </button>
                     <button type="button" onClick={() => setPbDesigningId(pbDesigningId === b.id ? null : b.id)}
                       className={`flex items-center justify-center gap-1 text-[11px] font-bold px-2 min-h-11 rounded-lg cursor-pointer border ${
-                        pbDesigningId === b.id ? 'bg-[#0A2342] text-white border-[#0A2342]' : 'text-[#0A2342] border-[#0A2342]/30 hover:bg-[#FAF8F5]'
+                        pbDesigningId === b.id ? 'bg-[var(--ds-brand)] text-white border-[var(--ds-brand)]' : 'text-[var(--ds-brand)] border-[var(--ds-brand)]/30 hover:bg-[var(--ds-bg)]'
                       }`}>
                       <Wand2 className="w-3 h-3" /> تصميم
                     </button>
-                    <button type="button" onClick={() => onTogglePromoBanner?.(b.id, !b.isActive)} className={`text-[11px] font-bold px-2 min-h-11 rounded-lg cursor-pointer ${b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EBEBE0] text-[#8A8A70]'}`}>{b.isActive ? 'مفعّل' : 'متوقف'}</button>
+                    <button type="button" onClick={() => onTogglePromoBanner?.(b.id, !b.isActive)} className={`text-[11px] font-bold px-2 min-h-11 rounded-lg cursor-pointer ${b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-[#EBEBE0] text-[var(--ds-text-2)]'}`}>{b.isActive ? 'مفعّل' : 'متوقف'}</button>
                     <button type="button"
                       onClick={() => onAddPromoBanner?.({
                         ...b,
@@ -2575,7 +2575,7 @@ export default function AdminDashboard({
                         sort: promoBanners.filter((x) => x.placement === b.placement).length,
                         createdAt: new Date().toISOString(),
                       })}
-                      className="flex items-center justify-center gap-1 text-[11px] font-bold text-[#5A5A40] border border-[#D6D6C2] hover:bg-[#FAF8F5] px-2 min-h-11 rounded-lg cursor-pointer">
+                      className="flex items-center justify-center gap-1 text-[11px] font-bold text-[var(--ds-primary)] border border-[var(--ds-border)] hover:bg-[var(--ds-bg)] px-2 min-h-11 rounded-lg cursor-pointer">
                       <Copy className="w-3 h-3" /> نسخة
                     </button>
                     <button type="button" onClick={() => { if (confirm('حذف هذا البانر نهائياً؟')) { if (pbEditingId === b.id) pbResetForm(); onDeletePromoBanner?.(b.id); } }} className="text-[11px] font-bold text-rose-600 hover:bg-rose-50 px-2 min-h-11 rounded-lg cursor-pointer">حذف</button>
@@ -2593,14 +2593,14 @@ export default function AdminDashboard({
       {activeTab === 'users' && (
         <div className="space-y-3">
           {/* Search + filter + export */}
-          <div className="bg-white p-3 rounded-2xl border border-[#D6D6C2] space-y-2">
+          <div className="bg-[var(--ds-surface)] p-3 rounded-2xl border border-[var(--ds-border)] space-y-2">
             <div className="flex items-center gap-2">
               <div className="flex-1 relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8A8A70]" />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--ds-text-2)]" />
                 <input type="text" placeholder="ابحث بالاسم أو الإيميل أو الهاتف أو الكنيسة..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)}
-                  className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs min-h-11 pr-9 pl-3 py-2 text-[#2D2D24] focus:outline-none focus:border-[#464E3D] text-right" />
+                  className="w-full bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-xs min-h-11 pr-9 pl-3 py-2 text-[var(--ds-text-strong)] focus:outline-none focus:border-[#464E3D] text-right" />
               </div>
-              <button onClick={exportUsers} className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold px-3 min-h-11 rounded-xl cursor-pointer shrink-0">
+              <button onClick={exportUsers} className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold px-3 min-h-11 rounded-xl cursor-pointer shrink-0">
                 <Download className="w-3.5 h-3.5" /> تصدير CSV
               </button>
             </div>
@@ -2614,26 +2614,26 @@ export default function AdminDashboard({
                 { key: 'banned' as const, label: 'محظورين' },
               ]).map((f) => (
                 <button key={f.key} onClick={() => setUserRoleFilter(f.key)}
-                  className={`text-[12px] font-bold px-2.5 min-h-11 rounded-lg transition-all cursor-pointer whitespace-nowrap ${userRoleFilter === f.key ? 'bg-[#5A5A40] text-white shadow-sm' : 'bg-[#FAF8F5] text-[#8A8A70] border border-[#E7E5DB] hover:bg-[#EBEBE0]/50'}`}>
+                  className={`text-[12px] font-bold px-2.5 min-h-11 rounded-lg transition-all cursor-pointer whitespace-nowrap ${userRoleFilter === f.key ? 'bg-[var(--ds-primary)] text-white shadow-sm' : 'bg-[var(--ds-bg)] text-[var(--ds-text-2)] border border-[#E7E5DB] hover:bg-[#EBEBE0]/50'}`}>
                   {f.label}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="text-[12px] text-[#8A8A70] px-1 font-bold">{arabicPlural(filteredUsers.length, USER_FORMS)}</div>
+          <div className="text-[12px] text-[var(--ds-text-2)] px-1 font-bold">{arabicPlural(filteredUsers.length, USER_FORMS)}</div>
 
           <div className="space-y-2">
             {filteredUsers.map((usr) => (
-              <div key={usr.id} className={`bg-white p-3.5 rounded-2xl border text-right ${usr.isBanned ? 'border-rose-200 ring-1 ring-rose-50' : 'border-[#D6D6C2]'}`}>
+              <div key={usr.id} className={`bg-[var(--ds-surface)] p-3.5 rounded-2xl border text-right ${usr.isBanned ? 'border-rose-200 ring-1 ring-rose-50' : 'border-[var(--ds-border)]'}`}>
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
-                    <div className="text-xs font-bold text-[#4A4A3A] flex items-center gap-1.5">
+                    <div className="text-xs font-bold text-[var(--ds-text)] flex items-center gap-1.5">
                       {usr.name}
                       {usr.isBanned && <span className="text-[11px] font-black bg-rose-600 text-white px-1.5 py-0.5 rounded">محظور</span>}
                     </div>
-                    <div className="text-[12px] text-[#8A8A70] mt-0.5">{usr.email} · {usr.phone}</div>
-                    {usr.organizationName && <div className="text-[11px] text-[#5A5A40] font-black mt-0.5">{usr.organizationName}</div>}
+                    <div className="text-[12px] text-[var(--ds-text-2)] mt-0.5">{usr.email} · {usr.phone}</div>
+                    {usr.organizationName && <div className="text-[11px] text-[var(--ds-primary)] font-black mt-0.5">{usr.organizationName}</div>}
                     <div className="text-[11px] text-[#BCBC9D] mt-0.5">
                       تسجيل: {new Date(usr.createdAt).toLocaleDateString('ar-EG')}
                       {usr.points ? ` · ${arabicPlural(usr.points, POINT_FORMS)}` : ''}
@@ -2642,17 +2642,17 @@ export default function AdminDashboard({
 
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
-                      usr.role === 'admin' ? 'bg-red-50 text-red-800 border-red-200' : usr.role === 'owner' ? 'bg-[#EBEBE0] text-[#5A5A40] border-[#BCBC9D]' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      usr.role === 'admin' ? 'bg-red-50 text-red-800 border-red-200' : usr.role === 'owner' ? 'bg-[#EBEBE0] text-[var(--ds-primary)] border-[#BCBC9D]' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                     }`}>
                       {ROLE_LABELS[usr.role] ?? 'فرد'}
                     </span>
                     <button onClick={() => setDetailUserId(usr.id)}
-                      className="flex items-center gap-1 min-h-11 px-2 text-[11px] font-bold text-[#5A5A40] hover:bg-[#EBEBE0]/50 px-2 py-1 rounded-lg cursor-pointer border border-[#D6D6C2]">
+                      className="flex items-center gap-1 min-h-11 px-2 text-[11px] font-bold text-[var(--ds-primary)] hover:bg-[#EBEBE0]/50 px-2 py-1 rounded-lg cursor-pointer border border-[var(--ds-border)]">
                       <Eye className="w-3 h-3" /> تفاصيل
                     </button>
                     {usr.role !== 'admin' && (
                       <select value={usr.role} onChange={(e) => onToggleUserRole(usr.id, e.target.value as User['role'])}
-                        className="text-[11px] bg-white border border-[#D6D6C2] rounded px-1.5 min-h-11 text-[#4A4A3A] outline-none focus:border-[#5A5A40]">
+                        className="text-[11px] bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded px-1.5 min-h-11 text-[var(--ds-text)] outline-none focus:border-[var(--ds-primary)]">
                         <option value="individual">فرد</option>
                         <option value="servant">خادم كنسي</option>
                         <option value="owner">صاحب بيت</option>
@@ -2683,7 +2683,7 @@ export default function AdminDashboard({
                           if (ok) alert(`تم حذف الحساب. الإيميل ${usr.email} بقى متاح للتسجيل من جديد.`);
                         }}
                         disabled={releasingUserId === usr.id}
-                        className="flex items-center gap-1 min-h-11 text-[11px] font-bold px-2 rounded-lg border border-rose-300 bg-white text-rose-700 hover:bg-rose-50 cursor-pointer disabled:opacity-50">
+                        className="flex items-center gap-1 min-h-11 text-[11px] font-bold px-2 rounded-lg border border-rose-300 bg-[var(--ds-surface)] text-rose-700 hover:bg-rose-50 cursor-pointer disabled:opacity-50">
                         <Trash2 className="w-3 h-3" /> {releasingUserId === usr.id ? 'جاري الحذف…' : 'حذف الحساب'}
                       </button>
                     )}
@@ -2709,8 +2709,8 @@ export default function AdminDashboard({
         <div className="space-y-4">
 
           <div className="px-1">
-            <h3 className="text-[16px] font-black text-[#4A4A3A]">الماليات</h3>
-            <p className="text-[12px] text-[#8A8A70] mt-0.5">فلوس بيما — اللي حصّلته، اللي ليك منه، واللي لسه لازم يتبعت للملّاك.</p>
+            <h3 className="text-[16px] font-black text-[var(--ds-text)]">الماليات</h3>
+            <p className="text-[12px] text-[var(--ds-text-2)] mt-0.5">فلوس بيما — اللي حصّلته، اللي ليك منه، واللي لسه لازم يتبعت للملّاك.</p>
           </div>
 
           {/* Without collection accounts Pima is not in the money path at all,
@@ -2733,10 +2733,10 @@ export default function AdminDashboard({
               for a trip next month is cash in hand today. Dating it to the trip
               and then ending every window at «now» meant it showed up in no
               period at all except «كل الوقت». */}
-          <div className="bg-white p-3.5 rounded-[20px] border border-[#EBEBE0] space-y-2.5">
+          <div className="bg-[var(--ds-surface)] p-3.5 rounded-[20px] border border-[#EBEBE0] space-y-2.5">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[12px] font-bold text-[#8A8A70]">الفترة (حسب تاريخ الدفع)</span>
-              <span className="text-[11px] font-black text-[#0A2342] bg-[#EBEBE0]/60 px-2 py-1 rounded-lg shrink-0">
+              <span className="text-[12px] font-bold text-[var(--ds-text-2)]">الفترة (حسب تاريخ الدفع)</span>
+              <span className="text-[11px] font-black text-[var(--ds-brand)] bg-[#EBEBE0]/60 px-2 py-1 rounded-lg shrink-0">
                 {arabicPlural(fin.bookingCount, BOOKING_FORMS)}
               </span>
             </div>
@@ -2754,7 +2754,7 @@ export default function AdminDashboard({
                   type="button"
                   onClick={() => setFinPeriod(p.key)}
                   className={`text-[11px] font-bold px-3 min-h-11 rounded-xl transition-all cursor-pointer ${
-                    finPeriod === p.key ? 'bg-[#5A5A40] text-white' : 'bg-[#EBEBE0]/50 text-[#4A4A3A] hover:bg-[#DEDECB]'
+                    finPeriod === p.key ? 'bg-[var(--ds-primary)] text-white' : 'bg-[#EBEBE0]/50 text-[var(--ds-text)] hover:bg-[#DEDECB]'
                   }`}
                 >
                   {p.label}
@@ -2763,9 +2763,9 @@ export default function AdminDashboard({
             </div>
             {finPeriod === 'custom' && (
               <div className="flex items-center gap-1.5 pt-1">
-                <input type="date" value={finFrom} onChange={(e) => setFinFrom(e.target.value)} className="flex-1 bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
-                <span className="text-[11px] text-[#8A8A70] shrink-0">إلى</span>
-                <input type="date" value={finTo} onChange={(e) => setFinTo(e.target.value)} className="flex-1 bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                <input type="date" value={finFrom} onChange={(e) => setFinFrom(e.target.value)} className="flex-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                <span className="text-[11px] text-[var(--ds-text-2)] shrink-0">إلى</span>
+                <input type="date" value={finTo} onChange={(e) => setFinTo(e.target.value)} className="flex-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
               </div>
             )}
           </div>
@@ -2774,23 +2774,23 @@ export default function AdminDashboard({
               The cash position, in the order the admin cares about it: what
               came in, what is mine, what I still owe, what I have sent. */}
           <div className="px-1 pt-1">
-            <span className="text-[11px] font-black text-[#8A8A70]">فلوس بيما</span>
+            <span className="text-[11px] font-black text-[var(--ds-text-2)]">فلوس بيما</span>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
             {([
               { label: 'حصّلته بيما', hint: 'عرابين وصلت لحسابات بيما', value: fin.collectedByPima, Icon: CheckCircle2, tint: 'text-emerald-700', num: 'text-emerald-800' },
-              { label: 'عمولة بيما', hint: `${arabicNumber(Math.round(PLATFORM_COMMISSION * 100))}٪ من قيمة الحجز`, value: fin.platformCommission, Icon: Coins, tint: 'text-[#C5A059]', num: 'text-[#0A2342]' },
+              { label: 'عمولة بيما', hint: `${arabicNumber(Math.round(PLATFORM_COMMISSION * 100))}٪ من قيمة الحجز`, value: fin.platformCommission, Icon: Coins, tint: 'text-[var(--ds-accent)]', num: 'text-[var(--ds-brand)]' },
               { label: 'لسه عندك للملّاك', hint: 'رصيد مستحق — مش رقم الفترة', value: fin.ownersOwed, Icon: Wallet, tint: 'text-amber-600', num: 'text-amber-700' },
-              { label: 'حوّلته للملّاك', hint: 'خرج فعلاً من حساباتك', value: fin.ownersPaid, Icon: DollarSign, tint: 'text-[#5A5A40]', num: 'text-[#4A4A3A]' },
+              { label: 'حوّلته للملّاك', hint: 'خرج فعلاً من حساباتك', value: fin.ownersPaid, Icon: DollarSign, tint: 'text-[var(--ds-primary)]', num: 'text-[var(--ds-text)]' },
             ] as const).map((k) => (
-              <div key={k.label} className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+              <div key={k.label} className="bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[20px] p-3.5">
                 <k.Icon className={`w-4 h-4 ${k.tint}`} />
                 <div className={`text-[20px] font-black leading-tight mt-1.5 tabular-nums ${k.num}`}>
                   {arabicNumber(k.value)}
-                  <span className="text-[12px] font-bold text-[#8A8A70]"> ج.م</span>
+                  <span className="text-[12px] font-bold text-[var(--ds-text-2)]"> ج.م</span>
                 </div>
-                <div className="text-[11px] font-bold text-[#4A4A3A]">{k.label}</div>
-                <div className="text-[11px] text-[#8A8A70] leading-snug">{k.hint}</div>
+                <div className="text-[11px] font-bold text-[var(--ds-text)]">{k.label}</div>
+                <div className="text-[11px] text-[var(--ds-text-2)] leading-snug">{k.hint}</div>
               </div>
             ))}
           </div>
@@ -2799,17 +2799,17 @@ export default function AdminDashboard({
               to be one card labelled «متبقٍ لم يُحصّل» under a warning triangle
               — a permanent alarm over ~85% of the business, which is by design
               paid in cash at the door and never enters Pima's accounts. */}
-          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-1">
+          <div className="bg-[var(--ds-surface)] rounded-[20px] border border-[#EBEBE0] p-4 space-y-1">
             {([
-              { label: 'باقي عند الضيف', hint: 'كاش لصاحب البيت عند الوصول — مش بيعدّي على بيما', value: fin.cashAtDoor, tint: 'text-[#4A4A3A]' },
-              ...(fin.collectedByOwnerDirect > 0 ? [{ label: 'اتدفع للمالك مباشرة', hint: 'عربون كاش استلمه صاحب البيت بنفسه', value: fin.collectedByOwnerDirect, tint: 'text-[#4A4A3A]' }] : []),
+              { label: 'باقي عند الضيف', hint: 'كاش لصاحب البيت عند الوصول — مش بيعدّي على بيما', value: fin.cashAtDoor, tint: 'text-[var(--ds-text)]' },
+              ...(fin.collectedByOwnerDirect > 0 ? [{ label: 'اتدفع للمالك مباشرة', hint: 'عربون كاش استلمه صاحب البيت بنفسه', value: fin.collectedByOwnerDirect, tint: 'text-[var(--ds-text)]' }] : []),
               ...(fin.collectedOnCancelled > 0 ? [{ label: 'محصّل على حجوزات ملغية', hint: 'فلوس فعلية مستنية قرار استرجاع', value: fin.collectedOnCancelled, tint: 'text-rose-700' }] : []),
-              { label: 'قيمة الحجوزات', hint: 'إجمالي سعر الحجوزات اللي اتدفع فيها', value: fin.bookingValue, tint: 'text-[#4A4A3A]' },
+              { label: 'قيمة الحجوزات', hint: 'إجمالي سعر الحجوزات اللي اتدفع فيها', value: fin.bookingValue, tint: 'text-[var(--ds-text)]' },
             ] as const).map((r) => (
               <div key={r.label} className="flex justify-between items-start gap-3 text-[12px] py-2 border-b border-[#EBEBE0]/60 last:border-0">
                 <div className="min-w-0">
-                  <div className="font-bold text-[#4A4A3A]">{r.label}</div>
-                  <div className="text-[11px] text-[#8A8A70] leading-snug">{r.hint}</div>
+                  <div className="font-bold text-[var(--ds-text)]">{r.label}</div>
+                  <div className="text-[11px] text-[var(--ds-text-2)] leading-snug">{r.hint}</div>
                 </div>
                 <span className={`font-black shrink-0 tabular-nums ${r.tint}`}>{arabicNumber(r.value)} ج.م</span>
               </div>
@@ -2825,24 +2825,24 @@ export default function AdminDashboard({
           {treasury.accounts.length > 0 && (
             <>
               <div className="px-1 pt-1">
-                <span className="text-[11px] font-black text-[#8A8A70]">الخزنة</span>
+                <span className="text-[11px] font-black text-[var(--ds-text-2)]">الخزنة</span>
               </div>
-              <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-1">
+              <div className="bg-[var(--ds-surface)] rounded-[20px] border border-[#EBEBE0] p-4 space-y-1">
                 {treasury.accounts.map((a) => (
                   <div key={a.account} className="flex justify-between items-start gap-3 text-[12px] py-2 border-b border-[#EBEBE0]/60 last:border-0">
                     <div className="min-w-0">
-                      <div className="font-bold text-[#4A4A3A] truncate">{a.account}</div>
-                      <div className="text-[11px] text-[#8A8A70]">
+                      <div className="font-bold text-[var(--ds-text)] truncate">{a.account}</div>
+                      <div className="text-[11px] text-[var(--ds-text-2)]">
                         {arabicPlural(a.count, PAYMENT_FORMS)}
                         {a.refunded > 0 && ` · اترجّع ${arabicNumber(a.refunded)}`}
                         {a.paidOut > 0 && ` · خرج للملّاك ${arabicNumber(a.paidOut)}`}
                       </div>
                     </div>
-                    <span className="font-black text-[#0A2342] shrink-0 tabular-nums">{arabicNumber(a.net)} ج.م</span>
+                    <span className="font-black text-[var(--ds-brand)] shrink-0 tabular-nums">{arabicNumber(a.net)} ج.م</span>
                   </div>
                 ))}
                 {treasury.unassignedCount > 0 && (
-                  <p className="text-[11px] text-[#8A8A70] leading-relaxed pt-1">
+                  <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed pt-1">
                     {arabicNumber(treasury.unassignedCount)} دفعة مش متسجّل وصلت على أنهي حساب. حدّدها من صفحة الدفعيات علشان المطابقة تظبط.
                   </p>
                 )}
@@ -2852,22 +2852,22 @@ export default function AdminDashboard({
 
           {/* ── التفاصيل ── */}
           <div className="px-1 pt-1">
-            <span className="text-[11px] font-black text-[#8A8A70]">التفاصيل</span>
+            <span className="text-[11px] font-black text-[var(--ds-text-2)]">التفاصيل</span>
           </div>
 
           {/* One row per owner, sorted by who is owed the most so the payment
               backlog is the first thing read. The old table was a 4-column
               grid that gave an Arabic name 75px and cut most real ones in
               half; the name now owns its own line. */}
-          <div className="bg-white rounded-[20px] p-4 border border-[#EBEBE0] space-y-1">
-            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">مستحقات كل صاحب بيت</h3>
+          <div className="bg-[var(--ds-surface)] rounded-[20px] p-4 border border-[#EBEBE0] space-y-1">
+            <h3 className="text-[12px] font-black text-[var(--ds-brand)] border-b border-[#EBEBE0] pb-2">مستحقات كل صاحب بيت</h3>
             {fin.perOwner.length === 0 ? (
-              <p className="text-[12px] text-[#8A8A70] text-center py-3">مفيش فلوس اتحركت في الفترة دي.</p>
+              <p className="text-[12px] text-[var(--ds-text-2)] text-center py-3">مفيش فلوس اتحركت في الفترة دي.</p>
             ) : (
               fin.perOwner.map((o) => (
                 <div key={o.id} className="py-2.5 border-b border-[#EBEBE0]/60 last:border-0 space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[12px] font-black text-[#4A4A3A] truncate">{o.name}</span>
+                    <span className="text-[12px] font-black text-[var(--ds-text)] truncate">{o.name}</span>
                     {o.owed > 0 ? (
                       <span className="text-[11px] font-black text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg shrink-0 tabular-nums">
                         لسه {arabicNumber(o.owed)} ج.م
@@ -2878,10 +2878,10 @@ export default function AdminDashboard({
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-3 text-[11px] text-[#8A8A70]">
-                    <span>حصّلت <span className="font-bold text-[#4A4A3A] tabular-nums">{arabicNumber(o.collected)}</span></span>
-                    <span>عمولتك <span className="font-bold text-[#C5A059] tabular-nums">{arabicNumber(o.commission)}</span></span>
-                    <span>حوّلت <span className="font-bold text-[#5A5A40] tabular-nums">{arabicNumber(o.paid)}</span></span>
+                  <div className="flex gap-3 text-[11px] text-[var(--ds-text-2)]">
+                    <span>حصّلت <span className="font-bold text-[var(--ds-text)] tabular-nums">{arabicNumber(o.collected)}</span></span>
+                    <span>عمولتك <span className="font-bold text-[var(--ds-accent)] tabular-nums">{arabicNumber(o.commission)}</span></span>
+                    <span>حوّلت <span className="font-bold text-[var(--ds-primary)] tabular-nums">{arabicNumber(o.paid)}</span></span>
                   </div>
                 </div>
               ))
@@ -2889,28 +2889,28 @@ export default function AdminDashboard({
           </div>
 
           {fin.perHouse.length > 0 && (
-            <div className="bg-white rounded-[20px] p-4 border border-[#EBEBE0] space-y-2">
-              <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أكثر البيوت تحصيلاً</h3>
+            <div className="bg-[var(--ds-surface)] rounded-[20px] p-4 border border-[#EBEBE0] space-y-2">
+              <h3 className="text-[12px] font-black text-[var(--ds-brand)] border-b border-[#EBEBE0] pb-2">أكثر البيوت تحصيلاً</h3>
               {fin.perHouse.slice(0, 5).map((h, i) => (
                 <div key={h.id} className="flex items-center justify-between gap-2 text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0">
-                  <span className="font-bold text-[#4A4A3A] truncate flex items-center gap-1.5">
-                    <span className="w-4 h-4 rounded-full bg-[#EBEBE0] text-[#5A5A40] text-[11px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
+                  <span className="font-bold text-[var(--ds-text)] truncate flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-full bg-[#EBEBE0] text-[var(--ds-primary)] text-[11px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
                     {h.name}
                   </span>
                   <span className="font-black text-emerald-800 shrink-0 tabular-nums">{arabicNumber(h.amount)} ج.م</span>
                 </div>
               ))}
               {fin.perHouse.length > 5 && (
-                <p className="text-[11px] text-[#8A8A70]">و{arabicNumber(fin.perHouse.length - 5)} بيت آخر.</p>
+                <p className="text-[11px] text-[var(--ds-text-2)]">و{arabicNumber(fin.perHouse.length - 5)} بيت آخر.</p>
               )}
             </div>
           )}
 
           <div className="flex gap-2">
-            <button onClick={exportFinancials} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+            <button onClick={exportFinancials} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
               <Download className="w-3.5 h-3.5" /> تصدير المالية CSV
             </button>
-            <button onClick={exportBookings} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+            <button onClick={exportBookings} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
               <Download className="w-3.5 h-3.5" /> تصدير الحجوزات CSV
             </button>
           </div>
@@ -2932,8 +2932,8 @@ export default function AdminDashboard({
         <div className="space-y-4">
 
           <div className="px-1">
-            <h3 className="text-[16px] font-black text-[#4A4A3A]">إحصائيات المستخدمين</h3>
-            <p className="text-[12px] text-[#8A8A70] mt-0.5">مين بيستخدم بيما — أعمارهم ومحافظاتهم، من بيانات التسجيل نفسها.</p>
+            <h3 className="text-[16px] font-black text-[var(--ds-text)]">إحصائيات المستخدمين</h3>
+            <p className="text-[12px] text-[var(--ds-text-2)] mt-0.5">مين بيستخدم بيما — أعمارهم ومحافظاتهم، من بيانات التسجيل نفسها.</p>
           </div>
 
           {(() => {
@@ -2945,65 +2945,65 @@ export default function AdminDashboard({
             const named = demo.govs.filter((g) => g.label !== 'غير محدد').length;
             return (
               <div className="grid grid-cols-2 gap-2.5">
-                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
-                  <Users className="w-4 h-4 text-[#0A2342]" />
-                  <div className="text-[22px] font-black text-[#4A4A3A] leading-tight mt-1.5 tabular-nums">{arabicNumber(demo.coverage.total)}</div>
-                  <div className="text-[11px] font-bold text-[#8A8A70]">إجمالي المستخدمين</div>
+                <div className="bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <Users className="w-4 h-4 text-[var(--ds-brand)]" />
+                  <div className="text-[22px] font-black text-[var(--ds-text)] leading-tight mt-1.5 tabular-nums">{arabicNumber(demo.coverage.total)}</div>
+                  <div className="text-[11px] font-bold text-[var(--ds-text-2)]">إجمالي المستخدمين</div>
                 </div>
-                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
-                  <CalendarDays className="w-4 h-4 text-[#5A5A40]" />
-                  <div className="text-[22px] font-black text-[#4A4A3A] leading-tight mt-1.5 tabular-nums">
+                <div className="bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <CalendarDays className="w-4 h-4 text-[var(--ds-primary)]" />
+                  <div className="text-[22px] font-black text-[var(--ds-text)] leading-tight mt-1.5 tabular-nums">
                     {demo.median === null ? '—' : arabicNumber(demo.median)}
                   </div>
-                  <div className="text-[11px] font-bold text-[#8A8A70]">متوسط السن</div>
-                  <div className="text-[11px] text-[#8A8A70] leading-snug">من {arabicNumber(demo.coverage.age)} مسجّل تاريخ ميلاده</div>
+                  <div className="text-[11px] font-bold text-[var(--ds-text-2)]">متوسط السن</div>
+                  <div className="text-[11px] text-[var(--ds-text-2)] leading-snug">من {arabicNumber(demo.coverage.age)} مسجّل تاريخ ميلاده</div>
                 </div>
-                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
-                  <MapPin className="w-4 h-4 text-[#C5A059]" />
-                  <div className="text-[16px] font-black text-[#4A4A3A] leading-tight mt-1.5 truncate">{top ? top.label : '—'}</div>
-                  <div className="text-[11px] font-bold text-[#8A8A70]">أكتر محافظة</div>
-                  <div className="text-[11px] text-[#8A8A70] leading-snug">
+                <div className="bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <MapPin className="w-4 h-4 text-[var(--ds-accent)]" />
+                  <div className="text-[16px] font-black text-[var(--ds-text)] leading-tight mt-1.5 truncate">{top ? top.label : '—'}</div>
+                  <div className="text-[11px] font-bold text-[var(--ds-text-2)]">أكتر محافظة</div>
+                  <div className="text-[11px] text-[var(--ds-text-2)] leading-snug">
                     {top ? `${arabicNumber(top.pct)}٪ من المستخدمين` : 'مفيش محافظات مسجّلة'}
                   </div>
                 </div>
-                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
-                  <Building className="w-4 h-4 text-[#5A5A40]" />
-                  <div className="text-[22px] font-black text-[#4A4A3A] leading-tight mt-1.5 tabular-nums">{arabicNumber(named)}</div>
-                  <div className="text-[11px] font-bold text-[#8A8A70]">محافظة وصلتها بيما</div>
+                <div className="bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[20px] p-3.5">
+                  <Building className="w-4 h-4 text-[var(--ds-primary)]" />
+                  <div className="text-[22px] font-black text-[var(--ds-text)] leading-tight mt-1.5 tabular-nums">{arabicNumber(named)}</div>
+                  <div className="text-[11px] font-bold text-[var(--ds-text-2)]">محافظة وصلتها بيما</div>
                 </div>
               </div>
             );
           })()}
 
-          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
-            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">الفئات العمرية</h3>
+          <div className="bg-[var(--ds-surface)] rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
+            <h3 className="text-[12px] font-black text-[var(--ds-brand)] border-b border-[#EBEBE0] pb-2">الفئات العمرية</h3>
             {demo.ages.map((s) => (
-              <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[#5A5A40]" />
+              <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[var(--ds-primary)]" />
             ))}
           </div>
 
-          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
-            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">المحافظات</h3>
+          <div className="bg-[var(--ds-surface)] rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
+            <h3 className="text-[12px] font-black text-[var(--ds-brand)] border-b border-[#EBEBE0] pb-2">المحافظات</h3>
             {demo.govs.slice(0, 8).map((s) => (
-              <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[#0A2342]" />
+              <DemoBar key={s.label} label={s.label} count={s.count} pct={s.pct} tint="bg-[var(--ds-brand)]" />
             ))}
             {demo.govs.length > 8 && (
-              <p className="text-[11px] text-[#8A8A70]">و{arabicNumber(demo.govs.length - 8)} محافظة أخرى.</p>
+              <p className="text-[11px] text-[var(--ds-text-2)]">و{arabicNumber(demo.govs.length - 8)} محافظة أخرى.</p>
             )}
           </div>
 
-          <div className="bg-white rounded-[20px] p-4 border border-[#EBEBE0] space-y-2.5">
-            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">أرقام المنصة العامة</h3>
+          <div className="bg-[var(--ds-surface)] rounded-[20px] p-4 border border-[#EBEBE0] space-y-2.5">
+            <h3 className="text-[12px] font-black text-[var(--ds-brand)] border-b border-[#EBEBE0] pb-2">أرقام المنصة العامة</h3>
             <div className="space-y-1">
               {([
-                { label: 'إجمالي الحسابات المسجلة', value: arabicPlural(totalRegisteredUsers, MEMBER_FORMS), tint: 'text-[#4A4A3A]' },
-                { label: 'البيوت المؤكدة والنشطة للجمهور', value: arabicPlural(totalHousesApproved, HOUSE_FORMS), tint: 'text-[#4A4A3A]' },
-                { label: 'إجمالي الزوار المسكّنين تلقائياً', value: arabicPlural(allocationsCount, GUEST_FORMS), tint: 'text-[#5A5A40]' },
-                { label: 'متوسط الحضور بالرحلة', value: arabicPlural(averageBookingSize, GUEST_FORMS), tint: 'text-[#4A4A3A]' },
+                { label: 'إجمالي الحسابات المسجلة', value: arabicPlural(totalRegisteredUsers, MEMBER_FORMS), tint: 'text-[var(--ds-text)]' },
+                { label: 'البيوت المؤكدة والنشطة للجمهور', value: arabicPlural(totalHousesApproved, HOUSE_FORMS), tint: 'text-[var(--ds-text)]' },
+                { label: 'إجمالي الزوار المسكّنين تلقائياً', value: arabicPlural(allocationsCount, GUEST_FORMS), tint: 'text-[var(--ds-primary)]' },
+                { label: 'متوسط الحضور بالرحلة', value: arabicPlural(averageBookingSize, GUEST_FORMS), tint: 'text-[var(--ds-text)]' },
                 { label: 'الطلبات قيد المراجعة حاليًا', value: `${arabicPlural(pendingHouses.length, HOUSE_FORMS)} معلق`, tint: 'text-amber-700' },
               ] as const).map((r) => (
                 <div key={r.label} className="flex justify-between items-center gap-2 text-[12px] py-1.5 border-b border-[#EBEBE0]/60 last:border-0">
-                  <span className="text-[#8A8A70]">{r.label}</span>
+                  <span className="text-[var(--ds-text-2)]">{r.label}</span>
                   <span className={`font-bold shrink-0 ${r.tint}`}>{r.value}</span>
                 </div>
               ))}
@@ -3026,8 +3026,8 @@ export default function AdminDashboard({
         <div className="space-y-4">
 
           <div className="px-1">
-            <h3 className="text-[16px] font-black text-[#4A4A3A]">التدقيق</h3>
-            <p className="text-[12px] text-[#8A8A70] mt-0.5">الحاجات اللي المفروض ما تحصلش في فلوس بيما. الصفحة فاضية يبقى كله مظبوط.</p>
+            <h3 className="text-[16px] font-black text-[var(--ds-text)]">التدقيق</h3>
+            <p className="text-[12px] text-[var(--ds-text-2)] mt-0.5">الحاجات اللي المفروض ما تحصلش في فلوس بيما. الصفحة فاضية يبقى كله مظبوط.</p>
           </div>
 
           {/* Money that belongs to a guest and is still in Pima's hands —
@@ -3038,7 +3038,7 @@ export default function AdminDashboard({
               owed back. cancellationPolicy computes what a guest is due, but
               only to render a sentence; nothing persisted it. */}
           {refundQueue.length > 0 && (
-            <div className="bg-white rounded-[20px] border border-rose-200 p-4 space-y-2">
+            <div className="bg-[var(--ds-surface)] rounded-[20px] border border-rose-200 p-4 space-y-2">
               <div className="flex items-center justify-between gap-2 border-b border-[#EBEBE0] pb-2">
                 <h3 className="text-[12px] font-black text-rose-800">فلوس محتاجة ترجع للضيوف</h3>
                 <span className="text-[11px] font-black text-rose-700 shrink-0 tabular-nums">
@@ -3049,8 +3049,8 @@ export default function AdminDashboard({
                 <div key={r.paymentId} className="py-2.5 border-b border-[#EBEBE0]/60 last:border-0 space-y-1.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="text-[12px] font-black text-[#4A4A3A] truncate">{r.who}</div>
-                      <div className="text-[11px] text-[#8A8A70] truncate">
+                      <div className="text-[12px] font-black text-[var(--ds-text)] truncate">{r.who}</div>
+                      <div className="text-[11px] text-[var(--ds-text-2)] truncate">
                         {r.houseName} · {r.reason === 'cancelled' ? 'الحجز اتلغى' : 'دفع زيادة'}
                       </div>
                     </div>
@@ -3059,7 +3059,7 @@ export default function AdminDashboard({
                     </span>
                   </div>
                   {r.alreadyRefunded > 0 && (
-                    <div className="text-[11px] text-[#8A8A70]">اترجّع منها {arabicNumber(r.alreadyRefunded)} قبل كده.</div>
+                    <div className="text-[11px] text-[var(--ds-text-2)]">اترجّع منها {arabicNumber(r.alreadyRefunded)} قبل كده.</div>
                   )}
                   {onRecordRefund && (
                     <button
@@ -3089,29 +3089,29 @@ export default function AdminDashboard({
           )}
 
           {openExceptions.length === 0 ? (
-            <div className="bg-white rounded-[20px] p-8 border border-[#EBEBE0] text-center space-y-2">
+            <div className="bg-[var(--ds-surface)] rounded-[20px] p-8 border border-[#EBEBE0] text-center space-y-2">
               <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
-              <p className="text-[12px] font-black text-[#4A4A3A]">كل حاجة مظبوطة</p>
-              <p className="text-[11px] text-[#8A8A70]">
+              <p className="text-[12px] font-black text-[var(--ds-text)]">كل حاجة مظبوطة</p>
+              <p className="text-[11px] text-[var(--ds-text-2)]">
                 اتفحص {arabicPlural(bookings.length, BOOKING_FORMS)} ومفيش ولا حاجة خارجة عن المتوقع.
               </p>
             </div>
           ) : (
             <>
               <div className="grid grid-cols-2 gap-2.5">
-                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                <div className="bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[20px] p-3.5">
                   <AlertTriangle className="w-4 h-4 text-rose-600" />
                   <div className="text-[22px] font-black text-rose-700 leading-tight mt-1.5 tabular-nums">
                     {arabicNumber(openExceptions.filter((e) => e.severity === 'high').length)}
                   </div>
-                  <div className="text-[11px] font-bold text-[#8A8A70]">محتاج تصرّف دلوقتي</div>
+                  <div className="text-[11px] font-bold text-[var(--ds-text-2)]">محتاج تصرّف دلوقتي</div>
                 </div>
-                <div className="bg-white border border-[#EBEBE0] rounded-[20px] p-3.5">
+                <div className="bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[20px] p-3.5">
                   <Clock className="w-4 h-4 text-amber-600" />
                   <div className="text-[22px] font-black text-amber-700 leading-tight mt-1.5 tabular-nums">
                     {arabicNumber(openExceptions.filter((e) => e.severity === 'medium').length)}
                   </div>
-                  <div className="text-[11px] font-bold text-[#8A8A70]">محتاج مراجعة</div>
+                  <div className="text-[11px] font-bold text-[var(--ds-text-2)]">محتاج مراجعة</div>
                 </div>
               </div>
 
@@ -3119,14 +3119,14 @@ export default function AdminDashboard({
                 {openExceptions.map((e) => (
                   <div
                     key={e.id}
-                    className={`bg-white rounded-[20px] p-4 border space-y-2 ${
+                    className={`bg-[var(--ds-surface)] rounded-[20px] p-4 border space-y-2 ${
                       e.severity === 'high' ? 'border-rose-200' : 'border-[#EBEBE0]'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="text-[12px] font-black text-[#4A4A3A] truncate">{e.who}</div>
-                        <div className="text-[11px] text-[#8A8A70] truncate">{e.houseName}</div>
+                        <div className="text-[12px] font-black text-[var(--ds-text)] truncate">{e.who}</div>
+                        <div className="text-[11px] text-[var(--ds-text-2)] truncate">{e.houseName}</div>
                       </div>
                       <span className={`text-[12px] font-black shrink-0 tabular-nums ${
                         e.severity === 'high' ? 'text-rose-700' : 'text-amber-700'
@@ -3135,16 +3135,16 @@ export default function AdminDashboard({
                       </span>
                     </div>
 
-                    <p className="text-[12px] text-[#4A4A3A] leading-relaxed">{e.detail}</p>
+                    <p className="text-[12px] text-[var(--ds-text)] leading-relaxed">{e.detail}</p>
 
                     <div className="flex items-center justify-between gap-2 pt-0.5">
-                      <span className="text-[11px] font-bold text-[#5A5A40]">← {e.action}</span>
+                      <span className="text-[11px] font-bold text-[var(--ds-primary)]">← {e.action}</span>
                       <div className="flex gap-1.5 shrink-0">
                         {e.bookingId && (
                           <button
                             type="button"
                             onClick={() => { setBookingSearch(e.bookingId!); setBookingFilter('all'); goTo('money', 'bookings'); }}
-                            className="text-[11px] font-bold bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] min-h-11 px-3 rounded-xl cursor-pointer"
+                            className="text-[11px] font-bold bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] min-h-11 px-3 rounded-xl cursor-pointer"
                           >
                             افتح الحجز
                           </button>
@@ -3157,7 +3157,7 @@ export default function AdminDashboard({
                         <button
                           type="button"
                           onClick={() => dismissException(e.id)}
-                          className="text-[11px] font-bold bg-white border border-[#D6D6C2] hover:bg-[#FAF8F5] text-[#8A8A70] min-h-11 px-3 rounded-xl cursor-pointer"
+                          className="text-[11px] font-bold bg-[var(--ds-surface)] border border-[var(--ds-border)] hover:bg-[var(--ds-bg)] text-[var(--ds-text-2)] min-h-11 px-3 rounded-xl cursor-pointer"
                         >
                           شفته
                         </button>
@@ -3176,7 +3176,7 @@ export default function AdminDashboard({
                 setDismissedExceptions(new Set());
                 try { localStorage.removeItem('pima_admin_dismissed_exceptions'); } catch { /* private mode */ }
               }}
-              className="w-full text-[11px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] min-h-11 cursor-pointer"
+              className="w-full text-[11px] font-bold text-[var(--ds-text-2)] hover:text-[var(--ds-text)] min-h-11 cursor-pointer"
             >
               رجّع {arabicNumber(dismissedExceptions.size)} حاجة كنت اتجاهلتها
             </button>
@@ -3193,16 +3193,16 @@ export default function AdminDashboard({
         <div className="space-y-4">
 
           <div className="px-1">
-            <h3 className="text-[16px] font-black text-[#4A4A3A]">الموسم</h3>
-            <p className="text-[12px] text-[#8A8A70] mt-0.5">الأسابيع اللي لسه فاضية قدّامنا، والكنايس اللي جت السنة اللي فاتت ولسه مرجعتش.</p>
+            <h3 className="text-[16px] font-black text-[var(--ds-text)]">الموسم</h3>
+            <p className="text-[12px] text-[var(--ds-text-2)] mt-0.5">الأسابيع اللي لسه فاضية قدّامنا، والكنايس اللي جت السنة اللي فاتت ولسه مرجعتش.</p>
           </div>
 
           {/* A bed empty on a Friday in August is not deferred to September —
               it is gone. Pricing it is what turns occupancy into a decision. */}
-          <div className="bg-[#0A2342] text-white rounded-[20px] p-4 space-y-1">
+          <div className="bg-[var(--ds-brand)] text-white rounded-[20px] p-4 space-y-1">
             <div className="flex items-center gap-2">
-              <CalendarDays className="w-5 h-5 text-[#C5A059]" />
-              <span className="text-[11px] font-black text-[#C5A059]">أسرّة فاضية في الـ٨ أسابيع الجاية</span>
+              <CalendarDays className="w-5 h-5 text-[var(--ds-accent)]" />
+              <span className="text-[11px] font-black text-[var(--ds-accent)]">أسرّة فاضية في الـ٨ أسابيع الجاية</span>
             </div>
             <div className="text-[22px] font-black tabular-nums">
               {arabicNumber(occupancy.totalEmptyValue)}<span className="text-[12px] font-bold text-white/70"> ج.م</span>
@@ -3212,26 +3212,26 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
-            <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">الإشغال أسبوع بأسبوع</h3>
+          <div className="bg-[var(--ds-surface)] rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
+            <h3 className="text-[12px] font-black text-[var(--ds-brand)] border-b border-[#EBEBE0] pb-2">الإشغال أسبوع بأسبوع</h3>
             {occupancy.weeks.map((w) => (
               <div key={w.startISO} className="space-y-1">
                 <div className="flex items-center justify-between gap-2 text-[11px]">
-                  <span className="font-bold text-[#4A4A3A]">{arabicDateRange(w.startISO, w.endISO)}</span>
-                  <span className="text-[#8A8A70] tabular-nums shrink-0">
+                  <span className="font-bold text-[var(--ds-text)]">{arabicDateRange(w.startISO, w.endISO)}</span>
+                  <span className="text-[var(--ds-text-2)] tabular-nums shrink-0">
                     {arabicNumber(w.occupancyPct)}٪ · {arabicNumber(w.emptyValue)} ج.م فاضي
                   </span>
                 </div>
                 <div className="h-2 bg-[#EBEBE0] rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${w.occupancyPct >= 70 ? 'bg-emerald-600' : w.occupancyPct >= 35 ? 'bg-[#C5A059]' : 'bg-rose-400'}`}
+                    className={`h-full rounded-full ${w.occupancyPct >= 70 ? 'bg-emerald-600' : w.occupancyPct >= 35 ? 'bg-[var(--ds-accent)]' : 'bg-rose-400'}`}
                     style={{ width: `${Math.min(100, w.occupancyPct)}%` }}
                   />
                 </div>
               </div>
             ))}
             {occupancy.weeks.every((w) => w.capacity === 0) && (
-              <p className="text-[11px] text-[#8A8A70]">مفيش بيوت معتمدة لسه، فمفيش سعة تتحسب.</p>
+              <p className="text-[11px] text-[var(--ds-text-2)]">مفيش بيوت معتمدة لسه، فمفيش سعة تتحسب.</p>
             )}
           </div>
 
@@ -3243,22 +3243,22 @@ export default function AdminDashboard({
               anniversary and drops everyone outside it, which is exactly the
               group that vanished. */}
           {cohorts.length > 0 && (
-            <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
-              <h3 className="text-[12px] font-black text-[#0A2342] border-b border-[#EBEBE0] pb-2">
+            <div className="bg-[var(--ds-surface)] rounded-[20px] border border-[#EBEBE0] p-4 space-y-2.5">
+              <h3 className="text-[12px] font-black text-[var(--ds-brand)] border-b border-[#EBEBE0] pb-2">
                 نسبة الكنايس اللي رجعت السنة اللي بعدها
               </h3>
               {cohorts.map((c) => (
                 <div key={c.year} className="flex items-center justify-between gap-2 text-[12px] py-1.5 border-b border-[#EBEBE0]/50 last:border-0">
-                  <span className="font-bold text-[#4A4A3A]">
+                  <span className="font-bold text-[var(--ds-text)]">
                     جم في {arabicNumber(c.year)}
-                    <span className="text-[11px] font-normal text-[#8A8A70]"> · {arabicNumber(c.groups)} مجموعة</span>
+                    <span className="text-[11px] font-normal text-[var(--ds-text-2)]"> · {arabicNumber(c.groups)} مجموعة</span>
                   </span>
-                  <span className={`font-black tabular-nums shrink-0 ${c.ratePct >= 50 ? 'text-emerald-800' : c.ratePct >= 25 ? 'text-[#C5A059]' : 'text-rose-700'}`}>
+                  <span className={`font-black tabular-nums shrink-0 ${c.ratePct >= 50 ? 'text-emerald-800' : c.ratePct >= 25 ? 'text-[var(--ds-accent)]' : 'text-rose-700'}`}>
                     {arabicNumber(c.ratePct)}٪ رجعوا
                   </span>
                 </div>
               ))}
-              <p className="text-[11px] text-[#8A8A70] leading-relaxed">
+              <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">
                 الكنيسة بتتحسب بالاسم بعد توحيد طريقة كتابته — «كنيسة مار جرجس» و«مارجرجس» واحدة، وإلا كان أي اختلاف في الكتابة هيتحسب هروب.
               </p>
             </div>
@@ -3266,13 +3266,13 @@ export default function AdminDashboard({
 
           {/* The church is the customer, not whichever servant held the phone
               that year — so these are grouped by organisation. */}
-          <div className="bg-white rounded-[20px] border border-[#EBEBE0] p-4 space-y-2">
+          <div className="bg-[var(--ds-surface)] rounded-[20px] border border-[#EBEBE0] p-4 space-y-2">
             <div className="flex items-center justify-between gap-2 border-b border-[#EBEBE0] pb-2">
-              <h3 className="text-[12px] font-black text-[#0A2342]">جم السنة اللي فاتت ولسه مرجعوش</h3>
-              <span className="text-[11px] font-bold text-[#8A8A70] shrink-0">{arabicNumber(renewals.length)}</span>
+              <h3 className="text-[12px] font-black text-[var(--ds-brand)]">جم السنة اللي فاتت ولسه مرجعوش</h3>
+              <span className="text-[11px] font-bold text-[var(--ds-text-2)] shrink-0">{arabicNumber(renewals.length)}</span>
             </div>
             {renewals.length === 0 ? (
-              <p className="text-[12px] text-[#8A8A70] text-center py-3">مفيش حد في نفس التوقيت من السنة اللي فاتت.</p>
+              <p className="text-[12px] text-[var(--ds-text-2)] text-center py-3">مفيش حد في نفس التوقيت من السنة اللي فاتت.</p>
             ) : (
               renewals.slice(0, 20).map((r) => {
                 const msg = `سلام ونعمة${r.name ? ` يا ${r.name}` : ''}، معاكم بيما. زي ما حجزتوا معانا في "${r.lastHouseName}" السنة اللي فاتت، حابين نطمّنكم إن الحجز للموسم الجديد فتح — والأماكن بتخلص بدري. تحبوا نحجزلكم؟`;
@@ -3280,17 +3280,17 @@ export default function AdminDashboard({
                   <div key={r.key} className="py-2.5 border-b border-[#EBEBE0]/60 last:border-0 space-y-1.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="text-[12px] font-black text-[#4A4A3A] truncate">{r.name}</div>
-                        <div className="text-[11px] text-[#8A8A70] truncate">
+                        <div className="text-[12px] font-black text-[var(--ds-text)] truncate">{r.name}</div>
+                        <div className="text-[11px] text-[var(--ds-text-2)] truncate">
                           {r.lastHouseName} · {arabicDate(r.lastCheckIn)}
                         </div>
                       </div>
-                      <span className="text-[11px] font-black text-[#0A2342] shrink-0 tabular-nums">
+                      <span className="text-[11px] font-black text-[var(--ds-brand)] shrink-0 tabular-nums">
                         {arabicNumber(r.lastTotal)} ج.م
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] text-[#8A8A70]">{arabicPlural(r.lastGuests, GUEST_FORMS)}</span>
+                      <span className="text-[11px] text-[var(--ds-text-2)]">{arabicPlural(r.lastGuests, GUEST_FORMS)}</span>
                       {r.phone && (
                         <a
                           href={getWhatsAppLink(r.phone, msg)}
@@ -3307,7 +3307,7 @@ export default function AdminDashboard({
               })
             )}
             {renewals.length > 20 && (
-              <p className="text-[11px] text-[#8A8A70]">و{arabicNumber(renewals.length - 20)} مجموعة تانية.</p>
+              <p className="text-[11px] text-[var(--ds-text-2)]">و{arabicNumber(renewals.length - 20)} مجموعة تانية.</p>
             )}
           </div>
         </div>
@@ -3316,18 +3316,18 @@ export default function AdminDashboard({
       {/* Payments Verification Tab */}
       {activeTab === 'payments' && (
         <div className="space-y-4 text-right">
-          <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
-            <h3 className="text-xs font-bold text-[#4A4A3A]">قائمة الحوالات والدفعيات لإثباتات الحجز:</h3>
-            <div className="text-[12px] text-[#8A8A70]">
+          <div className="flex items-center justify-between border-b border-[var(--ds-border)] pb-2">
+            <h3 className="text-xs font-bold text-[var(--ds-text)]">قائمة الحوالات والدفعيات لإثباتات الحجز:</h3>
+            <div className="text-[12px] text-[var(--ds-text-2)]">
               بانتظار التحقق: <strong className="text-amber-800">{arabicNumber(payments.filter(p => p.paymentStatus === 'pending').length)}</strong> / إجمالي المعاملات بالمنصة: {arabicNumber(payments.length)}
             </div>
           </div>
 
           {payments.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-2">
+            <div className="bg-[var(--ds-surface)] rounded-3xl p-8 border border-[var(--ds-border)] text-center space-y-2">
               <Clock className="w-8 h-8 text-[#BCBC9D] mx-auto animate-pulse" />
-              <p className="text-sm font-bold text-[#4A4A3A]">لا توجد أي سحوبات أو إثباتات سداد بعد</p>
-              <p className="text-[11px] text-[#8A8A70]">سيقوم المستخدمون برفع إيصالات الدفع هنا فور قيامهم بالتحويل البنكي أو InstaPay.</p>
+              <p className="text-sm font-bold text-[var(--ds-text)]">لا توجد أي سحوبات أو إثباتات سداد بعد</p>
+              <p className="text-[11px] text-[var(--ds-text-2)]">سيقوم المستخدمون برفع إيصالات الدفع هنا فور قيامهم بالتحويل البنكي أو InstaPay.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -3341,16 +3341,16 @@ export default function AdminDashboard({
                   <div
                     id={`admin-payment-card-${pay.id}`}
                     key={pay.id}
-                    className={`bg-white rounded-3xl border shadow-sm overflow-hidden text-right transition-all ${
-                      isPending ? 'border-amber-300 ring-1 ring-amber-100' : 'border-[#D6D6C2]'
+                    className={`bg-[var(--ds-surface)] rounded-3xl border shadow-sm overflow-hidden text-right transition-all ${
+                      isPending ? 'border-amber-300 ring-1 ring-amber-100' : 'border-[var(--ds-border)]'
                     }`}
                   >
                     {/* Header info */}
-                    <div className="p-3.5 bg-slate-50 border-b border-[#D6D6C2]/60 flex flex-wrap items-center justify-between gap-2">
+                    <div className="p-3.5 bg-slate-50 border-b border-[var(--ds-border)]/60 flex flex-wrap items-center justify-between gap-2">
                       <div className="space-y-0.5">
-                        <span className="text-[11px] text-[#8A8A70] font-bold">معرف الدفع: #{pay.id.toUpperCase()}</span>
-                        <h4 className="text-xs font-extrabold text-[#4A4A3A]">{pay.userName}</h4>
-                        {b && <p className="text-[12px] text-[#8A8A70]">لحجز بيت: <strong>{b.houseName}</strong> (حساب #{b.id.toUpperCase()})</p>}
+                        <span className="text-[11px] text-[var(--ds-text-2)] font-bold">معرف الدفع: #{pay.id.toUpperCase()}</span>
+                        <h4 className="text-xs font-extrabold text-[var(--ds-text)]">{pay.userName}</h4>
+                        {b && <p className="text-[12px] text-[var(--ds-text-2)]">لحجز بيت: <strong>{b.houseName}</strong> (حساب #{b.id.toUpperCase()})</p>}
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -3420,7 +3420,7 @@ export default function AdminDashboard({
                         </div>
 
                         {/* Render customized transaction parameters based on type */}
-                        <div className="bg-[#FAF8F5] p-3 rounded-2xl border border-[#E7E5DB] text-[11px] space-y-1 text-[#2D2D24]">
+                        <div className="bg-[var(--ds-bg)] p-3 rounded-2xl border border-[#E7E5DB] text-[11px] space-y-1 text-[var(--ds-text-strong)]">
                           <div className="font-extrabold text-[#464E3D] text-[12px] mb-1">بيانات وتفاصيل المعاملة المصرحة:</div>
                           
                           {pay.paymentMethod === 'instapay' && pay.details && (
@@ -3467,7 +3467,7 @@ export default function AdminDashboard({
                             placeholder="اكتب ردك هنا (مثال: تم مطابقة إيصال فودافون كاش مع المحفظة)"
                             value={notesInputs[pay.id] || pay.adminNotes || ''}
                             onChange={(e) => setNotesInputs({ ...notesInputs, [pay.id]: e.target.value })}
-                            className="w-full bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 min-h-11 text-[#2D2D24] focus:outline-none focus:border-[#464E3D]"
+                            className="w-full bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-xs px-3 min-h-11 text-[var(--ds-text-strong)] focus:outline-none focus:border-[#464E3D]"
                           />
                         </div>
 
@@ -3527,12 +3527,12 @@ export default function AdminDashboard({
                             here, which was a dead end every week. */}
                         {pay.paymentStatus === 'approved' && onSetPaymentAccount && (settings.paymentMethods ?? []).length > 0 && (
                           <div className="pt-2">
-                            <label className="block text-[11px] font-bold text-[#8A8A70] mb-1">وصلت على أنهي حساب؟</label>
+                            <label className="block text-[11px] font-bold text-[var(--ds-text-2)] mb-1">وصلت على أنهي حساب؟</label>
                             <select
                               value={pay.receivedAccount ?? ''}
                               onChange={(e) => onSetPaymentAccount(pay.id, e.target.value)}
-                              className={`w-full bg-white border text-[12px] px-2 min-h-11 rounded-xl focus:outline-none cursor-pointer ${
-                                pay.receivedAccount ? 'border-[#D6D6C2] text-[#4A4A3A]' : 'border-amber-300 text-amber-800 bg-amber-50'
+                              className={`w-full bg-[var(--ds-surface)] border text-[12px] px-2 min-h-11 rounded-xl focus:outline-none cursor-pointer ${
+                                pay.receivedAccount ? 'border-[var(--ds-border)] text-[var(--ds-text)]' : 'border-amber-300 text-amber-800 bg-amber-50'
                               }`}
                             >
                               <option value="">— لسه محدّدش —</option>
@@ -3552,7 +3552,7 @@ export default function AdminDashboard({
                                 if (!confirm('هترجّع الإيصال ده لقائمة المراجعة تاني.\n\nالفلوس مش هتتحسب محصّلة لحد ما تراجعه، والحجز هيفضل زي ما هو. تمام؟')) return;
                                 onVerifyPayment(pay.id, 'pending', notesInputs[pay.id]);
                               }}
-                              className="w-full bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 px-3 rounded-xl transition-colors cursor-pointer text-center"
+                              className="w-full bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold min-h-11 px-3 rounded-xl transition-colors cursor-pointer text-center"
                             >
                               تراجع — رجّع الإيصال للمراجعة
                             </button>
@@ -3561,7 +3561,7 @@ export default function AdminDashboard({
                       </div>
 
                       {/* Right side: Proof Image display */}
-                      <div className="flex flex-col items-center justify-center p-3 bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl relative">
+                      <div className="flex flex-col items-center justify-center p-3 bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-2xl relative">
                         <span className="text-[12px] font-bold text-[#867E65] mb-2">إثبات التحويل المرفق:</span>
                         {proofImg ? (
                           <div className="space-y-2 text-center">
@@ -3663,19 +3663,19 @@ export default function AdminDashboard({
           <div className="space-y-4 text-right">
             {onSettleBookings && (
               <div className="space-y-2">
-                <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
-                  <h3 className="text-xs font-bold text-[#4A4A3A]">مستحقات جاهزة للتحويل (لكل حجز):</h3>
-                  <div className="text-[12px] text-[#8A8A70]">{arabicPlural(unclaimedOwed.length, BOOKING_FORMS)}</div>
+                <div className="flex items-center justify-between border-b border-[var(--ds-border)] pb-2">
+                  <h3 className="text-xs font-bold text-[var(--ds-text)]">مستحقات جاهزة للتحويل (لكل حجز):</h3>
+                  <div className="text-[12px] text-[var(--ds-text-2)]">{arabicPlural(unclaimedOwed.length, BOOKING_FORMS)}</div>
                 </div>
                 {/* Say what was netted off, rather than silently showing a
                     shorter list than the money would suggest. */}
                 {alreadyClaimed > 0 && (
-                  <p className="text-[11px] text-[#8A8A70] leading-relaxed">
+                  <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">
                     اتخصم {arabicNumber(alreadyClaimed)} ج.م اتحوّلت خلاص عن طريق طلبات التحويل تحت، علشان الحجوزات دي متتدفعش مرتين.
                   </p>
                 )}
                 {owedHouseIds.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-[#D6D6C2] p-6 text-center text-xs text-[#8A8A70]">لا توجد مستحقات غير محوّلة حالياً.</div>
+                  <div className="bg-[var(--ds-surface)] rounded-2xl border border-[var(--ds-border)] p-6 text-center text-xs text-[var(--ds-text-2)]">لا توجد مستحقات غير محوّلة حالياً.</div>
                 ) : owedHouseIds.map((hid) => {
                   const house = houses.find((h) => h.id === hid);
                   const list = owedByHouse[hid];
@@ -3684,18 +3684,18 @@ export default function AdminDashboard({
                   const total = list.reduce((s, b) => s + ownerShare(b), 0);
                   const methods = house?.paymentMethods ?? [];
                   return (
-                    <div key={hid} className="bg-white rounded-2xl border border-[#D6D6C2] p-3.5 space-y-2">
+                    <div key={hid} className="bg-[var(--ds-surface)] rounded-2xl border border-[var(--ds-border)] p-3.5 space-y-2">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="text-xs font-black text-[#4A4A3A] min-w-0">{ownerName} · <span className="font-bold text-[#8A8A70]">{house?.name || '—'}</span></div>
-                        <div className="text-xs font-black text-[#5A5A40] shrink-0">{arabicNumber(total)} ج.م</div>
+                        <div className="text-xs font-black text-[var(--ds-text)] min-w-0">{ownerName} · <span className="font-bold text-[var(--ds-text-2)]">{house?.name || '—'}</span></div>
+                        <div className="text-xs font-black text-[var(--ds-primary)] shrink-0">{arabicNumber(total)} ج.م</div>
                       </div>
                       {methods.length > 0 ? (
                         <div className="bg-[#FBFBFA] border border-[#EBEBE0] rounded-xl p-2 space-y-1">
-                          <div className="text-[11px] font-black text-[#8A8A70]">حوّل إلى:</div>
+                          <div className="text-[11px] font-black text-[var(--ds-text-2)]">حوّل إلى:</div>
                           {methods.map((m) => (
                             <div key={m.id} className="flex items-center justify-between gap-2 text-[12px]">
-                              <span className="font-bold text-[#4A4A3A] shrink-0">{m.label}</span>
-                              <span dir="ltr" className="font-mono font-black text-[#5A5A40] select-all break-all">{m.value}</span>
+                              <span className="font-bold text-[var(--ds-text)] shrink-0">{m.label}</span>
+                              <span dir="ltr" className="font-mono font-black text-[var(--ds-primary)] select-all break-all">{m.value}</span>
                             </div>
                           ))}
                         </div>
@@ -3706,11 +3706,11 @@ export default function AdminDashboard({
                         {list.map((b) => (
                           <div key={b.id} className="flex items-center justify-between gap-2 bg-[#FBFBFA] rounded-xl px-2.5 py-1.5">
                             <div className="min-w-0">
-                              <div className="text-[11px] font-bold text-[#4A4A3A] truncate">{b.userName}</div>
-                              <div className="text-[11px] text-[#8A8A70] font-bold">{arabicDateRange(b.checkIn, b.checkOut)}</div>
+                              <div className="text-[11px] font-bold text-[var(--ds-text)] truncate">{b.userName}</div>
+                              <div className="text-[11px] text-[var(--ds-text-2)] font-bold">{arabicDateRange(b.checkIn, b.checkOut)}</div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[11px] font-black text-[#5A5A40]">{arabicNumber(ownerShare(b))} ج.م</span>
+                              <span className="text-[11px] font-black text-[var(--ds-primary)]">{arabicNumber(ownerShare(b))} ج.م</span>
                               <button type="button"
                                 onClick={() => { const t = askTransfer(`تحويل لـ${ownerName} عن حجز ${b.userName}`, ownerShare(b)); if (t) onSettleBookings({ houseId: hid, ownerId, amount: ownerShare(b), bookingIds: [b.id], note: `حجز ${b.userName}`, transactionReference: t.reference, paidFromAccount: t.account }); }}
                                 className="text-[12px] font-bold bg-emerald-600 text-white px-2.5 min-h-11.5 rounded-lg cursor-pointer">حوّل ✓</button>
@@ -3728,12 +3728,12 @@ export default function AdminDashboard({
                 })}
               </div>
             )}
-            <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
-              <h3 className="text-xs font-bold text-[#4A4A3A]">طلبات تحويل أصحاب البيوت + السجل:</h3>
-              <div className="text-[12px] text-[#8A8A70]">قيد التنفيذ: <strong className="text-amber-800">{arabicNumber(pendingTotal)} ج.م</strong></div>
+            <div className="flex items-center justify-between border-b border-[var(--ds-border)] pb-2">
+              <h3 className="text-xs font-bold text-[var(--ds-text)]">طلبات تحويل أصحاب البيوت + السجل:</h3>
+              <div className="text-[12px] text-[var(--ds-text-2)]">قيد التنفيذ: <strong className="text-amber-800">{arabicNumber(pendingTotal)} ج.م</strong></div>
             </div>
             {payouts.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-[#D6D6C2] p-8 text-center text-xs text-[#8A8A70]">لا توجد طلبات تحويل بعد.</div>
+              <div className="bg-[var(--ds-surface)] rounded-2xl border border-[var(--ds-border)] p-8 text-center text-xs text-[var(--ds-text-2)]">لا توجد طلبات تحويل بعد.</div>
             ) : (
               <div className="space-y-2">
                 {payouts.map((p) => {
@@ -3742,11 +3742,11 @@ export default function AdminDashboard({
                   const houseName = houses.find((h) => h.id === p.houseId)?.name || '—';
                   const open = p.status === 'pending' || p.status === 'processing';
                   return (
-                    <div key={p.id} className="bg-white rounded-2xl border border-[#D6D6C2] p-3.5 space-y-2">
+                    <div key={p.id} className="bg-[var(--ds-surface)] rounded-2xl border border-[var(--ds-border)] p-3.5 space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="text-xs font-black text-[#4A4A3A]">{ownerName} · <span className="font-bold text-[#8A8A70]">{houseName}</span></div>
-                          <div className="text-[11px] text-[#8A8A70] font-bold">{(p.completedAt ?? p.requestedAt).split('T')[0]}{p.note ? ` · ${p.note}` : ''}</div>
+                          <div className="text-xs font-black text-[var(--ds-text)]">{ownerName} · <span className="font-bold text-[var(--ds-text-2)]">{houseName}</span></div>
+                          <div className="text-[11px] text-[var(--ds-text-2)] font-bold">{(p.completedAt ?? p.requestedAt).split('T')[0]}{p.note ? ` · ${p.note}` : ''}</div>
                         </div>
                         <span className={`shrink-0 text-[11px] font-black px-2 py-1 rounded-full border ${meta.cls}`}>{meta.label}</span>
                       </div>
@@ -3754,11 +3754,11 @@ export default function AdminDashboard({
                         const methods = houses.find((h) => h.id === p.houseId)?.paymentMethods ?? [];
                         return methods.length > 0 ? (
                           <div className="bg-[#FBFBFA] border border-[#EBEBE0] rounded-xl p-2 space-y-1">
-                            <div className="text-[11px] font-black text-[#8A8A70]">حوّل إلى:</div>
+                            <div className="text-[11px] font-black text-[var(--ds-text-2)]">حوّل إلى:</div>
                             {methods.map((m) => (
                               <div key={m.id} className="flex items-center justify-between gap-2 text-[12px]">
-                                <span className="font-bold text-[#4A4A3A] shrink-0">{m.label}</span>
-                                <span dir="ltr" className="font-mono font-black text-[#5A5A40] select-all break-all">{m.value}</span>
+                                <span className="font-bold text-[var(--ds-text)] shrink-0">{m.label}</span>
+                                <span dir="ltr" className="font-mono font-black text-[var(--ds-primary)] select-all break-all">{m.value}</span>
                               </div>
                             ))}
                           </div>
@@ -3767,7 +3767,7 @@ export default function AdminDashboard({
                         );
                       })()}
                       <div className="flex items-center justify-between gap-2">
-                        <div className="text-base font-black text-[#5A5A40]">{arabicNumber(p.amount)} ج.م</div>
+                        <div className="text-base font-black text-[var(--ds-primary)]">{arabicNumber(p.amount)} ج.م</div>
                         {open && onUpdatePayoutStatus && (
                           <div className="flex gap-1.5">
                             {p.status === 'pending' && (
@@ -3777,7 +3777,7 @@ export default function AdminDashboard({
                             <button type="button" onClick={() => { if (confirm(`تأكيد تحويل ${arabicNumber(p.amount)} ج.م لـ${ownerName}؟`)) onUpdatePayoutStatus(p.id, 'completed'); }}
                               className="text-[12px] font-bold bg-emerald-600 text-white px-2.5 min-h-11.5 rounded-lg cursor-pointer">تم التحويل ✓</button>
                             <button type="button" onClick={() => { if (confirm('رفض طلب التحويل؟')) onUpdatePayoutStatus(p.id, 'rejected'); }}
-                              className="text-[12px] font-bold bg-white text-rose-700 border border-rose-200 px-2.5 min-h-11.5 rounded-lg cursor-pointer">رفض</button>
+                              className="text-[12px] font-bold bg-[var(--ds-surface)] text-rose-700 border border-rose-200 px-2.5 min-h-11.5 rounded-lg cursor-pointer">رفض</button>
                           </div>
                         )}
                       </div>
@@ -3793,21 +3793,21 @@ export default function AdminDashboard({
       {/* Bookings Management Tab */}
       {activeTab === 'bookings' && (
         <div className="space-y-4 text-right">
-          <div className="flex items-center justify-between border-b border-[#D6D6C2] pb-2">
-            <h3 className="text-xs font-bold text-[#4A4A3A]">إدارة حجوزات المنصة والتحصيل:</h3>
-            <div className="text-[12px] text-[#8A8A70]">
+          <div className="flex items-center justify-between border-b border-[var(--ds-border)] pb-2">
+            <h3 className="text-xs font-bold text-[var(--ds-text)]">إدارة حجوزات المنصة والتحصيل:</h3>
+            <div className="text-[12px] text-[var(--ds-text-2)]">
               المعلقة أو غير مكتملة السداد: <strong className="text-amber-800">{arabicNumber(pendingOrUnpaidBookingsCount)}</strong> / إجمالي الحجوزات: {arabicNumber(bookings.length)}
             </div>
           </div>
 
           {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row gap-2 bg-white p-3 rounded-2xl border border-[#D6D6C2] shadow-sm text-right">
+          <div className="flex flex-col sm:flex-row gap-2 bg-[var(--ds-surface)] p-3 rounded-2xl border border-[var(--ds-border)] shadow-sm text-right">
             <input
               type="text"
               placeholder="ابحث باسم المستخدم، اسم البيت، أو رقم الحجز..."
               value={bookingSearch}
               onChange={(e) => setBookingSearch(e.target.value)}
-              className="flex-1 bg-[#FAF8F5] border border-[#E7E5DB] rounded-xl text-xs px-3 min-h-11 text-[#2D2D24] focus:outline-none focus:border-[#464E3D] text-right"
+              className="flex-1 bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-xs px-3 min-h-11 text-[var(--ds-text-strong)] focus:outline-none focus:border-[#464E3D] text-right"
             />
             <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
               {(['all', 'soon', 'pending', 'unpaid', 'temporary', 'completed'] as const).map((filterOpt) => (
@@ -3817,8 +3817,8 @@ export default function AdminDashboard({
                   onClick={() => setBookingFilter(filterOpt)}
                   className={`text-[12px] font-bold px-2.5 min-h-11 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                     bookingFilter === filterOpt
-                      ? 'bg-[#5A5A40] text-white shadow-sm'
-                      : 'bg-[#FAF8F5] text-[#8A8A70] border border-[#E7E5DB] hover:bg-[#EBEBE0]/50'
+                      ? 'bg-[var(--ds-primary)] text-white shadow-sm'
+                      : 'bg-[var(--ds-bg)] text-[var(--ds-text-2)] border border-[#E7E5DB] hover:bg-[#EBEBE0]/50'
                   }`}
                 >
                   {filterOpt === 'all' && 'الكل'}
@@ -3834,9 +3834,9 @@ export default function AdminDashboard({
 
           {/* Bookings list */}
           {sortedBookings.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 border border-[#D6D6C2] text-center space-y-2">
+            <div className="bg-[var(--ds-surface)] rounded-3xl p-8 border border-[var(--ds-border)] text-center space-y-2">
               <Clock className="w-8 h-8 text-[#BCBC9D] mx-auto animate-pulse" />
-              <p className="text-sm font-bold text-[#4A4A3A]">لا توجد حجوزات مطابقة للبحث أو التصفية</p>
+              <p className="text-sm font-bold text-[var(--ds-text)]">لا توجد حجوزات مطابقة للبحث أو التصفية</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -3858,14 +3858,14 @@ export default function AdminDashboard({
                 return (
                   <div
                     key={booking.id}
-                    className={`bg-white rounded-3xl border shadow-sm overflow-hidden text-right transition-all ${
-                      booking.status === 'pending' || remaining > 0 ? 'border-amber-200 ring-1 ring-amber-50' : 'border-[#D6D6C2]'
+                    className={`bg-[var(--ds-surface)] rounded-3xl border shadow-sm overflow-hidden text-right transition-all ${
+                      booking.status === 'pending' || remaining > 0 ? 'border-amber-200 ring-1 ring-amber-50' : 'border-[var(--ds-border)]'
                     }`}
                   >
-                    <div className="p-3.5 bg-slate-50 border-b border-[#D6D6C2]/60 flex flex-wrap items-center justify-between gap-2">
+                    <div className="p-3.5 bg-slate-50 border-b border-[var(--ds-border)]/60 flex flex-wrap items-center justify-between gap-2">
                       <div className="space-y-0.5">
-                        <span className="text-[11px] text-[#8A8A70] font-bold">رقم الحجز: #{booking.id.toUpperCase()}</span>
-                        <h4 className="text-xs font-extrabold text-[#4A4A3A] flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] text-[var(--ds-text-2)] font-bold">رقم الحجز: #{booking.id.toUpperCase()}</span>
+                        <h4 className="text-xs font-extrabold text-[var(--ds-text)] flex items-center gap-1.5 flex-wrap">
                           {booking.userName}
                           {/* A hold blocks real beds. Nothing anywhere expires
                               one, and the panel never showed which bookings
@@ -3877,12 +3877,12 @@ export default function AdminDashboard({
                             </span>
                           )}
                           {booking.source === 'manual' && (
-                            <span className="text-[11px] font-bold text-[#5A5A40] bg-[#EBEBE0]/70 border border-[#D6D6C2] px-1.5 py-0.5 rounded-md">
+                            <span className="text-[11px] font-bold text-[var(--ds-primary)] bg-[#EBEBE0]/70 border border-[var(--ds-border)] px-1.5 py-0.5 rounded-md">
                               سجّله المالك
                             </span>
                           )}
                         </h4>
-                        <p className="text-[12px] text-[#8A8A70]">الهاتف: <strong className="font-mono text-[11px] text-[#4A4A3A]">{booking.userPhone}</strong></p>
+                        <p className="text-[12px] text-[var(--ds-text-2)]">الهاتف: <strong className="font-mono text-[11px] text-[var(--ds-text)]">{booking.userPhone}</strong></p>
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {booking.status === 'pending' && (
@@ -3921,29 +3921,29 @@ export default function AdminDashboard({
                     <div className="p-4 space-y-3">
                       <div className="grid grid-cols-2 gap-3 text-right">
                         <div className="space-y-1">
-                          <div className="text-[12px] text-[#8A8A70] font-bold">بيت الخلوة:</div>
-                          <div className="text-xs font-black text-[#4A4A3A]">{booking.houseName}</div>
+                          <div className="text-[12px] text-[var(--ds-text-2)] font-bold">بيت الخلوة:</div>
+                          <div className="text-xs font-black text-[var(--ds-text)]">{booking.houseName}</div>
                         </div>
                         <div className="space-y-1">
-                          <div className="text-[12px] text-[#8A8A70] font-bold">تاريخ الدخول والمدة:</div>
-                          <div className="text-xs font-black text-[#4A4A3A] flex items-center gap-1 justify-end">
-                            <Calendar className="w-3.5 h-3.5 text-[#8A8A70]" />
+                          <div className="text-[12px] text-[var(--ds-text-2)] font-bold">تاريخ الدخول والمدة:</div>
+                          <div className="text-xs font-black text-[var(--ds-text)] flex items-center gap-1 justify-end">
+                            <Calendar className="w-3.5 h-3.5 text-[var(--ds-text-2)]" />
                             <span>{arabicDateRange(booking.checkIn, booking.checkOut)}</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="bg-[#FAF8F5] p-3 rounded-2xl border border-[#E7E5DB] text-[11px] grid grid-cols-3 gap-2 text-center text-[#4A4A3A] font-bold">
+                      <div className="bg-[var(--ds-bg)] p-3 rounded-2xl border border-[#E7E5DB] text-[11px] grid grid-cols-3 gap-2 text-center text-[var(--ds-text)] font-bold">
                         <div>
-                          <div className="text-[11px] text-[#8A8A70] mb-0.5">القيمة الإجمالية</div>
+                          <div className="text-[11px] text-[var(--ds-text-2)] mb-0.5">القيمة الإجمالية</div>
                           <div className="text-emerald-800">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</div>
                         </div>
                         <div>
-                          <div className="text-[11px] text-[#8A8A70] mb-0.5">المسدد المقرّ</div>
+                          <div className="text-[11px] text-[var(--ds-text-2)] mb-0.5">المسدد المقرّ</div>
                           <div className="text-blue-800">{totalPaid.toLocaleString('ar-EG')} ج.م</div>
                         </div>
                         <div>
-                          <div className="text-[11px] text-[#8A8A70] mb-0.5">المتبقي المستحق</div>
+                          <div className="text-[11px] text-[var(--ds-text-2)] mb-0.5">المتبقي المستحق</div>
                           <div className={`text-rose-800 ${remaining > 0 ? 'underline' : ''}`}>{remaining.toLocaleString('ar-EG')} ج.م</div>
                         </div>
                       </div>
@@ -3959,7 +3959,7 @@ export default function AdminDashboard({
                           <span>واتساب</span>
                         </a>
                         <button onClick={() => { setChatBookingId(booking.id); goTo('people', 'messages'); }}
-                          className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-xs font-bold min-h-11 px-3 rounded-xl transition-all cursor-pointer">
+                          className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-xs font-bold min-h-11 px-3 rounded-xl transition-all cursor-pointer">
                           <MessageSquareDashed className="w-3.5 h-3.5" /> الشات
                         </button>
                         {booking.status !== 'rejected' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
@@ -3982,23 +3982,23 @@ export default function AdminDashboard({
                           the room allocation, so an edit here cannot overbook. */}
                       {onUpdateBookingDetails && booking.status !== 'cancelled' && booking.status !== 'rejected' && (
                         editBookingId === booking.id ? (
-                          <div className="bg-[#FAF8F5] border border-[#E7E5DB] rounded-2xl p-3 space-y-2">
+                          <div className="bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-2xl p-3 space-y-2">
                             <div className="grid grid-cols-2 gap-2">
                               <label className="space-y-1">
-                                <span className="text-[11px] font-bold text-[#8A8A70]">الدخول</span>
+                                <span className="text-[11px] font-bold text-[var(--ds-text-2)]">الدخول</span>
                                 <input type="date" value={bookingEdit.checkIn} onChange={(e) => setBookingEdit((d) => ({ ...d, checkIn: e.target.value }))}
-                                  className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                                  className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
                               </label>
                               <label className="space-y-1">
-                                <span className="text-[11px] font-bold text-[#8A8A70]">الخروج</span>
+                                <span className="text-[11px] font-bold text-[var(--ds-text-2)]">الخروج</span>
                                 <input type="date" value={bookingEdit.checkOut} onChange={(e) => setBookingEdit((d) => ({ ...d, checkOut: e.target.value }))}
-                                  className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                                  className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
                               </label>
                             </div>
                             <label className="space-y-1 block">
-                              <span className="text-[11px] font-bold text-[#8A8A70]">عدد الأفراد</span>
+                              <span className="text-[11px] font-bold text-[var(--ds-text-2)]">عدد الأفراد</span>
                               <input type="number" min={1} value={bookingEdit.guestsCount} onChange={(e) => setBookingEdit((d) => ({ ...d, guestsCount: e.target.value }))}
-                                className="w-full bg-white border border-[#D6D6C2] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
+                                className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[12px] px-2 min-h-11 rounded-lg focus:outline-none" />
                             </label>
                             <div className="flex gap-2">
                               <button type="button" disabled={editSaving}
@@ -4011,11 +4011,11 @@ export default function AdminDashboard({
                                   setEditSaving(false);
                                   if (ok) setEditBookingId(null);
                                 }}
-                                className="flex-1 bg-[#5A5A40] hover:bg-[#4A4A3A] disabled:opacity-60 text-white text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+                                className="flex-1 bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] disabled:opacity-60 text-white text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
                                 {editSaving ? 'بيتحفظ…' : 'احفظ التعديل'}
                               </button>
                               <button type="button" onClick={() => setEditBookingId(null)}
-                                className="bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 px-4 rounded-xl cursor-pointer">
+                                className="bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold min-h-11 px-4 rounded-xl cursor-pointer">
                                 إلغاء
                               </button>
                             </div>
@@ -4026,7 +4026,7 @@ export default function AdminDashboard({
                               setEditBookingId(booking.id);
                               setBookingEdit({ checkIn: booking.checkIn?.slice(0, 10) || '', checkOut: booking.checkOut?.slice(0, 10) || '', guestsCount: String(booking.guestsCount) });
                             }}
-                            className="w-full flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[#4A4A3A] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+                            className="w-full flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
                             <Pencil className="w-3.5 h-3.5" /> تعديل التواريخ والعدد
                           </button>
                         )
@@ -4043,42 +4043,42 @@ export default function AdminDashboard({
       {/* Messages tab — admin reads booking chats for dispute resolution */}
       {activeTab === 'messages' && (
         <div className="space-y-3">
-          <div className="text-xs font-bold text-[#8A8A70] px-1">مراجعة محادثات الحجوزات — اختر حجز لعرض المحادثة:</div>
+          <div className="text-xs font-bold text-[var(--ds-text-2)] px-1">مراجعة محادثات الحجوزات — اختر حجز لعرض المحادثة:</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {bookings.filter((b) => b.status !== 'rejected').slice(0, 50).map((b) => {
               const isOpen = chatBookingId === b.id;
               return (
                 <button key={b.id} onClick={() => setChatBookingId(isOpen ? null : b.id)}
-                  className={`text-right p-3 rounded-2xl border transition-all cursor-pointer ${isOpen ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white border-[#D6D6C2] hover:bg-[#FAF8F5]'}`}>
+                  className={`text-right p-3 rounded-2xl border transition-all cursor-pointer ${isOpen ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)] hover:bg-[var(--ds-bg)]'}`}>
                   <div className="text-[11px] font-bold truncate">{b.userName}</div>
-                  <div className={`text-[11px] truncate ${isOpen ? 'text-white/70' : 'text-[#8A8A70]'}`}>{b.houseName} · {arabicDate(b.checkIn)}</div>
+                  <div className={`text-[11px] truncate ${isOpen ? 'text-white/70' : 'text-[var(--ds-text-2)]'}`}>{b.houseName} · {arabicDate(b.checkIn)}</div>
                 </button>
               );
             })}
           </div>
           {chatBookingId && (
-            <div className="bg-white rounded-3xl border border-[#D6D6C2] overflow-hidden">
-              <div className="bg-[#FAF8F5] border-b border-[#D6D6C2] px-4 py-3 flex items-center justify-between">
-                <div className="text-xs font-bold text-[#4A4A3A] flex items-center gap-1.5">
-                  <MessageSquareDashed className="w-4 h-4 text-[#5A5A40]" />
+            <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] overflow-hidden">
+              <div className="bg-[var(--ds-bg)] border-b border-[var(--ds-border)] px-4 py-3 flex items-center justify-between">
+                <div className="text-xs font-bold text-[var(--ds-text)] flex items-center gap-1.5">
+                  <MessageSquareDashed className="w-4 h-4 text-[var(--ds-primary)]" />
                   محادثة الحجز #{chatBookingId.slice(0, 8)}
                 </div>
-                <button onClick={() => setChatBookingId(null)} className="text-[12px] font-bold text-[#8A8A70] hover:text-[#4A4A3A] cursor-pointer">إغلاق</button>
+                <button onClick={() => setChatBookingId(null)} className="text-[12px] font-bold text-[var(--ds-text-2)] hover:text-[var(--ds-text)] cursor-pointer">إغلاق</button>
               </div>
               <div className="p-4 max-h-80 overflow-y-auto space-y-2">
                 {chatLoading ? (
-                  <div className="text-center py-6 text-[12px] text-[#8A8A70] animate-pulse">جاري تحميل المحادثة...</div>
+                  <div className="text-center py-6 text-[12px] text-[var(--ds-text-2)] animate-pulse">جاري تحميل المحادثة...</div>
                 ) : chatMessages.length === 0 ? (
-                  <div className="text-center py-6 text-[12px] text-[#8A8A70]">لا توجد رسائل في هذا الحجز بعد.</div>
+                  <div className="text-center py-6 text-[12px] text-[var(--ds-text-2)]">لا توجد رسائل في هذا الحجز بعد.</div>
                 ) : (
                   chatMessages.map((msg) => {
                     const booking = bookings.find((b) => b.id === chatBookingId);
                     const isGuest = booking && msg.senderId === booking.userId;
                     return (
                       <div key={msg.id} className={`flex ${isGuest ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[75%] rounded-2xl px-3 py-2 space-y-0.5 ${isGuest ? 'bg-emerald-50 border border-emerald-200' : 'bg-[#FAF8F5] border border-[#E7E5DB]'}`}>
-                          <div className="text-[11px] font-bold text-[#8A8A70]">{msg.senderName}</div>
-                          <div className="text-[11px] text-[#4A4A3A]">{msg.content}</div>
+                        <div className={`max-w-[75%] rounded-2xl px-3 py-2 space-y-0.5 ${isGuest ? 'bg-emerald-50 border border-emerald-200' : 'bg-[var(--ds-bg)] border border-[#E7E5DB]'}`}>
+                          <div className="text-[11px] font-bold text-[var(--ds-text-2)]">{msg.senderName}</div>
+                          <div className="text-[11px] text-[var(--ds-text)]">{msg.content}</div>
                           <div className="text-[11px] text-[#BCBC9D]">{new Date(msg.createdAt).toLocaleString('ar-EG')}</div>
                         </div>
                       </div>
@@ -4095,44 +4095,44 @@ export default function AdminDashboard({
       {detailUser && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3">
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setDetailUserId(null)} />
-          <div className="bg-[#FAF8F5] max-w-lg w-full max-h-[90vh] overflow-y-auto rounded-3xl relative z-10 text-right">
-            <div className="sticky top-0 bg-[#FAF8F5] border-b border-[#D6D6C2] px-5 py-3.5 flex items-center justify-between z-10">
-              <h4 className="text-sm font-black text-[#2D2D24]">{detailUser.name}</h4>
-              <button onClick={() => setDetailUserId(null)} className="bg-white border border-[#D6D6C2] text-[#2D2D24] text-xs font-bold px-3 min-h-11.5 rounded-xl cursor-pointer">إغلاق ✕</button>
+          <div className="bg-[var(--ds-bg)] max-w-lg w-full max-h-[90vh] overflow-y-auto rounded-3xl relative z-10 text-right">
+            <div className="sticky top-0 bg-[var(--ds-bg)] border-b border-[var(--ds-border)] px-5 py-3.5 flex items-center justify-between z-10">
+              <h4 className="text-sm font-black text-[var(--ds-text-strong)]">{detailUser.name}</h4>
+              <button onClick={() => setDetailUserId(null)} className="bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[var(--ds-text-strong)] text-xs font-bold px-3 min-h-11.5 rounded-xl cursor-pointer">إغلاق ✕</button>
             </div>
             <div className="p-5 space-y-4">
               {/* User info */}
-              <div className="bg-white rounded-2xl border border-[#D6D6C2] p-4 space-y-2 text-[11px]">
-                <div className="flex justify-between"><span className="text-[#8A8A70]">الإيميل:</span><span className="font-bold">{detailUser.email}</span></div>
-                <div className="flex justify-between"><span className="text-[#8A8A70]">الهاتف:</span><span className="font-bold font-mono">{detailUser.phone}</span></div>
-                <div className="flex justify-between"><span className="text-[#8A8A70]">الدور:</span><span className="font-bold">{ROLE_LABELS[detailUser.role] ?? 'فرد'}</span></div>
-                {detailUser.organizationName && <div className="flex justify-between"><span className="text-[#8A8A70]">الكنيسة/المنظمة:</span><span className="font-bold">{detailUser.organizationName}</span></div>}
-                {detailUser.governorate && <div className="flex justify-between"><span className="text-[#8A8A70]">المحافظة:</span><span className="font-bold">{detailUser.governorate}</span></div>}
-                <div className="flex justify-between"><span className="text-[#8A8A70]">تاريخ التسجيل:</span><span className="font-bold">{new Date(detailUser.createdAt).toLocaleDateString('ar-EG')}</span></div>
-                <div className="flex justify-between"><span className="text-[#8A8A70]">النقاط:</span><span className="font-bold">{detailUser.points ?? 0}</span></div>
+              <div className="bg-[var(--ds-surface)] rounded-2xl border border-[var(--ds-border)] p-4 space-y-2 text-[11px]">
+                <div className="flex justify-between"><span className="text-[var(--ds-text-2)]">الإيميل:</span><span className="font-bold">{detailUser.email}</span></div>
+                <div className="flex justify-between"><span className="text-[var(--ds-text-2)]">الهاتف:</span><span className="font-bold font-mono">{detailUser.phone}</span></div>
+                <div className="flex justify-between"><span className="text-[var(--ds-text-2)]">الدور:</span><span className="font-bold">{ROLE_LABELS[detailUser.role] ?? 'فرد'}</span></div>
+                {detailUser.organizationName && <div className="flex justify-between"><span className="text-[var(--ds-text-2)]">الكنيسة/المنظمة:</span><span className="font-bold">{detailUser.organizationName}</span></div>}
+                {detailUser.governorate && <div className="flex justify-between"><span className="text-[var(--ds-text-2)]">المحافظة:</span><span className="font-bold">{detailUser.governorate}</span></div>}
+                <div className="flex justify-between"><span className="text-[var(--ds-text-2)]">تاريخ التسجيل:</span><span className="font-bold">{new Date(detailUser.createdAt).toLocaleDateString('ar-EG')}</span></div>
+                <div className="flex justify-between"><span className="text-[var(--ds-text-2)]">النقاط:</span><span className="font-bold">{detailUser.points ?? 0}</span></div>
               </div>
 
               {/* User bookings */}
               <div className="space-y-1.5">
-                <h5 className="text-[11px] font-black text-[#4A4A3A]">الحجوزات ({detailUserBookings.length})</h5>
+                <h5 className="text-[11px] font-black text-[var(--ds-text)]">الحجوزات ({detailUserBookings.length})</h5>
                 {detailUserBookings.length === 0 ? (
-                  <div className="text-[12px] text-[#8A8A70] bg-white rounded-xl border border-[#D6D6C2] p-3 text-center">لا توجد حجوزات</div>
+                  <div className="text-[12px] text-[var(--ds-text-2)] bg-[var(--ds-surface)] rounded-xl border border-[var(--ds-border)] p-3 text-center">لا توجد حجوزات</div>
                 ) : detailUserBookings.map((b) => (
-                  <div key={b.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[12px] space-y-0.5">
+                  <div key={b.id} className="bg-[var(--ds-surface)] rounded-xl border border-[var(--ds-border)] p-3 text-[12px] space-y-0.5">
                     <div className="flex justify-between font-bold"><span>{b.houseName}</span><span className={b.status === 'approved' || b.status === 'completed' ? 'text-emerald-700' : b.status === 'pending' ? 'text-amber-700' : 'text-rose-700'}>{b.status === 'approved' ? 'مقبول' : b.status === 'completed' ? 'مكتمل' : b.status === 'pending' ? 'معلّق' : b.status === 'cancelled' ? 'ملغى' : 'مرفوض'}</span></div>
-                    <div className="text-[#8A8A70]">{arabicDateRange(b.checkIn, b.checkOut)} · {arabicPlural(b.guestsCount, GUEST_FORMS)} · {arabicNumber(b.totalPrice)} ج.م</div>
+                    <div className="text-[var(--ds-text-2)]">{arabicDateRange(b.checkIn, b.checkOut)} · {arabicPlural(b.guestsCount, GUEST_FORMS)} · {arabicNumber(b.totalPrice)} ج.م</div>
                   </div>
                 ))}
               </div>
 
               {/* User payments */}
               <div className="space-y-1.5">
-                <h5 className="text-[11px] font-black text-[#4A4A3A]">المدفوعات ({detailUserPayments.length})</h5>
+                <h5 className="text-[11px] font-black text-[var(--ds-text)]">المدفوعات ({detailUserPayments.length})</h5>
                 {detailUserPayments.length === 0 ? (
-                  <div className="text-[12px] text-[#8A8A70] bg-white rounded-xl border border-[#D6D6C2] p-3 text-center">لا توجد مدفوعات</div>
+                  <div className="text-[12px] text-[var(--ds-text-2)] bg-[var(--ds-surface)] rounded-xl border border-[var(--ds-border)] p-3 text-center">لا توجد مدفوعات</div>
                 ) : detailUserPayments.map((p) => (
-                  <div key={p.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[12px] flex justify-between items-center">
-                    <div><span className="font-bold">{arabicNumber(p.amount)} ج.م</span> <span className="text-[#8A8A70]">({p.paymentMethod})</span></div>
+                  <div key={p.id} className="bg-[var(--ds-surface)] rounded-xl border border-[var(--ds-border)] p-3 text-[12px] flex justify-between items-center">
+                    <div><span className="font-bold">{arabicNumber(p.amount)} ج.م</span> <span className="text-[var(--ds-text-2)]">({p.paymentMethod})</span></div>
                     <span className={`font-bold ${p.paymentStatus === 'approved' ? 'text-emerald-700' : p.paymentStatus === 'pending' ? 'text-amber-700' : 'text-rose-700'}`}>
                       {p.paymentStatus === 'approved' ? 'معتمد' : p.paymentStatus === 'pending' ? 'معلّق' : 'مرفوض'}
                     </span>
@@ -4142,16 +4142,16 @@ export default function AdminDashboard({
 
               {/* User reviews */}
               <div className="space-y-1.5">
-                <h5 className="text-[11px] font-black text-[#4A4A3A]">التقييمات ({detailUserReviews.length})</h5>
+                <h5 className="text-[11px] font-black text-[var(--ds-text)]">التقييمات ({detailUserReviews.length})</h5>
                 {detailUserReviews.length === 0 ? (
-                  <div className="text-[12px] text-[#8A8A70] bg-white rounded-xl border border-[#D6D6C2] p-3 text-center">لا توجد تقييمات</div>
+                  <div className="text-[12px] text-[var(--ds-text-2)] bg-[var(--ds-surface)] rounded-xl border border-[var(--ds-border)] p-3 text-center">لا توجد تقييمات</div>
                 ) : detailUserReviews.map((r) => (
-                  <div key={r.id} className="bg-white rounded-xl border border-[#D6D6C2] p-3 text-[12px] space-y-0.5">
+                  <div key={r.id} className="bg-[var(--ds-surface)] rounded-xl border border-[var(--ds-border)] p-3 text-[12px] space-y-0.5">
                     <div className="flex justify-between items-center">
                       <span className="font-bold">{houses.find((h) => h.id === r.houseId)?.name || r.houseId}</span>
                       <span className="flex items-center gap-0.5 text-amber-600 font-bold"><Star className="w-3 h-3 fill-amber-500 text-amber-500" />{arabicDecimal(r.overall_rating ?? r.rating)}</span>
                     </div>
-                    {r.comment && <div className="text-[#8A8A70] truncate">{r.comment}</div>}
+                    {r.comment && <div className="text-[var(--ds-text-2)] truncate">{r.comment}</div>}
                   </div>
                 ))}
               </div>
@@ -4166,16 +4166,16 @@ export default function AdminDashboard({
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedProofImage(null)} />
           <div className="bg-[#F3F0E8] border border-[#C5BCA0] max-w-xl w-full rounded-3xl overflow-hidden relative z-10 p-5 text-right">
             <div className="flex items-center justify-between pb-2 border-b border-[#E7E5DB] mb-4">
-              <h4 className="text-xs font-bold text-[#2D2D24]">تكبير لقطة شاشة إثبات الدفع المعتمدة:</h4>
+              <h4 className="text-xs font-bold text-[var(--ds-text-strong)]">تكبير لقطة شاشة إثبات الدفع المعتمدة:</h4>
               <button
                 id="lightbox-close-btn"
                 onClick={() => setSelectedProofImage(null)}
-                className="bg-white hover:bg-[#FAF8F5] border border-[#E7E5DB] text-[#2D2D24] text-xs font-bold px-3 min-h-11.5 rounded-xl cursor-pointer"
+                className="bg-[var(--ds-surface)] hover:bg-[var(--ds-bg)] border border-[#E7E5DB] text-[var(--ds-text-strong)] text-xs font-bold px-3 min-h-11.5 rounded-xl cursor-pointer"
               >
                 إغلاق ✕
               </button>
             </div>
-            <div className="flex justify-center bg-white p-3 rounded-2xl border border-[#E7E5DB]">
+            <div className="flex justify-center bg-[var(--ds-surface)] p-3 rounded-2xl border border-[#E7E5DB]">
               <img
                 src={selectedProofImage}
                 alt="إثبات الدفع مكبر"
@@ -4195,21 +4195,21 @@ export default function AdminDashboard({
       {previewHouse && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-3">
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => { setPreviewHouseId(null); setEditingHouseId(null); }} />
-          <div className="bg-[#FAF8F5] max-w-2xl w-full max-h-[92vh] overflow-y-auto rounded-3xl relative z-10 text-right">
-            <div className="sticky top-0 bg-[#FAF8F5] border-b border-[#D6D6C2] flex items-center justify-between px-5 py-3.5 z-10">
-              <h4 className="text-sm font-black text-[#2D2D24]">معاينة: {previewHouse.name}</h4>
+          <div className="bg-[var(--ds-bg)] max-w-2xl w-full max-h-[92vh] overflow-y-auto rounded-3xl relative z-10 text-right">
+            <div className="sticky top-0 bg-[var(--ds-bg)] border-b border-[var(--ds-border)] flex items-center justify-between px-5 py-3.5 z-10">
+              <h4 className="text-sm font-black text-[var(--ds-text-strong)]">معاينة: {previewHouse.name}</h4>
               <div className="flex items-center gap-2">
                 {onUpdateHouse && editingHouseId !== previewHouse.id && (
                   <button
                     onClick={() => startEdit(previewHouse)}
-                    className="flex items-center gap-1 bg-white border border-[#D6D6C2] hover:bg-[#F0EDE6] text-[#4A4A3A] text-[11px] font-bold px-3 min-h-11.5 rounded-xl"
+                    className="flex items-center gap-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] hover:bg-[#F0EDE6] text-[var(--ds-text)] text-[11px] font-bold px-3 min-h-11.5 rounded-xl"
                   >
                     <Pencil className="w-3.5 h-3.5" /> تعديل
                   </button>
                 )}
                 <button
                   onClick={() => { setPreviewHouseId(null); setEditingHouseId(null); }}
-                  className="bg-white hover:bg-[#F0EDE6] border border-[#D6D6C2] text-[#2D2D24] text-xs font-bold px-3 min-h-11.5 rounded-xl"
+                  className="bg-[var(--ds-surface)] hover:bg-[#F0EDE6] border border-[var(--ds-border)] text-[var(--ds-text-strong)] text-xs font-bold px-3 min-h-11.5 rounded-xl"
                 >
                   إغلاق ✕
                 </button>
@@ -4219,19 +4219,19 @@ export default function AdminDashboard({
             {editingHouseId === previewHouse.id ? (
               <div className="p-5 space-y-3">
                 <input type="text" value={editDraft.name ?? ''} onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))}
-                  placeholder="اسم البيت" className="w-full bg-white border border-[#D6D6C2] text-xs px-3 min-h-11 rounded-xl" />
+                  placeholder="اسم البيت" className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] text-xs px-3 min-h-11 rounded-xl" />
                 <textarea value={editDraft.description ?? ''} onChange={(e) => setEditDraft((d) => ({ ...d, description: e.target.value }))}
-                  placeholder="الوصف" rows={3} className="w-full bg-white border border-[#D6D6C2] text-xs px-3 min-h-11 rounded-xl resize-none" />
+                  placeholder="الوصف" rows={3} className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] text-xs px-3 min-h-11 rounded-xl resize-none" />
                 <input type="number" value={editDraft.pricePerNightPerPerson ?? 0} onChange={(e) => setEditDraft((d) => ({ ...d, pricePerNightPerPerson: Number(e.target.value) }))}
-                  placeholder="السعر لليلة للفرد" className="w-full bg-white border border-[#D6D6C2] text-xs px-3 min-h-11 rounded-xl" />
+                  placeholder="السعر لليلة للفرد" className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] text-xs px-3 min-h-11 rounded-xl" />
                 {/* Blank, not 0, when the house does not sell a day — so an
                     admin opening this form cannot set a price by saving it. */}
                 <input type="number" min={0} value={editDraft.dayUsePricePerPerson ?? ''}
                   onChange={(e) => setEditDraft((d) => ({ ...d, dayUsePricePerPerson: e.target.value === '' ? undefined : Number(e.target.value) }))}
                   placeholder="سعر اليوم بدون مبيت للفرد (اتركه فارغاً لو غير متاح)"
-                  className="w-full bg-white border border-[#D6D6C2] text-xs px-3 min-h-11 rounded-xl" />
+                  className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] text-xs px-3 min-h-11 rounded-xl" />
                 <div>
-                  <p className="text-[11px] font-bold text-[#8A8A70] mb-1.5">الخدمات:</p>
+                  <p className="text-[11px] font-bold text-[var(--ds-text-2)] mb-1.5">الخدمات:</p>
                   <div className="grid grid-cols-2 gap-1.5">
                     {AMENITIES_LIST.map((s) => {
                       const list = editDraft.services ?? [];
@@ -4239,7 +4239,7 @@ export default function AdminDashboard({
                       return (
                         <button key={s} type="button"
                           onClick={() => setEditDraft((d) => ({ ...d, services: active ? list.filter((x) => x !== s) : [...list, s] }))}
-                          className={`text-[12px] font-bold min-h-11.5 px-2 rounded-lg border ${active ? 'bg-[#5A5A40] text-white border-[#5A5A40]' : 'bg-white border-[#D6D6C2] text-[#4A4A3A]'}`}>
+                          className={`text-[12px] font-bold min-h-11.5 px-2 rounded-lg border ${active ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)] text-[var(--ds-text)]'}`}>
                           {s}
                         </button>
                       );
@@ -4247,7 +4247,7 @@ export default function AdminDashboard({
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end pt-1">
-                  <button onClick={() => setEditingHouseId(null)} className="text-xs font-bold text-[#8A8A70] px-3 min-h-11">إلغاء</button>
+                  <button onClick={() => setEditingHouseId(null)} className="text-xs font-bold text-[var(--ds-text-2)] px-3 min-h-11">إلغاء</button>
                   <button onClick={() => saveEdit(previewHouse)} className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 min-h-11 rounded-xl">
                     حفظ التعديلات
                   </button>
@@ -4256,16 +4256,16 @@ export default function AdminDashboard({
             ) : (
               <>
                 <div className="px-5 pt-4">
-                  <div className="bg-white border border-[#D6D6C2] rounded-2xl p-3.5 flex items-start gap-2">
-                    <Wallet className="w-4 h-4 text-[#5A5A40] shrink-0 mt-0.5" />
+                  <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-3.5 flex items-start gap-2">
+                    <Wallet className="w-4 h-4 text-[var(--ds-primary)] shrink-0 mt-0.5" />
                     <div className="min-w-0">
-                      <p className="text-[11px] font-black text-[#2D2D24] mb-1">وسائل استلام الدفع من صاحب البيت</p>
+                      <p className="text-[11px] font-black text-[var(--ds-text-strong)] mb-1">وسائل استلام الدفع من صاحب البيت</p>
                       {previewHouse.paymentMethods.length === 0 ? (
                         <p className="text-[11px] text-rose-600 font-bold">لم يضف صاحب البيت أي وسيلة دفع بعد.</p>
                       ) : (
                         <div className="space-y-1">
                           {previewHouse.paymentMethods.map((p) => (
-                            <p key={p.id} className="text-[11px] text-[#4A4A3A]"><span className="font-bold">{p.label}:</span> {p.value}</p>
+                            <p key={p.id} className="text-[11px] text-[var(--ds-text)]"><span className="font-bold">{p.label}:</span> {p.value}</p>
                           ))}
                         </div>
                       )}
@@ -4310,7 +4310,7 @@ export default function AdminDashboard({
       <div className="sticky bottom-0 z-20 pt-2 pb-[env(safe-area-inset-bottom)]">
         <nav
           aria-label="أقسام لوحة الإدارة"
-          className="bg-white rounded-[28px] shadow-[0_8px_28px_rgba(10,35,66,0.14),0_2px_8px_rgba(10,35,66,0.06)] border border-[#EBEBE0] px-2 py-2 flex items-stretch"
+          className="bg-[var(--ds-surface)] rounded-[28px] shadow-[0_8px_28px_rgba(10,35,66,0.14),0_2px_8px_rgba(10,35,66,0.06)] border border-[#EBEBE0] px-2 py-2 flex items-stretch"
         >
           {NAV_GROUPS.map((g) => {
             const Icon = g.icon;
@@ -4328,13 +4328,13 @@ export default function AdminDashboard({
                   <span
                     className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-[250ms] ${
                       isOn
-                        ? 'bg-[#0A2342] shadow-[0_6px_16px_rgba(10,35,66,0.35)] scale-100'
-                        : 'bg-[#0A2342]/90 shadow-[0_3px_10px_rgba(10,35,66,0.2)] scale-95 group-hover:scale-100'
+                        ? 'bg-[var(--ds-brand)] shadow-[0_6px_16px_rgba(10,35,66,0.35)] scale-100'
+                        : 'bg-[var(--ds-brand)]/90 shadow-[0_3px_10px_rgba(10,35,66,0.2)] scale-95 group-hover:scale-100'
                     }`}
                   >
-                    <Icon className="w-6 h-6 text-[#C5A059]" />
+                    <Icon className="w-6 h-6 text-[var(--ds-accent)]" />
                   </span>
-                  <span className={`text-[11px] font-black transition-colors duration-[250ms] ${isOn ? 'text-[#C5A059]' : 'text-[#8A8A70]'}`}>
+                  <span className={`text-[11px] font-black transition-colors duration-[250ms] ${isOn ? 'text-[var(--ds-accent)]' : 'text-[var(--ds-text-2)]'}`}>
                     {g.label}
                   </span>
                 </button>
@@ -4350,10 +4350,10 @@ export default function AdminDashboard({
               >
                 <Icon
                   className={`w-5 h-5 transition-all duration-[250ms] ${
-                    isOn ? 'text-[#C5A059] scale-110' : 'text-[#8A8A70] scale-100'
+                    isOn ? 'text-[var(--ds-accent)] scale-110' : 'text-[var(--ds-text-2)] scale-100'
                   }`}
                 />
-                <span className={`text-[11px] font-bold transition-colors duration-[250ms] ${isOn ? 'text-[#C5A059]' : 'text-[#8A8A70]'}`}>
+                <span className={`text-[11px] font-bold transition-colors duration-[250ms] ${isOn ? 'text-[var(--ds-accent)]' : 'text-[var(--ds-text-2)]'}`}>
                   {g.label}
                 </span>
               </button>
