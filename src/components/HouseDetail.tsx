@@ -1338,7 +1338,7 @@ export default function HouseDetail({
     );
   }
 
-  return (    <div className="space-y-4 pb-6 text-right text-[var(--ds-text)]">
+  return (    <div className="pb-6 text-right text-[var(--ds-text)]">
       
       {/* Hero — gallery, headline facts and the page's own controls. Kept in
           its own component so the sections below are untouched by changes
@@ -1353,6 +1353,11 @@ export default function HouseDetail({
         onToggleFavorite={onToggleFavorite}
       />
 
+      {/* In-flow content tier. The hero above stays a direct child so its
+          -mx-4 sm:-mx-6 breakout still measures against the full width; the
+          reading content below no longer runs to 1343px at 1440. Bottom
+          sheets are `fixed` and out of flow, so they are unaffected. */}
+      <div className="pima-page-content space-y-4">
       <HouseLocationTrust
         house={house}
         announcements={announcements}
@@ -2495,6 +2500,7 @@ export default function HouseDetail({
         )}
       </HouseReviews>
 
+      </div>
     </div>
   );
 }
