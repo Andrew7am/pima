@@ -892,7 +892,7 @@ export default function AdminDashboard({
           {NAV_GROUPS.find((g) => g.key === navSection)!.tabs.map((t) => (
             <button key={t.key} id={`admin-tab-${t.key}`} onClick={() => setActiveTab(t.key)}
               className={`shrink-0 flex items-center gap-1.5 min-h-11 px-3 rounded-xl text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === t.key ? 'bg-[var(--ds-primary)] text-white shadow-sm' : 'text-[var(--ds-primary)] bg-[var(--ds-bg)] hover:bg-[var(--ds-raised)]'
+                activeTab === t.key ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-sm' : 'text-[var(--ds-primary)] bg-[var(--ds-bg)] hover:bg-[var(--ds-raised)]'
               }`}>
               {t.label}
               {(t.badge ?? 0) > 0 && (
@@ -920,7 +920,7 @@ export default function AdminDashboard({
                 <span className="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
                   <a.Icon className="w-4 h-4 text-rose-600" />
                 </span>
-                <span className="flex-1 text-[12px] font-bold text-[#2E2E24] truncate">{a.label}</span>
+                <span className="flex-1 text-[12px] font-bold text-[var(--ds-text-strong)] truncate">{a.label}</span>
                 <span className="text-[11px] font-black text-rose-600 shrink-0">{a.count.toLocaleString('ar-EG')}</span>
                 <ChevronLeft className="w-4 h-4 text-[#B8B8A0] shrink-0" />
               </button>
@@ -1067,7 +1067,7 @@ export default function AdminDashboard({
                 <div className="space-y-1.5">
                   {busiestHouses.map((row, i) => (
                     <div key={row.house!.id} className="flex items-center gap-2 bg-[var(--ds-bg)] border border-[var(--ds-border)] rounded-2xl p-2.5">
-                      <span className="w-6 h-6 rounded-full bg-[var(--ds-primary)] text-white text-[12px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
+                      <span className="w-6 h-6 rounded-full bg-[var(--ds-primary)] text-[var(--ds-on-primary)] text-[12px] font-black flex items-center justify-center shrink-0">{arabicNumber(i + 1)}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-[11px] font-bold text-[var(--ds-text)] truncate">{row.house!.name}</div>
                         <div className="text-[11px] text-[var(--ds-text-2)]">{row.house!.governorate}</div>
@@ -1117,7 +1117,7 @@ export default function AdminDashboard({
               bottom of the reports page, which is the one screen where it
               had nothing to do with anything above it. It belongs here,
               where someone is about to approve or reject a house. */}
-          <div className="bg-[var(--ds-primary)] text-white rounded-2xl p-3 flex gap-2.5 items-start leading-relaxed">
+          <div className="bg-[var(--ds-primary)] text-[var(--ds-on-primary)] rounded-2xl p-3 flex gap-2.5 items-start leading-relaxed">
             <Shield className="w-5 h-5 text-amber-200 shrink-0 mt-0.5" />
             <div>
               <span className="text-[12px] font-bold text-amber-200 block">رقابة المحتوى والبيوت القبطية:</span>
@@ -1141,7 +1141,7 @@ export default function AdminDashboard({
                     <div key={house.id} className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] shadow-sm overflow-hidden text-right">
                       <div className="h-24 bg-[#EBEBE0] relative">
                         {house.images[0] && <img referrerPolicy="no-referrer" src={house.images[0]} alt={house.name} className="w-full h-full object-cover" />}
-                        <span className="absolute top-2 right-2 bg-[var(--ds-primary)]/90 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[11px] font-bold">
+                        <span className="absolute top-2 right-2 bg-[var(--ds-primary)]/90 backdrop-blur-sm text-[var(--ds-on-primary)] px-2 py-0.5 rounded text-[11px] font-bold">
                           {house.governorate}
                         </span>
                       </div>
@@ -1545,7 +1545,7 @@ export default function AdminDashboard({
                   + ` · ${arabicNumber(skipped)} بيت مكانش محتاج`]);
                 setImgMigrationBusy(false);
               }}
-              className="w-full flex items-center justify-center gap-1.5 bg-[var(--ds-primary)] hover:bg-[#4A4A35] text-white text-[12px] font-bold min-h-11 rounded-xl cursor-pointer disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-1.5 bg-[var(--ds-primary)] hover:bg-[#4A4A35] text-[var(--ds-on-primary)] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer disabled:opacity-60"
             >
               {imgMigrationBusy
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> جاري النقل…</>
@@ -1592,7 +1592,7 @@ export default function AdminDashboard({
                 ]).map((f) => (
                   <button key={f.key} type="button" onClick={() => setAuditKind(f.key)}
                     className={`shrink-0 flex items-center gap-1 text-[11px] font-black px-3 min-h-11 rounded-xl border transition-colors cursor-pointer ${
-                      auditKind === f.key ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] text-[var(--ds-text)] border-[var(--ds-border)] hover:bg-[var(--ds-raised)]'
+                      auditKind === f.key ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] text-[var(--ds-text)] border-[var(--ds-border)] hover:bg-[var(--ds-raised)]'
                     }`}>
                     {f.label}
                     <span className={`text-[11px] font-black ${auditKind === f.key ? 'text-white/80' : 'text-[var(--ds-text-2)]'}`}>{arabicNumber(f.n)}</span>
@@ -2202,7 +2202,7 @@ export default function AdminDashboard({
                   onClick={() => setPbView(key)}
                   className={`px-3.5 min-h-11 rounded-xl text-[12px] font-black border transition-all cursor-pointer ${
                     pbView === key
-                      ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)] shadow-sm'
+                      ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] border-[var(--ds-primary)] shadow-sm'
                       : 'bg-[var(--ds-bg)] text-[var(--ds-primary)] border-[#E7E5DB] hover:bg-[var(--ds-surface)]'
                   }`}
                 >
@@ -2269,7 +2269,7 @@ export default function AdminDashboard({
                   {([['draft', 'مسودة'], ['published', 'نشر الآن'], ['scheduled', 'جدولة']] as const).map(([v, label]) => (
                     <button key={v} type="button" onClick={() => setPbStatus(v)}
                       className={`flex-1 min-h-11 rounded-xl text-[12px] font-black border transition-all cursor-pointer ${
-                        pbStatus === v ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] text-[var(--ds-primary)] border-[var(--ds-border)]'
+                        pbStatus === v ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] text-[var(--ds-primary)] border-[var(--ds-border)]'
                       }`}>{label}</button>
                   ))}
                 </div>
@@ -2305,7 +2305,7 @@ export default function AdminDashboard({
                   {([['any', 'حجز أو لا'], ['yes', 'حجز قبل كده'], ['no', 'لسه ما حجزش']] as const).map(([v, label]) => (
                     <button key={v} type="button" onClick={() => setPbBooked(v)}
                       className={`flex-1 min-h-11.5 rounded-xl text-[11px] font-bold border cursor-pointer transition-all ${
-                        pbBooked === v ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] text-[var(--ds-primary)] border-[var(--ds-border)]'
+                        pbBooked === v ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] text-[var(--ds-primary)] border-[var(--ds-border)]'
                       }`}>{label}</button>
                   ))}
                 </div>
@@ -2464,7 +2464,7 @@ export default function AdminDashboard({
                 pbResetForm();
                 setPbView('list');
               }}
-              className="w-full bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-white text-[11px] font-black min-h-11 rounded-xl transition-all cursor-pointer"
+              className="w-full bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-[var(--ds-on-primary)] text-[11px] font-black min-h-11 rounded-xl transition-all cursor-pointer"
             >
               {pbEditingId ? 'حفظ التعديل' : 'إضافة البانر'}
             </button>
@@ -2614,7 +2614,7 @@ export default function AdminDashboard({
                 { key: 'banned' as const, label: 'محظورين' },
               ]).map((f) => (
                 <button key={f.key} onClick={() => setUserRoleFilter(f.key)}
-                  className={`text-[12px] font-bold px-2.5 min-h-11 rounded-lg transition-all cursor-pointer whitespace-nowrap ${userRoleFilter === f.key ? 'bg-[var(--ds-primary)] text-white shadow-sm' : 'bg-[var(--ds-bg)] text-[var(--ds-text-2)] border border-[#E7E5DB] hover:bg-[var(--ds-raised)]'}`}>
+                  className={`text-[12px] font-bold px-2.5 min-h-11 rounded-lg transition-all cursor-pointer whitespace-nowrap ${userRoleFilter === f.key ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-sm' : 'bg-[var(--ds-bg)] text-[var(--ds-text-2)] border border-[#E7E5DB] hover:bg-[var(--ds-raised)]'}`}>
                   {f.label}
                 </button>
               ))}
@@ -2754,7 +2754,7 @@ export default function AdminDashboard({
                   type="button"
                   onClick={() => setFinPeriod(p.key)}
                   className={`text-[11px] font-bold px-3 min-h-11 rounded-xl transition-all cursor-pointer ${
-                    finPeriod === p.key ? 'bg-[var(--ds-primary)] text-white' : 'bg-[#EBEBE0]/50 text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
+                    finPeriod === p.key ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)]' : 'bg-[#EBEBE0]/50 text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
                   }`}
                 >
                   {p.label}
@@ -3817,7 +3817,7 @@ export default function AdminDashboard({
                   onClick={() => setBookingFilter(filterOpt)}
                   className={`text-[12px] font-bold px-2.5 min-h-11 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                     bookingFilter === filterOpt
-                      ? 'bg-[var(--ds-primary)] text-white shadow-sm'
+                      ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-sm'
                       : 'bg-[var(--ds-bg)] text-[var(--ds-text-2)] border border-[#E7E5DB] hover:bg-[var(--ds-raised)]'
                   }`}
                 >
@@ -4011,7 +4011,7 @@ export default function AdminDashboard({
                                   setEditSaving(false);
                                   if (ok) setEditBookingId(null);
                                 }}
-                                className="flex-1 bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] disabled:opacity-60 text-white text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+                                className="flex-1 bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] disabled:opacity-60 text-[var(--ds-on-primary)] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
                                 {editSaving ? 'بيتحفظ…' : 'احفظ التعديل'}
                               </button>
                               <button type="button" onClick={() => setEditBookingId(null)}
@@ -4049,7 +4049,7 @@ export default function AdminDashboard({
               const isOpen = chatBookingId === b.id;
               return (
                 <button key={b.id} onClick={() => setChatBookingId(isOpen ? null : b.id)}
-                  className={`text-right p-3 rounded-2xl border transition-all cursor-pointer ${isOpen ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)] hover:bg-[var(--ds-bg)]'}`}>
+                  className={`text-right p-3 rounded-2xl border transition-all cursor-pointer ${isOpen ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)] hover:bg-[var(--ds-bg)]'}`}>
                   <div className="text-[11px] font-bold truncate">{b.userName}</div>
                   <div className={`text-[11px] truncate ${isOpen ? 'text-white/70' : 'text-[var(--ds-text-2)]'}`}>{b.houseName} · {arabicDate(b.checkIn)}</div>
                 </button>
@@ -4239,7 +4239,7 @@ export default function AdminDashboard({
                       return (
                         <button key={s} type="button"
                           onClick={() => setEditDraft((d) => ({ ...d, services: active ? list.filter((x) => x !== s) : [...list, s] }))}
-                          className={`text-[12px] font-bold min-h-11.5 px-2 rounded-lg border ${active ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)] text-[var(--ds-text)]'}`}>
+                          className={`text-[12px] font-bold min-h-11.5 px-2 rounded-lg border ${active ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)] border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)] text-[var(--ds-text)]'}`}>
                           {s}
                         </button>
                       );

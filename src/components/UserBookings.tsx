@@ -1506,7 +1506,7 @@ export default function UserBookings({
                       <button
                         onClick={async () => { const ok = await onNotifyOwnerDistribution!(booking.id); if (ok) { setNotifiedOwner((p) => new Set(p).add(booking.id)); } }}
                         disabled={notifiedOwner.has(booking.id)}
-                        className="flex items-center gap-1.5 bg-[var(--ds-primary)] hover:bg-[color-mix(in_srgb,var(--ds-primary)_82%,black)] disabled:opacity-60 text-white px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-[var(--ds-primary)] hover:bg-[color-mix(in_srgb,var(--ds-primary)_82%,black)] disabled:opacity-60 text-[var(--ds-on-primary)] px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>{notifiedOwner.has(booking.id) ? 'تم إبلاغ صاحب البيت ✓' : 'أبلغ صاحب البيت إني خلّصت'}</span>
@@ -1728,7 +1728,7 @@ export default function UserBookings({
               </div>
 
               {/* Receipt Header */}
-              <div className="bg-gradient-to-r from-[var(--ds-text)] to-[var(--ds-primary)] text-white p-5 text-center space-y-1">
+              <div className="bg-gradient-to-r from-[var(--ds-text)] to-[var(--ds-primary)] text-[var(--ds-on-primary)] p-5 text-center space-y-1">
                 <h3 className="text-sm font-extrabold tracking-wide">سند تأكيد حجز رسمي كنسي</h3>
                 <p className="text-[11px] text-white/80">تطبيق حجز بيوت المؤتمرات والفنادق المسيحية بمصر</p>
               </div>
@@ -1812,7 +1812,7 @@ export default function UserBookings({
               <button
                 id="receipt-close-btn"
                 onClick={() => setActiveReceipt(null)}
-                className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-[var(--ds-on-primary)] px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
               >
                 إغلاق
               </button>
@@ -1837,7 +1837,7 @@ export default function UserBookings({
                 <div className="text-3xl">🛏️</div>
                 <h3 className="text-sm font-black text-[var(--ds-text)]">بانتظار تخصيص الغرف</h3>
                 <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">لسه صاحب البيت ماخصّصش غرف لمجموعتك. بمجرد ما يبعت الغرف، هتقدر تكتب أسماء المشاركين وتوزّعهم عليها من هنا.</p>
-                <button type="button" onClick={() => setActiveAllocationBooking(null)} className="mt-2 bg-[var(--ds-primary)] text-white text-xs font-black px-5 py-2.5 rounded-2xl">تمام</button>
+                <button type="button" onClick={() => setActiveAllocationBooking(null)} className="mt-2 bg-[var(--ds-primary)] text-[var(--ds-on-primary)] text-xs font-black px-5 py-2.5 rounded-2xl">تمام</button>
               </div>
             </div>
           );
@@ -1884,7 +1884,7 @@ export default function UserBookings({
             
             <div className="bg-[var(--ds-bg)] rounded-3xl w-full max-w-lg max-h-[88vh] flex flex-col shadow-2xl overflow-hidden border border-[var(--ds-border)] relative z-10 animate-scale-up text-[var(--ds-text)]">
               {/* Header */}
-              <div className="bg-gradient-to-r from-[var(--ds-text)] to-[var(--ds-primary)] text-white px-5 py-4 flex items-center justify-between shadow-md">
+              <div className="bg-gradient-to-r from-[var(--ds-text)] to-[var(--ds-primary)] text-[var(--ds-on-primary)] px-5 py-4 flex items-center justify-between shadow-md">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[color-mix(in_srgb,var(--ds-warning)_30%,var(--ds-surface))] animate-pulse" />
                   <div className="text-right">
@@ -1941,7 +1941,7 @@ export default function UserBookings({
                           onClick={() => changeThemeTemplate(bookingId, 'growth')}
                           className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all cursor-pointer border ${
                             plannerTheme === 'growth'
-                              ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-white shadow-xs'
+                              ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-xs'
                               : 'bg-white border-[var(--ds-border)] text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
                           }`}
                         >
@@ -1951,7 +1951,7 @@ export default function UserBookings({
                           onClick={() => changeThemeTemplate(bookingId, 'fellowship')}
                           className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all cursor-pointer border ${
                             plannerTheme === 'fellowship'
-                              ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-white shadow-xs'
+                              ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-xs'
                               : 'bg-white border-[var(--ds-border)] text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
                           }`}
                         >
@@ -1961,7 +1961,7 @@ export default function UserBookings({
                           onClick={() => changeThemeTemplate(bookingId, 'saints')}
                           className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all cursor-pointer border ${
                             plannerTheme === 'saints'
-                              ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-white shadow-xs'
+                              ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-xs'
                               : 'bg-white border-[var(--ds-border)] text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
                           }`}
                         >
@@ -2086,7 +2086,7 @@ export default function UserBookings({
                             addChecklistItem(bookingId, newGroupText, 'group');
                             setNewGroupText('');
                           }}
-                          className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-white text-[11px] font-black px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                          className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-[var(--ds-on-primary)] text-[11px] font-black px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
                         >
                           إضافة
                         </button>
@@ -2149,7 +2149,7 @@ export default function UserBookings({
                             addChecklistItem(bookingId, newPersonalText, 'personal');
                             setNewPersonalText('');
                           }}
-                          className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-white text-[11px] font-black px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                          className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-[var(--ds-on-primary)] text-[11px] font-black px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
                         >
                           إضافة
                         </button>
@@ -2168,7 +2168,7 @@ export default function UserBookings({
                               >
                                 <span className={`w-4.5 h-4.5 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                                   item.checked 
-                                    ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-white' 
+                                    ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-[var(--ds-on-primary)]'
                                     : 'border-[var(--ds-border)] bg-white'
                                 }`}>
                                   {item.checked && <Check className="w-3 h-3 stroke-[3]" />}
@@ -2208,7 +2208,7 @@ export default function UserBookings({
 
                 <button
                   onClick={() => setActivePlannerBooking(null)}
-                  className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-white text-[11px] font-black px-5 py-2 rounded-xl transition-all cursor-pointer"
+                  className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-[var(--ds-on-primary)] text-[11px] font-black px-5 py-2 rounded-xl transition-all cursor-pointer"
                 >
                   إغلاق التخطيط
                 </button>
@@ -2233,7 +2233,7 @@ export default function UserBookings({
                 <div className="text-3xl">🛏️</div>
                 <h3 className="text-sm font-black text-[var(--ds-text)]">بانتظار تخصيص الغرف</h3>
                 <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">لسه صاحب البيت ماخصّصش غرف لمجموعتك. بمجرد ما يبعت الغرف، هتقدر تكتب أسماء المشاركين وتوزّعهم عليها من هنا.</p>
-                <button type="button" onClick={() => setActiveAllocationBooking(null)} className="mt-2 bg-[var(--ds-primary)] text-white text-xs font-black px-5 py-2.5 rounded-2xl">تمام</button>
+                <button type="button" onClick={() => setActiveAllocationBooking(null)} className="mt-2 bg-[var(--ds-primary)] text-[var(--ds-on-primary)] text-xs font-black px-5 py-2.5 rounded-2xl">تمام</button>
               </div>
             </div>
           );

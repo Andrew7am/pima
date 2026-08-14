@@ -519,7 +519,7 @@ export default function UserDashboard({
               id="toggle-filters-btn"
               onClick={() => { tapFeedback(); setShowFilters(!showFilters); }}
               className={`shrink-0 flex items-center gap-1 rounded-full px-3 min-h-11 text-[11px] font-black transition-all cursor-pointer ${
-                showFilters ? 'bg-[var(--ds-primary)] text-white' : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
+                showFilters ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)]' : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
               }`}
               title="فلاتر متقدمة"
               aria-label="فلاتر متقدمة"
@@ -849,7 +849,7 @@ export default function UserDashboard({
                     truncates — owners write this freely, and a long one would
                     otherwise slide under the panel. */}
                 <div className="absolute bottom-3 left-3 flex items-center gap-1.5 max-w-[47%]">
-                  <span className="bg-[var(--ds-primary)]/90 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
+                  <span className="bg-[var(--ds-primary)]/90 backdrop-blur-sm text-[var(--ds-on-primary)] text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
                     <MapPin className="w-3 h-3" />
                     {house.governorate}
                   </span>
@@ -1147,7 +1147,7 @@ export default function UserDashboard({
             <button
               onClick={() => setShowComparisonModal(true)}
               disabled={comparedHouseIds.length < 2}
-              className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] disabled:bg-[color-mix(in_srgb,var(--ds-primary)_70%,black)] disabled:text-[var(--ds-text-2)] disabled:cursor-not-allowed text-white text-[11px] font-extrabold px-3.5 py-1.5 rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer"
+              className="bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] disabled:bg-[color-mix(in_srgb,var(--ds-primary)_70%,black)] disabled:text-[var(--ds-text-2)] disabled:cursor-not-allowed text-[var(--ds-on-primary)] text-[11px] font-extrabold px-3.5 py-1.5 rounded-xl shadow-sm transition-all flex items-center gap-1 cursor-pointer"
             >
               <Scale className="w-3.5 h-3.5" />
               <span>قارن</span>
@@ -1162,7 +1162,7 @@ export default function UserDashboard({
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 text-right">
           <div className="bg-[var(--ds-bg)] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-[var(--ds-border)] animate-scale-up">
             {/* Header */}
-            <div className="bg-[var(--ds-primary)] text-white px-5 py-4 flex items-center justify-between">
+            <div className="bg-[var(--ds-primary)] text-[var(--ds-on-primary)] px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Scale className="w-4 h-4 text-amber-200" />
                 <h3 className="text-xs font-extrabold">مقارنة بيوت الخلوة والمؤتمرات 📊</h3>
@@ -1306,7 +1306,7 @@ export default function UserDashboard({
                           onSelectHouse(h);
                           setShowComparisonModal(false);
                         }}
-                        className="w-full bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-white text-[11px] font-bold py-1.5 rounded-xl transition-all text-center cursor-pointer"
+                        className="w-full bg-[var(--ds-primary)] hover:bg-[var(--ds-text)] text-[var(--ds-on-primary)] text-[11px] font-bold py-1.5 rounded-xl transition-all text-center cursor-pointer"
                       >
                         عرض التفاصيل
                       </button>

@@ -187,7 +187,7 @@ export default function WebLayout({
               onClick={onRequireLogin}
               title="تسجيل الدخول / إنشاء حساب"
               aria-label="تسجيل الدخول أو إنشاء حساب"
-              className="relative z-10 flex items-center gap-1.5 bg-[var(--ds-primary)] hover:opacity-90 text-white text-[11px] font-bold px-3 min-h-11 rounded-full transition-all cursor-pointer shrink-0"
+              className="relative z-10 flex items-center gap-1.5 bg-[var(--ds-primary)] hover:opacity-90 text-[var(--ds-on-primary)] text-[11px] font-bold px-3 min-h-11 rounded-full transition-all cursor-pointer shrink-0"
             >
               <UserCircle className="w-4 h-4 shrink-0" />
               <span>دخول</span>
@@ -308,7 +308,7 @@ export default function WebLayout({
               onClick={() => setActiveScreen('profile')}
               title={currentUser.name}
               aria-label={`حسابي — ${currentUser.name}`}
-              className="w-9 h-9 rounded-full bg-[var(--ds-primary)] text-white flex items-center justify-center text-sm font-bold overflow-hidden shrink-0 ring-2 ring-[#C5A059]/45 shadow-[0_2px_8px_rgba(45,45,36,0.14)] hover:opacity-90 transition-opacity cursor-pointer"
+              className="w-9 h-9 rounded-full bg-[var(--ds-primary)] text-[var(--ds-on-primary)] flex items-center justify-center text-sm font-bold overflow-hidden shrink-0 ring-2 ring-[#C5A059]/45 shadow-[0_2px_8px_rgba(45,45,36,0.14)] hover:opacity-90 transition-opacity cursor-pointer"
             >
               {currentUser.avatarUrl
                 ? <img src={currentUser.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
