@@ -856,7 +856,97 @@ export default function AdminDashboard({
   // `position: sticky`. The seven `fixed inset-0` modals are out of flow and
   // unaffected. No wrapper, so `space-y-4` keeps the same children.
   return (
-    <div className="pima-page-wide space-y-4 text-right text-[var(--ds-text)]">
+    <div className="pima-page-wide text-right text-[var(--ds-text)] lg:flex lg:gap-5 lg:items-start">
+
+      {/* ── Desktop sidebar ─────────────────────────────────────────────────
+          The five sections and their sub-tabs as one vertical surface, on the
+          owner shell's pattern: sticky w-60 aside, `lg` and up only.
+
+          It REPLACES the bottom bar at this width instead of joining it. Both
+          drive the same `navSection`/`activeTab`, so running both on desktop
+          would put one control on screen twice — `lg:hidden` on the bar and
+          `hidden lg:flex` here are exact complements, and mobile keeps the bar
+          it already had.
+
+          `navSection` IS the accordion state: a group row opens its own
+          section, so the open group and the routed group cannot disagree and
+          there is no second source of truth to keep in sync.
+
+          First child, so RTL puts it right and LTR puts it left off the same
+          markup — flex order follows direction, no mirrored copy. `sticky
+          top-0` rides the app shell's scroll container the way the owner aside
+          does; the panel scrolls itself when a group is tall, the page never
+          does. */}
+      <aside
+        aria-label="أقسام لوحة الإدارة"
+        className="hidden lg:flex flex-col w-60 shrink-0 sticky top-0 gap-0.5 p-2 rounded-3xl bg-[var(--ds-surface)] border border-[var(--ds-border)] max-h-[calc(100vh-2rem)] overflow-y-auto"
+      >
+        {NAV_GROUPS.map((g) => {
+          const Icon = g.icon;
+          const isOpen = navSection === g.key;
+          // A collapsed group still has to be able to say something needs
+          // doing, otherwise the badge disappears exactly when it is the only
+          // way to notice the work.
+          const groupPending = g.tabs.reduce((n, t) => n + (t.badge ?? 0), 0);
+          return (
+            <div key={g.key}>
+              <button
+                type="button"
+                onClick={() => goTo(g.key, g.tabs[0].key)}
+                aria-current={isOpen ? 'page' : undefined}
+                className={`w-full flex items-center gap-2.5 px-3 min-h-11 rounded-xl text-[12px] font-black transition-all cursor-pointer ${
+                  isOpen
+                    ? 'bg-[var(--ds-raised)] text-[var(--ds-text-strong)]'
+                    : 'text-[var(--ds-text-2)] hover:bg-[var(--ds-raised)] hover:text-[var(--ds-text)]'
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="flex-1">{g.label}</span>
+                {!isOpen && groupPending > 0 && (
+                  <span className="min-w-[16px] h-[16px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-black flex items-center justify-center shrink-0">
+                    {arabicBadge(groupPending)}
+                  </span>
+                )}
+              </button>
+
+              {isOpen && (
+                <div className="mt-0.5 mb-1.5 flex flex-col gap-0.5 ps-3.5">
+                  {g.tabs.map((t) => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setActiveTab(t.key)}
+                      aria-current={activeTab === t.key ? 'page' : undefined}
+                      className={`w-full flex items-center gap-2 px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                        activeTab === t.key
+                          ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)]'
+                          : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
+                      }`}
+                    >
+                      <span className="flex-1">{t.label}</span>
+                      {(t.badge ?? 0) > 0 && (
+                        // On the gold active row the rose pill would be two
+                        // saturated colours touching, so the badge inverts the
+                        // pair it already sits in.
+                        <span className={`min-w-[16px] h-[16px] px-1 rounded-full text-[11px] font-black flex items-center justify-center shrink-0 ${
+                          activeTab === t.key
+                            ? 'bg-[var(--ds-on-primary)] text-[var(--ds-primary)]'
+                            : 'bg-rose-500 text-white'
+                        }`}>{arabicBadge(t.badge ?? 0)}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </aside>
+
+      {/* `space-y-4` moves here with the children it spaces. Left on the root
+          it would now be spacing the aside against the column, not the cards
+          against each other. */}
+      <div className="flex-1 min-w-0 space-y-4">
 
       {/* Admin header — says at a glance whether anything needs the admin */}
       <div className="bg-gradient-to-r from-[var(--ds-brand)] to-[var(--ds-brand-2)] text-white rounded-3xl p-4 flex items-center justify-between gap-3">
@@ -886,8 +976,10 @@ export default function AdminDashboard({
       {/* The five sections moved to a floating bar pinned at the bottom of the
           screen — see the end of this component. Sub-tabs stay here, beside
           the content they filter. */}
-      <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl overflow-hidden">
-        {/* Sub-tabs: natural width and scrollable, so labels aren't squeezed */}
+      <div className="lg:hidden bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl overflow-hidden">
+        {/* Sub-tabs: natural width and scrollable, so labels aren't squeezed.
+            Hidden from `lg` up — the sidebar carries the same sub-tabs there,
+            and two copies of one control is worse than either. */}
         <div className="flex gap-1.5 p-1.5 overflow-x-auto">
           {NAV_GROUPS.find((g) => g.key === navSection)!.tabs.map((t) => (
             <button key={t.key} id={`admin-tab-${t.key}`} onClick={() => setActiveTab(t.key)}
@@ -4307,7 +4399,7 @@ export default function AdminDashboard({
 
           The safe-area inset keeps the tap targets clear of the Android
           gesture bar, matching the treatment the other two bars already have. */}
-      <div className="sticky bottom-0 z-20 pt-2 pb-[env(safe-area-inset-bottom)]">
+      <div className="lg:hidden sticky bottom-0 z-20 pt-2 pb-[env(safe-area-inset-bottom)]">
         <nav
           aria-label="أقسام لوحة الإدارة"
           className="bg-[var(--ds-surface)] rounded-[28px] shadow-[0_8px_28px_rgba(10,35,66,0.14),0_2px_8px_rgba(10,35,66,0.06)] border border-[#EBEBE0] px-2 py-2 flex items-stretch"
@@ -4362,6 +4454,7 @@ export default function AdminDashboard({
         </nav>
       </div>
 
+      </div>
     </div>
   );
 }
