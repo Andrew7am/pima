@@ -29,6 +29,15 @@ export interface SearchInputProps
   label?: string;
   className?: string;
   wrapperClassName?: string;
+  /** Set false when the field sits inside something that already provides the
+   *  surface — the homepage hero pill, which is frosted glass with its own
+   *  background, border and radius. Omitting those classes is not the same as
+   *  overriding them through className: two background or radius utilities at
+   *  equal specificity resolve by whichever Tailwind emits later, which the
+   *  caller cannot see or rely on. Everything that makes this a search field —
+   *  the 44px floor, the logical padding, the icon, the type, the focus ring —
+   *  is unaffected. */
+  surface?: boolean;
 }
 
 export default function SearchInput({
@@ -37,6 +46,7 @@ export default function SearchInput({
   disabled,
   className = '',
   wrapperClassName = '',
+  surface = true,
   ...rest
 }: SearchInputProps) {
   const auto = useId();
@@ -64,18 +74,21 @@ export default function SearchInput({
           disabled={disabled}
           className={[
             // Same box as Input, with the start padding opened for the icon.
-            'min-h-11 ps-10 pe-3 rounded-[12px] text-[14px] w-full',
-            'bg-[var(--ds-surface)] text-[var(--ds-text)]',
+            'min-h-11 ps-10 pe-3 text-[14px] w-full',
+            surface && 'rounded-[12px] bg-[var(--ds-surface)]',
+            'text-[var(--ds-text)]',
             'placeholder:text-[var(--ds-text-faint)]',
             // No transition-colors, for the reason Button and Input document:
             // border-color reads an unregistered custom property, and a
             // transition on one never resolves when the theme changes — the
             // border would keep the previous theme's colour for good.
-            'border border-[var(--ds-border)] outline-none',
-            'focus:border-[var(--ds-primary)]',
+            surface && 'border border-[var(--ds-border)]',
+            'outline-none',
+            surface && 'focus:border-[var(--ds-primary)]',
             'focus-visible:ring-2 focus-visible:ring-[var(--ds-primary)]',
             'focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--ds-bg)]',
-            'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--ds-raised)]',
+            'disabled:opacity-50 disabled:cursor-not-allowed',
+            surface && 'disabled:bg-[var(--ds-raised)]',
             // Safari paints its own clear affordance on type=search, which
             // would be a second, unstyled control inside the field.
             '[&::-webkit-search-cancel-button]:appearance-none',

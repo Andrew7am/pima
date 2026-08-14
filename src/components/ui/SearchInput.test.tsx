@@ -74,6 +74,38 @@ describe('SearchInput', () => {
     expect(cls(container.querySelector('input'))).toContain('focus-visible:ring-2');
   });
 
+  /** The homepage hero puts this field inside a frosted glass pill that already
+   *  owns the background, border and radius for the whole bar. `surface={false}`
+   *  is the sanctioned way to sit inside one — the alternative, overriding
+   *  through className, leaves two utilities at equal specificity where the
+   *  winner is Tailwind's emission order. */
+  describe('surface={false}', () => {
+    it('drops only the background, border and radius', () => {
+      const { container } = render(<SearchInput aria-label="ابحث" surface={false} />);
+      const c = cls(container.querySelector('input'));
+      for (const dropped of ['rounded-[12px]', 'bg-[var(--ds-surface)]', 'border-[var(--ds-border)]']) {
+        expect(c, dropped).not.toContain(dropped);
+      }
+    });
+
+    it('keeps everything that makes it a search field', () => {
+      const { container } = render(<SearchInput aria-label="ابحث" surface={false} />);
+      const input = container.querySelector('input')!;
+      expect(input).toHaveAttribute('type', 'search');
+      const c = cls(input);
+      for (const kept of ['min-h-11', 'ps-10', 'pe-3', 'text-[14px]', 'focus-visible:ring-2']) {
+        expect(c, kept).toContain(kept);
+      }
+      // The icon is still there, still positioned logically.
+      expect(cls(container.querySelector('svg'))).toContain('start-3');
+    });
+
+    it('defaults to carrying its own surface', () => {
+      const { container } = render(<SearchInput aria-label="ابحث" />);
+      expect(cls(container.querySelector('input'))).toContain('bg-[var(--ds-surface)]');
+    });
+  });
+
   describe('direction', () => {
     it('positions the icon logically, so it follows the writing direction', () => {
       const { container } = render(<SearchInput aria-label="ابحث" />);

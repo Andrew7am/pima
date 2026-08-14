@@ -2,7 +2,7 @@
 import { RetreatHouse, User, PromoBanner, Booking, Review } from '../types';
 import { arabicNumber, arabicDecimal, arabicPlural, arabicUnit, HOUSE_FORMS, GUEST_FORMS } from '../lib/arabic';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
-import { Search, MapPin, Map as MapIcon, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking, Flame, Sun } from 'lucide-react';
+import { MapPin, Map as MapIcon, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking, Flame, Sun } from 'lucide-react';
 import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
 import { loadHousesAvailability, loadHouseBookingCounts } from '../lib/db';
 import { computeStayPrice, offersDayUse , hasLiveDiscount } from '../lib/pricing';
@@ -10,6 +10,7 @@ import { isBannerLive, matchesAudience, pickExperimentVariants } from '../lib/ba
 import { bannerSeed } from '../lib/bannerEvents';
 import { copticSeason } from '../lib/copticSeason';
 import { tapFeedback } from '../lib/haptics';
+import SearchInput from './ui/SearchInput';
 import { useRevealOnScroll } from '../lib/useRevealOnScroll';
 import { useHeroParallax } from '../lib/useHeroParallax';
 import FilterSheet from './FilterSheet';
@@ -494,26 +495,23 @@ export default function UserDashboard({
               </>
             )}
 
-            {/* NOT <SearchInput/>. That component is a self-contained field —
-                its own opaque surface, border and 12px radius — and this is a
+            {/* The canonical field, with its surface turned off. This is a
                 SEGMENT of a frosted pill that shares one border with the map
-                and filter buttons either side of it. Dropping it in here would
-                nest a solid box inside the glass and put a second border
-                around a third of the bar. What SearchInput exists to fix is
-                applied directly instead: the icon and padding are logical, so
-                they follow the writing direction rather than assuming Arabic.
-                Reported as a design-system gap. */}
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute top-1/2 -translate-y-1/2 start-2.5 w-4 h-4 text-[var(--ds-text-faint)] pointer-events-none" />
-              <input
-                id="user-search-query"
-                type="text"
-                placeholder="ابحث باسم البيت، المحافظة، الكلمات المفتاحية..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent min-h-11 pe-2 ps-9 text-[11px] text-[var(--ds-text)] placeholder:text-[var(--ds-text-faint)] focus:outline-none"
-              />
-            </div>
+                and filter buttons either side of it, so the component's own
+                opaque background, border and 12px radius would nest a solid
+                box inside the glass. `surface={false}` omits exactly those
+                three; everything that makes it a search field — the 44px
+                floor, the logical icon and padding, type=search, the focus
+                ring — comes from the shared component. */}
+            <SearchInput
+              id="user-search-query"
+              surface={false}
+              placeholder="ابحث باسم البيت، المحافظة، الكلمات المفتاحية..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="ابحث عن بيت"
+              wrapperClassName="flex-1 min-w-0"
+            />
 
             <span aria-hidden="true" className="w-px h-6 bg-[var(--ds-border)] shrink-0" />
 
