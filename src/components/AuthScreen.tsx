@@ -478,7 +478,18 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   if (!isRegisterMode && !isForgotMode) {
     return (
       <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center p-4 font-sans antialiased text-right">
-        <div className="w-full max-w-md bg-white rounded-[32px] border border-[#D6D6C2] shadow-2xl overflow-hidden text-[#4A4A3A]">
+        {/* At lg the card becomes two columns: the brand block moves BESIDE the
+            form instead of stacking above it. Measured cause of the "phone UI on
+            a laptop" complaint — this file had 0 responsive utilities across 995
+            lines, so a 448px column rendered identically at 375 and 1920, and at
+            1440 it was 31.4% of the viewport with 978px of dead space and a card
+            taller than the window.
+
+            Nothing new is introduced: same copy, same colours, same components.
+            The brand half is the hero, the welcome line and the three existing
+            trust chips; the form half is untouched. Below lg the single column
+            is exactly as it was. */}
+        <div className="w-full max-w-md lg:max-w-4xl bg-white rounded-[32px] border border-[#D6D6C2] shadow-2xl overflow-hidden text-[#4A4A3A] lg:grid lg:grid-cols-2 lg:items-stretch">
 
           {/* 1 — Hero image + curved bottom wave. Full image shown as-is
               (the user's uploaded file already has the correct
@@ -486,6 +497,8 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
               bottom makes the transition into the content section flow
               seamlessly instead of a hard rectangular edge, with a
               subtle gold hairline tracing the same curve. */}
+          {/* ── brand column (lg) / top of the stack (below lg) ── */}
+          <div className="lg:flex lg:flex-col lg:justify-center lg:bg-[#FDFBF7]">
           <div className="relative w-full">
             <img
               src="/pima-hero.png"
@@ -536,6 +549,10 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
               <FeatureChip icon={<CalendarIcon className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="احجز الآن" sub="بكل سهولة" />
               <FeatureChip icon={<ShieldCheck className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="موثوق وآمن" sub="حجوزات مؤكدة" />
             </div>
+          </div>
+          </div>
+          {/* ── authentication panel ── */}
+          <div className="px-5 pt-2 pb-5 space-y-4 lg:pt-6 lg:flex lg:flex-col lg:justify-center">
 
             {/* 4 — Section heading with leaf flourishes on both sides */}
             <div className="flex items-center justify-center gap-2 pt-1">
@@ -675,12 +692,12 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
           </div>
 
           {/* 9 — Navy footer with 3 trust chips */}
-          <div className="bg-[#0A2342] px-4 pt-4 pb-3 grid grid-cols-3 gap-3">
+          <div className="bg-[#0A2342] px-4 pt-4 pb-3 grid grid-cols-3 gap-3 lg:col-span-2">
             <BottomChip icon={<ShieldCheck className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="حجوزات آمنة" sub="بياناتك محمية بالكامل" />
             <BottomChip icon={<Award className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="جودة موثوقة" sub="أفضل أماكن للإقامة" />
             <BottomChip icon={<Headphones className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="دعم على مدار الساعة" sub="نحن هنا لمساعدتك" />
           </div>
-          <div className="bg-[#0A2342] text-center pb-3">
+          <div className="bg-[#0A2342] text-center pb-3 lg:col-span-2">
             <button
               type="button" onClick={() => setIsViewingPrivacy(true)}
               className="text-[9px] text-white/70 hover:text-white underline"
