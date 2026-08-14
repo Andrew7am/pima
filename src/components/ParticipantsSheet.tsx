@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Attendee } from '../types';
 import BottomSheet from './BottomSheet';
 import { arabicNumber } from '../lib/arabic';
+import SearchInput from './ui/SearchInput';
 
 /**
  * The participants list, and the card that opens it.
@@ -14,10 +15,11 @@ import { arabicNumber } from '../lib/arabic';
  * second tally somewhere else is a second thing to keep true.
  */
 
-const NAVY = '#0A2342';
+const NAVY = 'var(--ds-brand)';
 const GOLD = '#C5A059';
-const MUTED = '#8A8A70';
-const LINE = '#E7E2D5';
+const MUTED = 'var(--ds-text-2)';
+const LINE = 'var(--ds-border)';
+const RAISED = 'var(--ds-raised)';
 
 const GROUP_LABEL: Record<Attendee['groupType'], string> = {
   youth: 'شباب', family: 'عائلة', child: 'أطفال', other: 'أخرى',
@@ -57,7 +59,7 @@ export function tally(attendees: Attendee[], seats: number): ParticipantTally {
 
 function Stat({ n, label, fg }: { n: number; label: string; fg: string }) {
   return (
-    <div className="flex-1 rounded-xl border bg-white px-2 py-2 text-center" style={{ borderColor: LINE }}>
+    <div className="flex-1 rounded-xl border bg-[var(--ds-surface)] px-2 py-2 text-center" style={{ borderColor: LINE }}>
       <div className="text-[16px] font-black leading-none" style={{ color: fg }}>{arabicNumber(n)}</div>
       <div className="text-[9.5px] font-bold mt-1" style={{ color: MUTED }}>{label}</div>
     </div>
@@ -67,9 +69,9 @@ function Stat({ n, label, fg }: { n: number; label: string; fg: string }) {
 function StatRow({ t }: { t: ParticipantTally }) {
   return (
     <div className="flex gap-1.5">
-      <Stat n={t.paid} label="تم الدفع" fg="#047857" />
-      <Stat n={t.pending} label="قيد المراجعة" fg="#92400E" />
-      <Stat n={t.unpaid} label="لم يدفعوا" fg="#B91C1C" />
+      <Stat n={t.paid} label="تم الدفع" fg="var(--ds-success-ink)" />
+      <Stat n={t.pending} label="قيد المراجعة" fg="var(--ds-warning-ink)" />
+      <Stat n={t.unpaid} label="لم يدفعوا" fg="var(--ds-danger-ink)" />
       <Stat n={t.seats} label="إجمالي" fg={NAVY} />
     </div>
   );
@@ -80,7 +82,7 @@ function StatRow({ t }: { t: ParticipantTally }) {
 export function ParticipantsCard({ t, onOpen }: { t: ParticipantTally; onOpen: () => void }) {
   const pct = t.seats > 0 ? Math.min(100, Math.round((t.registered / t.seats) * 100)) : 0;
   return (
-    <section className="rounded-2xl border bg-[#FDFBF7] p-4 flex flex-col gap-3" style={{ borderColor: '#EFE3CC' }}>
+    <section className="rounded-2xl border bg-[var(--ds-surface)] p-4 flex flex-col gap-3" style={{ borderColor: LINE }}>
       <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="text-[14px] font-black" style={{ color: NAVY }}>المشاركون</h3>
@@ -105,7 +107,7 @@ export function ParticipantsCard({ t, onOpen }: { t: ParticipantTally; onOpen: (
       <StatRow t={t} />
 
       <button type="button" onClick={onOpen}
-        className="w-full flex items-center justify-between rounded-xl bg-white border px-3 py-2.5 min-h-11 cursor-pointer"
+        className="w-full flex items-center justify-between rounded-xl bg-[var(--ds-surface)] border px-3 py-2.5 min-h-11 cursor-pointer"
         style={{ borderColor: LINE }}>
         <span className="text-[12.5px] font-black" style={{ color: NAVY }}>عرض قائمة المشاركين</span>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ color: GOLD }}>
@@ -153,11 +155,16 @@ export default function ParticipantsSheet({
     });
   }, [attendees, q, status, group]);
 
+  // The selected ground is --ds-primary, the same pair the admin tabs use, not
+  // the navy this chip used to be. Navy reads as «selected» against a cream
+  // page and all but vanishes against a dark one — measured at 1.15:1 to the
+  // dark panel, where --ds-primary inverts to a light gold and stays obvious.
+  // --ds-on-primary is bound in both themes, so the label follows it.
   const chip = (on: boolean) =>
     `px-3 py-1.5 rounded-full text-[11px] font-bold border cursor-pointer transition-colors ${
-      on ? 'text-white' : 'bg-white'}`;
+      on ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)]' : 'bg-[var(--ds-surface)]'}`;
   const chipStyle = (on: boolean) =>
-    on ? { backgroundColor: NAVY, borderColor: NAVY } : { borderColor: LINE, color: MUTED };
+    on ? { borderColor: 'var(--ds-primary)' } : { borderColor: LINE, color: MUTED };
 
   return (
     <BottomSheet
@@ -169,39 +176,22 @@ export default function ParticipantsSheet({
         <div className="flex flex-col gap-2.5">
           <StatRow t={t} />
           <div className="flex gap-2">
-            {/* NOT ui/SearchInput, and not yet tokenised — deliberately, with
-                the reason recorded so the next pass does not have to re-derive
-                it. This sheet and the BottomSheet chrome around it are entirely
-                pre-theme: in dark mode the panel is still #FBF7F0 and thirty-six
-                surfaces inside it are still white or cream. A field that alone
-                followed --ds-surface would land at 15.8:1 against the panel it
-                sits on and 16.9:1 against the «تصفية» button beside it in this
-                same row — a black rectangle next to a white one. The colour has
-                to move when the sheet moves, and the sheet cannot move until
-                BottomSheet does, which six Owner screens also render.
-
-                What does not depend on any of that is applied here: the touch
-                floor, a real search type, an accessible name, and padding and
-                icon placement that follow the writing direction instead of
-                assuming Arabic. */}
-            <div className="relative flex-1">
-              <input
-                type="search"
-                aria-label="ابحث في المشاركين"
-                value={q} onChange={(e) => setQ(e.target.value)}
-                placeholder="ابحث باسم المشارك أو رقم الهاتف..."
-                className="w-full bg-white border rounded-xl min-h-11 py-2.5 ps-9 pe-3 text-[12.5px] focus:outline-none focus:ring-2 focus:ring-[#C5A059]/40 [&::-webkit-search-cancel-button]:appearance-none"
-                style={{ borderColor: LINE, color: '#4A4A3A' }}
-              />
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"
-                className="absolute top-1/2 -translate-y-1/2 start-3" style={{ color: MUTED }}>
-                <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-                <path d="m20 20-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </div>
+            {/* The canonical field, now that it can be. Until the sheet was
+                themed this could not be used at all: its --ds-surface ground
+                would have been a black rectangle inside a cream panel. With the
+                panel on --ds-bg the field sits on it exactly as a search sits on
+                any other Pima screen, so the shared component works unchanged
+                and this screen stops being a fourth bespoke search. */}
+            <SearchInput
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="ابحث باسم المشارك أو رقم الهاتف..."
+              aria-label="ابحث في المشاركين"
+              wrapperClassName="flex-1"
+            />
             <button type="button" onClick={() => setFiltersOpen((v) => !v)}
               aria-expanded={filtersOpen}
-              className="shrink-0 flex items-center gap-1.5 rounded-xl bg-white border px-3 min-h-11 text-[12px] font-bold cursor-pointer"
+              className="shrink-0 flex items-center gap-1.5 rounded-xl bg-[var(--ds-surface)] border px-3 min-h-11 text-[12px] font-bold cursor-pointer"
               style={{ borderColor: filtersOpen ? GOLD : LINE, color: NAVY }}>
               تصفية
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -240,13 +230,13 @@ export default function ParticipantsSheet({
             + إضافة مشارك
           </button>
           <button type="button" onClick={onShareLink} disabled={!onShareLink}
-            className="rounded-xl px-3 py-2.5 text-[12px] font-bold bg-white border cursor-pointer disabled:opacity-40"
+            className="rounded-xl px-3 py-2.5 text-[12px] font-bold bg-[var(--ds-surface)] border cursor-pointer disabled:opacity-40"
             style={{ borderColor: LINE, color: NAVY }}>
             رابط الدعوة
           </button>
           <button type="button" onClick={onExport} disabled={!onExport}
             aria-label="تحميل القائمة"
-            className="rounded-xl px-3 py-2.5 bg-white border cursor-pointer disabled:opacity-40"
+            className="rounded-xl px-3 py-2.5 bg-[var(--ds-surface)] border cursor-pointer disabled:opacity-40"
             style={{ borderColor: LINE, color: NAVY }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -266,10 +256,10 @@ export default function ParticipantsSheet({
             return (
               <li key={a.id}>
                 <button type="button" onClick={() => onSelect?.(a)}
-                  className="w-full text-right rounded-xl bg-white border p-3 flex items-start gap-3 min-h-11 cursor-pointer"
+                  className="w-full text-start rounded-xl bg-[var(--ds-surface)] border p-3 flex items-start gap-3 min-h-11 cursor-pointer"
                   style={{ borderColor: LINE }}>
                   <span className="shrink-0 w-10 h-10 rounded-full grid place-items-center text-[13px] font-black"
-                    style={{ backgroundColor: '#F6EFE1', color: GOLD }} aria-hidden="true">
+                    style={{ backgroundColor: RAISED, color: GOLD }} aria-hidden="true">
                     {a.name.trim().charAt(0) || '؟'}
                   </span>
                   <span className="flex-1 min-w-0">
@@ -279,7 +269,7 @@ export default function ParticipantsSheet({
                     </span>
                     <span className="flex flex-wrap items-center gap-1.5 mt-1.5">
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border"
-                        style={{ backgroundColor: '#FBF7F0', borderColor: LINE, color: MUTED }}>
+                        style={{ backgroundColor: RAISED, borderColor: LINE, color: MUTED }}>
                         {GROUP_LABEL[a.groupType]}
                       </span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border"
@@ -288,7 +278,7 @@ export default function ParticipantsSheet({
                       </span>
                       {a.arrivalMethod && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border"
-                          style={{ backgroundColor: '#FBF7F0', borderColor: LINE, color: MUTED }}>
+                          style={{ backgroundColor: RAISED, borderColor: LINE, color: MUTED }}>
                           {ARRIVAL_LABEL[a.arrivalMethod]}
                         </span>
                       )}

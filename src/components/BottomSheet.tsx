@@ -85,6 +85,10 @@ export default function BottomSheet({ open, onClose, title, subtitle, header, fo
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label={title}>
+      {/* The scrim and the shadow stay literal navy. --ds-brand would be the
+          matching role in light, but it inverts to cream in dark — a scrim has
+          to darken what is behind it in every theme, so this one is fixed by
+          intent rather than unmigrated. */}
       <button
         type="button"
         aria-label="إغلاق"
@@ -92,8 +96,12 @@ export default function BottomSheet({ open, onClose, title, subtitle, header, fo
         className="absolute inset-0 bg-[#0A2342]/35 backdrop-blur-[2px] cursor-default"
       />
 
+      {/* --ds-bg, not --ds-surface: the sheet is a page-like container and the
+          cards inside it are --ds-surface, so the two keep the same relationship
+          they have on any other screen. Reversing them would put white cards on
+          a white panel in light. */}
       <div ref={sheet} style={style}
-        className="relative w-full max-w-[30rem] mx-auto bg-[#FBF7F0] rounded-t-[1.75rem]
+        className="relative w-full max-w-[30rem] mx-auto bg-[var(--ds-bg)] rounded-t-[1.75rem]
                    shadow-[0_-8px_40px_-8px_rgba(10,35,66,.35)] flex flex-col overflow-hidden">
 
         {/* Drag zone: handle + title. The list below scrolls normally. */}
@@ -105,15 +113,15 @@ export default function BottomSheet({ open, onClose, title, subtitle, header, fo
           className="shrink-0 touch-none select-none cursor-grab active:cursor-grabbing"
         >
           <div className="pt-2.5 pb-1 grid place-items-center">
-            <span className="w-10 h-1 rounded-full bg-[#D6D6C2]" aria-hidden="true" />
+            <span className="w-10 h-1 rounded-full bg-[var(--ds-border)]" aria-hidden="true" />
           </div>
           <div className="flex items-start justify-between gap-3 px-4 pb-3">
             <div className="min-w-0">
-              <h2 className="text-[16px] font-black text-[#0A2342] truncate">{title}</h2>
-              {subtitle && <p className="text-[11px] text-[#8A8A70] truncate mt-0.5">{subtitle}</p>}
+              <h2 className="text-[16px] font-black text-[var(--ds-brand)] truncate">{title}</h2>
+              {subtitle && <p className="text-[11px] text-[var(--ds-text-2)] truncate mt-0.5">{subtitle}</p>}
             </div>
             <button type="button" onClick={onClose} aria-label="إغلاق القائمة"
-              className="shrink-0 w-9 h-9 rounded-full grid place-items-center bg-white border border-[#D6D6C2] text-[#4A4A3A] cursor-pointer">
+              className="shrink-0 w-9 h-9 rounded-full grid place-items-center bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[var(--ds-text)] cursor-pointer">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
               </svg>
@@ -121,12 +129,12 @@ export default function BottomSheet({ open, onClose, title, subtitle, header, fo
           </div>
         </div>
 
-        {header && <div className="shrink-0 px-4 pb-3 border-b border-[#E7E2D5]">{header}</div>}
+        {header && <div className="shrink-0 px-4 pb-3 border-b border-[var(--ds-border)]">{header}</div>}
 
         <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3">{children}</div>
 
         {footer && (
-          <div className="shrink-0 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[#E7E2D5] bg-[#FBF7F0]">
+          <div className="shrink-0 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-[var(--ds-border)] bg-[var(--ds-bg)]">
             {footer}
           </div>
         )}
