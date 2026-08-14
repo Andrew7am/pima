@@ -6,6 +6,7 @@ import {
 import { GOVERNORATES, AMENITIES_LIST } from '../mockData';
 import { useDialogFocus } from '../lib/useDialogFocus';
 import { tapFeedback } from '../lib/haptics';
+import SearchInput from './ui/SearchInput';
 
 export type SeaProximity = 'all' | 'near' | 'view' | 'beach' | 'far';
 
@@ -378,11 +379,17 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
           <h3 className="text-[13px] font-black text-[var(--ds-text)] pt-2">الخدمات والمرافق</h3>
           {(
             <>
-              <div className="relative">
-                <Search className="absolute top-1/2 -translate-y-1/2 right-3 w-4 h-4 text-[var(--ds-text-faint)] pointer-events-none" />
-                <input value={amenityQuery} onChange={(e) => setAmenityQuery(e.target.value)} placeholder="ابحث عن خدمة"
-                  className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl py-2.5 pr-9 pl-3 text-[11px] text-[var(--ds-text-strong)] placeholder:text-[var(--ds-text-faint)] focus:outline-none" />
-              </div>
+              {/* The shared field. Its colours were already right here; what it
+                  gains is the 44px floor, a real search type, an accessible
+                  name, a focus ring where there was none, and padding and icon
+                  placement that follow the writing direction rather than
+                  assuming Arabic. */}
+              <SearchInput
+                value={amenityQuery}
+                onChange={(e) => setAmenityQuery(e.target.value)}
+                placeholder="ابحث عن خدمة"
+                aria-label="ابحث عن خدمة أو مرفق"
+              />
               <div className="grid grid-cols-3 gap-2">
                 {AMENITIES_LIST.filter((a) => a.includes(amenityQuery.trim())).map((a) => {
                   const on = draft.amenities.includes(a);
