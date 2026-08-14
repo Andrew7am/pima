@@ -2950,8 +2950,31 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                 {/* 2. Pure Spiritual Material Reading Space */}
                 {(() => {
                   const content = getSpiritualMaterial(selectedLecture.title);
+                  /* NOTE — this .pima-play-mid does nothing, and that is a
+                        finding rather than a bug to quietly delete.
+
+                        The responsive pass applied the page-container utility
+                        here, but this element is nested four levels inside the
+                        lecture modal above, which is `w-full max-w-3xl` (768px).
+                        The modal wins at every width, so the utility's cap never
+                        binds. Measured in a browser against the compiled CSS:
+
+                          vw 375  modal 343  reading 294  cap  672px
+                          vw 735  modal 703  reading 654  cap  672px
+                          vw 1280 modal 768  reading 718  cap 1040px
+                          vw 1440 modal 768  reading 718  cap 1160px
+
+                        Reading width is pinned at 718 from 1280 up — by
+                        max-w-3xl, not by this class.
+
+                        The real gap it was meant to close is still open:
+                        ConferenceHub has NO page-level container. Giving it one
+                        is a layout decision about a 3000-line screen that also
+                        hosts deliberately full-bleed presentation and slide
+                        views, so it belongs to the product owner, not to a
+                        colour migration. */
                   return (
-                    <div 
+                    <div
                       className="pima-play-mid space-y-8 pb-10"
                       style={{ fontSize: `${readingFontSize}px`, lineHeight: 1.8 }}
                     >
