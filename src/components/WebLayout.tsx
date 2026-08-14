@@ -126,7 +126,7 @@ export default function WebLayout({
   return (
     <div
       className={`flex flex-col h-dvh w-screen overflow-hidden ${
-        isEntertainment ? 'bg-[var(--color-play-bg)]' : 'bg-[var(--color-natural-bg)]'
+        isEntertainment ? 'bg-[var(--color-play-bg)]' : 'bg-[var(--ds-bg)]'
       }`}
       dir="rtl"
     >
@@ -158,7 +158,7 @@ export default function WebLayout({
           className={`relative shrink-0 h-[90px] flex items-center justify-end px-4 border-b shadow-sm z-40 ${
             isEntertainment
               ? 'bg-[var(--color-play-bg)] border-white/10'
-              : 'bg-white border-[var(--color-natural-border)]'
+              : 'bg-[var(--ds-surface)] border-[var(--ds-border)]'
           }`}
         >
           <div className="absolute inset-x-0 flex flex-col items-center justify-center pointer-events-none">
@@ -187,7 +187,7 @@ export default function WebLayout({
               onClick={onRequireLogin}
               title="تسجيل الدخول / إنشاء حساب"
               aria-label="تسجيل الدخول أو إنشاء حساب"
-              className="relative z-10 flex items-center gap-1.5 bg-[var(--color-natural-primary)] hover:opacity-90 text-white text-[11px] font-bold px-3 min-h-11 rounded-full transition-all cursor-pointer shrink-0"
+              className="relative z-10 flex items-center gap-1.5 bg-[var(--ds-primary)] hover:opacity-90 text-white text-[11px] font-bold px-3 min-h-11 rounded-full transition-all cursor-pointer shrink-0"
             >
               <UserCircle className="w-4 h-4 shrink-0" />
               <span>دخول</span>
@@ -199,7 +199,7 @@ export default function WebLayout({
               <button
                 onClick={() => setShowNotif(v => !v)}
                 aria-label="الإشعارات"
-                className="relative p-2 rounded-lg hover:bg-[var(--color-natural-hover)] text-[var(--color-natural-secondary)] transition-colors"
+                className="relative p-2 rounded-lg hover:bg-[var(--ds-raised)] text-[var(--ds-text-2)] transition-colors"
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
@@ -221,9 +221,9 @@ export default function WebLayout({
                 // basis 0 inside a container whose height comes from its own
                 // content resolves to a broken layout — the header and the list
                 // detach and the panel sprawls down the page.
-                <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:top-11 sm:left-0 sm:w-96 bg-white rounded-2xl shadow-xl border border-[var(--color-natural-border)] z-50 overflow-hidden flex flex-col max-h-[75dvh] sm:max-h-[26rem]">
-                  <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-[var(--color-natural-border)]">
-                    <span className="font-bold text-sm text-[var(--color-natural-text)] flex items-center gap-1.5">
+                <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:top-11 sm:left-0 sm:w-96 bg-[var(--ds-surface)] rounded-2xl shadow-xl border border-[var(--ds-border)] z-50 overflow-hidden flex flex-col max-h-[75dvh] sm:max-h-[26rem]">
+                  <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-[var(--ds-border)]">
+                    <span className="font-bold text-sm text-[var(--ds-text-strong)] flex items-center gap-1.5">
                       الإشعارات
                       {unreadCount > 0 && (
                         <span className="text-[11px] font-black text-white bg-blue-500 rounded-full px-1.5 py-0.5">{unreadCount} جديد</span>
@@ -235,14 +235,14 @@ export default function WebLayout({
                         disabled={unreadCount === 0}
                         className={`text-[11px] flex items-center gap-0.5 px-2 py-1 rounded-md transition-colors ${
                           unreadCount === 0
-                            ? 'text-[var(--color-natural-secondary)]/40 cursor-default'
-                            : 'text-[var(--color-natural-secondary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-natural-hover)]'
+                            ? 'text-[var(--ds-text-2)]/40 cursor-default'
+                            : 'text-[var(--ds-text-2)] hover:text-[var(--color-primary)] hover:bg-[var(--ds-raised)]'
                         }`}
                       >
                         <Check className="w-3 h-3" /> تمييز الكل كمقروء
                       </button>
-                      <button aria-label="إغلاق الإشعارات" onClick={() => setShowNotif(false)} className="p-1 rounded-md hover:bg-[var(--color-natural-hover)]">
-                        <X className="w-4 h-4 text-[var(--color-natural-secondary)]" />
+                      <button aria-label="إغلاق الإشعارات" onClick={() => setShowNotif(false)} className="p-1 rounded-md hover:bg-[var(--ds-raised)]">
+                        <X className="w-4 h-4 text-[var(--ds-text-2)]" />
                       </button>
                     </div>
                   </div>
@@ -250,7 +250,7 @@ export default function WebLayout({
                       the list from chaining to the page behind the sheet. */}
                   <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
                     {userNotifications.length === 0 ? (
-                      <div className="flex flex-col items-center gap-2 py-12 text-[var(--color-natural-secondary)]">
+                      <div className="flex flex-col items-center gap-2 py-12 text-[var(--ds-text-2)]">
                         <Bell className="w-8 h-8 opacity-25" />
                         <p className="text-sm">لا توجد إشعارات</p>
                       </div>
@@ -264,8 +264,8 @@ export default function WebLayout({
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openNotification(n); }
                           }}
-                          className={`px-4 py-3 border-b border-[var(--color-natural-border)] last:border-0 flex gap-3 items-start transition-colors cursor-pointer hover:bg-[var(--color-natural-hover)]
-                            ${!n.isRead ? 'bg-blue-50/70' : 'bg-white'}`}
+                          className={`px-4 py-3 border-b border-[var(--ds-border)] last:border-0 flex gap-3 items-start transition-colors cursor-pointer hover:bg-[var(--ds-raised)]
+                            ${!n.isRead ? 'bg-blue-50/70' : 'bg-[var(--ds-surface)]'}`}
                         >
                           {/* The tinted row, the coloured dot and the "جديد" pill
                               already say "unread" three times over — a fourth
@@ -276,19 +276,19 @@ export default function WebLayout({
                           } ${n.isRead ? 'opacity-30' : ''}`} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 mb-1">
-                              <p className={`text-xs truncate ${!n.isRead ? 'font-black text-[var(--color-natural-text)]' : 'font-semibold text-[var(--color-natural-secondary)]'}`}>{n.title}</p>
+                              <p className={`text-xs truncate ${!n.isRead ? 'font-black text-[var(--ds-text-strong)]' : 'font-semibold text-[var(--ds-text-2)]'}`}>{n.title}</p>
                               {!n.isRead && <span className="shrink-0 text-[11px] font-black text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full">جديد</span>}
                             </div>
                             {/* Arabic needs the looser leading to stay readable at this size. */}
-                            <p className={`text-[11px] leading-[1.75] line-clamp-3 ${n.isRead ? 'text-[var(--color-natural-secondary)]/60' : 'text-[var(--color-natural-secondary)]'}`}>{n.message}</p>
-                            <span className="block mt-1 text-[11px] font-bold text-[var(--color-natural-secondary)]/60">{timeAgo(n.createdAt)}</span>
+                            <p className={`text-[11px] leading-[1.75] line-clamp-3 ${n.isRead ? 'text-[var(--ds-text-2)]/60' : 'text-[var(--ds-text-2)]'}`}>{n.message}</p>
+                            <span className="block mt-1 text-[11px] font-bold text-[var(--ds-text-2)]/60">{timeAgo(n.createdAt)}</span>
                           </div>
                           {!n.isRead && (
                             <button
                               onClick={(e) => { e.stopPropagation(); onMarkNotificationAsRead(n.id); }}
                               title="تمييز كمقروء"
                               aria-label="تمييز كمقروء"
-                              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full border border-[var(--color-natural-border)] bg-white text-[var(--color-natural-secondary)] hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-colors"
+                              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full border border-[var(--ds-border)] bg-[var(--ds-surface)] text-[var(--ds-text-2)] hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-colors"
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
@@ -308,7 +308,7 @@ export default function WebLayout({
               onClick={() => setActiveScreen('profile')}
               title={currentUser.name}
               aria-label={`حسابي — ${currentUser.name}`}
-              className="w-9 h-9 rounded-full bg-[var(--color-natural-primary)] text-white flex items-center justify-center text-sm font-bold overflow-hidden shrink-0 ring-2 ring-[#C5A059]/45 shadow-[0_2px_8px_rgba(45,45,36,0.14)] hover:opacity-90 transition-opacity cursor-pointer"
+              className="w-9 h-9 rounded-full bg-[var(--ds-primary)] text-white flex items-center justify-center text-sm font-bold overflow-hidden shrink-0 ring-2 ring-[#C5A059]/45 shadow-[0_2px_8px_rgba(45,45,36,0.14)] hover:opacity-90 transition-opacity cursor-pointer"
             >
               {currentUser.avatarUrl
                 ? <img src={currentUser.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -350,7 +350,7 @@ export default function WebLayout({
             // rather than capping it. A light drop shadow would glow on dark,
             // so the mode leans on the hairline for separation instead.
             ? 'bg-[var(--color-play-page-deep)] border-white/10 shadow-[0_-8px_24px_rgba(0,0,0,0.45)]'
-            : 'bg-white border-[var(--color-natural-border)] shadow-[0_-8px_24px_rgba(0,0,0,0.08),0_-2px_6px_rgba(0,0,0,0.03)]'
+            : 'bg-[var(--ds-surface)] border-[var(--ds-border)] shadow-[0_-8px_24px_rgba(0,0,0,0.08),0_-2px_6px_rgba(0,0,0,0.03)]'
         } ${
           (currentUser?.role === 'owner' && activeScreen === 'owner_panel')
           || (currentUser?.role === 'admin' && activeScreen === 'admin_panel') ? 'hidden' : ''
@@ -391,8 +391,8 @@ export default function WebLayout({
                 </span>
                 <span className={`text-[11px] leading-tight whitespace-nowrap ${
                   isActive
-                    ? `font-black ${isEntertainment ? 'text-white' : 'text-[var(--color-natural-text)]'}`
-                    : `font-bold ${isEntertainment ? 'text-slate-300' : 'text-[var(--color-natural-secondary)]'}`
+                    ? `font-black ${isEntertainment ? 'text-white' : 'text-[var(--ds-text-strong)]'}`
+                    : `font-bold ${isEntertainment ? 'text-slate-300' : 'text-[var(--ds-text-2)]'}`
                 }`}>
                   {item.label}
                 </span>
@@ -412,8 +412,8 @@ export default function WebLayout({
                   // role. Reward gold stays reserved for XP/points/winning.
                   // slate-300 clears AA on this ground where the light theme's
                   // secondary would not.
-                  ? (isActive ? 'text-[var(--color-natural-gold)]' : 'text-slate-300 hover:text-white')
-                  : (isActive ? 'text-[var(--color-natural-primary)]' : 'text-[var(--color-natural-secondary)] hover:text-[var(--color-natural-text)]')
+                  ? (isActive ? 'text-[var(--ds-accent)]' : 'text-slate-300 hover:text-white')
+                  : (isActive ? 'text-[var(--ds-primary)]' : 'text-[var(--ds-text-2)] hover:text-[var(--ds-text-strong)]')
                 }`}
             >
               <span className="relative">
