@@ -117,8 +117,19 @@ export default function WebLayout({
     admin: 'مشرف',
   };
 
+  // Entertainment is a mode: one derived flag drives the header, the content
+  // ground and the bottom bar, so the shell reads as a single dark space
+  // instead of a dark panel between two light ones. Everything else about the
+  // shell — structure, sizes, nav items, routes, behaviour — is untouched.
+  const isEntertainment = ENTERTAINMENT_SCREENS.includes(activeScreen);
+
   return (
-    <div className="flex flex-col h-dvh w-screen overflow-hidden bg-[var(--color-natural-bg)]" dir="rtl">
+    <div
+      className={`flex flex-col h-dvh w-screen overflow-hidden ${
+        isEntertainment ? 'bg-[var(--color-play-bg)]' : 'bg-[var(--color-natural-bg)]'
+      }`}
+      dir="rtl"
+    >
 
       {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -139,7 +150,17 @@ export default function WebLayout({
             takes part in no flex layout, which left the single control group
             sitting at flex-start — the right edge in RTL, right up against the
             centred logo. Pushed to the end it clears the brand entirely. */}
-        <header className="relative shrink-0 h-[90px] flex items-center justify-end px-4 bg-white border-b border-[var(--color-natural-border)] shadow-sm z-40">
+        {/* Header keeps its structure, height, alignment and controls; only the
+            ground changes. In Entertainment it takes the top colour of the
+            content gradient so the two read as one surface, with the same
+            white/10 hairline the mode's cards use instead of a light border. */}
+        <header
+          className={`relative shrink-0 h-[90px] flex items-center justify-end px-4 border-b shadow-sm z-40 ${
+            isEntertainment
+              ? 'bg-[var(--color-play-bg)] border-white/10'
+              : 'bg-white border-[var(--color-natural-border)]'
+          }`}
+        >
           <div className="absolute inset-x-0 flex flex-col items-center justify-center pointer-events-none">
             <div className="flex items-center gap-2">
               <Logo size={32} variant="icon" />
@@ -303,7 +324,7 @@ export default function WebLayout({
             scrolling and flex behaviour are untouched. */}
         <main
           className={`flex-1 overflow-y-auto p-4 sm:p-6 ${
-            ENTERTAINMENT_SCREENS.includes(activeScreen)
+            isEntertainment
               ? 'bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)]'
               : ''
           }`}
@@ -323,7 +344,14 @@ export default function WebLayout({
         // The inset keeps the tap targets clear of the Android gesture bar —
         // same treatment the owner dashboard's own bar already has.
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-        className={`shrink-0 bg-white border-t border-[var(--color-natural-border)] rounded-t-3xl shadow-[0_-8px_24px_rgba(0,0,0,0.08),0_-2px_6px_rgba(0,0,0,0.03)] flex items-stretch z-10 ${
+        className={`shrink-0 border-t rounded-t-3xl flex items-stretch z-10 ${
+          isEntertainment
+            // Deep end of the content gradient, so the bar continues the space
+            // rather than capping it. A light drop shadow would glow on dark,
+            // so the mode leans on the hairline for separation instead.
+            ? 'bg-[var(--color-play-page-deep)] border-white/10 shadow-[0_-8px_24px_rgba(0,0,0,0.45)]'
+            : 'bg-white border-[var(--color-natural-border)] shadow-[0_-8px_24px_rgba(0,0,0,0.08),0_-2px_6px_rgba(0,0,0,0.03)]'
+        } ${
           (currentUser?.role === 'owner' && activeScreen === 'owner_panel')
           || (currentUser?.role === 'admin' && activeScreen === 'admin_panel') ? 'hidden' : ''
         }`}
@@ -348,7 +376,12 @@ export default function WebLayout({
                 className="relative flex-1 flex flex-col items-center justify-start gap-1 pt-1.5 pb-1.5 px-0.5 min-h-[62px] text-center cursor-pointer group pima-press"
               >
                 <span
-                  className={`w-12 h-12 rounded-full flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] ring-4 ring-white transition-transform duration-120 ease-[cubic-bezier(0.33,1,0.68,1)] ${
+                  // The ring reads as the bar's own surface punched around the
+                  // disc — on dark it has to follow the bar, or it becomes a
+                  // white halo floating in the mode.
+                  className={`w-12 h-12 rounded-full flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] ring-4 ${
+                    isEntertainment ? 'ring-[var(--color-play-page-deep)]' : 'ring-white'
+                  } transition-transform duration-120 ease-[cubic-bezier(0.33,1,0.68,1)] ${
                     isActive
                       ? 'bg-gradient-to-b from-[#E0C48A] to-[#B8944E] text-[#2D2D24]'
                       : 'bg-gradient-to-b from-[#EBD9B4] to-[#C9A96A] text-[#4A4A3A]'
@@ -356,7 +389,11 @@ export default function WebLayout({
                 >
                   <Home className="w-6 h-6" />
                 </span>
-                <span className={`text-[11px] leading-tight whitespace-nowrap ${isActive ? 'font-black text-[var(--color-natural-text)]' : 'font-bold text-[var(--color-natural-secondary)]'}`}>
+                <span className={`text-[11px] leading-tight whitespace-nowrap ${
+                  isActive
+                    ? `font-black ${isEntertainment ? 'text-white' : 'text-[var(--color-natural-text)]'}`
+                    : `font-bold ${isEntertainment ? 'text-slate-300' : 'text-[var(--color-natural-secondary)]'}`
+                }`}>
                   {item.label}
                 </span>
               </button>
@@ -370,9 +407,13 @@ export default function WebLayout({
               title={item.label}
               aria-current={isActive ? 'page' : undefined}
               className={`relative flex-1 flex flex-col items-center justify-center gap-1 pt-2 pb-1.5 px-0.5 min-h-[62px] text-center transition-colors duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] cursor-pointer pima-press
-                ${isActive
-                  ? 'text-[var(--color-natural-primary)]'
-                  : 'text-[var(--color-natural-secondary)] hover:text-[var(--color-natural-text)]'
+                ${isEntertainment
+                  // Brand accent gold marks the active tab — the mode's accent
+                  // role. Reward gold stays reserved for XP/points/winning.
+                  // slate-300 clears AA on this ground where the light theme's
+                  // secondary would not.
+                  ? (isActive ? 'text-[var(--color-natural-gold)]' : 'text-slate-300 hover:text-white')
+                  : (isActive ? 'text-[var(--color-natural-primary)]' : 'text-[var(--color-natural-secondary)] hover:text-[var(--color-natural-text)]')
                 }`}
             >
               <span className="relative">
