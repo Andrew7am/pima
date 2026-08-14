@@ -1352,3 +1352,32 @@ body {
  * (2.95 -> 5.48, same hue family, minimal visual shift). --color-play-text-muted
  * already exists and passes at 6.19, but it is a warm grey and swapping the
  * blue-greys onto it would be a palette change, not a contrast fix. */
+
+/* THE 147 LITERALS THAT REMAIN, AND WHY.
+ *
+ * Every one was classified by how it is USED, never by how close it looks to
+ * something already named:
+ *
+ *   53  in 34 colours  gradient-only ramp stops, each under from/via/to only
+ *   36  in 12 colours  single-file decoration — the hub's category accents,
+ *                      the reading modal's sepia/dim/dark theme grounds
+ *   11  in 11 colours  literally one occurrence each
+ *   10  in  6 colours  alpha-only, incl. the oklab-divergent focus ring
+ *   37  in  6 colours  multi-file navies, see below
+ *
+ * The last group is the interesting one. Six of them sit a hair from tokens
+ * that already exist — measured as RGB channel deltas:
+ *
+ *   #0D1B3E vs --tile-deep  #0D1B3B   (0,0,3)   luminance delta 0.0003
+ *   #0A1128 vs --bg         #0A1428   (0,3,0)   0.0010
+ *   #0B1B36 vs --page-mid   #0E1A33   (3,1,3)   0.0005
+ *   #0B0F1A vs --page-deep  #08101F   (3,1,5)   0.0003
+ *   #050B18 vs --page-deep  #08101F   (3,5,7)   0.0018
+ *   #0D315C vs --tile       #152A55   (8,7,7)   0.0058
+ *
+ * A single channel off by three, in a file that also uses the token, reads
+ * like drift or a typo rather than intent. But "reads like" is not evidence,
+ * and folding a colour into a token because the two look alike is the exact
+ * move this migration has refused throughout — semantic role decides, not
+ * proximity. They are AMBIGUOUS, so they stay exactly as they are, recorded
+ * here so the next person inherits the question rather than rediscovering it. */
