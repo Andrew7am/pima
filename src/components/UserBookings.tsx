@@ -712,7 +712,7 @@ export default function UserBookings({
   return (
     <div className="pima-page-content space-y-4 text-right text-[var(--ds-text)]">
       {userBookings.length === 0 ? (
-        <div className="bg-white rounded-3xl p-8 border border-[var(--ds-border)] text-center space-y-3">
+        <div className="bg-[var(--ds-surface)] rounded-3xl p-8 border border-[var(--ds-border)] text-center space-y-3">
           <div className="mx-auto w-12 h-12 bg-[var(--ds-raised)]/30 border border-[var(--ds-border)] rounded-full flex items-center justify-center text-[var(--ds-text-2)]">
             <Calendar className="w-5 h-5 text-[var(--ds-text-2)]" />
           </div>
@@ -741,13 +741,13 @@ export default function UserBookings({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="ابحث باسم المكان أو رقم الحجز"
-                className="w-full bg-white border border-[var(--ds-border)] rounded-2xl min-h-11 pr-10 pl-3 text-[11px] font-bold text-[var(--ds-text)] placeholder:text-[var(--ds-text-faint)] focus:outline-none focus:border-[var(--ds-accent)] shadow-sm"
+                className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl min-h-11 pr-10 pl-3 text-[11px] font-bold text-[var(--ds-text)] placeholder:text-[var(--ds-text-faint)] focus:outline-none focus:border-[var(--ds-accent)] shadow-sm"
               />
             </div>
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="shrink-0 flex items-center gap-1.5 bg-white border border-[var(--ds-border)] rounded-2xl px-3 py-2.5 text-[11px] font-black text-[var(--ds-primary)] shadow-sm cursor-pointer"
+                className="shrink-0 flex items-center gap-1.5 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-3 py-2.5 text-[11px] font-black text-[var(--ds-primary)] shadow-sm cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>مسح</span>
@@ -765,13 +765,13 @@ export default function UserBookings({
                   onClick={() => setTab(t.key)}
                   className={`shrink-0 flex items-center gap-1.5 px-3.5 min-h-11 rounded-2xl text-[11px] font-black transition-all cursor-pointer border ${
                     active
-                      ? 'bg-[var(--ds-brand)] text-white border-[var(--ds-brand)] shadow-sm'
-                      : 'bg-white text-[var(--ds-primary)] border-[var(--ds-border)] hover:bg-[var(--ds-bg)]'
+                      ? 'bg-[var(--ds-brand)] text-[var(--ds-on-brand)] border-[var(--ds-brand)] shadow-sm'
+                      : 'bg-[var(--ds-surface)] text-[var(--ds-primary)] border-[var(--ds-border)] hover:bg-[var(--ds-bg)]'
                   } ${t.count === 0 && !active ? 'opacity-45' : ''}`}
                 >
                   <span>{t.label}</span>
                   <span className={`min-w-[17px] h-[17px] px-1 rounded-full text-[11px] font-black flex items-center justify-center ${
-                    active ? 'bg-white/20 text-white' : t.key === 'action' && t.count > 0 ? 'bg-[var(--ds-danger)] text-white' : 'bg-[var(--ds-raised)] text-[var(--ds-primary)]'
+                    active ? 'bg-[var(--ds-on-brand)]/20 text-[var(--ds-on-brand)]' : t.key === 'action' && t.count > 0 ? 'bg-[var(--ds-danger)] text-[var(--ds-on-danger)]' : 'bg-[var(--ds-raised)] text-[var(--ds-primary)]'
                   }`}>
                     {arabicNumber(t.count)}
                   </span>
@@ -851,7 +851,7 @@ export default function UserBookings({
 
                 {/* Its journey, straight under the card. Same buildBookingJourney
                     as the detail sheet — one source, drawn compactly. */}
-                <div className="bg-white rounded-b-3xl border border-t-0 border-[var(--ds-border)] px-3.5 pt-3 pb-3.5 -mt-3 relative z-10 shadow-sm">
+                <div className="bg-[var(--ds-surface)] rounded-b-3xl border border-t-0 border-[var(--ds-border)] px-3.5 pt-3 pb-3.5 -mt-3 relative z-10 shadow-sm">
                   <BookingJourney booking={nextBooking} payments={payments} variant="bar" />
                 </div>
               </div>
@@ -876,7 +876,7 @@ export default function UserBookings({
           </div>
 
           {visibleBookings.length === 0 ? (
-            <div className="bg-white rounded-3xl p-8 border border-[var(--ds-border)] text-center space-y-3">
+            <div className="bg-[var(--ds-surface)] rounded-3xl p-8 border border-[var(--ds-border)] text-center space-y-3">
               <div className="mx-auto w-12 h-12 bg-[var(--ds-raised)]/30 border border-[var(--ds-border)] rounded-full flex items-center justify-center text-[var(--ds-text-2)]">
                 <Sparkles className="w-5 h-5 text-[var(--ds-text-2)]" />
               </div>
@@ -959,7 +959,7 @@ export default function UserBookings({
                     // (and distribution state) are fresh when the sheet opens.
                     if (booking.status === 'approved' || booking.status === 'completed') onOpenRoomDistribution?.(booking.id);
                   }}
-                  className="w-full bg-white rounded-3xl border border-[var(--ds-border)] shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer text-right overflow-hidden"
+                  className="w-full bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer text-right overflow-hidden"
                 >
                   {/* Photo first: a place is recognised by how it looks long
                       before its name is read. Houses with no photo keep the
@@ -1026,10 +1026,10 @@ export default function UserBookings({
                   <div className="fixed inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150" onClick={() => setDetailBookingId(null)} />
                   <div
                     id={`booking-card-${booking.id}`}
-                    className="relative z-10 w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-white rounded-t-3xl sm:rounded-3xl border border-[var(--ds-border)] shadow-2xl text-right animate-in slide-in-from-bottom sm:zoom-in-95 duration-200"
+                    className="relative z-10 w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-[var(--ds-surface)] rounded-t-3xl sm:rounded-3xl border border-[var(--ds-border)] shadow-2xl text-right animate-in slide-in-from-bottom sm:zoom-in-95 duration-200"
                   >
                     {/* Sheet grabber + close */}
-                    <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-[var(--ds-border)]/60 px-4 py-2 flex items-center justify-between">
+                    <div className="sticky top-0 z-20 bg-[var(--ds-surface)]/95 backdrop-blur-sm border-b border-[var(--ds-border)]/60 px-4 py-2 flex items-center justify-between">
                       <span className="text-[11px] font-black text-[var(--ds-brand)]">تفاصيل الحجز</span>
                       <button
                         type="button"
@@ -1042,7 +1042,7 @@ export default function UserBookings({
                     </div>
                 {/* ── Hero: the place, its reference, and where it stands ── */}
                 <div className="p-4">
-                  <div className="rounded-[28px] border border-[var(--ds-border)] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-3 flex items-start gap-3">
+                  <div className="rounded-[28px] border border-[var(--ds-border)] bg-[var(--ds-surface)] shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-3 flex items-start gap-3">
                     <div className="w-[86px] h-[86px] rounded-2xl overflow-hidden shrink-0 bg-gradient-to-br from-[var(--ds-brand)] to-[var(--ds-brand-2)] relative">
                       {bookingHouse?.images?.[0] && (
                         <img src={bookingHouse.images[0]} alt="" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />
@@ -1077,7 +1077,7 @@ export default function UserBookings({
                 {/* The booking's journey with Pima (live statuses only) */}
                 {(booking.status === 'pending' || booking.status === 'approved' || booking.status === 'completed') && (
                   <div className="px-4 pb-4">
-                    <div className="rounded-[28px] border border-[var(--ds-border)] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4">
+                    <div className="rounded-[28px] border border-[var(--ds-border)] bg-[var(--ds-surface)] shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4">
                       <BookingJourney booking={booking} payments={payments} />
                       {/* Renders nothing unless another group genuinely shares
                           these nights. get_house_neighbours re-checks that the
@@ -1110,7 +1110,7 @@ export default function UserBookings({
                        where the booking actually is. ── */}
                 <div className="px-4 pb-4">
                   {stage === 'review' && (
-                    <div className="rounded-[28px] border border-[var(--ds-border)] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 text-center space-y-2">
+                    <div className="rounded-[28px] border border-[var(--ds-border)] bg-[var(--ds-surface)] shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 text-center space-y-2">
                       <span className="inline-flex w-14 h-14 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_8%,var(--ds-surface))] items-center justify-center">
                         <Clock className="w-6 h-6 text-[var(--ds-accent)]" />
                       </span>
@@ -1125,7 +1125,7 @@ export default function UserBookings({
                   {stage === 'awaiting_deposit' && (
                     <div className="rounded-[28px] border border-[var(--ds-accent-soft)] bg-[color-mix(in_srgb,var(--ds-accent)_5%,var(--ds-surface))] p-4 space-y-3">
                       <div className="flex items-start gap-3">
-                        <span className="w-11 h-11 rounded-full bg-white border border-[var(--ds-accent-soft)] flex items-center justify-center shrink-0">
+                        <span className="w-11 h-11 rounded-full bg-[var(--ds-surface)] border border-[var(--ds-accent-soft)] flex items-center justify-center shrink-0">
                           <ShieldCheck className="w-5 h-5 text-[var(--ds-accent)]" />
                         </span>
                         <div className="min-w-0">
@@ -1166,7 +1166,7 @@ export default function UserBookings({
                   )}
 
                   {stage === 'verifying' && (
-                    <div className="rounded-[28px] border border-[var(--ds-border)] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 space-y-3">
+                    <div className="rounded-[28px] border border-[var(--ds-border)] bg-[var(--ds-surface)] shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 space-y-3">
                       <div className="flex items-start gap-3">
                         <span className="w-11 h-11 rounded-full bg-[color-mix(in_srgb,var(--ds-accent)_8%,var(--ds-surface))] flex items-center justify-center shrink-0">
                           <FileDown className="w-5 h-5 text-[var(--ds-accent)]" />
@@ -1189,7 +1189,7 @@ export default function UserBookings({
                   {stage === 'confirmed' && (
                     <div className="rounded-[28px] border border-[color-mix(in_srgb,var(--ds-success)_30%,var(--ds-surface))] bg-[color-mix(in_srgb,var(--ds-success)_5%,var(--ds-surface))] p-4 space-y-3">
                       <div className="flex items-start gap-3">
-                        <span className="w-11 h-11 rounded-full bg-white border border-[color-mix(in_srgb,var(--ds-success)_30%,var(--ds-surface))] flex items-center justify-center shrink-0">
+                        <span className="w-11 h-11 rounded-full bg-[var(--ds-surface)] border border-[color-mix(in_srgb,var(--ds-success)_30%,var(--ds-surface))] flex items-center justify-center shrink-0">
                           <ShieldCheck className="w-5 h-5 text-[var(--ds-success)]" />
                         </span>
                         <div className="min-w-0">
@@ -1203,7 +1203,7 @@ export default function UserBookings({
                         <button
                           type="button"
                           onClick={() => setActiveReceipt(booking)}
-                          className="flex items-center justify-center gap-1.5 bg-white border border-[var(--ds-border)] hover:border-[var(--ds-accent-soft)] text-[var(--ds-text)] font-black text-[11px] min-h-11 rounded-2xl transition-colors cursor-pointer pima-press"
+                          className="flex items-center justify-center gap-1.5 bg-[var(--ds-surface)] border border-[var(--ds-border)] hover:border-[var(--ds-accent-soft)] text-[var(--ds-text)] font-black text-[11px] min-h-11 rounded-2xl transition-colors cursor-pointer pima-press"
                         >
                           <FileDown className="w-3.5 h-3.5 text-[var(--ds-accent)]" />
                           عرض سند الحجز
@@ -1246,7 +1246,7 @@ export default function UserBookings({
                   const remaining = Math.max(0, booking.totalPrice - paid);
                   return (
                     <div className="px-4 pb-4">
-                      <div className="rounded-[28px] border border-[var(--ds-border)] bg-white shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 space-y-2">
+                      <div className="rounded-[28px] border border-[var(--ds-border)] bg-[var(--ds-surface)] shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] font-black text-[var(--ds-brand)]">تقدّم السداد</span>
                           <span className={`text-[11px] font-black ${remaining === 0 ? 'text-[var(--ds-success-ink)]' : 'text-[var(--ds-accent-deep)]'}`}>
@@ -1286,7 +1286,7 @@ export default function UserBookings({
                       <div className="text-[11px] text-[var(--ds-primary)] font-medium pt-1">نوع الحجز: {bookingTypeLabel(booking)}</div>
                     )}
                     {booking.conferenceDetails.extraRequests && (
-                      <div className="text-[11px] text-[var(--ds-text)]/80 leading-relaxed bg-white border border-[var(--ds-border)] p-2 rounded-xl mt-1 text-right whitespace-pre-line">
+                      <div className="text-[11px] text-[var(--ds-text)]/80 leading-relaxed bg-[var(--ds-surface)] border border-[var(--ds-border)] p-2 rounded-xl mt-1 text-right whitespace-pre-line">
                         {booking.conferenceDetails.extraRequests}
                       </div>
                     )}
@@ -1496,7 +1496,7 @@ export default function UserBookings({
                       <button
                         id={`booking-allocation-btn-${booking.id}`}
                         onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-[var(--ds-surface)] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <Building className="w-3.5 h-3.5 text-[var(--ds-text-2)]" />
                         <span>توزيع الغرف</span>
@@ -1526,7 +1526,7 @@ export default function UserBookings({
                             setCustomActivities(prev => ({ ...prev, [booking.id]: getThemeActivities('growth') }));
                           }
                         }}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-[var(--ds-surface)] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <Calendar className="w-3.5 h-3.5 text-[var(--ds-success-ink)]" />
                         <span>برنامج الخلوة</span>
@@ -1535,7 +1535,7 @@ export default function UserBookings({
                     {(booking.status === 'approved' || booking.status === 'completed') && (
                       <button
                         onClick={() => downloadBookingIcs(booking, bookingHouse?.address)}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-[var(--ds-surface)] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <CalendarPlus className="w-3.5 h-3.5 text-[var(--ds-text-2)]" />
                         <span>أضف لتقويمك</span>
@@ -1549,7 +1549,7 @@ export default function UserBookings({
                           const msg = `سلام ونعمة 🙏\nانضم لقائمة مشاركين خلوة «${booking.houseName}» (${arabicDateRange(booking.checkIn, booking.checkOut)}) واكتب اسمك من هنا:\n${link}`;
                           void shareToWhatsApp(msg);
                         }}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-[var(--ds-surface)] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <UserPlus className="w-3.5 h-3.5 text-[var(--ds-success-ink)]" />
                         <span>ادعُ المشاركين</span>
@@ -1559,7 +1559,7 @@ export default function UserBookings({
                       <button
                         id={`booking-chat-btn-${booking.id}`}
                         onClick={() => setChatOpenBookingId(chatOpenBookingId === booking.id ? null : booking.id)}
-                        className="flex items-center gap-1.5 bg-white hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                        className="flex items-center gap-1.5 bg-[var(--ds-surface)] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                       >
                         <MessageCircle className="w-3.5 h-3.5 text-[var(--ds-brand-2)]" />
                         <span>راسل صاحب البيت</span>
@@ -1568,7 +1568,7 @@ export default function UserBookings({
                     <button
                       id={`booking-receipt-btn-${booking.id}`}
                       onClick={() => setActiveReceipt(booking)}
-                      className="flex items-center gap-1.5 bg-white hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                      className="flex items-center gap-1.5 bg-[var(--ds-surface)] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] border border-[var(--ds-border)] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
                     >
                       <FileText className="w-3.5 h-3.5 text-[var(--ds-text-2)]" />
                       <span>سند التأكيد</span>
@@ -1662,7 +1662,7 @@ export default function UserBookings({
                     to carry the same lock, or the block above is decoration —
                     which is exactly what the test caught. */}
                 {stage === 'awaiting_deposit' && isPaying !== booking.id && !awaitingVerification && !platformPayeeMissing && (
-                  <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-sm border-t border-[var(--ds-border)] px-4 py-3 flex items-center gap-3">
+                  <div className="sticky bottom-0 z-20 bg-[var(--ds-surface)]/95 backdrop-blur-sm border-t border-[var(--ds-border)] px-4 py-3 flex items-center gap-3">
                     <div className="shrink-0 leading-tight">
                       <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">المتبقي للدفع</span>
                       <span className="block text-[14px] font-black text-[var(--ds-brand)]">
@@ -1700,7 +1700,7 @@ export default function UserBookings({
             <div className="relative z-10 w-full max-w-md max-h-[90dvh] overflow-y-auto animate-in zoom-in-95 duration-200">
               <button aria-label="إغلاق التقييم"
                 onClick={() => setReviewingBooking(null)}
-                className="absolute top-2 left-2 z-20 p-1.5 bg-white/90 hover:bg-white rounded-full border border-[var(--ds-border)] cursor-pointer shadow-sm"
+                className="absolute top-2 left-2 z-20 p-1.5 bg-[var(--ds-surface)]/90 hover:bg-[var(--ds-surface)] rounded-full border border-[var(--ds-border)] cursor-pointer shadow-sm"
               >
                 <X className="w-4 h-4 text-[var(--ds-text)]" />
               </button>
@@ -1833,7 +1833,7 @@ export default function UserBookings({
         if (assignedIds.length === 0) {
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setActiveAllocationBooking(null)}>
-              <div className="bg-white rounded-3xl border border-[var(--ds-border)] p-6 max-w-sm text-center space-y-2" dir="rtl" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-6 max-w-sm text-center space-y-2" dir="rtl" onClick={(e) => e.stopPropagation()}>
                 <div className="text-3xl">🛏️</div>
                 <h3 className="text-sm font-black text-[var(--ds-text)]">بانتظار تخصيص الغرف</h3>
                 <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">لسه صاحب البيت ماخصّصش غرف لمجموعتك. بمجرد ما يبعت الغرف، هتقدر تكتب أسماء المشاركين وتوزّعهم عليها من هنا.</p>
@@ -1906,7 +1906,7 @@ export default function UserBookings({
                   onClick={() => setPlannerTab('schedule')}
                   className={`flex-1 py-2 text-center text-[11px] font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     plannerTab === 'schedule'
-                      ? 'bg-white text-[var(--ds-text)] shadow-xs border border-[var(--ds-border)]'
+                      ? 'bg-[var(--ds-surface)] text-[var(--ds-text)] shadow-xs border border-[var(--ds-border)]'
                       : 'text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
                   }`}
                 >
@@ -1917,7 +1917,7 @@ export default function UserBookings({
                   onClick={() => setPlannerTab('packing')}
                   className={`flex-1 py-2 text-center text-[11px] font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     plannerTab === 'packing'
-                      ? 'bg-white text-[var(--ds-text)] shadow-xs border border-[var(--ds-border)]'
+                      ? 'bg-[var(--ds-surface)] text-[var(--ds-text)] shadow-xs border border-[var(--ds-border)]'
                       : 'text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
                   }`}
                 >
@@ -1942,7 +1942,7 @@ export default function UserBookings({
                           className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all cursor-pointer border ${
                             plannerTheme === 'growth'
                               ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-xs'
-                              : 'bg-white border-[var(--ds-border)] text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
+                              : 'bg-[var(--ds-surface)] border-[var(--ds-border)] text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
                           }`}
                         >
                           🌟 روحي وعقيدي
@@ -1952,7 +1952,7 @@ export default function UserBookings({
                           className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all cursor-pointer border ${
                             plannerTheme === 'fellowship'
                               ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-xs'
-                              : 'bg-white border-[var(--ds-border)] text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
+                              : 'bg-[var(--ds-surface)] border-[var(--ds-border)] text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
                           }`}
                         >
                           🎉 تعارف ومحبة
@@ -1962,7 +1962,7 @@ export default function UserBookings({
                           className={`py-1.5 px-2 rounded-lg text-[11px] font-bold text-center transition-all cursor-pointer border ${
                             plannerTheme === 'saints'
                               ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-[var(--ds-on-primary)] shadow-xs'
-                              : 'bg-white border-[var(--ds-border)] text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
+                              : 'bg-[var(--ds-surface)] border-[var(--ds-border)] text-[var(--ds-text-2)] hover:text-[var(--ds-text)]'
                           }`}
                         >
                           ⛪ آباء وقديسين
@@ -1987,7 +1987,7 @@ export default function UserBookings({
                       {dayNumbers.map((dayNum) => {
                         const dayActs = bookingActs.filter(a => a.day === dayNum);
                         return (
-                          <div key={dayNum} className="bg-white rounded-2xl border border-[var(--ds-border)] p-3 space-y-2.5 shadow-xs">
+                          <div key={dayNum} className="bg-[var(--ds-surface)] rounded-2xl border border-[var(--ds-border)] p-3 space-y-2.5 shadow-xs">
                             <div className="flex justify-between items-center border-b border-[var(--ds-raised)] pb-1.5">
                               <span className="text-xs font-black text-[var(--ds-primary)] flex items-center gap-1">
                                 <Calendar className="w-3.5 h-3.5 text-[var(--ds-warning)]" />
@@ -2015,7 +2015,7 @@ export default function UserBookings({
                                       type="text"
                                       value={act.time}
                                       onChange={(e) => updateActivity(bookingId, act.id, 'time', e.target.value)}
-                                      className="w-16 bg-white border border-[var(--ds-border)] rounded-lg px-1.5 py-1 text-[11px] text-center font-bold text-[var(--ds-text)] focus:ring-1 focus:ring-[var(--ds-primary)] focus:outline-none"
+                                      className="w-16 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-lg px-1.5 py-1 text-[11px] text-center font-bold text-[var(--ds-text)] focus:ring-1 focus:ring-[var(--ds-primary)] focus:outline-none"
                                       title="وقت الفقرة"
                                     />
                                     
@@ -2024,7 +2024,7 @@ export default function UserBookings({
                                       type="text"
                                       value={act.activity}
                                       onChange={(e) => updateActivity(bookingId, act.id, 'activity', e.target.value)}
-                                      className="flex-1 bg-white border border-[var(--ds-border)] rounded-lg px-2 py-1 text-[11px] font-semibold text-[var(--ds-text)] focus:ring-1 focus:ring-[var(--ds-primary)] focus:outline-none"
+                                      className="flex-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-lg px-2 py-1 text-[11px] font-semibold text-[var(--ds-text)] focus:ring-1 focus:ring-[var(--ds-primary)] focus:outline-none"
                                       title="تفاصيل ومسمى النشاط"
                                     />
 
@@ -2051,7 +2051,7 @@ export default function UserBookings({
                 {plannerTab === 'packing' && (
                   <div className="space-y-4">
                     {/* Progress indicator */}
-                    <div className="bg-white rounded-2xl border border-[var(--ds-border)] p-3 shadow-xs space-y-1.5">
+                    <div className="bg-[var(--ds-surface)] rounded-2xl border border-[var(--ds-border)] p-3 shadow-xs space-y-1.5">
                       <div className="flex justify-between text-[11px] font-black">
                         <span>معدل جاهزية تحضير الرحلة كنسيًا وشخصيًا:</span>
                         <span className="text-[var(--ds-warning-ink)]">{progressPercentage}% ({totalCheckedCount} من أصل {totalItemsCount})</span>
@@ -2079,7 +2079,7 @@ export default function UserBookings({
                           value={newGroupText}
                           onChange={(e) => setNewGroupText(e.target.value)}
                           placeholder="إضافة غرض خدمة مشترك (مثل: قربان، هدايا...)"
-                          className="flex-1 bg-white border border-[var(--ds-border)] rounded-xl px-2.5 py-1.5 text-[11px] font-bold focus:ring-1 focus:ring-[var(--ds-primary)] focus:outline-none"
+                          className="flex-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl px-2.5 py-1.5 text-[11px] font-bold focus:ring-1 focus:ring-[var(--ds-primary)] focus:outline-none"
                         />
                         <button
                           onClick={() => {
@@ -2093,7 +2093,7 @@ export default function UserBookings({
                       </div>
 
                       {/* Group list */}
-                      <div className="bg-white rounded-2xl border border-[var(--ds-border)] overflow-hidden shadow-xs divide-y divide-[var(--ds-raised)]/60">
+                      <div className="bg-[var(--ds-surface)] rounded-2xl border border-[var(--ds-border)] overflow-hidden shadow-xs divide-y divide-[var(--ds-raised)]/60">
                         {groupItems.length === 0 ? (
                           <p className="p-3 text-[11px] text-[var(--ds-text-2)] text-center font-bold">لا توجد أغراض مسجلة هنا.</p>
                         ) : (
@@ -2106,7 +2106,7 @@ export default function UserBookings({
                                 <span className={`w-4.5 h-4.5 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                                   item.checked 
                                     ? 'bg-[var(--ds-success)] border-[var(--ds-success)] text-white' 
-                                    : 'border-[var(--ds-border)] bg-white'
+                                    : 'border-[var(--ds-border)] bg-[var(--ds-surface)]'
                                 }`}>
                                   {item.checked && <Check className="w-3 h-3 stroke-[3]" />}
                                 </span>
@@ -2142,7 +2142,7 @@ export default function UserBookings({
                           value={newPersonalText}
                           onChange={(e) => setNewPersonalText(e.target.value)}
                           placeholder="إضافة غرض شخصي فردي (مثل: كاب للشمس، أدوية...)"
-                          className="flex-1 bg-white border border-[var(--ds-border)] rounded-xl px-2.5 py-1.5 text-[11px] font-bold focus:ring-1 focus:ring-[var(--ds-primary)] focus:outline-none"
+                          className="flex-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl px-2.5 py-1.5 text-[11px] font-bold focus:ring-1 focus:ring-[var(--ds-primary)] focus:outline-none"
                         />
                         <button
                           onClick={() => {
@@ -2156,7 +2156,7 @@ export default function UserBookings({
                       </div>
 
                       {/* Personal list */}
-                      <div className="bg-white rounded-2xl border border-[var(--ds-border)] overflow-hidden shadow-xs divide-y divide-[var(--ds-raised)]/60">
+                      <div className="bg-[var(--ds-surface)] rounded-2xl border border-[var(--ds-border)] overflow-hidden shadow-xs divide-y divide-[var(--ds-raised)]/60">
                         {personalItems.length === 0 ? (
                           <p className="p-3 text-[11px] text-[var(--ds-text-2)] text-center font-bold">لا توجد أغراض فردية مسجلة هنا.</p>
                         ) : (
@@ -2169,7 +2169,7 @@ export default function UserBookings({
                                 <span className={`w-4.5 h-4.5 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                                   item.checked 
                                     ? 'bg-[var(--ds-primary)] border-[var(--ds-primary)] text-[var(--ds-on-primary)]'
-                                    : 'border-[var(--ds-border)] bg-white'
+                                    : 'border-[var(--ds-border)] bg-[var(--ds-surface)]'
                                 }`}>
                                   {item.checked && <Check className="w-3 h-3 stroke-[3]" />}
                                 </span>
@@ -2200,7 +2200,7 @@ export default function UserBookings({
                   onClick={() => {
                     window.print();
                   }}
-                  className="bg-white border border-[var(--ds-border)] text-[var(--ds-text)] hover:bg-[var(--ds-bg)] text-[11px] font-black px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                  className="bg-[var(--ds-surface)] border border-[var(--ds-border)] text-[var(--ds-text)] hover:bg-[var(--ds-bg)] text-[11px] font-black px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-xs"
                 >
                   <Printer className="w-4 h-4 text-[var(--ds-text)]" />
                   <span>طباعة البرنامج والتحضيرات 🖨️</span>
@@ -2229,7 +2229,7 @@ export default function UserBookings({
         if (assignedIds.length === 0) {
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setActiveAllocationBooking(null)}>
-              <div className="bg-white rounded-3xl border border-[var(--ds-border)] p-6 max-w-sm text-center space-y-2" dir="rtl" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-6 max-w-sm text-center space-y-2" dir="rtl" onClick={(e) => e.stopPropagation()}>
                 <div className="text-3xl">🛏️</div>
                 <h3 className="text-sm font-black text-[var(--ds-text)]">بانتظار تخصيص الغرف</h3>
                 <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">لسه صاحب البيت ماخصّصش غرف لمجموعتك. بمجرد ما يبعت الغرف، هتقدر تكتب أسماء المشاركين وتوزّعهم عليها من هنا.</p>

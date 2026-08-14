@@ -116,9 +116,9 @@ export default function UserMessages({ currentUser, bookings, houses, users }: U
   return (
     <div className="max-w-2xl mx-auto space-y-4 -mt-1">
       <div className="flex items-baseline justify-between px-1">
-        <h2 className="text-[17px] font-black text-[#2D2D24]">المحادثات</h2>
+        <h2 className="text-[17px] font-black text-[var(--ds-text-strong)]">المحادثات</h2>
         {totalUnread > 0 && (
-          <span className="text-[10px] font-black text-[#B8944E]">{totalUnread} غير مقروءة</span>
+          <span className="text-[10px] font-black text-[var(--ds-accent-deep)]">{totalUnread} غير مقروءة</span>
         )}
       </div>
 
@@ -147,9 +147,9 @@ export default function UserMessages({ currentUser, bookings, houses, users }: U
           <div className="flex items-start gap-2.5 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {recent.map((b) => (
               <button key={b.houseId} onClick={() => { tapFeedback(); setSelectedHouseId(b.houseId); }}
-                className="shrink-0 w-[78px] bg-white border border-[#EDE7DA] rounded-2xl p-2 flex flex-col items-center gap-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press">
+                className="shrink-0 w-[78px] bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-2 flex flex-col items-center gap-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press">
                 <PimaAvatar name={b.houseName} src={ownerAvatar(b)} size={44} online />
-                <span className="text-[8.5px] font-black text-[#2D2D24] leading-tight text-center line-clamp-2">{b.houseName}</span>
+                <span className="text-[8.5px] font-black text-[var(--ds-text-strong)] leading-tight text-center line-clamp-2">{b.houseName}</span>
               </button>
             ))}
           </div>
@@ -157,7 +157,7 @@ export default function UserMessages({ currentUser, bookings, houses, users }: U
       )}
 
       {loading ? (
-        <div className="bg-white rounded-3xl border border-[#EDE7DA] divide-y divide-[#EDE7DA] overflow-hidden">
+        <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] divide-y divide-[#EDE7DA] overflow-hidden">
           {[0, 1, 2, 3].map((i) => <PimaLoadingRow key={i} />)}
         </div>
       ) : conversations.length === 0 ? (
@@ -170,7 +170,7 @@ export default function UserMessages({ currentUser, bookings, houses, users }: U
           action={q || filter !== 'all' ? { label: 'عرض كل المحادثات', onClick: () => { setSearch(''); setFilter('all'); } } : undefined}
         />
       ) : (
-        <div className="bg-white rounded-3xl border border-[#EDE7DA] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+        <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
           {conversations.map((b, idx) => {
             const preview = previews[b.id];
             const unreadCount = unreadForHouse(b.houseId);
@@ -189,19 +189,19 @@ export default function UserMessages({ currentUser, bookings, houses, users }: U
                 id={`user-conversation-${b.houseId}`}
                 type="button"
                 onClick={() => { tapFeedback(); setSelectedHouseId(b.houseId); }}
-                className={`w-full flex items-center gap-3 hover:bg-[#FBF9F4] p-3.5 min-h-[72px] text-right transition-colors duration-[250ms] cursor-pointer pima-press ${
-                  isLast ? '' : 'border-b border-[#EDE7DA]'
-                } ${unreadCount > 0 ? 'bg-[#FDFBF6]' : ''}`}
+                className={`w-full flex items-center gap-3 hover:bg-[var(--ds-raised)] p-3.5 min-h-[72px] text-right transition-colors duration-[250ms] cursor-pointer pima-press ${
+                  isLast ? '' : 'border-b border-[var(--ds-border)]'
+                } ${unreadCount > 0 ? 'bg-[var(--ds-raised)]' : ''}`}
               >
                 <PimaAvatar name={b.houseName} src={ownerAvatar(b)} size={48} online={unreadCount > 0} />
                 <span className="flex-1 min-w-0 space-y-1">
                   <span className="flex items-center justify-between gap-2">
-                    <span className={`text-[12.5px] truncate text-[#2D2D24] ${unreadCount > 0 ? 'font-black' : 'font-bold'}`}>{b.houseName}</span>
-                    <span className={`text-[9.5px] shrink-0 font-bold ${unreadCount > 0 ? 'text-[#B8944E]' : 'text-[#B5AF98]'}`}>{timeText}</span>
+                    <span className={`text-[12.5px] truncate text-[var(--ds-text-strong)] ${unreadCount > 0 ? 'font-black' : 'font-bold'}`}>{b.houseName}</span>
+                    <span className={`text-[9.5px] shrink-0 font-bold ${unreadCount > 0 ? 'text-[var(--ds-accent-deep)]' : 'text-[var(--ds-text-faint)]'}`}>{timeText}</span>
                   </span>
                   <span className="flex items-center justify-between gap-2">
                     <span className={`text-[10.5px] truncate flex items-center gap-1 ${
-                      unreadCount > 0 && !isMine ? 'text-[#2D2D24] font-bold' : 'text-[#8A8A70] font-medium'}`}>
+                      unreadCount > 0 && !isMine ? 'text-[var(--ds-text-strong)] font-bold' : 'text-[var(--ds-text-2)] font-medium'}`}>
                       {isMine && preview && <PimaReceipt read={!!preview.readAt} />}
                       {attachmentIcon}
                       <span className="truncate">{previewText}</span>
@@ -213,7 +213,7 @@ export default function UserMessages({ currentUser, bookings, houses, users }: U
                     )}
                   </span>
                 </span>
-                <ChevronLeft className="w-4 h-4 text-[#D2C9B8] shrink-0" aria-hidden="true" />
+                <ChevronLeft className="w-4 h-4 text-[var(--ds-text-faint)] shrink-0" aria-hidden="true" />
               </button>
             );
           })}
@@ -223,15 +223,15 @@ export default function UserMessages({ currentUser, bookings, houses, users }: U
       {/* Support entry — a real destination rather than a dead filter. */}
       {!loading && filter !== 'support' && (
         <a href="https://wa.me/201234567890" target="_blank" rel="noreferrer"
-          className="flex items-center gap-3 bg-white border border-[#EDE7DA] rounded-2xl p-3.5 min-h-[64px] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press">
-          <span className="w-11 h-11 rounded-full bg-[#F6F0E2] flex items-center justify-center shrink-0">
-            <Headphones className="w-5 h-5 text-[#C5A059]" />
+          className="flex items-center gap-3 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-3.5 min-h-[64px] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press">
+          <span className="w-11 h-11 rounded-full bg-[var(--ds-raised)] flex items-center justify-center shrink-0">
+            <Headphones className="w-5 h-5 text-[var(--ds-accent)]" />
           </span>
           <span className="flex-1 min-w-0 text-right">
-            <span className="block text-[12.5px] font-black text-[#2D2D24]">دعم بيما</span>
-            <span className="block text-[10.5px] font-medium text-[#8A8A70] truncate">مرحبًا، كيف يمكننا مساعدتك؟</span>
+            <span className="block text-[12.5px] font-black text-[var(--ds-text-strong)]">دعم بيما</span>
+            <span className="block text-[10.5px] font-medium text-[var(--ds-text-2)] truncate">مرحبًا، كيف يمكننا مساعدتك؟</span>
           </span>
-          <ChevronLeft className="w-4 h-4 text-[#D2C9B8] shrink-0" aria-hidden="true" />
+          <ChevronLeft className="w-4 h-4 text-[var(--ds-text-faint)] shrink-0" aria-hidden="true" />
         </a>
       )}
     </div>

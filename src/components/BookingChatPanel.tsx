@@ -38,10 +38,10 @@ const THEME = {
     headerBg: 'bg-[var(--color-owner-primary)]', focusBorder: 'focus:border-[var(--color-owner-primary)]',
   },
   guest: {
-    surface: 'bg-white', border: 'border-[#D6D6C2]',
-    bg: 'bg-[#FAF8F5]', primary: 'bg-[#5A5A40]', primaryHover: 'hover:bg-[#4A4A3A]',
-    text: 'text-[#4A4A3A]', secondary: 'text-[#8A8A70]', accent: 'text-amber-300',
-    headerBg: 'bg-[#4A4A3A]', focusBorder: 'focus:border-[#5A5A40]',
+    surface: 'bg-[var(--ds-surface)]', border: 'border-[var(--ds-border)]',
+    bg: 'bg-[var(--ds-bg)]', primary: 'bg-[var(--ds-primary)]', primaryHover: 'hover:bg-[#4A4A3A]',
+    text: 'text-[var(--ds-text)]', secondary: 'text-[var(--ds-text-2)]', accent: 'text-amber-300',
+    headerBg: 'bg-[#4A4A3A]', focusBorder: 'focus:border-[var(--ds-primary)]',
   },
 };
 
@@ -323,7 +323,7 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
             the dates are the thing people re-check mid-conversation. */}
         {booking && (
           <div className="relative px-3 pb-3">
-            <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-white/70 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden">
+            <div className="bg-[var(--ds-surface)]/95 backdrop-blur-md rounded-2xl border border-[var(--ds-border)] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => { tapFeedback(); setCardOpen((v) => !v); }}
@@ -331,16 +331,16 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
                 className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-right pima-press"
               >
                 <span className="flex items-center gap-2 min-w-0">
-                  <span className="text-[11.5px] font-black text-[#2D2D24] shrink-0">حجزك القادم</span>
+                  <span className="text-[11.5px] font-black text-[var(--ds-text-strong)] shrink-0">حجزك القادم</span>
                   {!cardOpen && (
-                    <span className="text-[10px] font-bold text-[#8A8A70] truncate">
+                    <span className="text-[10px] font-bold text-[var(--ds-text-2)] truncate">
                       {shortDate(booking.checkIn)} · {booking.guestsCount} فرد · {nights} {nights === 1 ? 'ليلة' : nights === 2 ? 'ليلتين' : 'ليالٍ'}
                     </span>
                   )}
                 </span>
                 <span className="flex items-center gap-1.5 shrink-0">
                   <PimaStatusBadge status={booking.status} />
-                  <ChevronRight aria-hidden="true" className={`w-4 h-4 text-[#B5AF98] transition-transform duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${cardOpen ? '-rotate-90' : 'rotate-90'}`} />
+                  <ChevronRight aria-hidden="true" className={`w-4 h-4 text-[var(--ds-text-faint)] transition-transform duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] ${cardOpen ? '-rotate-90' : 'rotate-90'}`} />
                 </span>
               </button>
 
@@ -361,10 +361,10 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
                         { icon: <Users className="w-3.5 h-3.5" />, top: `${booking.guestsCount} فرد`, bottom: 'عدد الأفراد' },
                         { icon: <MapPin className="w-3.5 h-3.5" />, top: `${nights} ${nights === 1 ? 'ليلة' : nights === 2 ? 'ليلتين' : 'ليالٍ'}`, bottom: 'المدة' },
                       ].map((c) => (
-                        <div key={c.bottom} className="flex flex-col items-center gap-0.5 bg-[#FBF9F4] rounded-xl py-2">
-                          <span className="text-[#C5A059]">{c.icon}</span>
-                          <span className="text-[10.5px] font-black text-[#2D2D24] leading-none">{c.top}</span>
-                          <span className="text-[8.5px] font-bold text-[#8A8A70]">{c.bottom}</span>
+                        <div key={c.bottom} className="flex flex-col items-center gap-0.5 bg-[var(--ds-raised)] rounded-xl py-2">
+                          <span className="text-[var(--ds-accent)]">{c.icon}</span>
+                          <span className="text-[10.5px] font-black text-[var(--ds-text-strong)] leading-none">{c.top}</span>
+                          <span className="text-[8.5px] font-bold text-[var(--ds-text-2)]">{c.bottom}</span>
                         </div>
                       ))}
                     </div>
@@ -411,7 +411,7 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
                 <React.Fragment key={m.id}>
                   {capsule}
                   <div className={`max-w-[75%] ${isMine ? 'ml-auto' : 'mr-auto'}`}>
-                    <div dir="rtl" className="rounded-2xl px-3.5 py-2.5 text-[11px] italic text-[#8A8A70] bg-white/60 border border-[#EDE7DA] flex items-center gap-1.5">
+                    <div dir="rtl" className="rounded-2xl px-3.5 py-2.5 text-[11px] italic text-[var(--ds-text-2)] bg-[var(--ds-surface)]/60 border border-[var(--ds-border)] flex items-center gap-1.5">
                       <Trash2 className="w-3 h-3" /> تم حذف هذه الرسالة
                     </div>
                   </div>
@@ -428,7 +428,7 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
                 {/* Quoted message */}
                 {repliedTo && (
                   <div dir="rtl" className={`rounded-xl px-2.5 py-1.5 border-r-2 ${t.bg} border ${t.border} text-[10px]`}>
-                    <div className={`font-black ${t.accent === 'text-amber-300' ? 'text-[#8A8A70]' : t.secondary}`}>{repliedTo.senderId === currentUserId ? 'أنت' : repliedTo.senderName}</div>
+                    <div className={`font-black ${t.accent === 'text-amber-300' ? 'text-[var(--ds-text-2)]' : t.secondary}`}>{repliedTo.senderId === currentUserId ? 'أنت' : repliedTo.senderName}</div>
                     <div className={`${t.secondary} truncate`}>{repliedPreview}</div>
                   </div>
                 )}
@@ -439,14 +439,14 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
                 )}
                 {m.attachmentUrl && m.attachmentType === 'file' && (
                   <a href={m.attachmentUrl} download={m.attachmentName || 'ملف'}
-                    className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 shadow-sm ${isMine ? `${t.primary} text-white` : `bg-white border ${t.border} ${t.text}`}`}>
+                    className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 shadow-sm ${isMine ? `${t.primary} text-[var(--ds-on-primary)]` : `bg-[var(--ds-surface)] border ${t.border} ${t.text}`}`}>
                     <FileText className="w-5 h-5 shrink-0 opacity-80" />
                     <span dir="rtl" className="text-[11px] font-bold truncate flex-1">{m.attachmentName || 'ملف مرفق'}</span>
                     <Download className="w-4 h-4 shrink-0 opacity-70" />
                   </a>
                 )}
                 {m.attachmentUrl && m.attachmentType === 'audio' && (
-                  <div className={`rounded-2xl px-2 py-1.5 shadow-sm ${isMine ? `${t.primary}` : `bg-white border ${t.border}`}`}>
+                  <div className={`rounded-2xl px-2 py-1.5 shadow-sm ${isMine ? `${t.primary}` : `bg-[var(--ds-surface)] border ${t.border}`}`}>
                     <audio controls src={m.attachmentUrl} className="h-9 w-[210px] max-w-full" />
                   </div>
                 )}
@@ -461,7 +461,7 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
                     className={`inline-block text-right px-3.5 py-2.5 text-[12px] font-medium leading-relaxed max-w-full rounded-[22px] ${
                       isMine
                         ? 'rounded-bl-md bg-gradient-to-b from-[#F7EEDB] to-[#F2E4C9] text-[#3A3524] border border-[#E9D9B4] shadow-[0_2px_8px_rgba(184,148,78,0.12)]'
-                        : 'rounded-br-md bg-white text-[#2D2D24] border border-[#EDE7DA] shadow-[0_2px_8px_rgba(45,45,36,0.05)]'
+                        : 'rounded-br-md bg-[var(--ds-surface)] text-[var(--ds-text-strong)] border border-[var(--ds-border)] shadow-[0_2px_8px_rgba(45,45,36,0.05)]'
                     }`}>
                     {m.content}
                   </button>
@@ -470,12 +470,12 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
                 {menuFor === m.id && (
                   <div className={`flex items-center gap-1 ${isMine ? 'justify-start' : 'justify-end'}`}>
                     <button type="button" onClick={() => { setReplyTo(m); setMenuFor(null); }}
-                      className={`flex items-center gap-1 text-[9.5px] font-bold ${t.secondary} bg-white border ${t.border} rounded-lg px-2 py-1`}>
+                      className={`flex items-center gap-1 text-[9.5px] font-bold ${t.secondary} bg-[var(--ds-surface)] border ${t.border} rounded-lg px-2 py-1`}>
                       <Reply className="w-3 h-3" /> رد
                     </button>
                     {isMine && (
                       <button type="button" onClick={() => handleDelete(m.id)}
-                        className="flex items-center gap-1 text-[9.5px] font-bold text-rose-600 bg-white border border-rose-200 rounded-lg px-2 py-1">
+                        className="flex items-center gap-1 text-[9.5px] font-bold text-rose-600 bg-[var(--ds-surface)] border border-rose-200 rounded-lg px-2 py-1">
                         <Trash2 className="w-3 h-3" /> حذف
                       </button>
                     )}
@@ -483,15 +483,15 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
                 )}
                 <div className={`flex items-center gap-1.5 px-1 ${isMine ? 'justify-start' : 'justify-end'}`}>
                   {!m.content && (
-                    <button type="button" onClick={() => setMenuFor(menuFor === m.id ? null : m.id)} aria-label="رد" className="text-[#B5AF98]">
+                    <button type="button" onClick={() => setMenuFor(menuFor === m.id ? null : m.id)} aria-label="رد" className="text-[var(--ds-text-faint)]">
                       <Reply className="w-3 h-3" />
                     </button>
                   )}
-                  <p className="text-[9px] text-[#B5AF98] font-bold">{formatTime(m.createdAt)}</p>
+                  <p className="text-[9px] text-[var(--ds-text-faint)] font-bold">{formatTime(m.createdAt)}</p>
                   {/* Receipts only make sense on messages you sent. */}
                   {isMine && (m.readAt
                     ? <CheckCheck className="w-3.5 h-3.5 text-sky-500" aria-label="تمت القراءة" />
-                    : <Check className="w-3.5 h-3.5 text-[#B5AF98]" aria-label="تم الإرسال" />)}
+                    : <Check className="w-3.5 h-3.5 text-[var(--ds-text-faint)]" aria-label="تم الإرسال" />)}
                 </div>
               </div>
               </React.Fragment>
@@ -505,7 +505,7 @@ export default function BookingChatPanel({ bookingId, bookingIds, booking, house
           Hidden once there is something in the box, where they would compete
           with what the guest is already writing. */}
       {!loading && !input.trim() && (
-        <div className="shrink-0 flex items-center gap-1.5 px-3 py-2 overflow-x-auto bg-white border-t border-[#EDE7DA] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="shrink-0 flex items-center gap-1.5 px-3 py-2 overflow-x-auto bg-[var(--ds-surface)] border-t border-[var(--ds-border)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {QUICK_REPLIES.map((q) => (
             <PimaQuickReplyChip key={q} label={q} onClick={() => { tapFeedback(); setInput(q); }} />
           ))}
