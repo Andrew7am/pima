@@ -825,12 +825,18 @@ body {
    (surface → raised) and keeps its own place above the page without becoming
    the brightest thing on it. Light is untouched: same gradient, same tokens. */
 .pima-brand-panel {
-  background-image: linear-gradient(to bottom right, var(--ds-brand), var(--ds-brand-2));
+  background-image: linear-gradient(var(--pima-brand-panel-dir, to bottom right), var(--ds-brand), var(--ds-brand-2));
   color: var(--ds-on-brand);
 }
 :root[data-theme='dark'] .pima-brand-panel {
-  background-image: linear-gradient(to bottom right, var(--ds-surface), var(--ds-raised));
+  background-image: linear-gradient(var(--pima-brand-panel-dir, to bottom right), var(--ds-surface), var(--ds-raised));
   color: var(--ds-text);
+}
+/* The seasonal strip runs along the page, not across a card. Physical `to
+   left` on purpose: it is what `bg-gradient-to-l` emitted before, so the
+   light rendering is unchanged rather than mirrored. */
+.pima-brand-panel--to-left {
+  --pima-brand-panel-dir: to left;
 }
 
 .pima-chat-bg {

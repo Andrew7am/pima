@@ -431,9 +431,11 @@ export default function UserDashboard({
         const s = copticSeason();
         if (s.season === 'ordinary') return null;
         return (
-          <div className="flex items-center justify-center gap-2 bg-gradient-to-l from-[var(--ds-brand)] to-[var(--ds-brand-2)] text-[var(--ds-on-brand)] rounded-2xl px-4 py-2.5 shadow-sm">
+          <div className="pima-brand-panel pima-brand-panel--to-left flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 shadow-sm">
             <span className="text-[11px] font-black text-[var(--ds-accent)]">{s.label}</span>
-            <span className="w-1 h-1 rounded-full bg-[var(--ds-on-brand)]/40" />
+            {/* currentColor, so the dot follows whichever ink the panel is
+                using — white on navy in light, --ds-text on the dark surface. */}
+            <span className="w-1 h-1 rounded-full bg-current/40" />
             <span className="text-[11px] font-bold">{s.greeting}</span>
           </div>
         );
