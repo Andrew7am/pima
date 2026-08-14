@@ -334,10 +334,11 @@ export default function EntertainmentHome({
             <div className="space-y-1.5">
               <div className="flex justify-between items-center text-[10px] font-black px-1">
                 <span className={dark ? 'text-slate-400' : 'text-slate-500'}>التقدم والخبرة الروحية (XP)</span>
-                <span className={`font-mono ${dark ? 'text-amber-400' : 'text-slate-800'}`}>{xpInLevel} / {xpNeeded} XP</span>
+                {/* XP is reward, so it reads in reward gold rather than amber. */}
+                <span className={`font-mono ${dark ? 'text-play-reward' : 'text-slate-800'}`}>{xpInLevel} / {xpNeeded} XP</span>
               </div>
               <div className={`w-full h-3 rounded-full overflow-hidden p-0.5 border ${dark ? 'bg-play-card/80 border-blue-500/15' : 'bg-slate-100 border-slate-200'}`}>
-                <motion.div initial={{ width: 0 }} animate={{ width: `${xpPercent}%` }} transition={{ duration: 1, ease: 'easeOut' }} className={`h-full rounded-full ${dark ? 'bg-gradient-to-r from-amber-500 to-[var(--color-play-reward)]' : 'bg-slate-700'}`} />
+                <motion.div initial={{ width: 0 }} animate={{ width: `${xpPercent}%` }} transition={{ duration: 1, ease: 'easeOut' }} className={`h-full rounded-full ${dark ? 'bg-gradient-to-r from-play-reward/60 to-play-reward' : 'bg-slate-700'}`} />
               </div>
             </div>
 
