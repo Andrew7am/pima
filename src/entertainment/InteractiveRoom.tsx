@@ -2005,7 +2005,10 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                           <div className="grid grid-cols-2 gap-2 text-center">
                             <div className="bg-amber-50 p-2.5 rounded-xl">
                               <p className="text-[9.5px] text-amber-800">نقاط فريقك</p>
-                              <p className="text-base font-black text-amber-600 font-mono mt-0.5">{selfTeam.score}</p>
+                              {/* Same reward ink as the label above it: amber-600
+                                  measured 3.07:1 on this chip, and 16px bold sits
+                                  under the large-text threshold, so it needed 4.5. */}
+                              <p className="text-base font-black text-amber-800 font-mono mt-0.5">{selfTeam.score}</p>
                             </div>
                             <div className="bg-emerald-50 p-2.5 rounded-xl">
                               <p className="text-[9.5px] text-emerald-800">نقاطك الفردية</p>
@@ -2062,7 +2065,8 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                         {t.name}
                       </span>
                     </div>
-                    <span className="font-mono font-black text-amber-600 text-xs">{t.score} نقطة</span>
+                    {/* 12px score on a white row: amber-600 measured 3.19:1. */}
+                    <span className="font-mono font-black text-amber-800 text-xs">{t.score} نقطة</span>
                   </div>
                 ))}
               </div>
