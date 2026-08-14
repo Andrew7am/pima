@@ -169,15 +169,32 @@ export default function ParticipantsSheet({
         <div className="flex flex-col gap-2.5">
           <StatRow t={t} />
           <div className="flex gap-2">
+            {/* NOT ui/SearchInput, and not yet tokenised — deliberately, with
+                the reason recorded so the next pass does not have to re-derive
+                it. This sheet and the BottomSheet chrome around it are entirely
+                pre-theme: in dark mode the panel is still #FBF7F0 and thirty-six
+                surfaces inside it are still white or cream. A field that alone
+                followed --ds-surface would land at 15.8:1 against the panel it
+                sits on and 16.9:1 against the «تصفية» button beside it in this
+                same row — a black rectangle next to a white one. The colour has
+                to move when the sheet moves, and the sheet cannot move until
+                BottomSheet does, which six Owner screens also render.
+
+                What does not depend on any of that is applied here: the touch
+                floor, a real search type, an accessible name, and padding and
+                icon placement that follow the writing direction instead of
+                assuming Arabic. */}
             <div className="relative flex-1">
               <input
+                type="search"
+                aria-label="ابحث في المشاركين"
                 value={q} onChange={(e) => setQ(e.target.value)}
                 placeholder="ابحث باسم المشارك أو رقم الهاتف..."
-                className="w-full bg-white border rounded-xl py-2.5 pr-9 pl-3 text-[12.5px] focus:outline-none focus:ring-2 focus:ring-[#C5A059]/40"
+                className="w-full bg-white border rounded-xl min-h-11 py-2.5 ps-9 pe-3 text-[12.5px] focus:outline-none focus:ring-2 focus:ring-[#C5A059]/40 [&::-webkit-search-cancel-button]:appearance-none"
                 style={{ borderColor: LINE, color: '#4A4A3A' }}
               />
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"
-                className="absolute top-1/2 -translate-y-1/2 right-3" style={{ color: MUTED }}>
+                className="absolute top-1/2 -translate-y-1/2 start-3" style={{ color: MUTED }}>
                 <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
                 <path d="m20 20-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
