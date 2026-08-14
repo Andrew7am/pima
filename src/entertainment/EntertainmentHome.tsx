@@ -152,7 +152,7 @@ export default function EntertainmentHome({
     return (
       <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
         <div className="pima-play-wide px-4 pt-5 pb-12">
-          <button type="button" onClick={() => setSection('menu')} className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors mb-4">
+          <button type="button" onClick={() => setSection('menu')} className="pima-tap flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors mb-4">
             <ChevronRight className="w-4 h-4" /><span>رجوع للقائمة</span>
           </button>
           <h2 className="text-lg font-black text-white mb-4">{headers[section]}</h2>
@@ -309,20 +309,6 @@ export default function EntertainmentHome({
             {dark ? <Sun className="w-5 h-5 fill-current" /> : <Moon className="w-5 h-5" />}
           </button>
         </div>
-      </div>
-
-      {/* Night-mode bar */}
-      <div className={`p-4 rounded-[24px] border mb-6 flex items-center justify-between ${dark ? 'bg-gradient-to-r from-[#0f2142] to-[#162a54] border-blue-500/30 text-[var(--color-play-reward)]' : 'bg-white border-slate-200 text-slate-800'}`}>
-        <div className="flex items-center gap-3">
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${dark ? 'bg-play-reward/10 border border-play-reward/20 text-[var(--color-play-reward)]' : 'bg-slate-100 text-slate-600'}`}>
-            {dark ? <Moon className="w-5 h-5 fill-current" /> : <Sun className="w-5 h-5 fill-current" />}
-          </div>
-          <div className="text-right">
-            <h4 className="text-xs sm:text-sm font-black">الوضع الليلي وتعتيم الشاشة الذكي 🌙</h4>
-            <p className={`text-[10px] sm:text-xs font-bold leading-none mt-1 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{dark ? 'الوضع المظلم الفاخر نشط لحماية عينيك ✨' : 'شغّل الوضع المظلم لتقليل إجهاد العين 🕯️'}</p>
-          </div>
-        </div>
-        <button type="button" onClick={() => setIsDarkMode((v) => !v)} className={`px-4 py-2 rounded-xl text-[11px] font-black active:scale-95 ${dark ? 'bg-[var(--color-play-reward)] text-slate-950' : 'bg-slate-900 text-white'}`}>{dark ? '💡 نهاري' : '🌙 ليلي'}</button>
       </div>
 
       {/* Player profile card */}

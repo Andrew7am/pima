@@ -24,7 +24,7 @@ export default function AchievementsScreen({ currentUser, onBack }: Achievements
           <button
             type="button"
             onClick={onBack}
-            className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors"
+            className="pima-tap flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
             <span>رجوع</span>

@@ -250,7 +250,7 @@ export default function GamesCatalog({ currentUser, onBack, onUserUpdated, onAch
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors mb-4"
+          className="pima-tap flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors mb-4"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
           <span>رجوع</span>
