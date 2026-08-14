@@ -431,9 +431,9 @@ export default function UserDashboard({
         const s = copticSeason();
         if (s.season === 'ordinary') return null;
         return (
-          <div className="flex items-center justify-center gap-2 bg-gradient-to-l from-[var(--ds-brand)] to-[var(--ds-brand-2)] text-white rounded-2xl px-4 py-2.5 shadow-sm">
+          <div className="flex items-center justify-center gap-2 bg-gradient-to-l from-[var(--ds-brand)] to-[var(--ds-brand-2)] text-[var(--ds-on-brand)] rounded-2xl px-4 py-2.5 shadow-sm">
             <span className="text-[11px] font-black text-[var(--ds-accent)]">{s.label}</span>
-            <span className="w-1 h-1 rounded-full bg-white/40" />
+            <span className="w-1 h-1 rounded-full bg-[var(--ds-on-brand)]/40" />
             <span className="text-[11px] font-bold">{s.greeting}</span>
           </div>
         );
@@ -472,7 +472,7 @@ export default function UserDashboard({
           {/* Frosted white: saturated blur is what makes it read as glass over a
               photograph. The shadow is kept tight and low so it does not cast a
               grey band up across the banner it is sitting on. */}
-          <div className="flex items-center gap-1 bg-white/85 backdrop-blur-2xl backdrop-saturate-150 border border-white/80 rounded-full shadow-[0_6px_18px_-6px_rgba(45,45,36,0.22),0_1px_4px_rgba(45,45,36,0.06)] p-2">
+          <div className="flex items-center gap-1 bg-[var(--ds-surface)]/85 backdrop-blur-2xl backdrop-saturate-150 border border-[var(--ds-surface)]/80 rounded-full shadow-[0_6px_18px_-6px_rgba(45,45,36,0.22),0_1px_4px_rgba(45,45,36,0.06)] p-2">
             {/* DOM order is right-to-left on screen: map sits at the right end,
                 filter at the left, matching the approved layout. */}
             {onOpenMap && (
@@ -673,7 +673,7 @@ export default function UserDashboard({
               <>
                 <img src={cover} alt="" referrerPolicy="no-referrer" loading="lazy" aria-hidden="true"
                   className="absolute inset-y-0 right-0 w-24 h-full object-cover" />
-                <div className="absolute inset-y-0 right-0 w-36 bg-gradient-to-r from-white via-white/85 to-transparent" />
+                <div className="absolute inset-y-0 right-0 w-36 bg-gradient-to-r from-[var(--ds-surface)] via-[var(--ds-surface)]/85 to-transparent" />
               </>
             )}
             <div className="relative flex items-stretch justify-start divide-x divide-x-reverse divide-[var(--ds-border)] py-2.5 pl-3 pr-24">
@@ -821,7 +821,7 @@ export default function UserDashboard({
                 {/* Rating, and real popularity beside it (top-3 by confirmed
                     bookings over the last year — see mostBookedIds) */}
                 <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                  <span className="bg-white/95 backdrop-blur-sm text-[var(--ds-text)] text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                  <span className="bg-[var(--ds-surface)]/95 backdrop-blur-sm text-[var(--ds-text)] text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                     <span>{arabicDecimal(house.rating)}</span>
                   </span>
@@ -874,7 +874,7 @@ export default function UserDashboard({
                       tapFeedback();
                       onToggleFavorite(house.id);
                     }}
-                    className="bg-white/95 hover:bg-[var(--ds-surface)] text-rose-500 hover:text-rose-600 w-11 h-11 rounded-full grid place-items-center shadow transition-all duration-200 cursor-pointer"
+                    className="bg-[var(--ds-surface)]/95 hover:bg-[var(--ds-surface)] text-rose-500 hover:text-rose-600 w-11 h-11 rounded-full grid place-items-center shadow transition-all duration-200 cursor-pointer"
                     title={currentUser?.favorites?.includes(house.id) ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
                     aria-label={currentUser?.favorites?.includes(house.id) ? `إزالة ${house.name} من المفضلة` : `إضافة ${house.name} للمفضلة`}
                   >
@@ -888,7 +888,7 @@ export default function UserDashboard({
                     className={`w-11 h-11 rounded-full grid place-items-center shadow transition-all duration-200 cursor-pointer ${
                       comparedHouseIds.includes(house.id)
                         ? 'bg-amber-600 text-white hover:bg-amber-700'
-                        : 'bg-white/95 text-[var(--ds-text-faint)] hover:text-[var(--ds-primary)] hover:bg-[var(--ds-surface)]'
+                        : 'bg-[var(--ds-surface)]/95 text-[var(--ds-text-faint)] hover:text-[var(--ds-primary)] hover:bg-[var(--ds-surface)]'
                     }`}
                     title={comparedHouseIds.includes(house.id) ? 'إزالة من المقارنة' : 'إضافة للمقارنة والمفاضلة'}
                     aria-label={comparedHouseIds.includes(house.id) ? `إزالة ${house.name} من المقارنة` : `إضافة ${house.name} للمقارنة`}
