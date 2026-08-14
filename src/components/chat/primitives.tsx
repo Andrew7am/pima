@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, MessageCircle, Check, CheckCheck } from 'lucide-react';
+import { MessageCircle, Check, CheckCheck } from 'lucide-react';
+import SearchInput from '../ui/SearchInput';
 
 // Shared building blocks for the chat module. Everything the conversations list
 // and the thread both draw lives here once, so a radius or a shadow is changed
@@ -146,21 +147,29 @@ export function PimaFilterChip({
   );
 }
 
+/**
+ * The conversations search. A thin wrapper, not a second implementation: the
+ * field itself is the canonical ui/SearchInput, so the 44px floor, the logical
+ * padding, the icon side, the tokens and the focus ring all come from one
+ * place and stay in step with every other search in the product.
+ *
+ * The wrapper survives because its callers pass `onChange(value)` — a string,
+ * not an event — and that is the shape the chat module already speaks. Bridging
+ * it here keeps the public API of every existing call site intact.
+ */
 export function PimaSearchBar({
-  value, onChange, placeholder, id,
-}: { value: string; onChange: (v: string) => void; placeholder: string; id?: string }) {
+  value, onChange, placeholder, id, ariaLabel,
+}: { value: string; onChange: (v: string) => void; placeholder: string; id?: string; ariaLabel?: string }) {
   return (
-    <div className="relative">
-      <Search className="w-4 h-4 text-[var(--ds-text-faint)] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-      <input
-        id={id}
-        type="search"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full h-12 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl pr-10 pl-3 text-[12px] text-[var(--ds-text-strong)] placeholder:text-[var(--ds-text-faint)] outline-none focus:border-[#C9A96A] transition-colors duration-[250ms]"
-      />
-    </div>
+    <SearchInput
+      id={id}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      // A placeholder is not an accessible name. The row has no space for a
+      // visible label, so the field carries one of its own.
+      aria-label={ariaLabel ?? placeholder}
+    />
   );
 }
 
