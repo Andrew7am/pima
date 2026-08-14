@@ -7,9 +7,10 @@ import {
   Printer, Building, AlertTriangle, Bell, Smartphone, CreditCard, 
   Coins, Upload, ShieldCheck, Image, Check, Sparkles, ListTodo, Plus, Trash2, BookOpen,
   FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft, CalendarPlus, Star, X, UserPlus,
-  Search, ArrowDownWideNarrow, Copy
+  ArrowDownWideNarrow, Copy
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
+import SearchInput from './ui/SearchInput';
 import HouseNeighbours from './house/HouseNeighbours';
 import BookingJourney from './BookingJourney';
 import BookingChatPanel from './BookingChatPanel';
@@ -734,16 +735,18 @@ export default function UserBookings({
           {/* Search — a guest hunting for one booking has the place name or the
               reference, so both match. */}
           <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ds-text-faint)] pointer-events-none" />
-              <input
-                id="bookings-search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث باسم المكان أو رقم الحجز"
-                className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl min-h-11 pr-10 pl-3 text-[11px] font-bold text-[var(--ds-text)] placeholder:text-[var(--ds-text-faint)] focus:outline-none focus:border-[var(--ds-accent)] shadow-sm"
-              />
-            </div>
+            {/* The canonical search control. It owns the icon, the logical
+                padding and the focus ring, so the hand-rolled wrapper this
+                replaces is gone rather than nested. aria-label, not a label:
+                the row has no space for one, and a placeholder is not a name. */}
+            <SearchInput
+              id="bookings-search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ابحث باسم المكان أو رقم الحجز"
+              aria-label="ابحث في حجوزاتك"
+              wrapperClassName="flex-1 min-w-0"
+            />
             {search && (
               <button
                 onClick={() => setSearch('')}
