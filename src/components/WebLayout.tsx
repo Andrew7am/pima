@@ -45,6 +45,20 @@ interface NavItem {
 // الخريطة is deliberately NOT here: it is the same search drawn on a map, so it
 // lives as a button beside the search box on the browse screen. Freeing that
 // slot is also what lets an odd number of tabs centre the home tab exactly.
+// Entertainment is a mode, not a screen. Its pages already paint the canonical
+// play gradient on themselves, but at sm+ they drop the `-mx-4 -my-6` breakout
+// and become a rounded card — which then floats inside <main>'s light padding,
+// reading as a dark rectangle dropped into a light app. Carrying the same
+// gradient on <main> for these screens puts that card on matching ground so the
+// environment reaches the shell edges instead of stopping at a white frame.
+// Scoped by screen id: every other Pima screen keeps the light shell untouched.
+const ENTERTAINMENT_SCREENS: Screen[] = [
+  'entertainment', 'trivia', 'whoami', 'hymns', 'fillverse',
+  'multiplayer_lobby', 'live_match', 'random_match', 'games_catalog',
+  'achievements', 'friends', 'chat_thread', 'leaderboard',
+  'interactive_room', 'conference_hub', 'rewards',
+];
+
 const NAV_ITEMS: NavItem[] = [
   { id: 'entertainment', label: 'الترفيه',         icon: <Sparkles className="w-5 h-5" />,  roles: ['individual', 'servant'] },
   { id: 'messages',      label: 'المحادثات',       icon: <MessageCircle className="w-5 h-5" />, roles: ['individual', 'servant'] },
@@ -283,8 +297,17 @@ export default function WebLayout({
           )}
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        {/* Page Content — in Entertainment the same play gradient the screens
+            paint on themselves continues out here, so the mode owns the whole
+            content area rather than sitting in it as a dark tile. Padding,
+            scrolling and flex behaviour are untouched. */}
+        <main
+          className={`flex-1 overflow-y-auto p-4 sm:p-6 ${
+            ENTERTAINMENT_SCREENS.includes(activeScreen)
+              ? 'bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)]'
+              : ''
+          }`}
+        >
           {children}
         </main>
       </div>
