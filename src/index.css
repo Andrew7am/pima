@@ -812,6 +812,27 @@ body {
 
 /* Chat wallpaper: the Pima cross at ~2%, large enough that it reads as paper
    grain rather than a pattern, over the cream the rest of the app uses. */
+/* Pima's identity panel — the navy field behind an avatar.
+
+   --ds-brand deliberately inverts to near-white in dark so the brand mark
+   still reads on a dark ground, and for a 48px nav disc or a chip that is
+   exactly right. On a 300px profile hero it is not: it turns the largest
+   surface on the screen into a cream slab sitting in a dark page.
+
+   The token is not the problem — 108 of its 144 uses are text-, where the
+   light value is what makes them legible. Only large brand SURFACES need a
+   different treatment, so the panel takes the surface hierarchy in dark
+   (surface → raised) and keeps its own place above the page without becoming
+   the brightest thing on it. Light is untouched: same gradient, same tokens. */
+.pima-brand-panel {
+  background-image: linear-gradient(to bottom right, var(--ds-brand), var(--ds-brand-2));
+  color: var(--ds-on-brand);
+}
+:root[data-theme='dark'] .pima-brand-panel {
+  background-image: linear-gradient(to bottom right, var(--ds-surface), var(--ds-raised));
+  color: var(--ds-text);
+}
+
 .pima-chat-bg {
   /* The thread's ground. Was #FBF9F4, which is --ds-bg to within one unit per
      channel in light and a bright cream slab in dark — the single largest

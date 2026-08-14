@@ -222,14 +222,6 @@ function Avatar({ user, size, onClick }: { user: User; size: number; onClick?: (
   );
 }
 
-/** The dark identity panel behind the avatar. Physical `to bottom right`, not
- *  a logical direction: it is the same diagonal in both writing directions and
- *  flipping it in RTL would be a change, not a fix. */
-const BRAND_PANEL: React.CSSProperties = {
-  backgroundImage: 'linear-gradient(to bottom right, var(--ds-brand), var(--ds-brand-2))',
-  color: 'var(--ds-on-brand)',
-};
-
 export default function ProfileScreen({
   currentUser, onLogout, onBack, onNavigateSupport, onNavigatePrivacy, onDeleteAccount, onUpdateAvatar, reviews, houses,
   bookings = [], onNavigateBookings, initialView = 'hub', onInitialViewConsumed,
@@ -327,7 +319,7 @@ export default function ProfileScreen({
         </div>
 
         {/* Avatar + change photo */}
-        <div className="rounded-3xl p-6 flex flex-col items-center gap-3 relative overflow-hidden" style={BRAND_PANEL}>
+        <div className="pima-brand-panel rounded-3xl p-6 flex flex-col items-center gap-3 relative overflow-hidden">
           <div className="absolute -top-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
           <div
             className="absolute -bottom-12 -right-8 w-32 h-32 rounded-full blur-2xl pointer-events-none"
@@ -448,7 +440,7 @@ export default function ProfileScreen({
   return (
     <div className="space-y-4 text-right animate-in fade-in duration-200 pb-10">
       {/* Hero — avatar is the entry to personal data */}
-      <div className="rounded-3xl p-6 flex flex-col items-center gap-3 relative overflow-hidden" style={BRAND_PANEL}>
+      <div className="pima-brand-panel rounded-3xl p-6 flex flex-col items-center gap-3 relative overflow-hidden">
         <div className="absolute -top-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
         <div
           className="absolute -bottom-12 -right-8 w-36 h-36 rounded-full blur-2xl pointer-events-none"
