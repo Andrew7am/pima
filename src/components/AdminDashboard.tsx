@@ -844,9 +844,20 @@ export default function AdminDashboard({
     setActiveTab(tab);
   };
 
+  // Wide tier: the admin panel is a dashboard, not a reading surface — its
+  // densest structure is a 4-column grid, so `pima-page-content` would squeeze
+  // those cells to 206px. It is also not a full-width surface: the panel holds
+  // no table at all (zero <table> in the rendered DOM across all five tabs) and
+  // nothing scrolls horizontally, so `pima-page-full` would be a no-op label on
+  // an already-uncapped root — at 1920 it leaves 455px cells around text whose
+  // widest run is 189px. 1320 lands those cells at 321px.
+  // The sticky tab bar below is a direct child and narrows with this container,
+  // which is what keeps it aligned to the content it belongs to; it stays
+  // `position: sticky`. The seven `fixed inset-0` modals are out of flow and
+  // unaffected. No wrapper, so `space-y-4` keeps the same children.
   return (
-    <div className="space-y-4 text-right text-[#4A4A3A]">
-      
+    <div className="pima-page-wide space-y-4 text-right text-[#4A4A3A]">
+
       {/* Admin header — says at a glance whether anything needs the admin */}
       <div className="bg-gradient-to-r from-[#0A2342] to-[#123E75] text-white rounded-3xl p-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
