@@ -399,7 +399,7 @@ export const RoomHostDashboard: React.FC<RoomHostDashboardProps> = ({
                     <div className="flex items-center gap-2">
                       {/* Quick assignment dropdown */}
                       <select
-                        value={p.teamId || ''}
+                        aria-label="تعيين فريق المشارك" value={p.teamId || ''}
                         onChange={(e) => onAssignTeamManual(p.id, e.target.value)}
                         className="bg-white border text-[10px] font-black rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500"
                       >

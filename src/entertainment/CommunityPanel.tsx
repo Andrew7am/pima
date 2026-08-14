@@ -108,7 +108,7 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             maxLength={400}
-            className="w-full bg-play-card/70 border border-white/10 rounded-2xl p-3 text-xs leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-[#F5C542]/60"
+            className="w-full bg-play-card/70 border border-white/10 rounded-2xl p-3 text-xs leading-relaxed text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#F5C542]/60"
             rows={3}
           />
           <div className="flex justify-between items-center">
@@ -133,7 +133,7 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
         </h3>
 
         {loading ? (
-          <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 text-slate-500 animate-spin" /></div>
+          <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 text-slate-400 animate-spin" /></div>
         ) : prayers.length === 0 ? (
           <div className="bg-white/5 border border-dashed border-white/15 rounded-3xl p-6 text-center text-slate-400 text-[12px] font-bold">
             كن أول من يشارك طلبة صلاة 🙏
@@ -143,11 +143,11 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
             {prayers.map((pr) => (
               <div key={pr.id} className="bg-[#0b1b36]/80 border border-white/10 p-4 rounded-2xl space-y-3 text-right">
                 <div className="flex justify-between items-start">
-                  <span className="text-[9px] text-slate-500 font-bold">{formatWhen(pr.createdAt)}</span>
+                  <span className="text-[9px] text-slate-400 font-bold">{formatWhen(pr.createdAt)}</span>
                   <div className="flex items-center gap-2">
                     <div className="text-right">
                       <span className="text-[10.5px] font-black text-white block">{pr.authorName}</span>
-                      <span className="text-[8.5px] text-slate-500 font-bold block mt-0.5">{pr.church}</span>
+                      <span className="text-[8.5px] text-slate-400 font-bold block mt-0.5">{pr.church}</span>
                     </div>
                     <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xs">🙏</div>
                   </div>
@@ -171,7 +171,7 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-[var(--ds-accent)]">{pr.prayersCount} أخ يصلي لأجل هذه الطلبة</span>
                     {pr.isMine && (
-                      <button onClick={() => handleDelete(pr.id)} title="حذف طلبتي" className="p-1 rounded-md text-slate-500 hover:text-rose-400 hover:bg-white/5">
+                      <button onClick={() => handleDelete(pr.id)} title="حذف طلبتي" className="p-1 rounded-md text-slate-400 hover:text-rose-400 hover:bg-white/5">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}

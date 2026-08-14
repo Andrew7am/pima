@@ -107,7 +107,7 @@ export default function ChatThreadScreen({ currentUser, friendId, friendName, on
           ) : messages.length === 0 ? (
             <div className="text-center py-10">
               <MessageCircle className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-              <p className="text-xs text-slate-500 font-bold">ابدأ المحادثة مع {friendName}</p>
+              <p className="text-xs text-slate-400 font-bold">ابدأ المحادثة مع {friendName}</p>
             </div>
           ) : (
             messages.map((m) => {
@@ -124,7 +124,7 @@ export default function ChatThreadScreen({ currentUser, friendId, friendName, on
                   >
                     {m.content}
                   </div>
-                  <p className={`text-[9px] text-slate-500 font-bold mt-1 px-1 ${isMine ? 'text-left' : 'text-right'}`}>
+                  <p className={`text-[9px] text-slate-400 font-bold mt-1 px-1 ${isMine ? 'text-left' : 'text-right'}`}>
                     {formatTime(m.createdAt)}
                   </p>
                 </div>
@@ -143,7 +143,7 @@ export default function ChatThreadScreen({ currentUser, friendId, friendName, on
             onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
             placeholder="اكتب رسالة..."
             maxLength={2000}
-            className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-500/40 transition-colors min-w-0"
+            className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-amber-500/40 transition-colors min-w-0"
           />
           <button aria-label="إرسال الرسالة"
             type="button"

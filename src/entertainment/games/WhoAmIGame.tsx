@@ -266,7 +266,7 @@ export default function WhoAmIGame({ currentUser, onBack, onUserUpdated, onAchie
             if (answered) {
               if (isCorrect) style = 'bg-emerald-500/15 border-emerald-500/50 text-emerald-200';
               else if (isPicked) style = 'bg-rose-500/15 border-rose-500/50 text-rose-200';
-              else style = 'bg-white/[0.03] border-white/5 text-slate-500';
+              else style = 'bg-white/[0.03] border-white/5 text-slate-400';
             }
             return (
               <button

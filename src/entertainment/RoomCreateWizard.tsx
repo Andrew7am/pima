@@ -660,7 +660,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                               <span className="text-xs font-bold text-slate-400 font-mono">#{idx+1}</span>
                               <input 
                                 type="text"
-                                value={team.name}
+                                aria-label="اسم الفريق" value={team.name}
                                 onChange={(e) => updateTeamConfig(team.id, { name: e.target.value })}
                                 className="text-xs font-black text-slate-800 bg-slate-50 hover:bg-slate-100 focus:bg-white rounded-lg px-2 py-1 flex-1 text-right focus:outline-none focus:ring-1 focus:ring-amber-500"
                               />

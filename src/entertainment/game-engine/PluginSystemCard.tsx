@@ -78,8 +78,8 @@ export const PluginSystemCard: React.FC<PluginSystemCardProps> = ({
       <div className="relative z-10 border-t border-white/5 pt-2 flex justify-between items-center">
         {/* Core Engine Hooks badge list */}
         <div className="flex gap-1">
-          <span className="text-[8px] bg-white/5 text-slate-500 font-black px-1.5 py-0.5 rounded-md">T</span>
-          <span className="text-[8px] bg-white/5 text-slate-500 font-black px-1.5 py-0.5 rounded-md">S</span>
+          <span className="text-[8px] bg-white/5 text-slate-400 font-black px-1.5 py-0.5 rounded-md">T</span>
+          <span className="text-[8px] bg-white/5 text-slate-400 font-black px-1.5 py-0.5 rounded-md">S</span>
         </div>
 
         {role === 'host' ? (
@@ -96,7 +96,7 @@ export const PluginSystemCard: React.FC<PluginSystemCardProps> = ({
             <span>{isActive ? 'قيد اللعب' : 'تشغيل اللعبة'}</span>
           </button>
         ) : (
-          <span className="text-[8px] text-slate-500 italic font-medium">بانتظار المنظم</span>
+          <span className="text-[8px] text-slate-400 italic font-medium">بانتظار المنظم</span>
         )}
       </div>
     </motion.div>

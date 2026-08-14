@@ -40,7 +40,7 @@ export default function AchievementsScreen({ currentUser, onBack }: Achievements
           <div>
             <p className="text-[10px] text-slate-400 font-bold mb-1">إنجازاتك المكتملة</p>
             <p className="text-2xl font-black text-white">
-              {unlockedCount}<span className="text-slate-500 text-base"> / {ACHIEVEMENTS.length}</span>
+              {unlockedCount}<span className="text-slate-400 text-base"> / {ACHIEVEMENTS.length}</span>
             </p>
           </div>
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-lg text-3xl">
@@ -90,7 +90,7 @@ export default function AchievementsScreen({ currentUser, onBack }: Achievements
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <p className="text-[9px] text-slate-500 font-bold tabular-nums">{progress} / {a.target}</p>
+                      <p className="text-[9px] text-slate-400 font-bold tabular-nums">{progress} / {a.target}</p>
                     </div>
                   )}
 

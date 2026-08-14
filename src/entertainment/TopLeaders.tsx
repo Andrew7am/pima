@@ -141,9 +141,9 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
               could never be seen. */}
           {podiumData.length === 0 && (
             <div className="w-full mb-16 py-10 px-6 rounded-3xl bg-white/5 border border-white/10 text-center">
-              <Trophy className="w-8 h-8 text-slate-500 mx-auto mb-3" />
+              <Trophy className="w-8 h-8 text-slate-400 mx-auto mb-3" />
               <p className="text-sm font-black text-slate-300 mb-1">لسه محدش دخل الصدارة</p>
-              <p className="text-[11px] text-slate-500">إلعب أي لعبة واكسب نقط، وهتكون أول واحد هنا.</p>
+              <p className="text-[11px] text-slate-400">إلعب أي لعبة واكسب نقط، وهتكون أول واحد هنا.</p>
             </div>
           )}
           {podiumData.length > 0 && <div className="flex items-end justify-center gap-4 sm:gap-8 w-full mb-16">
@@ -277,7 +277,7 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
               {/* Scrollable Ranking Preview */}
               <div className="w-full max-w-md bg-black/30 rounded-3xl p-2 border border-white/5 mb-8 overflow-hidden">
                  <div className="flex justify-between items-center px-4 py-3 border-b border-white/5">
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">المنافسون المباشرون</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">المنافسون المباشرون</p>
                     <div className="flex items-center gap-1.5">
                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.5)]" />
                        <span className="text-[9px] text-blue-400 font-black">قائمة متفاعلة</span>
@@ -300,7 +300,7 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
                           }`}
                         >
                            <div className="flex items-center gap-3">
-                             <div className={`w-5 h-5 flex items-center justify-center rounded-lg text-[9px] font-black ${isUser ? 'bg-blue-500 text-white' : 'bg-white/10 text-slate-500'}`}>
+                             <div className={`w-5 h-5 flex items-center justify-center rounded-lg text-[9px] font-black ${isUser ? 'bg-blue-500 text-white' : 'bg-white/10 text-slate-400'}`}>
                                 {player.rank}
                              </div>
                              <div className="flex items-center gap-2">
@@ -318,7 +318,7 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
                            </div>
                            <div className="flex items-center gap-2">
                               <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${isUser ? 'bg-blue-500/20' : 'bg-black/20'}`}>
-                                <Star className={`w-3 h-3 ${isUser ? 'text-amber-400' : 'text-slate-500'}`} />
+                                <Star className={`w-3 h-3 ${isUser ? 'text-amber-400' : 'text-slate-400'}`} />
                                 <span className={`text-[10px] font-mono font-black ${isUser ? 'text-amber-400' : 'text-slate-400'}`}>
                                   {(player.points || 0).toLocaleString('ar-EG')}
                                 </span>
@@ -333,7 +333,7 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
                  </div>
                  
                  <div className="p-3 text-center border-t border-white/5 bg-white/5">
-                    <p className="text-[9px] text-slate-500 font-black">اسحب للأعلى لرؤية المزيد من المنافسين 👆</p>
+                    <p className="text-[9px] text-slate-400 font-black">اسحب للأعلى لرؤية المزيد من المنافسين 👆</p>
                  </div>
               </div>
 
@@ -361,7 +361,7 @@ export const TopLeaders: React.FC<TopLeadersProps> = ({ currentUser }) => {
                       <div className={`${stat.bg} p-2 rounded-xl mb-2 group-hover:scale-110 transition-transform`}>
                          <stat.icon className={`w-4 h-4 ${stat.color}`} />
                       </div>
-                      <p className="text-[9px] text-slate-500 font-bold mb-1">{stat.label}</p>
+                      <p className="text-[9px] text-slate-400 font-bold mb-1">{stat.label}</p>
                       <p className={`text-sm font-black ${stat.color}`}>{stat.value}</p>
                    </motion.div>
                  ))}

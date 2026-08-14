@@ -82,7 +82,7 @@ function HubCard({ icon, title, badge, badgeCls, desc, onClick, borderHover, che
         </div>
         <p className="text-[10.5px] text-slate-400 leading-relaxed">{desc}</p>
       </div>
-      <ChevronRight className={`w-4 h-4 text-slate-500 ${chevronHover} transition-colors rotate-180 shrink-0`} />
+      <ChevronRight className={`w-4 h-4 text-slate-400 ${chevronHover} transition-colors rotate-180 shrink-0`} />
     </button>
   );
 }

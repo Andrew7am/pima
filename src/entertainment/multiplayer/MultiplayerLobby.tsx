@@ -205,7 +205,7 @@ export default function MultiplayerLobby({ currentUser, onBack, onEnterMatch }: 
           </div>
         </div>
 
-        <div className="pt-2 flex items-center justify-center gap-2 text-[10px] text-slate-500">
+        <div className="pt-2 flex items-center justify-center gap-2 text-[10px] text-slate-400">
           <Zap className="w-3 h-3" />
           <span>فوز: +25 تقييم | تعادل: 0 | خسارة: -15</span>
         </div>

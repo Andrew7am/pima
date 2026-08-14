@@ -157,3 +157,92 @@ describe('Entertainment — buttons carry a name', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+/**
+ * Contrast: text-slate-500 must never sit on an Entertainment dark ground.
+ *
+ * #64748B measures 2.95:1 on the tile — under even the 3:1 large-text floor.
+ * It is NOT banned outright, because Entertainment also has genuinely light
+ * surfaces (the lecture reading modal's normal/sepia themes, the module cards)
+ * where it is correct at 4.76:1. The rule is contextual, so the test is too.
+ */
+describe('Entertainment — slate-500 never lands on a dark ground', () => {
+  const srgb = (c: number) => { const x = c / 255; return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
+  const lum = (hex: string) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    return 0.2126 * srgb(r) + 0.7152 * srgb(g) + 0.0722 * srgb(b);
+  };
+  const ratio = (a: string, b: string) => {
+    const [hi, lo] = [lum(a), lum(b)].sort((p, q) => q - p);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+
+  const GROUNDS = { page: '#0A1428', card: '#081326', raised: '#122244', tile: '#152A55' };
+  const SLATE_400 = '#94A3B8';
+  const SLATE_500 = '#64748B';
+
+  it('confirms the colour that was replaced really did fail', () => {
+    // If this ever stops failing, the grounds moved and the whole rule needs
+    // rechecking — so the premise is asserted, not assumed.
+    const worst = Math.min(...Object.values(GROUNDS).map((g) => ratio(SLATE_500, g)));
+    expect(worst).toBeLessThan(3.0);
+  });
+
+  it('confirms the replacement clears AA body text on every ground', () => {
+    for (const [name, g] of Object.entries(GROUNDS)) {
+      const r = ratio(SLATE_400, g);
+      expect(r, `slate-400 on ${name}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('leaves no slate-500 on a dark game surface', () => {
+    // The dark surfaces are named by token or by a very dark literal. A line
+    // that offers BOTH slate-400 and slate-500 is an intentional dark/light
+    // conditional and is correct as written.
+    const DARK = /\[var\(--color-play-(?:bg|card|card-raised|tile|tile-deep|page-mid|page-deep)\)\]|(?:bg|from|via|to)-play-(?:bg|card|card-raised|tile)|bg-white\/\[0\.0\d\]/;
+    const offenders: string[] = [];
+    for (const f of FILES) {
+      const lines = strip(readFileSync(f, 'utf8')).split('\n');
+      lines.forEach((line, i) => {
+        if (!/text-slate-500/.test(line)) return;
+        if (/text-slate-(300|400)/.test(line)) return;   // intentional conditional
+        if (DARK.test(line)) offenders.push(`${rel(f)}:${i + 1}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('keeps the wholly-dark screens free of it entirely', () => {
+    // The same-line check above cannot see a ground declared on an ancestor.
+    // These twelve screens were each verified to have NO light surface behind
+    // any slate-500 they carried, so for them the rule is absolute: zero. That
+    // is a much tighter guard than a heuristic, and it is the one that would
+    // catch a regression reintroducing the colour into a game screen.
+    const DARK_ONLY = [
+      'RandomMatchGame.tsx', 'multiplayer/LiveMatchGame.tsx', 'multiplayer/RoomChat.tsx',
+      'AchievementsScreen.tsx', 'AdGateModal.tsx', 'ChatThreadScreen.tsx',
+      'game-engine/PluginSystemCard.tsx', 'GamesCatalog.tsx', 'multiplayer/MultiplayerLobby.tsx',
+      'FriendChat.tsx', 'CommunityPanel.tsx', 'TopLeaders.tsx',
+      'games/MCQGame.tsx', 'games/WhoAmIGame.tsx',
+    ];
+    const offenders: string[] = [];
+    for (const name of DARK_ONLY) {
+      const f = FILES.find((p) => rel(p) === name);
+      expect(f, `${name} should exist`).toBeTruthy();
+      const n = (readFileSync(f!, 'utf8').match(/text-slate-500/g) || []).length;
+      if (n > 0) offenders.push(`${name} (${n})`);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('does NOT purge slate-500 from the light surfaces where it is correct', () => {
+    // Guards against someone "fixing" this with a global replace. On white,
+    // slate-500 measures 4.76:1 and slate-400 only 2.85:1 — a blanket swap
+    // would trade one failure for a worse one.
+    let remaining = 0;
+    for (const f of FILES) remaining += (readFileSync(f, 'utf8').match(/text-slate-500/g) || []).length;
+    expect(remaining).toBeGreaterThan(40);
+    expect(ratio(SLATE_500, '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(SLATE_400, '#FFFFFF')).toBeLessThan(3.0);
+  });
+});

@@ -1636,7 +1636,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                             {/* Dropdown manually assigning teams (Drag-alternative) */}
                             {(role as string) === 'host' && p.approved && !p.isHost && (
                               <select
-                                value={p.teamId || ''}
+                                aria-label="تعيين فريق المشارك" value={p.teamId || ''}
                                 onChange={(e) => handleAssignTeamManual(p.id, e.target.value)}
                                 className="bg-slate-100 text-[9.5px] font-black rounded-lg border-none px-1 py-0.5"
                               >

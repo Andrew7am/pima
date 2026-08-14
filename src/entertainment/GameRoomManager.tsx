@@ -365,7 +365,7 @@ export const GameRoomManager: React.FC<GameRoomManagerProps> = (props) => {
                     {/* Team Selector */}
                     <div className="flex gap-2">
                       <select
-                        value={selectedTeamForPoints}
+                        aria-label="اختر فريقاً لتعديل النقاط" value={selectedTeamForPoints}
                         onChange={(e) => setSelectedTeamForPoints(e.target.value)}
                         className="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg p-1.5 text-xs font-bold w-full focus:outline-none focus:border-amber-500"
                       >

@@ -816,7 +816,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
               </div>
               <span className="text-xs font-black text-white truncate max-w-[100px]">{meName}</span>
             </div>
-            <span className="text-2xl font-black text-slate-500">VS</span>
+            <span className="text-2xl font-black text-slate-400">VS</span>
             <div className="flex flex-col items-center gap-2">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center text-2xl font-black text-white shadow-xl">
                 {oppName?.charAt(0) ?? '?'}
@@ -920,7 +920,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
             <span className="mx-1">مقابل</span>
             <span className="font-black text-white">{oppScore}</span>
             {' — '}
-            <span className="text-slate-500">{oppName}</span>
+            <span className="text-slate-400">{oppName}</span>
           </p>
 
           {/* A practice match pays nothing, and says so.
@@ -930,7 +930,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
           {driver.isPractice && (
             <div className="bg-white/5 border border-white/15 rounded-2xl p-3 text-center">
               <p className="text-[11px] font-black text-slate-300">🤖 تدريب مع بوت</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">مفيش تقييم ولا خبرة ولا عملات — دي للتجربة بس.</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">مفيش تقييم ولا خبرة ولا عملات — دي للتجربة بس.</p>
             </div>
           )}
 
@@ -1204,15 +1204,15 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
           <div className="text-center min-w-0">
             <p className="text-[10px] font-bold text-slate-400 truncate">{meName ?? 'أنت'}</p>
             <p className="text-2xl font-black text-emerald-400">{meScore}</p>
-            <p className="text-[9px] text-slate-500">{meRating ?? 100} 🏆</p>
+            <p className="text-[9px] text-slate-400">{meRating ?? 100} 🏆</p>
           </div>
           <div className="text-center">
-            <p className="text-[11px] font-black text-slate-500">VS</p>
+            <p className="text-[11px] font-black text-slate-400">VS</p>
           </div>
           <div className="text-center min-w-0">
             <p className="text-[10px] font-bold text-slate-400 truncate">{oppName ?? 'الخصم'}</p>
             <p className="text-2xl font-black text-rose-400">{oppScore}</p>
-            <p className="text-[9px] text-slate-500">{oppRating ?? 100} 🏆</p>
+            <p className="text-[9px] text-slate-400">{oppRating ?? 100} 🏆</p>
           </div>
         </div>
 
@@ -1305,11 +1305,11 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
                 } else if (iAnswered && !showFeedback) {
                   // I've answered but opponent hasn't yet — highlight only my pick
                   if (isPicked) style = 'bg-amber-500/10 border-amber-500/40 text-amber-200';
-                  else style = 'bg-white/[0.03] border-white/5 text-slate-500';
+                  else style = 'bg-white/[0.03] border-white/5 text-slate-400';
                 } else if (showFeedback) {
                   if (isCorrect) style = 'bg-emerald-500/15 border-emerald-500/50 text-emerald-200';
                   else if (isPicked) style = 'bg-rose-500/15 border-rose-500/50 text-rose-200';
-                  else style = 'bg-white/[0.03] border-white/5 text-slate-500';
+                  else style = 'bg-white/[0.03] border-white/5 text-slate-400';
                 }
                 const clickable = !iAnswered && !submitting && !isRemoved;
                 return (
@@ -1389,7 +1389,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
                 </button>
               </>
             ) : (
-              <p className="text-[10px] text-slate-500 text-center">
+              <p className="text-[10px] text-slate-400 text-center">
                 لو الخصم مردش خلال {Math.max(0, ABANDON_SECONDS - stalledFor)} ثانية هتقدر تنهي المباراة.
               </p>
             )}
@@ -1408,7 +1408,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
             {/* Says the pause is on purpose. Without it a deliberate beat and
                 a stalled connection look exactly the same. */}
             {holdingReveal && (
-              <div className="flex items-center gap-2 text-[10px] font-black text-slate-500 pt-0.5">
+              <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 pt-0.5">
                 <span className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
                   <span
                     className="block h-full bg-amber-400/70 rounded-full"

@@ -1044,7 +1044,7 @@ export default function RandomMatchGame({
               >
                 <div className="flex items-center justify-between">
                   <Users className="w-7 h-7 text-purple-400 shrink-0" />
-                  <ChevronLeft className="w-4 h-4 text-slate-500" />
+                  <ChevronLeft className="w-4 h-4 text-slate-400" />
                 </div>
                 <p className="text-xs font-black text-white mt-2">اللعب مع صديق</p>
                 <p className="text-[9px] text-slate-400 font-bold mt-0.5">تحدَّ أصدقاءك الآن</p>
@@ -1057,7 +1057,7 @@ export default function RandomMatchGame({
                 >
                   <div className="flex items-center justify-between">
                     <Gift className="w-7 h-7 text-cyan-400 shrink-0" />
-                    <ChevronLeft className="w-4 h-4 text-slate-500" />
+                    <ChevronLeft className="w-4 h-4 text-slate-400" />
                   </div>
                   <p className="text-xs font-black text-white mt-2">الجوائز والتحدي اليومي</p>
                   <p className="text-[9px] text-slate-400 font-bold mt-0.5">عجلة الحظ وتحدي اليوم</p>
@@ -1170,7 +1170,7 @@ export default function RandomMatchGame({
                 >
                   <span className="text-base">🤖</span>
                   <span className="text-[11px] font-black">تدريب مع بوت</span>
-                  <span className="text-[9px] font-bold text-slate-500">— من غير نقط ولا تقييم</span>
+                  <span className="text-[9px] font-bold text-slate-400">— من غير نقط ولا تقييم</span>
                 </button>
               )}
 
@@ -1191,7 +1191,7 @@ export default function RandomMatchGame({
                 </button>
 
                 <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-blue-500/10 space-y-2.5">
-                  <span className="text-[9px] font-black text-slate-500 block uppercase tracking-widest text-center">لديك كود؟ ادخل الميدان الآن</span>
+                  <span className="text-[9px] font-black text-slate-400 block uppercase tracking-widest text-center">لديك كود؟ ادخل الميدان الآن</span>
                   <div className="flex gap-2">
                     <input aria-label="كود الغرفة (ROOM-XXXX)"
                       type="text"
@@ -1220,16 +1220,16 @@ export default function RandomMatchGame({
                 { label: 'الوضع', val: 'مباشر ⚡', icon: <Zap className="w-3 h-3" /> }
               ].map((item, i) => (
                 <div key={i} className="bg-slate-900/40 border border-white/5 p-2 rounded-xl flex flex-col items-center justify-center">
-                  <div className="text-slate-500 mb-0.5">{item.icon}</div>
+                  <div className="text-slate-400 mb-0.5">{item.icon}</div>
                   <span className="text-[9px] font-black text-slate-100">{item.val}</span>
-                  <span className="text-[8px] text-slate-500 font-bold">{item.label}</span>
+                  <span className="text-[8px] text-slate-400 font-bold">{item.label}</span>
                 </div>
               ))}
             </div>
 
             <button 
               onClick={() => { setJoinError(''); setScreen('league_info'); }}
-              className="relative z-10 text-[10px] font-black text-slate-500 hover:text-white transition-all py-2 px-6 rounded-full border border-white/5 hover:bg-white/5"
+              className="relative z-10 text-[10px] font-black text-slate-400 hover:text-white transition-all py-2 px-6 rounded-full border border-white/5 hover:bg-white/5"
             >
               العودة للقائمة الرئيسية
             </button>
@@ -1285,7 +1285,7 @@ export default function RandomMatchGame({
               <motion.button
                 whileHover={{ x: -4 }}
                 onClick={() => setScreen('friend_menu')}
-                className="text-[11px] font-black text-slate-500 hover:text-rose-400 transition-all cursor-pointer flex items-center gap-2 mx-auto px-4 py-2 rounded-full hover:bg-rose-500/5"
+                className="text-[11px] font-black text-slate-400 hover:text-rose-400 transition-all cursor-pointer flex items-center gap-2 mx-auto px-4 py-2 rounded-full hover:bg-rose-500/5"
               >
                 <ArrowRight className="w-4 h-4" />
                 <span>العدول عن الإنشاء والعودة للمنصة</span>
@@ -1325,7 +1325,7 @@ export default function RandomMatchGame({
               <div className="bg-white/5 backdrop-blur-2xl rounded-[32px] p-8 border border-white/10 shadow-2xl relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 
-                <span className="text-[9px] text-slate-500 font-black block uppercase tracking-[0.3em] mb-4">ACCESS TOKEN</span>
+                <span className="text-[9px] text-slate-400 font-black block uppercase tracking-[0.3em] mb-4">ACCESS TOKEN</span>
                 <div className="text-4xl font-black font-mono text-amber-400 tracking-[0.2em] mb-8 select-all drop-shadow-glow">{roomCode}</div>
                 
                 <div className="flex flex-col gap-3">
@@ -1370,7 +1370,7 @@ export default function RandomMatchGame({
                     className="h-full bg-rose-500/50"
                   />
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold">
+                <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold">
                   <Clock className="w-3.5 h-3.5 text-rose-500/80" />
                   <span>تنتهي الجلسة خلال:</span>
                   <span className="font-mono text-white bg-white/5 px-2 py-0.5 rounded-md">
@@ -1382,7 +1382,7 @@ export default function RandomMatchGame({
             
             {/* Connected Players list (Pro Table Style) */}
             <div className="w-full bg-slate-950/60 border border-white/5 rounded-2xl p-3 text-right space-y-2 shadow-xl">
-              <h4 className="text-[9px] font-black text-slate-500 border-b border-white/5 pb-1.5 flex items-center gap-1 justify-end">
+              <h4 className="text-[9px] font-black text-slate-400 border-b border-white/5 pb-1.5 flex items-center gap-1 justify-end">
                 <span>اللاعبون المستعدون 👥</span>
               </h4>
               <div className="space-y-1.5 text-[10px]">
@@ -1395,10 +1395,10 @@ export default function RandomMatchGame({
                 </div>
                 <div className="flex justify-between items-center bg-black/20 p-2 rounded-lg border border-white/5 opacity-50">
                   <div className="flex items-center gap-1.5">
-                    <RefreshCw className="w-3 h-3 text-slate-500 animate-spin" />
-                    <span className="text-slate-500 text-[8px] font-black uppercase">Waiting</span>
+                    <RefreshCw className="w-3 h-3 text-slate-400 animate-spin" />
+                    <span className="text-slate-400 text-[8px] font-black uppercase">Waiting</span>
                   </div>
-                  <span className="font-black text-slate-500">جاري البحث عن الخصم...</span>
+                  <span className="font-black text-slate-400">جاري البحث عن الخصم...</span>
                 </div>
               </div>
             </div>
@@ -1429,7 +1429,7 @@ export default function RandomMatchGame({
               <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-rose-500/5 pointer-events-none" />
               
               <div className="text-center space-y-1 relative z-10">
-                <span className="text-[9px] text-slate-500 block font-black truncate max-w-[80px] uppercase tracking-tighter">{isCreator ? liveRoom.player1Name : 'أنت'}</span>
+                <span className="text-[9px] text-slate-400 block font-black truncate max-w-[80px] uppercase tracking-tighter">{isCreator ? liveRoom.player1Name : 'أنت'}</span>
                 <span className="text-base font-black font-mono text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]">{isCreator ? liveRoom.player1Score : liveRoom.player2Score}</span>
                 <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden mt-1">
                   <div className="h-full bg-emerald-500" style={{ width: `${(Math.min(5, (isCreator ? liveRoom.player1CurrentIndex : liveRoom.player2CurrentIndex)) / 5) * 100}%` }} />
@@ -1437,14 +1437,14 @@ export default function RandomMatchGame({
               </div>
               
               <div className="flex-1 px-1 text-center relative z-10">
-                <div className="text-slate-500 font-black text-[8px] italic mb-0.5 uppercase tracking-[0.2em]">Live Battle</div>
+                <div className="text-slate-400 font-black text-[8px] italic mb-0.5 uppercase tracking-[0.2em]">Live Battle</div>
                 <div className="flex justify-center items-center gap-1">
                   <span className="text-[9px] text-amber-500 font-black uppercase tracking-widest animate-pulse">Synced ⚡</span>
                 </div>
               </div>
 
               <div className="text-center space-y-1 relative z-10">
-                <span className="text-[9px] text-slate-500 block font-black truncate max-w-[80px] uppercase tracking-tighter">{isCreator ? (liveRoom.player2Name || 'صديقك') : liveRoom.player1Name}</span>
+                <span className="text-[9px] text-slate-400 block font-black truncate max-w-[80px] uppercase tracking-tighter">{isCreator ? (liveRoom.player2Name || 'صديقك') : liveRoom.player1Name}</span>
                 <span className="text-base font-black font-mono text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]">{isCreator ? liveRoom.player2Score : liveRoom.player1Score}</span>
                 <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden mt-1">
                   <div className="h-full bg-rose-500" style={{ width: `${(Math.min(5, (isCreator ? liveRoom.player2CurrentIndex : liveRoom.player1CurrentIndex)) / 5) * 100}%` }} />
@@ -1464,7 +1464,7 @@ export default function RandomMatchGame({
                     {/* Timer & Meta (Compact Pro) */}
                     <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-2xl px-4 py-2 shadow-inner">
                       <div className="flex items-center gap-2">
-                        <Clock className={`w-3.5 h-3.5 ${isTimerFrozen ? 'text-cyan-400' : playTimer <= 5 ? 'text-rose-500 animate-pulse' : 'text-slate-500'}`} />
+                        <Clock className={`w-3.5 h-3.5 ${isTimerFrozen ? 'text-cyan-400' : playTimer <= 5 ? 'text-rose-500 animate-pulse' : 'text-slate-400'}`} />
                         <span className={`text-xs font-black font-mono ${isTimerFrozen ? 'text-cyan-400' : playTimer <= 5 ? 'text-rose-500' : 'text-white'}`}>{playTimer}s</span>
                       </div>
                       <div className="text-[9px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-lg border border-blue-500/20 uppercase tracking-widest">
@@ -1489,7 +1489,7 @@ export default function RandomMatchGame({
                         
                         {currentQuestion.clues && (
                           <div className="space-y-1.5 pt-3 border-t border-white/5 relative z-10">
-                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider block">Intelligence Clues:</span>
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Intelligence Clues:</span>
                             {currentQuestion.clues.map((clue: string, idx: number) => (
                               <p key={idx} className="text-[10px] text-slate-400 font-bold">• {clue}</p>
                             ))}
@@ -1560,7 +1560,7 @@ export default function RandomMatchGame({
                     </div>
                     <div className="space-y-1 relative z-10">
                       <h3 className="text-sm font-black text-white uppercase tracking-wide">بانتظار مزامنة النتائج...</h3>
-                      <p className="text-[10px] text-slate-500 leading-relaxed font-bold max-w-xs mx-auto">
+                      <p className="text-[10px] text-slate-400 leading-relaxed font-bold max-w-xs mx-auto">
                         لقد أتممت مهمتك بنجاح. صديقك الآن في المرحلة الأخيرة من المواجهة. استعد للنتيجة النهائية!
                       </p>
                     </div>
@@ -1568,11 +1568,11 @@ export default function RandomMatchGame({
                     {/* Live Progress Track (Dark Pro) */}
                     <div className="bg-black/40 border border-white/5 rounded-2xl p-4 w-full max-w-xs space-y-3 text-right shadow-inner relative z-10">
                       <div className="flex justify-between items-center text-[10px] font-black">
-                        <span className="text-slate-500">أنت (المنهي)</span>
+                        <span className="text-slate-400">أنت (المنهي)</span>
                         <span className="text-emerald-400 font-mono tracking-tighter">MISSION COMPLETE ✅</span>
                       </div>
                       <div className="flex justify-between items-center text-[10px] font-black">
-                        <span className="text-slate-500">{isCreator ? (liveRoom.player2Name || 'الخصم') : liveRoom.player1Name}</span>
+                        <span className="text-slate-400">{isCreator ? (liveRoom.player2Name || 'الخصم') : liveRoom.player1Name}</span>
                         <span className="text-amber-500 font-mono animate-pulse">
                           {isCreator 
                             ? (liveRoom.player2CurrentIndex === 5 ? "SYNCING..." : `QUEST ${liveRoom.player2CurrentIndex}/5`) 
@@ -1659,7 +1659,7 @@ export default function RandomMatchGame({
 
               {/* Final Score Table (Pro Style) */}
               <div className="w-full max-w-xs bg-black/40 border border-white/5 rounded-2xl overflow-hidden mt-4">
-                <div className="grid grid-cols-2 text-[9px] font-black text-slate-500 border-b border-white/5 bg-white/5 py-2 px-4 uppercase tracking-widest">
+                <div className="grid grid-cols-2 text-[9px] font-black text-slate-400 border-b border-white/5 bg-white/5 py-2 px-4 uppercase tracking-widest">
                   <span>Player Entity</span>
                   <span className="text-left">Combat Score</span>
                 </div>

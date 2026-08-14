@@ -218,7 +218,7 @@ export default function ParticipantCardEditor({ currentUser }: ParticipantCardEd
                 </button>
                 <input 
                   type="number"
-                  value={points}
+                  aria-label="عدد النقاط" value={points}
                   onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
                   className="flex-1 bg-purple-900/60 border border-purple-500/20 rounded-xl p-2 text-white text-xs text-center font-mono"
                 />

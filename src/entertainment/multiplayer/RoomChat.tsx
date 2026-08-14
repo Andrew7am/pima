@@ -93,7 +93,7 @@ export default function RoomChat({ currentUser, roomId, opponentName }: RoomChat
 
             <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
               {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-500">
+                <div className="h-full flex flex-col items-center justify-center gap-2 text-slate-400">
                   <Smile className="w-6 h-6" />
                   <p className="text-[10.5px] font-bold">لا توجد رسائل بعد</p>
                 </div>
@@ -109,7 +109,7 @@ export default function RoomChat({ currentUser, roomId, opponentName }: RoomChat
                       >
                         {m.content}
                       </div>
-                      <p className={`text-[8.5px] text-slate-500 font-bold mt-0.5 px-1 ${isMine ? 'text-left' : 'text-right'}`}>
+                      <p className={`text-[8.5px] text-slate-400 font-bold mt-0.5 px-1 ${isMine ? 'text-left' : 'text-right'}`}>
                         {formatTime(m.createdAt)}
                       </p>
                     </div>
@@ -163,7 +163,7 @@ export default function RoomChat({ currentUser, roomId, opponentName }: RoomChat
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSend(input); }}
                 placeholder="اكتب رسالة..."
                 maxLength={500}
-                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-500 outline-none focus:border-amber-500/40 min-w-0"
+                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-400 outline-none focus:border-amber-500/40 min-w-0"
               />
               <button aria-label="إرسال الرسالة"
                 type="button"

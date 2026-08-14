@@ -1490,10 +1490,10 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
               );
             })() : (
               <div className="flex flex-col items-center justify-center p-8 text-center my-auto space-y-3 relative z-10">
-                <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-slate-500 text-2xl">📽️</div>
+                <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 text-2xl">📽️</div>
                 <div className="space-y-1">
                   <p className="text-sm font-black text-slate-300">لا توجد شرائح عرض نشطة حالياً</p>
-                  <p className="text-xs text-slate-500 max-w-sm">بانتظار أن يقوم المنظم بتشغيل وبث الشرائح التفاعلية للمؤتمر.</p>
+                  <p className="text-xs text-slate-400 max-w-sm">بانتظار أن يقوم المنظم بتشغيل وبث الشرائح التفاعلية للمؤتمر.</p>
                 </div>
               </div>
             )}
@@ -1544,7 +1544,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                 })}
 
                 {slides.length === 0 && (
-                  <p className="text-[10px] text-slate-500 py-6 text-center font-bold">لا يوجد شرائح مسجلة.</p>
+                  <p className="text-[10px] text-slate-400 py-6 text-center font-bold">لا يوجد شرائح مسجلة.</p>
                 )}
               </div>
             </div>
@@ -1568,7 +1568,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                 </div>
                 <div className="text-right">
                   <h3 className="text-sm font-black text-white">مركز قيادة المؤتمر 🚀</h3>
-                  <p className="text-[10px] text-slate-500 font-bold">التحكم الحصري لمنظم العرض والبث المباشر</p>
+                  <p className="text-[10px] text-slate-400 font-bold">التحكم الحصري لمنظم العرض والبث المباشر</p>
                 </div>
               </div>
 
@@ -1671,7 +1671,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                       <span className="text-[10px] font-black text-rose-300 uppercase tracking-widest">مركز التنبيهات العاجلة</span>
                       <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                     </div>
-                    <p className="text-[9px] text-slate-500 font-bold">بث رسائل نصية عاجلة تظهر فوراً على شاشات جميع الحضور.</p>
+                    <p className="text-[9px] text-slate-400 font-bold">بث رسائل نصية عاجلة تظهر فوراً على شاشات جميع الحضور.</p>
                   </div>
 
                   <form onSubmit={handleSendInstantAlert} className="space-y-3 mt-4">
@@ -1769,7 +1769,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
 
                     <div className="grid grid-cols-2 gap-2">
                       <select
-                        value={newSlideBgStyle}
+                        aria-label="خلفية الشريحة" value={newSlideBgStyle}
                         onChange={(e) => setNewSlideBgStyle(e.target.value)}
                         className="bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs text-white focus:outline-none"
                       >
@@ -2095,7 +2095,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                 />
                 <div className="grid grid-cols-2 gap-2">
                   <select
-                    value={newEventDay}
+                    aria-label="يوم الحدث" value={newEventDay}
                     onChange={(e) => setNewEventDay(e.target.value)}
                     className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
                   >

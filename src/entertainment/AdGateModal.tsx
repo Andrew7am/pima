@@ -48,9 +48,9 @@ export default function AdGateModal({ open, title = 'شاهد الإعلان', r
             rewarded ad is served by AdMob inside the native app. */}
         <div className="rounded-2xl border border-white/10 bg-[var(--color-play-bg)] overflow-hidden mb-4 min-h-[160px] flex items-center justify-center">
           <div className="text-center py-8 px-4">
-            <Play className="w-10 h-10 text-slate-500 mx-auto mb-2" />
+            <Play className="w-10 h-10 text-slate-400 mx-auto mb-2" />
             <p className="text-[11px] text-slate-400 font-bold">مساحة إعلانية</p>
-            <p className="text-[10px] text-slate-500 mt-1">شكراً لدعمك المنصة عبر مشاهدة الإعلان 🙏</p>
+            <p className="text-[10px] text-slate-400 mt-1">شكراً لدعمك المنصة عبر مشاهدة الإعلان 🙏</p>
           </div>
         </div>
 

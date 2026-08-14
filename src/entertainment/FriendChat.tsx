@@ -155,7 +155,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-play-card/40 relative z-10">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-4 space-y-2 text-slate-400">
-                  <Smile className="w-8 h-8 text-slate-500 animate-bounce" />
+                  <Smile className="w-8 h-8 text-slate-400 animate-bounce" />
                   <p className="text-[11px] font-black text-slate-300">لا توجد رسائل بعد</p>
                   <p className="text-[9.5px] text-slate-400 font-bold">أرسل عبارة أو رمزاً تعبيرياً لتشجيع صديقك!</p>
                 </div>
