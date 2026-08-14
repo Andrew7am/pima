@@ -103,7 +103,7 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
           <p className="text-[9.5px] text-slate-400 mt-0.5 leading-relaxed">اكتب طلبتك أو احتياجك لكي يصلي لأجلك الإخوة والخدام من جميع الكنائس والخدمات المترابطة.</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-2">
-          <textarea
+          <textarea aria-label="اكتب طلبتك هنا بوقار (مثال: صلوا من أجل مريض، مسافر، أو توجيه روحي للخدمة...)"
             placeholder="اكتب طلبتك هنا بوقار (مثال: صلوا من أجل مريض، مسافر، أو توجيه روحي للخدمة...)"
             value={text}
             onChange={(e) => setText(e.target.value)}

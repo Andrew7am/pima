@@ -150,7 +150,7 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
           <div className="flex items-center gap-2">
             <div className="flex-1 flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-3 py-2.5">
               <Search className="w-4 h-4 text-slate-400 shrink-0" />
-              <input
+              <input aria-label="ابحث بالاسم..."
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}

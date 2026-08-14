@@ -1365,7 +1365,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
           <div className="space-y-3.5">
             <div>
               <label className="block text-[11px] font-black text-slate-700 mb-1">كود الغرفة المكون من ٦ أرقام 🔢</label>
-              <input
+              <input aria-label="458921"
                 type="text"
                 maxLength={6}
                 required
@@ -1386,7 +1386,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
 
             <div>
               <label className="block text-[11px] font-black text-slate-700 mb-1">اسم الشهرة الخاص بك في اللعبة 👤</label>
-              <input
+              <input aria-label="ادخل اسمك الثنائي"
                 type="text"
                 required
                 value={joinNameInput}

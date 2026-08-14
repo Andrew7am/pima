@@ -863,7 +863,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[20000] flex items-center justify-center p-4"
+            role="alertdialog" aria-modal="true" aria-label="تنبيه عاجل" className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[20000] flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ scale: 0.9, y: 30, opacity: 0 }}
@@ -1364,7 +1364,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
 
               {/* Chat Input */}
               <form onSubmit={handleSendLiveChatMessage} className="flex gap-1.5 mt-1.5">
-                <input
+                <input aria-label="أرسل مشاركة تشجيعية..."
                   type="text"
                   placeholder="أرسل مشاركة تشجيعية..."
                   value={newChatMessage}
@@ -1676,7 +1676,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
 
                   <form onSubmit={handleSendInstantAlert} className="space-y-3 mt-4">
                     <div className="relative">
-                      <input
+                      <input aria-label="ادخل نص التنبيه العاجل..."
                         type="text"
                         placeholder="ادخل نص التنبيه العاجل..."
                         value={instantAlertInput}
@@ -1726,7 +1726,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                     <PlusCircle className="w-4 h-4 text-emerald-400" />
                   </div>
                   <form onSubmit={handleCreateSlide} className="space-y-2 bg-black/40 p-3 rounded-2xl border border-white/5 text-right">
-                    <input
+                    <input aria-label="عنوان الشريحة..."
                       type="text"
                       placeholder="عنوان الشريحة..."
                       value={newSlideTitle}
@@ -1734,7 +1734,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                       className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-500/50 text-right"
                       required
                     />
-                    <textarea
+                    <textarea aria-label="وصف المحتوى أو الآيات المستهدفة..."
                       placeholder="وصف المحتوى أو الآيات المستهدفة..."
                       value={newSlideContent}
                       onChange={(e) => setNewSlideContent(e.target.value)}
@@ -1758,7 +1758,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                           🔮 AI Link
                         </button>
                       )}
-                      <input
+                      <input aria-label="رابط الصورة (اختياري)..."
                         type="url"
                         placeholder="رابط الصورة (اختياري)..."
                         value={newSlideImageUrl}
@@ -1777,7 +1777,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                         <option value="sky">سماء مرصعة 🌌</option>
                         <option value="purple">بنفسجي روحي 🕯️</option>
                       </select>
-                      <input
+                      <input aria-label="كلمات مفتاحية للـ AI..."
                         type="text"
                         placeholder="كلمات مفتاحية للـ AI..."
                         value={newSlidePrompt}
@@ -1988,7 +1988,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                 <span>➕ إضافة فعالية أو محاضرة جديدة للجدول</span>
               </h5>
               <div className="grid grid-cols-2 gap-2">
-                <input
+                <input aria-label="الوقت (مثال: 02:00 م)"
                   type="text"
                   placeholder="الوقت (مثال: 02:00 م)"
                   value={newSchedTime}
@@ -1996,7 +1996,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
                   required
                 />
-                <input
+                <input aria-label="عنوان الفعالية"
                   type="text"
                   placeholder="عنوان الفعالية"
                   value={newSchedTitle}
@@ -2004,21 +2004,21 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
                   required
                 />
-                <input
+                <input aria-label="مكان الانعقاد"
                   type="text"
                   placeholder="مكان الانعقاد"
                   value={newSchedLoc}
                   onChange={(e) => setNewSchedLoc(e.target.value)}
                   className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
                 />
-                <input
+                <input aria-label="المدة (مثال: 45 دقيقة)"
                   type="text"
                   placeholder="المدة (مثال: 45 دقيقة)"
                   value={newSchedDur}
                   onChange={(e) => setNewSchedDur(e.target.value)}
                   className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
                 />
-                <input
+                <input aria-label="المتحدث / المشرف"
                   type="text"
                   placeholder="المتحدث / المشرف"
                   value={newSchedSpeaker}
@@ -2026,7 +2026,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none col-span-2"
                 />
               </div>
-              <textarea
+              <textarea aria-label="تفاصيل إضافية عن الفعالية..."
                 placeholder="تفاصيل إضافية عن الفعالية..."
                 value={newSchedInfo}
                 onChange={(e) => setNewSchedInfo(e.target.value)}
@@ -2085,7 +2085,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
             {isServantMode && (
               <form onSubmit={handleAddEvent} className="bg-purple-50/50 border border-purple-500/20 p-3.5 rounded-2xl space-y-2">
                 <h5 className="text-[10px] font-black text-purple-950">➕ إضافة فعالية كبرى جديدة</h5>
-                <input
+                <input aria-label="عنوان الفعالية (مثل: دوري كرة القدم)"
                   type="text"
                   placeholder="عنوان الفعالية (مثل: دوري كرة القدم)"
                   value={newEventTitle}
@@ -2103,7 +2103,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                     <option value="اليوم الثاني">اليوم الثاني</option>
                     <option value="اليوم الثالث">اليوم الثالث</option>
                   </select>
-                  <input
+                  <input aria-label="الوقت (مثال: 07:30 م)"
                     type="text"
                     placeholder="الوقت (مثال: 07:30 م)"
                     value={newEventTime}
@@ -2111,7 +2111,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                     className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
                   />
                 </div>
-                <input
+                <input aria-label="النقاط الممنوحة (XP)"
                   type="number"
                   placeholder="النقاط الممنوحة (XP)"
                   value={newEventPoints}
@@ -2160,7 +2160,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
             </div>
 
             <form onSubmit={handleAddChecklistItem} className="flex gap-2 pt-1">
-              <input
+              <input aria-label="إضافة غرض شخصي آخر..."
                 type="text"
                 placeholder="إضافة غرض شخصي آخر..."
                 value={newChecklistItem}
@@ -2270,7 +2270,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
 
                     {/* Submit Comment */}
                     <div className="flex gap-1.5 mt-2">
-                      <input
+                      <input aria-label="اكتب استفسارًا أو مشاركة..."
                         type="text"
                         placeholder="اكتب استفسارًا أو مشاركة..."
                         value={commentInput[ann.id] || ''}
@@ -2302,7 +2302,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
             <h5 className="text-[11px] font-black text-purple-950 flex items-center gap-1">
               <span>➕ نشر إعلان أو تنبيه جديد للجميع</span>
             </h5>
-            <textarea
+            <textarea aria-label="اكتب التنبيه أو الإعلان هنا بوضوح ودقة..."
               placeholder="اكتب التنبيه أو الإعلان هنا بوضوح ودقة..."
               value={newAnnText}
               onChange={(e) => setNewAnnText(e.target.value)}
@@ -2321,7 +2321,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                 <span>تحديد كأهمية قصوى (هام جداً ⚠️)</span>
               </label>
               <label className="flex items-center gap-1.5 text-[10px] font-bold text-slate-700 cursor-pointer">
-                <input
+                <input aria-label="تحديد كأهمية قصوى (هام جداً ⚠️)"
                   type="checkbox"
                   checked={newAnnPinned}
                   onChange={(e) => setNewAnnPinned(e.target.checked)}
@@ -2468,7 +2468,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
               <span>🔔 بث إشعار فوري (Push Notification) لجميع الهواتف</span>
             </h5>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <input
+              <input aria-label="عنوان الإشعار الفوري (مثال: باقي ساعة على التجمع!)"
                 type="text"
                 placeholder="عنوان الإشعار الفوري (مثال: باقي ساعة على التجمع!)"
                 value={notificationInputTitle}
@@ -2476,7 +2476,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                 className="bg-white border border-purple-500/20 rounded-xl p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
                 required
               />
-              <input
+              <input aria-label="محتوى الإشعار وتفاصيله الموجهة..."
                 type="text"
                 placeholder="محتوى الإشعار وتفاصيله الموجهة..."
                 value={notificationInputBody}
@@ -2539,7 +2539,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
           const activeSlide = slides.find(s => s.id === activeSlideId) || slides[0];
           const slideIndex = slides.findIndex(s => s.id === activeSlide.id) + 1;
           return (
-            <div className="fixed inset-0 bg-slate-950/98 backdrop-blur-2xl z-[10000] flex flex-col justify-between p-4 sm:p-8 select-none" dir="rtl">
+            <div role="dialog" aria-modal="true" aria-label="عرض الشرائح بملء الشاشة" className="fixed inset-0 bg-slate-950/98 backdrop-blur-2xl z-[10000] flex flex-col justify-between p-4 sm:p-8 select-none" dir="rtl">
               
               {/* Floating lights drift particle effects (magical visual polish) */}
               <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -2701,7 +2701,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
       {/* Share QR Code Modal */}
       <AnimatePresence>
         {showShareModal && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div role="dialog" aria-modal="true" aria-label="مشاركة رمز الدخول" className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -2787,7 +2787,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
       {/* Lecture Details and Reading Mode Modal */}
       <AnimatePresence>
         {selectedLecture && (
-          <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[1000] flex items-center justify-center p-4">
+          <div role="dialog" aria-modal="true" aria-label="تفاصيل المحاضرة والقراءة" className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[1000] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, y: 30, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}

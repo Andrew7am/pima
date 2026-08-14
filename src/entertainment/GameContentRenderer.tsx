@@ -465,7 +465,7 @@ export const GameContentRenderer: React.FC<GameContentRendererProps> = ({
 
           {!guessImageSolved && (
             <div className="flex gap-2">
-              <input
+              <input aria-label="اكتب اسم الحدث لتخمينه..."
                 type="text"
                 placeholder="اكتب اسم الحدث لتخمينه..."
                 value={guessImageGuessValue}
@@ -616,7 +616,7 @@ export const GameContentRenderer: React.FC<GameContentRendererProps> = ({
               </div>
 
               {!ESCAPE_ROOM_LOCKS[escapeLockIdx].options && (
-                <input
+                <input aria-label="ادخل الشفرة لحل اللغز..."
                   type="text"
                   placeholder="ادخل الشفرة لحل اللغز..."
                   value={escapeCodeValue}
@@ -812,7 +812,7 @@ export const GameContentRenderer: React.FC<GameContentRendererProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <div className="space-y-1">
                   <label className="font-bold text-slate-600">السؤال:</label>
-                  <input
+                  <input aria-label="مثال: من هو النبي الصغير؟"
                     type="text"
                     placeholder="مثال: من هو النبي الصغير؟"
                     value={qBankForm.question}
@@ -822,7 +822,7 @@ export const GameContentRenderer: React.FC<GameContentRendererProps> = ({
                 </div>
                 <div className="space-y-1">
                   <label className="font-bold text-slate-600">التصنيف الكنسي:</label>
-                  <select
+                  <select aria-label="التصنيف الكنسي:"
                     value={qBankForm.category}
                     onChange={(e) => setQBankForm({ ...qBankForm, category: e.target.value })}
                     className="w-full p-2 border rounded-xl text-right"
@@ -836,28 +836,28 @@ export const GameContentRenderer: React.FC<GameContentRendererProps> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <input
+                <input aria-label="الاختيار أ"
                   type="text"
                   placeholder="الاختيار أ"
                   value={qBankForm.optionA}
                   onChange={(e) => setQBankForm({ ...qBankForm, optionA: e.target.value })}
                   className="p-1.5 border rounded-lg text-right"
                 />
-                <input
+                <input aria-label="الاختيار ب"
                   type="text"
                   placeholder="الاختيار ب"
                   value={qBankForm.optionB}
                   onChange={(e) => setQBankForm({ ...qBankForm, optionB: e.target.value })}
                   className="p-1.5 border rounded-lg text-right"
                 />
-                <input
+                <input aria-label="الاختيار ج"
                   type="text"
                   placeholder="الاختيار ج"
                   value={qBankForm.optionC}
                   onChange={(e) => setQBankForm({ ...qBankForm, optionC: e.target.value })}
                   className="p-1.5 border rounded-lg text-right"
                 />
-                <input
+                <input aria-label="الاختيار د"
                   type="text"
                   placeholder="الاختيار د"
                   value={qBankForm.optionD}
@@ -869,7 +869,7 @@ export const GameContentRenderer: React.FC<GameContentRendererProps> = ({
               <div className="flex gap-2 items-center text-xs justify-between">
                 <div className="flex gap-1.5 items-center">
                   <label className="font-bold">الإجابة الصحيحة:</label>
-                  <select
+                  <select aria-label="الإجابة الصحيحة:"
                     value={qBankForm.correctOption}
                     onChange={(e) => setQBankForm({ ...qBankForm, correctOption: e.target.value })}
                     className="p-1.5 border rounded-lg text-right"
@@ -1490,7 +1490,7 @@ export const GameContentRenderer: React.FC<GameContentRendererProps> = ({
 
             {typeSuccess === null ? (
               <div className="flex gap-2.5">
-                <input
+                <input aria-label="اكتب الكلمة المفقودة هنا بدقة..."
                   type="text"
                   placeholder="اكتب الكلمة المفقودة هنا بدقة..."
                   value={typeInput}

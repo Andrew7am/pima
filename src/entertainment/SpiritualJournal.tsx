@@ -403,7 +403,7 @@ ${headerBorder}
             {/* Title field */}
             <div className="space-y-1">
               <label className="block text-xs font-black text-slate-700">عنوان التأمل / مذكرات اليوم: *</label>
-              <input
+              <input aria-label="مثال: تأمل اليوم الأول - خلوة السلام والصمت"
                 type="text"
                 required
                 placeholder="مثال: تأمل اليوم الأول - خلوة السلام والصمت"
@@ -419,7 +419,7 @@ ${headerBorder}
                 <span>كتابة التأملات الروحية اليومية: *</span>
                 <span className="text-[10px] text-amber-600 font-bold">مساحة خاصة للتعبير والتأمل</span>
               </label>
-              <textarea
+              <textarea aria-label="اكتب هنا تأملك بوضوح وهدوء... تأمل في كلام الإنجيل، الصلاة، شعورك في الخلوة، ومقاصدك الروحية للتقرب إلى الله وصانع الخيرات..."
                 required
                 rows={6}
                 placeholder="اكتب هنا تأملك بوضوح وهدوء... تأمل في كلام الإنجيل، الصلاة، شعورك في الخلوة، ومقاصدك الروحية للتقرب إلى الله وصانع الخيرات..."
@@ -464,7 +464,7 @@ ${headerBorder}
 
               {/* Add Custom Verse Input */}
               <div className="flex gap-2">
-                <input
+                <input aria-label="أدخل آية جديدة (مثال: «الرَّبُّ نُورِي وَخَلاَصِي...»)"
                   type="text"
                   placeholder="أدخل آية جديدة (مثال: «الرَّبُّ نُورِي وَخَلاَصِي...»)"
                   value={verseInput}
@@ -533,7 +533,7 @@ ${headerBorder}
 
               {/* Add Custom Decision Input */}
               <div className="flex gap-2">
-                <input
+                <input aria-label="أدخل قرار روحي (مثال: قراءة إصحاح يومياً)"
                   type="text"
                   placeholder="أدخل قرار روحي (مثال: قراءة إصحاح يومياً)"
                   value={decisionInput}

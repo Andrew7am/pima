@@ -181,7 +181,7 @@ export const EffectsEngine: React.FC<EffectsEngineProps> = ({
 
       {/* Simulated Confetti Overlay */}
       {showConfetti && (
-        <div className="fixed inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-40">
+        <div aria-hidden="true" className="fixed inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-40">
           <div className="absolute w-full h-full bg-emerald-500/5 animate-pulse" />
           {[...Array(40)].map((_, i) => {
             const randomX = Math.random() * 100;
@@ -208,7 +208,7 @@ export const EffectsEngine: React.FC<EffectsEngineProps> = ({
 
       {/* Simulated Explosion Overlay */}
       {showExplosion && (
-        <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-40">
+        <div aria-hidden="true" className="fixed inset-0 pointer-events-none flex items-center justify-center z-40">
           <motion.div
             initial={{ scale: 0.1, opacity: 1 }}
             animate={{ scale: 3, opacity: 0 }}

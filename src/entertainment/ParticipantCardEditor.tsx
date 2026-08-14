@@ -125,7 +125,7 @@ export default function ParticipantCardEditor({ currentUser }: ParticipantCardEd
         {/* Search Bar */}
         <div className="relative w-full sm:w-64">
           <Search className="absolute right-3 top-2.5 w-4 h-4 text-purple-300" />
-          <input 
+          <input aria-label="ابحث بالاسم، الغرفة أو الفريق..." 
             type="text" 
             placeholder="ابحث بالاسم، الغرفة أو الفريق..." 
             value={searchQuery}
@@ -159,7 +159,7 @@ export default function ParticipantCardEditor({ currentUser }: ParticipantCardEd
             {/* Team */}
             <div className="space-y-1">
               <label className="text-purple-300 block font-bold">اسم الفريق</label>
-              <select 
+              <select aria-label="اسم الفريق" 
                 value={teamName}
                 onChange={(e) => setTeamName(e.target.value)}
                 className="w-full bg-purple-900/60 border border-purple-500/20 rounded-xl p-2.5 text-white text-xs"
@@ -175,7 +175,7 @@ export default function ParticipantCardEditor({ currentUser }: ParticipantCardEd
             {/* Room No */}
             <div className="space-y-1">
               <label className="text-purple-300 block font-bold">رقم الغرفة</label>
-              <input 
+              <input aria-label="رقم الغرفة" 
                 type="text"
                 value={roomNo}
                 onChange={(e) => setRoomNo(e.target.value)}
@@ -186,7 +186,7 @@ export default function ParticipantCardEditor({ currentUser }: ParticipantCardEd
             {/* Building */}
             <div className="space-y-1">
               <label className="text-purple-300 block font-bold">المبنى</label>
-              <input 
+              <input aria-label="المبنى" 
                 type="text"
                 value={building}
                 onChange={(e) => setBuilding(e.target.value)}
@@ -197,7 +197,7 @@ export default function ParticipantCardEditor({ currentUser }: ParticipantCardEd
             {/* Floor */}
             <div className="space-y-1">
               <label className="text-purple-300 block font-bold">الدور</label>
-              <input 
+              <input aria-label="الدور" 
                 type="text"
                 value={floor}
                 onChange={(e) => setFloor(e.target.value)}
@@ -235,7 +235,7 @@ export default function ParticipantCardEditor({ currentUser }: ParticipantCardEd
             {/* Level */}
             <div className="space-y-1">
               <label className="text-purple-300 block font-bold">المستوى</label>
-              <input 
+              <input aria-label="المستوى" 
                 type="number"
                 value={level}
                 onChange={(e) => setLevel(parseInt(e.target.value) || 1)}
@@ -246,7 +246,7 @@ export default function ParticipantCardEditor({ currentUser }: ParticipantCardEd
             {/* Attendance */}
             <div className="space-y-1">
               <label className="text-purple-300 block font-bold">حالة الحضور</label>
-              <select 
+              <select aria-label="حالة الحضور" 
                 value={attendanceStatus}
                 onChange={(e) => setAttendanceStatus(e.target.value as any)}
                 className="w-full bg-purple-900/60 border border-purple-500/20 rounded-xl p-2.5 text-white text-xs"
@@ -259,7 +259,7 @@ export default function ParticipantCardEditor({ currentUser }: ParticipantCardEd
             {/* Card Status */}
             <div className="space-y-1">
               <label className="text-purple-300 block font-bold">حالة البطاقة</label>
-              <select 
+              <select aria-label="حالة البطاقة" 
                 value={cardStatus}
                 onChange={(e) => setCardStatus(e.target.value as any)}
                 className="w-full bg-purple-900/60 border border-purple-500/20 rounded-xl p-2.5 text-white text-xs"

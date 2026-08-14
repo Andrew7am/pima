@@ -156,7 +156,7 @@ export default function RoomChat({ currentUser, roomId, opponentName }: RoomChat
               >
                 <Smile className="w-4 h-4" />
               </button>
-              <input
+              <input aria-label="اكتب رسالة..."
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}

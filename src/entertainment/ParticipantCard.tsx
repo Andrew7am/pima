@@ -497,7 +497,7 @@ export default function ParticipantCard({ currentUser }: ParticipantCardProps) {
       {/* Full QR Modal */}
       <AnimatePresence>
         {showFullQR && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div role="dialog" aria-modal="true" aria-label="رمز المشارك" className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}

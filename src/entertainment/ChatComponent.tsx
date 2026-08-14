@@ -144,7 +144,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({ roomId, senderName
             </div>
 
             <div className="border-t border-blue-500/10 p-3 bg-[#0b1b36] flex items-center gap-2">
-              <input
+              <input aria-label="اكتب رسالة..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && sendMessage(newMessage)}

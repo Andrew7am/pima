@@ -327,7 +327,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-950/90 z-[99999] flex flex-col items-center justify-center text-center p-6"
+            role="status" aria-live="polite" className="fixed inset-0 bg-slate-950/90 z-[99999] flex flex-col items-center justify-center text-center p-6"
           >
             <motion.div
               initial={{ scale: 0.3, y: 50, opacity: 0 }}
@@ -495,7 +495,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                     {/* Room Name */}
                     <div className="space-y-1">
                       <label className="block text-[11px] font-black text-slate-700">اسم الغرفة أو الفعالية 🏷️ <span className="text-red-500">*</span></label>
-                      <input
+                      <input aria-label="مثال: مسابقات خلوة الشباب كنيسة العذراء"
                         type="text"
                         required
                         value={roomName}
@@ -529,7 +529,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                     {/* Event Type */}
                     <div className="space-y-1">
                       <label className="block text-[11px] font-black text-slate-700">نوع الحدث أو المؤتمر ⛪</label>
-                      <select
+                      <select aria-label="نوع الحدث أو المؤتمر ⛪"
                         value={eventType}
                         onChange={(e) => setEventType(e.target.value)}
                         className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-amber-500 font-bold"
@@ -568,7 +568,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                     {/* Room Description */}
                     <div className="space-y-1 md:col-span-2">
                       <label className="block text-[11px] font-black text-slate-700">وصف مختصر للغرفة أو الغرض من الفعالية 📝</label>
-                      <textarea
+                      <textarea aria-label="أدخل رسالة قصيرة ترحيبية تظهر للاعبين فور انضمامهم للمسابقة..."
                         value={roomDesc}
                         onChange={(e) => setRoomDesc(e.target.value)}
                         rows={2}
@@ -601,7 +601,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                     <div className="space-y-4 md:col-span-1 bg-white p-4 rounded-2xl border border-slate-100">
                       <div className="space-y-1">
                         <label className="block text-[11px] font-black text-slate-700">عدد الفرق المتنافسة 👥</label>
-                        <select
+                        <select aria-label="عدد الفرق المتنافسة 👥"
                           value={teamCount}
                           onChange={(e) => setTeamCount(Number(e.target.value))}
                           className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:border-amber-500 font-bold"
@@ -684,7 +684,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                               </div>
 
                               {/* Emoji select */}
-                              <input 
+                              <input aria-label="🔴" 
                                 type="text" 
                                 value={team.icon} 
                                 onChange={(e) => updateTeamConfig(team.id, { icon: e.target.value })}
@@ -840,7 +840,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                       
                       <div className="space-y-1.5">
                         <label className="block text-[10px] font-bold text-slate-500">مؤقت الجولة الكلي (بالثواني)</label>
-                        <select 
+                        <select aria-label="مؤقت الجولة الكلي (بالثواني)" 
                           value={roundTimer} 
                           onChange={(e) => setRoundTimer(Number(e.target.value))}
                           className="w-full bg-slate-50 border rounded-lg px-2 py-1 text-xs font-black focus:outline-none"
@@ -854,7 +854,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
 
                       <div className="space-y-1.5 pt-1">
                         <label className="block text-[10px] font-bold text-slate-500">مؤقت الإجابة عن السؤال (ثانية)</label>
-                        <select 
+                        <select aria-label="مؤقت الإجابة عن السؤال (ثانية)" 
                           value={questionTimer} 
                           onChange={(e) => setQuestionTimer(Number(e.target.value))}
                           className="w-full bg-slate-50 border rounded-lg px-2 py-1 text-xs font-black focus:outline-none"
@@ -923,7 +923,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                       
                       <div className="space-y-1">
                         <label className="block text-[10px] font-bold text-slate-500">لغة الأسئلة المعتمدة</label>
-                        <select 
+                        <select aria-label="لغة الأسئلة المعتمدة" 
                           value={questionLanguage} 
                           onChange={(e) => setQuestionLanguage(e.target.value)}
                           className="w-full bg-slate-50 border rounded-lg px-2 py-1 text-xs font-black focus:outline-none"
@@ -936,7 +936,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
 
                       <div className="space-y-1 pt-1">
                         <label className="block text-[10px] font-bold text-slate-500">مستوى صعوبة الأسئلة</label>
-                        <select 
+                        <select aria-label="مستوى صعوبة الأسئلة" 
                           value={difficulty} 
                           onChange={(e) => setDifficulty(e.target.value)}
                           className="w-full bg-slate-50 border rounded-lg px-2 py-1 text-xs font-black focus:outline-none"

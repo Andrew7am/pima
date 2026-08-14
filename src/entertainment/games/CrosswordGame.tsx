@@ -68,7 +68,7 @@ export default function CrosswordGame({ currentUser, onBack, onUserUpdated, onAc
               <div key={i} className={`rounded-2xl p-3.5 border ${ok ? 'bg-emerald-500/15 border-emerald-400/50' : bad ? 'bg-red-500/10 border-red-400/40' : 'bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border-white/10'}`}>
                 <p className="text-[12px] font-bold text-slate-200 mb-2 leading-snug">{i + 1}. {c.clue}</p>
                 <div className="flex items-center gap-2">
-                  <input
+                  <input aria-label="اكتب الإجابة…"
                     type="text"
                     value={answers[i]}
                     onChange={(e) => { const a = answers.slice(); a[i] = e.target.value; setAnswers(a); }}

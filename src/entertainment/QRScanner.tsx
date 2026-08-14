@@ -105,7 +105,7 @@ export default function QRScanner({ onScan, onClose, title = 'امسح كود ا
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[70] bg-black/90 flex flex-col items-center justify-center p-4" dir="rtl">
+    <div role="dialog" aria-modal="true" aria-label="مسح رمز الدخول" className="fixed inset-0 z-[70] bg-black/90 flex flex-col items-center justify-center p-4" dir="rtl">
       <button
         type="button"
         onClick={onClose}

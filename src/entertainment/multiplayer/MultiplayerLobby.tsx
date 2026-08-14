@@ -185,7 +185,7 @@ export default function MultiplayerLobby({ currentUser, onBack, onEnterMatch }: 
               الانضمام بكود
             </label>
             <div className="flex gap-2">
-              <input
+              <input aria-label="ABC123"
                 type="text"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}

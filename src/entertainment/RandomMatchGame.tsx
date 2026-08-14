@@ -1193,7 +1193,7 @@ export default function RandomMatchGame({
                 <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-blue-500/10 space-y-2.5">
                   <span className="text-[9px] font-black text-slate-500 block uppercase tracking-widest text-center">لديك كود؟ ادخل الميدان الآن</span>
                   <div className="flex gap-2">
-                    <input
+                    <input aria-label="كود الغرفة (ROOM-XXXX)"
                       type="text"
                       placeholder="كود الغرفة (ROOM-XXXX)"
                       value={joinCode}

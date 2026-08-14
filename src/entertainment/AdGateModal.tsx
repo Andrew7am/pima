@@ -33,7 +33,7 @@ export default function AdGateModal({ open, title = 'شاهد الإعلان', r
   const done = left <= 0;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4" dir="rtl">
+    <div role="dialog" aria-modal="true" aria-label="إعلان برعاية" className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4" dir="rtl">
       <div className="w-full max-w-sm bg-gradient-to-br from-[var(--color-play-tile)] to-[var(--color-play-tile-deep)] border border-white/10 rounded-3xl p-5 shadow-2xl text-slate-100">
         <div className="flex items-center justify-between mb-3">
           <span className="text-[10px] font-black text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full">إعلان برعاية</span>

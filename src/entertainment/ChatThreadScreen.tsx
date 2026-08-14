@@ -136,7 +136,7 @@ export default function ChatThreadScreen({ currentUser, friendId, friendName, on
 
         {/* Composer */}
         <div className="shrink-0 flex items-center gap-2 pt-3 border-t border-white/10">
-          <input
+          <input aria-label="اكتب رسالة..."
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}

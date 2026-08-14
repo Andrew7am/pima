@@ -217,7 +217,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
 
             {/* Input Footer */}
             <div className="border-t border-blue-500/10 p-3 bg-[#0b1b36] flex items-center gap-2 relative z-10">
-              <input
+              <input aria-label="اكتب رسالتك هنا..."
                 type="text"
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}

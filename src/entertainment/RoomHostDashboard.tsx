@@ -631,7 +631,7 @@ export const RoomHostDashboard: React.FC<RoomHostDashboardProps> = ({
                   {/* Category Selection */}
                   <div className="space-y-1">
                     <label className="text-[9px] text-slate-400 font-bold">تصنيف السؤال:</label>
-                    <select
+                    <select aria-label="تصنيف السؤال:"
                       value={selectedCategory}
                       onChange={(e) => setSelectedCategory(e.target.value as any)}
                       className="w-full bg-slate-50 border border-slate-200 text-[11.5px] font-bold px-3 py-1.5 rounded-xl outline-none focus:border-indigo-500"
@@ -647,7 +647,7 @@ export const RoomHostDashboard: React.FC<RoomHostDashboardProps> = ({
                   {/* Difficulty Selection */}
                   <div className="space-y-1">
                     <label className="text-[9px] text-slate-400 font-bold">مستوى الصعوبة:</label>
-                    <select
+                    <select aria-label="مستوى الصعوبة:"
                       value={selectedDifficulty}
                       onChange={(e) => setSelectedDifficulty(e.target.value as any)}
                       className="w-full bg-slate-50 border border-slate-200 text-[11.5px] font-bold px-3 py-1.5 rounded-xl outline-none focus:border-indigo-500"
