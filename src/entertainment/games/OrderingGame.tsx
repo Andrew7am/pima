@@ -111,16 +111,16 @@ export default function OrderingGame({ currentUser, onBack, onUserUpdated, onAch
 
         <div className="mt-6">
           {!checked ? (
-            <button type="button" onClick={check} className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-black rounded-2xl">تحقق من الترتيب</button>
+            <button type="button" onClick={check} className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white text-sm font-black rounded-2xl">تحقق من الترتيب</button>
           ) : correct ? (
             <div className="text-center space-y-3">
               <div className="flex items-center justify-center gap-2 text-emerald-300 font-black"><Trophy className="w-5 h-5" /> ترتيب صحيح! {awarding ? '(جارٍ احتساب المكافأة…)' : '+نقاط خبرة'}</div>
-              <button type="button" onClick={next} className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white text-[13px] font-black rounded-2xl flex items-center justify-center gap-1"><RefreshCw className="w-4 h-4" /> مجموعة أخرى</button>
+              <button type="button" onClick={next} className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-black rounded-2xl flex items-center justify-center gap-1"><RefreshCw className="w-4 h-4" /> مجموعة أخرى</button>
             </div>
           ) : (
             <div className="text-center space-y-3">
-              <p className="text-red-300 font-black text-[13px]">ترتيب غير صحيح — حاول مرة أخرى.</p>
-              <button type="button" onClick={retry} className="w-full py-3 bg-white/10 hover:bg-white/15 text-white text-[13px] font-black rounded-2xl">إعادة المحاولة</button>
+              <p className="text-red-300 font-black text-sm">ترتيب غير صحيح — حاول مرة أخرى.</p>
+              <button type="button" onClick={retry} className="w-full py-3 bg-white/10 hover:bg-white/15 text-white text-sm font-black rounded-2xl">إعادة المحاولة</button>
             </div>
           )}
         </div>

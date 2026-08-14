@@ -1018,7 +1018,7 @@ export default function RandomMatchGame({
                 {findingMatch
                   ? <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
                   : <Zap className="w-4 h-4 shrink-0" />}
-                <span className="text-[13px] font-black whitespace-nowrap">
+                <span className="text-sm font-black whitespace-nowrap">
                   {findingMatch ? 'جارٍ البحث...' : 'ابدأ البحث'}
                 </span>
               </motion.button>

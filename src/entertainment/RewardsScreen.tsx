@@ -138,7 +138,7 @@ export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAc
             type="button"
             onClick={() => { if (!spinning) setAdOpen(true); }}
             disabled={spinning}
-            className={`mt-6 px-8 py-3 rounded-2xl text-[13px] font-black transition-all ${spinning ? 'bg-slate-600 text-slate-300' : 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white hover:scale-105 active:scale-95'}`}
+            className={`mt-6 px-8 py-3 rounded-2xl text-sm font-black transition-all ${spinning ? 'bg-slate-600 text-slate-300' : 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white hover:scale-105 active:scale-95'}`}
           >
             {spinning ? 'جارٍ الدوران… ⚙️' : 'شاهد إعلاناً وأدر العجلة 📺⚡'}
           </button>

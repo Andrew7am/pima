@@ -1323,3 +1323,32 @@ body {
   --color-play-tile: #152A55;
   --color-play-tile-deep: #0D1B3B;
 }
+
+/* CONTRAST ON THE FOUR GROUNDS ABOVE — measured, not inherited.
+ *
+ * The guest theme's contrast conclusions do not carry over here; the grounds
+ * are different, so every colour the games actually use was recomputed against
+ * page #0A1428, card #081326, raised #122244 and tile #152A55. Worst case of
+ * the four:
+ *
+ *   text-white 14.05   slate-100 12.83   play-text 11.88   slate-200 11.40
+ *   amber-300   9.75   slate-300  9.47   cyan#00E5FF 9.14  play-reward 8.67
+ *   amber-400   8.42   purple-300 7.95   emerald-400 7.31  play-muted  6.19
+ *   slate-400   5.48   #8B8CF7    4.81
+ *   #FF3D71     4.12  <- 3:1 graphic only, NOT body text. It is used as an
+ *                        icon and a chip rim, which is a valid role for it.
+ *   slate-500   2.95  <- FAILS even the 3:1 large-text floor on the tile
+ *                        (3.86 page / 3.90 card / 3.30 raised / 2.95 tile)
+ *
+ * text-slate-500 has 139 uses in src/entertainment and is a real failure
+ * WHEREVER it sits on these grounds. It is deliberately NOT mass-replaced:
+ * Entertainment also contains genuinely light surfaces — the lecture reading
+ * modal's normal and sepia themes, and several white cards — where slate-500
+ * is correct at 4.76:1. Deciding which of the 139 sit on dark ground needs
+ * per-site rendering, which has not been done, and a blanket swap would break
+ * the light-ground uses to fix the dark ones.
+ *
+ * The fix when it happens is slate-500 -> slate-400 on dark ground only
+ * (2.95 -> 5.48, same hue family, minimal visual shift). --color-play-text-muted
+ * already exists and passes at 6.19, but it is a warm grey and swapping the
+ * blue-greys onto it would be a palette change, not a contrast fix. */

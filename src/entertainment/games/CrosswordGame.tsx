@@ -74,7 +74,7 @@ export default function CrosswordGame({ currentUser, onBack, onUserUpdated, onAc
                     onChange={(e) => { const a = answers.slice(); a[i] = e.target.value; setAnswers(a); }}
                     disabled={checked && results[i]}
                     placeholder="اكتب الإجابة…"
-                    className="flex-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2 text-[13px] font-black text-white placeholder-slate-500 outline-none focus:border-amber-400/60"
+                    className="flex-1 bg-white/5 border border-white/15 rounded-xl px-3 py-2 text-sm font-black text-white placeholder-slate-500 outline-none focus:border-amber-400/60"
                     dir="rtl"
                   />
                   {ok && <Check className="w-5 h-5 text-emerald-400 shrink-0" />}
@@ -93,11 +93,11 @@ export default function CrosswordGame({ currentUser, onBack, onUserUpdated, onAc
             first time was the one player guaranteed to be paid nothing. */}
         <div className="mt-6">
           {!solved ? (
-            <button type="button" onClick={check} className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white text-[13px] font-black rounded-2xl">تحقق من الإجابات</button>
+            <button type="button" onClick={check} className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white text-sm font-black rounded-2xl">تحقق من الإجابات</button>
           ) : (
             <div className="text-center space-y-3">
               <div className="flex items-center justify-center gap-2 text-emerald-300 font-black"><Trophy className="w-5 h-5" /> أحسنت! حللت كل الألغاز {awarding ? '(جارٍ احتساب المكافأة…)' : ''}</div>
-              <button type="button" onClick={reset} className="w-full py-3 bg-white/10 hover:bg-white/15 text-white text-[13px] font-black rounded-2xl flex items-center justify-center gap-1"><RefreshCw className="w-4 h-4" /> من جديد</button>
+              <button type="button" onClick={reset} className="w-full py-3 bg-white/10 hover:bg-white/15 text-white text-sm font-black rounded-2xl flex items-center justify-center gap-1"><RefreshCw className="w-4 h-4" /> من جديد</button>
             </div>
           )}
         </div>

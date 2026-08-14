@@ -58,7 +58,7 @@ export default function AdGateModal({ open, title = 'شاهد الإعلان', r
           type="button"
           disabled={!done}
           onClick={() => { onReward(); }}
-          className={`w-full py-3 rounded-2xl text-[13px] font-black transition-all ${done ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white hover:scale-[1.02]' : 'bg-slate-600 text-slate-300 cursor-not-allowed'}`}
+          className={`w-full py-3 rounded-2xl text-sm font-black transition-all ${done ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white hover:scale-[1.02]' : 'bg-slate-600 text-slate-300 cursor-not-allowed'}`}
         >
           {done ? `${rewardLabel} 🎁` : `انتظر ${left} ثانية…`}
         </button>
