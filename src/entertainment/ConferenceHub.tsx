@@ -1095,7 +1095,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
       )}
 
 {/* ----------------- CORE PREMIUM CONFERENCE HUB HEADER ----------------- */}
-      <div className="bg-gradient-to-br from-purple-950 via-[#2E1065] to-[#1E1B4B] text-white p-6 sm:p-8 rounded-[36px] border-2 border-amber-500/40 shadow-2xl relative overflow-hidden">
+      <div className="bg-gradient-to-br from-purple-950 via-[var(--color-play-conference-violet)] to-[var(--color-play-conference)] text-white p-6 sm:p-8 rounded-[36px] border-2 border-amber-500/40 shadow-2xl relative overflow-hidden">
         {/* Artistic luxury circular glow backdrops */}
         <div className="absolute -top-16 -left-16 w-56 h-56 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-16 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -1108,7 +1108,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
             {/* Visual Icon Badge */}
             <div className="relative group cursor-pointer shrink-0">
               <div className="absolute inset-0 bg-gradient-to-tr from-amber-400 to-amber-600 rounded-full blur-md opacity-40 group-hover:opacity-75 transition-opacity duration-300" />
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-amber-400 flex items-center justify-center bg-[#1E1B4B] shadow-inner">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-amber-400 flex items-center justify-center bg-[var(--color-play-conference)] shadow-inner">
                 <span className="text-3xl sm:text-4xl">🏰</span>
               </div>
             </div> 
@@ -1153,7 +1153,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
       <ParticipantCard currentUser={currentUser as any} />
 
       {/* --- COUNTDOWN TIMER BLOCK --- */}
-      <div className="bg-gradient-to-r from-purple-950 to-[#2E1065] border-2 border-amber-500/30 p-5 rounded-3xl text-center space-y-3 relative overflow-hidden shadow-lg">
+      <div className="bg-gradient-to-r from-purple-950 to-[var(--color-play-conference-violet)] border-2 border-amber-500/30 p-5 rounded-3xl text-center space-y-3 relative overflow-hidden shadow-lg">
         <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl" />
         <h4 className="text-xs font-black text-amber-200 tracking-wider">⏱️ الوقت المتبقي حتى بداية الرحلة والتحرك بالبركة</h4>
         
@@ -1193,7 +1193,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
       <motion.div 
         whileHover={{ scale: 1.01, translateY: -2 }}
         transition={{ duration: 0.3 }}
-        className="bg-gradient-to-br from-[#1E1B4B] via-purple-950 to-[#2E1065] text-white rounded-[36px] p-6 sm:p-8 shadow-2xl relative overflow-hidden border-2 border-amber-500/40 text-right group"
+        className="bg-gradient-to-br from-[var(--color-play-conference)] via-purple-950 to-[var(--color-play-conference-violet)] text-white rounded-[36px] p-6 sm:p-8 shadow-2xl relative overflow-hidden border-2 border-amber-500/40 text-right group"
       >
         {/* Glow ambient effects */}
         <div className="absolute bg-amber-500/10 w-64 h-64 rounded-full blur-[100px] -top-12 -right-12 pointer-events-none" />
@@ -1209,7 +1209,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                <Gamepad2 className="w-8 h-8 text-[#1E1B4B]" />
+                <Gamepad2 className="w-8 h-8 text-[var(--color-play-conference)]" />
               </div>
               <div>
                 <h4 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
@@ -1292,7 +1292,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
 
       {/* --- LIVE MODE & EVENT CURRENTLY HAPPENING --- */}
       {liveMode.isLive && (
-        <div className="bg-gradient-to-r from-red-950 via-[#1E1B4B] to-purple-950 border-2 border-red-500/40 p-5 rounded-3xl relative overflow-hidden shadow-lg">
+        <div className="bg-gradient-to-r from-red-950 via-[var(--color-play-conference)] to-purple-950 border-2 border-red-500/40 p-5 rounded-3xl relative overflow-hidden shadow-lg">
           <div className="absolute top-0 left-0 bg-red-600 text-white text-[9px] font-black px-4 py-1.5 rounded-br-2xl flex items-center gap-1.5 animate-pulse z-15">
             <Radio className="w-3.5 h-3.5 animate-bounce" />
             <span>مباشر الآن / Live Mode 🔴</span>
@@ -2384,7 +2384,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
           </div>
 
           {/* Simulated Premium Minimap component */}
-          <div className="md:col-span-5 bg-gradient-to-br from-purple-950 via-[#1E1B4B] to-slate-900 border border-purple-500/20 p-4 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[220px]">
+          <div className="md:col-span-5 bg-gradient-to-br from-purple-950 via-[var(--color-play-conference)] to-slate-900 border border-purple-500/20 p-4 rounded-2xl flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[220px]">
             {/* Visual Grid Map simulation */}
             <div className="absolute inset-0 opacity-15 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#C5A059 1.5px, transparent 1.5px)', backgroundSize: '15px 15px' }} />
             

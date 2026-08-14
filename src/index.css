@@ -1286,4 +1286,22 @@ body {
   --color-play-card: #081326;
   --color-play-card-raised: #122244;
   --color-play-reward: #F5C542;
+
+  /* The conference sub-product — ConferenceHub, ParticipantCard,
+     SpiritualJournal — is not painted in the games' navy. It runs a
+     purple-indigo ramp against amber, and does so consistently: every one of
+     these 15 uses sits beside Tailwind's purple-950 or an amber border.
+     That is a deliberate identity for the spiritual-conference feature, not
+     drift, so it gets named rather than normalised away.
+
+     --conference earns a token on three distinct roles, not just frequency:
+       bg      ConferenceHub:1111   a filled disc inside an amber ring
+       text    ConferenceHub:1212   ink on an amber-400→600 tile (9.65:1)
+       from/via/to  7 stops across all three files
+     --conference-violet is the ramp's companion mid-stop (via:3 to:3).
+
+     Distinct from --color-play-indigo (#8B8CF7), which is the play THEME's
+     lightened indigo for text contrast and is not used by these screens. */
+  --color-play-conference: #1E1B4B;
+  --color-play-conference-violet: #2E1065;
 }

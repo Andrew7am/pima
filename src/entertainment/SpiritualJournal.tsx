@@ -263,7 +263,7 @@ ${headerBorder}
         <div className="space-y-4">
           
           {/* Welcome Cathedral-like Intro Card */}
-          <div className="bg-gradient-to-br from-purple-950 via-[#2E1065] to-[#1E1B4B] text-white p-5 rounded-3xl border border-amber-500/30 shadow-md relative overflow-hidden">
+          <div className="bg-gradient-to-br from-purple-950 via-[var(--color-play-conference-violet)] to-[var(--color-play-conference)] text-white p-5 rounded-3xl border border-amber-500/30 shadow-md relative overflow-hidden">
             <div className="absolute top-[-20px] left-[-20px] w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
             <div className="relative z-10 space-y-2">
               <h4 className="text-sm font-black text-amber-400 flex items-center gap-1.5">

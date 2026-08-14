@@ -212,7 +212,7 @@ export default function ParticipantCard({ currentUser }: ParticipantCardProps) {
             initial={{ opacity: 0, scale: 0.9, y: 50 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed bottom-6 left-6 right-6 md:left-auto md:right-6 md:w-[420px] bg-gradient-to-br from-purple-950 to-[#2E1065] text-white border-2 border-amber-400 p-5 rounded-2xl shadow-2xl z-50 overflow-hidden text-right"
+            className="fixed bottom-6 left-6 right-6 md:left-auto md:right-6 md:w-[420px] bg-gradient-to-br from-purple-950 to-[var(--color-play-conference-violet)] text-white border-2 border-amber-400 p-5 rounded-2xl shadow-2xl z-50 overflow-hidden text-right"
           >
             <div className="absolute -top-12 -left-12 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl pointer-events-none"></div>
             
@@ -242,7 +242,7 @@ export default function ParticipantCard({ currentUser }: ParticipantCardProps) {
       </AnimatePresence>
 
       {/* Main Collapsible Card container */}
-      <div className="bg-gradient-to-br from-[#1E1B4B] via-[#2E1065] to-purple-950 border-2 border-amber-500/40 rounded-[24px] shadow-lg overflow-hidden relative">
+      <div className="bg-gradient-to-br from-[var(--color-play-conference)] via-[var(--color-play-conference-violet)] to-purple-950 border-2 border-amber-500/40 rounded-[24px] shadow-lg overflow-hidden relative">
         {/* Decorative gold premium border outline */}
         <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-r from-transparent via-amber-400 to-transparent"></div>
         <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -502,7 +502,7 @@ export default function ParticipantCard({ currentUser }: ParticipantCardProps) {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-gradient-to-br from-[#1E1B4B] to-purple-950 border-2 border-amber-500 p-6 sm:p-8 rounded-[36px] max-w-sm w-full text-center relative space-y-6"
+              className="bg-gradient-to-br from-[var(--color-play-conference)] to-purple-950 border-2 border-amber-500 p-6 sm:p-8 rounded-[36px] max-w-sm w-full text-center relative space-y-6"
             >
               <button aria-label="إغلاق رمز الدخول" 
                 onClick={() => setShowFullQR(false)}

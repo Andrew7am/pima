@@ -106,6 +106,20 @@ export default function EntertainmentHome({
   const streak = currentUser.streak ?? 1;
   const avatar = currentUser.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name || 'P')}&background=122244&color=F5C542`;
 
+  /* The hub's category accents are deliberately NOT in the token layer.
+   *
+   * Each category is one consistent triple — text-[C] for the icon, bg-[C]/10
+   * for the chip, border-[C]/30 for its rim — and all nine literals live on the
+   * five lines below. This array already IS the single source of truth; a
+   * global token used three times, in one file, on adjacent lines, would add a
+   * hop and discover nothing. Tokens here are earned by cross-file reuse (see
+   * --color-play-conference, which spans three files); these have none.
+   *
+   * KNOWN DESIGN ISSUE, deliberately not "fixed" here: 'seasons' (#00E5FF) and
+   * 'stats' (#22D3EE) are both cyan. Two of the five categories are therefore
+   * near-indistinguishable at a glance, which weakens the point of a per-
+   * category accent. Changing one is a design decision about what the category
+   * should mean, not a migration, so it is left for the product owner. */
   const CATEGORIES = [
     { id: 'games' as Section, label: 'مركز الألعاب التفاعلي 🎮', sub: 'تحديات كنسية فردية، مباريات مباشرة وألعاب جماعية حماسية', icon: <Gamepad2 className="w-7 h-7 text-[var(--color-play-reward)]" strokeWidth={1.5} />, box: 'from-[var(--color-play-card-raised)] to-[#1C142E] border-blue-500/25', iconBg: 'bg-play-reward/10 border-play-reward/30' },
     { id: 'seasons' as Section, label: 'المؤتمرات والمواسم الروحية 📖', sub: 'الفعاليات المباركة، التحديات الموسمية والتسجيلات المباشرة', icon: <BookOpen className="w-7 h-7 text-[#00E5FF]" strokeWidth={1.5} />, box: 'from-[#0b1b36] to-[#0d315c] border-cyan-500/20', iconBg: 'bg-[#00E5FF]/10 border-[#00E5FF]/30' },
