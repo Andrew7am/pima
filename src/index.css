@@ -813,7 +813,10 @@ body {
 /* Chat wallpaper: the Pima cross at ~2%, large enough that it reads as paper
    grain rather than a pattern, over the cream the rest of the app uses. */
 .pima-chat-bg {
-  background-color: #FBF9F4;
+  /* The thread's ground. Was #FBF9F4, which is --ds-bg to within one unit per
+     channel in light and a bright cream slab in dark — the single largest
+     light island in the chat. Only BookingChatPanel uses this class. */
+  background-color: var(--ds-bg);
   background-image:
     radial-gradient(circle at 50% 0%, rgba(197,160,89,0.05), transparent 60%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cg fill='none' stroke='%232D2D24' stroke-opacity='0.02' stroke-width='2'%3E%3Cpath d='M36 22v28M22 36h28'/%3E%3C/g%3E%3C/svg%3E");

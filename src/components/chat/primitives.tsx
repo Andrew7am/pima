@@ -29,7 +29,7 @@ export function PimaAvatar({
   return (
     <span className="relative inline-block shrink-0" style={{ width: size, height: size }}>
       <span
-        className={`block w-full h-full rounded-full overflow-hidden bg-[#EDE7DA] text-[#B8944E] font-black flex items-center justify-center ${
+        className={`block w-full h-full rounded-full overflow-hidden bg-[var(--ds-raised)] text-[var(--ds-accent-deep)] font-black flex items-center justify-center ${
           ring ? 'ring-2 ring-[#C5A059]/45' : ''
         }`}
         style={{ fontSize: size * 0.34 }}
@@ -76,13 +76,13 @@ export function PimaStatusBadge({ status }: { status: string }) {
 export function PimaReceipt({ read }: { read?: boolean }) {
   return read
     ? <CheckCheck className="w-3.5 h-3.5 text-sky-500 shrink-0" aria-label="تمت القراءة" />
-    : <Check className="w-3.5 h-3.5 text-[#B5AF98] shrink-0" aria-label="تم الإرسال" />;
+    : <Check className="w-3.5 h-3.5 text-[var(--ds-text-faint)] shrink-0" aria-label="تم الإرسال" />;
 }
 
 /** Shimmer placeholder. Slow and low-contrast — a loading state should not
  *  perform. Width comes from the caller so a skeleton can mimic real content. */
 export function PimaSkeleton({ className = '' }: { className?: string }) {
-  return <span className={`block rounded-lg bg-[#EFE9DC] pima-shimmer ${className}`} aria-hidden="true" />;
+  return <span className={`block rounded-lg bg-[var(--ds-raised)] pima-shimmer ${className}`} aria-hidden="true" />;
 }
 
 /** Conversation-row skeleton — mirrors the real row's geometry so the list does
@@ -103,12 +103,12 @@ export function PimaEmptyState({
   title, body, action,
 }: { title: string; body: string; action?: { label: string; onClick: () => void } }) {
   return (
-    <div className="bg-white border border-[#EDE7DA] rounded-3xl px-6 py-10 text-center">
-      <span className="inline-flex w-14 h-14 rounded-full bg-[#F6F0E2] items-center justify-center mb-3">
-        <MessageCircle className="w-6 h-6 text-[#C5A059]" />
+    <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-3xl px-6 py-10 text-center">
+      <span className="inline-flex w-14 h-14 rounded-full bg-[var(--ds-raised)] items-center justify-center mb-3">
+        <MessageCircle className="w-6 h-6 text-[var(--ds-accent)]" />
       </span>
-      <p className="text-[13px] font-black text-[#2D2D24]">{title}</p>
-      <p className="text-[10.5px] font-bold text-[#8A8A70] mt-1 leading-relaxed">{body}</p>
+      <p className="text-[13px] font-black text-[var(--ds-text-strong)]">{title}</p>
+      <p className="text-[10.5px] font-bold text-[var(--ds-text-2)] mt-1 leading-relaxed">{body}</p>
       {action && (
         <button
           onClick={action.onClick}
@@ -133,13 +133,13 @@ export function PimaFilterChip({
       className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3.5 h-10 text-[11px] font-black transition-all duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press ${
         active
           ? 'bg-gradient-to-b from-[#C9A96A] to-[#B8944E] text-white'
-          : 'bg-white text-[#4A4A3A] border border-[#EDE7DA]'
+          : 'bg-[var(--ds-surface)] text-[var(--ds-text)] border border-[var(--ds-border)]'
       }`}
     >
       {label}
       {count ? (
         <span className={`min-w-[17px] h-[17px] px-1 rounded-full text-[9px] font-black flex items-center justify-center ${
-          active ? 'bg-white/25 text-white' : 'bg-[#F6F0E2] text-[#B8944E]'
+          active ? 'bg-[var(--ds-surface)]/25 text-white' : 'bg-[var(--ds-raised)] text-[var(--ds-accent-deep)]'
         }`}>{count}</span>
       ) : null}
     </button>
@@ -151,28 +151,28 @@ export function PimaSearchBar({
 }: { value: string; onChange: (v: string) => void; placeholder: string; id?: string }) {
   return (
     <div className="relative">
-      <Search className="w-4 h-4 text-[#B5AF98] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+      <Search className="w-4 h-4 text-[var(--ds-text-faint)] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
       <input
         id={id}
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-12 bg-white border border-[#EDE7DA] rounded-2xl pr-10 pl-3 text-[12px] text-[#2D2D24] placeholder:text-[#B5AF98] outline-none focus:border-[#C9A96A] transition-colors duration-[250ms]"
+        className="w-full h-12 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl pr-10 pl-3 text-[12px] text-[var(--ds-text-strong)] placeholder:text-[var(--ds-text-faint)] outline-none focus:border-[#C9A96A] transition-colors duration-[250ms]"
       />
     </div>
   );
 }
 
 export function PimaSectionTitle({ children }: { children: React.ReactNode }) {
-  return <h3 className="text-[11px] font-black text-[#8A8A70] px-1">{children}</h3>;
+  return <h3 className="text-[11px] font-black text-[var(--ds-text-2)] px-1">{children}</h3>;
 }
 
 export function PimaQuickReplyChip({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="shrink-0 rounded-full border border-[#EDE7DA] bg-white px-3.5 h-9 text-[11px] font-bold text-[#4A4A3A] hover:border-[#C9A96A] transition-colors duration-[250ms] pima-press"
+      className="shrink-0 rounded-full border border-[var(--ds-border)] bg-[var(--ds-surface)] px-3.5 h-9 text-[11px] font-bold text-[var(--ds-text)] hover:border-[#C9A96A] transition-colors duration-[250ms] pima-press"
     >
       {label}
     </button>
@@ -186,16 +186,16 @@ export interface TimelineStep { label: string; date?: string; done: boolean }
 export function PimaTimeline({ steps }: { steps: TimelineStep[] }) {
   return (
     <ol className="relative flex items-start justify-between gap-1">
-      <span aria-hidden="true" className="absolute top-[9px] inset-x-4 h-px bg-[#EDE7DA]" />
+      <span aria-hidden="true" className="absolute top-[9px] inset-x-4 h-px bg-[var(--ds-raised)]" />
       {steps.map((s) => (
         <li key={s.label} className="relative flex flex-col items-center gap-1 flex-1 min-w-0">
-          <span className={`w-[18px] h-[18px] rounded-full border-2 bg-white flex items-center justify-center ${
-            s.done ? 'border-[#B8944E]' : 'border-[#E0D9C8]'
+          <span className={`w-[18px] h-[18px] rounded-full border-2 bg-[var(--ds-surface)] flex items-center justify-center ${
+            s.done ? 'border-[#B8944E]' : 'border-[var(--ds-border)]'
           }`}>
             {s.done && <span className="w-2 h-2 rounded-full bg-gradient-to-b from-[#C9A96A] to-[#B8944E]" />}
           </span>
-          <span className={`text-[8.5px] font-black text-center leading-tight ${s.done ? 'text-[#2D2D24]' : 'text-[#B5AF98]'}`}>{s.label}</span>
-          {s.date && <span className="text-[8px] font-bold text-[#B5AF98] text-center leading-none">{s.date}</span>}
+          <span className={`text-[8.5px] font-black text-center leading-tight ${s.done ? 'text-[var(--ds-text-strong)]' : 'text-[var(--ds-text-faint)]'}`}>{s.label}</span>
+          {s.date && <span className="text-[8px] font-bold text-[var(--ds-text-faint)] text-center leading-none">{s.date}</span>}
         </li>
       ))}
     </ol>
@@ -206,7 +206,7 @@ export function PimaTimeline({ steps }: { steps: TimelineStep[] }) {
 export function PimaDateCapsule({ label }: { label: string }) {
   return (
     <div className="flex justify-center my-3">
-      <span className="rounded-full bg-white/75 backdrop-blur-md border border-white/80 px-3 py-1 text-[9.5px] font-black text-[#6B6B57] shadow-[0_2px_8px_rgba(45,45,36,0.06)]">
+      <span className="rounded-full bg-[var(--ds-surface)]/75 backdrop-blur-md border border-[var(--ds-border)] px-3 py-1 text-[9.5px] font-black text-[var(--ds-text-2)] shadow-[0_2px_8px_rgba(45,45,36,0.06)]">
         {label}
       </span>
     </div>
