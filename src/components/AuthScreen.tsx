@@ -78,11 +78,11 @@ function LeafFlourish({ className = '', flip = false }: { className?: string; fl
 function FeatureChip({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
   return (
     <div className="flex flex-col items-center gap-1 p-1 text-center">
-      <div className="w-9 h-9 rounded-full bg-white border border-[#EFE8D8] flex items-center justify-center shadow-sm">
+      <div className="w-9 h-9 rounded-full bg-[var(--ds-surface)] border border-[var(--ds-border)] flex items-center justify-center shadow-sm">
         {icon}
       </div>
-      <div className="text-[9.5px] font-black text-[#0A2342] leading-tight">{label}</div>
-      <div className="text-[8px] text-[#8A8A70] leading-tight">{sub}</div>
+      <div className="text-[9.5px] font-black text-[var(--ds-brand)] leading-tight">{label}</div>
+      <div className="text-[8px] text-[var(--ds-text-2)] leading-tight">{sub}</div>
     </div>
   );
 }
@@ -90,11 +90,11 @@ function FeatureChip({ icon, label, sub }: { icon: React.ReactNode; label: strin
 function BottomChip({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
   return (
     <div className="flex flex-col items-center gap-1 text-center">
-      <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center border border-[#C5A059]/40">
+      <div className="w-9 h-9 rounded-full bg-[var(--ds-surface)]/10 flex items-center justify-center border border-[var(--ds-accent)]/40">
         {icon}
       </div>
-      <div className="text-[9.5px] font-black text-white leading-tight">{label}</div>
-      <div className="text-[8px] text-white/70 leading-tight">{sub}</div>
+      <div className="text-[9.5px] font-black text-[var(--ds-on-brand)] leading-tight">{label}</div>
+      <div className="text-[8px] text-[var(--ds-on-brand)]/70 leading-tight">{sub}</div>
     </div>
   );
 }
@@ -407,7 +407,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
 
   if (isViewingPrivacy) {
     return (
-      <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center p-4 font-sans antialiased text-right">
+      <div className="min-h-screen bg-[var(--ds-bg)] flex items-center justify-center p-4 font-sans antialiased text-right">
         <div className="w-full max-w-md">
           <PrivacyPolicy onBack={() => setIsViewingPrivacy(false)} />
         </div>
@@ -480,7 +480,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   // Register + forgot flows keep the older compact wrapper below.
   if (!isRegisterMode && !isForgotMode) {
     return (
-      <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center p-4 font-sans antialiased text-right">
+      <div className="min-h-screen bg-[var(--ds-bg)] flex items-center justify-center p-4 font-sans antialiased text-right">
         {/* At lg the card becomes two columns: the brand block moves BESIDE the
             form instead of stacking above it. Measured cause of the "phone UI on
             a laptop" complaint — this file had 0 responsive utilities across 995
@@ -492,7 +492,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
             The brand half is the hero, the welcome line and the three existing
             trust chips; the form half is untouched. Below lg the single column
             is exactly as it was. */}
-        <div className="w-full max-w-md lg:max-w-4xl bg-white rounded-[32px] border border-[#D6D6C2] shadow-2xl overflow-hidden text-[#4A4A3A] lg:grid lg:grid-cols-2 lg:items-stretch">
+        <div className="w-full max-w-md lg:max-w-4xl bg-[var(--ds-surface)] rounded-[32px] border border-[var(--ds-border)] shadow-2xl overflow-hidden text-[var(--ds-text)] lg:grid lg:grid-cols-2 lg:items-stretch">
 
           {/* 1 — Hero image + curved bottom wave. Full image shown as-is
               (the user's uploaded file already has the correct
@@ -501,7 +501,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
               seamlessly instead of a hard rectangular edge, with a
               subtle gold hairline tracing the same curve. */}
           {/* ── brand column (lg) / top of the stack (below lg) ── */}
-          <div className="lg:flex lg:flex-col lg:justify-center lg:bg-[#FDFBF7]">
+          <div className="lg:flex lg:flex-col lg:justify-center lg:bg-[var(--ds-surface)]">
           <div className="relative w-full">
             <img
               src="/pima-hero.png"
@@ -510,7 +510,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
               // the artwork to a band — on a phone the top and bottom of it
               // simply were not there. Letterboxing onto the cream the card
               // already uses shows the whole image and reads as deliberate.
-              className="w-full h-64 object-contain object-center block bg-[#FDFBF7]"
+              className="w-full h-64 object-contain object-center block bg-[var(--ds-surface)]"
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
             />
             {/* Convex wave — white content bulges up into the image */}
@@ -538,19 +538,19 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
           <div className="px-5 pt-2 pb-5 space-y-4">
             {/* 2 — Title */}
             <div className="text-center space-y-1">
-              <h1 className="text-xl font-black text-[#0A2342]">
-                أهلاً بك في <span className="text-[#C5A059]">بيما</span>
+              <h1 className="text-xl font-black text-[var(--ds-brand)]">
+                أهلاً بك في <span className="text-[var(--ds-accent)]">بيما</span>
               </h1>
-              <p className="text-[11px] text-[#8A8A70] leading-relaxed max-w-[280px] mx-auto">
+              <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed max-w-[280px] mx-auto">
                 احجز مكانك بسهولة واستمتع بتجربة روحانية مميزة
               </p>
             </div>
 
             {/* 3 — Feature chips (3 tiles — "للقاء والبركة" removed) */}
-            <div className="grid grid-cols-3 gap-2 bg-white border border-[#EFE8D8] rounded-2xl p-2.5 shadow-sm">
-              <FeatureChip icon={<Home className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="أكثر من مكان" sub="اختيارات متنوعة" />
-              <FeatureChip icon={<CalendarIcon className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="احجز الآن" sub="بكل سهولة" />
-              <FeatureChip icon={<ShieldCheck className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="موثوق وآمن" sub="حجوزات مؤكدة" />
+            <div className="grid grid-cols-3 gap-2 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-2.5 shadow-sm">
+              <FeatureChip icon={<Home className="w-4 h-4 text-[var(--ds-accent)]" strokeWidth={2.2} />} label="أكثر من مكان" sub="اختيارات متنوعة" />
+              <FeatureChip icon={<CalendarIcon className="w-4 h-4 text-[var(--ds-accent)]" strokeWidth={2.2} />} label="احجز الآن" sub="بكل سهولة" />
+              <FeatureChip icon={<ShieldCheck className="w-4 h-4 text-[var(--ds-accent)]" strokeWidth={2.2} />} label="موثوق وآمن" sub="حجوزات مؤكدة" />
             </div>
           </div>
           </div>
@@ -560,7 +560,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
             {/* 4 — Section heading with leaf flourishes on both sides */}
             <div className="flex items-center justify-center gap-2 pt-1">
               <LeafFlourish className="w-10 h-3" />
-              <span className="text-base font-black text-[#0A2342] px-1">تسجيل الدخول</span>
+              <span className="text-base font-black text-[var(--ds-brand)] px-1">تسجيل الدخول</span>
               <LeafFlourish className="w-10 h-3" flip />
             </div>
 
@@ -569,7 +569,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
                 type="button"
                 id="browse-as-guest-btn"
                 onClick={onBackToBrowse}
-                className="w-full text-center text-[11px] font-bold text-[#0A2342]/70 hover:text-[#0A2342] underline underline-offset-4 transition-colors cursor-pointer"
+                className="w-full text-center text-[11px] font-bold text-[var(--ds-brand)]/70 hover:text-[var(--ds-brand)] underline underline-offset-4 transition-colors cursor-pointer"
               >
                 ← تصفح البيوت كزائر بدون تسجيل
               </button>
@@ -586,9 +586,9 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
               type="button"
               disabled={loading}
               onClick={handleGoogleSignIn}
-              className="w-full flex items-center justify-center gap-2 bg-[#0A2342] hover:bg-[#071930] disabled:opacity-60 text-white text-xs font-bold py-3 rounded-xl shadow-md transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-[var(--ds-brand)] hover:bg-[#071930] disabled:opacity-60 text-[var(--ds-on-brand)] text-xs font-bold py-3 rounded-xl shadow-md transition-colors"
             >
-              <div className="bg-white rounded-full p-0.5">
+              <div className="bg-[var(--ds-surface)] rounded-full p-0.5">
                 <GoogleG className="w-3.5 h-3.5" />
               </div>
               <span>تسجيل الدخول بحساب Google</span>
@@ -607,9 +607,9 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
             )}
 
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-[#EFE8D8]" />
-              <span className="text-[10px] text-[#8A8A70] font-bold">أو</span>
-              <div className="flex-1 h-px bg-[#EFE8D8]" />
+              <div className="flex-1 h-px bg-[var(--ds-border)]" />
+              <span className="text-[10px] text-[var(--ds-text-2)] font-bold">أو</span>
+              <div className="flex-1 h-px bg-[var(--ds-border)]" />
             </div>
 
             {/* 6 — Form */}
@@ -618,10 +618,10 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
                 <input
                   type="email" required placeholder="البريد الإلكتروني"
                   value={signInEmail} onChange={(e) => setSignInEmail(e.target.value)}
-                  className="w-full bg-white border border-[#EFE8D8] rounded-2xl py-3 pr-11 pl-3 text-xs text-[#4A4A3A] focus:outline-none focus:border-[#C5A059] text-right"
+                  className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl py-3 pr-11 pl-3 text-xs text-[var(--ds-text)] focus:outline-none focus:border-[var(--ds-accent)] text-right"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3.5">
-                  <Mail className="w-4 h-4 text-[#BCBC9D]" />
+                  <Mail className="w-4 h-4 text-[var(--ds-text-faint)]" />
                 </div>
               </div>
 
@@ -629,14 +629,14 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
                 <input
                   type={showPass ? 'text' : 'password'} required placeholder="كلمة المرور"
                   value={signInPassword} onChange={(e) => setSignInPassword(e.target.value)}
-                  className="w-full bg-white border border-[#EFE8D8] rounded-2xl py-3 pr-11 pl-10 text-xs text-[#4A4A3A] focus:outline-none focus:border-[#C5A059] text-right"
+                  className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl py-3 pr-11 pl-10 text-xs text-[var(--ds-text)] focus:outline-none focus:border-[var(--ds-accent)] text-right"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3.5">
-                  <Lock className="w-4 h-4 text-[#BCBC9D]" />
+                  <Lock className="w-4 h-4 text-[var(--ds-text-faint)]" />
                 </div>
                 <button aria-label={showPass ? 'إخفاء كلمة السر' : 'إظهار كلمة السر'}
                   type="button" onClick={() => setShowPass((s) => !s)}
-                  className="pima-tap absolute inset-y-0 left-0 flex items-center pl-3.5 text-[#BCBC9D] hover:text-[#4A4A3A]"
+                  className="pima-tap absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--ds-text-faint)] hover:text-[var(--ds-text)]"
                 >
                   {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -647,14 +647,14 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
                   <input
                     type="checkbox" checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-3.5 h-3.5 accent-[#C5A059] cursor-pointer"
+                    className="w-3.5 h-3.5 accent-[var(--ds-accent)] cursor-pointer"
                   />
-                  <span className="text-[#4A4A3A] font-bold">تذكرني</span>
+                  <span className="text-[var(--ds-text)] font-bold">تذكرني</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => { setIsForgotMode(true); setForgotSent(false); setForgotEmail(signInEmail); setError(''); }}
-                  className="text-[#8A8A70] hover:text-[#0A2342] font-bold underline"
+                  className="text-[var(--ds-text-2)] hover:text-[var(--ds-brand)] font-bold underline"
                 >
                   نسيت كلمة المرور؟
                 </button>
@@ -662,7 +662,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
 
               <button
                 type="submit" disabled={loading || cooldown > 0}
-                className="w-full flex items-center justify-center gap-2 bg-[#C5A059] hover:bg-[#B28F4D] disabled:opacity-60 text-[#0A2342] text-sm font-black py-3 rounded-2xl shadow-lg transition-colors"
+                className="w-full flex items-center justify-center gap-2 bg-[#C5A059] hover:bg-[#B28F4D] disabled:opacity-60 text-[var(--ds-on-accent)] text-sm font-black py-3 rounded-2xl shadow-lg transition-colors"
               >
                 {cooldown > 0 ? <Clock className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
                 <span>{cooldown > 0 ? retryInLabel(cooldown) : loading ? 'جارٍ تسجيل الدخول...' : 'تسجيل الدخول ومتابعة الحجز'}</span>
@@ -681,29 +681,29 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
             <button
               type="button"
               onClick={() => { setIsRegisterMode(true); setRoleChosen(false); setError(''); }}
-              className="w-full flex items-center justify-between gap-2 bg-white border border-[#EFE8D8] rounded-2xl p-3 hover:bg-[#FAF7F1] transition-colors"
+              className="w-full flex items-center justify-between gap-2 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-3 hover:bg-[var(--ds-raised)] transition-colors"
             >
-              <div className="w-9 h-9 rounded-full bg-[#FAF7F1] border border-[#EFE8D8] flex items-center justify-center shrink-0">
-                <UserPlus className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />
+              <div className="w-9 h-9 rounded-full bg-[var(--ds-raised)] border border-[var(--ds-border)] flex items-center justify-center shrink-0">
+                <UserPlus className="w-4 h-4 text-[var(--ds-accent)]" strokeWidth={2.2} />
               </div>
               <div className="flex-1 text-center text-[11px]">
-                <span className="text-[#8A8A70]">ليس لديك حساب؟ </span>
-                <span className="text-[#C5A059] font-black">إنشاء حساب جديد</span>
+                <span className="text-[var(--ds-text-2)]">ليس لديك حساب؟ </span>
+                <span className="text-[var(--ds-accent)] font-black">إنشاء حساب جديد</span>
               </div>
               <span className="w-9 shrink-0" aria-hidden />
             </button>
           </div>
 
           {/* 9 — Navy footer with 3 trust chips */}
-          <div className="bg-[#0A2342] px-4 pt-4 pb-3 grid grid-cols-3 gap-3 lg:col-span-2">
-            <BottomChip icon={<ShieldCheck className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="حجوزات آمنة" sub="بياناتك محمية بالكامل" />
-            <BottomChip icon={<Award className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="جودة موثوقة" sub="أفضل أماكن للإقامة" />
-            <BottomChip icon={<Headphones className="w-4 h-4 text-[#C5A059]" strokeWidth={2.2} />} label="دعم على مدار الساعة" sub="نحن هنا لمساعدتك" />
+          <div className="bg-[var(--ds-brand)] px-4 pt-4 pb-3 grid grid-cols-3 gap-3 lg:col-span-2">
+            <BottomChip icon={<ShieldCheck className="w-4 h-4 text-[var(--ds-accent)]" strokeWidth={2.2} />} label="حجوزات آمنة" sub="بياناتك محمية بالكامل" />
+            <BottomChip icon={<Award className="w-4 h-4 text-[var(--ds-accent)]" strokeWidth={2.2} />} label="جودة موثوقة" sub="أفضل أماكن للإقامة" />
+            <BottomChip icon={<Headphones className="w-4 h-4 text-[var(--ds-accent)]" strokeWidth={2.2} />} label="دعم على مدار الساعة" sub="نحن هنا لمساعدتك" />
           </div>
-          <div className="bg-[#0A2342] text-center pb-3 lg:col-span-2">
+          <div className="bg-[var(--ds-brand)] text-center pb-3 lg:col-span-2">
             <button
               type="button" onClick={() => setIsViewingPrivacy(true)}
-              className="text-[9px] text-white/70 hover:text-white underline"
+              className="text-[9px] text-[var(--ds-on-brand)]/70 hover:text-[var(--ds-on-brand)] underline"
             >
               سياسة الخصوصية وشروط الاستخدام
             </button>
@@ -715,10 +715,10 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
   }
 
   return (
-    <div className="min-h-screen bg-[#EBEBE0] flex items-center justify-center p-4 font-sans select-none antialiased text-right">
-      <div className="w-full max-w-md bg-[#FDFBF7] rounded-[32px] border border-[#D6D6C2] shadow-2xl p-6 space-y-6 relative overflow-hidden text-[#4A4A3A]">
+    <div className="min-h-screen bg-[var(--ds-bg)] flex items-center justify-center p-4 font-sans select-none antialiased text-right">
+      <div className="w-full max-w-md bg-[var(--ds-surface)] rounded-[32px] border border-[var(--ds-border)] shadow-2xl p-6 space-y-6 relative overflow-hidden text-[var(--ds-text)]">
 
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-l from-[#0A2342] to-[#C5A059]" />
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-l from-[var(--ds-brand)] to-[var(--ds-accent)]" />
 
         <div className="pt-2">
           <Logo variant="full" size={130} className="shadow-none border-none p-0 bg-transparent" />
@@ -734,7 +734,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
           type="button"
           disabled={loading}
           onClick={handleGoogleSignIn}
-          className="w-full flex items-center justify-center gap-2 bg-white border border-[#D6D6C2] hover:bg-[#EBEBE0]/40 disabled:opacity-60 text-[#4A4A3A] text-xs font-bold py-2.5 rounded-xl shadow-sm transition-colors"
+          className="w-full flex items-center justify-center gap-2 bg-[var(--ds-surface)] border border-[var(--ds-border)] hover:bg-[var(--ds-bg)]/40 disabled:opacity-60 text-[var(--ds-text)] text-xs font-bold py-2.5 rounded-xl shadow-sm transition-colors"
         >
           <svg className="w-4 h-4" viewBox="0 0 48 48">
             <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
@@ -758,9 +758,9 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
         )}
 
         <div className="flex items-center gap-2">
-          <div className="flex-1 h-px bg-[#D6D6C2]" />
-          <span className="text-[9px] text-[#8A8A70] font-bold">أو</span>
-          <div className="flex-1 h-px bg-[#D6D6C2]" />
+          <div className="flex-1 h-px bg-[var(--ds-border)]" />
+          <span className="text-[9px] text-[var(--ds-text-2)] font-bold">أو</span>
+          <div className="flex-1 h-px bg-[var(--ds-border)]" />
         </div>
 
         {isForgotMode ? (
@@ -770,7 +770,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
                 إذا كان بريدك الإلكتروني مسجلاً لدينا، فستصلك رسالة تحتوي على رابط إعادة تعيين كلمة المرور خلال دقائق. تأكد من صندوق الرسائل غير المرغوب فيها (Spam).
               </div>
               <button type="button" onClick={() => { setIsForgotMode(false); setForgotSent(false); setError(''); }}
-                className="text-[10px] text-[#8A8A70] hover:text-[#4A4A3A] font-bold underline">
+                className="text-[10px] text-[var(--ds-text-2)] hover:text-[var(--ds-text)] font-bold underline">
                 العودة لتسجيل الدخول
               </button>
             </div>
@@ -778,31 +778,31 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
             <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
               <div className="space-y-1">
                 <button type="button" onClick={() => { setIsForgotMode(false); setError(''); }}
-                  className="flex items-center gap-1 text-[10px] text-[#8A8A70] hover:text-[#0A2342] font-bold mb-1">
+                  className="flex items-center gap-1 text-[10px] text-[var(--ds-text-2)] hover:text-[var(--ds-brand)] font-bold mb-1">
                   <span>→</span>
                   <span>رجوع لتسجيل الدخول</span>
                 </button>
-                <h2 className="text-xs font-bold text-[#4A4A3A]">إعادة تعيين كلمة المرور:</h2>
-                <p className="text-[10px] text-[#8A8A70]">أدخل بريدك الإلكتروني المسجل، وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.</p>
+                <h2 className="text-xs font-bold text-[var(--ds-text)]">إعادة تعيين كلمة المرور:</h2>
+                <p className="text-[10px] text-[var(--ds-text-2)]">أدخل بريدك الإلكتروني المسجل، وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.</p>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">البريد الإلكتروني:</label>
+                <label className="block text-[10px] font-bold text-[var(--ds-text-2)] mb-1">البريد الإلكتروني:</label>
                 <div className="relative">
                   <input type="email" required placeholder="example@church.eg" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)}
-                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2.5 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none text-left" />
-                  <Mail className="absolute top-3 right-3 w-4 h-4 text-[#BCBC9D]" />
+                    className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl py-2.5 pl-3 pr-10 text-xs text-[var(--ds-text)] focus:outline-none text-left" />
+                  <Mail className="absolute top-3 right-3 w-4 h-4 text-[var(--ds-text-faint)]" />
                 </div>
               </div>
 
               <button type="submit" disabled={loading || cooldown > 0}
-                className="w-full bg-[#0A2342] hover:bg-[#071930] disabled:opacity-60 text-white text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors">
+                className="w-full bg-[var(--ds-brand)] hover:bg-[#071930] disabled:opacity-60 text-[var(--ds-on-brand)] text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors">
                 {cooldown > 0 ? retryInLabel(cooldown) : loading ? 'جارٍ الإرسال...' : 'إرسال رابط إعادة التعيين'}
               </button>
 
               <div className="text-center">
                 <button type="button" onClick={() => { setIsForgotMode(false); setError(''); }}
-                  className="text-[10px] text-[#8A8A70] hover:text-[#4A4A3A] font-bold underline">
+                  className="text-[10px] text-[var(--ds-text-2)] hover:text-[var(--ds-text)] font-bold underline">
                   العودة لتسجيل الدخول
                 </button>
               </div>
@@ -853,15 +853,15 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
           <form onSubmit={handleRegisterSubmit} className="space-y-4">
             <div className="space-y-1">
               <button type="button" onClick={() => { setIsRegisterMode(false); setError(''); }}
-                className="flex items-center gap-1 text-[10px] text-[#8A8A70] hover:text-[#0A2342] font-bold mb-1">
+                className="flex items-center gap-1 text-[10px] text-[var(--ds-text-2)] hover:text-[var(--ds-brand)] font-bold mb-1">
                 <span>→</span>
                 <span>رجوع لتسجيل الدخول</span>
               </button>
-              <h2 className="text-xs font-bold text-[#4A4A3A]">إنشاء حساب جديد بالمنصة:</h2>
-              <p className="text-[10px] text-[#8A8A70]">اختر نوع حسابك لتخصيص محرك البحث والحجوزات.</p>
+              <h2 className="text-xs font-bold text-[var(--ds-text)]">إنشاء حساب جديد بالمنصة:</h2>
+              <p className="text-[10px] text-[var(--ds-text-2)]">اختر نوع حسابك لتخصيص محرك البحث والحجوزات.</p>
             </div>
 
-            <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#EBEBE0] border border-[#D6D6C2] rounded-2xl">
+            <div className="grid grid-cols-3 gap-1.5 p-1 bg-[var(--ds-bg)] border border-[var(--ds-border)] rounded-2xl">
               {(['individual', 'servant', 'owner'] as UserRole[]).map((role) => {
                 const isSelected = selectedRole === role;
                 let label = '';
@@ -871,7 +871,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
                 else if (role === 'owner') { label = 'صاحب بيت'; Icon = Users; }
                 return (
                   <button key={role} type="button" onClick={() => setSelectedRole(role)}
-                    className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-all ${isSelected ? 'bg-[#0A2342] text-white shadow-sm font-extrabold' : 'text-[#8A8A70] hover:bg-[#DEDECB]'}`}>
+                    className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl transition-all ${isSelected ? 'bg-[var(--ds-brand)] text-[var(--ds-on-brand)] shadow-sm font-extrabold' : 'text-[var(--ds-text-2)] hover:bg-[var(--ds-border)]'}`}>
                     <Icon className="w-4 h-4" />
                     <span className="text-[9px]">{label}</span>
                   </button>
@@ -881,112 +881,112 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">الاسم بالكامل:</label>
+                <label className="block text-[10px] font-bold text-[var(--ds-text-2)] mb-1">الاسم بالكامل:</label>
                 <div className="relative">
                   <input type="text" required placeholder="مثال: فادي كمال مرقس" value={name} onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none" />
-                  <UserIcon className="absolute top-2.5 right-3 w-4 h-4 text-[#BCBC9D]" />
+                    className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl py-2 pl-3 pr-10 text-xs text-[var(--ds-text)] focus:outline-none" />
+                  <UserIcon className="absolute top-2.5 right-3 w-4 h-4 text-[var(--ds-text-faint)]" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">البريد الإلكتروني:</label>
+                <label className="block text-[10px] font-bold text-[var(--ds-text-2)] mb-1">البريد الإلكتروني:</label>
                 <div className="relative">
                   <input type="email" required placeholder="example@church.eg" value={email} onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none text-left" />
-                  <Mail className="absolute top-2.5 right-3 w-4 h-4 text-[#BCBC9D]" />
+                    className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl py-2 pl-3 pr-10 text-xs text-[var(--ds-text)] focus:outline-none text-left" />
+                  <Mail className="absolute top-2.5 right-3 w-4 h-4 text-[var(--ds-text-faint)]" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">رقم الهاتف / المحمول:</label>
+                <label className="block text-[10px] font-bold text-[var(--ds-text-2)] mb-1">رقم الهاتف / المحمول:</label>
                 <div className="relative">
                   <input type="tel" required maxLength={11} placeholder="01234567890" value={phone} onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none text-left" />
-                  <Phone className="absolute top-2.5 right-3 w-4 h-4 text-[#BCBC9D]" />
+                    className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl py-2 pl-3 pr-10 text-xs text-[var(--ds-text)] focus:outline-none text-left" />
+                  <Phone className="absolute top-2.5 right-3 w-4 h-4 text-[var(--ds-text-faint)]" />
                 </div>
               </div>
 
               {(selectedRole === 'servant' || selectedRole === 'owner') && (
                 <div>
-                  <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">
+                  <label className="block text-[10px] font-bold text-[var(--ds-text-2)] mb-1">
                     {selectedRole === 'owner' ? 'اسم بيت المؤتمرات / الشركة الممثلة:' : 'اسم الكنيسة / أسرة الخدمة التابع لها:'}
                   </label>
                   <input type="text" required placeholder="مثال: كنيسة العذراء بالزيتون" value={orgName} onChange={(e) => setOrgName(e.target.value)}
-                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
+                    className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl py-2 px-3 text-xs text-[var(--ds-text)] focus:outline-none" />
                 </div>
               )}
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">تاريخ الميلاد:</label>
+                <label className="block text-[10px] font-bold text-[var(--ds-text-2)] mb-1">تاريخ الميلاد:</label>
                 <input
                   type="date" required max={maxDateOfBirth}
                   value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none"
+                  className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl py-2 px-3 text-xs text-[var(--ds-text)] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">المحافظة:</label>
+                <label className="block text-[10px] font-bold text-[var(--ds-text-2)] mb-1">المحافظة:</label>
                 <div className="relative">
                   <select required value={governorate} onChange={(e) => setGovernorate(e.target.value)}
-                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none appearance-none">
+                    className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl py-2 pl-3 pr-10 text-xs text-[var(--ds-text)] focus:outline-none appearance-none">
                     <option value="" disabled>اختر المحافظة</option>
                     {GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
                   </select>
-                  <MapPin className="absolute top-2.5 right-3 w-4 h-4 text-[#BCBC9D] pointer-events-none" />
+                  <MapPin className="absolute top-2.5 right-3 w-4 h-4 text-[var(--ds-text-faint)] pointer-events-none" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">العنوان بالكامل (اختياري):</label>
+                <label className="block text-[10px] font-bold text-[var(--ds-text-2)] mb-1">العنوان بالكامل (اختياري):</label>
                 <input type="text" placeholder="مثال: مدينة شبين الكوم، قرية ميت حبيش" value={address} onChange={(e) => setAddress(e.target.value)}
-                  className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
+                  className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl py-2 px-3 text-xs text-[var(--ds-text)] focus:outline-none" />
               </div>
 
               {isChurchAffiliated && (
                 <>
                   <div>
-                    <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">اسم الكنيسة:</label>
+                    <label className="block text-[10px] font-bold text-[var(--ds-text-2)] mb-1">اسم الكنيسة:</label>
                     <div className="relative">
                       <input type="text" required placeholder="مثال: كنيسة الأنبا أنطونيوس" value={churchName} onChange={(e) => setChurchName(e.target.value)}
-                        className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none" />
-                      <Church className="absolute top-2.5 right-3 w-4 h-4 text-[#BCBC9D]" />
+                        className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl py-2 pl-3 pr-10 text-xs text-[var(--ds-text)] focus:outline-none" />
+                      <Church className="absolute top-2.5 right-3 w-4 h-4 text-[var(--ds-text-faint)]" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">اسم الأب الكاهن المسؤول:</label>
+                    <label className="block text-[10px] font-bold text-[var(--ds-text-2)] mb-1">اسم الأب الكاهن المسؤول:</label>
                     <input type="text" required placeholder="مثال: القس مرقس جرجس" value={priestName} onChange={(e) => setPriestName(e.target.value)}
-                      className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none" />
+                      className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl py-2 px-3 text-xs text-[var(--ds-text)] focus:outline-none" />
                   </div>
                 </>
               )}
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">كلمة المرور:</label>
+                <label className="block text-[10px] font-bold text-[var(--ds-text-2)] mb-1">كلمة المرور:</label>
                 <div className="relative">
                   <input type="password" required minLength={MIN_PASSWORD_LENGTH} placeholder={minPasswordLabel} value={password} onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 pl-3 pr-10 text-xs text-[#4A4A3A] focus:outline-none" />
-                  <Lock className="absolute top-2.5 right-3 w-4 h-4 text-[#BCBC9D]" />
+                    className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl py-2 pl-3 pr-10 text-xs text-[var(--ds-text)] focus:outline-none" />
+                  <Lock className="absolute top-2.5 right-3 w-4 h-4 text-[var(--ds-text-faint)]" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-[#8A8A70] mb-1">كود دعوة صديق (اختياري):</label>
+                <label className="block text-[10px] font-bold text-[var(--ds-text-2)] mb-1">كود دعوة صديق (اختياري):</label>
                 <input type="text" placeholder="مثال: a1b2c3d4" value={referralCode} onChange={(e) => setReferralCode(e.target.value)}
-                  className="w-full bg-white border border-[#D6D6C2] rounded-xl py-2 px-3 text-xs text-[#4A4A3A] focus:outline-none text-left" dir="ltr" />
-                <p className="text-[9px] text-[#8A8A70] mt-1">إن كان لديك كود من صديق، أدخله ليحصل على 2,000 نقطة (20 ج.م) عند إتمامك أول حجز مدفوع.</p>
+                  className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl py-2 px-3 text-xs text-[var(--ds-text)] focus:outline-none text-left" dir="ltr" />
+                <p className="text-[9px] text-[var(--ds-text-2)] mt-1">إن كان لديك كود من صديق، أدخله ليحصل على 2,000 نقطة (20 ج.م) عند إتمامك أول حجز مدفوع.</p>
               </div>
             </div>
 
             <button type="submit" disabled={loading || cooldown > 0}
-              className="w-full bg-[#0A2342] hover:bg-[#071930] disabled:opacity-60 text-white text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors">
+              className="w-full bg-[var(--ds-brand)] hover:bg-[#071930] disabled:opacity-60 text-[var(--ds-on-brand)] text-xs font-bold py-2.5 rounded-xl shadow-md text-center transition-colors">
               {cooldown > 0 ? retryInLabel(cooldown) : loading ? 'جارٍ إنشاء الحساب...' : 'تسجيل الحساب الجديد والدخول'}
             </button>
 
             <div className="text-center">
               <button type="button" onClick={() => { setIsRegisterMode(false); setError(''); }}
-                className="text-[10px] text-[#8A8A70] hover:text-[#4A4A3A] font-bold underline">
+                className="text-[10px] text-[var(--ds-text-2)] hover:text-[var(--ds-text)] font-bold underline">
                 لديك حساب بالفعل؟ سجل الدخول الآن
               </button>
             </div>
@@ -994,7 +994,7 @@ export default function AuthScreen({ onBackToBrowse }: AuthScreenProps = {}) {
         )}
         <div className="text-center pt-1">
           <button type="button" onClick={() => setIsViewingPrivacy(true)}
-            className="text-[9px] text-[#8A8A70] hover:text-[#4A4A3A] underline">
+            className="text-[9px] text-[var(--ds-text-2)] hover:text-[var(--ds-text)] underline">
             سياسة الخصوصية وشروط الاستخدام
           </button>
         </div>
