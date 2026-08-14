@@ -136,7 +136,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
             <div className="absolute top-0 left-0 w-full h-1/2 bg-blue-500/5 blur-2xl pointer-events-none" />
 
             {/* Header */}
-            <div className="bg-[#122244]/80 p-4 flex items-center justify-between border-b border-blue-500/10 relative z-10">
+            <div className="bg-play-card-raised/80 p-4 flex items-center justify-between border-b border-blue-500/10 relative z-10">
               <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
                 <h4 className="text-xs font-black text-white flex items-center gap-1.5">
@@ -152,7 +152,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
             </div>
 
             {/* Messages body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#081326]/40 relative z-10">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-play-card/40 relative z-10">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-4 space-y-2 text-slate-400">
                   <Smile className="w-8 h-8 text-slate-500 animate-bounce" />
@@ -187,7 +187,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
             </div>
 
             {/* Quick Actions Panel */}
-            <div className="bg-[#122244]/90 border-t border-blue-500/10 p-2 space-y-2 relative z-10">
+            <div className="bg-play-card-raised/90 border-t border-blue-500/10 p-2 space-y-2 relative z-10">
               {/* Emojis row */}
               <div className="flex gap-1 overflow-x-auto py-1 no-scrollbar justify-start">
                 {QUICK_EMOJIS.map((emoji) => (
@@ -207,7 +207,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
                   <button
                     key={phrase}
                     onClick={() => handleSendMessage(phrase)}
-                    className="whitespace-nowrap text-[9px] font-black bg-[#081326]/80 hover:bg-[var(--color-play-reward)] hover:text-slate-950 text-slate-300 px-3 py-1.5 rounded-full transition-all active:scale-95 cursor-pointer border border-blue-500/10"
+                    className="whitespace-nowrap text-[9px] font-black bg-play-card/80 hover:bg-[var(--color-play-reward)] hover:text-slate-950 text-slate-300 px-3 py-1.5 rounded-full transition-all active:scale-95 cursor-pointer border border-blue-500/10"
                   >
                     {phrase}
                   </button>
@@ -231,7 +231,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
               />
               <button aria-label="إرسال الرسالة"
                 onClick={() => handleSendMessage(messageText)}
-                className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 p-2 rounded-xl active:scale-95 transition-transform cursor-pointer border border-[#F5C542]/30"
+                className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-slate-950 p-2 rounded-xl active:scale-95 transition-transform cursor-pointer border border-play-reward/30"
               >
                 <Send className="w-4 h-4 rotate-180 fill-current" />
               </button>

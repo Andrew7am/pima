@@ -72,7 +72,7 @@ function HubCard({ icon, title, badge, badgeCls, desc, onClick, borderHover, che
       onClick={onClick}
       className={`w-full text-right bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 ${borderHover} rounded-3xl p-4 flex items-center gap-4 shadow-lg transition-all group cursor-pointer`}
     >
-      <div className="w-14 h-14 rounded-2xl bg-[#0A1428]/60 border border-white/10 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
+      <div className="w-14 h-14 rounded-2xl bg-play-bg/60 border border-white/10 flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
@@ -107,7 +107,7 @@ export default function EntertainmentHome({
   const avatar = currentUser.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name || 'P')}&background=122244&color=F5C542`;
 
   const CATEGORIES = [
-    { id: 'games' as Section, label: 'مركز الألعاب التفاعلي 🎮', sub: 'تحديات كنسية فردية، مباريات مباشرة وألعاب جماعية حماسية', icon: <Gamepad2 className="w-7 h-7 text-[var(--color-play-reward)]" strokeWidth={1.5} />, box: 'from-[var(--color-play-card-raised)] to-[#1C142E] border-blue-500/25', iconBg: 'bg-[#F5C542]/10 border-[#F5C542]/30' },
+    { id: 'games' as Section, label: 'مركز الألعاب التفاعلي 🎮', sub: 'تحديات كنسية فردية، مباريات مباشرة وألعاب جماعية حماسية', icon: <Gamepad2 className="w-7 h-7 text-[var(--color-play-reward)]" strokeWidth={1.5} />, box: 'from-[var(--color-play-card-raised)] to-[#1C142E] border-blue-500/25', iconBg: 'bg-play-reward/10 border-play-reward/30' },
     { id: 'seasons' as Section, label: 'المؤتمرات والمواسم الروحية 📖', sub: 'الفعاليات المباركة، التحديات الموسمية والتسجيلات المباشرة', icon: <BookOpen className="w-7 h-7 text-[#00E5FF]" strokeWidth={1.5} />, box: 'from-[#0b1b36] to-[#0d315c] border-cyan-500/20', iconBg: 'bg-[#00E5FF]/10 border-[#00E5FF]/30' },
     { id: 'community' as Section, label: 'شركة الصلوات المباركة ❤️', sub: 'الأصدقاء، تأملات الآباء وطلبات الصلاة المتبادلة', icon: <Heart className="w-7 h-7 text-[#FF3D71]" strokeWidth={1.5} />, box: 'from-[#1a0826] to-[#2c0c3a] border-fuchsia-500/20', iconBg: 'bg-[#FF3D71]/10 border-[#FF3D71]/30' },
     { id: 'stats' as Section, label: 'إحصائياتي التفصيلية 📊', sub: 'مستواك، خبرتك، دقتك، انتصاراتك وإنجازاتك الروحية', icon: <BarChart3 className="w-7 h-7 text-[#22D3EE]" strokeWidth={1.5} />, box: 'from-[#0b1b36] to-[#08243f] border-sky-500/20', iconBg: 'bg-[#22D3EE]/10 border-[#22D3EE]/30' },
@@ -162,7 +162,7 @@ export default function EntertainmentHome({
               </h3>
               {SPIRITUAL_SEASONS.map((s) => (
                 <div key={s.name} className={`bg-gradient-to-br ${s.tint} border rounded-3xl p-4 flex items-center gap-4`}>
-                  <div className="w-12 h-12 rounded-2xl bg-[#081326]/50 border border-white/10 flex items-center justify-center text-2xl shrink-0">{s.emoji}</div>
+                  <div className="w-12 h-12 rounded-2xl bg-play-card/50 border border-white/10 flex items-center justify-center text-2xl shrink-0">{s.emoji}</div>
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-black text-white mb-0.5">{s.name}</h4>
                     <p className="text-[10.5px] text-slate-300 leading-relaxed">🎯 تحدي الموسم: {s.challenge}</p>
@@ -187,13 +187,13 @@ export default function EntertainmentHome({
               return (
                 <div className="space-y-4">
                   {/* Level + XP banner */}
-                  <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-[#F5C542]/25 rounded-3xl p-5 flex items-center justify-between">
+                  <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-play-reward/25 rounded-3xl p-5 flex items-center justify-between">
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 mb-1">المستوى الحالي</p>
                       <p className="text-3xl font-black text-white leading-none">المستوى {currentLevel}</p>
                       <p className="text-[11px] font-bold text-[var(--color-play-reward)] mt-1.5">{xpInLevel} / {xpNeeded} خبرة للمستوى التالي</p>
                     </div>
-                    <div className="w-16 h-16 rounded-2xl bg-[#F5C542]/10 border border-[#F5C542]/30 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-2xl bg-play-reward/10 border border-play-reward/30 flex items-center justify-center">
                       <Star className="w-8 h-8 text-[var(--color-play-reward)] fill-current" />
                     </div>
                   </div>
@@ -230,14 +230,14 @@ export default function EntertainmentHome({
               <div className="space-y-3">
                 <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-3xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-[#F5C542]/10 border border-[#F5C542]/20 flex items-center justify-center">{isSoundEnabled ? <Volume2 className="w-5 h-5 text-[var(--color-play-reward)]" /> : <VolumeX className="w-5 h-5 text-slate-400" />}</div>
+                    <div className="w-11 h-11 rounded-2xl bg-play-reward/10 border border-play-reward/20 flex items-center justify-center">{isSoundEnabled ? <Volume2 className="w-5 h-5 text-[var(--color-play-reward)]" /> : <VolumeX className="w-5 h-5 text-slate-400" />}</div>
                     <div><h4 className="text-sm font-black text-white">الأصوات</h4><p className="text-[10.5px] text-slate-400">مؤثّرات صوتية داخل الألعاب.</p></div>
                   </div>
                   <button type="button" onClick={() => setIsSoundEnabled((v) => !v)} className={`px-4 py-2 rounded-xl text-[11px] font-black ${isSoundEnabled ? 'bg-[var(--color-play-reward)] text-slate-950' : 'bg-white/10 text-slate-300'}`}>{isSoundEnabled ? 'مفعّل' : 'مكتوم'}</button>
                 </div>
                 <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-3xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-[#F5C542]/10 border border-[#F5C542]/20 flex items-center justify-center">{isDarkMode ? <Moon className="w-5 h-5 fill-current text-[var(--color-play-reward)]" /> : <Sun className="w-5 h-5 fill-current text-amber-400" />}</div>
+                    <div className="w-11 h-11 rounded-2xl bg-play-reward/10 border border-play-reward/20 flex items-center justify-center">{isDarkMode ? <Moon className="w-5 h-5 fill-current text-[var(--color-play-reward)]" /> : <Sun className="w-5 h-5 fill-current text-amber-400" />}</div>
                     <div><h4 className="text-sm font-black text-white">الوضع الليلي</h4><p className="text-[10.5px] text-slate-400">حماية العين والاستمتاع بالتجربة.</p></div>
                   </div>
                   <button type="button" onClick={() => setIsDarkMode((v) => !v)} className={`px-4 py-2 rounded-xl text-[11px] font-black ${isDarkMode ? 'bg-[var(--color-play-reward)] text-slate-950' : 'bg-slate-900 text-white'}`}>{isDarkMode ? '💡 نهاري' : '🌙 ليلي'}</button>
@@ -284,7 +284,7 @@ export default function EntertainmentHome({
       {/* Night-mode bar */}
       <div className={`p-4 rounded-[24px] border mb-6 flex items-center justify-between ${dark ? 'bg-gradient-to-r from-[#0f2142] to-[#162a54] border-blue-500/30 text-[var(--color-play-reward)]' : 'bg-white border-slate-200 text-slate-800'}`}>
         <div className="flex items-center gap-3">
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${dark ? 'bg-[#F5C542]/10 border border-[#F5C542]/20 text-[var(--color-play-reward)]' : 'bg-slate-100 text-slate-600'}`}>
+          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${dark ? 'bg-play-reward/10 border border-play-reward/20 text-[var(--color-play-reward)]' : 'bg-slate-100 text-slate-600'}`}>
             {dark ? <Moon className="w-5 h-5 fill-current" /> : <Sun className="w-5 h-5 fill-current" />}
           </div>
           <div className="text-right">
@@ -320,7 +320,7 @@ export default function EntertainmentHome({
                 <span className={dark ? 'text-slate-400' : 'text-slate-500'}>التقدم والخبرة الروحية (XP)</span>
                 <span className={`font-mono ${dark ? 'text-amber-400' : 'text-slate-800'}`}>{xpInLevel} / {xpNeeded} XP</span>
               </div>
-              <div className={`w-full h-3 rounded-full overflow-hidden p-0.5 border ${dark ? 'bg-[#081326]/80 border-blue-500/15' : 'bg-slate-100 border-slate-200'}`}>
+              <div className={`w-full h-3 rounded-full overflow-hidden p-0.5 border ${dark ? 'bg-play-card/80 border-blue-500/15' : 'bg-slate-100 border-slate-200'}`}>
                 <motion.div initial={{ width: 0 }} animate={{ width: `${xpPercent}%` }} transition={{ duration: 1, ease: 'easeOut' }} className={`h-full rounded-full ${dark ? 'bg-gradient-to-r from-amber-500 to-[var(--color-play-reward)]' : 'bg-slate-700'}`} />
               </div>
             </div>
@@ -348,7 +348,7 @@ export default function EntertainmentHome({
             transition={{ type: 'spring', stiffness: 260, damping: 22, delay: idx * 0.08 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setSection(c.id)}
-            className={`group cursor-pointer relative overflow-hidden rounded-[28px] p-5 md:p-6 flex items-center justify-between border transition-all duration-300 ${dark ? `bg-gradient-to-br ${c.box} hover:border-[#F5C542]/40` : 'bg-white border-slate-200/80 hover:border-slate-300'}`}
+            className={`group cursor-pointer relative overflow-hidden rounded-[28px] p-5 md:p-6 flex items-center justify-between border transition-all duration-300 ${dark ? `bg-gradient-to-br ${c.box} hover:border-play-reward/40` : 'bg-white border-slate-200/80 hover:border-slate-300'}`}
           >
             <div className="flex items-center gap-4 relative z-10 text-right">
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all group-hover:scale-110 ${dark ? c.iconBg : 'bg-slate-100 border-slate-200'}`}>{c.icon}</div>
@@ -357,7 +357,7 @@ export default function EntertainmentHome({
                 <p className={`text-[11.5px] font-bold leading-relaxed max-w-[280px] sm:max-w-md ${dark ? 'text-slate-300 opacity-90' : 'text-slate-500'}`}>{c.sub}</p>
               </div>
             </div>
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border transition-all relative z-10 shrink-0 ${dark ? 'bg-[#081326]/60 border-blue-500/10 text-slate-300 group-hover:bg-[var(--color-play-reward)] group-hover:text-slate-950' : 'bg-slate-50 border-slate-100 text-slate-400 group-hover:bg-slate-900 group-hover:text-white'}`}>
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border transition-all relative z-10 shrink-0 ${dark ? 'bg-play-card/60 border-blue-500/10 text-slate-300 group-hover:bg-[var(--color-play-reward)] group-hover:text-slate-950' : 'bg-slate-50 border-slate-100 text-slate-400 group-hover:bg-slate-900 group-hover:text-white'}`}>
               <ArrowLeft className="w-4 h-4 fill-current rotate-180 group-hover:rotate-0 transition-transform duration-300" />
             </div>
           </motion.div>

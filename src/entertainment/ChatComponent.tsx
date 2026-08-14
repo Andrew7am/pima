@@ -106,12 +106,12 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({ roomId, senderName
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
             className="absolute bottom-18 left-0 w-80 max-w-[calc(100vw-2rem)] h-96 bg-[#0b1b36]/95 backdrop-blur-md border-2 border-blue-500/20 rounded-3xl shadow-2xl flex flex-col overflow-hidden"
           >
-            <div className="bg-[#122244]/80 p-4 flex items-center justify-between border-b border-blue-500/10">
+            <div className="bg-play-card-raised/80 p-4 flex items-center justify-between border-b border-blue-500/10">
               <h4 className="text-xs font-black text-[var(--color-play-reward)]">دردشة اللعب العشوائي ⚔️</h4>
               <button aria-label="إغلاق المحادثة" onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#081326]/40">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-play-card/40">
               {messages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400">
                   <Smile className="w-8 h-8 mb-2" />
@@ -130,7 +130,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({ roomId, senderName
               <div ref={chatEndRef} />
             </div>
 
-            <div className="bg-[#122244]/90 border-t border-blue-500/10 p-2 space-y-2">
+            <div className="bg-play-card-raised/90 border-t border-blue-500/10 p-2 space-y-2">
               <div className="flex gap-1 overflow-x-auto no-scrollbar">
                 {QUICK_EMOJIS.map(emoji => (
                   <button key={emoji} onClick={() => sendMessage(emoji)} className="text-sm p-1.5 hover:bg-blue-500/20 rounded-lg">{emoji}</button>
@@ -138,7 +138,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({ roomId, senderName
               </div>
               <div className="flex gap-1 overflow-x-auto no-scrollbar">
                 {QUICK_PHRASES.map(phrase => (
-                  <button key={phrase} onClick={() => sendMessage(phrase)} className="whitespace-nowrap text-[9px] font-black bg-[#081326]/80 hover:bg-[var(--color-play-reward)] hover:text-slate-950 text-slate-300 px-3 py-1.5 rounded-full">{phrase}</button>
+                  <button key={phrase} onClick={() => sendMessage(phrase)} className="whitespace-nowrap text-[9px] font-black bg-play-card/80 hover:bg-[var(--color-play-reward)] hover:text-slate-950 text-slate-300 px-3 py-1.5 rounded-full">{phrase}</button>
                 ))}
               </div>
             </div>

@@ -108,7 +108,7 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             maxLength={400}
-            className="w-full bg-[#081326]/70 border border-white/10 rounded-2xl p-3 text-xs leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-[#F5C542]/60"
+            className="w-full bg-play-card/70 border border-white/10 rounded-2xl p-3 text-xs leading-relaxed text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-[#F5C542]/60"
             rows={3}
           />
           <div className="flex justify-between items-center">
@@ -191,7 +191,7 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
         </h3>
         <div className="flex gap-3.5 overflow-x-auto pb-1">
           {SPIRITUAL_MEDITATIONS.map((med) => (
-            <div key={med.id} className="bg-[#081326]/70 p-4 rounded-2xl border border-white/10 w-64 shrink-0 space-y-2 flex flex-col justify-between text-right">
+            <div key={med.id} className="bg-play-card/70 p-4 rounded-2xl border border-white/10 w-64 shrink-0 space-y-2 flex flex-col justify-between text-right">
               <p className="text-[10.5px] font-bold text-slate-300 leading-relaxed italic">"{med.quote}"</p>
               <div className="flex justify-between items-center pt-2 border-t border-white/5 text-[9px] font-black">
                 <span className="bg-white/5 text-slate-300 px-1.5 py-0.5 rounded">{med.category}</span>

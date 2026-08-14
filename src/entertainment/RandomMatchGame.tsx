@@ -830,7 +830,7 @@ export default function RandomMatchGame({
             one printed `Lv. {currentUser.level || 23}` over a bar hardcoded
             to 75%, and stood a few pixels from the card that shows the
             truth. Shown on the inner screens only, where there is no card. */}
-        <div className={`items-center gap-2.5 bg-[#122244]/80 border border-blue-500/20 rounded-2xl px-3 py-1.5 shadow-inner ${screen === 'league_info' ? 'hidden' : 'flex'}`}>
+        <div className={`items-center gap-2.5 bg-play-card-raised/80 border border-blue-500/20 rounded-2xl px-3 py-1.5 shadow-inner ${screen === 'league_info' ? 'hidden' : 'flex'}`}>
           <div className="text-left">
             <div className="flex items-center gap-1 justify-end">
               <span className="text-[9px] font-black text-[var(--color-play-reward)]">Lv. {userLevel}</span>
@@ -914,7 +914,7 @@ export default function RandomMatchGame({
               { key: 'glory', value: currentUser.points ?? 0, label: 'نقاط المجد',
                 Icon: Sparkles, ring: 'from-cyan-300 to-blue-600', tint: 'text-[#0d1b3e]' },
             ] as const).map(({ key, value, label, Icon, ring, tint }) => (
-              <div key={key} className="flex items-center justify-between gap-2 bg-[#122244]/80 border border-blue-500/20 rounded-2xl px-2.5 py-2">
+              <div key={key} className="flex items-center justify-between gap-2 bg-play-card-raised/80 border border-blue-500/20 rounded-2xl px-2.5 py-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className={`w-8 h-8 shrink-0 rounded-full bg-gradient-to-br ${ring} flex items-center justify-center shadow-inner`}>
                     <Icon className={`w-4 h-4 ${tint}`} />
@@ -929,7 +929,7 @@ export default function RandomMatchGame({
                     type="button"
                     onClick={onOpenRewards}
                     aria-label={`اكسب المزيد من ${label}`}
-                    className="w-6 h-6 shrink-0 rounded-lg bg-[#F5C542]/15 border border-[#F5C542]/40 text-[var(--color-play-reward)] flex items-center justify-center hover:bg-[#F5C542]/25 transition-colors cursor-pointer"
+                    className="w-6 h-6 shrink-0 rounded-lg bg-play-reward/15 border border-play-reward/40 text-[var(--color-play-reward)] flex items-center justify-center hover:bg-play-reward/25 transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -969,7 +969,7 @@ export default function RandomMatchGame({
                 and every piece of interface placed over it as its own layer —
                 league pill top right, title left, reward bottom left, and the
                 capsule button across the bottom centre. */}
-            <div className="relative w-full aspect-[16/9] overflow-hidden rounded-[28px] border border-[#F5C542]/45 shadow-[0_0_44px_-10px_rgba(245,197,66,0.4)]">
+            <div className="relative w-full aspect-[16/9] overflow-hidden rounded-[28px] border border-play-reward/45 shadow-[0_0_44px_-10px_rgba(245,197,66,0.4)]">
               <MatchBannerScene className="absolute inset-0 w-full h-full" />
 
               {/* keeps the left-hand type legible over the artwork */}
