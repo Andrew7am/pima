@@ -976,7 +976,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
 
       
       {isServantMode && (
-        <div className="bg-gradient-to-br from-[#0A2342] to-[#0D315C] rounded-[36px] p-6 sm:p-8 shadow-xl border border-blue-900/50 mb-6 relative overflow-hidden text-right">
+        <div className="bg-gradient-to-br from-[var(--ds-brand)] to-[#0D315C] rounded-[36px] p-6 sm:p-8 shadow-xl border border-blue-900/50 mb-6 relative overflow-hidden text-right">
           <div className="absolute -top-16 -right-16 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl"></div>
           <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center md:items-start justify-between">
             
@@ -996,7 +996,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                 <div className="flex gap-2 w-full sm:w-auto order-last sm:order-first">
                   <button 
                     onClick={handleShareCode}
-                    className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-600 text-[#0A2342] px-5 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                    className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-600 text-[var(--ds-brand)] px-5 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
                   >
                     <span>مشاركة</span>
                     <Send className="w-3.5 h-3.5" />
@@ -1077,7 +1077,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
             </div>
 
             <div className="w-40 h-40 bg-white rounded-3xl p-3 shadow-lg flex items-center justify-center shrink-0 order-first md:order-last relative group cursor-pointer" onClick={() => setShowShareModal(true)}>
-              <div className="w-full h-full border-4 border-[#0A2342] rounded-xl flex items-center justify-center bg-white relative overflow-hidden p-1.5">
+              <div className="w-full h-full border-4 border-[var(--ds-brand)] rounded-xl flex items-center justify-center bg-white relative overflow-hidden p-1.5">
                 <QRCodeSVG value={conference.conferenceCode} size={115} level="H" includeMargin={false} />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-amber-500/20 to-transparent translate-y-[-100%] animate-[scan_2s_ease-in-out_infinite]" />
               </div>
@@ -1826,7 +1826,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
         <div className="lg:col-span-7 bg-white shadow-sm shadow-slate-200/50 border border-slate-100 p-5 rounded-3xl space-y-4">
           <div className="flex justify-between items-center border-b border-slate-100 pb-3">
             <div>
-              <h4 className="text-xs font-black text-[#0A2342] flex items-center gap-1.5">
+              <h4 className="text-xs font-black text-[var(--ds-brand)] flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-purple-600" />
                 <span>الجدول اليومي والتسلسل الزمني للفعاليات 📅</span>
               </h4>
@@ -1869,14 +1869,14 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                         }`}>
                           {item.time}
                         </span>
-                        <h5 className={`text-[12px] font-black ${item.completed ? 'line-through text-slate-500' : 'text-[#0A2342]'}`}>
+                        <h5 className={`text-[12px] font-black ${item.completed ? 'line-through text-slate-500' : 'text-[var(--ds-brand)]'}`}>
                           {item.title}
                         </h5>
                       </div>
                       
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-slate-500">
                         <span className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-[#C5A059]" />
+                          <MapPin className="w-3 h-3 text-[var(--ds-accent)]" />
                           <span>الموقع: <strong>{item.location}</strong></span>
                         </span>
                         <span className="flex items-center gap-1">
@@ -2011,7 +2011,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
               />
               <button
                 type="submit"
-                className="w-full bg-[#0A2342] text-white py-2 rounded-xl text-xs font-black hover:bg-[#0D315C] transition-colors cursor-pointer"
+                className="w-full bg-[var(--ds-brand)] text-white py-2 rounded-xl text-xs font-black hover:bg-[#0D315C] transition-colors cursor-pointer"
               >
                 تحديث الجدول فوراً 💾
               </button>
@@ -2025,7 +2025,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
           {/* Active Events & Competitions */}
           <div className="bg-white shadow-sm shadow-slate-200/50 border border-slate-100 p-5 rounded-3xl space-y-4">
             <div>
-              <h4 className="text-xs font-black text-[#0A2342] flex items-center gap-1.5">
+              <h4 className="text-xs font-black text-[var(--ds-brand)] flex items-center gap-1.5">
                 <Compass className="w-4 h-4 text-purple-600" />
                 <span>الفعاليات التنافسية والأنشطة ⚔️</span>
               </h4>
@@ -2038,7 +2038,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   <div className="flex items-center gap-2.5">
                     <span className="text-2xl shrink-0">{ev.icon}</span>
                     <div className="space-y-0.5">
-                      <span className="text-[11px] font-black text-[#0A2342] block">{ev.title}</span>
+                      <span className="text-[11px] font-black text-[var(--ds-brand)] block">{ev.title}</span>
                       <span className="text-[9px] text-slate-400 block">🗓️ {ev.day} | ⏰ {ev.time}</span>
                     </div>
                   </div>
@@ -2107,8 +2107,8 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
           {/* Packing checklist */}
           <div className="bg-white shadow-sm shadow-slate-200/50 border border-slate-100 p-5 rounded-3xl space-y-4">
             <div>
-              <h4 className="text-xs font-black text-[#0A2342] flex items-center gap-1.5">
-                <CheckSquare className="w-4 h-4 text-[#C5A059]" />
+              <h4 className="text-xs font-black text-[var(--ds-brand)] flex items-center gap-1.5">
+                <CheckSquare className="w-4 h-4 text-[var(--ds-accent)]" />
                 <span>قائمة التجهيزات والاحتياجات الشخصية 🧳</span>
               </h4>
               <p className="text-[9.5px] text-slate-500 mt-0.5">تأكد من إحضار كافة الأغراض والترتيبات لضمان راحتك في بيت الخلوة</p>
@@ -2141,11 +2141,11 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                 placeholder="إضافة غرض شخصي آخر..."
                 value={newChecklistItem}
                 onChange={(e) => setNewChecklistItem(e.target.value)}
-                className="bg-[#FAF8F5]/80 border border-slate-200 rounded-xl px-3 py-2 text-xs flex-1 focus:outline-none focus:ring-1 focus:ring-[#0A2342]"
+                className="bg-[#FAF8F5]/80 border border-slate-200 rounded-xl px-3 py-2 text-xs flex-1 focus:outline-none focus:ring-1 focus:ring-[var(--ds-brand)]"
               />
               <button aria-label="إضافة عنصر للقائمة"
                 type="submit"
-                className="bg-[#0A2342] text-white p-2 rounded-xl hover:bg-[#0D315C] shrink-0"
+                className="bg-[var(--ds-brand)] text-white p-2 rounded-xl hover:bg-[#0D315C] shrink-0"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -2159,7 +2159,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
       <div className="bg-white shadow-sm shadow-slate-200/50 border border-slate-100 p-5 rounded-3xl space-y-4">
         <div className="flex justify-between items-center border-b border-slate-150 pb-3">
           <div>
-            <h4 className="text-xs font-black text-[#0A2342] flex items-center gap-1.5">
+            <h4 className="text-xs font-black text-[var(--ds-brand)] flex items-center gap-1.5">
               <Bell className="w-4 h-4 text-purple-600 animate-swing" />
               <span>الإعلانات الرسمية والتنبيهات الفورية 📢</span>
             </h4>
@@ -2236,7 +2236,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                       <div className="space-y-1.5 max-h-40 overflow-y-auto bg-white/60 p-2 rounded-xl border border-slate-100">
                         {ann.comments.map(c => (
                           <div key={c.id} className="text-[10px] leading-relaxed">
-                            <span className="font-extrabold text-[#0A2342] ml-1">{c.author}:</span>
+                            <span className="font-extrabold text-[var(--ds-brand)] ml-1">{c.author}:</span>
                             <span className="text-slate-600">{c.text}</span>
                             <span className="text-[8px] text-slate-400 mr-2 font-mono">{c.date}</span>
                           </div>
@@ -2308,7 +2308,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
             </div>
             <button
               type="submit"
-              className="w-full bg-[#0A2342] text-white py-2 rounded-xl text-xs font-black hover:bg-[#0D315C] transition-colors cursor-pointer"
+              className="w-full bg-[var(--ds-brand)] text-white py-2 rounded-xl text-xs font-black hover:bg-[#0D315C] transition-colors cursor-pointer"
             >
               بث الإعلان فورا وإخطار المشتركين 📡
             </button>
@@ -2317,10 +2317,10 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
       </div>
 
       {/* ================= SECTION 4: LOCATION & VENUE DETAILS (تفاصيل المكان) ================= */}
-      <div className="bg-[#FAF8F5] border border-[#C5A059]/40 rounded-3xl p-5 space-y-4">
+      <div className="bg-[var(--ds-bg)] border border-[#C5A059]/40 rounded-3xl p-5 space-y-4">
         <div>
-          <h4 className="text-xs font-black text-[#0A2342] flex items-center gap-1.5">
-            <MapPin className="w-4 h-4 text-[#C5A059]" />
+          <h4 className="text-xs font-black text-[var(--ds-brand)] flex items-center gap-1.5">
+            <MapPin className="w-4 h-4 text-[var(--ds-accent)]" />
             <span>تفاصيل بيت الخلوة ومقر المؤتمر 📍</span>
           </h4>
           <p className="text-[9.5px] text-slate-500 mt-0.5">معلومات موقع السكن، أرقام الطوارئ، ومسار تحرك الحافلات المباركة</p>
@@ -2365,7 +2365,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   window.open('https://maps.google.com', '_blank');
                   showToast('جاري فتح خرائط جوجل لموقع وادي النطرون... 🗺️');
                 }}
-                className="bg-[#0A2342] hover:bg-[#0D315C] text-white px-5 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 flex-1 cursor-pointer"
+                className="bg-[var(--ds-brand)] hover:bg-[#0D315C] text-white px-5 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 flex-1 cursor-pointer"
               >
                 <Map className="w-4 h-4 text-amber-300" />
                 <span>فتح الخريطة على الجوال 🗺️</span>
@@ -2409,7 +2409,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
       <div className="bg-white shadow-sm shadow-slate-200/50 border border-slate-100 p-5 rounded-3xl space-y-4">
         <div className="flex justify-between items-center">
           <div>
-            <h4 className="text-xs font-black text-[#0A2342] flex items-center gap-1.5">
+            <h4 className="text-xs font-black text-[var(--ds-brand)] flex items-center gap-1.5">
               <Bell className="w-4 h-4 text-purple-600" />
               <span>أرشيف وسجل التنبيهات الذكية والمستجدات 📳</span>
             </h4>
@@ -2689,7 +2689,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
               <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
               <div className="space-y-1">
-                <h3 className="text-lg font-black text-[#0A2342] leading-tight">{conference.title}</h3>
+                <h3 className="text-lg font-black text-[var(--ds-brand)] leading-tight">{conference.title}</h3>
                 <p className="text-xs text-slate-500 font-bold">{conference.organizationName}</p>
               </div>
 
@@ -2709,7 +2709,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
               {/* Invitation Code */}
               <div className="space-y-1">
                 <span className="text-[10px] text-slate-400 font-black block">كود الدعوة السريع للغرفة</span>
-                <div className="text-xl font-mono font-black text-[#0A2342] tracking-widest bg-slate-100 py-2 px-6 rounded-xl border border-slate-200/60 inline-block">
+                <div className="text-xl font-mono font-black text-[var(--ds-brand)] tracking-widest bg-slate-100 py-2 px-6 rounded-xl border border-slate-200/60 inline-block">
                   {conference.conferenceCode}
                 </div>
               </div>
@@ -2725,13 +2725,13 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                     navigator.clipboard.writeText(conference.conferenceCode);
                     showToast('تم نسخ كود المؤتمر بنجاح! 📋');
                   }}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-[#0A2342] py-3 rounded-2xl text-xs font-black transition-all cursor-pointer"
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-[var(--ds-brand)] py-3 rounded-2xl text-xs font-black transition-all cursor-pointer"
                 >
                   نسخ الكود 📋
                 </button>
                 <button
                   onClick={() => setShowShareModal(false)}
-                  className="flex-1 bg-[#0A2342] hover:bg-[#0D315C] text-white py-3 rounded-2xl text-xs font-black transition-all cursor-pointer"
+                  className="flex-1 bg-[var(--ds-brand)] hover:bg-[#0D315C] text-white py-3 rounded-2xl text-xs font-black transition-all cursor-pointer"
                 >
                   إغلاق ✕
                 </button>
@@ -2769,7 +2769,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 30, scale: 0.95 }}
               className={`w-full max-w-3xl rounded-[32px] shadow-2xl border flex flex-col overflow-hidden h-[90vh] transition-colors duration-300 relative ${
-                readingTheme === 'normal' ? 'bg-[#FAF8F5] text-[#0A2342] border-slate-200' :
+                readingTheme === 'normal' ? 'bg-[var(--ds-bg)] text-[var(--ds-brand)] border-slate-200' :
                 readingTheme === 'sepia' ? 'bg-[#FAF4EB] text-[#3D2F20] border-[#E8DEC9]' :
                 readingTheme === 'dim' ? 'bg-[#1E2022] text-[#E0E0E0] border-[#2D3033]' :
                 'bg-[#0F172A] text-[#CBD5E1] border-[#1E293B]'
@@ -2815,7 +2815,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   <div className="flex items-center gap-1 bg-black/10 rounded-xl p-1">
                     <button
                       onClick={() => setReadingTheme('normal')}
-                      className={`text-[9.5px] px-2 py-1 rounded-lg font-black transition-all ${readingTheme === 'normal' ? 'bg-white text-[#0A2342] shadow-xs' : 'text-slate-400 hover:text-slate-200'}`}
+                      className={`text-[9.5px] px-2 py-1 rounded-lg font-black transition-all ${readingTheme === 'normal' ? 'bg-white text-[var(--ds-brand)] shadow-xs' : 'text-slate-400 hover:text-slate-200'}`}
                       title="النمط الطبيعي الأبيض"
                     >
                       عادي

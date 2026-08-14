@@ -788,7 +788,7 @@ export default function RandomMatchGame({
   const userLeague = getLeague(rating);
 
   return (
-    <div className="bg-[#081326] text-slate-100 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-blue-900/40 p-1.5 md:p-4 text-right dir-rtl font-sans relative min-h-[750px]">
+    <div className="bg-[var(--color-play-card)] text-slate-100 rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-blue-900/40 p-1.5 md:p-4 text-right dir-rtl font-sans relative min-h-[750px]">
 
       
       {/* AAA Game Background Gradients & Glows */}
@@ -809,18 +809,18 @@ export default function RandomMatchGame({
           >
             <span>خروج</span>
           </button>
-          <button aria-label="مفاجآت ومكافآت" className="bg-[#122244] hover:bg-[#1b3266] text-slate-300 hover:text-white border border-blue-500/20 p-2.5 rounded-xl transition-all cursor-pointer relative">
+          <button aria-label="مفاجآت ومكافآت" className="bg-[var(--color-play-card-raised)] hover:bg-[#1b3266] text-slate-300 hover:text-white border border-blue-500/20 p-2.5 rounded-xl transition-all cursor-pointer relative">
             <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border border-[#0d1b3e] animate-pulse" />
-            <Sparkles className="w-4 h-4 text-[#F5C542]" />
+            <Sparkles className="w-4 h-4 text-[var(--color-play-reward)]" />
           </button>
         </div>
 
         {/* Center: Branding Logo */}
         <div className="text-center flex-1 min-w-[120px]">
           <div className="flex items-center justify-center gap-1.5">
-            <span className="text-[#F5C542] font-black text-lg animate-pulse">~</span>
-            <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#F5C542] via-white to-[#F5C542] tracking-widest font-sans drop-shadow-[0_2px_8px_rgba(245,197,66,0.2)]">PiMã</span>
-            <span className="text-[#F5C542] font-black text-lg animate-pulse">~</span>
+            <span className="text-[var(--color-play-reward)] font-black text-lg animate-pulse">~</span>
+            <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-play-reward)] via-white to-[var(--color-play-reward)] tracking-widest font-sans drop-shadow-[0_2px_8px_rgba(245,197,66,0.2)]">PiMã</span>
+            <span className="text-[var(--color-play-reward)] font-black text-lg animate-pulse">~</span>
           </div>
           <p className="text-[9px] text-slate-400 font-bold tracking-tight">بدون إعلانات | تجربة نقية</p>
         </div>
@@ -833,7 +833,7 @@ export default function RandomMatchGame({
         <div className={`items-center gap-2.5 bg-[#122244]/80 border border-blue-500/20 rounded-2xl px-3 py-1.5 shadow-inner ${screen === 'league_info' ? 'hidden' : 'flex'}`}>
           <div className="text-left">
             <div className="flex items-center gap-1 justify-end">
-              <span className="text-[9px] font-black text-[#F5C542]">Lv. {userLevel}</span>
+              <span className="text-[9px] font-black text-[var(--color-play-reward)]">Lv. {userLevel}</span>
             </div>
             <div className="bg-slate-900 rounded-full h-1.5 w-12 overflow-hidden border border-blue-900/30 mt-0.5">
               <div className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full" style={{ width: `${xpProgressPct(userXp, userLevel)}%` }} />
@@ -843,10 +843,10 @@ export default function RandomMatchGame({
             <img
               src={currentUser.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"}
               alt="avatar"
-              className="w-8 h-8 rounded-full border-2 border-[#F5C542] object-cover"
+              className="w-8 h-8 rounded-full border-2 border-[var(--color-play-reward)] object-cover"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#122244]" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[var(--color-play-card-raised)]" />
           </div>
         </div>
       </div>
@@ -863,10 +863,10 @@ export default function RandomMatchGame({
               <div className="relative shrink-0">
                 {currentUser.avatar ? (
                   <img src={currentUser.avatar} alt="" referrerPolicy="no-referrer"
-                    className="w-12 h-12 rounded-full border-2 border-[#F5C542] object-cover" />
+                    className="w-12 h-12 rounded-full border-2 border-[var(--color-play-reward)] object-cover" />
                 ) : (
-                  <div className="w-12 h-12 rounded-full border-2 border-[#F5C542] bg-[#122244] flex items-center justify-center">
-                    <User className="w-5 h-5 text-[#F5C542]" />
+                  <div className="w-12 h-12 rounded-full border-2 border-[var(--color-play-reward)] bg-[var(--color-play-card-raised)] flex items-center justify-center">
+                    <User className="w-5 h-5 text-[var(--color-play-reward)]" />
                   </div>
                 )}
                 <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-[#0b1b36]" />
@@ -888,7 +888,7 @@ export default function RandomMatchGame({
                     style={{ width: `${xpProgressPct(userXp, userLevel)}%` }} />
                 </div>
               </div>
-              <div className="w-12 h-12 shrink-0 flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-[#F5C542] to-amber-600 border-2 border-amber-300/40 shadow-lg">
+              <div className="w-12 h-12 shrink-0 flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--color-play-reward)] to-amber-600 border-2 border-amber-300/40 shadow-lg">
                 <span className="text-base font-black text-[#0d1b3e] leading-none">{userLevel}</span>
                 <span className="text-[7px] font-black text-[#0d1b3e]/80">Lv.</span>
               </div>
@@ -910,7 +910,7 @@ export default function RandomMatchGame({
           <div className="grid grid-cols-2 gap-2 mt-3">
             {([
               { key: 'coins', value: currentUser.gameCoins ?? 0, label: 'عملات الألعاب',
-                Icon: Coins, ring: 'from-[#F5C542] to-amber-600', tint: 'text-[#0d1b3e]' },
+                Icon: Coins, ring: 'from-[var(--color-play-reward)] to-amber-600', tint: 'text-[#0d1b3e]' },
               { key: 'glory', value: currentUser.points ?? 0, label: 'نقاط المجد',
                 Icon: Sparkles, ring: 'from-cyan-300 to-blue-600', tint: 'text-[#0d1b3e]' },
             ] as const).map(({ key, value, label, Icon, ring, tint }) => (
@@ -929,7 +929,7 @@ export default function RandomMatchGame({
                     type="button"
                     onClick={onOpenRewards}
                     aria-label={`اكسب المزيد من ${label}`}
-                    className="w-6 h-6 shrink-0 rounded-lg bg-[#F5C542]/15 border border-[#F5C542]/40 text-[#F5C542] flex items-center justify-center hover:bg-[#F5C542]/25 transition-colors cursor-pointer"
+                    className="w-6 h-6 shrink-0 rounded-lg bg-[#F5C542]/15 border border-[#F5C542]/40 text-[var(--color-play-reward)] flex items-center justify-center hover:bg-[#F5C542]/25 transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -987,7 +987,7 @@ export default function RandomMatchGame({
               <div className="absolute top-6 left-3.5 max-w-[45%]">
                 <h2 className="text-[20px] font-black text-white leading-[1.1] tracking-tight drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
                   مباراة
-                  <span className="block text-[#F5C542]">عشوائية</span>
+                  <span className="block text-[var(--color-play-reward)]">عشوائية</span>
                 </h2>
                 {/* True now in a way it was not before: this button opens a
                     real matchmade room against a real person. */}
@@ -999,9 +999,9 @@ export default function RandomMatchGame({
               {/* Reward. +25 is real, but it is a rating delta — «نقاط» is the
                   loyalty balance redeemable against bookings. */}
               <div className="absolute bottom-3 left-3.5 flex items-center gap-1.5 bg-[#070C1F]/70 border border-white/10 rounded-xl px-2 py-1.5 backdrop-blur-sm">
-                <Trophy className="w-4 h-4 text-[#F5C542] shrink-0" />
+                <Trophy className="w-4 h-4 text-[var(--color-play-reward)] shrink-0" />
                 <div className="leading-none">
-                  <span className="block text-[13px] font-black text-[#F5C542]">+25</span>
+                  <span className="block text-[13px] font-black text-[var(--color-play-reward)]">+25</span>
                   <span className="block text-[8px] text-slate-300 font-bold mt-0.5 whitespace-nowrap">نقطة تقييم</span>
                 </div>
               </div>

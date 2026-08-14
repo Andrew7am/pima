@@ -126,7 +126,7 @@ export default function FriendsScreen({ currentUser, onBack, onOpenChat }: Frien
   const convoByUser = new Map(conversations.map((c) => [c.otherUserId, c]));
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
       <div className="pima-play-mid px-4 sm:px-6 py-5 space-y-5" dir="rtl">
 
         <div className="flex items-center justify-between">

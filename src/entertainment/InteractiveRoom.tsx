@@ -1286,7 +1286,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
         <div className="bg-white shadow-sm shadow-slate-200/50 border border-slate-100 rounded-3xl p-6 text-center space-y-6">
           <div className="max-w-md mx-auto space-y-2">
             <Crown className="w-12 h-12 text-amber-500 mx-auto animate-bounce" />
-            <h3 className="text-base font-black text-[#0A2342]">انضم للتحدي الجماعي المبارك!</h3>
+            <h3 className="text-base font-black text-[var(--ds-brand)]">انضم للتحدي الجماعي المبارك!</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
               تتيح لك غرفة الألعاب التنافس مع أصدقائك في المؤتمر أو الخلوة. قم بإنشاء غرفة جديدة كخادم منظم، أو انضم لغرفة نشطة بمفردك أو مع زملائك.
             </p>
@@ -1303,7 +1303,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                 <Crown className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-xs font-black text-[#0A2342]">أنا خادم منظم (Host)</h4>
+                <h4 className="text-xs font-black text-[var(--ds-brand)]">أنا خادم منظم (Host)</h4>
                 <p className="text-[10px] text-slate-500 leading-relaxed mt-1">
                   إنشاء غرفة جديدة، تقسيم المخدومين لفرق، اختيار الألعاب، التحكم في النقاط وحسم النتيجة الكبرى.
                 </p>
@@ -1320,7 +1320,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                 <Users className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-xs font-black text-[#0A2342]">أنا مشترك متسابق (Join)</h4>
+                <h4 className="text-xs font-black text-[var(--ds-brand)]">أنا مشترك متسابق (Join)</h4>
                 <p className="text-[10px] text-slate-500 leading-relaxed mt-1">
                   الانضمام بكود الغرفة، الانخراط في فريق بطرس أو بولس، والإجابة عن الأسئلة في الوقت الفعلي.
                 </p>
@@ -1354,8 +1354,8 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
       {mode === 'join' && (
         <>
         <form onSubmit={handleJoinRoom} className="bg-white shadow-sm shadow-slate-200/50 border border-slate-100 rounded-3xl p-6 space-y-4">
-          <div className="flex justify-between items-center border-b pb-3 border-[#D6D6C2]">
-            <h3 className="text-xs font-black text-[#0A2342] flex items-center gap-1.5">
+          <div className="flex justify-between items-center border-b pb-3 border-[var(--ds-border)]">
+            <h3 className="text-xs font-black text-[var(--ds-brand)] flex items-center gap-1.5">
               <UserPlus className="w-4 h-4 text-blue-500" />
               انضمام إلى غرفة ألعاب جارية
             </h3>
@@ -1377,7 +1377,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
               <button
                 type="button"
                 onClick={() => setShowScanner(true)}
-                className="mt-2 w-full flex items-center justify-center gap-2 bg-[#0A2342] hover:bg-[#0D315C] text-white text-[11px] font-black py-2.5 rounded-xl transition-colors"
+                className="mt-2 w-full flex items-center justify-center gap-2 bg-[var(--ds-brand)] hover:bg-[#0D315C] text-white text-[11px] font-black py-2.5 rounded-xl transition-colors"
               >
                 <QrCode className="w-4 h-4" />
                 امسح كود QR بالكاميرا
@@ -1453,7 +1453,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                 <span className="text-[10px] bg-amber-100 text-amber-800 font-black px-2.5 py-0.5 rounded-full">
                   {room.eventType === 'retreat' ? '⛪ خلوة مسيحية' : room.eventType === 'conference' ? '🏰 مؤتمر مبارك' : '⛪ اجتماع روحي'}
                 </span>
-                <h3 className="text-xs sm:text-sm font-black text-[#0A2342] mt-1.5">{room.name}</h3>
+                <h3 className="text-xs sm:text-sm font-black text-[var(--ds-brand)] mt-1.5">{room.name}</h3>
               </div>
 
               {/* ROOM CODE WITH SCANNABLE QR — encodes the join code so members
@@ -1523,7 +1523,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                   onClick={() => setLobbyTab('players')}
                   className={`py-2 px-4 rounded-xl text-xs font-black transition-all cursor-pointer ${
                     lobbyTab === 'players'
-                      ? 'bg-[#0A2342] text-white shadow-3xs'
+                      ? 'bg-[var(--ds-brand)] text-white shadow-3xs'
                       : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
@@ -1533,7 +1533,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                   onClick={() => setLobbyTab('plugins')}
                   className={`py-2 px-4 rounded-xl text-xs font-black transition-all cursor-pointer ${
                     lobbyTab === 'plugins'
-                      ? 'bg-[#0A2342] text-white shadow-3xs'
+                      ? 'bg-[var(--ds-brand)] text-white shadow-3xs'
                       : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
@@ -1543,7 +1543,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                   onClick={() => setLobbyTab('sessions')}
                   className={`py-2 px-4 rounded-xl text-xs font-black transition-all cursor-pointer ${
                     lobbyTab === 'sessions'
-                      ? 'bg-[#0A2342] text-white shadow-3xs'
+                      ? 'bg-[var(--ds-brand)] text-white shadow-3xs'
                       : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
@@ -1660,7 +1660,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
 
                     {/* Team Assignment Box */}
                     {room.players.filter(p => p.approved && !p.isHost).length > 0 && (
-                      <div className="border-t border-[#D6D6C2] pt-4 mt-2 space-y-3">
+                      <div className="border-t border-[var(--ds-border)] pt-4 mt-2 space-y-3">
                         <div className="flex justify-between items-center">
                           <span className="text-[11px] font-black text-slate-700">توزيع فرق المتسابقين الحالية:</span>
                           {(role as string) === 'host' && (
@@ -1710,7 +1710,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                         <Users className="w-6 h-6" />
                       </div>
                       <div className="space-y-1.5">
-                        <h4 className="text-xs font-black text-[#0A2342]">حالة الغرفة الحالية</h4>
+                        <h4 className="text-xs font-black text-[var(--ds-brand)]">حالة الغرفة الحالية</h4>
                         <p className="text-[10.5px] text-slate-500 leading-relaxed">
                           رمز الغرفة: <strong className="text-amber-600 text-xs font-mono">{room.code}</strong>. شارك هذا الرمز أو قم بمسح الـ QR للإنضمام الفوري.
                         </p>
@@ -1766,7 +1766,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* LEFT COLUMN: SESSIONS HISTORY */}
                   <div className="bg-white shadow-sm shadow-slate-200/50 border border-slate-100 rounded-3xl p-5 space-y-4 md:col-span-2 text-right font-sans">
-                    <h4 className="text-xs font-black text-[#0A2342] border-b pb-2 flex items-center gap-1.5">
+                    <h4 className="text-xs font-black text-[var(--ds-brand)] border-b pb-2 flex items-center gap-1.5">
                       <Trophy className="w-4 h-4 text-amber-500" />
                       سجلات الجلسات المؤرشفة لهذه الغرفة ({room.sessionHistory?.length || 0} جلسة)
                     </h4>
@@ -1985,7 +1985,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
                   ) : (
                     // Player status during playing
                     <div className="bg-white shadow-sm shadow-slate-200/50 border border-slate-100 rounded-3xl p-5 space-y-4">
-                      <h4 className="text-xs font-black text-[#0A2342] border-b pb-2">لوحة نتائج المتسابق</h4>
+                      <h4 className="text-xs font-black text-[var(--ds-brand)] border-b pb-2">لوحة نتائج المتسابق</h4>
                       
                       {selfTeam ? (
                         <div className="space-y-3">
@@ -2045,7 +2045,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
             <div className="bg-white shadow-sm shadow-slate-200/50 border border-slate-100 rounded-3xl p-6 text-center space-y-6">
               <div className="max-w-md mx-auto space-y-2">
                 <Trophy className="w-12 h-12 text-amber-500 mx-auto" />
-                <h3 className="text-base font-black text-[#0A2342]">انتهت الجولة الروحية بنجاح! 🏁</h3>
+                <h3 className="text-base font-black text-[var(--ds-brand)]">انتهت الجولة الروحية بنجاح! 🏁</h3>
                 <p className="text-xs text-slate-500">مبارك لجميع الفرق! إليكم ترتيب درجات النقاط الكلية بعد انتهاء اللعبة الحالية.</p>
               </div>
 
@@ -2098,7 +2098,7 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
               {/* Grand Celebratory Trophy header */}
               <div className="space-y-3">
                 <Crown className="w-16 h-16 text-yellow-500 mx-auto animate-bounce" />
-                <h3 className="text-lg font-black text-[#0A2342]">كأس الخلوة الروحية والمؤتمرات 🏆</h3>
+                <h3 className="text-lg font-black text-[var(--ds-brand)]">كأس الخلوة الروحية والمؤتمرات 🏆</h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
                   توجت المسابقة بالنعمة والبركة الكنسية! نبارك للفريق المتصدر ولأفضل متسابق روحي متميز.
                 </p>
@@ -2138,11 +2138,11 @@ export default function InteractiveRoom({ currentUser, onBack, onUpdateUser, ini
               <div className="grid grid-cols-2 gap-3 max-w-md mx-auto text-right">
                 <div className="bg-slate-50 p-3 rounded-2xl border text-slate-700">
                   <p className="text-[10px] text-slate-400">إجمالي الألعاب الملعبة:</p>
-                  <p className="text-xs font-black mt-1 text-[#0A2342]">{room.gameHistory.length} ألعاب روحية</p>
+                  <p className="text-xs font-black mt-1 text-[var(--ds-brand)]">{room.gameHistory.length} ألعاب روحية</p>
                 </div>
                 <div className="bg-slate-50 p-3 rounded-2xl border text-slate-700">
                   <p className="text-[10px] text-slate-400">الموسم أو المؤتمر التابع:</p>
-                  <p className="text-xs font-black mt-1 text-[#0A2342]">Season: Summer 2026</p>
+                  <p className="text-xs font-black mt-1 text-[var(--ds-brand)]">Season: Summer 2026</p>
                 </div>
               </div>
 

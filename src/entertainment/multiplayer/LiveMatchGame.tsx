@@ -758,7 +758,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
+      <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
         {/* Same fault as the «جارٍ حساب النتيجة» spinner below: a load that
             does not come back — a dropped connection on the way in — left the
             player on a spinner with nothing to press. */}
@@ -782,7 +782,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
 
   if (!room) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
+      <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
         <div className="max-w-md text-center space-y-4 px-6" dir="rtl">
           <XIcon className="w-12 h-12 text-rose-400 mx-auto" />
           <h3 className="text-sm font-black text-white">الغرفة غير موجودة</h3>
@@ -802,7 +802,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
   // ── "VS" INTRO (brief beat right after a guest joins) ──────────
   if (showVsIntro) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -833,7 +833,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
   // ── WAITING (room still not full) ─────────────────────────────
   if (room.status === 'waiting') {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
         <div className="max-w-md mx-auto px-6 py-10 space-y-5 text-center" dir="rtl">
           <div className="mx-auto w-20 h-20 rounded-full bg-white/5 border-2 border-dashed border-amber-500/50 flex items-center justify-center">
             <UsersIcon className="w-10 h-10 text-amber-400" />
@@ -899,7 +899,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
     const progress = leagueProgress(myNew);
 
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1060,7 +1060,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
   // buttons for a room submit_answer would reject with ROOM_NOT_ACTIVE.
   if (room.status === 'finished' && !outcome) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
+      <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
         {/* The spinner needs a way out. finalizeMatch() has no catch, so a
             failed finalize leaves `outcome` null forever and this branch keeps
             rendering — and with nothing to tap, the player was stuck on a
@@ -1091,7 +1091,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
   // stale sweep.
   if (room.status === 'cancelled' && !outcome) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
+      <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
         <div className="max-w-sm mx-auto px-6 text-center space-y-4" dir="rtl">
           <div className="mx-auto w-16 h-16 rounded-full bg-slate-500/10 border border-slate-500/30 flex items-center justify-center">
             <UsersIcon className="w-7 h-7 text-slate-400" />
@@ -1120,7 +1120,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
   // no options, and a countdown auto-submitting an out-of-range index.
   if (finalizeFailed && !outcome) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
+      <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 flex items-center justify-center -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl">
         <div className="max-w-sm mx-auto px-6 text-center space-y-4" dir="rtl">
           <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
             <XIcon className="w-7 h-7 text-amber-400" />
@@ -1158,7 +1158,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
   const timerLow = playTimer <= 5;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden">
       <div className="max-w-lg mx-auto px-4 sm:px-6 py-5 space-y-4" dir="rtl">
 
         <div className="flex items-center justify-between">

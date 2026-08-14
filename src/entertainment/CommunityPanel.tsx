@@ -112,11 +112,11 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
             rows={3}
           />
           <div className="flex justify-between items-center">
-            <span className="text-[9px] text-[#F5C542] font-bold">✓ اكسب +{PRAYER_XP} خبرة بمشاركة طلبتك (مرة يومياً)</span>
+            <span className="text-[9px] text-[var(--color-play-reward)] font-bold">✓ اكسب +{PRAYER_XP} خبرة بمشاركة طلبتك (مرة يومياً)</span>
             <button
               type="submit"
               disabled={posting || !text.trim()}
-              className="bg-[#F5C542] hover:brightness-105 disabled:opacity-40 text-slate-950 px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5"
+              className="bg-[var(--color-play-reward)] hover:brightness-105 disabled:opacity-40 text-slate-950 px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5"
             >
               {posting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
               <span>انشر الصلاة</span>
@@ -128,7 +128,7 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
       {/* Prayer requests feed */}
       <div className="space-y-3">
         <h3 className="text-xs font-black text-slate-200 flex items-center gap-1.5 px-1">
-          <MessageSquare className="w-4 h-4 text-[#C5A059]" />
+          <MessageSquare className="w-4 h-4 text-[var(--ds-accent)]" />
           <span>طلبات الصلاة الحية للآباء والخدام:</span>
         </h3>
 
@@ -169,7 +169,7 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
                   </button>
 
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#C5A059]">{pr.prayersCount} أخ يصلي لأجل هذه الطلبة</span>
+                    <span className="font-bold text-[var(--ds-accent)]">{pr.prayersCount} أخ يصلي لأجل هذه الطلبة</span>
                     {pr.isMine && (
                       <button onClick={() => handleDelete(pr.id)} title="حذف طلبتي" className="p-1 rounded-md text-slate-500 hover:text-rose-400 hover:bg-white/5">
                         <Trash2 className="w-3.5 h-3.5" />
@@ -186,7 +186,7 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
       {/* Coptic fathers' meditations */}
       <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-3xl p-5 space-y-3.5">
         <h3 className="text-xs font-black text-white flex items-center gap-1.5">
-          <Award className="w-4 h-4 text-[#C5A059]" />
+          <Award className="w-4 h-4 text-[var(--ds-accent)]" />
           <span>من تأملات آباء الكنيسة الأطهار:</span>
         </h3>
         <div className="flex gap-3.5 overflow-x-auto pb-1">
@@ -195,7 +195,7 @@ export default function CommunityPanel({ currentUser, onUserUpdated }: Props) {
               <p className="text-[10.5px] font-bold text-slate-300 leading-relaxed italic">"{med.quote}"</p>
               <div className="flex justify-between items-center pt-2 border-t border-white/5 text-[9px] font-black">
                 <span className="bg-white/5 text-slate-300 px-1.5 py-0.5 rounded">{med.category}</span>
-                <span className="text-[#F5C542]">{med.author}</span>
+                <span className="text-[var(--color-play-reward)]">{med.author}</span>
               </div>
             </div>
           ))}

@@ -21,7 +21,7 @@ export const PluginSystemCard: React.FC<PluginSystemCardProps> = ({
       whileHover={{ y: -2 }}
       className={`relative overflow-hidden rounded-2xl border p-4 transition-all duration-300 h-[140px] flex flex-col justify-between ${
         isActive
-          ? 'bg-gradient-to-br from-[#0A2342] via-[#0D2E55] to-[#123E73] border-indigo-500/50 text-white shadow-xl'
+          ? 'bg-gradient-to-br from-[var(--ds-brand)] via-[#0D2E55] to-[#123E73] border-indigo-500/50 text-white shadow-xl'
           : 'bg-[#0B0F1A] border-white/5 hover:border-white/10 hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)] text-white'
       }`}
       dir="rtl"

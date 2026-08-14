@@ -238,7 +238,7 @@ export default function GamesCatalog({ currentUser, onBack, onUserUpdated, onAch
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
       <AdGateModal
         open={pendingId !== null}
         title="شاهد الإعلان لبدء اللعبة"

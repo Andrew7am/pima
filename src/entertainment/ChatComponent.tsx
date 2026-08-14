@@ -93,7 +93,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({ roomId, senderName
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-gradient-to-r from-yellow-500 to-amber-600 text-slate-950 p-4 rounded-full shadow-[0_0_20px_rgba(245,197,66,0.4)] border-2 border-[#F5C542]"
+        className="bg-gradient-to-r from-yellow-500 to-amber-600 text-slate-950 p-4 rounded-full shadow-[0_0_20px_rgba(245,197,66,0.4)] border-2 border-[var(--color-play-reward)]"
       >
         <MessageSquare className="w-6 h-6 fill-current" />
       </motion.button>
@@ -107,7 +107,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({ roomId, senderName
             className="absolute bottom-18 left-0 w-80 max-w-[calc(100vw-2rem)] h-96 bg-[#0b1b36]/95 backdrop-blur-md border-2 border-blue-500/20 rounded-3xl shadow-2xl flex flex-col overflow-hidden"
           >
             <div className="bg-[#122244]/80 p-4 flex items-center justify-between border-b border-blue-500/10">
-              <h4 className="text-xs font-black text-[#F5C542]">دردشة اللعب العشوائي ⚔️</h4>
+              <h4 className="text-xs font-black text-[var(--color-play-reward)]">دردشة اللعب العشوائي ⚔️</h4>
               <button aria-label="إغلاق المحادثة" onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
             </div>
 
@@ -121,7 +121,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({ roomId, senderName
                 messages.map(msg => (
                   <div key={msg.id} className={`flex flex-col ${msg.senderId === auth.currentUser?.uid ? 'items-start' : 'items-end'}`}>
                     <span className="text-[9px] text-slate-400 font-bold mb-0.5">{msg.senderId === auth.currentUser?.uid ? 'أنت' : msg.senderName}</span>
-                    <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs font-black ${msg.senderId === auth.currentUser?.uid ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-[#122244] text-slate-100 rounded-tl-none'}`}>
+                    <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs font-black ${msg.senderId === auth.currentUser?.uid ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-[var(--color-play-card-raised)] text-slate-100 rounded-tl-none'}`}>
                       {msg.text}
                     </div>
                   </div>
@@ -138,7 +138,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({ roomId, senderName
               </div>
               <div className="flex gap-1 overflow-x-auto no-scrollbar">
                 {QUICK_PHRASES.map(phrase => (
-                  <button key={phrase} onClick={() => sendMessage(phrase)} className="whitespace-nowrap text-[9px] font-black bg-[#081326]/80 hover:bg-[#F5C542] hover:text-slate-950 text-slate-300 px-3 py-1.5 rounded-full">{phrase}</button>
+                  <button key={phrase} onClick={() => sendMessage(phrase)} className="whitespace-nowrap text-[9px] font-black bg-[#081326]/80 hover:bg-[var(--color-play-reward)] hover:text-slate-950 text-slate-300 px-3 py-1.5 rounded-full">{phrase}</button>
                 ))}
               </div>
             </div>
@@ -148,7 +148,7 @@ export const ChatComponent: React.FC<ChatComponentProps> = ({ roomId, senderName
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && sendMessage(newMessage)}
-                className="flex-1 bg-[#081326] border border-blue-500/10 rounded-xl px-3.5 py-2 text-xs font-bold text-white placeholder-slate-500"
+                className="flex-1 bg-[var(--color-play-card)] border border-blue-500/10 rounded-xl px-3.5 py-2 text-xs font-bold text-white placeholder-slate-500"
                 placeholder="اكتب رسالة..."
               />
               <button aria-label="إرسال الرسالة" onClick={() => sendMessage(newMessage)} className="bg-amber-500 text-slate-950 p-2 rounded-xl">

@@ -358,12 +358,12 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
         )}
       </AnimatePresence>
 
-      <div className="bg-white border border-[#D6D6C2] rounded-3xl p-6 space-y-6 shadow-sm overflow-hidden">
+      <div className="bg-white border border-[var(--ds-border)] rounded-3xl p-6 space-y-6 shadow-sm overflow-hidden">
         
         {/* HEADER SECTION */}
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-4 border-[#D6D6C2] gap-3">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-4 border-[var(--ds-border)] gap-3">
           <div className="space-y-1 text-right">
-            <h3 className="text-base font-black text-[#0A2342] flex items-center gap-2">
+            <h3 className="text-base font-black text-[var(--ds-brand)] flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
               مساعد إعداد وتأسيس غرفة ألعاب جديدة
             </h3>
@@ -836,7 +836,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                     
                     {/* Timer configs */}
                     <div className="bg-white border rounded-2xl p-3.5 space-y-2">
-                      <h5 className="text-[11px] font-black text-[#0A2342] border-b pb-1">⏱️ إعدادات المؤقت والوقت</h5>
+                      <h5 className="text-[11px] font-black text-[var(--ds-brand)] border-b pb-1">⏱️ إعدادات المؤقت والوقت</h5>
                       
                       <div className="space-y-1.5">
                         <label className="block text-[10px] font-bold text-slate-500">مؤقت الجولة الكلي (بالثواني)</label>
@@ -869,7 +869,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
 
                     {/* Room protection */}
                     <div className="bg-white border rounded-2xl p-3.5 space-y-2.5">
-                      <h5 className="text-[11px] font-black text-[#0A2342] border-b pb-1">🛡️ الأمان وضوابط الدخول</h5>
+                      <h5 className="text-[11px] font-black text-[var(--ds-brand)] border-b pb-1">🛡️ الأمان وضوابط الدخول</h5>
                       
                       <div className="flex items-center justify-between text-xs font-black">
                         <span className="text-slate-700">موافقة المنظم قبل الدخول</span>
@@ -889,7 +889,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
 
                     {/* Sounds and FX */}
                     <div className="bg-white border rounded-2xl p-3.5 space-y-2.5">
-                      <h5 className="text-[11px] font-black text-[#0A2342] border-b pb-1">🔊 الصوت والموسيقى</h5>
+                      <h5 className="text-[11px] font-black text-[var(--ds-brand)] border-b pb-1">🔊 الصوت والموسيقى</h5>
                       
                       <div className="flex items-center justify-between text-xs font-black">
                         <span className="text-slate-700">تشغيل المؤثرات الصوتية (SFX)</span>
@@ -904,7 +904,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
 
                     {/* Scoring engines */}
                     <div className="bg-white border rounded-2xl p-3.5 space-y-2.5">
-                      <h5 className="text-[11px] font-black text-[#0A2342] border-b pb-1">📊 التحكيم واحتساب النقاط</h5>
+                      <h5 className="text-[11px] font-black text-[var(--ds-brand)] border-b pb-1">📊 التحكيم واحتساب النقاط</h5>
                       
                       <div className="flex items-center justify-between text-xs font-black">
                         <span className="text-slate-700">احتساب النقاط تلقائياً</span>
@@ -919,7 +919,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
 
                     {/* Difficulty and Localization */}
                     <div className="bg-white border rounded-2xl p-3.5 space-y-2">
-                      <h5 className="text-[11px] font-black text-[#0A2342] border-b pb-1">🌍 اللغة ومستوى الصعوبة</h5>
+                      <h5 className="text-[11px] font-black text-[var(--ds-brand)] border-b pb-1">🌍 اللغة ومستوى الصعوبة</h5>
                       
                       <div className="space-y-1">
                         <label className="block text-[10px] font-bold text-slate-500">لغة الأسئلة المعتمدة</label>
@@ -971,7 +971,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                     
                     {/* Column 1: basic */}
                     <div className="bg-white border rounded-2xl p-3.5 space-y-2">
-                      <h5 className="text-[11px] font-black text-[#0A2342] border-b pb-1">🏕️ معلومات الغرفة</h5>
+                      <h5 className="text-[11px] font-black text-[var(--ds-brand)] border-b pb-1">🏕️ معلومات الغرفة</h5>
                       <div className="space-y-1.5 text-xs">
                         <div className="flex justify-between font-bold">
                           <span className="text-slate-400">الاسم:</span>
@@ -996,7 +996,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
 
                     {/* Column 2: teams */}
                     <div className="bg-white border rounded-2xl p-3.5 space-y-2">
-                      <h5 className="text-[11px] font-black text-[#0A2342] border-b pb-1">👥 تكوين الفرق ({teamCount})</h5>
+                      <h5 className="text-[11px] font-black text-[var(--ds-brand)] border-b pb-1">👥 تكوين الفرق ({teamCount})</h5>
                       <div className="space-y-1.5">
                         <div className="grid grid-cols-2 gap-1 max-h-24 overflow-y-auto">
                           {teamConfigs.slice(0, teamCount).map(t => (
@@ -1015,7 +1015,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
 
                     {/* Column 3: games */}
                     <div className="bg-white border rounded-2xl p-3.5 space-y-2">
-                      <h5 className="text-[11px] font-black text-[#0A2342] border-b pb-1">🎮 الألعاب المعتمدة بترتيبها</h5>
+                      <h5 className="text-[11px] font-black text-[var(--ds-brand)] border-b pb-1">🎮 الألعاب المعتمدة بترتيبها</h5>
                       <div className="space-y-1 text-[10px] font-black max-h-28 overflow-y-auto">
                         {gamesOrder.map((gId, index) => {
                           const g = GAME_PLUGINS.find(p => p.id === gId);
@@ -1051,7 +1051,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
         </div>
 
         {/* BOTTOM NAVIGATION BUTTONS */}
-        <div className="flex justify-between items-center border-t pt-4 border-[#D6D6C2]">
+        <div className="flex justify-between items-center border-t pt-4 border-[var(--ds-border)]">
           <button
             type="button"
             onClick={handlePrev}

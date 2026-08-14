@@ -96,7 +96,7 @@ export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAc
   const conic = `conic-gradient(${WHEEL.map((w, i) => `${w.color} ${i * SEG}deg ${(i + 1) * SEG}deg`).join(', ')})`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
       <AdGateModal open={adOpen} title="شاهد الإعلان لتدوير العجلة" rewardLabel="أدر العجلة" onReward={runSpin} onClose={() => setAdOpen(false)} />
 
       <div className="max-w-lg mx-auto px-4 pt-5 pb-10">
@@ -129,7 +129,7 @@ export default function RewardsScreen({ currentUser, onBack, onUserUpdated, onAc
                 );
               })}
             </div>
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-[#0A1428] border-4 border-amber-400 flex items-center justify-center z-10">
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-[var(--color-play-bg)] border-4 border-amber-400 flex items-center justify-center z-10">
               <Sparkles className="w-5 h-5 text-amber-400" />
             </div>
           </div>

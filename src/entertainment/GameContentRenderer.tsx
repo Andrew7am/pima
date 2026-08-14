@@ -328,7 +328,7 @@ export const GameContentRenderer: React.FC<GameContentRendererProps> = ({
                                   ? "bg-emerald-100 border-emerald-300 text-emerald-800"
                                   : "bg-slate-50 border-slate-200 text-slate-400"
                               : isSelected
-                                ? "bg-blue-50 border-[#0A2342] text-[#0A2342] scale-[1.01] shadow-3xs"
+                                ? "bg-blue-50 border-[var(--ds-brand)] text-[var(--ds-brand)] scale-[1.01] shadow-3xs"
                                 : "bg-white border-slate-200 hover:border-blue-400 hover:bg-blue-50/30"
                           }`}
                         >
@@ -563,7 +563,7 @@ export const GameContentRenderer: React.FC<GameContentRendererProps> = ({
             {wheelResultText && (
               <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-3.5 mt-2 animate-bounce">
                 <p className="text-[10px] text-amber-800">التحدي الذي تم اختياره:</p>
-                <h4 className="text-xs font-black text-[#0A2342] mt-1">{wheelResultText}</h4>
+                <h4 className="text-xs font-black text-[var(--ds-brand)] mt-1">{wheelResultText}</h4>
               </div>
             )}
           </div>
@@ -786,7 +786,7 @@ export const GameContentRenderer: React.FC<GameContentRendererProps> = ({
           </div>
 
           <div className="bg-white border rounded-xl p-3 text-right">
-            <p className="text-[10.5px] font-black text-[#0A2342] border-b pb-1.5 mb-2 flex items-center gap-1">
+            <p className="text-[10.5px] font-black text-[var(--ds-brand)] border-b pb-1.5 mb-2 flex items-center gap-1">
               <span>📋</span>
               جدول المهام التابع للنرد:
             </p>
@@ -1377,7 +1377,7 @@ export const GameContentRenderer: React.FC<GameContentRendererProps> = ({
                   onClick={() => setSacramentIdx(idx)}
                   className={`p-3 rounded-2xl border text-right transition-all flex flex-col justify-between h-[85px] group cursor-pointer ${
                     isActive
-                      ? "bg-gradient-to-tr from-[#C5A059] to-amber-400 border-amber-600 text-slate-950 font-black shadow-md scale-[1.01]"
+                      ? "bg-gradient-to-tr from-[var(--ds-accent)] to-amber-400 border-amber-600 text-slate-950 font-black shadow-md scale-[1.01]"
                       : "bg-white hover:bg-amber-50/20 border-slate-200 text-slate-800"
                   }`}
                 >
@@ -1398,7 +1398,7 @@ export const GameContentRenderer: React.FC<GameContentRendererProps> = ({
           {/* Selected Sacrament Details & Question */}
           <div className="bg-white border rounded-2xl p-4 space-y-3.5">
             <div className="border-b pb-2">
-              <h4 className="text-xs sm:text-sm font-black text-[#0A2342] flex items-center gap-1.5">
+              <h4 className="text-xs sm:text-sm font-black text-[var(--ds-brand)] flex items-center gap-1.5">
                 <Flame className="w-4 h-4 text-amber-500" />
                 {SACRAMENTS_QUESTIONS[sacramentIdx].sacrament}
               </h4>
@@ -1482,7 +1482,7 @@ export const GameContentRenderer: React.FC<GameContentRendererProps> = ({
             </div>
 
             <div className="text-center py-4 space-y-2">
-              <p className="text-base sm:text-lg font-black text-[#0A2342] tracking-wide leading-relaxed">
+              <p className="text-base sm:text-lg font-black text-[var(--ds-brand)] tracking-wide leading-relaxed">
                 "{TYPE_VERSE_ITEMS[typeVerseIdx].verseWithGap}"
               </p>
               <span className="text-[11px] text-amber-600 font-black">({TYPE_VERSE_ITEMS[typeVerseIdx].reference})</span>

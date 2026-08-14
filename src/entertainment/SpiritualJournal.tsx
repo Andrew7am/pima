@@ -231,7 +231,7 @@ ${headerBorder}
             initial={{ opacity: 0, y: -40, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="fixed top-6 left-6 right-6 sm:left-auto sm:right-6 sm:w-96 bg-[#0A2342] text-amber-300 border-2 border-amber-500/50 px-5 py-3.5 rounded-2xl shadow-2xl z-50 flex items-center gap-3 font-sans"
+            className="fixed top-6 left-6 right-6 sm:left-auto sm:right-6 sm:w-96 bg-[var(--ds-brand)] text-amber-300 border-2 border-amber-500/50 px-5 py-3.5 rounded-2xl shadow-2xl z-50 flex items-center gap-3 font-sans"
           >
             <div className="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">✨</div>
             <p className="text-xs font-black leading-relaxed">{toastMessage}</p>
@@ -254,7 +254,7 @@ ${headerBorder}
           <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
             <BookOpen className="w-4 h-4" />
           </div>
-          <h3 className="text-base font-black text-[#0A2342]">مذكرات الخلوة الشخصية 📖</h3>
+          <h3 className="text-base font-black text-[var(--ds-brand)]">مذكرات الخلوة الشخصية 📖</h3>
         </div>
       </div>
 
@@ -327,7 +327,7 @@ ${headerBorder}
                       <div className="flex gap-1.5 shrink-0">
                         <button
                           onClick={() => handleExportTextFile(entry)}
-                          className="p-1.5 text-[#0A2342] hover:bg-slate-100 rounded-lg transition-colors border border-slate-100"
+                          className="p-1.5 text-[var(--ds-brand)] hover:bg-slate-100 rounded-lg transition-colors border border-slate-100"
                           title="تصدير كملف نصي"
                         >
                           <Download className="w-4 h-4" />
@@ -348,7 +348,7 @@ ${headerBorder}
                         </button>
                       </div>
                       <div className="space-y-0.5">
-                        <h4 className="text-sm font-extrabold text-[#0A2342]">{entry.title}</h4>
+                        <h4 className="text-sm font-extrabold text-[var(--ds-brand)]">{entry.title}</h4>
                         <span className="text-[10px] text-slate-400 font-mono font-bold block">
                           📅 {new Date(entry.createdAt).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
                         </span>
@@ -431,7 +431,7 @@ ${headerBorder}
 
             {/* SECTION 2: FAVORITE BIBLE VERSES */}
             <div className="border-t border-slate-100 pt-4 space-y-3">
-              <div className="flex items-center gap-1 text-[#0A2342]">
+              <div className="flex items-center gap-1 text-[var(--ds-brand)]">
                 <Heart className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0" />
                 <h4 className="text-xs font-black">الآيات الروحية المفضلة والآيات المحفوظة 📜</h4>
               </div>
@@ -500,7 +500,7 @@ ${headerBorder}
 
             {/* SECTION 3: SPIRITUAL DECISIONS / COMMITMENTS */}
             <div className="border-t border-slate-100 pt-4 space-y-3">
-              <div className="flex items-center gap-1 text-[#0A2342]">
+              <div className="flex items-center gap-1 text-[var(--ds-brand)]">
                 <CheckSquare className="w-4 h-4 text-emerald-600 shrink-0" />
                 <h4 className="text-xs font-black">القرارات والالتزامات الروحية والعملية للمستقبل 🎯</h4>
               </div>

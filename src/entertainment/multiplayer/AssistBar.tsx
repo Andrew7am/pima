@@ -62,7 +62,7 @@ export default function AssistBar({ usedAssists, onUseAssist, userLevel }: Assis
                   >
                     {locked ? <Lock className="w-3.5 h-3.5 text-slate-400" /> : a.icon}
                     {used && (
-                      <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center border border-[#0A1428]">
+                      <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center border border-[var(--color-play-bg)]">
                         <Check className="w-2.5 h-2.5 text-white" />
                       </span>
                     )}

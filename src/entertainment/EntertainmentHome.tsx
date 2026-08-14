@@ -107,7 +107,7 @@ export default function EntertainmentHome({
   const avatar = currentUser.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name || 'P')}&background=122244&color=F5C542`;
 
   const CATEGORIES = [
-    { id: 'games' as Section, label: 'مركز الألعاب التفاعلي 🎮', sub: 'تحديات كنسية فردية، مباريات مباشرة وألعاب جماعية حماسية', icon: <Gamepad2 className="w-7 h-7 text-[#F5C542]" strokeWidth={1.5} />, box: 'from-[#122244] to-[#1C142E] border-blue-500/25', iconBg: 'bg-[#F5C542]/10 border-[#F5C542]/30' },
+    { id: 'games' as Section, label: 'مركز الألعاب التفاعلي 🎮', sub: 'تحديات كنسية فردية، مباريات مباشرة وألعاب جماعية حماسية', icon: <Gamepad2 className="w-7 h-7 text-[var(--color-play-reward)]" strokeWidth={1.5} />, box: 'from-[var(--color-play-card-raised)] to-[#1C142E] border-blue-500/25', iconBg: 'bg-[#F5C542]/10 border-[#F5C542]/30' },
     { id: 'seasons' as Section, label: 'المؤتمرات والمواسم الروحية 📖', sub: 'الفعاليات المباركة، التحديات الموسمية والتسجيلات المباشرة', icon: <BookOpen className="w-7 h-7 text-[#00E5FF]" strokeWidth={1.5} />, box: 'from-[#0b1b36] to-[#0d315c] border-cyan-500/20', iconBg: 'bg-[#00E5FF]/10 border-[#00E5FF]/30' },
     { id: 'community' as Section, label: 'شركة الصلوات المباركة ❤️', sub: 'الأصدقاء، تأملات الآباء وطلبات الصلاة المتبادلة', icon: <Heart className="w-7 h-7 text-[#FF3D71]" strokeWidth={1.5} />, box: 'from-[#1a0826] to-[#2c0c3a] border-fuchsia-500/20', iconBg: 'bg-[#FF3D71]/10 border-[#FF3D71]/30' },
     { id: 'stats' as Section, label: 'إحصائياتي التفصيلية 📊', sub: 'مستواك، خبرتك، دقتك، انتصاراتك وإنجازاتك الروحية', icon: <BarChart3 className="w-7 h-7 text-[#22D3EE]" strokeWidth={1.5} />, box: 'from-[#0b1b36] to-[#08243f] border-sky-500/20', iconBg: 'bg-[#22D3EE]/10 border-[#22D3EE]/30' },
@@ -120,7 +120,7 @@ export default function EntertainmentHome({
       games: 'مركز الألعاب التفاعلي', seasons: 'المؤتمرات والمواسم', community: 'شركة الصلوات المباركة', stats: 'إحصائياتي التفصيلية', settings: 'إعدادات التجربة',
     };
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0A1428] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-b from-[var(--color-play-bg)] via-[#0E1A33] to-[#08101F] text-slate-100 -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl overflow-hidden" dir="rtl">
         <div className="pima-play-wide px-4 pt-5 pb-12">
           <button type="button" onClick={() => setSection('menu')} className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-200 transition-colors mb-4">
             <ChevronRight className="w-4 h-4" /><span>رجوع للقائمة</span>
@@ -158,7 +158,7 @@ export default function EntertainmentHome({
 
               {/* Spiritual seasons + a challenge each */}
               <h3 className="text-xs font-black text-slate-300 flex items-center gap-1.5 px-1 pt-2">
-                <Sparkles className="w-4 h-4 text-[#F5C542]" /><span>المواسم والتحديات الروحية</span>
+                <Sparkles className="w-4 h-4 text-[var(--color-play-reward)]" /><span>المواسم والتحديات الروحية</span>
               </h3>
               {SPIRITUAL_SEASONS.map((s) => (
                 <div key={s.name} className={`bg-gradient-to-br ${s.tint} border rounded-3xl p-4 flex items-center gap-4`}>
@@ -191,10 +191,10 @@ export default function EntertainmentHome({
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 mb-1">المستوى الحالي</p>
                       <p className="text-3xl font-black text-white leading-none">المستوى {currentLevel}</p>
-                      <p className="text-[11px] font-bold text-[#F5C542] mt-1.5">{xpInLevel} / {xpNeeded} خبرة للمستوى التالي</p>
+                      <p className="text-[11px] font-bold text-[var(--color-play-reward)] mt-1.5">{xpInLevel} / {xpNeeded} خبرة للمستوى التالي</p>
                     </div>
                     <div className="w-16 h-16 rounded-2xl bg-[#F5C542]/10 border border-[#F5C542]/30 flex items-center justify-center">
-                      <Star className="w-8 h-8 text-[#F5C542] fill-current" />
+                      <Star className="w-8 h-8 text-[var(--color-play-reward)] fill-current" />
                     </div>
                   </div>
 
@@ -213,7 +213,7 @@ export default function EntertainmentHome({
                       <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center"><Flame className="w-5 h-5 text-amber-300 fill-current" /></div>
                       <div><h4 className="text-sm font-black text-white">نقاط المجد</h4><p className="text-[10.5px] text-slate-400">رصيدك من نقاط الولاء.</p></div>
                     </div>
-                    <span className="text-xl font-black text-[#F5C542]">{glory}</span>
+                    <span className="text-xl font-black text-[var(--color-play-reward)]">{glory}</span>
                   </div>
                   <button type="button" onClick={onOpenAchievements} className="w-full bg-gradient-to-br from-[#2c0c3a] to-[#1a0826] border border-fuchsia-500/25 hover:border-fuchsia-500/50 rounded-3xl p-4 flex items-center justify-between transition-all group">
                     <div className="flex items-center gap-3">
@@ -230,17 +230,17 @@ export default function EntertainmentHome({
               <div className="space-y-3">
                 <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-3xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-[#F5C542]/10 border border-[#F5C542]/20 flex items-center justify-center">{isSoundEnabled ? <Volume2 className="w-5 h-5 text-[#F5C542]" /> : <VolumeX className="w-5 h-5 text-slate-400" />}</div>
+                    <div className="w-11 h-11 rounded-2xl bg-[#F5C542]/10 border border-[#F5C542]/20 flex items-center justify-center">{isSoundEnabled ? <Volume2 className="w-5 h-5 text-[var(--color-play-reward)]" /> : <VolumeX className="w-5 h-5 text-slate-400" />}</div>
                     <div><h4 className="text-sm font-black text-white">الأصوات</h4><p className="text-[10.5px] text-slate-400">مؤثّرات صوتية داخل الألعاب.</p></div>
                   </div>
-                  <button type="button" onClick={() => setIsSoundEnabled((v) => !v)} className={`px-4 py-2 rounded-xl text-[11px] font-black ${isSoundEnabled ? 'bg-[#F5C542] text-slate-950' : 'bg-white/10 text-slate-300'}`}>{isSoundEnabled ? 'مفعّل' : 'مكتوم'}</button>
+                  <button type="button" onClick={() => setIsSoundEnabled((v) => !v)} className={`px-4 py-2 rounded-xl text-[11px] font-black ${isSoundEnabled ? 'bg-[var(--color-play-reward)] text-slate-950' : 'bg-white/10 text-slate-300'}`}>{isSoundEnabled ? 'مفعّل' : 'مكتوم'}</button>
                 </div>
                 <div className="bg-gradient-to-br from-[#152A55] to-[#0D1B3B] border border-white/10 rounded-3xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-[#F5C542]/10 border border-[#F5C542]/20 flex items-center justify-center">{isDarkMode ? <Moon className="w-5 h-5 fill-current text-[#F5C542]" /> : <Sun className="w-5 h-5 fill-current text-amber-400" />}</div>
+                    <div className="w-11 h-11 rounded-2xl bg-[#F5C542]/10 border border-[#F5C542]/20 flex items-center justify-center">{isDarkMode ? <Moon className="w-5 h-5 fill-current text-[var(--color-play-reward)]" /> : <Sun className="w-5 h-5 fill-current text-amber-400" />}</div>
                     <div><h4 className="text-sm font-black text-white">الوضع الليلي</h4><p className="text-[10.5px] text-slate-400">حماية العين والاستمتاع بالتجربة.</p></div>
                   </div>
-                  <button type="button" onClick={() => setIsDarkMode((v) => !v)} className={`px-4 py-2 rounded-xl text-[11px] font-black ${isDarkMode ? 'bg-[#F5C542] text-slate-950' : 'bg-slate-900 text-white'}`}>{isDarkMode ? '💡 نهاري' : '🌙 ليلي'}</button>
+                  <button type="button" onClick={() => setIsDarkMode((v) => !v)} className={`px-4 py-2 rounded-xl text-[11px] font-black ${isDarkMode ? 'bg-[var(--color-play-reward)] text-slate-950' : 'bg-slate-900 text-white'}`}>{isDarkMode ? '💡 نهاري' : '🌙 ليلي'}</button>
                 </div>
               </div>
             )}
@@ -255,7 +255,7 @@ export default function EntertainmentHome({
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-      className={`w-full pima-play-wide pb-24 text-right min-h-screen px-4 pt-6 -mx-4 -my-6 sm:mx-auto sm:my-0 transition-colors duration-500 ${dark ? 'bg-[#081326] text-white' : 'bg-[#FAFAFA] text-slate-900'}`}
+      className={`w-full pima-play-wide pb-24 text-right min-h-screen px-4 pt-6 -mx-4 -my-6 sm:mx-auto sm:my-0 transition-colors duration-500 ${dark ? 'bg-[var(--color-play-card)] text-white' : 'bg-[#FAFAFA] text-slate-900'}`}
       dir="rtl"
     >
       {/* Title + toggles */}
@@ -272,19 +272,19 @@ export default function EntertainmentHome({
           <p className={`text-sm font-bold ${dark ? 'text-slate-400' : 'text-slate-500'}`}>اختر القسم الذي ترغب في المغامرة والتحدي فيه.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setIsSoundEnabled((v) => !v)} className={`w-12 h-12 rounded-2xl shadow-lg border flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${dark ? 'bg-[#122244] border-blue-500/20 text-[#F5C542]' : 'bg-white border-slate-200 text-slate-600'}`} title={isSoundEnabled ? 'كتم الصوت' : 'تفعيل الصوت'}>
+          <button onClick={() => setIsSoundEnabled((v) => !v)} className={`w-12 h-12 rounded-2xl shadow-lg border flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${dark ? 'bg-[var(--color-play-card-raised)] border-blue-500/20 text-[var(--color-play-reward)]' : 'bg-white border-slate-200 text-slate-600'}`} title={isSoundEnabled ? 'كتم الصوت' : 'تفعيل الصوت'}>
             {isSoundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
           </button>
-          <button onClick={() => setIsDarkMode((v) => !v)} className={`w-12 h-12 rounded-2xl shadow-lg border flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${dark ? 'bg-[#122244] border-blue-500/20 text-[#F5C542]' : 'bg-white border-slate-200 text-slate-600'}`} title={dark ? 'الوضع النهاري' : 'الوضع الليلي'}>
+          <button onClick={() => setIsDarkMode((v) => !v)} className={`w-12 h-12 rounded-2xl shadow-lg border flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${dark ? 'bg-[var(--color-play-card-raised)] border-blue-500/20 text-[var(--color-play-reward)]' : 'bg-white border-slate-200 text-slate-600'}`} title={dark ? 'الوضع النهاري' : 'الوضع الليلي'}>
             {dark ? <Sun className="w-5 h-5 fill-current" /> : <Moon className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
       {/* Night-mode bar */}
-      <div className={`p-4 rounded-[24px] border mb-6 flex items-center justify-between ${dark ? 'bg-gradient-to-r from-[#0f2142] to-[#162a54] border-blue-500/30 text-[#F5C542]' : 'bg-white border-slate-200 text-slate-800'}`}>
+      <div className={`p-4 rounded-[24px] border mb-6 flex items-center justify-between ${dark ? 'bg-gradient-to-r from-[#0f2142] to-[#162a54] border-blue-500/30 text-[var(--color-play-reward)]' : 'bg-white border-slate-200 text-slate-800'}`}>
         <div className="flex items-center gap-3">
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${dark ? 'bg-[#F5C542]/10 border border-[#F5C542]/20 text-[#F5C542]' : 'bg-slate-100 text-slate-600'}`}>
+          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${dark ? 'bg-[#F5C542]/10 border border-[#F5C542]/20 text-[var(--color-play-reward)]' : 'bg-slate-100 text-slate-600'}`}>
             {dark ? <Moon className="w-5 h-5 fill-current" /> : <Sun className="w-5 h-5 fill-current" />}
           </div>
           <div className="text-right">
@@ -292,18 +292,18 @@ export default function EntertainmentHome({
             <p className={`text-[10px] sm:text-xs font-bold leading-none mt-1 ${dark ? 'text-slate-400' : 'text-slate-500'}`}>{dark ? 'الوضع المظلم الفاخر نشط لحماية عينيك ✨' : 'شغّل الوضع المظلم لتقليل إجهاد العين 🕯️'}</p>
           </div>
         </div>
-        <button type="button" onClick={() => setIsDarkMode((v) => !v)} className={`px-4 py-2 rounded-xl text-[11px] font-black active:scale-95 ${dark ? 'bg-[#F5C542] text-slate-950' : 'bg-slate-900 text-white'}`}>{dark ? '💡 نهاري' : '🌙 ليلي'}</button>
+        <button type="button" onClick={() => setIsDarkMode((v) => !v)} className={`px-4 py-2 rounded-xl text-[11px] font-black active:scale-95 ${dark ? 'bg-[var(--color-play-reward)] text-slate-950' : 'bg-slate-900 text-white'}`}>{dark ? '💡 نهاري' : '🌙 ليلي'}</button>
       </div>
 
       {/* Player profile card */}
       <div className={`relative p-6 rounded-[32px] shadow-2xl mb-8 flex flex-col sm:flex-row items-center sm:items-start gap-6 border overflow-hidden ${dark ? 'bg-[#0b1b36]/90 border-blue-500/20' : 'bg-white border-slate-200'}`}>
         {dark && <div className="absolute top-0 left-0 w-48 h-48 bg-blue-500/5 blur-3xl pointer-events-none" />}
         <div className="relative shrink-0 group">
-          <div className={`absolute -inset-1.5 rounded-full bg-gradient-to-tr ${dark ? 'from-amber-600 to-[#F5C542]' : 'from-slate-300 to-slate-400'} blur-sm opacity-70`} />
-          <div className={`w-28 h-28 rounded-full overflow-hidden border-[4px] relative z-10 flex items-center justify-center ${dark ? 'border-[#081326] bg-[#122244]' : 'border-white bg-slate-100'}`}>
+          <div className={`absolute -inset-1.5 rounded-full bg-gradient-to-tr ${dark ? 'from-amber-600 to-[var(--color-play-reward)]' : 'from-slate-300 to-slate-400'} blur-sm opacity-70`} />
+          <div className={`w-28 h-28 rounded-full overflow-hidden border-[4px] relative z-10 flex items-center justify-center ${dark ? 'border-[var(--color-play-card)] bg-[var(--color-play-card-raised)]' : 'border-white bg-slate-100'}`}>
             <img src={avatar} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
           </div>
-          <div className={`absolute -bottom-2 -left-2 text-xs font-black w-9 h-9 rounded-full flex items-center justify-center border-4 relative z-20 shadow-xl ${dark ? 'bg-[#F5C542] text-slate-950 border-[#081326]' : 'bg-slate-800 text-white border-white'}`}>{currentLevel}</div>
+          <div className={`absolute -bottom-2 -left-2 text-xs font-black w-9 h-9 rounded-full flex items-center justify-center border-4 relative z-20 shadow-xl ${dark ? 'bg-[var(--color-play-reward)] text-slate-950 border-[var(--color-play-card)]' : 'bg-slate-800 text-white border-white'}`}>{currentLevel}</div>
         </div>
 
         <div className="flex-1 w-full space-y-4 text-center sm:text-right relative z-10">
@@ -321,7 +321,7 @@ export default function EntertainmentHome({
                 <span className={`font-mono ${dark ? 'text-amber-400' : 'text-slate-800'}`}>{xpInLevel} / {xpNeeded} XP</span>
               </div>
               <div className={`w-full h-3 rounded-full overflow-hidden p-0.5 border ${dark ? 'bg-[#081326]/80 border-blue-500/15' : 'bg-slate-100 border-slate-200'}`}>
-                <motion.div initial={{ width: 0 }} animate={{ width: `${xpPercent}%` }} transition={{ duration: 1, ease: 'easeOut' }} className={`h-full rounded-full ${dark ? 'bg-gradient-to-r from-amber-500 to-[#F5C542]' : 'bg-slate-700'}`} />
+                <motion.div initial={{ width: 0 }} animate={{ width: `${xpPercent}%` }} transition={{ duration: 1, ease: 'easeOut' }} className={`h-full rounded-full ${dark ? 'bg-gradient-to-r from-amber-500 to-[var(--color-play-reward)]' : 'bg-slate-700'}`} />
               </div>
             </div>
 
@@ -353,11 +353,11 @@ export default function EntertainmentHome({
             <div className="flex items-center gap-4 relative z-10 text-right">
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all group-hover:scale-110 ${dark ? c.iconBg : 'bg-slate-100 border-slate-200'}`}>{c.icon}</div>
               <div className="space-y-1">
-                <h3 className={`text-base font-black transition-colors ${dark ? 'text-white group-hover:text-[#F5C542]' : 'text-slate-800'}`}>{c.label}</h3>
+                <h3 className={`text-base font-black transition-colors ${dark ? 'text-white group-hover:text-[var(--color-play-reward)]' : 'text-slate-800'}`}>{c.label}</h3>
                 <p className={`text-[11.5px] font-bold leading-relaxed max-w-[280px] sm:max-w-md ${dark ? 'text-slate-300 opacity-90' : 'text-slate-500'}`}>{c.sub}</p>
               </div>
             </div>
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border transition-all relative z-10 shrink-0 ${dark ? 'bg-[#081326]/60 border-blue-500/10 text-slate-300 group-hover:bg-[#F5C542] group-hover:text-slate-950' : 'bg-slate-50 border-slate-100 text-slate-400 group-hover:bg-slate-900 group-hover:text-white'}`}>
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border transition-all relative z-10 shrink-0 ${dark ? 'bg-[#081326]/60 border-blue-500/10 text-slate-300 group-hover:bg-[var(--color-play-reward)] group-hover:text-slate-950' : 'bg-slate-50 border-slate-100 text-slate-400 group-hover:bg-slate-900 group-hover:text-white'}`}>
               <ArrowLeft className="w-4 h-4 fill-current rotate-180 group-hover:rotate-0 transition-transform duration-300" />
             </div>
           </motion.div>

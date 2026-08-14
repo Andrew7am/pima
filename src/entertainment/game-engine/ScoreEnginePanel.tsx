@@ -30,7 +30,7 @@ export const ScoreEnginePanel: React.FC<ScoreEnginePanelProps> = ({
             <Award className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="text-xs font-black text-[#0A2342]">محرك النقاط والبركات الروحيّة (Score Engine)</h4>
+            <h4 className="text-xs font-black text-[var(--ds-brand)]">محرك النقاط والبركات الروحيّة (Score Engine)</h4>
             <p className="text-[9.5px] text-slate-400">إدارة موازين النقاط والعمليات وتتبع تاريخ الرهانات والأجوبة</p>
           </div>
         </div>
@@ -55,7 +55,7 @@ export const ScoreEnginePanel: React.FC<ScoreEnginePanelProps> = ({
         {teamsList.map((team, idx) => (
           <div
             key={team.id}
-            className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col justify-between shadow-3xs relative overflow-hidden group hover:border-[#0A2342] transition-colors"
+            className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col justify-between shadow-3xs relative overflow-hidden group hover:border-[var(--ds-brand)] transition-colors"
           >
             {/* Crown icon for leader */}
             {idx === 0 && (
@@ -67,7 +67,7 @@ export const ScoreEnginePanel: React.FC<ScoreEnginePanelProps> = ({
             <div className="flex items-center gap-2.5 mb-3">
               <span className="w-5 h-5 rounded-full" style={{ backgroundColor: team.color }} />
               <div>
-                <h5 className="text-[12px] font-black text-[#0A2342]">{team.name}</h5>
+                <h5 className="text-[12px] font-black text-[var(--ds-brand)]">{team.name}</h5>
                 <span className="text-[14px] font-mono font-black text-slate-700">
                   {team.score} <span className="text-[10px] text-slate-400 font-bold">نقطة</span>
                 </span>

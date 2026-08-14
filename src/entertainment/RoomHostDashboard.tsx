@@ -200,7 +200,7 @@ export const RoomHostDashboard: React.FC<RoomHostDashboardProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Metric 1: Room Code */}
-        <div className="bg-gradient-to-br from-[#0A2342] to-[#123e75] text-white p-5 rounded-3xl border border-slate-700/30 flex flex-col justify-between shadow-md relative overflow-hidden group">
+        <div className="bg-gradient-to-br from-[var(--ds-brand)] to-[#123e75] text-white p-5 rounded-3xl border border-slate-700/30 flex flex-col justify-between shadow-md relative overflow-hidden group">
           <div className="absolute top-2 left-2 text-white/5 group-hover:scale-110 transition-transform">
             <QrCode className="w-24 h-24" />
           </div>
@@ -231,7 +231,7 @@ export const RoomHostDashboard: React.FC<RoomHostDashboardProps> = ({
           <div className="space-y-1">
             <p className="text-[10px] text-slate-400 font-bold">المتسابقون المتصلون حالياً 👥</p>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black text-[#0A2342]">{approvedPlayersCount}</span>
+              <span className="text-3xl font-black text-[var(--ds-brand)]">{approvedPlayersCount}</span>
               <span className="text-[10px] text-slate-400 font-bold">مقبولين</span>
             </div>
             {waitingPlayers.length > 0 && (
@@ -310,12 +310,12 @@ export const RoomHostDashboard: React.FC<RoomHostDashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* LEFT COLUMN (2 COLS): ACTIVE PARTICIPANTS AND ROOM LOGS */}
-        <div className="lg:col-span-2 bg-white border border-[#D6D6C2] rounded-3xl p-5 space-y-4">
+        <div className="lg:col-span-2 bg-white border border-[var(--ds-border)] rounded-3xl p-5 space-y-4">
           
           <div className="flex justify-between items-center border-b pb-3 border-slate-100">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-amber-500" />
-              <h4 className="text-xs font-black text-[#0A2342]">بوابة إدارة المتسابقين وتوزيع المجموعات</h4>
+              <h4 className="text-xs font-black text-[var(--ds-brand)]">بوابة إدارة المتسابقين وتوزيع المجموعات</h4>
             </div>
             
             {/* Inner tab navigator */}
@@ -329,7 +329,7 @@ export const RoomHostDashboard: React.FC<RoomHostDashboardProps> = ({
                   onClick={() => setActiveTab(t.id as any)}
                   className={`px-3 py-1 rounded-lg text-[10.5px] font-black transition-all cursor-pointer ${
                     activeTab === t.id 
-                      ? "bg-[#0A2342] text-white" 
+                      ? "bg-[var(--ds-brand)] text-white" 
                       : "text-slate-500 hover:bg-slate-50"
                   }`}
                 >
@@ -455,7 +455,7 @@ export const RoomHostDashboard: React.FC<RoomHostDashboardProps> = ({
                       style={{ borderTop: `4px solid ${team.color}` }}
                     >
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-black text-[#0A2342] flex items-center gap-1.5">
+                        <span className="text-xs font-black text-[var(--ds-brand)] flex items-center gap-1.5">
                           <span className="text-base">{team.icon || "🏳️"}</span>
                           {team.name}
                         </span>
@@ -496,8 +496,8 @@ export const RoomHostDashboard: React.FC<RoomHostDashboardProps> = ({
         <div className="space-y-4">
           
           {/* Beautiful QR Code Card */}
-          <div className="bg-white border border-[#D6D6C2] rounded-3xl p-5 text-center space-y-4">
-            <h4 className="text-xs font-black text-[#0A2342] flex items-center justify-center gap-1.5 border-b pb-2">
+          <div className="bg-white border border-[var(--ds-border)] rounded-3xl p-5 text-center space-y-4">
+            <h4 className="text-xs font-black text-[var(--ds-brand)] flex items-center justify-center gap-1.5 border-b pb-2">
               <QrCode className="w-4 h-4 text-amber-500" />
               المسح الضوئي السريع للانضمام
             </h4>
@@ -547,8 +547,8 @@ export const RoomHostDashboard: React.FC<RoomHostDashboardProps> = ({
           </div>
 
           {/* Real-time Team Leaderboard preview */}
-          <div className="bg-white border border-[#D6D6C2] rounded-3xl p-5 space-y-4">
-            <h4 className="text-xs font-black text-[#0A2342] flex items-center gap-1.5 border-b pb-2">
+          <div className="bg-white border border-[var(--ds-border)] rounded-3xl p-5 space-y-4">
+            <h4 className="text-xs font-black text-[var(--ds-brand)] flex items-center gap-1.5 border-b pb-2">
               <Trophy className="w-4 h-4 text-yellow-500 animate-bounce" />
               لوحة الصدارة والترتيب الحالي للفرق 🏆
             </h4>
@@ -570,7 +570,7 @@ export const RoomHostDashboard: React.FC<RoomHostDashboardProps> = ({
                       <span className="text-xs font-black text-slate-800">{team.name}</span>
                     </div>
                     <div className="text-left">
-                      <span className="text-xs font-black text-[#0A2342] font-mono">{team.score}</span>
+                      <span className="text-xs font-black text-[var(--ds-brand)] font-mono">{team.score}</span>
                       <span className="text-[9px] text-slate-400 font-bold mr-1">نقطة</span>
                     </div>
                   </div>
@@ -584,10 +584,10 @@ export const RoomHostDashboard: React.FC<RoomHostDashboardProps> = ({
           </div>
 
           {/* Smart Coptic Question Pool & AI Generation Panel */}
-          <div className="bg-white border border-[#D6D6C2] rounded-3xl p-5 space-y-4">
+          <div className="bg-white border border-[var(--ds-border)] rounded-3xl p-5 space-y-4">
             <button 
               onClick={() => setShowPoolPanel(!showPoolPanel)}
-              className="w-full flex justify-between items-center text-xs font-black text-[#0A2342] border-b pb-2 cursor-pointer"
+              className="w-full flex justify-between items-center text-xs font-black text-[var(--ds-brand)] border-b pb-2 cursor-pointer"
             >
               <div className="flex items-center gap-1.5">
                 <Database className="w-4 h-4 text-indigo-600 animate-pulse" />

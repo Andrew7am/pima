@@ -43,7 +43,7 @@ export const TimerEnginePanel: React.FC<TimerEnginePanelProps> = ({
   };
 
   return (
-    <div className="bg-[#0A2342] text-white rounded-3xl p-5 shadow-lg flex flex-col md:flex-row justify-between items-center gap-4 text-right border border-[#144783]" dir="rtl">
+    <div className="bg-[var(--ds-brand)] text-white rounded-3xl p-5 shadow-lg flex flex-col md:flex-row justify-between items-center gap-4 text-right border border-[#144783]" dir="rtl">
       {/* 1. Left Section: Question/Round Countdown */}
       <div className="flex items-center gap-4 w-full md:w-auto">
         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl transition-all ${

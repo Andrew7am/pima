@@ -1239,3 +1239,29 @@ body {
 @media (min-width: 1024px) { .pima-play-wide { max-width: 64rem; } .pima-play-mid { max-width: 56rem; } }
 @media (min-width: 1280px) { .pima-play-wide { max-width: 1160px; } .pima-play-mid { max-width: 1040px; } }
 @media (min-width: 1440px) { .pima-play-wide { max-width: 1320px; } .pima-play-mid { max-width: 1160px; } }
+
+/* ── Entertainment semantic surfaces ──────────────────────────────────────
+   Derived from measured usage across the 77 files in src/entertainment, not
+   from an imagined palette. Each is the colour that role ACTUALLY renders:
+
+     #0A1428  29 uses (from:24 bg:3 border:2) — the page ground the hub
+              gradients start from
+     #081326  16 uses (bg:13 border:3)        — the card
+     #122244  15 uses (bg:13 from:1 border:1) — the raised/lighter card
+     #F5C542  62 uses (text:25 border:15 bg:15) — reward gold
+
+   REWARD GOLD IS NOT PIMA GOLD. --ds-accent (#C5A059) is Pima's action colour;
+   it appears 9 times here and keeps that meaning. #F5C542 is brighter and marks
+   winning, XP and trophies — a game-state colour, not a call to action. They are
+   allowed to sit on the same screen and must not be merged.
+
+   Pure gradient stops (#0D1B3B to:25, #0E1A33 via:24, #08101F to:24, #152A55
+   from:22) are deliberately NOT tokenised: each appears under exactly one
+   gradient prefix and carries no role beyond "this stop of this ramp". Naming
+   them would be cosmetic. */
+@theme static {
+  --color-play-bg: #0A1428;
+  --color-play-card: #081326;
+  --color-play-card-raised: #122244;
+  --color-play-reward: #F5C542;
+}

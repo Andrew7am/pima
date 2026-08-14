@@ -105,7 +105,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
         whileHover={{ scale: 1.1, y: -2 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="relative bg-gradient-to-r from-yellow-500 via-amber-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 p-4 rounded-full shadow-[0_0_20px_rgba(245,197,66,0.4)] flex items-center justify-center cursor-pointer border-2 border-[#F5C542]"
+        className="relative bg-gradient-to-r from-yellow-500 via-amber-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 p-4 rounded-full shadow-[0_0_20px_rgba(245,197,66,0.4)] flex items-center justify-center cursor-pointer border-2 border-[var(--color-play-reward)]"
       >
         <MessageCircle className="w-5.5 h-5.5 fill-current" />
         <AnimatePresence>
@@ -114,7 +114,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
-              className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-[#081326] animate-pulse"
+              className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-[var(--color-play-card)] animate-pulse"
             >
               {unreadCount}
             </motion.span>
@@ -140,7 +140,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
               <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
                 <h4 className="text-xs font-black text-white flex items-center gap-1.5">
-                  <span className="text-[#F5C542]">دردشة التحدي ⚔️</span>
+                  <span className="text-[var(--color-play-reward)]">دردشة التحدي ⚔️</span>
                 </h4>
               </div>
               <button aria-label="إغلاق المحادثة"
@@ -174,7 +174,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
                         className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs font-black leading-relaxed shadow-md border ${
                           isMe
                             ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400/20 rounded-tr-none'
-                            : 'bg-[#122244] border-blue-500/10 text-slate-100 rounded-tl-none'
+                            : 'bg-[var(--color-play-card-raised)] border-blue-500/10 text-slate-100 rounded-tl-none'
                         }`}
                       >
                         {msg.text}
@@ -207,7 +207,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
                   <button
                     key={phrase}
                     onClick={() => handleSendMessage(phrase)}
-                    className="whitespace-nowrap text-[9px] font-black bg-[#081326]/80 hover:bg-[#F5C542] hover:text-slate-950 text-slate-300 px-3 py-1.5 rounded-full transition-all active:scale-95 cursor-pointer border border-blue-500/10"
+                    className="whitespace-nowrap text-[9px] font-black bg-[#081326]/80 hover:bg-[var(--color-play-reward)] hover:text-slate-950 text-slate-300 px-3 py-1.5 rounded-full transition-all active:scale-95 cursor-pointer border border-blue-500/10"
                   >
                     {phrase}
                   </button>
@@ -227,7 +227,7 @@ export const FriendChat: React.FC<FriendChatProps> = ({
                   }
                 }}
                 placeholder="اكتب رسالتك هنا..."
-                className="flex-1 bg-[#081326] border border-blue-500/10 rounded-xl px-3.5 py-2 text-xs font-bold outline-hidden focus:border-blue-400 text-white text-right placeholder-slate-500"
+                className="flex-1 bg-[var(--color-play-card)] border border-blue-500/10 rounded-xl px-3.5 py-2 text-xs font-bold outline-hidden focus:border-blue-400 text-white text-right placeholder-slate-500"
               />
               <button aria-label="إرسال الرسالة"
                 onClick={() => handleSendMessage(messageText)}
