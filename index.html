@@ -1,6 +1,22 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
   <head>
+    <!-- Theme, resolved before first paint. A React effect would run after the
+         browser has already painted the light default, which is the white flash
+         we are avoiding. Wrapped in try/catch because localStorage throws in
+         some privacy modes and a theme must never stop the app loading. -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('pima-theme');
+          var dark = saved === 'dark' || ((!saved || saved === 'system')
+            && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light';
+        }
+      })();
+    </script>
     <meta charset="UTF-8" />
     <!-- viewport-fit=cover is what makes env(safe-area-inset-*) report real
          values; without it they resolve to 0 and the bottom nav sits under

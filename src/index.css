@@ -1442,3 +1442,85 @@ body {
  * move this migration has refused throughout — semantic role decides, not
  * proximity. They are AMBIGUOUS, so they stay exactly as they are, recorded
  * here so the next person inherits the question rather than rediscovering it. */
+
+/* ── Dark Pima ──────────────────────────────────────────────────────────────
+   A second binding of the same --ds-* roles, not a second design system. The
+   light values in :root are untouched; every component already reading
+   var(--ds-…) becomes theme-aware for free.
+
+   Warm-neutral, deliberately not the owner dashboard's cool navy (#0C1424) and
+   deliberately not Entertainment's navy/violet — the three modes have to stay
+   tellable apart. Light Pima is warm ivory over olive-black; this is the same
+   temperature inverted.
+
+   Scoping note: .owner-theme and .play-theme sit on descendant elements, so
+   they keep overriding these values inside their own subtrees — custom
+   properties resolve from the nearest ancestor that declares them, not by
+   specificity. Owner dark and Entertainment are therefore untouched by
+   construction, not by a rule ordering that could drift.
+
+   Every value below was measured, not eyeballed. Ratios are against
+   --ds-surface #1E1D18 unless noted. The brief's proposed faint #7F7A6C came
+   out at 3.94:1 and would have failed AA for text, so --ds-text-faint takes
+   the muted value #A39F91 (6.37:1) instead — contrast is not traded for
+   softness. */
+:root[data-theme='dark'] {
+  /* Four levels so elevation reads without leaning on shadows, which are
+     nearly invisible on dark ground. */
+  --ds-bg: #171612;                 /* page                                  */
+  --ds-surface: #1E1D18;            /* cards, standard surfaces              */
+  --ds-raised: #25231D;             /* dropdowns, raised cards               */
+
+  --ds-text: #F4F1E8;               /* 14.95:1                               */
+  --ds-text-strong: #FFFDF7;        /* 16.59:1                               */
+  --ds-text-2: #D0CCBF;             /* 10.51:1                               */
+  --ds-text-faint: #A39F91;         /*  6.37:1                               */
+  --ds-border: #3A382F;             /*  1.44:1 vs surface — a seam, not text */
+
+  /* Brand gold survives the inversion unchanged: 6.87:1 on surface, 7.37:1 on
+     page. No dark variant is needed, and reward gold #F5C542 stays in
+     Entertainment where it belongs. */
+  --ds-accent: #C5A059;
+  --ds-accent-deep: #B8944E;
+  --ds-accent-soft: #E3CD9F;        /* 10.85:1 — decorative rim / soft fills */
+  --ds-accent-ink: #171612;         /* ink ON gold: gold is light here       */
+  --ds-on-accent: #171612;
+
+  --ds-primary: #E3CD9F;
+  --ds-on-primary: #171612;
+  --ds-brand: #F4F1E8;
+  --ds-brand-2: #D0CCBF;
+  --ds-on-brand: #171612;
+
+  /* Semantic colours are REDEFINED, never inherited. The owner-dark block
+     documents what inheriting costs: light-surface shades landed between
+     1.2:1 and 2.0:1 there — a coloured smudge rather than a signal. These are
+     the 400-weight steps, measured on #1E1D18. */
+  --ds-success: #4ADE80;            /*  9.69:1 */
+  --ds-success-deep: #34D399;       /*  8.78:1 */
+  --ds-success-ink: #4ADE80;
+  --ds-on-success: #171612;
+
+  --ds-warning: #FBBF24;            /* 10.11:1 */
+  --ds-warning-deep: #F59E0B;
+  --ds-warning-ink: #FBBF24;
+  --ds-on-warning: #171612;
+
+  --ds-danger: #F87171;             /*  6.10:1 */
+  --ds-danger-deep: #EF4444;
+  --ds-danger-ink: #F87171;
+  --ds-on-danger: #171612;
+
+  /* Categorical roles keep their identity — they encode data, not mood. */
+  --ds-category-1: #E3CD9F;
+  --ds-category-2: #A8C7A1;
+  --ds-category-3: #C9A9C4;
+  --ds-on-category: #171612;
+
+  --ds-media: #25231D;
+  --ds-media-border: #3A382F;
+  --ds-media-accent: #C5A059;
+  --ds-on-media: #F4F1E8;
+
+  color-scheme: dark;
+}

@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { User, Booking, Review, RetreatHouse } from '../types';
 import {
   User as UserIcon, Phone, MapPin, Church, LogOut, Lock, HelpCircle, ChevronLeft,
-  Trash2, ShieldCheck, Camera, Coins, Award, CalendarCheck, ChevronRight, Copy, Check, Mail, Bell,
+  Trash2, ShieldCheck, Camera, Coins, Award, CalendarCheck, ChevronRight, Copy, Check, Mail, Bell, Moon,
 } from 'lucide-react';
 import RewardsDashboard from './RewardsDashboard';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { setEmailOptOut } from '../lib/db';
 import WebPushToggle from './WebPushToggle';
+import { useTheme } from '../lib/useTheme';
 import { Badge, Button, Card, Input } from './ui';
 
 /**
@@ -233,6 +234,7 @@ export default function ProfileScreen({
   currentUser, onLogout, onBack, onNavigateSupport, onNavigatePrivacy, onDeleteAccount, onUpdateAvatar, reviews, houses,
   bookings = [], onNavigateBookings, initialView = 'hub', onInitialViewConsumed,
 }: ProfileScreenProps) {
+  const { theme, setTheme } = useTheme();
   const roleLabel = currentUser.role === 'servant' ? 'خادم' : currentUser.role === 'owner' ? 'صاحب بيت' : 'مستخدم';
   const canSelfDelete = currentUser.role === 'individual' || currentUser.role === 'servant';
 
@@ -537,6 +539,38 @@ export default function ProfileScreen({
             disabled={p.disabled}
           />
         )} />
+        {/* Theme. Three segments rather than a switch, because "system" is a
+            real third state and a two-way toggle cannot express it. Uses the
+            same row metrics as its neighbours — no new control invented. */}
+        <div className="flex items-center gap-3 min-h-11 px-3.5 py-3 text-right">
+          <span
+            className="w-9 h-9 rounded-xl grid place-items-center shrink-0"
+            style={{ backgroundColor: 'var(--ds-raised)', color: 'var(--ds-accent)' }}
+          >
+            <Moon className="w-4 h-4" />
+          </span>
+          <span className="flex-1 min-w-0 text-[14px] font-bold text-[var(--ds-text)]">المظهر</span>
+          <div className="flex gap-1 shrink-0" role="group" aria-label="المظهر">
+            {([
+              { v: 'system', l: 'النظام' },
+              { v: 'light', l: 'فاتح' },
+              { v: 'dark', l: 'داكن' },
+            ] as const).map((o) => (
+              <button
+                key={o.v}
+                type="button"
+                onClick={() => setTheme(o.v)}
+                aria-pressed={theme === o.v}
+                className="min-h-11 px-3 rounded-xl text-[12px] font-black border transition-colors cursor-pointer ds-focus"
+                style={theme === o.v
+                  ? { backgroundColor: 'var(--ds-accent)', color: 'var(--ds-on-accent)', borderColor: 'var(--ds-accent)' }
+                  : { backgroundColor: 'var(--ds-surface)', color: 'var(--ds-text-2)', borderColor: 'var(--ds-border)' }}
+              >
+                {o.l}
+              </button>
+            ))}
+          </div>
+        </div>
         <SettingsRow icon={HelpCircle} label="التواصل والدعم الفني" onClick={onNavigateSupport} />
         <SettingsRow icon={ShieldCheck} label="سياسة الخصوصية وشروط الاستخدام" onClick={onNavigatePrivacy} />
       </Card>
