@@ -1,4 +1,4 @@
-import { RetreatHouse, User, Booking, Review, Payment } from './types';
+import { RetreatHouse, User, Booking, Review, Payment, Room, RoomType } from './types';
 
 export const INITIAL_USERS: User[] = [
   {
@@ -665,4 +665,47 @@ export const INITIAL_PAYMENTS: Payment[] = [
       senderNumberOrAddress: 'mina@instapay',
     }
   }
+];
+
+// ── Rooms ────────────────────────────────────────────────────────────────
+// Development fixtures only. The rooms/occupancy/distribution screens read
+// Room.typeId back through RoomType, so these two lists have to stay
+// internally consistent — every typeId below exists in INITIAL_ROOM_TYPES,
+// and every houseId belongs to user_owner's house_1. Sized to exercise the
+// layouts rather than to mirror a production house: 12 rooms over 3 floors
+// covering all four Room['status'] values.
+export const INITIAL_ROOM_TYPES: RoomType[] = [
+  {
+    id: 'rtype_std', houseId: 'house_1', name: 'غرفة عادية', price: 300, bedsCount: 3,
+    facilities: ['bathroom', 'wifi'], icon: 'standard', createdAt: '2026-01-05T08:00:00Z',
+  },
+  {
+    id: 'rtype_ac', houseId: 'house_1', name: 'غرفة مكيفة', price: 450, bedsCount: 3,
+    facilities: ['ac', 'bathroom', 'wifi', 'fridge'], icon: 'ac', createdAt: '2026-01-05T08:05:00Z',
+  },
+  {
+    id: 'rtype_family', houseId: 'house_1', name: 'غرفة عائلية', price: 600, bedsCount: 5,
+    facilities: ['ac', 'bathroom', 'tv', 'wifi', 'balcony'], icon: 'family',
+    description: 'تتسع لأسرة كاملة', createdAt: '2026-01-05T08:10:00Z',
+  },
+  {
+    id: 'rtype_vip', houseId: 'house_1', name: 'جناح VIP', price: 900, bedsCount: 2,
+    facilities: ['ac', 'bathroom', 'tv', 'wifi', 'fridge', 'balcony'], icon: 'vip',
+    createdAt: '2026-01-05T08:15:00Z',
+  },
+];
+
+export const INITIAL_ROOMS: Room[] = [
+  { id: 'room_101', houseId: 'house_1', name: '١٠١', bedsCount: 3, images: [], status: 'available',   floor: 1, typeId: 'rtype_std',    createdAt: '2026-01-06T09:00:00Z' },
+  { id: 'room_102', houseId: 'house_1', name: '١٠٢', bedsCount: 3, images: [], status: 'booked',      floor: 1, typeId: 'rtype_std',    createdAt: '2026-01-06T09:01:00Z' },
+  { id: 'room_103', houseId: 'house_1', name: '١٠٣', bedsCount: 3, images: [], status: 'available',   floor: 1, typeId: 'rtype_ac',     createdAt: '2026-01-06T09:02:00Z' },
+  { id: 'room_104', houseId: 'house_1', name: '١٠٤', bedsCount: 5, images: [], status: 'cleaning',    floor: 1, typeId: 'rtype_family', createdAt: '2026-01-06T09:03:00Z' },
+  { id: 'room_201', houseId: 'house_1', name: '٢٠١', bedsCount: 3, images: [], status: 'available',   floor: 2, typeId: 'rtype_ac',     createdAt: '2026-01-06T09:04:00Z' },
+  { id: 'room_202', houseId: 'house_1', name: '٢٠٢', bedsCount: 3, images: [], status: 'booked',      floor: 2, typeId: 'rtype_ac',     createdAt: '2026-01-06T09:05:00Z' },
+  { id: 'room_203', houseId: 'house_1', name: '٢٠٣', bedsCount: 5, images: [], status: 'maintenance', floor: 2, typeId: 'rtype_family', createdAt: '2026-01-06T09:06:00Z' },
+  { id: 'room_204', houseId: 'house_1', name: '٢٠٤', bedsCount: 3, images: [], status: 'available',   floor: 2, typeId: 'rtype_std',    createdAt: '2026-01-06T09:07:00Z' },
+  { id: 'room_301', houseId: 'house_1', name: '٣٠١', bedsCount: 2, images: [], status: 'available',   floor: 3, typeId: 'rtype_vip',    createdAt: '2026-01-06T09:08:00Z' },
+  { id: 'room_302', houseId: 'house_1', name: '٣٠٢', bedsCount: 2, images: [], status: 'booked',      floor: 3, typeId: 'rtype_vip',    createdAt: '2026-01-06T09:09:00Z' },
+  { id: 'room_303', houseId: 'house_1', name: '٣٠٣', bedsCount: 5, images: [], status: 'available',   floor: 3, typeId: 'rtype_family', createdAt: '2026-01-06T09:10:00Z' },
+  { id: 'room_304', houseId: 'house_1', name: '٣٠٤', bedsCount: 3, images: [], status: 'cleaning',    floor: 3, typeId: 'rtype_std',    createdAt: '2026-01-06T09:11:00Z' },
 ];
