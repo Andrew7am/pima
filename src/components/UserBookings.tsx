@@ -702,8 +702,15 @@ export default function UserBookings({
     setCvv('');
   };
 
+  // Reading tier. Every booking card is a summary row — thumbnail plus a
+  // `justify-between` text column — so extra page width becomes dead space
+  // between related items rather than more content: measured at 1440, the
+  // title/badge row spread 925px apart and the price/rating row 1062px.
+  // The only multi-column block on the screen (the 2-col fact grid) lives
+  // inside a `fixed` 431px modal, out of flow and unaffected by this.
+  // `space-y-4` stays on this element with the same children.
   return (
-    <div className="space-y-4 text-right text-[var(--ds-text)]">
+    <div className="pima-page-content space-y-4 text-right text-[var(--ds-text)]">
       {userBookings.length === 0 ? (
         <div className="bg-white rounded-3xl p-8 border border-[var(--ds-border)] text-center space-y-3">
           <div className="mx-auto w-12 h-12 bg-[var(--ds-raised)]/30 border border-[var(--ds-border)] rounded-full flex items-center justify-center text-[var(--ds-text-2)]">
