@@ -813,8 +813,32 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
     }, 4000);
   };
 
+  /* pima-play-wide is the PAGE container, and it belongs here rather than
+     deeper in the tree. Three kinds of content live in this component and only
+     one of them is page content:
+
+       A. page content   — everything in normal flow below. Constrained here.
+       B. modals         — four `fixed inset-0` overlays (842, 2680, 2766) keep
+                           their own max-w-3xl / max-w-sm. Out of flow, so this
+                           container cannot reach them, which is why the modal
+                           behaviour is unchanged.
+       C. full-bleed     — the presentation/slide view (2518) is also
+                           `fixed inset-0`, so slides stay edge to edge.
+
+     Without this, page content had NO width constraint at all and ran the full
+     width of <main> — 1392px at a 1440 viewport, against 1160/1040 on every
+     other Entertainment screen. Measured before/after (both RTL and LTR, which
+     match because the container centres with margin-inline):
+
+       vw  375   375 -> 375    unchanged   (mobile full-bleed preserved)
+       vw  800   752 -> 752    unchanged   (cap does not bind below lg)
+       vw 1280  1232 -> 1160   96.3% -> 90.6%
+       vw 1440  1392 -> 1320   96.7% -> 91.7%
+
+     The earlier .pima-play-mid inside the lecture modal is a separate thing and
+     stays inert by design — see the note at its site. */
   return (
-    <div className="space-y-8 select-none" dir="rtl">
+    <div className="pima-play-wide space-y-8 select-none" dir="rtl">
       {/* Toast Notification */}
       <AnimatePresence>
         {successToast && (
