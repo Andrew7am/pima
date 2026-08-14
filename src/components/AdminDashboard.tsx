@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, ROLE_LABELS, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS, PAYMENT_FORMS } from '../lib/arabic';
+import SearchInput from './ui/SearchInput';
 import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
 import { topHousesByBookings } from '../lib/topHouses';
 import { summarizeFinances, accountBalances, refundsDue } from '../lib/adminFinance';
@@ -23,7 +24,7 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
   { value: 'we_cash', label: 'وي كاش' },
   { value: 'bank_transfer', label: 'تحويل بنكي' },
 ];
-import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Search, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft, ChevronRight, XCircle, MoreHorizontal, MapPin, CalendarDays, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft, ChevronRight, XCircle, MoreHorizontal, MapPin, CalendarDays, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { timeAgo } from '../lib/timeAgo';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import WebPushToggle from './WebPushToggle';
@@ -1664,17 +1665,13 @@ export default function AdminDashboard({
 
           {auditLog.length > 0 && (
             <div className="space-y-2">
-              <div className="relative">
-                <Search className="w-4 h-4 text-[var(--ds-text-2)] absolute right-3 top-1/2 -translate-y-1/2" />
-                <input
-                  id="admin-audit-search"
-                  type="text"
-                  value={auditSearch}
-                  onChange={(e) => setAuditSearch(e.target.value)}
-                  placeholder="ابحث بالإجراء أو التفاصيل أو مين عمله..."
-                  className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl pr-9 pl-3 min-h-11 text-[12px] text-[var(--ds-text-strong)] outline-none focus:border-[var(--ds-primary)] text-right"
-                />
-              </div>
+              <SearchInput
+                id="admin-audit-search"
+                value={auditSearch}
+                onChange={(e) => setAuditSearch(e.target.value)}
+                placeholder="ابحث بالإجراء أو التفاصيل أو مين عمله..."
+                aria-label="ابحث في سجل التدقيق"
+              />
               <div className="flex gap-1.5 overflow-x-auto pb-0.5">
                 {([
                   { key: 'all' as const, label: 'الكل', n: auditLog.length },
@@ -1769,17 +1766,14 @@ export default function AdminDashboard({
 
           {/* Search takes the width; sort and export stay quiet beside it. */}
           <div className="flex items-stretch gap-2">
-            <div className="relative flex-1 min-w-0">
-              <Search className="w-4 h-4 text-[#BCBC9D] absolute top-1/2 -translate-y-1/2 right-3 pointer-events-none" />
-              <input
-                id="admin-house-search"
-                value={houseQuery}
-                onChange={(e) => { setHouseQuery(e.target.value); setHousePage(1); }}
-                placeholder="ابحث باسم البيت أو المحافظة أو المالك…"
-                aria-label="ابحث في البيوت"
-                className="w-full bg-[var(--ds-surface)] border border-[#EBEBE0] rounded-[20px] text-[12px] min-h-11 pr-9 pl-3 text-[var(--ds-text)] placeholder-[#BCBC9D] focus:outline-none focus:border-[#756B42] transition-colors"
-              />
-            </div>
+            <SearchInput
+              id="admin-house-search"
+              value={houseQuery}
+              onChange={(e) => { setHouseQuery(e.target.value); setHousePage(1); }}
+              placeholder="ابحث باسم البيت أو المحافظة أو المالك…"
+              aria-label="ابحث في البيوت"
+              wrapperClassName="flex-1 min-w-0"
+            />
             <select
               value={houseSort}
               onChange={(e) => setHouseSort(e.target.value as typeof houseSort)}
@@ -2687,11 +2681,13 @@ export default function AdminDashboard({
           {/* Search + filter + export */}
           <div className="bg-[var(--ds-surface)] p-3 rounded-2xl border border-[var(--ds-border)] space-y-2">
             <div className="flex items-center gap-2">
-              <div className="flex-1 relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--ds-text-2)]" />
-                <input type="text" placeholder="ابحث بالاسم أو الإيميل أو الهاتف أو الكنيسة..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)}
-                  className="w-full bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-xs min-h-11 pr-9 pl-3 py-2 text-[var(--ds-text-strong)] focus:outline-none focus:border-[#464E3D] text-right" />
-              </div>
+              <SearchInput
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="ابحث بالاسم أو الإيميل أو الهاتف أو الكنيسة..."
+                aria-label="ابحث في المستخدمين"
+                wrapperClassName="flex-1"
+              />
               <button onClick={exportUsers} className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] text-[12px] font-bold px-3 min-h-11 rounded-xl cursor-pointer shrink-0">
                 <Download className="w-3.5 h-3.5" /> تصدير CSV
               </button>
@@ -3894,12 +3890,12 @@ export default function AdminDashboard({
 
           {/* Search and Filters */}
           <div className="flex flex-col sm:flex-row gap-2 bg-[var(--ds-surface)] p-3 rounded-2xl border border-[var(--ds-border)] shadow-sm text-right">
-            <input
-              type="text"
-              placeholder="ابحث باسم المستخدم، اسم البيت، أو رقم الحجز..."
+            <SearchInput
               value={bookingSearch}
               onChange={(e) => setBookingSearch(e.target.value)}
-              className="flex-1 bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-xs px-3 min-h-11 text-[var(--ds-text-strong)] focus:outline-none focus:border-[#464E3D] text-right"
+              placeholder="ابحث باسم المستخدم، اسم البيت، أو رقم الحجز..."
+              aria-label="ابحث في الحجوزات"
+              wrapperClassName="flex-1"
             />
             <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
               {(['all', 'soon', 'pending', 'unpaid', 'temporary', 'completed'] as const).map((filterOpt) => (
