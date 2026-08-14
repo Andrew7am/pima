@@ -163,15 +163,15 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true" aria-label="فلتر البحث">
       <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px] animate-in fade-in duration-200" onClick={onClose} />
 
-      <div ref={panelRef} className="relative w-full sm:max-w-md bg-[#FBF9F4] rounded-t-[28px] sm:rounded-[28px] sm:mb-6 max-h-[92dvh] flex flex-col shadow-[0_-8px_40px_rgba(0,0,0,0.18)] outline-none animate-in slide-in-from-bottom duration-300 ease-[cubic-bezier(0.33,1,0.68,1)]"
+      <div ref={panelRef} className="relative w-full sm:max-w-md bg-[var(--ds-bg)] rounded-t-[28px] sm:rounded-[28px] sm:mb-6 max-h-[92dvh] flex flex-col shadow-[0_-8px_40px_rgba(0,0,0,0.18)] outline-none animate-in slide-in-from-bottom duration-300 ease-[cubic-bezier(0.33,1,0.68,1)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
 
         {/* Grab handle + header */}
         <div className="shrink-0 pt-2.5">
-          <div aria-hidden="true" className="w-10 h-1 rounded-full bg-[#D9D2C2] mx-auto" />
+          <div aria-hidden="true" className="w-10 h-1 rounded-full bg-[var(--ds-border)] mx-auto" />
           <div className="flex items-center justify-between px-5 pt-3 pb-2">
             {isWizard || step === 'done' ? (
-              <button onClick={() => go(step === 'done' ? 'menu' : 'menu')} aria-label="رجوع" className="pima-tap p-1.5 -mr-1.5 rounded-full hover:bg-[#F1ECE0] pima-press">
+              <button onClick={() => go(step === 'done' ? 'menu' : 'menu')} aria-label="رجوع" className="pima-tap p-1.5 -mr-1.5 rounded-full hover:bg-[var(--ds-raised)] pima-press">
                 <ChevronRight className="w-5 h-5 text-[var(--ds-text)]" />
               </button>
             ) : <span className="w-8" />}
@@ -184,7 +184,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                 : step === 'amenities' ? 'الخدمات والمرافق'
                 : 'تم ضبط الفلتر'}
             </h2>
-            <button onClick={onClose} aria-label="إغلاق" className="pima-tap p-1.5 -ml-1.5 rounded-full hover:bg-[#F1ECE0] pima-press">
+            <button onClick={onClose} aria-label="إغلاق" className="pima-tap p-1.5 -ml-1.5 rounded-full hover:bg-[var(--ds-raised)] pima-press">
               <X className="w-5 h-5 text-[var(--ds-text)]" />
             </button>
           </div>
@@ -228,7 +228,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                       className="w-full flex items-center justify-between px-3.5 py-2.5 text-[11px] font-bold text-[var(--ds-text)] pima-press">
                       <span>{o.label}</span>
                       <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-[250ms] ${
-                        draft.seaProximity === o.key ? 'border-[var(--ds-accent-deep)]' : 'border-[#D9D2C2]'}`}>
+                        draft.seaProximity === o.key ? 'border-[var(--ds-accent-deep)]' : 'border-[var(--ds-border)]'}`}>
                         {draft.seaProximity === o.key && <span className="w-2 h-2 rounded-full bg-[var(--ds-accent-deep)]" />}
                       </span>
                     </button>
@@ -277,7 +277,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {[{ l: 'تاريخ الوصول', v: draft.checkIn }, { l: 'تاريخ المغادرة', v: draft.checkOut }].map((f) => (
                   <button type="button" key={f.l} onClick={() => { tapFeedback(); setCalOpen(true); }}
-                    className={`rounded-xl border px-3 py-2 text-center min-h-11 pima-press ${f.v ? 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] border-[#C9A96A]' : 'bg-[#FBF9F4] border-[var(--ds-border)]'}`}>
+                    className={`rounded-xl border px-3 py-2 text-center min-h-11 pima-press ${f.v ? 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] border-[#C9A96A]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)]'}`}>
                     <span className="block text-[9px] font-bold text-[var(--ds-text-2)]">{f.l}</span>
                     <span className="block text-[15px] font-black text-[var(--ds-text-strong)] leading-tight mt-0.5">{f.v ? new Date(`${f.v}T00:00:00`).getDate() : '—'}</span>
                     <span className="block text-[9px] font-bold text-[var(--ds-text-2)]">{f.v ? `${MONTHS[new Date(`${f.v}T00:00:00`).getMonth()]} ${new Date(`${f.v}T00:00:00`).getFullYear()}` : ''}</span>
@@ -294,9 +294,9 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
 
               {calOpen && (<>
               <div className="flex items-center justify-between mb-2">
-                <button aria-label="الشهر السابق" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="p-1 rounded-full hover:bg-[#F1ECE0] pima-press"><ChevronRight className="w-4 h-4 text-[var(--ds-text)]" /></button>
+                <button aria-label="الشهر السابق" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))} className="p-1 rounded-full hover:bg-[var(--ds-raised)] pima-press"><ChevronRight className="w-4 h-4 text-[var(--ds-text)]" /></button>
                 <span className="text-[11.5px] font-black text-[var(--ds-text-strong)]">{MONTHS[month.getMonth()]} {month.getFullYear()}</span>
-                <button aria-label="الشهر التالي" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="p-1 rounded-full hover:bg-[#F1ECE0] pima-press"><ChevronLeft className="w-4 h-4 text-[var(--ds-text)]" /></button>
+                <button aria-label="الشهر التالي" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))} className="p-1 rounded-full hover:bg-[var(--ds-raised)] pima-press"><ChevronLeft className="w-4 h-4 text-[var(--ds-text)]" /></button>
               </div>
 
               <div className="grid grid-cols-7 gap-1 text-center">
@@ -312,17 +312,17 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                   return (
                     <button key={day} disabled={past} onClick={() => pickDay(day)}
                       className={`h-8 rounded-lg text-[11px] font-bold transition-colors duration-[250ms] ${
-                        past ? 'text-[#D9D2C2] cursor-not-allowed'
+                        past ? 'text-[var(--ds-text-faint)] cursor-not-allowed'
                           : isStart || isEnd ? 'bg-gradient-to-b from-[#C9A96A] to-[var(--ds-accent-deep)] text-white'
                           : inRange ? 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] text-[var(--ds-text-strong)]'
-                          : 'text-[var(--ds-text)] hover:bg-[#F1ECE0]'}`}>{day}</button>
+                          : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'}`}>{day}</button>
                   );
                 })}
               </div>
               </>)}
 
               {n > 0 && (
-                <p className="mt-3 text-center text-[10px] font-bold text-[var(--ds-text-2)] bg-[#FBF9F4] border border-[var(--ds-border)] rounded-xl py-2">
+                <p className="mt-3 text-center text-[10px] font-bold text-[var(--ds-text-2)] bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl py-2">
                   المدة: {n} {n === 1 ? 'ليلة' : n === 2 ? 'ليلتين' : 'ليالٍ'}
                 </p>
               )}
@@ -359,7 +359,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
               <button type="button" onClick={() => { tapFeedback(); patch({ dayUseOnly: !draft.dayUseOnly }); }}
                 aria-pressed={draft.dayUseOnly}
                 className={`w-full mt-5 flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-right transition-colors duration-200 pima-press ${
-                  draft.dayUseOnly ? 'bg-[#FDF9EF] border-[#C9A24A]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)]'}`}>
+                  draft.dayUseOnly ? 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] border-[#C9A24A]' : 'bg-[var(--ds-surface)] border-[var(--ds-border)]'}`}>
                 <span className={`w-9 h-9 rounded-full border flex items-center justify-center shrink-0 ${
                   draft.dayUseOnly ? 'bg-[var(--ds-surface)] border-[var(--ds-accent-soft)]' : 'bg-[color-mix(in_srgb,var(--ds-accent)_12%,var(--ds-surface))] border-[var(--ds-border)]'}`}>
                   <Sun className={`w-4 h-4 ${draft.dayUseOnly ? 'text-[var(--ds-accent-deep)]' : 'text-[var(--ds-text-2)]'}`} />
@@ -369,7 +369,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
                   <span className="block text-[9.5px] font-medium text-[var(--ds-text-2)] mt-0.5">البيوت التي تستقبل مجموعات ليوم واحد</span>
                 </span>
                 <span className={`w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
-                  draft.dayUseOnly ? 'bg-[#C9A24A] border-[#C9A24A]' : 'border-[#DED6C4]'}`}>
+                  draft.dayUseOnly ? 'bg-[#C9A24A] border-[#C9A24A]' : 'border-[var(--ds-border)]'}`}>
                   {draft.dayUseOnly && <Check className="w-3 h-3 text-white" strokeWidth={3.5} />}
                 </span>
               </button>
@@ -451,7 +451,7 @@ export default function FilterSheet({ open, value, matchCount, onPreview, onAppl
           </div>
         )}
 
-        <div className="shrink-0 px-5 pb-4 pt-1 bg-gradient-to-t from-[#FBF9F4] via-[#FBF9F4] to-transparent">
+        <div className="shrink-0 px-5 pb-4 pt-1 bg-gradient-to-t from-[var(--ds-bg)] via-[var(--ds-bg)] to-transparent">
           {step === 'menu' || step === 'done' ? (
             <button onClick={() => { tapFeedback(); onApply(draft); }} className={goldCta} disabled={matchCount === 0}
               style={matchCount === 0 ? { opacity: 0.55 } : undefined}>
