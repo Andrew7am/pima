@@ -1558,7 +1558,7 @@ export default function AdminDashboard({
                   setSettingsSaved(true);
                   setTimeout(() => setSettingsSaved(false), 3000);
                 }}
-                className="flex-1 bg-[var(--ds-brand)] hover:bg-[#071930] text-white text-xs font-bold min-h-11.5 rounded-xl transition-colors cursor-pointer"
+                className="flex-1 bg-[var(--ds-brand)] hover:bg-[#071930] text-[var(--ds-on-brand)] text-xs font-bold min-h-11.5 rounded-xl transition-colors cursor-pointer"
               >
                 💾 حفظ وتطبيق
               </button>
@@ -2276,7 +2276,7 @@ export default function AdminDashboard({
               <button
                 type="button"
                 onClick={() => { pbResetForm(); setPbView('form'); }}
-                className="flex items-center gap-1.5 bg-[var(--ds-brand)] hover:bg-[var(--ds-brand-2)] text-white text-[12px] font-black px-3.5 min-h-11 rounded-xl shadow-sm transition-all cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 bg-[var(--ds-brand)] hover:bg-[var(--ds-brand-2)] text-[var(--ds-on-brand)] text-[12px] font-black px-3.5 min-h-11 rounded-xl shadow-sm transition-all cursor-pointer shrink-0"
               >
                 + إنشاء بانر جديد
               </button>
@@ -2389,7 +2389,7 @@ export default function AdminDashboard({
                     <button key={r} type="button"
                       onClick={() => setPbRoles((p) => p.includes(r) ? p.filter((x) => x !== r) : [...p, r])}
                       className={`px-2.5 min-h-11.5 rounded-xl text-[12px] font-bold border cursor-pointer transition-all ${
-                        pbRoles.includes(r) ? 'bg-[var(--ds-brand)] text-white border-[var(--ds-brand)]' : 'bg-[var(--ds-surface)] text-[var(--ds-primary)] border-[var(--ds-border)]'
+                        pbRoles.includes(r) ? 'bg-[var(--ds-brand)] text-[var(--ds-on-brand)] border-[var(--ds-brand)]' : 'bg-[var(--ds-surface)] text-[var(--ds-primary)] border-[var(--ds-border)]'
                       }`}>{label}</button>
                   ))}
                 </div>
@@ -2652,7 +2652,7 @@ export default function AdminDashboard({
                     </button>
                     <button type="button" onClick={() => setPbDesigningId(pbDesigningId === b.id ? null : b.id)}
                       className={`flex items-center justify-center gap-1 text-[11px] font-bold px-2 min-h-11 rounded-lg cursor-pointer border ${
-                        pbDesigningId === b.id ? 'bg-[var(--ds-brand)] text-white border-[var(--ds-brand)]' : 'text-[var(--ds-brand)] border-[var(--ds-brand)]/30 hover:bg-[var(--ds-bg)]'
+                        pbDesigningId === b.id ? 'bg-[var(--ds-brand)] text-[var(--ds-on-brand)] border-[var(--ds-brand)]' : 'text-[var(--ds-brand)] border-[var(--ds-brand)]/30 hover:bg-[var(--ds-bg)]'
                       }`}>
                       <Wand2 className="w-3 h-3" /> تصميم
                     </button>
@@ -3291,7 +3291,7 @@ export default function AdminDashboard({
 
           {/* A bed empty on a Friday in August is not deferred to September —
               it is gone. Pricing it is what turns occupancy into a decision. */}
-          <div className="bg-[var(--ds-brand)] text-white rounded-[20px] p-4 space-y-1">
+          <div className="bg-[var(--ds-brand)] text-[var(--ds-on-brand)] rounded-[20px] p-4 space-y-1">
             <div className="flex items-center gap-2">
               <CalendarDays className="w-5 h-5 text-[var(--ds-accent)]" />
               <span className="text-[11px] font-black text-[var(--ds-accent)]">أسرّة فاضية في الـ٨ أسابيع الجاية</span>

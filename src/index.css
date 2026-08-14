@@ -629,7 +629,13 @@
 body {
   font-family: var(--font-sans);
   direction: rtl;
-  background-color: var(--color-natural-bg);
+  /* --ds-bg, not --color-natural-bg: they are the same #FAF8F5 in light, but
+     the raw variable never follows the theme, so body stayed a light ground
+     under a dark app. The shell covers it, which is why nothing showed — until
+     an overscroll bounce or the moment before first paint, both of which the
+     Android WebView does expose. `color` deliberately stays put: natural-text
+     is #2D2D24 and --ds-text is #4A4A3A, so moving it would change light. */
+  background-color: var(--ds-bg);
   color: var(--color-natural-text);
 }
 

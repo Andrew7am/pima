@@ -1464,7 +1464,7 @@ export default function UserBookings({
                     <button
                       id={`booking-allocation-btn-${booking.id}`}
                       onClick={() => { setActiveAllocationBooking(booking); onOpenRoomDistribution?.(booking.id); }}
-                      className="w-full flex items-center justify-center gap-2 bg-[var(--ds-success)] hover:bg-[var(--ds-success-ink)] text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
+                      className="w-full flex items-center justify-center gap-2 bg-[var(--ds-success)] hover:bg-[var(--ds-success-ink)] text-[var(--ds-on-success)] px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
                     >
                       <Building className="w-4 h-4" />
                       <span>ابدأ توزيع الغرف</span>
@@ -1483,7 +1483,7 @@ export default function UserBookings({
                     <button
                       id={`booking-chat-btn-${booking.id}`}
                       onClick={() => setChatOpenBookingId(chatOpenBookingId === booking.id ? null : booking.id)}
-                      className="w-full flex items-center justify-center gap-2 bg-[var(--ds-brand)] hover:bg-[var(--ds-brand-2)] text-white px-4 min-h-11 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
+                      className="w-full flex items-center justify-center gap-2 bg-[var(--ds-brand)] hover:bg-[var(--ds-brand-2)] text-[var(--ds-on-brand)] px-4 min-h-11 rounded-2xl text-xs font-black transition-all cursor-pointer shadow-sm active:scale-[0.99]"
                     >
                       <MessageCircle className="w-4 h-4" />
                       <span>{chatOpenBookingId === booking.id ? 'إغلاق المحادثة' : 'راسل صاحب البيت'}</span>
@@ -2105,7 +2105,7 @@ export default function UserBookings({
                               >
                                 <span className={`w-4.5 h-4.5 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                                   item.checked 
-                                    ? 'bg-[var(--ds-success)] border-[var(--ds-success)] text-white' 
+                                    ? 'bg-[var(--ds-success)] border-[var(--ds-success)] text-[var(--ds-on-success)]'
                                     : 'border-[var(--ds-border)] bg-[var(--ds-surface)]'
                                 }`}>
                                   {item.checked && <Check className="w-3 h-3 stroke-[3]" />}

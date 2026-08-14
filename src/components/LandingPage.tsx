@@ -81,7 +81,7 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
               { step: '3', icon: MessageCircle, title: 'أكّد الحجز', desc: 'قدّم طلب الحجز وتواصل مع صاحب البيت مباشرة من داخل التطبيق.' },
             ].map(({ step, icon: Icon, title, desc }) => (
               <div key={step} className="text-center">
-                <div className="w-14 h-14 bg-[var(--ds-brand)] text-white rounded-2xl flex items-center justify-center mx-auto mb-4 text-xl font-black shadow-lg">
+                <div className="w-14 h-14 bg-[var(--ds-brand)] text-[var(--ds-on-brand)] rounded-2xl flex items-center justify-center mx-auto mb-4 text-xl font-black shadow-lg">
                   {step}
                 </div>
                 <h3 className="font-black text-[14px] text-[var(--ds-brand)] mb-1">{title}</h3>
@@ -114,7 +114,7 @@ export default function LandingPage({ onBrowse, onLogin, housesCount }: LandingP
       <footer className="border-t border-[color-mix(in_srgb,var(--ds-border)_50%,transparent)] bg-[var(--ds-raised)] py-8">
         <div className="max-w-5xl mx-auto px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-[var(--ds-text-2)]">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[var(--ds-brand)] rounded-lg flex items-center justify-center text-white text-[10px] font-black">ب</div>
+            <div className="w-6 h-6 bg-[var(--ds-brand)] rounded-lg flex items-center justify-center text-[var(--ds-on-brand)] text-[10px] font-black">ب</div>
             <span className="font-bold text-[var(--ds-brand)]">بيما</span>
             <span>— بيوت الخلوات والمصايف</span>
           </div>

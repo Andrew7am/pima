@@ -93,7 +93,7 @@ interface UserDashboardProps {
 // would remount every comparison row instead of updating it. Band takes the
 // column template as a prop since it can no longer close over it.
 function Win() {
-  return <span className="bg-[var(--ds-success)] text-white text-[11px] font-black px-1 py-0.5 rounded-full">الأفضل</span>;
+  return <span className="bg-[var(--ds-success)] text-[var(--ds-on-success)] text-[11px] font-black px-1 py-0.5 rounded-full">الأفضل</span>;
 }
 
 function Band({ label, cols, children }: { label: string; cols: React.CSSProperties; children: React.ReactNode }) {
@@ -905,7 +905,7 @@ export default function UserDashboard({
                     different kind of place. Amenities stay inside. */}
                 <div className="absolute top-11 left-3 flex flex-col gap-1 items-start">
                   {availability !== null && (
-                    <span className="bg-[var(--ds-success)]/95 backdrop-blur-sm text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+                    <span className="bg-[var(--ds-success)]/95 backdrop-blur-sm text-[var(--ds-on-success)] text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
                       ✓ متاح في تواريخك
                     </span>
                   )}
