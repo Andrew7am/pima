@@ -311,11 +311,36 @@ describe('entertainment leads with gold, not indigo', () => {
     expect(CSS).toMatch(/--color-play-on-gold:\s*#1A1408/i);
   });
 
-  it('uses a warm base, not the original cool slate', () => {
-    // #17130F is warm; the #151A26 it replaced was blue-tinted, and a
-    // blue-grey room with an indigo button is a gaming product that happens
-    // to be bundled here rather than Pima's own.
-    expect(CSS).toMatch(/--color-play-surface:\s*#17130F/i);
+  it('uses the cool-navy base the games are actually painted in', () => {
+    // This assertion USED to pin #17130F, a warm near-black, on the reasoning
+    // that "a blue-grey room with an indigo button is a gaming product that
+    // happens to be bundled here rather than Pima's own."
+    //
+    // Overturned at product level: Entertainment stays cool navy. The warm
+    // ramp was also never adopted — zero occurrences across all 77 files in
+    // src/entertainment — so the theme was describing a room nobody painted.
+    //
+    // #0A1428 is the measured ground: 29 uses, 24 of them gradient origins.
+    expect(CSS).toMatch(/--color-play-surface:\s*#0A1428/i);
+  });
+
+  it('binds the play surfaces to the same values the screens were migrated onto', () => {
+    // The theme and the screens must not drift apart again. --color-play-*
+    // here and --color-play-bg/-card/-card-raised in @theme static describe
+    // ONE palette; if someone edits one side only, this fails.
+    expect(CSS).toMatch(/--color-play-raised:\s*#081326/i);
+    expect(CSS).toMatch(/--color-play-elevated:\s*#122244/i);
+    expect(CSS).toMatch(/--color-play-bg:\s*#0A1428/i);
+    expect(CSS).toMatch(/--color-play-card:\s*#081326/i);
+    expect(CSS).toMatch(/--color-play-card-raised:\s*#122244/i);
+  });
+
+  it('keeps reward gold distinct from Pima gold', () => {
+    // #F5C542 marks winning, XP and trophies — a game STATE. #C5A059 is
+    // Pima's action colour. Collapsing them would make every trophy look
+    // like a button. They are deliberately two tokens.
+    expect(CSS).toMatch(/--color-play-reward:\s*#F5C542/i);
+    expect(CSS).not.toMatch(/--color-play-reward:\s*var\(--color-gold\)/i);
   });
 
   it('lightens the supporting indigo so it clears AA as text', () => {

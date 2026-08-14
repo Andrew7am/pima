@@ -31,7 +31,7 @@ const THEMES = [
   { id: 'owner-light', cls: 'owner-theme', label: 'المالك — نهاري', hint: 'كحلي + ذهبي' },
   { id: 'owner-dark', cls: 'owner-theme owner-dark', label: 'المالك — ليلي', hint: 'الوضع الليلي' },
   { id: 'admin', cls: 'admin-theme', label: 'الإدارة', hint: 'نفس اللغة، كثافة أعلى' },
-  { id: 'play', cls: 'play-theme', label: 'الترفيه', hint: 'Slate + إنديجو + ذهبي' },
+  { id: 'play', cls: 'play-theme', label: 'الترفيه', hint: 'كحلي داكن + ذهبي' },
 ] as const;
 
 /* ── Small helpers, local to this page ──────────────────────────────────── */

@@ -252,10 +252,32 @@
      not even clear AA as TEXT: 3.77:1 on the surface. #8B8CF7 measures 5.77:1
      and is what the supporting accent actually is now. The old value is kept
      only for decorative glow, where contrast does not apply. */
-  --color-play-surface: #17130F;        /* warm near-black base */
-  --color-play-raised: #221C17;         /* warm dark card */
-  --color-play-elevated: #2E2620;       /* warm raised surface */
-  --color-play-border: #3A312A;
+  /* SUPERSEDED, deliberately and on the record.
+
+     These four were a WARM near-black ramp (#17130F / #221C17 / #2E2620 /
+     #3A312A), chosen to stop the games reading as a generic gaming product.
+     That was a real decision and theme.test.tsx pinned it. It has now been
+     overturned at product level: Entertainment stays COOL NAVY.
+
+     The warm ramp was also never adopted — an audit of all 77 files in
+     src/entertainment found not one occurrence of any of those four values.
+     Pointing the theme at them meant adopting it would have REPAINTED every
+     game screen rather than describing it.
+
+     These now carry the measured values, and match the tokens the screens
+     themselves were migrated onto (--color-play-bg / -card / -card-raised):
+       #0A1428  29 uses, from:24 — the page ground
+       #081326  16 uses, bg:13  — the card
+       #122244  15 uses, bg:13  — the raised card
+       #152A55  22 uses, from:22 — the mid navy used for rims
+
+     Contrast recomputed against the new ground, not carried over: text
+     #F2EBE1 15.52:1, muted #B8AA9A 8.09:1, reward #F5C542 11.32:1, Pima gold
+     #C5A059 7.47:1 — all AA. */
+  --color-play-surface: #0A1428;        /* cool navy base — the page ground */
+  --color-play-raised: #081326;         /* the card */
+  --color-play-elevated: #122244;       /* the raised card */
+  --color-play-border: #152A55;         /* mid navy rim */
   --color-play-text: #F2EBE1;           /* 15.61:1 on the base */
   --color-play-text-muted: #B8AA9A;     /* 7.42:1 on the card */
   --color-play-gold: #C5A059;           /* 7.52:1 as text on the base */
