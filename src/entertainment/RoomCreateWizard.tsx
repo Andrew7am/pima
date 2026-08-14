@@ -46,7 +46,7 @@ const ToggleSwitch = ({ checked, onChange, icon }: { checked: boolean; onChange:
   <button
     type="button"
     onClick={() => onChange(!checked)}
-    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ds-focus ${
       checked ? "bg-amber-500" : "bg-slate-200"
     }`}
   >
@@ -435,7 +435,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                   key={step}
                   type="button"
                   onClick={() => handleJumpToStep(step)}
-                  className="flex flex-col items-center focus:outline-none group relative cursor-pointer"
+                  className="flex flex-col items-center ds-focus group relative cursor-pointer"
                 >
                   <div 
                     className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
@@ -843,7 +843,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                         <select aria-label="مؤقت الجولة الكلي (بالثواني)" 
                           value={roundTimer} 
                           onChange={(e) => setRoundTimer(Number(e.target.value))}
-                          className="w-full bg-slate-50 border rounded-lg px-2 py-1 text-xs font-black focus:outline-none"
+                          className="w-full bg-slate-50 border rounded-lg px-2 py-1 text-xs font-black ds-focus"
                         >
                           <option value={60}>⏱️ دقيقة واحدة (60 ث)</option>
                           <option value={120}>⏱️ دقيقتان (120 ث)</option>
@@ -857,7 +857,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                         <select aria-label="مؤقت الإجابة عن السؤال (ثانية)" 
                           value={questionTimer} 
                           onChange={(e) => setQuestionTimer(Number(e.target.value))}
-                          className="w-full bg-slate-50 border rounded-lg px-2 py-1 text-xs font-black focus:outline-none"
+                          className="w-full bg-slate-50 border rounded-lg px-2 py-1 text-xs font-black ds-focus"
                         >
                           <option value={15}>⚡ سريع جداً (15 ث)</option>
                           <option value={30}>⚡ متوسط مناسب (30 ث)</option>
@@ -926,7 +926,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                         <select aria-label="لغة الأسئلة المعتمدة" 
                           value={questionLanguage} 
                           onChange={(e) => setQuestionLanguage(e.target.value)}
-                          className="w-full bg-slate-50 border rounded-lg px-2 py-1 text-xs font-black focus:outline-none"
+                          className="w-full bg-slate-50 border rounded-lg px-2 py-1 text-xs font-black ds-focus"
                         >
                           <option value="العربية">العربية (الأولية)</option>
                           <option value="القبطية">القبطية والطقوس</option>
@@ -939,7 +939,7 @@ export const RoomCreateWizard: React.FC<RoomCreateWizardProps> = ({ onCancel, on
                         <select aria-label="مستوى صعوبة الأسئلة" 
                           value={difficulty} 
                           onChange={(e) => setDifficulty(e.target.value)}
-                          className="w-full bg-slate-50 border rounded-lg px-2 py-1 text-xs font-black focus:outline-none"
+                          className="w-full bg-slate-50 border rounded-lg px-2 py-1 text-xs font-black ds-focus"
                         >
                           <option value="سهل">سهل وبسيط</option>
                           <option value="متوسط">متوسط متوازن</option>

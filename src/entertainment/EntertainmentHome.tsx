@@ -372,13 +372,14 @@ export default function EntertainmentHome({
       {/* 4 category cards */}
       <div className="space-y-4">
         {CATEGORIES.map((c, idx) => (
-          <motion.div
-            key={c.id}
-            initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
+          <motion.button
+              type="button"
+              key={c.id}
+              initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 260, damping: 22, delay: idx * 0.08 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setSection(c.id)}
-            className={`group cursor-pointer relative overflow-hidden rounded-[28px] p-5 md:p-6 flex items-center justify-between border transition-all duration-300 ${dark ? `bg-gradient-to-br ${c.box} hover:border-play-reward/40` : 'bg-white border-slate-200/80 hover:border-slate-300'}`}
+            className={`group cursor-pointer relative overflow-hidden w-full rounded-[28px] p-5 md:p-6 flex items-center justify-between border transition-all duration-300 ${dark ? `bg-gradient-to-br ${c.box} hover:border-play-reward/40` : 'bg-white border-slate-200/80 hover:border-slate-300'}`}
           >
             <div className="flex items-center gap-4 relative z-10 text-right">
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all group-hover:scale-110 ${dark ? c.iconBg : 'bg-slate-100 border-slate-200'}`}>{c.icon}</div>
@@ -390,7 +391,7 @@ export default function EntertainmentHome({
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border transition-all relative z-10 shrink-0 ${dark ? 'bg-play-card/60 border-blue-500/10 text-slate-300 group-hover:bg-[var(--color-play-reward)] group-hover:text-slate-950' : 'bg-slate-50 border-slate-100 text-slate-400 group-hover:bg-slate-900 group-hover:text-white'}`}>
               <ArrowLeft className="w-4 h-4 fill-current rotate-180 group-hover:rotate-0 transition-transform duration-300" />
             </div>
-          </motion.div>
+          </motion.button>
         ))}
       </div>
     </motion.div>

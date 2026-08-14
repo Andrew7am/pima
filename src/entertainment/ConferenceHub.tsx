@@ -1100,13 +1100,13 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
               )}
             </div>
 
-            <div className="w-40 h-40 bg-white rounded-3xl p-3 shadow-lg flex items-center justify-center shrink-0 order-first md:order-last relative group cursor-pointer" onClick={() => setShowShareModal(true)}>
+            <button type="button" aria-label="عرض رمز مشاركة المؤتمر" className="w-40 h-40 bg-white rounded-3xl p-3 shadow-lg flex items-center justify-center shrink-0 order-first md:order-last relative group cursor-pointer" onClick={() => setShowShareModal(true)}>
               <div className="w-full h-full border-4 border-[var(--ds-brand)] rounded-xl flex items-center justify-center bg-white relative overflow-hidden p-1.5">
                 <QRCodeSVG value={conference.conferenceCode} size={115} level="H" includeMargin={false} />
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-amber-500/20 to-transparent translate-y-[-100%] animate-[scan_2s_ease-in-out_infinite]" />
               </div>
               <div className="absolute -bottom-2 bg-slate-900 text-amber-400 text-[8px] font-black px-2 py-0.5 rounded-md shadow border border-slate-700">اضغط للتكبير 🔍</div>
-            </div>
+            </button>
 
           </div>
         </div>
@@ -1508,7 +1508,8 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                 {slides.map((s, idx) => {
                   const isSelected = s.id === activeSlideId;
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={s.id}
                       onClick={() => handleSelectActiveSlide(s.id)}
                       className={`p-2.5 rounded-2xl border transition-all cursor-pointer flex gap-2.5 items-center relative overflow-hidden group ${
@@ -1539,7 +1540,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                       {isSelected && (
                         <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
                       )}
-                    </div>
+                    </button>
                   );
                 })}
 
@@ -1771,7 +1772,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                       <select
                         aria-label="خلفية الشريحة" value={newSlideBgStyle}
                         onChange={(e) => setNewSlideBgStyle(e.target.value)}
-                        className="bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs text-white focus:outline-none"
+                        className="bg-slate-900 border border-slate-800 rounded-xl p-2 text-xs text-white ds-focus-on-brand"
                       >
                         <option value="golden">ذهبي كنسي ⚜️</option>
                         <option value="sky">سماء مرصعة 🌌</option>
@@ -1782,7 +1783,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                         placeholder="كلمات مفتاحية للـ AI..."
                         value={newSlidePrompt}
                         onChange={(e) => setNewSlidePrompt(e.target.value)}
-                        className="bg-slate-900 border border-slate-800 rounded-xl p-2 text-[10px] text-white focus:outline-none text-right"
+                        className="bg-slate-900 border border-slate-800 rounded-xl p-2 text-[10px] text-white ds-focus-on-brand text-right"
                       />
                     </div>
 
@@ -1993,7 +1994,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   placeholder="الوقت (مثال: 02:00 م)"
                   value={newSchedTime}
                   onChange={(e) => setNewSchedTime(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
+                  className="bg-white border border-slate-200 rounded-xl p-2 text-xs ds-focus"
                   required
                 />
                 <input aria-label="عنوان الفعالية"
@@ -2001,7 +2002,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   placeholder="عنوان الفعالية"
                   value={newSchedTitle}
                   onChange={(e) => setNewSchedTitle(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
+                  className="bg-white border border-slate-200 rounded-xl p-2 text-xs ds-focus"
                   required
                 />
                 <input aria-label="مكان الانعقاد"
@@ -2009,28 +2010,28 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   placeholder="مكان الانعقاد"
                   value={newSchedLoc}
                   onChange={(e) => setNewSchedLoc(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
+                  className="bg-white border border-slate-200 rounded-xl p-2 text-xs ds-focus"
                 />
                 <input aria-label="المدة (مثال: 45 دقيقة)"
                   type="text"
                   placeholder="المدة (مثال: 45 دقيقة)"
                   value={newSchedDur}
                   onChange={(e) => setNewSchedDur(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
+                  className="bg-white border border-slate-200 rounded-xl p-2 text-xs ds-focus"
                 />
                 <input aria-label="المتحدث / المشرف"
                   type="text"
                   placeholder="المتحدث / المشرف"
                   value={newSchedSpeaker}
                   onChange={(e) => setNewSchedSpeaker(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none col-span-2"
+                  className="bg-white border border-slate-200 rounded-xl p-2 text-xs ds-focus col-span-2"
                 />
               </div>
               <textarea aria-label="تفاصيل إضافية عن الفعالية..."
                 placeholder="تفاصيل إضافية عن الفعالية..."
                 value={newSchedInfo}
                 onChange={(e) => setNewSchedInfo(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
+                className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs ds-focus"
                 rows={2}
               />
               <button
@@ -2090,14 +2091,14 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   placeholder="عنوان الفعالية (مثل: دوري كرة القدم)"
                   value={newEventTitle}
                   onChange={(e) => setNewEventTitle(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
+                  className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs ds-focus"
                   required
                 />
                 <div className="grid grid-cols-2 gap-2">
                   <select
                     aria-label="يوم الحدث" value={newEventDay}
                     onChange={(e) => setNewEventDay(e.target.value)}
-                    className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
+                    className="bg-white border border-slate-200 rounded-xl p-2 text-xs ds-focus"
                   >
                     <option value="اليوم الأول">اليوم الأول</option>
                     <option value="اليوم الثاني">اليوم الثاني</option>
@@ -2108,7 +2109,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                     placeholder="الوقت (مثال: 07:30 م)"
                     value={newEventTime}
                     onChange={(e) => setNewEventTime(e.target.value)}
-                    className="bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
+                    className="bg-white border border-slate-200 rounded-xl p-2 text-xs ds-focus"
                   />
                 </div>
                 <input aria-label="النقاط الممنوحة (XP)"
@@ -2116,7 +2117,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   placeholder="النقاط الممنوحة (XP)"
                   value={newEventPoints}
                   onChange={(e) => setNewEventPoints(Number(e.target.value))}
-                  className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs focus:outline-none"
+                  className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs ds-focus"
                 />
                 <button
                   type="submit"
@@ -2140,9 +2141,11 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
 
             <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
               {checklist.map(item => (
-                <div
-                  key={item.id}
-                  onClick={() => handleToggleChecklist(item.id)}
+                <button
+                type="button"
+                aria-pressed={item.checked}
+                key={item.id}
+                onClick={() => handleToggleChecklist(item.id)}
                   className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${
                     item.checked 
                       ? 'bg-emerald-50/50 border-emerald-200 text-slate-500 line-through' 
@@ -2155,7 +2158,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                     <Square className="w-4 h-4 text-slate-400 shrink-0" />
                   )}
                   <span className="text-[11px] font-bold leading-relaxed">{item.label}</span>
-                </div>
+                </button>
               ))}
             </div>
 
@@ -2306,7 +2309,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
               placeholder="اكتب التنبيه أو الإعلان هنا بوضوح ودقة..."
               value={newAnnText}
               onChange={(e) => setNewAnnText(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs focus:outline-none"
+              className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs ds-focus"
               rows={3}
               required
             />

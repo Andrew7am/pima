@@ -249,8 +249,10 @@ export default function ParticipantCard({ currentUser }: ParticipantCardProps) {
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
         {/* Card Header (Always visible - Name, Team, Room, Points in collapsed mode) */}
-        <div 
-          className="p-4 sm:p-5 flex items-center justify-between gap-4 cursor-pointer select-none" 
+        <button
+          type="button"
+          aria-expanded={!isCollapsed}
+          className="w-full p-4 sm:p-5 flex items-center justify-between gap-4 cursor-pointer select-none"
           onClick={() => setIsCollapsed(!isCollapsed)}
         >
           <div className="flex items-center gap-3">
@@ -304,7 +306,7 @@ export default function ParticipantCard({ currentUser }: ParticipantCardProps) {
               {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
             </button>
           </div>
-        </div>
+        </button>
 
         {/* Collapsible Card Details (Animated with Framer Motion) */}
         <AnimatePresence initial={false}>
@@ -436,15 +438,17 @@ export default function ParticipantCard({ currentUser }: ParticipantCardProps) {
                             <span>عرض الرمز</span>
                           </button>
                         </div>
-                        <div 
-                          className="bg-white p-1 rounded-xl w-14 h-14 flex items-center justify-center shrink-0 border border-amber-500/20 cursor-pointer" 
-                          onClick={(e) => {
+                        <button
+                          type="button"
+                          aria-label="تكبير رمز المشارك"
+                          className="bg-white p-1 rounded-xl w-14 h-14 flex items-center justify-center shrink-0 border border-amber-500/20 cursor-pointer"
+              onClick={(e) => {
                             e.stopPropagation();
                             setShowFullQR(true);
                           }}
                         >
                           <QRCodeSVG value={card.qrCodeData} size={48} level="M" />
-                        </div>
+                        </button>
                       </div>
 
                     </div>
