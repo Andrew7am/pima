@@ -892,7 +892,7 @@ export default function AdminDashboard({
           {NAV_GROUPS.find((g) => g.key === navSection)!.tabs.map((t) => (
             <button key={t.key} id={`admin-tab-${t.key}`} onClick={() => setActiveTab(t.key)}
               className={`shrink-0 flex items-center gap-1.5 min-h-11 px-3 rounded-xl text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                activeTab === t.key ? 'bg-[var(--ds-primary)] text-white shadow-sm' : 'text-[var(--ds-primary)] bg-[var(--ds-bg)] hover:bg-[#EBEBE0]/60'
+                activeTab === t.key ? 'bg-[var(--ds-primary)] text-white shadow-sm' : 'text-[var(--ds-primary)] bg-[var(--ds-bg)] hover:bg-[var(--ds-raised)]'
               }`}>
               {t.label}
               {(t.badge ?? 0) > 0 && (
@@ -1165,7 +1165,7 @@ export default function AdminDashboard({
                           <button
                             id={`preview-house-${house.id}`}
                             onClick={() => setPreviewHouseId(house.id)}
-                            className="flex items-center gap-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] hover:bg-[#F0EDE6] text-[var(--ds-text)] px-3 min-h-11.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                            className="flex items-center gap-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] px-3 min-h-11.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             <span>معاينة كاملة</span>
@@ -1564,7 +1564,7 @@ export default function AdminDashboard({
             </div>
             {auditLog.length > 0 && (
               <button type="button" onClick={exportAudit}
-                className="shrink-0 flex items-center gap-1 text-[11px] font-black text-[var(--ds-brand)] bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl px-2.5 min-h-11 cursor-pointer hover:bg-[#F0EDE6]">
+                className="shrink-0 flex items-center gap-1 text-[11px] font-black text-[var(--ds-brand)] bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl px-2.5 min-h-11 cursor-pointer hover:bg-[var(--ds-raised)]">
                 <Download className="w-3.5 h-3.5" /> تصدير CSV
               </button>
             )}
@@ -1592,7 +1592,7 @@ export default function AdminDashboard({
                 ]).map((f) => (
                   <button key={f.key} type="button" onClick={() => setAuditKind(f.key)}
                     className={`shrink-0 flex items-center gap-1 text-[11px] font-black px-3 min-h-11 rounded-xl border transition-colors cursor-pointer ${
-                      auditKind === f.key ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] text-[var(--ds-text)] border-[var(--ds-border)] hover:bg-[#F0EDE6]'
+                      auditKind === f.key ? 'bg-[var(--ds-primary)] text-white border-[var(--ds-primary)]' : 'bg-[var(--ds-surface)] text-[var(--ds-text)] border-[var(--ds-border)] hover:bg-[var(--ds-raised)]'
                     }`}>
                     {f.label}
                     <span className={`text-[11px] font-black ${auditKind === f.key ? 'text-white/80' : 'text-[var(--ds-text-2)]'}`}>{arabicNumber(f.n)}</span>
@@ -2036,7 +2036,7 @@ export default function AdminDashboard({
                             {parseInt(discountDraft.pct, 10) > 0 ? 'فعّل الخصم' : 'شيل الخصم'}
                           </button>
                           <button type="button" onClick={() => setDiscountHouseId(null)}
-                            className="bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold min-h-11 px-4 rounded-xl cursor-pointer">
+                            className="bg-[#EBEBE0] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] text-[12px] font-bold min-h-11 px-4 rounded-xl cursor-pointer">
                             إلغاء
                           </button>
                         </div>
@@ -2600,7 +2600,7 @@ export default function AdminDashboard({
                 <input type="text" placeholder="ابحث بالاسم أو الإيميل أو الهاتف أو الكنيسة..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)}
                   className="w-full bg-[var(--ds-bg)] border border-[#E7E5DB] rounded-xl text-xs min-h-11 pr-9 pl-3 py-2 text-[var(--ds-text-strong)] focus:outline-none focus:border-[#464E3D] text-right" />
               </div>
-              <button onClick={exportUsers} className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold px-3 min-h-11 rounded-xl cursor-pointer shrink-0">
+              <button onClick={exportUsers} className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] text-[12px] font-bold px-3 min-h-11 rounded-xl cursor-pointer shrink-0">
                 <Download className="w-3.5 h-3.5" /> تصدير CSV
               </button>
             </div>
@@ -2614,7 +2614,7 @@ export default function AdminDashboard({
                 { key: 'banned' as const, label: 'محظورين' },
               ]).map((f) => (
                 <button key={f.key} onClick={() => setUserRoleFilter(f.key)}
-                  className={`text-[12px] font-bold px-2.5 min-h-11 rounded-lg transition-all cursor-pointer whitespace-nowrap ${userRoleFilter === f.key ? 'bg-[var(--ds-primary)] text-white shadow-sm' : 'bg-[var(--ds-bg)] text-[var(--ds-text-2)] border border-[#E7E5DB] hover:bg-[#EBEBE0]/50'}`}>
+                  className={`text-[12px] font-bold px-2.5 min-h-11 rounded-lg transition-all cursor-pointer whitespace-nowrap ${userRoleFilter === f.key ? 'bg-[var(--ds-primary)] text-white shadow-sm' : 'bg-[var(--ds-bg)] text-[var(--ds-text-2)] border border-[#E7E5DB] hover:bg-[var(--ds-raised)]'}`}>
                   {f.label}
                 </button>
               ))}
@@ -2647,7 +2647,7 @@ export default function AdminDashboard({
                       {ROLE_LABELS[usr.role] ?? 'فرد'}
                     </span>
                     <button onClick={() => setDetailUserId(usr.id)}
-                      className="flex items-center gap-1 min-h-11 px-2 text-[11px] font-bold text-[var(--ds-primary)] hover:bg-[#EBEBE0]/50 px-2 py-1 rounded-lg cursor-pointer border border-[var(--ds-border)]">
+                      className="flex items-center gap-1 min-h-11 px-2 text-[11px] font-bold text-[var(--ds-primary)] hover:bg-[var(--ds-raised)] px-2 py-1 rounded-lg cursor-pointer border border-[var(--ds-border)]">
                       <Eye className="w-3 h-3" /> تفاصيل
                     </button>
                     {usr.role !== 'admin' && (
@@ -2754,7 +2754,7 @@ export default function AdminDashboard({
                   type="button"
                   onClick={() => setFinPeriod(p.key)}
                   className={`text-[11px] font-bold px-3 min-h-11 rounded-xl transition-all cursor-pointer ${
-                    finPeriod === p.key ? 'bg-[var(--ds-primary)] text-white' : 'bg-[#EBEBE0]/50 text-[var(--ds-text)] hover:bg-[#DEDECB]'
+                    finPeriod === p.key ? 'bg-[var(--ds-primary)] text-white' : 'bg-[#EBEBE0]/50 text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
                   }`}
                 >
                   {p.label}
@@ -2907,10 +2907,10 @@ export default function AdminDashboard({
           )}
 
           <div className="flex gap-2">
-            <button onClick={exportFinancials} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+            <button onClick={exportFinancials} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
               <Download className="w-3.5 h-3.5" /> تصدير المالية CSV
             </button>
-            <button onClick={exportBookings} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+            <button onClick={exportBookings} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
               <Download className="w-3.5 h-3.5" /> تصدير الحجوزات CSV
             </button>
           </div>
@@ -3144,7 +3144,7 @@ export default function AdminDashboard({
                           <button
                             type="button"
                             onClick={() => { setBookingSearch(e.bookingId!); setBookingFilter('all'); goTo('money', 'bookings'); }}
-                            className="text-[11px] font-bold bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] min-h-11 px-3 rounded-xl cursor-pointer"
+                            className="text-[11px] font-bold bg-[#EBEBE0] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] min-h-11 px-3 rounded-xl cursor-pointer"
                           >
                             افتح الحجز
                           </button>
@@ -3552,7 +3552,7 @@ export default function AdminDashboard({
                                 if (!confirm('هترجّع الإيصال ده لقائمة المراجعة تاني.\n\nالفلوس مش هتتحسب محصّلة لحد ما تراجعه، والحجز هيفضل زي ما هو. تمام؟')) return;
                                 onVerifyPayment(pay.id, 'pending', notesInputs[pay.id]);
                               }}
-                              className="w-full bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold min-h-11 px-3 rounded-xl transition-colors cursor-pointer text-center"
+                              className="w-full bg-[#EBEBE0] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] text-[12px] font-bold min-h-11 px-3 rounded-xl transition-colors cursor-pointer text-center"
                             >
                               تراجع — رجّع الإيصال للمراجعة
                             </button>
@@ -3818,7 +3818,7 @@ export default function AdminDashboard({
                   className={`text-[12px] font-bold px-2.5 min-h-11 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                     bookingFilter === filterOpt
                       ? 'bg-[var(--ds-primary)] text-white shadow-sm'
-                      : 'bg-[var(--ds-bg)] text-[var(--ds-text-2)] border border-[#E7E5DB] hover:bg-[#EBEBE0]/50'
+                      : 'bg-[var(--ds-bg)] text-[var(--ds-text-2)] border border-[#E7E5DB] hover:bg-[var(--ds-raised)]'
                   }`}
                 >
                   {filterOpt === 'all' && 'الكل'}
@@ -3959,7 +3959,7 @@ export default function AdminDashboard({
                           <span>واتساب</span>
                         </a>
                         <button onClick={() => { setChatBookingId(booking.id); goTo('people', 'messages'); }}
-                          className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-xs font-bold min-h-11 px-3 rounded-xl transition-all cursor-pointer">
+                          className="flex items-center gap-1 bg-[#EBEBE0] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] text-xs font-bold min-h-11 px-3 rounded-xl transition-all cursor-pointer">
                           <MessageSquareDashed className="w-3.5 h-3.5" /> الشات
                         </button>
                         {booking.status !== 'rejected' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
@@ -4015,7 +4015,7 @@ export default function AdminDashboard({
                                 {editSaving ? 'بيتحفظ…' : 'احفظ التعديل'}
                               </button>
                               <button type="button" onClick={() => setEditBookingId(null)}
-                                className="bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold min-h-11 px-4 rounded-xl cursor-pointer">
+                                className="bg-[#EBEBE0] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] text-[12px] font-bold min-h-11 px-4 rounded-xl cursor-pointer">
                                 إلغاء
                               </button>
                             </div>
@@ -4026,7 +4026,7 @@ export default function AdminDashboard({
                               setEditBookingId(booking.id);
                               setBookingEdit({ checkIn: booking.checkIn?.slice(0, 10) || '', checkOut: booking.checkOut?.slice(0, 10) || '', guestsCount: String(booking.guestsCount) });
                             }}
-                            className="w-full flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[#DEDECB] text-[var(--ds-text)] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
+                            className="w-full flex items-center justify-center gap-1.5 bg-[#EBEBE0] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] text-[12px] font-bold min-h-11 rounded-xl cursor-pointer">
                             <Pencil className="w-3.5 h-3.5" /> تعديل التواريخ والعدد
                           </button>
                         )
@@ -4202,14 +4202,14 @@ export default function AdminDashboard({
                 {onUpdateHouse && editingHouseId !== previewHouse.id && (
                   <button
                     onClick={() => startEdit(previewHouse)}
-                    className="flex items-center gap-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] hover:bg-[#F0EDE6] text-[var(--ds-text)] text-[11px] font-bold px-3 min-h-11.5 rounded-xl"
+                    className="flex items-center gap-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] text-[11px] font-bold px-3 min-h-11.5 rounded-xl"
                   >
                     <Pencil className="w-3.5 h-3.5" /> تعديل
                   </button>
                 )}
                 <button
                   onClick={() => { setPreviewHouseId(null); setEditingHouseId(null); }}
-                  className="bg-[var(--ds-surface)] hover:bg-[#F0EDE6] border border-[var(--ds-border)] text-[var(--ds-text-strong)] text-xs font-bold px-3 min-h-11.5 rounded-xl"
+                  className="bg-[var(--ds-surface)] hover:bg-[var(--ds-raised)] border border-[var(--ds-border)] text-[var(--ds-text-strong)] text-xs font-bold px-3 min-h-11.5 rounded-xl"
                 >
                   إغلاق ✕
                 </button>
