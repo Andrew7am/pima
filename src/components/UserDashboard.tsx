@@ -421,7 +421,9 @@ export default function UserDashboard({
     // Full-bleed on purpose: a capped, centred column left big empty margins on
     // a wide screen and read as a shrunken page. Desktop is handled by giving
     // the CONTENT more columns (see the house grid), not by narrowing the page.
-    <div className="min-h-screen bg-gradient-to-b from-[var(--ds-bg)] via-[color-mix(in_srgb,var(--ds-bg)_50%,var(--ds-raised))] to-[var(--ds-raised)] text-[var(--ds-text)] -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl px-4 py-5 space-y-5 text-right">
+    <div className="min-h-screen bg-gradient-to-b from-[var(--ds-bg)] via-[color-mix(in_srgb,var(--ds-bg)_50%,var(--ds-raised))] to-[var(--ds-raised)] text-[var(--ds-text)] -mx-4 -my-6 sm:mx-0 sm:my-0 sm:rounded-3xl px-4 py-5 text-right">
+      {/* Content tier — the gradient above stays full-bleed, the catalog does not. */}
+      <div className="pima-page-wide space-y-5">
 
       {/* Follows the Coptic calendar on its own — no one has to remember to
           switch it on, and it disappears outside the fasts and feasts. */}
@@ -1327,6 +1329,7 @@ export default function UserDashboard({
         </div>
       )}
 
+      </div>
     </div>
   );
 }
