@@ -2583,8 +2583,21 @@ export default function OwnerDashboardShell({
       )}
 
       {/* Overflow: Settings / Profile */}
+      {/* Settings reads at a narrower measure than the dashboards around it.
+          It is four stacked sections of form, not a data surface, and under
+          the shell's wide tier its fields stretched past any useful measure:
+          the InstaPay handle — a phone number or name@instapay — rendered an
+          846px input at 1440. Content brings that to 646px and the password
+          pair to 405px each, keeps the two-column composition intentional,
+          and costs nothing vertically (the panel measures 749px tall at wide,
+          content and narrow alike). Narrow was measured too and rejected: at
+          295px the side-by-side password fields get cramped, and this is a
+          multi-section settings page rather than the single-task form that
+          tier is for. Below 1280 the cap does not bind, so tablet and mobile
+          are untouched. `space-y-3` stays on this element with the same
+          children. */}
       {activeTab === 'profile' && (
-        <div className="space-y-3">
+        <div className="pima-page-content space-y-3">
           <div className="bg-[var(--color-owner-surface)] p-6 rounded-3xl border border-[var(--color-owner-border)] text-right space-y-5">
             <div className="flex items-center justify-between gap-3 border-b border-[var(--color-owner-border)] pb-4">
               <div className="flex items-center gap-3">
