@@ -1140,11 +1140,17 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
                 <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full font-bold tracking-wide shadow-xs">
-                  خلوة الشباب الروحية ٢٠٢٦ ⛰️
+                  {/* Was «خلوة الشباب الروحية ٢٠٢٦», a literal. The hub greeted
+                      every servant with somebody else's retreat while the real
+                      conference the database had opened for their booking was
+                      nowhere on the screen meant to be showing it. */}
+                  {conference.title || 'مؤتمر جديد'} ⛰️
                 </span>
-                <span className="text-[10px] bg-purple-900/60 text-purple-200 border border-purple-500/30 px-3 py-1 rounded-full font-bold">
-                  كنيسة الشهيد العظيم مارجرجس
-                </span>
+                {(conference.organizationName || conference.houseName) && (
+                  <span className="text-[10px] bg-purple-900/60 text-purple-200 border border-purple-500/30 px-3 py-1 rounded-full font-bold">
+                    {conference.organizationName || conference.houseName}
+                  </span>
+                )}
               </div>
               <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">مركز إدارة وتجربة المؤتمرات والفعاليات 🏆</h2>
               <p className="text-xs text-purple-200/80 leading-relaxed max-w-lg">
