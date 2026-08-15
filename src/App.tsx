@@ -34,6 +34,7 @@ import { autoAllocate } from './lib/roomAllocation';
 import { resolvePaymentVerdict } from './lib/paymentLedger';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout, ConferenceRoom, PromoBanner } from './types';
 import { createEmptyConference } from './entertainment/data/newConference';
+import { loadMyConferences, saveConference } from './lib/conferences';
 
 // Component Imports
 // Route-level code splitting: heavy, role- or navigation-gated screens load on
@@ -2361,9 +2362,15 @@ export default function App() {
               onOpenFriends={() => setActiveScreen('friends')}
               onOpenLeaderboard={() => setActiveScreen('leaderboard')}
               onOpenRooms={() => setActiveScreen('interactive_room')}
-              onOpenConference={() => {
-                if (!conference) setConference(createEmptyConference(currentUser));
+              onOpenConference={async () => {
                 setActiveScreen('conference_hub');
+                // The conference is opened by the database when an owner
+                // approves a booking (migration 123), so this reads rather than
+                // invents. createEmptyConference stays as the fallback for a
+                // servant with no approved booking yet — better an empty hub
+                // they can look around than a dead end.
+                const mine = await loadMyConferences();
+                setConference(mine[0] ?? conference ?? createEmptyConference(currentUser));
               }}
               onOpenRandomMatch={() => setActiveScreen('random_match')}
               onOpenGamesCatalog={() => setActiveScreen('games_catalog')}
@@ -2451,7 +2458,20 @@ export default function App() {
                   organizationName: currentUser.organizationName,
                 }}
                 conference={conference}
-                onUpdateConference={(updated) => setConference(updated)}
+                onUpdateConference={(updated) => {
+                  setConference(updated);
+                  // Optimistic on screen, persisted behind it. Without this the
+                  // hub was write-only: a servant could add a schedule item,
+                  // close the tab and find it gone — which reads worse than a
+                  // feature that was never there, because it looked like it
+                  // worked. Only a conference tied to a booking has somewhere
+                  // to be saved; the fallback empty one does not.
+                  if (updated.bookingId) {
+                    void saveConference(updated).then((r) => {
+                      if (!r.ok) console.error('saveConference:', r.error);
+                    });
+                  }
+                }}
                 onBack={() => goBack('entertainment')}
                 onUpdateUser={(u: { xp?: number; points?: number }) =>
                   setCurrentUser((prev) =>
