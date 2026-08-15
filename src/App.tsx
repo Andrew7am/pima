@@ -33,7 +33,7 @@ import {
 import { autoAllocate } from './lib/roomAllocation';
 import { resolvePaymentVerdict } from './lib/paymentLedger';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout, ConferenceRoom, PromoBanner } from './types';
-import { createEmptyConference } from './entertainment/data/newConference';
+import ConferenceGate from './entertainment/ConferenceGate';
 import { loadMyConferences, saveConference } from './lib/conferences';
 
 // Component Imports
@@ -2364,13 +2364,15 @@ export default function App() {
               onOpenRooms={() => setActiveScreen('interactive_room')}
               onOpenConference={async () => {
                 setActiveScreen('conference_hub');
-                // The conference is opened by the database when an owner
-                // approves a booking (migration 123), so this reads rather than
-                // invents. createEmptyConference stays as the fallback for a
-                // servant with no approved booking yet — better an empty hub
-                // they can look around than a dead end.
+                // This used to fall back to createEmptyConference when the
+                // servant had none — so the hub appeared to open itself, with a
+                // join code nobody could use and every edit silently discarded,
+                // because a conference with no bookingId has nowhere to be
+                // saved. That comment cited migration 123, which 126 reversed:
+                // approval permits a conference now, it does not create one.
+                // With nothing to show, the gate below asks instead of inventing.
                 const mine = await loadMyConferences();
-                setConference(mine[0] ?? conference ?? createEmptyConference(currentUser));
+                setConference(mine[0] ?? null);
               }}
               onOpenRandomMatch={() => setActiveScreen('random_match')}
               onOpenGamesCatalog={() => setActiveScreen('games_catalog')}
@@ -2446,6 +2448,19 @@ export default function App() {
               onUserUpdated={(patch) => setCurrentUser((prev) => (prev ? { ...prev, ...patch } : prev))}
               onAchievementsUnlocked={handleAchievementsUnlocked}
             />
+          )}
+
+          {activeScreen === 'conference_hub' && !conference && (
+            <div className="-mx-4 -my-6 sm:mx-0 sm:my-0">
+              <ConferenceGate
+                currentUserId={currentUser.id}
+                onBack={() => goBack('entertainment')}
+                onOpened={async () => {
+                  const mine = await loadMyConferences();
+                  setConference(mine[0] ?? null);
+                }}
+              />
+            </div>
           )}
 
           {activeScreen === 'conference_hub' && conference && (
