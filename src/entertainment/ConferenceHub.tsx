@@ -342,32 +342,35 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
   };
 
   // --- 1. COUNTDOWN TIMER STATE (12 Days, 5 Hours, 22 Min, 10 Sec) ---
-  const [countdown, setCountdown] = useState({
-    days: 11,
-    hours: 5,
-    minutes: 22,
-    seconds: 10
-  });
+  // Counts to the booking's check-in (migration 125). It used to start at a
+  // hardcoded 11d 5h 22m 10s and tick down from there — not early or late, but
+  // counting to nothing, because a conference had no date at all.
+  //
+  // Recomputed from the clock every second rather than decremented: a
+  // decrementing timer drifts, and stops being true the moment the phone sleeps
+  // or the tab is backgrounded. A servant asking «كام يوم فاضل» would be told
+  // whatever the counter happened to have reached.
+  const remaining = (iso?: string) => {
+    if (!iso) return null;
+    const ms = new Date(`${iso}T00:00:00`).getTime() - Date.now();
+    if (!Number.isFinite(ms) || ms <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+    return {
+      days: Math.floor(ms / 86400000),
+      hours: Math.floor(ms / 3600000) % 24,
+      minutes: Math.floor(ms / 60000) % 60,
+      seconds: Math.floor(ms / 1000) % 60,
+    };
+  };
+  const ZERO = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+  const [countdown, setCountdown] = useState(() => remaining(conference.startsAt) ?? ZERO);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev.seconds > 0) {
-          return { ...prev, seconds: prev.seconds - 1 };
-        } else if (prev.minutes > 0) {
-          return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
-        } else if (prev.hours > 0) {
-          return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        } else if (prev.days > 0) {
-          return { ...prev, days: prev.days - 1, hours: 23, minutes: 59, seconds: 59 };
-        } else {
-          clearInterval(timer);
-          return prev;
-        }
-      });
-    }, 1000);
+    const tick = () => setCountdown(remaining(conference.startsAt) ?? ZERO);
+    tick();
+    const timer = setInterval(tick, 1000);
     return () => clearInterval(timer);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conference.startsAt]);
 
   // --- PRESENTATION SLIDES STATES ---
   const [slides, setSlides] = useState<any[]>(conference.presentationSlides || []);
@@ -1176,7 +1179,15 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
           <div className="flex flex-wrap items-center justify-center gap-3 text-center">
             <div className="bg-purple-900/40 hover:bg-purple-900/60 border border-purple-500/20 px-4 py-3 rounded-2xl min-w-[90px] sm:min-w-[110px]">
               <span className="text-[9px] text-purple-300 block font-bold mb-1">المشتركين 👥</span>
-              <span className="text-lg sm:text-xl font-black text-amber-300 font-mono">٨٥ مشتركاً</span>
+              {/* Was the literal «٨٥ مشتركاً», which told a servant with nobody
+                  in the room that eighty-five people were waiting. Joined out of
+                  seats booked — both real, and the pair is the honest answer:
+                  «٣ من ٧٦» says what «٨٥» never could. */}
+              <span className="text-lg sm:text-xl font-black text-amber-300 font-mono">
+                {conference.guestsCount
+                  ? `${conference.joinedUserIds.length} من ${conference.guestsCount}`
+                  : `${conference.joinedUserIds.length} منضم`}
+              </span>
             </div>
             
             <div className="bg-purple-900/40 hover:bg-purple-900/60 border border-purple-500/20 px-4 py-3 rounded-2xl min-w-[90px] sm:min-w-[110px]">

@@ -29,6 +29,9 @@ type Row = {
   events: unknown;
   announcements: unknown;
   checklist: unknown;
+  starts_at: string | null;
+  ends_at: string | null;
+  guests_count: number | null;
   live_mode: unknown;
   joined_user_ids: unknown;
   notifications_log: unknown;
@@ -41,6 +44,9 @@ const toRoom = (r: Row): ConferenceRoom => ({
   houseName: r.house_name,
   title: r.title,
   organizationName: r.organization_name,
+  startsAt: r.starts_at ?? undefined,
+  endsAt: r.ends_at ?? undefined,
+  guestsCount: r.guests_count ?? undefined,
   conferenceCode: r.conference_code,
   qrCodeUrl: r.qr_code_url ?? '',
   joiningRequirements: r.joining_requirements,
@@ -65,6 +71,9 @@ const toRow = (c: ConferenceRoom) => ({
   house_name: c.houseName ?? '',
   title: c.title ?? '',
   organization_name: c.organizationName ?? '',
+  starts_at: c.startsAt ?? null,
+  ends_at: c.endsAt ?? null,
+  guests_count: c.guestsCount ?? null,
   conference_code: c.conferenceCode,
   qr_code_url: c.qrCodeUrl ?? null,
   joining_requirements: c.joiningRequirements ?? 'open',

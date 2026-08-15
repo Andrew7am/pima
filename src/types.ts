@@ -689,6 +689,12 @@ export interface ConferenceRoom {
   houseName: string;
   title: string;
   organizationName: string;
+  /** Check-in of the booking this was opened against (migration 125). The
+   *  countdown had nothing to count to before these existed. */
+  startsAt?: string;
+  endsAt?: string;
+  /** Seats booked. What the hub's «عدد المشاركين» should have been reading. */
+  guestsCount?: number;
   conferenceCode: string; // e.g. YTH2026, MARG4587, RET-9031
   qrCodeUrl: string; // Generated SVG/visual path/base64 representation
   joiningRequirements: 'open' | 'approval_needed';
