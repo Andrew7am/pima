@@ -112,3 +112,30 @@ export async function saveConference(c: ConferenceRoom): Promise<{ ok: boolean; 
   }
   return { ok: true };
 }
+
+/**
+ * Join by the code a servant read out. The code lets you ask; the row records
+ * that you are in. Knowing a code is not itself authorisation — RLS grants
+ * reading to joined_user_ids, not to whoever can type six characters.
+ */
+export async function joinConferenceByCode(code: string): Promise<
+  { ok: true; conferenceId: string; title: string; alreadyJoined: boolean; needsApproval: boolean }
+  | { ok: false; error: string }
+> {
+  const { data, error } = await supabase.rpc('join_conference_by_code', { code });
+  if (error) {
+    console.error('joinConferenceByCode:', error);
+    // The RPC raises Arabic for the cases a guest can actually hit — a wrong
+    // code, a closed conference — so those reach the screen verbatim.
+    return { ok: false, error: error.message };
+  }
+  const d = data as { conferenceId: string; title: string; alreadyJoined: boolean; needsApproval: boolean };
+  return { ok: true, ...d };
+}
+
+/** Leave, or — for the host — remove somebody. */
+export async function leaveConference(conferenceId: string, userId?: string): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc('leave_conference', { conf_id: conferenceId, target: userId ?? null });
+  if (error) { console.error('leaveConference:', error); return { ok: false, error: error.message }; }
+  return { ok: true };
+}
