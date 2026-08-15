@@ -226,6 +226,14 @@ export function mapAttendee(r: Record<string, unknown>): Attendee {
     gender: r.gender as Attendee['gender'],
     groupType: r.group_type as Attendee['groupType'],
     sharePaid: !!r.share_paid,
+    // Migration 119 added these four and this mapper was never widened. The
+    // participants list has been rendering an arrival chip from a field that
+    // could not be truthy at runtime, and falling back to sharePaid for a
+    // payment status the row already knew. The answers were in the column.
+    phone: (r.phone as string) || undefined,
+    arrivalMethod: (r.arrival_method as Attendee['arrivalMethod']) ?? undefined,
+    paymentStatus: (r.payment_status as Attendee['paymentStatus']) ?? undefined,
+    registeredAt: (r.registered_at as string) || undefined,
   };
 }
 
