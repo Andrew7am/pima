@@ -19,7 +19,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import BookingFlow from './BookingFlow';
 import { INITIAL_HOUSES } from '../../mockData';
+import { DEFAULT_PLATFORM_SETTINGS } from '../../types';
 import type { User } from '../../types';
+import { resolvePolicy } from '../../lib/bookingPolicy';
 
 const servant = {
   id: 'u1', name: 'أندرو أشرف', role: 'individual', email: 'a@b.c',
@@ -33,6 +35,10 @@ const mount = (over: Over = {}) => {
     currentUser: null,
     checkIn: '2026-07-15', checkOut: '2026-07-18', nights: 3,
     guestsCount: 40, setGuestsCount: vi.fn(),
+    // Migration 0128. The default house sets no child rule, so the child
+    // control is absent and every step below behaves exactly as before.
+    childAges: [], setChildAges: vi.fn(),
+    policy: resolvePolicy(null, DEFAULT_PLATFORM_SETTINGS),
     isQuoteMode: false, setIsQuoteMode: vi.fn(), isMonthlyHousing: false,
     originalTotalPrice: 30000, totalPrice: 30000, depositAmount: 5000,
     breakdown: [], datePicker: <div />,
@@ -233,5 +239,50 @@ describe('leaving the flow', () => {
     fireEvent.click(screen.getByText('إرسال طلب الحجز'));
     await waitFor(() => expect(p.onSubmit).toHaveBeenCalled());
     expect(onExit).toBeDefined();
+  });
+});
+
+// jsdom has no innerText; textContent is the equivalent here.
+const bodyText = () => (document.body.textContent || '').replace(/\s+/g, ' ');
+
+describe('the policy on the confirmation step (B3.4)', () => {
+  const reach = (over: Over = {}) => {
+    mount({ currentUser: servant, ...over });
+    fireEvent.click(continueBtn());
+    fillDetails();
+    fireEvent.click(stepOneNext());
+  };
+
+  // The checkbox says «أوافق على سياسة الحجز والإلغاء». The terms it refers to
+  // have to be on the same screen, and they have to be THIS property's.
+  it('states the terms next to the box that agrees to them', () => {
+    reach({ policy: resolvePolicy(
+      { freeCancelDays: 14, partialRefundDays: 7, partialRefundPct: 0.25 } as never,
+      DEFAULT_PLATFORM_SETTINGS) });
+    const t = bodyText();
+    expect(t).toContain('سياسة الإلغاء والاسترداد');
+    expect(t).toMatch(/قبل الوصول بـ ١٤ أيام/);   // the property's, not 7
+    expect(t).toMatch(/استرداد ٢٥٪/);
+  });
+
+  it('falls back to the platform terms for a property with no policy', () => {
+    reach();
+    const t = bodyText();
+    expect(t).toMatch(/قبل الوصول بـ ٧ أيام/);
+    expect(t).toMatch(/استرداد ٥٠٪/);
+  });
+
+  it('breaks the party down in the summary when children were declared', () => {
+    reach({
+      guestsCount: 4, childAges: [4, 8],
+      policy: resolvePolicy({ childFreeUnderAge: 5 } as never, DEFAULT_PLATFORM_SETTINGS),
+    });
+    const t = bodyText();
+    expect(t).toContain('٢ بالغ · ٢ طفل · ١ مجانًا');
+  });
+
+  it('says nothing about a breakdown when the party was never split', () => {
+    reach();
+    expect(bodyText()).not.toContain('بالغ ·');
   });
 });

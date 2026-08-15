@@ -8,8 +8,8 @@
   "scope": "/",
   "display": "standalone",
   "background_color": "#EBEBE0",
-  "theme_color": "#3A6B4C",
+  "theme_color": "#0A2342",
   "icons": [
-    { "src": "/pima-hero.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/pima-logo.jpg", "sizes": "1254x1254", "type": "image/jpeg", "purpose": "any maskable" }
   ]
 }

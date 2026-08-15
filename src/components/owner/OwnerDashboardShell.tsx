@@ -17,6 +17,7 @@ import { passwordProblem } from '../../lib/password';
 import { ownerBookingBadge } from '../../lib/ownerBookingBadge';
 import { arabicDay, arabicDayYear, nightsBetween, nightsLabel } from '../../lib/bookingDates';
 import OwnerDisclosure from './OwnerDisclosure';
+import OwnerBookingPolicy from './OwnerBookingPolicy';
 import { editableHouseFields } from '../../lib/houseEdits';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
@@ -71,6 +72,8 @@ interface OwnerDashboardShellProps {
   onUpdateAllocations: (bookingId: string, allocations: RoomAllocation[]) => void;
   onOpenRoomDistribution?: (bookingId: string) => void;
   onUpdateHouse?: (house: RetreatHouse) => void;
+  /** Local-state merge only — OwnerBookingPolicy has already persisted the write. */
+  onPolicySaved?: (houseId: string, patch: Partial<RetreatHouse>) => void;
   onRequestHouseEdit?: (houseId: string, changes: Partial<RetreatHouse>) => void;
   reviews?: Review[];
   onUpdateReview?: (review: Review) => void;
@@ -117,7 +120,7 @@ export default function OwnerDashboardShell({
   owner, houses, bookings, settings = DEFAULT_PLATFORM_SETTINGS,
   onAddHouse, onDeleteHouse, onApproveBooking, onRejectBooking, onDeleteBooking, onAssignRooms, onConfirmDeposit, onCheckInBooking, onCheckOutBooking,
   attendees, allocations, onUpdateAttendees, onUpdateAllocations, onOpenRoomDistribution,
-  onUpdateHouse, onRequestHouseEdit, reviews = [], onUpdateReview,
+  onUpdateHouse, onPolicySaved, onRequestHouseEdit, reviews = [], onUpdateReview,
   rooms = [], onAddRoom, onUpdateRoom, onDeleteRoom,
   roomTypes = [], onAddRoomType, onUpdateRoomType, onDeleteRoomType, waitlist = [], onNotifyWaitlist,
   notifications = [], onMarkNotificationAsRead,
@@ -2419,6 +2422,13 @@ export default function OwnerDashboardShell({
                 <p className="text-[11px] text-[var(--color-owner-secondary)]">لا توجد سياسات خاصة مسجلة لهذا النوع من العقار.</p>
               )}
             </div>
+
+            {/* 4b. Booking policy — cancellation and children (migration 0128).
+                Owner-direct, not staged for admin review: they are the owner's
+                own terms, and the database allow-list agrees. */}
+            {ownerHouses.length >= 1 && (
+              <OwnerBookingPolicy house={ownerHouses[0]} settings={settings} onSaved={onPolicySaved} />
+            )}
 
 
             <button id="add-house-submit" type="submit" className="w-full bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] text-[var(--color-owner-on-primary)] text-xs font-bold min-h-11.5 rounded-xl shadow-md transition-all cursor-pointer">

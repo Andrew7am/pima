@@ -93,6 +93,15 @@ export default function WebLayout({
 }: WebLayoutProps) {
   const [showNotif, setShowNotif] = useState(false);
 
+  /* The compact header is transparent at rest and picks up a blurred ground
+     once content has moved under it. <main> is the element with
+     overflow-y-auto — the window never scrolls here — so the handler is bound
+     to <main> directly via React's onScroll rather than a window listener,
+     which would leave the bar permanently transparent over scrolled content.
+     A boolean, not a scroll offset: the bar's height never changes, so it
+     cannot shift the page under the reader. */
+  const [scrolled, setScrolled] = useState(false);
+
   const visibleNav = currentUser ? NAV_ITEMS.filter(item => item.roles.includes(currentUser.role)) : GUEST_NAV;
   const unreadCount = currentUser ? notifications.filter(n => n.userId === currentUser.id && !n.isRead).length : 0;
   const userNotifications = currentUser ? notifications.filter(n => n.userId === currentUser.id) : [];
@@ -132,7 +141,11 @@ export default function WebLayout({
     >
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {/* `relative` so the compact header can overlay <main> rather than sit
+          above it in flow. <main> is the scroll container (not the window), so
+          the header is a sibling of the thing that scrolls: position:sticky
+          would never engage, and a window scroll listener would never fire. */}
+      <div className="relative flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Top Navbar — the brand sits centred and absolutely positioned so it
             stays optically centred no matter how wide the controls beside it
@@ -154,27 +167,51 @@ export default function WebLayout({
             ground changes. In Entertainment it takes the top colour of the
             content gradient so the two read as one surface, with the same
             white/10 hairline the mode's cards use instead of a light border. */}
+        {/* 56px, overlaying the scroller, transparent until the page moves.
+            Height is fixed across states — only the ground changes — so the
+            bar never resizes under the reader and <main>'s padding stays
+            correct. HEADER_H below is the single number both agree on. */}
+        {/* The glass is applied as inline style, not utility classes.
+            `bg-[color-mix(in_srgb,var(--ds-bg)_72%,transparent)]` and
+            `backdrop-blur-xl` both emitted CSS that resolved to nothing at
+            runtime under Tailwind v4 — measured as `oklab(0 0 0 / 0)` and
+            `blur(0px)`, leaving the bar transparent over scrolled content.
+            A style object goes straight to CSSOM, so the value that is written
+            is the value that paints, and it still reads the theme through
+            var() so all five themes keep working. */}
         <header
-          className={`relative shrink-0 h-[90px] flex items-center justify-end px-4 border-b shadow-sm z-40 ${
-            isEntertainment
-              ? 'bg-[var(--color-play-bg)] border-white/10'
-              : 'bg-[var(--ds-surface)] border-[var(--ds-border)]'
-          }`}
+          style={{
+            backgroundColor: scrolled
+              ? `color-mix(in srgb, ${isEntertainment ? 'var(--color-play-bg)' : 'var(--ds-bg)'} 72%, transparent)`
+              : 'transparent',
+            backdropFilter: scrolled ? 'blur(16px) saturate(180%)' : 'none',
+            WebkitBackdropFilter: scrolled ? 'blur(16px) saturate(180%)' : 'none',
+            borderBottomColor: scrolled
+              ? (isEntertainment ? 'rgba(255,255,255,0.10)' : 'var(--ds-border)')
+              : 'transparent',
+            boxShadow: scrolled ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+            paddingTop: 'env(safe-area-inset-top)',
+          }}
+          className="absolute inset-x-0 top-0 h-14 flex items-center justify-end px-3 sm:px-4 z-40
+            border-b box-content
+            transition-[background-color,border-color,box-shadow,backdrop-filter] duration-200"
         >
-          <div className="absolute inset-x-0 flex flex-col items-center justify-center pointer-events-none">
+          <div className="absolute inset-x-0 flex items-center justify-center pointer-events-none">
+            {/* One row now, not two: the stacked lockup is what made the old
+                bar 90px tall. The strapline keeps its hairline-and-diamond
+                treatment but rides alongside the wordmark, and stands down
+                below `sm` where there is no room for it. */}
             <div className="flex items-center gap-2">
-              <Logo size={32} variant="icon" />
-              <span className="font-black text-[#C5A059] text-[23px] tracking-wide leading-none">بيما</span>
+              <Logo size={26} variant="icon" />
+              <span className="font-black text-[#C5A059] text-[19px] tracking-wide leading-none">بيما</span>
+              <span className="hidden sm:flex items-center gap-1.5">
+                <span aria-hidden="true" className="w-4 h-px bg-gradient-to-l from-[#C5A059]/55 to-transparent" />
+                <span aria-hidden="true" className="w-[3px] h-[3px] rotate-45 bg-[#C5A059]/70" />
+                <span className="text-[11px] font-bold text-[#C5A059] tracking-[0.03em]">بيوت المؤتمرات والخلوات</span>
+                <span aria-hidden="true" className="w-[3px] h-[3px] rotate-45 bg-[#C5A059]/70" />
+                <span aria-hidden="true" className="w-4 h-px bg-gradient-to-r from-[#C5A059]/55 to-transparent" />
+              </span>
             </div>
-            {/* Hairline and a diamond either side of the strapline, as in the
-                approved header — plain text alone read as an afterthought. */}
-            <span className="flex items-center gap-1.5 mt-1">
-              <span aria-hidden="true" className="w-5 h-px bg-gradient-to-l from-[#C5A059]/55 to-transparent" />
-              <span aria-hidden="true" className="w-[3px] h-[3px] rotate-45 bg-[#C5A059]/70" />
-              <span className="text-[11px] font-bold text-[#C5A059] tracking-[0.03em]">بيوت المؤتمرات والخلوات</span>
-              <span aria-hidden="true" className="w-[3px] h-[3px] rotate-45 bg-[#C5A059]/70" />
-              <span aria-hidden="true" className="w-5 h-px bg-gradient-to-r from-[#C5A059]/55 to-transparent" />
-            </span>
           </div>
 
           {!currentUser ? (
@@ -322,8 +359,17 @@ export default function WebLayout({
             paint on themselves continues out here, so the mode owns the whole
             content area rather than sitting in it as a dark tile. Padding,
             scrolling and flex behaviour are untouched. */}
+        {/* Top padding, not a spacer element: it clears the overlaid header
+            without adding a box that could itself shift. env() keeps the first
+            card below a notch on iOS standalone. */}
         <main
-          className={`flex-1 overflow-y-auto p-4 sm:p-6 ${
+          onScroll={(e) => {
+            const next = e.currentTarget.scrollTop > 4;
+            setScrolled((prev) => (prev === next ? prev : next));
+          }}
+          className={`flex-1 overflow-y-auto p-4 sm:p-6
+            pt-[calc(3.5rem+1rem+env(safe-area-inset-top))]
+            sm:pt-[calc(3.5rem+1.5rem+env(safe-area-inset-top))] ${
             isEntertainment
               ? 'bg-gradient-to-b from-[var(--color-play-bg)] via-[var(--color-play-page-mid)] to-[var(--color-play-page-deep)]'
               : ''

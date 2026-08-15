@@ -11,6 +11,8 @@ import BookingFlow, { ApplicantDetails } from './house/BookingFlow';
 import { tapFeedback } from '../lib/haptics';
 import ReviewWizard from './ReviewWizard';
 import { computeStayPrice, offersDayUse, computeMealPlan, activeDiscountFor, applyDiscount } from '../lib/pricing';
+import { resolvePolicy, chargeableGuests } from '../lib/bookingPolicy';
+import PropertyBookingPolicy from './house/PropertyBookingPolicy';
 import { buildPriestQuote, printPriestQuote } from '../lib/priestQuote';
 import { buildRoomOfferings } from '../lib/roomOffering';
 import { bookingRef } from '../lib/bookingRef';
@@ -688,8 +690,12 @@ export default function HouseDetail({
     const cap = house.bedsCount || 0;
     return cap > 0 ? Math.min(preferred, cap) : preferred;
   });
+  // The children INSIDE guestsCount, by age. guestsCount stays the total party
+  // — capacity is checked against it and a child who pays nothing still sleeps
+  // in a bed. Only the chargeable head count shrinks.
+  const [childAges, setChildAges] = useState<number[]>([]);
   const [usePoints, setUsePoints] = useState(false);
-  
+
   // Custom price quote states
   const [selectedHallId, setSelectedHallId] = useState(house.conferenceHalls[0]?.id || '');
   // `mealsIncluded` used to be a state here that nothing ever set, spread into
@@ -899,10 +905,22 @@ export default function HouseDetail({
 
   const nights = calculateNights();
   const months = calculateMonths();
+
+  // This property's terms — its own where it has set them, the platform's
+  // where it has not. Everything that shows or prices the policy reads this.
+  const effectivePolicy = resolvePolicy(house, settings);
+  // Trimmed rather than corrected: if the party shrinks below the number of
+  // children already entered, the extra ages simply stop counting. Deriving it
+  // means the two can never be out of step, which an effect could not promise.
+  const effectiveChildAges = childAges.slice(0, Math.max(0, guestsCount - 1));
+  // Who actually pays. MUST equal what validate_booking_price computes from the
+  // booking's stamped rule, or the server rejects the total with PRICE_TOO_LOW.
+  const payingGuests = chargeableGuests(guestsCount, effectiveChildAges, effectivePolicy.childFreeUnderAge);
+
   // Night-by-night with seasonal rates (lib/pricing.ts) — must match the
   // server's validate_booking_price math or the booking gets rejected.
   const stayPrice = !isMonthlyHousing && checkIn && checkOut
-    ? computeStayPrice(house, checkIn, checkOut, guestsCount)
+    ? computeStayPrice(house, checkIn, checkOut, payingGuests)
     : { total: 0, breakdown: [] };
   // What the house will feed them, and whether they have asked for it.
   // Opt-in: a charge the guest did not choose turning up in their total is
@@ -922,7 +940,7 @@ export default function HouseDetail({
   // Meals are excluded on both sides: they are not in the server's figure at
   // all, and the offer is about the owner's empty beds, not his food.
   const accommodation = isMonthlyHousing
-    ? (house.monthlyRent || 1500) * guestsCount * months
+    ? (house.monthlyRent || 1500) * payingGuests * months
     : stayPrice.total;
   const discountPct = activeDiscountFor(house, checkIn);
   const accommodationAfterDiscount = applyDiscount(accommodation, discountPct);
@@ -1182,6 +1200,10 @@ export default function HouseDetail({
       checkIn,
       checkOut,
       guestsCount,
+      // The children inside that total. Sent because the server needs them to
+      // reach the same price we quoted; adults_count, children_count and the
+      // policy snapshot are all derived from here by the database, not by us.
+      childAges: effectiveChildAges.length ? effectiveChildAges : undefined,
       totalPrice,
       depositPaid: false,
       depositAmount,
@@ -1218,6 +1240,9 @@ export default function HouseDetail({
             nights={isMonthlyHousing ? months : nights}
             guestsCount={guestsCount}
             setGuestsCount={setGuestsCount}
+            childAges={effectiveChildAges}
+            setChildAges={setChildAges}
+            policy={effectivePolicy}
             isQuoteMode={isQuoteMode}
             setIsQuoteMode={setIsQuoteMode}
             isMonthlyHousing={isMonthlyHousing}
@@ -1320,22 +1345,24 @@ export default function HouseDetail({
                 )}
 
                 {/* Cancellation terms, stated before anything is committed —
-                    now folded, because three lines of tiers were pushing the
+                    THIS house's, which may not be the platform's — and now
+                    folded, because three lines of tiers were pushing the
                     button off the first screen. The closed row still carries
                     the one a guest actually decides on: how long they have to
                     change their mind and get everything back. Hiding that
                     would be hiding the terms, which is not what «shorter»
-                    is supposed to mean. */}
+                    is supposed to mean.
+
+                    Both sides of this merge improved the same card: one made
+                    it per-property, the other made it fold. The hint reads
+                    from the resolved policy rather than platform settings, so
+                    the closed row and the opened body cannot disagree. */}
                 <Disclosure
                   title="سياسة الإلغاء والاسترداد"
-                  hint={`إلغاء مجاني قبل ${arabicNumber(settings.freeCancelDays)} أيام`}
+                  hint={`إلغاء مجاني قبل ${arabicNumber(effectivePolicy.freeCancelDays)} أيام`}
                   icon={<ShieldCheck className="w-4 h-4 text-[var(--ds-accent)]" />}
                 >
-                  <ul className="space-y-1 text-[11px] font-medium text-[var(--ds-text)] pr-4 list-disc marker:text-[var(--ds-accent)]">
-                    <li>قبل الوصول بـ<strong> {arabicNumber(settings.freeCancelDays)} أيام</strong> أو أكثر: استرداد <strong>كامل</strong>.</li>
-                    <li>قبل الوصول بـ<strong> {arabicNumber(settings.partialRefundDays)} أيام</strong> أو أكثر: استرداد <strong>{arabicNumber(Math.round(settings.partialRefundPct * 100))}٪</strong>.</li>
-                    <li>أقل من ذلك: لا يوجد استرداد.</li>
-                  </ul>
+                  <PropertyBookingPolicy policy={effectivePolicy} variant="plain" />
                 </Disclosure>
               </>
             }

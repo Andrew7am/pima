@@ -71,6 +71,15 @@ export function mapHouse(r: Record<string, unknown>): RetreatHouse {
     discountStartsAt: (r.discount_starts_at as string) ?? undefined,
     discountEndsAt: (r.discount_ends_at as string) ?? undefined,
     discountNote: (r.discount_note as string) ?? undefined,
+    // Undefined MEANS INHERIT — resolvePolicy applies the platform fallback.
+    // Never coerce these to 0; a house with no opinion is not a house that
+    // refunds nothing.
+    freeCancelDays: r.free_cancel_days != null ? Number(r.free_cancel_days) : undefined,
+    partialRefundDays: r.partial_refund_days != null ? Number(r.partial_refund_days) : undefined,
+    partialRefundPct: r.partial_refund_pct != null ? Number(r.partial_refund_pct) : undefined,
+    childFreeUnderAge: r.child_free_under_age != null ? Number(r.child_free_under_age) : undefined,
+    bookingPolicyNotes: (r.booking_policy_notes as string) ?? undefined,
+    policyUpdatedAt: (r.policy_updated_at as string) ?? undefined,
     status: r.status as RetreatHouse['status'],
     rating: r.rating as number,
     reviewsCount: r.reviews_count as number,
@@ -110,6 +119,16 @@ export function mapBooking(r: Record<string, unknown>): Booking {
     depositAmount: r.deposit_amount as number,
     discountPctApplied: r.discount_pct_applied != null ? Number(r.discount_pct_applied) : undefined,
     priceBeforeDiscount: r.price_before_discount != null ? Number(r.price_before_discount) : undefined,
+    adultsCount: r.adults_count != null ? Number(r.adults_count) : undefined,
+    childrenCount: r.children_count != null ? Number(r.children_count) : undefined,
+    childAges: (r.child_ages as number[]) ?? undefined,
+    // The frozen policy. Undefined on pre-0128 bookings — policyForBooking
+    // falls back to the platform terms those bookings were actually made under.
+    policyFreeCancelDays: r.policy_free_cancel_days != null ? Number(r.policy_free_cancel_days) : undefined,
+    policyPartialRefundDays: r.policy_partial_refund_days != null ? Number(r.policy_partial_refund_days) : undefined,
+    policyPartialRefundPct: r.policy_partial_refund_pct != null ? Number(r.policy_partial_refund_pct) : undefined,
+    policyChildFreeUnderAge: r.policy_child_free_under_age != null ? Number(r.policy_child_free_under_age) : undefined,
+    policySnapshotAt: (r.policy_snapshot_at as string) ?? undefined,
     status: r.status as Booking['status'],
     source: r.source as Booking['source'] ?? 'platform',
     isLargeConferenceQuote: r.is_large_conference_quote as boolean,
@@ -389,7 +408,18 @@ const HOUSE_PUBLIC_COLUMNS =
   'blocked_dates,sea_proximity,student_housing_gender,distance_from_university,nearby_landmark,monthly_rent,' +
   'day_use_price_per_person,' +
   'room_capacity,housing_rules,contract_terms,menu,image_descriptions,pending_edit,' +
-  'discount_pct,discount_starts_at,discount_ends_at,discount_note';
+  'discount_pct,discount_starts_at,discount_ends_at,discount_note,' +
+  // Per-property booking policy (migration 0128). Guests need these to be told
+  // the terms BEFORE they book, so they are part of the public column set.
+  'free_cancel_days,partial_refund_days,partial_refund_pct,' +
+  'child_free_under_age,booking_policy_notes,policy_updated_at';
+
+/** Columns added since the last release — see the retry in loadHouses. */
+const HOUSE_COLUMNS_SINCE_LAST_RELEASE = [
+  'nearby_landmark', 'day_use_price_per_person',
+  'free_cancel_days', 'partial_refund_days', 'partial_refund_pct',
+  'child_free_under_age', 'booking_policy_notes', 'policy_updated_at',
+];
 
 /**
  * Every house, with ONE photo each.
@@ -435,9 +465,10 @@ export async function loadHouses(includePaymentMethods = false): Promise<Retreat
     // Every column added since the last release, not just the newest one:
     // stripping one and leaving another still errors, the retry fails too,
     // and loadHouses returns [] — which is the whole site, empty.
-    const fallbackColumns = HOUSE_PUBLIC_COLUMNS
-      .replace('nearby_landmark,', '')
-      .replace('day_use_price_per_person,', '');
+    // Handles a stripped column in any position, including last, where there
+    // is no trailing comma to match.
+    const fallbackColumns = HOUSE_COLUMNS_SINCE_LAST_RELEASE.reduce(
+      (cols, c) => cols.replace(`${c},`, '').replace(`,${c}`, ''), HOUSE_PUBLIC_COLUMNS);
     const retry = await supabase.from('houses').select(fallbackColumns).neq('status', 'archived').order('created_at');
     data = retry.data as unknown as Row[] | null;
     error = retry.error;
@@ -683,6 +714,52 @@ export async function updateHouse(h: RetreatHouse): Promise<boolean> {
   const { error } = await supabase.from('houses').update(houseUpdatePayload(h)).eq('id', h.id);
   if (error) { console.error('updateHouse:', error); return false; }
   return true;
+}
+
+/** A property's booking policy. null clears a field back to "inherit the platform value". */
+export interface HousePolicyInput {
+  freeCancelDays: number | null;
+  partialRefundDays: number | null;
+  partialRefundPct: number | null;
+  childFreeUnderAge: number | null;
+  bookingPolicyNotes: string | null;
+}
+
+/**
+ * Write ONLY the policy columns (migration 0128).
+ *
+ * Deliberately not folded into houseUpdatePayload. A house loaded from the
+ * cover-only list view carries whatever columns that view exposes, and a
+ * whole-row save built from such an object would write NULL over policy the
+ * owner had set — the same trap houseUpdatePayload already documents for
+ * images. Writing five named columns cannot do that.
+ *
+ * null is meaningful and is therefore sent, not omitted: it is how an owner
+ * says "go back to the platform default". Only policy_updated_at is absent,
+ * because the server stamps it.
+ *
+ * Authorization is the database's: RLS decides whose house this is, and
+ * protect_house_owner_updates decides which columns an owner may write. This
+ * function is a shape, not a gate.
+ */
+export async function updateHousePolicy(houseId: string, p: HousePolicyInput): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.from('houses').update({
+    free_cancel_days: p.freeCancelDays,
+    partial_refund_days: p.partialRefundDays,
+    partial_refund_pct: p.partialRefundPct,
+    child_free_under_age: p.childFreeUnderAge,
+    booking_policy_notes: p.bookingPolicyNotes,
+  }).eq('id', houseId);
+  if (error) {
+    const msg = error.message || '';
+    // Surfaced so the form can say which rule was broken instead of «حاول مرة أخرى».
+    if (msg.includes('INVALID_POLICY_WINDOW')) return { ok: false, error: 'INVALID_POLICY_WINDOW' };
+    if (msg.includes('houses_partial_refund_pct_range')) return { ok: false, error: 'INVALID_REFUND_PCT' };
+    if (msg.includes('houses_child_free_under_age_range')) return { ok: false, error: 'INVALID_CHILD_AGE' };
+    console.error('updateHousePolicy:', error);
+    return { ok: false, error: msg };
+  }
+  return { ok: true };
 }
 
 export async function loadBookings(): Promise<Booking[]> {
@@ -1037,6 +1114,10 @@ function bookingToRow(b: Booking): Record<string, unknown> {
     check_in: b.checkIn,
     check_out: b.checkOut,
     guests_count: b.guestsCount,
+    // The TOTAL party above; the ages of the children inside it here. The
+    // server derives adults_count/children_count from these two and stamps the
+    // policy snapshot itself, so neither is sent — see migration 0128.
+    child_ages: b.childAges && b.childAges.length ? b.childAges : null,
     total_price: b.totalPrice,
     deposit_paid: b.depositPaid,
     deposit_amount: b.depositAmount,
