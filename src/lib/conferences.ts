@@ -110,11 +110,28 @@ export async function loadConference(bookingId: string): Promise<ConferenceRoom 
 }
 
 /** Every conference this user can see — theirs to host, or theirs to attend. */
-export async function loadMyConferences(): Promise<ConferenceRoom[]> {
+/**
+ * The conferences you are actually in — hosting, or joined.
+ *
+ * The query is RLS-scoped, but RLS is wider than «mine» on purpose: migration
+ * 124 also lets a house's owner and an admin read a conference, so they can
+ * support it. Without the filter below, the caller's `[0]` was «the newest room
+ * this account may read» — which for an owner is a guest church's room at their
+ * house, and for an admin is any room on the platform. Both were then opened
+ * automatically, with nobody having chosen anything.
+ *
+ * Pass the viewer's id. Omitting it returns the raw RLS view, which is what the
+ * admin tooling wants and what nothing else should.
+ */
+export async function loadMyConferences(userId?: string): Promise<ConferenceRoom[]> {
   const { data, error } = await supabase
     .from('conferences').select('*').order('created_at', { ascending: false });
   if (error) { console.error('loadMyConferences:', error); return []; }
-  return (data as Row[] ?? []).map(toRoom);
+  const all = (data as Row[] ?? []).map(toRoom);
+  if (!userId) return all;
+  return all.filter(
+    (c) => c.hostUserId === userId || (c.joinedUserIds ?? []).includes(userId)
+  );
 }
 
 /**

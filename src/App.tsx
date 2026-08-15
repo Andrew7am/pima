@@ -2371,8 +2371,14 @@ export default function App() {
                 // saved. That comment cited migration 123, which 126 reversed:
                 // approval permits a conference now, it does not create one.
                 // With nothing to show, the gate below asks instead of inventing.
-                const mine = await loadMyConferences();
-                setConference(mine[0] ?? null);
+                //
+                // Scoped to this account and opened straight away only when
+                // there is exactly one room. `[0]` was «the newest conference
+                // RLS lets me read» — for a house owner that is a guest
+                // church's room at their house, and a servant hosting two was
+                // dropped into the newer one and never told the other existed.
+                const mine = await loadMyConferences(currentUser.id);
+                setConference(mine.length === 1 ? mine[0] : null);
               }}
               onOpenRandomMatch={() => setActiveScreen('random_match')}
               onOpenGamesCatalog={() => setActiveScreen('games_catalog')}
@@ -2455,9 +2461,15 @@ export default function App() {
               <ConferenceGate
                 currentUserId={currentUser.id}
                 onBack={() => goBack('entertainment')}
-                onOpened={async () => {
-                  const mine = await loadMyConferences();
-                  setConference(mine[0] ?? null);
+                onOpened={async (conferenceId?: string) => {
+                  // The gate says which room it just opened or joined, so the
+                  // servant lands in that one rather than in whichever happens
+                  // to sort first.
+                  const mine = await loadMyConferences(currentUser.id);
+                  setConference(
+                    (conferenceId ? mine.find((c) => c.id === conferenceId) : null) ??
+                    (mine.length === 1 ? mine[0] : null)
+                  );
                 }}
               />
             </div>

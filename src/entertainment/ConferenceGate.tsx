@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, Castle, KeyRound, Loader2 } from 'lucide-react';
 import JoinConferenceCard from './JoinConferenceCard';
-import { createConferenceForBooking } from '../lib/conferences';
+import { createConferenceForBooking, loadMyConferences } from '../lib/conferences';
 import { loadBookings } from '../lib/db';
-import type { Booking } from '../types';
+import type { Booking, ConferenceRoom } from '../types';
 
 /**
  * The door, before there is a room.
@@ -20,7 +20,8 @@ import type { Booking } from '../types';
  */
 
 interface Props {
-  onOpened: () => void;
+  /** The room to land in. Omitted when the caller should decide. */
+  onOpened: (conferenceId?: string) => void;
   onBack: () => void;
   currentUserId: string;
 }
@@ -40,6 +41,9 @@ export default function ConferenceGate({ onOpened, onBack, currentUserId }: Prop
   const [error, setError] = useState('');
   const [loadFailed, setLoadFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // Rooms already open. App.tsx enters straight into one only when it is the
+  // only one; with two it sends the servant here to say which.
+  const [mine, setMine] = useState<ConferenceRoom[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -57,6 +61,9 @@ export default function ConferenceGate({ onOpened, onBack, currentUserId }: Prop
       // servant sat on «بنحمّل حجوزاتك…» with no button, no reason and nothing
       // to press — which looks exactly like the feature being broken.
       .catch(() => { if (alive) setLoadFailed(true); });
+    loadMyConferences(currentUserId)
+      .then((cs) => { if (alive) setMine(cs); })
+      .catch(() => { /* the list is an extra; its absence must not blank the gate */ });
     return () => { alive = false; };
   }, [currentUserId, reloadKey]);
 
@@ -66,7 +73,7 @@ export default function ConferenceGate({ onOpened, onBack, currentUserId }: Prop
     const r = await createConferenceForBooking(bookingId);
     setOpening(null);
     if ('error' in r) { setError(r.error); return; }
-    onOpened();
+    onOpened(r.conferenceId);
   };
 
   return (
@@ -90,6 +97,30 @@ export default function ConferenceGate({ onOpened, onBack, currentUserId }: Prop
             كل مؤتمر بيتفتح من حجز متوافق عليه. افتح مؤتمرك، أو ادخل بالكود لو حد بعتهولك.
           </p>
         </div>
+
+        {mine.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-[11px] font-black text-amber-200 flex items-center gap-1.5">
+              <Castle className="w-4 h-4" />
+              <span>مؤتمراتك المفتوحة</span>
+            </h2>
+            {mine.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => onOpened(c.id)}
+                className="w-full text-right bg-purple-950/50 hover:bg-purple-900/60 border border-amber-500/25 rounded-2xl p-4 transition-all cursor-pointer"
+              >
+                <h3 className="text-[13px] font-black text-white">{c.title || c.houseName}</h3>
+                <p className="text-[10px] text-purple-200/70 mt-1">
+                  {fmt(c.startsAt)} · كود {c.conferenceCode}
+                  {c.hostUserId !== currentUserId && ' · انت مشترك'}
+                  {c.isDisabled && ' · مقفول'}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
 
         <JoinConferenceCard onJoined={onOpened} />
 
