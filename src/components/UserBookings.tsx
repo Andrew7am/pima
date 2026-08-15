@@ -22,6 +22,7 @@ import DepositPayment from './booking/DepositPayment';
 import { downloadBookingIcs } from '../lib/ics';
 import { setAttendeeSharePaid } from '../lib/db';
 import ParticipantsSheet, { ParticipantsCard, tally } from './ParticipantsSheet';
+import { createConferenceForBooking } from '../lib/conferences';
 import { bookingTypeLabel } from '../lib/bookingGroups';
 import { Badge } from './ui';
 import type { BadgeTone } from './ui';
@@ -198,6 +199,8 @@ export default function UserBookings({
   const depositDueFor = (b: Booking) => depositDue(b, settings.depositRate);
 
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
+  // Which booking's conference is being opened, so the button can say so.
+  const [openingConference, setOpeningConference] = useState<string | null>(null);
   // Which booking's detail sheet is open. Stored as an id (not the object) so
   // the sheet always renders the freshest booking data from props.
   const [detailBookingId, setDetailBookingId] = useState<string | null>(null);
@@ -1368,6 +1371,34 @@ export default function UserBookings({
                   );
                 })()}
 
+                {/* Opening a conference is the servant's call, not
+                    something approval does for them (migration 126) —
+                    most bookings never want a room. The button appears
+                    only once the owner has approved, because that is
+                    exactly when the RPC will accept it; offering it
+                    earlier would only produce a refusal. */}
+                {booking.status === 'approved' && (
+                  <button
+                    type="button"
+                    disabled={openingConference === booking.id}
+                    onClick={async () => {
+                      setOpeningConference(booking.id);
+                      const r = await createConferenceForBooking(booking.id);
+                      setOpeningConference(null);
+                      if ('error' in r) { alert(r.error); return; }
+                      alert(r.alreadyOpen
+                        ? `مؤتمرك مفتوح بالفعل. الكود: ${r.code}`
+                        : `اتفتح مؤتمر لحجزك. الكود: ${r.code}\n\nقول الكود ده لمجموعتك عشان يدخلوا.`);
+                    }}
+                    className="w-full flex items-center justify-between rounded-xl bg-[var(--ds-surface)] border border-[var(--ds-border)] px-3 py-2.5 min-h-11 cursor-pointer disabled:opacity-60"
+                  >
+                    <span className="text-[12.5px] font-black text-[var(--ds-brand)]">
+                      {openingConference === booking.id ? 'جاري الفتح…' : 'افتح مؤتمر لهذا الحجز'}
+                    </span>
+                    <span className="text-[10.5px] font-bold text-[var(--ds-text-2)]">جدول · إعلانات · كود انضمام</span>
+                  </button>
+                )}
+
                 {/* Collection tracker — who has paid their share to the leader.
                     Roster comes from self-registration / room distribution. */}
                 {(booking.status === 'approved' || booking.status === 'completed') && booking.guestsCount > 0 && (() => {
@@ -1395,6 +1426,7 @@ export default function UserBookings({
                         t={tally(roster, booking.guestsCount)}
                         onOpen={() => setParticipantsFor(booking.id)}
                       />
+
                       <ParticipantsSheet
                         open={participantsFor === booking.id}
                         onClose={() => setParticipantsFor(null)}
