@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
+import JoinConferenceCard from './JoinConferenceCard';
 import { ConferenceRoom, ConferenceAnnouncement, ConferenceChecklistItem, ConferenceEvent, ConferenceLiveChatMessage, ConferenceScheduleItem } from '../types';
 import { QrCode, Search, LogIn, ArrowRight, Gamepad2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -1040,6 +1041,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
               
               <p className="text-xs text-slate-300 font-medium">شارك هذا الكود مع الخدام والمخدومين لتسهيل وصولهم المباشر للغرفة ومتابعة الفعاليات.</p>
 
+
               <div className="flex flex-wrap gap-2 pt-2 justify-end">
                  <button 
                    onClick={handleChangeCode}
@@ -1153,6 +1155,17 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                 )}
               </div>
               <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">مركز إدارة وتجربة المؤتمرات والفعاليات 🏆</h2>
+
+              {/* The other side of the code. The host reads theirs out; anyone
+                  who is not the host needs somewhere to spend one, and until
+                  now there was nowhere — the code was printed and shared and
+                  led nowhere. Hidden from the host, who cannot join their own
+                  room and does not need the clutter. */}
+              {currentUser.id !== conference.hostUserId && (
+                <div className="pt-2">
+                  <JoinConferenceCard onJoined={() => window.location.reload()} />
+                </div>
+              )}
               <p className="text-xs text-purple-200/80 leading-relaxed max-w-lg">
                 مرحباً بك في المنصة الروحية المتكاملة لإدارة مؤتمراتك! هنا تجد كل تفاصيل الحجز، الجدول اليومي التفاعلي، الإعلانات الفورية، والعد التنازلي للتجمع المبارك.
               </p>
