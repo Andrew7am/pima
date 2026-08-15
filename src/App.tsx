@@ -2362,23 +2362,21 @@ export default function App() {
               onOpenFriends={() => setActiveScreen('friends')}
               onOpenLeaderboard={() => setActiveScreen('leaderboard')}
               onOpenRooms={() => setActiveScreen('interactive_room')}
-              onOpenConference={async () => {
-                setActiveScreen('conference_hub');
-                // This used to fall back to createEmptyConference when the
-                // servant had none — so the hub appeared to open itself, with a
-                // join code nobody could use and every edit silently discarded,
-                // because a conference with no bookingId has nowhere to be
-                // saved. That comment cited migration 123, which 126 reversed:
-                // approval permits a conference now, it does not create one.
-                // With nothing to show, the gate below asks instead of inventing.
+              onOpenConference={() => {
+                // Always the gate first, never a room.
                 //
-                // Scoped to this account and opened straight away only when
-                // there is exactly one room. `[0]` was «the newest conference
-                // RLS lets me read» — for a house owner that is a guest
-                // church's room at their house, and a servant hosting two was
-                // dropped into the newer one and never told the other existed.
-                const mine = await loadMyConferences(currentUser.id);
-                setConference(mine.length === 1 ? mine[0] : null);
+                // This used to fall back to createEmptyConference, so the hub
+                // appeared to open itself with a join code nobody could spend.
+                // Removing that left «open the only one automatically», which
+                // is still a room the servant did not choose — and worse, it
+                // made the gate unreachable to anyone who had one: no way to
+                // see their other rooms, and no way to type a code they had
+                // been sent, because that field only lives on the gate.
+                //
+                // So the centre stays the centre. A room is one tap from it,
+                // and the tap is theirs.
+                setConference(null);
+                setActiveScreen('conference_hub');
               }}
               onOpenRandomMatch={() => setActiveScreen('random_match')}
               onOpenGamesCatalog={() => setActiveScreen('games_catalog')}
@@ -2499,7 +2497,10 @@ export default function App() {
                     });
                   }
                 }}
-                onBack={() => goBack('entertainment')}
+                // Leaving a room lands on the centre, not outside the feature:
+                // from there they can open another, or type a code they were
+                // sent — that field only exists on the gate.
+                onBack={() => setConference(null)}
                 onUpdateUser={(u: { xp?: number; points?: number }) =>
                   setCurrentUser((prev) =>
                     prev ? { ...prev, xp: u.xp ?? prev.xp, points: u.points ?? prev.points } : prev

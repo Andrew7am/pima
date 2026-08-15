@@ -947,7 +947,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
           className="bg-white hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-xl text-xs font-black transition-all border border-slate-200 shadow-sm flex items-center gap-2 cursor-pointer"
         >
           <ArrowRight className="w-4 h-4" />
-          <span>الخروج من المؤتمر والعودة للبحث</span>
+          <span>الخروج من المؤتمر</span>
         </button>
 
         <button 
