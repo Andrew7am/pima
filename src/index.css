@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
 
@@ -90,6 +90,10 @@
   --color-natural-success-deep: #0F3D2A;
   --color-natural-warning-deep: #5C3A0A;
   --color-natural-danger-deep: #5E1F1A;
+  --color-natural-info: #1D6FB8;
+  --color-natural-on-info: #FFFFFF;
+  --color-natural-info-ink: #1A5C99;
+  --color-natural-info-deep: #0F3A61;
 
   /* The gold beyond the flat accent. The booking screen's signature control is
      a GRADIENT — #C9A96A → #B8944E — and one flat token cannot express it, so
@@ -219,6 +223,8 @@
   --color-owner-warning-ink: #92400E;
   --color-owner-danger-ink: #B91C1C;
   --color-owner-info-ink: #1D4ED8;
+  --color-owner-on-info: #FFFFFF;
+  --color-owner-info-deep: #1E3A8A;
   --color-owner-accent-ink: #8A6D28;
 
   /* ── Owner foreground pairs ───────────────────────────────────────────────
@@ -432,6 +438,10 @@
   --ds-on-danger: var(--color-natural-on-danger);
   --ds-danger-ink: var(--color-natural-danger-ink);
   --ds-danger-deep: var(--color-natural-danger-deep);
+  --ds-info: var(--color-natural-info);
+  --ds-on-info: var(--color-natural-on-info);
+  --ds-info-ink: var(--color-natural-info-ink);
+  --ds-info-deep: var(--color-natural-info-deep);
 }
 
 /* ── Owner: navy and gold ───────────────────────────────────────────────────
@@ -492,6 +502,10 @@
   --ds-on-danger: var(--color-owner-on-danger);
   --ds-danger-ink: var(--color-owner-danger-ink);
   --ds-danger-deep: var(--color-owner-danger-deep);
+  --ds-info: var(--color-owner-info);
+  --ds-on-info: var(--color-owner-on-info);
+  --ds-info-ink: var(--color-owner-info-ink);
+  --ds-info-deep: var(--color-owner-info-deep);
 }
 
 /* ── Admin: the owner's language, and later its own density ─────────────────
@@ -554,6 +568,10 @@
   --ds-on-danger: var(--color-owner-on-danger);
   --ds-danger-ink: var(--color-owner-danger-ink);
   --ds-danger-deep: var(--color-owner-danger-deep);
+  --ds-info: var(--color-owner-info);
+  --ds-on-info: var(--color-owner-on-info);
+  --ds-info-ink: var(--color-owner-info-ink);
+  --ds-info-deep: var(--color-owner-info-deep);
 }
 
 /* ── Entertainment: slate and indigo, with Pima's gold for winning ──────────
@@ -624,6 +642,10 @@
   --ds-on-danger: #0B1220;
   --ds-danger-ink: #F87171;
   --ds-danger-deep: var(--color-play-danger-deep);
+  --ds-info: #60A5FA;
+  --ds-on-info: #171612;
+  --ds-info-ink: #60A5FA;
+  --ds-info-deep: #3B82F6;
 }
 
 body {
@@ -1546,6 +1568,11 @@ body {
   --ds-danger-deep: #EF4444;
   --ds-danger-ink: #F87171;
   --ds-on-danger: #171612;
+
+  --ds-info: #60A5FA;             /*  6.5:1 */
+  --ds-info-deep: #3B82F6;
+  --ds-info-ink: #60A5FA;
+  --ds-on-info: #171612;
 
   /* Categorical roles keep their identity — they encode data, not mood. */
   --ds-category-1: #E3CD9F;

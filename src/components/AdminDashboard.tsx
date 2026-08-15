@@ -4043,15 +4043,15 @@ export default function AdminDashboard({
                       <div className="bg-[var(--ds-bg)] p-3 rounded-2xl border border-[var(--ds-border)] text-[11px] grid grid-cols-3 gap-2 text-center text-[var(--ds-text)] font-bold">
                         <div>
                           <div className="text-[11px] text-[var(--ds-text-2)] mb-0.5">القيمة الإجمالية</div>
-                          <div className="text-emerald-800">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</div>
+                          <div className="text-[var(--ds-success-ink)]">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</div>
                         </div>
                         <div>
                           <div className="text-[11px] text-[var(--ds-text-2)] mb-0.5">المسدد المقرّ</div>
-                          <div className="text-blue-800">{totalPaid.toLocaleString('ar-EG')} ج.م</div>
+                          <div className="text-[var(--ds-info-ink)]">{totalPaid.toLocaleString('ar-EG')} ج.م</div>
                         </div>
                         <div>
                           <div className="text-[11px] text-[var(--ds-text-2)] mb-0.5">المتبقي المستحق</div>
-                          <div className={`text-rose-800 ${remaining > 0 ? 'underline' : ''}`}>{remaining.toLocaleString('ar-EG')} ج.م</div>
+                          <div className={`text-[var(--ds-danger-ink)] ${remaining > 0 ? 'underline' : ''}`}>{remaining.toLocaleString('ar-EG')} ج.م</div>
                         </div>
                       </div>
 
