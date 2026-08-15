@@ -1,7 +1,7 @@
 -- ============================================================
 -- The countdown counts to something
 --
--- The hub shows «العد التنازلي للتجمع المبارك» starting from a hardcoded
+-- The hub shows «العد التنازلي للمؤتمر» starting from a hardcoded
 -- 11d 5h 22m 10s and ticking down from there. It is not late or early — it is
 -- counting to nothing. ConferenceRoom has no date at all, so there was nothing
 -- for it to count to.

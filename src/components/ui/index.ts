@@ -29,6 +29,9 @@ export type { BadgeProps, BadgeTone, BadgeVariant } from './Badge';
 export { default as EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
 
+export { default as Disclosure } from './Disclosure';
+export type { DisclosureProps } from './Disclosure';
+
 export { default as Skeleton, SkeletonGroup } from './Skeleton';
 export type { SkeletonProps } from './Skeleton';
 

@@ -8,6 +8,7 @@ import {
   Backpack, BookOpen, GraduationCap, Flame, HeartHandshake, Sun, Utensils, Printer } from 'lucide-react';
 import { tapFeedback } from '../../lib/haptics';
 import PimaSheet from '../PimaSheet';
+import Disclosure from '../ui/Disclosure';
 import { useCountUp } from '../../lib/useCountUp';
 import { arabicNumber } from '../../lib/arabic';
 import { BOOKING_GROUPS, BookingGroupKey, isStoredGroup } from '../../lib/bookingGroups';
@@ -722,13 +723,17 @@ export default function BookingFlow({
 
           {notices}
 
-          {/* Trust — two columns, so five short promises cost one block of
-              height instead of five rows of it. */}
-          <div className={`${CARD} p-3 space-y-2`}>
-            <span className="flex items-center gap-1.5 text-[11px] font-black text-[var(--ds-brand)]">
-              <ShieldCheck className="w-4 h-4 text-[#C9A24A]" />
-              لماذا تحجز عبر بيما؟
-            </span>
+          {/* Trust. Folded away, because it is reassurance rather than
+              information: it says the same five things on every house and for
+              every guest, and it was costing a block of the one screen where
+              the dates, the price and the button all have to fit. The one line
+              that changes a decision — nothing is charged now — stays on the
+              closed row. */}
+          <Disclosure
+            title="لماذا تحجز عبر بيما؟"
+            hint="لا دفع الآن"
+            icon={<ShieldCheck className="w-4 h-4 text-[#C9A24A]" />}
+          >
             <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5">
               {[
                 'لا يوجد أي دفع الآن',
@@ -743,7 +748,7 @@ export default function BookingFlow({
                 </li>
               ))}
             </ul>
-          </div>
+          </Disclosure>
 
           <button
             type="button"

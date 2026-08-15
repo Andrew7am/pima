@@ -5,6 +5,7 @@ import HouseHero from './house/HouseHero';
 import HouseLocationTrust from './house/HouseLocationTrust';
 import HouseReviews from './house/HouseReviews';
 import PimaSheet from './PimaSheet';
+import Disclosure from './ui/Disclosure';
 import { ExploreSection, ExploreCard } from './house/HouseExplore';
 import BookingFlow, { ApplicantDetails } from './house/BookingFlow';
 import { tapFeedback } from '../lib/haptics';
@@ -1318,18 +1319,24 @@ export default function HouseDetail({
                   </div>
                 )}
 
-                {/* Cancellation terms, stated before anything is committed. */}
-                <div className="rounded-[28px] border border-[var(--ds-border)] bg-[var(--ds-surface)] p-3 space-y-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.06),0_2px_6px_rgba(0,0,0,0.03)]">
-                  <span className="flex items-center gap-1.5 text-[12px] font-black text-[var(--ds-brand)]">
-                    <ShieldCheck className="w-4 h-4 text-[var(--ds-accent)]" />
-                    سياسة الإلغاء والاسترداد
-                  </span>
+                {/* Cancellation terms, stated before anything is committed —
+                    now folded, because three lines of tiers were pushing the
+                    button off the first screen. The closed row still carries
+                    the one a guest actually decides on: how long they have to
+                    change their mind and get everything back. Hiding that
+                    would be hiding the terms, which is not what «shorter»
+                    is supposed to mean. */}
+                <Disclosure
+                  title="سياسة الإلغاء والاسترداد"
+                  hint={`إلغاء مجاني قبل ${arabicNumber(settings.freeCancelDays)} أيام`}
+                  icon={<ShieldCheck className="w-4 h-4 text-[var(--ds-accent)]" />}
+                >
                   <ul className="space-y-1 text-[11px] font-medium text-[var(--ds-text)] pr-4 list-disc marker:text-[var(--ds-accent)]">
                     <li>قبل الوصول بـ<strong> {arabicNumber(settings.freeCancelDays)} أيام</strong> أو أكثر: استرداد <strong>كامل</strong>.</li>
                     <li>قبل الوصول بـ<strong> {arabicNumber(settings.partialRefundDays)} أيام</strong> أو أكثر: استرداد <strong>{arabicNumber(Math.round(settings.partialRefundPct * 100))}٪</strong>.</li>
                     <li>أقل من ذلك: لا يوجد استرداد.</li>
                   </ul>
-                </div>
+                </Disclosure>
               </>
             }
           />
