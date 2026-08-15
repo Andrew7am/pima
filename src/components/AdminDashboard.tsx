@@ -1002,7 +1002,7 @@ export default function AdminDashboard({
               {t.label}
               {(t.badge ?? 0) > 0 && (
                 <span className={`min-w-[16px] h-[16px] px-1 rounded-full text-[11px] font-black flex items-center justify-center ${
-                  activeTab === t.key ? 'bg-white/25 text-white' : 'bg-rose-500 text-white'
+                  activeTab === t.key ? 'bg-[var(--ds-on-primary)]/25 text-[var(--ds-on-primary)]' : 'bg-rose-500 text-white'
                 }`}>{arabicBadge(t.badge ?? 0)}</span>
               )}
             </button>
@@ -3903,7 +3903,7 @@ export default function AdminDashboard({
           <div className="flex items-center justify-between border-b border-[var(--ds-border)] pb-2">
             <h3 className="text-xs font-bold text-[var(--ds-text)]">إدارة حجوزات المنصة والتحصيل:</h3>
             <div className="text-[12px] text-[var(--ds-text-2)]">
-              المعلقة أو غير مكتملة السداد: <strong className="text-amber-800">{arabicNumber(pendingOrUnpaidBookingsCount)}</strong> / إجمالي الحجوزات: {arabicNumber(bookings.length)}
+              المعلقة أو غير مكتملة السداد: <strong className="text-[var(--ds-warning-ink)]">{arabicNumber(pendingOrUnpaidBookingsCount)}</strong> / إجمالي الحجوزات: {arabicNumber(bookings.length)}
             </div>
           </div>
 
