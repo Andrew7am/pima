@@ -55,8 +55,32 @@ EXCEPTION
   WHEN others THEN RAISE NOTICE 'room_id FK not added: %', SQLERRM;
 END $$;
 
--- Two people in one bed was possible. It is the kind of thing nobody notices
--- until two families arrive at the same door.
+-- Two people in one bed was possible, and it had already happened: the first
+-- attempt at this index failed on (room_1784307270301_0, bed 4). So the
+-- duplicates have to be resolved before the rule can be enforced.
+--
+-- The earliest allocation for a bed keeps it. The later one is deleted rather
+-- than moved: the attendee had no real bed — two people cannot share one — and
+-- an unallocated attendee is visible to the servant doing the rooming, where a
+-- silently reassigned one is not.
+DO $$
+DECLARE removed INTEGER;
+BEGIN
+  WITH ranked AS (
+    SELECT id, ROW_NUMBER() OVER (
+             PARTITION BY room_id, bed_number ORDER BY id
+           ) AS rn
+      FROM public.room_allocations
+  )
+  DELETE FROM public.room_allocations ra
+   USING ranked r
+   WHERE ra.id = r.id AND r.rn > 1;
+  GET DIAGNOSTICS removed = ROW_COUNT;
+  IF removed > 0 THEN
+    RAISE NOTICE 'freed % duplicate bed allocation(s) — those attendees now have no bed and need re-rooming', removed;
+  END IF;
+END $$;
+
 CREATE UNIQUE INDEX IF NOT EXISTS uq_allocation_bed
   ON public.room_allocations(room_id, bed_number);
 
