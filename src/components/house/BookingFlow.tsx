@@ -5,7 +5,9 @@ import {
   Star, Send, Clock, FileText, Pencil, Minus, Plus, Building2, Phone, User as UserIcon,
   Mail, MessageSquare, Church, Info, Loader2, Receipt, CreditCard,
   Sparkles, BedDouble, Copy, Home, Bell,
-  Backpack, BookOpen, GraduationCap, Flame, HeartHandshake, Sun, Utensils, Printer } from 'lucide-react';
+  Backpack, BookOpen, GraduationCap, Flame, HeartHandshake, Sun, Utensils, Printer, Baby } from 'lucide-react';
+import { EffectivePolicy, freeChildCount } from '../../lib/bookingPolicy';
+import PropertyBookingPolicy from './PropertyBookingPolicy';
 import { tapFeedback } from '../../lib/haptics';
 import PimaSheet from '../PimaSheet';
 import { useCountUp } from '../../lib/useCountUp';
@@ -47,6 +49,11 @@ interface BookingFlowProps {
   nights: number;
   guestsCount: number;
   setGuestsCount: (n: number) => void;
+  /** Ages of the children INSIDE guestsCount — never added to it. */
+  childAges: number[];
+  setChildAges: (a: number[]) => void;
+  /** This property's resolved policy; drives both the child control and the terms shown. */
+  policy: EffectivePolicy;
   isQuoteMode: boolean;
   setIsQuoteMode: (v: boolean) => void;
   isMonthlyHousing: boolean;
@@ -131,6 +138,7 @@ const INPUT = 'w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] ro
  */
 export default function BookingFlow({
   house, currentUser, checkIn, checkOut, nights, guestsCount, setGuestsCount,
+  childAges, setChildAges, policy,
   isQuoteMode, setIsQuoteMode, isMonthlyHousing, originalTotalPrice, totalPrice,
   discountPct = 0, discountSaving = 0, onPrintPriestQuote,
   depositAmount, breakdown, datePicker, datesConfirmed, dayUseAvailable, dayUsePrice, onSetStayMode,
@@ -374,7 +382,17 @@ export default function BookingFlow({
   const summaryRows = [
     { icon: <Building2 className="w-4 h-4" />, label: 'المكان', value: house.name, sub: house.governorate },
     { icon: <CalendarDays className="w-4 h-4" />, label: 'التاريخ', value: dayUse ? shortDate(checkIn) : `${shortDate(checkIn)} — ${shortDate(checkOut)}`, sub: stayLabel },
-    { icon: <Users className="w-4 h-4" />, label: 'عدد الحضور', value: `${egp(guestsCount)} فرد`, sub: '' },
+    {
+      icon: <Users className="w-4 h-4" />, label: 'عدد الحضور', value: `${egp(guestsCount)} فرد`,
+      // The breakdown only when there is one to give. «٤ فرد» on its own is
+      // the honest line for a party nobody split.
+      sub: childAges.length
+        ? `${egp(guestsCount - childAges.length)} بالغ · ${egp(childAges.length)} طفل`
+          + (policy.childFreeUnderAge != null
+            ? ` · ${egp(freeChildCount(childAges, policy.childFreeUnderAge))} مجانًا`
+            : '')
+        : '',
+    },
     { icon: <GroupIcon className="w-4 h-4" />, label: 'نوع الحجز', value: group.label, sub: '' },
   ];
 
@@ -590,6 +608,94 @@ export default function BookingFlow({
               </div>
             </div>
           </div>
+
+          {/* Children — ONLY when this property actually has a child rule.
+              A house that has not set one charges for everybody, and asking
+              for ages there would imply a discount that does not exist.
+
+              These children are part of عدد الأفراد above, not additional to
+              it: the house still has to sleep them. What changes is who pays.
+              Ages are collected one by one because the rule is written against
+              an age, and an average or a headcount cannot answer it. */}
+          {policy.childFreeUnderAge != null && (
+            <div className={`${CARD} p-3 space-y-2.5`}>
+              <div className="flex items-center justify-between gap-3">
+                <span className="leading-tight">
+                  <span className="flex items-center gap-1.5 text-[11px] font-black text-[var(--ds-text-strong)]">
+                    <Baby className="w-4 h-4 text-[#C9A24A]" />
+                    منهم أطفال
+                  </span>
+                  <span className="block text-[11px] font-medium text-[var(--ds-text-2)] mt-0.5">
+                    الأطفال تحت {egp(policy.childFreeUnderAge)} سنوات مجانًا
+                  </span>
+                </span>
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => { tapFeedback(); setChildAges(childAges.slice(0, -1)); }}
+                    disabled={childAges.length <= 0}
+                    aria-label="إنقاص عدد الأطفال"
+                    className="w-9 h-9 rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] text-[var(--ds-text)] flex items-center justify-center disabled:opacity-40 hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="w-[56px] text-[22px] font-black text-[var(--ds-brand)] text-center [font-variant-numeric:tabular-nums]">
+                    {egp(childAges.length)}
+                  </span>
+                  <button
+                    type="button"
+                    // At most one fewer than the party: a booking with no adult
+                    // in it is rejected by the server, so it is not offered.
+                    onClick={() => { tapFeedback(); setChildAges([...childAges, 0]); }}
+                    disabled={childAges.length >= guestsCount - 1}
+                    aria-label="زيادة عدد الأطفال"
+                    className="w-9 h-9 rounded-xl border border-[var(--ds-border)] bg-[var(--ds-surface)] text-[var(--ds-text)] flex items-center justify-center disabled:opacity-40 hover:bg-[#F1ECE0] transition-colors cursor-pointer pima-press"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {childAges.length > 0 && (
+                <div className="space-y-2 pt-1 border-t border-[var(--ds-border)]">
+                  {childAges.map((age, i) => (
+                    <div key={i} className="flex items-center justify-between gap-3">
+                      <label htmlFor={`child-age-${i}`} className="text-[11px] font-bold text-[var(--ds-text)]">
+                        سن الطفل {egp(i + 1)}
+                      </label>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <input
+                          id={`child-age-${i}`}
+                          type="text"
+                          inputMode="numeric"
+                          value={egp(age)}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[^\d]/g, '');
+                            const n = digits === '' ? 0 : parseInt(digits, 10);
+                            if (!Number.isFinite(n) || n > 17) return;   // 18 is an adult
+                            const next = [...childAges];
+                            next[i] = n;
+                            setChildAges(next);
+                          }}
+                          onFocus={(e) => e.currentTarget.select()}
+                          className="w-[52px] min-h-11 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl text-[14px] font-black text-[var(--ds-brand)] text-center [font-variant-numeric:tabular-nums] focus:border-[#C9A24A] focus:outline-none transition-colors"
+                        />
+                        <span className={`text-[11px] font-black w-[52px] ${age < (policy.childFreeUnderAge ?? 0) ? 'text-[var(--ds-success)]' : 'text-[var(--ds-text-2)]'}`}>
+                          {age < (policy.childFreeUnderAge ?? 0) ? 'مجانًا' : 'بيدفع'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {/* The arithmetic, spelled out — the guest should never have to
+                      infer why the total moved. */}
+                  <p className="text-[11px] font-bold text-[var(--ds-text-2)] pt-1">
+                    {egp(guestsCount)} فرد · {egp(freeChildCount(childAges, policy.childFreeUnderAge))} مجانًا ·
+                    {' '}<span className="text-[var(--ds-brand)]">{egp(guestsCount - freeChildCount(childAges, policy.childFreeUnderAge))} بيدفعوا</span>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Type — a row that opens the list, not the list itself. Nine kinds
               of group laid out on the review screen would outweigh the dates
@@ -884,6 +990,11 @@ export default function BookingFlow({
             </span>
             <span className="text-[11px] font-medium text-[#B5AF98]">آخر ٣٠ يوم</span>
           </div>
+
+          {/* The terms being agreed to, immediately above the box that agrees
+              to them. They are THIS property's, so a checkbox referring to
+              «سياسة الحجز والإلغاء» must not make the reader go and find it. */}
+          <PropertyBookingPolicy policy={policy} />
 
           <label className="flex items-start gap-2.5 px-1 cursor-pointer">
             <input

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { arabicNumber, arabicPlural, arabicDate, arabicDateTime, arabicDateRange, arabicBadge, arabicDecimal, ROLE_LABELS, GUEST_FORMS, REVIEW_FORMS, HOUSE_FORMS, MEMBER_FORMS, POINT_FORMS, BOOKING_FORMS, USER_FORMS, PAYMENT_FORMS } from '../lib/arabic';
 import SearchInput from './ui/SearchInput';
+// The owner's policy editor, worn in admin colours. One implementation, so an
+// admin edit is the same authorized five-column write the owner's is.
+import OwnerBookingPolicy from './owner/OwnerBookingPolicy';
 import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
 import { topHousesByBookings } from '../lib/topHouses';
 import { summarizeFinances, accountBalances, refundsDue } from '../lib/adminFinance';
@@ -96,6 +99,8 @@ interface AdminDashboardProps {
   onDeletePromoBanner?: (id: string) => void;
   settings?: PlatformSettings;
   onUpdateSettings?: (s: PlatformSettings) => void;
+  /** Local-state merge after the shared policy editor has already persisted. */
+  onPolicySaved?: (houseId: string, patch: Partial<RetreatHouse>) => void;
   auditLog?: AuditLogEntry[];
   onLoadProofImage?: (paymentId: string) => Promise<string | null>;
   // Real curation powers, not just approve/reject — reuses the same
@@ -170,6 +175,7 @@ export default function AdminDashboard({
   onDeletePromoBanner,
   settings = DEFAULT_PLATFORM_SETTINGS,
   onUpdateSettings,
+  onPolicySaved,
   auditLog = [],
   onLoadProofImage,
   onUpdateHouse,
@@ -1463,9 +1469,9 @@ export default function AdminDashboard({
               { key: 'maxRedemptionPct', label: 'أقصى خصم بالنقاط من الحجز', suffix: '%', factor: 100, hint: 'أقصى نسبة من قيمة الحجز ممكن تتدفع بالنقاط.' },
               { key: 'pointsPerEgp', label: 'نقاط مقابل الجنيه (الاستبدال)', suffix: 'نقطة = ١ ج.م', factor: 1, hint: 'كل كام نقطة تساوي جنيه عند الخصم.' },
               { key: 'referralBonusPoints', label: 'مكافأة دعوة صديق', suffix: 'نقطة', factor: 1, hint: 'نقاط تُمنح للمُحيل عند أول حجز مدفوع لصديقه.' },
-              { key: 'freeCancelDays', label: 'إلغاء مجاني قبل الوصول بـ', suffix: 'يوم', factor: 1, hint: 'الإلغاء قبل الوصول بهذه المدة أو أكثر = استرداد كامل.' },
-              { key: 'partialRefundDays', label: 'استرداد جزئي قبل الوصول بـ', suffix: 'يوم', factor: 1, hint: 'الإلغاء قبل الوصول بهذه المدة أو أكثر = استرداد جزئي. أقل منها = لا استرداد.' },
-              { key: 'partialRefundPct', label: 'نسبة الاسترداد الجزئي', suffix: '%', factor: 100, hint: 'النسبة المستردة من المبلغ المدفوع في نافذة الاسترداد الجزئي.' },
+              { key: 'freeCancelDays', label: 'السياسة الافتراضية للمنصة — إلغاء مجاني قبل الوصول بـ', suffix: 'يوم', factor: 1, hint: 'تُطبَّق على أي بيت لم يحدّد سياسته الخاصة. البيت اللي محدّد رقم مختلف بيمشي على رقمه.' },
+              { key: 'partialRefundDays', label: 'السياسة الافتراضية للمنصة — استرداد جزئي قبل الوصول بـ', suffix: 'يوم', factor: 1, hint: 'الإلغاء قبل الوصول بهذه المدة أو أكثر = استرداد جزئي. أقل منها = لا استرداد. افتراضي فقط — البيت يقدر يغيّرها.' },
+              { key: 'partialRefundPct', label: 'السياسة الافتراضية للمنصة — نسبة الاسترداد الجزئي', suffix: '%', factor: 100, hint: 'النسبة المستردة من المبلغ المدفوع في نافذة الاسترداد الجزئي. افتراضي فقط — البيت يقدر يغيّرها.' },
               { key: 'maxBookingsPerDay', label: 'أقصى عدد حجوزات للحساب الواحد', suffix: 'حجز / ٢٤ ساعة', factor: 1, hint: 'يمنع حساب واحد من إغراق البيوت بحجوزات وهمية. صاحب البيت والأدمن مستثنيين، فالمالك يقدر يسجّل حجوزات التليفون براحته.' },
             ] as const).map((f) => (
               <div key={f.key} className="space-y-1">
@@ -4318,6 +4324,13 @@ export default function AdminDashboard({
                   onChange={(e) => setEditDraft((d) => ({ ...d, dayUsePricePerPerson: e.target.value === '' ? undefined : Number(e.target.value) }))}
                   placeholder="سعر اليوم بدون مبيت للفرد (اتركه فارغاً لو غير متاح)"
                   className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] text-xs px-3 min-h-11 rounded-xl" />
+
+                {/* This property's booking policy, and what it resolves to.
+                    The SAME editor the owner uses — one implementation, so an
+                    admin can never save through a path the owner's rules do not
+                    also apply to. It saves on its own button, not with the rest
+                    of this form, because it writes its own five columns. */}
+                <OwnerBookingPolicy house={previewHouse} settings={settings} variant="admin" onSaved={onPolicySaved} />
                 <div>
                   <p className="text-[11px] font-bold text-[var(--ds-text-2)] mb-1.5">الخدمات:</p>
                   <div className="grid grid-cols-2 gap-1.5">

@@ -1,5 +1,35 @@
 apply plugin: 'com.android.application'
 
+// ── Release signing ──────────────────────────────────────────────────────────
+// Credentials NEVER live in this file or in git. They are read from, in order:
+//   1. android/keystore.properties  — local developer machine, gitignored
+//   2. PIMA_KEYSTORE_* environment variables — CI / build server
+//
+// When none are present the release build stays unsigned exactly as it did
+// before, so nothing that works today starts failing. Google Play rejects an
+// unsigned bundle, so the mistake cannot reach production silently — but the
+// warning below makes it obvious long before that.
+def keystorePropsFile = rootProject.file('keystore.properties')
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+
+def ksStoreFile = keystoreProps['storeFile']     ?: System.getenv('PIMA_KEYSTORE_FILE')
+def ksStorePw   = keystoreProps['storePassword'] ?: System.getenv('PIMA_KEYSTORE_PASSWORD')
+def ksKeyAlias  = keystoreProps['keyAlias']      ?: System.getenv('PIMA_KEY_ALIAS')
+def ksKeyPw     = keystoreProps['keyPassword']   ?: System.getenv('PIMA_KEY_PASSWORD')
+
+def resolvedKeystore = ksStoreFile ? rootProject.file(ksStoreFile) : null
+def hasReleaseSigning = ksStoreFile && ksStorePw && ksKeyAlias && ksKeyPw &&
+        resolvedKeystore != null && resolvedKeystore.exists()
+
+if (!hasReleaseSigning) {
+    logger.warn("[pima] No release signing credentials found — `assembleRelease`/`bundleRelease` " +
+                "will produce an UNSIGNED artifact that Google Play will reject. " +
+                "Create android/keystore.properties (see android/keystore.properties.example).")
+}
+
 android {
     namespace = "com.pimastay.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +46,25 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile resolvedKeystore
+                storePassword ksStorePw
+                keyAlias ksKeyAlias
+                keyPassword ksKeyPw
+                // Play requires both; v1 keeps sideloaded installs working on
+                // the older devices this app still supports (minSdk 24).
+                enableV1Signing true
+                enableV2Signing true
+            }
+        }
+    }
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

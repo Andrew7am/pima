@@ -53,7 +53,10 @@ export default function HouseLocationTrust({ house, announcements }: HouseLocati
   ];
 
   const guarantees = [
-    { icon: BadgeCheck,    title: 'مكان موثق',   body: 'جميع الأماكن مراجعة وموثقة' },
+    // «مراجَع» not «موثق»: Pima reviews and approves every listing before it
+    // goes live, but performs no identity or licence verification on owners.
+    // «موثق» promises the second thing — see the B3 policy audit.
+    { icon: BadgeCheck,    title: 'مكان مراجَع',  body: 'كل الأماكن مراجعة ومعتمدة من بيما' },
     { icon: Lock,          title: 'دفع آمن',      body: 'جميع المدفوعات مؤمنة ١٠٠٪' },
     { icon: MessageSquare, title: 'التواصل بعد', body: 'تأكيد الحجز فقط لحمايتك وخصوصيتك' },
     { icon: Headphones,    title: 'دعم من بيما',  body: 'نحن هنا لمساعدتك عند الحاجة ٢٤/٧' },

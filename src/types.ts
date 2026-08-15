@@ -149,6 +149,22 @@ export interface RetreatHouse {
   discountStartsAt?: string;
   discountEndsAt?: string;
   discountNote?: string;
+  /** This property's own booking policy (migration 0128). Every field is
+   *  optional and undefined MEANS INHERIT — the platform value in
+   *  platform_settings applies. That is why no existing house needed a data
+   *  migration: leaving them unset preserves exactly today's behaviour.
+   *  Never read these directly; go through resolvePolicy in lib/bookingPolicy,
+   *  which is the only thing that knows how the fallback works. */
+  freeCancelDays?: number;
+  partialRefundDays?: number;
+  partialRefundPct?: number;
+  /** Children strictly under this age are not charged. Undefined = this house
+   *  has no child rule, which is what every house does today. There is no
+   *  platform fallback for it, deliberately. */
+  childFreeUnderAge?: number;
+  bookingPolicyNotes?: string;
+  /** Server-stamped whenever the policy above changes. Read-only. */
+  policyUpdatedAt?: string;
   // Owner-submitted edits to an already-approved house wait here for admin
   // review instead of applying immediately — only editable/listing fields.
   pendingEdit?: Partial<RetreatHouse>;
@@ -198,6 +214,25 @@ export interface Booking {
   /** What the stay would have cost without it. Null when there was no
    *  discount, so the «كان» line only appears when it is true. */
   priceBeforeDiscount?: number;
+  /** The party, broken down (migration 0128). guestsCount remains the TOTAL and
+   *  is what capacity is checked against — a child who pays nothing still
+   *  occupies a bed. childAges is the only one the client sends; the other two
+   *  are derived server-side, so they cannot disagree with it. All undefined on
+   *  a booking whose party was never broken down. */
+  adultsCount?: number;
+  childrenCount?: number;
+  childAges?: number[];
+  /** The policy THIS booking was taken under, frozen at INSERT by
+   *  stamp_booking_policy and immutable thereafter — an owner changing their
+   *  terms later must not rewrite an agreement already made. Undefined on
+   *  bookings predating migration 0128, which correctly fall back to the
+   *  platform policy they were actually made under. Read via policyForBooking
+   *  in lib/bookingPolicy, never directly. */
+  policyFreeCancelDays?: number;
+  policyPartialRefundDays?: number;
+  policyPartialRefundPct?: number;
+  policyChildFreeUnderAge?: number;
+  policySnapshotAt?: string;
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
   // platform = guest booked through the app; manual = owner recorded a
   // phone/walk-in booking himself; temporary = tentative hold the owner

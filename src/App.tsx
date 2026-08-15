@@ -1696,6 +1696,15 @@ export default function App() {
     trackWrite(updateHouseDb(updatedHouse), 'حفظ بيانات البيت');
   };
 
+  // The booking policy has ALREADY been written by OwnerBookingPolicy, through
+  // its own five-column update. This only brings local state into line — going
+  // through handleUpdateHouse instead would re-save the whole row, and a house
+  // loaded from the cover-only list view would lose its photos to it.
+  const handlePolicySaved = (houseId: string, patch: Partial<RetreatHouse>) => {
+    setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, ...patch } : h)));
+    setSelectedHouse((cur) => (cur && cur.id === houseId ? { ...cur, ...patch } : cur));
+  };
+
   // Owner-submitted edits to an already-approved house are staged here
   // instead of applying immediately — the admin approves or rejects them.
   const handleRequestHouseEdit = (houseId: string, changes: Partial<RetreatHouse>) => {
@@ -2222,6 +2231,7 @@ export default function App() {
               settings={settings}
               onAddHouse={handleAddHouse}
               onUpdateHouse={handleUpdateHouse}
+              onPolicySaved={handlePolicySaved}
               onRequestHouseEdit={handleRequestHouseEdit}
               onDeleteHouse={handleDeleteHouse}
               onApproveBooking={handleApproveBooking}
@@ -2303,6 +2313,7 @@ export default function App() {
               auditLog={auditLog}
               onLoadProofImage={loadPaymentProofImage}
               onUpdateHouse={handleUpdateHouse}
+              onPolicySaved={handlePolicySaved}
               onDeleteHouse={handleDeleteHouse}
             />
           )}

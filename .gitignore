@@ -26,6 +26,10 @@ android/*.iml
 android/.idea/
 *.keystore
 *.jks
+# Signing credentials. The keystore itself is covered above; these hold the
+# passwords that open it, so they must never be committed either.
+keystore.properties
+signing.properties
 .vercel
 supabase/apply-all.sql
 

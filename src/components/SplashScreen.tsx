@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Home, Utensils, Sparkles, Star, MessageCircle } from 'lucide-react';
+import Logo from './Logo';
 
 /**
  * The six seconds before the app.
@@ -138,83 +139,12 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
         {/* Sits at 34%, not the middle: the five cards need the lower half,
             and a centred logo put the first of them through it. */}
         <div className="pima-splash-logo absolute left-1/2 top-[34%]">
-          <svg width="188" height="153" viewBox="0 0 160 130" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              {/* The soft light around the pen. No lens flare, no sparkle — a
-                  blur of the same gold, nothing else. */}
-              <filter id="pima-splash-glow" x="-120%" y="-120%" width="340%" height="340%">
-                <feGaussianBlur stdDeviation="2.4" result="b" />
-                <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-              </filter>
-            </defs>
-
-            {/* The ink. Drawn in gold, then handed over to the real outline. */}
-            <path
-              className="pima-splash-ink"
-              d={HOUSE_PATH}
-              // The house measures 346.7 user units. Normalising it to 1000
-              // makes the CSS dash values percent-of-path, so the ink tip and
-              // the pen — which travels 0→100% of the same path over the same
-              // second — advance together. Against a raw 1000-unit dash the
-              // house finished drawing at 1.29s with the pen still at 48%: the
-              // stroke ran nearly three times ahead of the light writing it.
-              pathLength={1000}
-              stroke="#C9A15A"
-              strokeWidth="5"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              filter="url(#pima-splash-glow)"
-            />
-
-            {/* The official outline, in its own navy, arriving as the ink goes. */}
-            <path
-              className="pima-splash-outline"
-              d={HOUSE_PATH}
-              pathLength={1000}
-              stroke="#0A2342"
-              strokeWidth="5"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              fill="#FDFBF7"
-            />
-
-            {/* Everything inside the house — chimney, cross, window — is the
-                logo exactly as it is drawn everywhere else in the app. */}
-            <g className="pima-splash-inner">
-              <rect x="115" y="27" width="9" height="20" fill="#0A2342" />
-              <g transform="translate(80, 60) scale(1.15)">
-                <circle cx="0" cy="0" r="5.5" fill="#C5A059" />
-                <circle cx="0" cy="0" r="3.5" fill="none" stroke="#0A2342" strokeWidth="0.8" />
-                <path d="M-3,-5 L-6,-18 C-6,-20.5 -1,-21.5 0,-21.5 C1,-21.5 6,-20.5 6,-18 L3,-5 Z" fill="#C5A059" />
-                <circle cx="0" cy="-18" r="2.2" fill="#0A2342" />
-                <path d="M-3,5 L-6,18 C-6,20.5 -1,21.5 0,21.5 C1,21.5 6,20.5 6,18 L3,5 Z" fill="#C5A059" />
-                <circle cx="0" cy="18" r="2.2" fill="#0A2342" />
-                <path d="M-5,-3 L-18,-6 C-20.5,-6 -21.5,-1 -21.5,0 C-21.5,1 -20.5,6 -18,6 L-5,3 Z" fill="#C5A059" />
-                <circle cx="-18" cy="0" r="2.2" fill="#0A2342" />
-                <path d="M5,-3 L18,-6 C20.5,-6 21.5,-1 21.5,0 C21.5,1 20.5,6 18,6 L5,3 Z" fill="#C5A059" />
-                <circle cx="18" cy="0" r="2.2" fill="#0A2342" />
-                <circle cx="-11" cy="0" r="1.2" fill="#0A2342" />
-                <circle cx="11" cy="0" r="1.2" fill="#0A2342" />
-                <circle cx="0" cy="-11" r="1.2" fill="#0A2342" />
-                <circle cx="0" cy="11" r="1.2" fill="#0A2342" />
-                <circle cx="-10" cy="-10" r="1.5" fill="#C5A059" />
-                <circle cx="10" cy="-10" r="1.5" fill="#C5A059" />
-                <circle cx="-10" cy="10" r="1.5" fill="#C5A059" />
-                <circle cx="10" cy="10" r="1.5" fill="#C5A059" />
-              </g>
-              <path d="M71 114 V94 C71 89 75 85 80 85 C85 85 89 89 89 94 V114 Z" fill="#0A2342" stroke="#C5A059" strokeWidth="2.5" />
-              <line x1="80" y1="85" x2="80" y2="114" stroke="#FDFBF7" strokeWidth="1.2" />
-              <line x1="71" y1="99" x2="89" y2="99" stroke="#FDFBF7" strokeWidth="1.2" />
-            </g>
-
-            {/* The pen: one point of light riding the outline it is writing.
-                It is carried by CSS offset-path along the same `d`, so it
-                cannot drift off the line it is drawing. */}
-            <g className="pima-splash-pen">
-              <circle r="3.4" fill="#E8D4A8" opacity="0.55" filter="url(#pima-splash-glow)" />
-              <circle r="1.5" fill="#FFFFFF" />
-            </g>
-          </svg>
+          {/* The canonical mark, referenced — not a second hand-drawn copy.
+              This block used to redraw the whole logo in SVG, so the splash
+              showed different artwork from every other screen. The wrapper,
+              its position, the pima-splash-logo animation and the timing are
+              untouched; only the artwork source changed. */}
+          <Logo size={188} variant="icon" className="drop-shadow-[0_8px_24px_rgba(10,35,66,0.18)]" />
         </div>
 
         {/* The point of light before it becomes the pen. Its own element so

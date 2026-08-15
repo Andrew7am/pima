@@ -16,6 +16,8 @@ import BookingJourney from './BookingJourney';
 import BookingChatPanel from './BookingChatPanel';
 import ReviewWizard from './ReviewWizard';
 import { refundAmountFor } from '../lib/cancellationPolicy';
+import { policyForBooking } from '../lib/bookingPolicy';
+import PropertyBookingPolicy from './house/PropertyBookingPolicy';
 import { getBookingStage } from '../lib/bookingStage';
 import { depositDue } from '../lib/paymentLedger';
 import DepositPayment from './booking/DepositPayment';
@@ -1595,6 +1597,13 @@ export default function UserBookings({
                         <span>إلغاء الحجز</span>
                       </button>
                     )}
+                  </div>
+
+                  {/* The terms THIS booking was taken under — its own frozen
+                      snapshot, not whatever the house advertises today. A guest
+                      deciding whether to cancel must read the deal they made. */}
+                  <div className="mt-3">
+                    <PropertyBookingPolicy policy={policyForBooking(booking, settings)} />
                   </div>
                 </div>
 
