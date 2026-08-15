@@ -148,3 +148,25 @@ export async function leaveConference(conferenceId: string, userId?: string): Pr
   if (error) { console.error('leaveConference:', error); return { ok: false, error: error.message }; }
   return { ok: true };
 }
+
+/**
+ * Open the conference for a booking. Approval permits it; the servant decides.
+ *
+ * Most bookings never want a room — a family taking a weekend does not need a
+ * join code and a QR — so this is a deliberate act rather than something that
+ * happens to every approved booking.
+ */
+export async function createConferenceForBooking(bookingId: string): Promise<
+  { ok: true; conferenceId: string; code: string; alreadyOpen: boolean }
+  | { ok: false; error: string }
+> {
+  const { data, error } = await supabase.rpc('create_conference_for_booking', { p_booking_id: bookingId });
+  if (error) {
+    console.error('createConferenceForBooking:', error);
+    // The RPC raises Arabic for the two an organiser can hit — a booking that
+    // is not theirs, and one the owner has not approved yet.
+    return { ok: false, error: error.message };
+  }
+  const d = data as { conferenceId: string; code: string; alreadyOpen: boolean };
+  return { ok: true, ...d };
+}
