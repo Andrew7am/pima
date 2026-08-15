@@ -180,44 +180,10 @@ function getSlideImageUrl(prompt: string, presetStyle: string): string {
   return 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80';
 }
 
-// --- CONFERENCE PULSE DATA ---
-const CONFERENCE_PULSE_DATA = {
-  day1: [
-    { time: '08:00 ص', activeUsers: 65, interactions: 35, activity: 'القداس الإلهي وتجمع الوصول ⛪' },
-    { time: '10:00 ص', activeUsers: 72, interactions: 50, activity: 'المحاضرة التمهيدية وتوزيع الغرف 🔑' },
-    { time: '12:00 م', activeUsers: 45, interactions: 40, activity: 'الغداء والراحة الاستجمامية 🍲' },
-    { time: '02:00 م', activeUsers: 55, interactions: 60, activity: 'مسابقات وبدء المسح السريع للرموز 🔍' },
-    { time: '04:00 م', activeUsers: 70, interactions: 85, activity: 'دوري كرة القدم وألعاب الملاعب الروحية ⚽' },
-    { time: '06:00 م', activeUsers: 78, interactions: 95, activity: 'صلاة العشية وتسبحة الغروب 🕯️' },
-    { time: '08:00 م', activeUsers: 83, interactions: 140, activity: 'المحاضرة الكبرى وحل أسئلة المنصة 📝' },
-    { time: '10:00 م', activeUsers: 81, interactions: 110, activity: 'سهرة التجمع والسمر حول النار 🔥' },
-    { time: '12:00 ص', activeUsers: 30, interactions: 25, activity: 'صلوات منتصف الليل والنوم بسلام 🛌' },
-  ],
-  day2: [
-    { time: '08:00 ص', activeUsers: 70, interactions: 45, activity: 'التسبحة والقداس الصباحي الباكر ⛪' },
-    { time: '10:00 ص', activeUsers: 84, interactions: 90, activity: 'المحاضرة الأولى: مهارات القيادة والخدمة 💡' },
-    { time: '12:00 م', activeUsers: 52, interactions: 48, activity: 'فترة غداء خفيف وتبادل الأحاديث ☕' },
-    { time: '02:00 م', activeUsers: 75, interactions: 115, activity: 'ورش العمل التشاركية والبحث الروحي 👥' },
-    { time: '04:00 م', activeUsers: 80, interactions: 130, activity: 'البحث عن الكنز وحل الألغاز الكنسية 🗺️' },
-    { time: '06:00 م', activeUsers: 82, interactions: 110, activity: 'العشية وصلاة الأجبية المباركة 📖' },
-    { time: '08:00 م', activeUsers: 85, interactions: 175, activity: 'المسابقة الكبرى وحل تحديات الألعاب التفاعلية 🎮' },
-    { time: '10:00 م', activeUsers: 83, interactions: 150, activity: 'سهرة تسبيح وألحان وتأمل روحي ممتد 🎶' },
-    { time: '12:00 ص', activeUsers: 28, interactions: 30, activity: 'الهدوء التام والصلوات الفردية بالمخدع 🕯️' },
-  ],
-  day3: [
-    { time: '08:00 ص', activeUsers: 82, interactions: 80, activity: 'القداس الختامي وصلاة الشكر العام ⛪' },
-    { time: '10:00 ص', activeUsers: 85, interactions: 110, activity: 'توزيع الهدايا والدروع وتكريم المتميزين 🏆' },
-    { time: '12:00 م', activeUsers: 78, interactions: 95, activity: 'الصورة الجماعية الختامية وتدوين الآراء 📸' },
-    { time: '02:00 م', activeUsers: 60, interactions: 70, activity: 'تناول طعام البركة الختامي ومغادرة البيت 🚌' },
-    { time: '04:00 م', activeUsers: 45, interactions: 55, activity: 'أتوبيسات العودة ومراجعة الملاحظات بالرابط 💬' },
-    { time: '06:00 م', activeUsers: 30, interactions: 40, activity: 'الوصول بسلامة الله وكتابة تقييمات الخدمة 📝' },
-    { time: '08:00 م', activeUsers: 20, interactions: 35, activity: 'تفاعل مستمر عبر مجموعات الواتساب والمتابعة 💬' },
-    { time: '10:00 م', activeUsers: 15, interactions: 20, activity: 'أرشفة الصور ورفع الفيديوهات السحابية ☁️' },
-    { time: '12:00 ص', activeUsers: 8, interactions: 10, activity: 'اكتتمال بركة المؤتمر وتجديد الطاقات الروحية ✨' },
-  ],
-};
-
-// --- CUSTOM TOOLTIP FOR RECHARTS CONFERENCE PULSE ---
+// The «نبض المؤتمر» dashboard lived here: invented per-hour attendance and
+// interaction counts for three days, plus a button that multiplied them by
+// 1.25. Nothing in Pima measures either. It was computed on every render and
+// never drawn — dead code presenting fabricated telemetry — so it is gone.
 const CustomPulseTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const dataPoint = payload[0].payload;
@@ -261,7 +227,11 @@ interface ActiveConferenceHubProps {
 
 function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConference, onUpdateUser }: ActiveConferenceHubProps) {
   // --- STATE FOR SERVANT MODE & CONFIGS ---
-  const [isServantMode, setIsServantMode] = useState(currentUser.id === conference.hostUserId);
+  // Who actually owns this room. Derived, never stored, so it cannot drift out
+  // of step with the conference being displayed — and so the toggle below has
+  // something to check rather than trusting whoever pressed it.
+  const isHost = currentUser.id === conference.hostUserId;
+  const [isServantMode, setIsServantMode] = useState(isHost);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
 
@@ -363,6 +333,33 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
   };
   const ZERO = { days: 0, hours: 0, minutes: 0, seconds: 0 };
   const [countdown, setCountdown] = useState(() => remaining(conference.startsAt) ?? ZERO);
+
+  // How many nights the booking covers, and where today sits inside it. Both
+  // chips beside the countdown used to be literals — «٣ أيام كاملة» for every
+  // conference regardless of length, and «مباشر الآن» pulsing red on a retreat
+  // that is still two weeks away.
+  const nights = (() => {
+    if (!conference.startsAt || !conference.endsAt) return null;
+    const ms = new Date(`${conference.endsAt}T00:00:00`).getTime()
+             - new Date(`${conference.startsAt}T00:00:00`).getTime();
+    const n = Math.round(ms / 86400000);
+    return n > 0 ? n : null;
+  })();
+  const arabicDays = (n: number) => {
+    if (n === 1) return 'يوم واحد';
+    if (n === 2) return 'يومين';
+    if (n <= 10) return `${n.toLocaleString('ar-EG')} أيام`;
+    return `${n.toLocaleString('ar-EG')} يوم`;
+  };
+  // Compared against the end of the last day, not its start: a conference that
+  // finishes today is still running today.
+  const phase: 'before' | 'during' | 'after' = (() => {
+    if (!conference.startsAt) return 'before';
+    const now = Date.now();
+    if (now < new Date(`${conference.startsAt}T00:00:00`).getTime()) return 'before';
+    if (conference.endsAt && now > new Date(`${conference.endsAt}T00:00:00`).getTime() + 86400000) return 'after';
+    return 'during';
+  })();
 
   useEffect(() => {
     const tick = () => setCountdown(remaining(conference.startsAt) ?? ZERO);
@@ -522,29 +519,6 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
     const scrollPercent = (container.scrollTop / (container.scrollHeight - container.clientHeight)) * 100;
     setReadingProgress(Math.min(100, Math.max(0, scrollPercent)));
   };
-
-  // --- CONFERENCE PULSE INDICATOR STATES ---
-  const [selectedPulseDay, setSelectedPulseDay] = useState<'day1' | 'day2' | 'day3'>('day1');
-  const [pulseBoostActive, setPulseBoostActive] = useState(false);
-  const [pulseBoostTimer, setPulseBoostTimer] = useState<number | null>(null);
-  const [pulseMessage, setPulseMessage] = useState<string>('');
-
-  // --- PULSE DATA CALCULATIONS ---
-  const currentPulseData = (CONFERENCE_PULSE_DATA[selectedPulseDay] || CONFERENCE_PULSE_DATA.day1).map(item => {
-    if (pulseBoostActive) {
-      return {
-        ...item,
-        activeUsers: Math.min(85, Math.round(item.activeUsers * 1.25)),
-        interactions: Math.round(item.interactions * 1.3),
-      };
-    }
-    return item;
-  });
-
-  const peakAttendance = Math.max(...currentPulseData.map(d => d.activeUsers));
-  const peakInteractions = Math.max(...currentPulseData.map(d => d.interactions));
-  const avgAttendance = Math.round(currentPulseData.reduce((acc, d) => acc + d.activeUsers, 0) / currentPulseData.length);
-  const totalInteractions = currentPulseData.reduce((acc, d) => acc + d.interactions, 0);
 
   // Servant Add Schedule state
   const [newSchedTime, setNewSchedTime] = useState('');
@@ -729,20 +703,24 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
   };
 
   // --- 6. LIVE MODE STATE ---
+  // Was a hardcoded lecture given by a named priest to 150 viewers, live in
+  // every conference that had ever been opened. The column exists (122) and the
+  // servant fills it; until they do, this is off, because a hub that announces
+  // a session nobody is holding sends people to an empty hall.
   const [liveMode, setLiveMode] = useState({
-    eventName: 'المحاضرة الأولى: «الحياة والنمو الروحي مع المسيح»',
-    speaker: 'القمص يوحنا نصيف',
-    location: 'القاعة الكبرى للمحاضرات',
-    minutesLeft: 45,
-    viewersCount: 150,
-    isLive: true
+    eventName: conference.liveMode?.eventName ?? '',
+    speaker: conference.liveMode?.speaker ?? '',
+    location: conference.liveMode?.location ?? '',
+    minutesLeft: conference.liveMode?.minutesLeft ?? 0,
+    viewersCount: conference.liveMode?.viewersCount ?? 0,
+    isLive: conference.liveMode?.isLive ?? false,
   });
 
-  const [liveChatMessages, setLiveChatMessages] = useState([
-    { id: 'chat1', author: 'أبونا يوحنا', text: 'أهلاً بكم يا شباب، استعدوا لبدء المحاضرة بعد قليل' },
-    { id: 'chat2', author: 'مينا كمال', text: 'المكان ممتاز والصوت واضح جداً يا آباء!' },
-    { id: 'chat3', author: 'مريم عادل', text: 'ربنا يتمم المؤتمر ببركة عظيمة.' }
-  ]);
+  // These three were seeded with invented messages signed «أبونا يوحنا»,
+  // «مينا كمال» and «مريم عادل» — words put in a named priest's mouth, shown
+  // to everyone who opened the chat. There is no chat backend yet, so this
+  // stays local to the session and starts empty rather than starting a lie.
+  const [liveChatMessages, setLiveChatMessages] = useState<{ id: string; author: string; text: string }[]>([]);
   const [newChatMessage, setNewChatMessage] = useState('');
 
   const handleSendLiveChatMessage = (e: React.FormEvent) => {
@@ -756,12 +734,14 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
     setNewChatMessage('');
   };
 
-  // --- PUSH NOTIFICATION SIMULATOR & LOG ---
-  const [notificationsLog, setNotificationsLog] = useState([
-    { id: 'n1', title: 'باقي أسبوع على المؤتمر! 🎉', body: 'تأكد من تأكيد كود الحجز الرقمي وسداد المتبقي مع خدام الخدمة لتثبيت غرفتك المخصصة.', time: 'قبل المؤتمر بـ 7 أيام' },
-    { id: 'n2', title: 'لا تنس تجهيز أغراضك الشخصية! 🧳', body: 'راجع كشف قائمة التجهيزات داخل التطبيق حتى لا تنسى الإنجيل والملابس المناسبة ومثبت الأدوية.', time: 'قبل المؤتمر بـ 24 ساعة' },
-    { id: 'n3', title: 'تنبيه موعد التجمع والتحرك 🚌', body: 'موعد تجمع الحافلات في السادسة مساءً تماماً أمام مبنى الخدمات الرئيسي، يرجى التواجد المبكر.', time: 'قبل التحرك بساعتين' },
-  ]);
+  // --- ANNOUNCEMENTS LOG ---
+  // Migration 122 added conferences.notifications_log and this read the three
+  // literals below instead — so every conference showed the same three
+  // announcements, including a bus gathering «في السادسة مساءً» that nobody
+  // had arranged, and anything the servant actually sent vanished on reload.
+  const notificationsLog = conference.notificationsLog ?? [];
+  const setNotificationsLog = (next: ConferenceRoom['notificationsLog']) =>
+    onUpdateConference({ ...conference, notificationsLog: next });
 
   const [notificationInputTitle, setNotificationInputTitle] = useState('');
   const [notificationInputBody, setNotificationInputBody] = useState('');
@@ -773,10 +753,12 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
       id: Date.now().toString(),
       title: notificationInputTitle,
       body: notificationInputBody,
-      time: 'مباشر الآن 🔔'
+      // Stored as an instant, not as the words «مباشر الآن» — which is what it
+      // used to save, so a week-old announcement still claimed to be live.
+      time: new Date().toISOString(),
     };
     setNotificationsLog([newNotif, ...notificationsLog]);
-    showToast(`تم إرسال إشعار فوري: ${notificationInputTitle} 🔔`);
+    showToast(`اتبعت لكل المشتركين: ${notificationInputTitle} 🔔`);
     setNotificationInputTitle('');
     setNotificationInputBody('');
   };
@@ -981,6 +963,10 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
       </div>
       
 {/* --- CROWN SERVANT ACCESS BUTTON --- */}
+      {/* Host-only, and hidden rather than disabled: showing a participant a
+          crown they can never press reads as a locked feature, when really it
+          is simply somebody else's job. */}
+      {isHost && (
       <div className="flex justify-between items-center gap-4 bg-purple-950/40 p-4 rounded-3xl border border-purple-500/20 shadow-md">
         <div className="flex items-center gap-2">
           <Crown className={`w-5 h-5 ${isServantMode ? 'text-amber-400 animate-pulse' : 'text-slate-400'}`} />
@@ -989,6 +975,14 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
         <button
           onClick={() => {
             playSound('click');
+            // The toggle used to flip unconditionally, so anyone who opened a
+            // conference could grant themselves the supervision panel by
+            // pressing a button. Only the host may turn it on; for them it
+            // stays a way to look at their own room as a participant sees it.
+            if (!isHost) {
+              showToast('لوحة الإشراف لمسؤول المؤتمر بس.');
+              return;
+            }
             setIsServantMode(!isServantMode);
             showToast(isServantMode ? 'تم تسجيل الخروج من وضع الخادم والعودة لوضع المشترك.' : 'مرحبًا بك يا خادم المسيح! تم تفعيل لوحة الإشراف وإرسال الإشعارات. 👑');
           }}
@@ -1001,8 +995,9 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
           {isServantMode ? 'خروج من وضع المشرف' : 'تفعيل لوحة المنظم / الخادم'}
         </button>
       </div>
+      )}
 
-      
+
       {isServantMode && (
         <div className="bg-gradient-to-br from-[var(--ds-brand)] to-[#0D315C] rounded-[36px] p-6 sm:p-8 shadow-xl border border-blue-900/50 mb-6 relative overflow-hidden text-right">
           <div className="absolute -top-16 -right-16 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl"></div>
@@ -1192,12 +1187,20 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
             
             <div className="bg-purple-900/40 hover:bg-purple-900/60 border border-purple-500/20 px-4 py-3 rounded-2xl min-w-[90px] sm:min-w-[110px]">
               <span className="text-[9px] text-purple-300 block font-bold mb-1">المدة 📅</span>
-              <span className="text-lg sm:text-xl font-black text-amber-300 font-mono">٣ أيام كاملة</span>
+              <span className="text-lg sm:text-xl font-black text-amber-300 font-mono">
+                {nights ? arabicDays(nights) : '—'}
+              </span>
             </div>
 
             <div className="bg-purple-900/40 hover:bg-purple-900/60 border border-purple-500/20 px-4 py-3 rounded-2xl min-w-[90px] sm:min-w-[110px]">
               <span className="text-[9px] text-purple-300 block font-bold mb-1">الوضع الجاري 📍</span>
-              <span className="text-[11px] font-black text-rose-400 block mt-1 animate-pulse">مباشر الآن 🟢</span>
+              {phase === 'during' ? (
+                <span className="text-[11px] font-black text-rose-400 block mt-1 animate-pulse">مباشر الآن 🟢</span>
+              ) : phase === 'before' ? (
+                <span className="text-[11px] font-black text-amber-300 block mt-1">لسه ما بدأش ⏳</span>
+              ) : (
+                <span className="text-[11px] font-black text-slate-400 block mt-1">انتهى ✅</span>
+              )}
             </div>
           </div>
         </div>
@@ -1373,16 +1376,19 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
               </div>
             </div>
 
-            {/* Simulated Live Viewers & Chat Feed */}
+            {/* Live chat feed. The «المشاهدين الحاليين» counter that sat here
+                read a stored number, not a count — nothing in Pima tracks who
+                is watching, so it was a figure the servant typed and everyone
+                else read as measured. Removed rather than zeroed. */}
             <div className="bg-black/40 border border-purple-500/20 p-3 rounded-2xl w-full md:w-80 text-right space-y-2">
-              <div className="flex justify-between items-center text-[10px] text-purple-200 border-b border-purple-500/20 pb-1.5">
-                <span className="flex items-center gap-1 font-bold">
-                  <Users className="w-3 h-3 text-red-400" />
-                  <span>المشاهدين الحاليين</span>
-                </span>
-                <span className="font-mono font-black text-red-400">{liveMode.viewersCount} مشاهد 👥</span>
+              <div className="flex items-center gap-1 text-[10px] text-purple-200 border-b border-purple-500/20 pb-1.5 font-bold">
+                <Users className="w-3 h-3 text-red-400" />
+                <span>الشات المباشر</span>
               </div>
-              
+              {liveChatMessages.length === 0 && (
+                <p className="text-[10px] text-purple-300/60 py-2">لسه مفيش رسايل — ابدأ انت.</p>
+              )}
+
               <div className="h-20 overflow-y-auto space-y-1.5 scrollbar-thin text-[10px] pr-1">
                 {liveChatMessages.map(msg => (
                   <div key={msg.id} className="leading-tight">
@@ -2380,7 +2386,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
             <MapPin className="w-4 h-4 text-[var(--ds-accent)]" />
             <span>تفاصيل بيت الخلوة ومقر المؤتمر 📍</span>
           </h4>
-          <p className="text-[9.5px] text-slate-500 mt-0.5">معلومات موقع السكن، أرقام الطوارئ، ومسار تحرك الحافلات المباركة</p>
+          <p className="text-[9.5px] text-slate-500 mt-0.5">عنوان البيت، ورقم مسؤول المؤتمر، وموعد الوصول</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
@@ -2388,10 +2394,17 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
           <div className="md:col-span-7 space-y-3">
             <div className="p-4 bg-white rounded-2xl border border-slate-150 text-right space-y-2">
               <span className="text-[10px] text-slate-400 font-bold block">موقع بيت الخلوة السكني</span>
-              <h5 className="text-sm font-black text-purple-950">🏡 بيت المؤتمرات القبطي الأرثوذكسي – وادي النطرون</h5>
-              <p className="text-[10.5px] text-slate-500 leading-relaxed">
-                يقع على طريق مصر الإسكندرية الصحراوي، ويحتوي على قاعات مكيفة مخصصة للأنشطة والترانيم والمحاضرات، بالإضافة إلى ملاعب كرة قدم مجهزة وحمام سباحة مأمن.
-              </p>
+              <h5 className="text-sm font-black text-purple-950">🏡 {conference.houseName || 'بيت المؤتمر'}</h5>
+              {/* Was a paragraph about air-conditioned halls, football pitches and
+                  a secured pool at a house in وادي النطرون — printed over every
+                  conference in the country. The address is the one thing here
+                  that is actually true of this booking, so it is the only thing
+                  shown, and nothing takes its place when it is missing. */}
+              {(conference.houseAddress || conference.houseGovernorate) && (
+                <p className="text-[10.5px] text-slate-500 leading-relaxed">
+                  {[conference.houseAddress, conference.houseGovernorate].filter(Boolean).join('، ')}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2400,8 +2413,12 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   <Phone className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-[8px] text-slate-400 block font-bold">رقم طوارئ المؤتمر</span>
-                  <span className="text-xs font-black text-slate-800 font-mono">0123456789</span>
+                  <span className="text-[8px] text-slate-400 block font-bold">رقم مسؤول المؤتمر</span>
+                  {/* Was 0123456789 — a number that rings nobody, offered to
+                      every group as their emergency contact. */}
+                  <span className="text-xs font-black text-slate-800 font-mono" dir="ltr">
+                    {conference.hostPhone || '—'}
+                  </span>
                 </div>
               </div>
 
@@ -2410,33 +2427,52 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                   <Calendar className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-[8px] text-slate-400 block font-bold">موعد الانطلاق والتجمع</span>
-                  <span className="text-xs font-black text-slate-800">الجمعة 06:00 مساءً</span>
+                  <span className="text-[8px] text-slate-400 block font-bold">موعد الوصول</span>
+                  {/* Was «الجمعة 06:00 مساءً» on every conference. The booking
+                      knows the day; it does not know an hour, so none is
+                      invented — a wrong gathering time strands a bus. */}
+                  <span className="text-xs font-black text-slate-800">
+                    {conference.startsAt
+                      ? new Date(`${conference.startsAt}T00:00:00`).toLocaleDateString('ar-EG', {
+                          weekday: 'long', day: 'numeric', month: 'long',
+                        })
+                      : '—'}
+                  </span>
                 </div>
               </div>
             </div>
 
             <div className="flex gap-2">
-              <button 
-                onClick={() => {
-                  window.open('https://maps.google.com', '_blank');
-                  showToast('جاري فتح خرائط جوجل لموقع وادي النطرون... 🗺️');
-                }}
-                className="bg-[var(--ds-brand)] hover:bg-[#0D315C] text-white px-5 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 flex-1 cursor-pointer"
-              >
-                <Map className="w-4 h-4 text-amber-300" />
-                <span>فتح الخريطة على الجوال 🗺️</span>
-              </button>
-              
-              <button 
-                onClick={() => {
-                  showToast('رقم الطوارئ الموحد للمؤتمر: 0123456789. يرجى الاتصال عند الضرورة القصوى.');
-                }}
-                className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-3 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Phone className="w-4 h-4 text-rose-500" />
-                <span>اتصال بالطوارئ</span>
-              </button>
+              {/* Opened maps.google.com — the home page, centred on wherever the
+                  phone happens to be. Coordinates when the house has them,
+                  otherwise a search for its name and governorate; and if there
+                  is neither, no button, because a map button that lands nowhere
+                  is worse than none. */}
+              {(conference.houseLat != null && conference.houseLng != null) || conference.houseName ? (
+                <button
+                  onClick={() => {
+                    const q = conference.houseLat != null && conference.houseLng != null
+                      ? `${conference.houseLat},${conference.houseLng}`
+                      : [conference.houseName, conference.houseAddress, conference.houseGovernorate]
+                          .filter(Boolean).join(' ');
+                    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank');
+                  }}
+                  className="bg-[var(--ds-brand)] hover:bg-[#0D315C] text-white px-5 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 flex-1 cursor-pointer"
+                >
+                  <Map className="w-4 h-4 text-amber-300" />
+                  <span>فتح الخريطة على الجوال 🗺️</span>
+                </button>
+              ) : null}
+
+              {conference.hostPhone && (
+                <a
+                  href={`tel:${conference.hostPhone}`}
+                  className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-3 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Phone className="w-4 h-4 text-rose-500" />
+                  <span>اتصال بالمسؤول</span>
+                </a>
+              )}
             </div>
           </div>
 
@@ -2451,12 +2487,20 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
               <div className="w-3 h-3 rounded-full bg-amber-500 relative z-10" />
             </div>
 
+            {/* Said «الكيلو 102 – وادي النطرون» under a decorative pin, plus a
+                promise of air-conditioned coaches with guides that Pima does not
+                arrange and cannot keep. The governorate and address are what we
+                actually know. */}
             <div className="space-y-1 relative z-10">
-              <span className="text-[9px] text-amber-300 font-extrabold uppercase tracking-widest block">طريق الإسكندرية الصحراوي</span>
-              <h5 className="text-[12px] font-black text-white">الكيلو 102 – وادي النطرون</h5>
-              <p className="text-[9px] text-purple-200/70 max-w-[180px] mx-auto mt-1 leading-relaxed">
-                حافلات النقل مجهزة ومكيفة بالكامل ومصحوبة بمرشدين ميسرين للرحلة.
-              </p>
+              <span className="text-[9px] text-amber-300 font-extrabold uppercase tracking-widest block">
+                {conference.houseGovernorate || 'الموقع'}
+              </span>
+              <h5 className="text-[12px] font-black text-white">{conference.houseName || '—'}</h5>
+              {conference.houseAddress && (
+                <p className="text-[9px] text-purple-200/70 max-w-[180px] mx-auto mt-1 leading-relaxed">
+                  {conference.houseAddress}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -2470,20 +2514,34 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
               <Bell className="w-4 h-4 text-purple-600" />
               <span>أرشيف وسجل التنبيهات الذكية والمستجدات 📳</span>
             </h4>
-            <p className="text-[9.5px] text-slate-500 mt-0.5">التنبيهات التاريخية المرسلة تلقائيًا من خلال خوادم السحابة والتذكيرات الذكية</p>
+            <p className="text-[9.5px] text-slate-500 mt-0.5">كل الإشعارات اللي مسؤول المؤتمر بعتها للمشتركين</p>
           </div>
           {isServantMode && (
-            <span className="text-[9px] bg-red-100 text-red-800 px-2.5 py-1 rounded-xl font-extrabold">منصة البث المباشر</span>
+            <span className="text-[9px] bg-slate-100 text-slate-700 px-2.5 py-1 rounded-xl font-extrabold">{notificationsLog.length} إشعار</span>
           )}
         </div>
 
         {/* List of past notifications */}
+        {notificationsLog.length === 0 && (
+          <p className="text-[10.5px] text-slate-400 text-center py-6">
+            لسه مفيش إشعارات اتبعتت في المؤتمر ده.
+          </p>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {notificationsLog.map(notif => (
             <div key={notif.id} className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-right space-y-1 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-24 h-24 bg-purple-500/5 rounded-full blur-xl pointer-events-none" />
               <div className="flex justify-between items-center">
-                <span className="text-[8.5px] text-slate-400 font-bold font-mono">{notif.time}</span>
+                {/* Rows written before the timestamp fix hold a phrase, not a
+                    date. Those are shown as they were saved rather than turned
+                    into «Invalid Date». */}
+                <span className="text-[8.5px] text-slate-400 font-bold font-mono">
+                  {Number.isNaN(new Date(notif.time).getTime())
+                    ? notif.time
+                    : new Date(notif.time).toLocaleString('ar-EG', {
+                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                      })}
+                </span>
                 <span className="text-xs">🔔</span>
               </div>
               <h5 className="text-[11.5px] font-black text-purple-950 mt-1">{notif.title}</h5>
@@ -2497,8 +2555,11 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
         {/* Servant post simulated notification */}
         {isServantMode && (
           <form onSubmit={handleSendSimulatedNotification} className="bg-purple-950/40 border border-amber-500/30 p-4 rounded-2xl space-y-3 mt-2">
+            {/* Said «Push Notification لجميع الهواتف». Pima sends no phone
+                pushes — this writes an announcement participants see when they
+                open the hub, which is a useful thing and a different thing. */}
             <h5 className="text-[11px] font-black text-amber-200 flex items-center gap-1">
-              <span>🔔 بث إشعار فوري (Push Notification) لجميع الهواتف</span>
+              <span>🔔 إشعار لكل المشتركين داخل التطبيق</span>
             </h5>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input aria-label="عنوان الإشعار الفوري (مثال: باقي ساعة على التجمع!)"
@@ -2523,7 +2584,7 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
               className="w-full bg-amber-500 text-purple-950 py-2.5 rounded-xl text-xs font-black hover:bg-amber-600 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <Bell className="w-4 h-4 text-purple-950" />
-              <span>بث الإشعار الفوري والـ Push Notification الآن 🚀</span>
+              <span>إرسال الإشعار 🚀</span>
             </button>
           </form>
         )}
@@ -2683,10 +2744,16 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
                       </p>
                     </div>
 
-                    <div className="text-[11px] text-slate-400 mt-6 border-t border-white/5 pt-4 flex justify-between items-center">
-                      <span>👤 المحاضر: <strong>{liveMode.speaker || 'الخادم المتحدث'}</strong></span>
-                      <span>📍 الموقع: {liveMode.location || 'قاعة الاجتماعات الكبرى'}</span>
-                    </div>
+                    {/* Fell back to «الخادم المتحدث» in «قاعة الاجتماعات الكبرى»
+                        — a speaker and a hall invented for a slide projected in
+                        front of a room. Blank is honest; an empty row is not
+                        drawn at all. */}
+                    {(liveMode.speaker || liveMode.location) && (
+                      <div className="text-[11px] text-slate-400 mt-6 border-t border-white/5 pt-4 flex justify-between items-center">
+                        {liveMode.speaker ? <span>👤 المحاضر: <strong>{liveMode.speaker}</strong></span> : <span />}
+                        {liveMode.location && <span>📍 الموقع: {liveMode.location}</span>}
+                      </div>
+                    )}
                   </div>
 
                 </div>

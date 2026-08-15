@@ -695,6 +695,16 @@ export interface ConferenceRoom {
   endsAt?: string;
   /** Seats booked. What the hub's «عدد المشاركين» should have been reading. */
   guestsCount?: number;
+  /** The venue, copied from the house at creation (migration 127). The hub's
+   *  «تفاصيل بيت الخلوة» card used to name a house in وادي النطرون and give an
+   *  emergency number of 0123456789 to every conference in the country. */
+  houseGovernorate?: string;
+  houseAddress?: string;
+  houseLat?: number;
+  houseLng?: number;
+  /** The servant who booked. A group with a problem at 2am needs the person
+   *  who brought them, not the house switchboard. */
+  hostPhone?: string;
   conferenceCode: string; // e.g. YTH2026, MARG4587, RET-9031
   qrCodeUrl: string; // Generated SVG/visual path/base64 representation
   joiningRequirements: 'open' | 'approval_needed';
@@ -720,6 +730,9 @@ export interface ConferenceRoom {
     id: string;
     title: string;
     body: string;
+    /** ISO timestamp of when it was sent. Used to be a frozen phrase — a
+     *  notification sent last week still read «مباشر الآن 🔔» forever. Old rows
+     *  hold those phrases, so the hub renders this defensively. */
     time: string;
   }[];
 

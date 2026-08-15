@@ -32,6 +32,11 @@ type Row = {
   starts_at: string | null;
   ends_at: string | null;
   guests_count: number | null;
+  house_governorate: string | null;
+  house_address: string | null;
+  house_lat: number | null;
+  house_lng: number | null;
+  host_phone: string | null;
   live_mode: unknown;
   joined_user_ids: unknown;
   notifications_log: unknown;
@@ -47,6 +52,14 @@ const toRoom = (r: Row): ConferenceRoom => ({
   startsAt: r.starts_at ?? undefined,
   endsAt: r.ends_at ?? undefined,
   guestsCount: r.guests_count ?? undefined,
+  // Stamped server-side by create_conference_for_booking. Deliberately absent
+  // from toRow below: the client saves the conference on every edit, and the
+  // venue is not the client's to rewrite.
+  houseGovernorate: r.house_governorate ?? undefined,
+  houseAddress: r.house_address ?? undefined,
+  houseLat: r.house_lat ?? undefined,
+  houseLng: r.house_lng ?? undefined,
+  hostPhone: r.host_phone ?? undefined,
   conferenceCode: r.conference_code,
   qrCodeUrl: r.qr_code_url ?? '',
   joiningRequirements: r.joining_requirements,
