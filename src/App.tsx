@@ -33,7 +33,8 @@ import {
 import { autoAllocate } from './lib/roomAllocation';
 import { resolvePaymentVerdict } from './lib/paymentLedger';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout, ConferenceRoom, PromoBanner } from './types';
-import { createEmptyConference } from './entertainment/data/newConference';
+import ConferenceGate from './entertainment/ConferenceGate';
+import { loadMyConferences, saveConference } from './lib/conferences';
 
 // Component Imports
 // Route-level code splitting: heavy, role- or navigation-gated screens load on
@@ -2373,7 +2374,19 @@ export default function App() {
               onOpenLeaderboard={() => setActiveScreen('leaderboard')}
               onOpenRooms={() => setActiveScreen('interactive_room')}
               onOpenConference={() => {
-                if (!conference) setConference(createEmptyConference(currentUser));
+                // Always the gate first, never a room.
+                //
+                // This used to fall back to createEmptyConference, so the hub
+                // appeared to open itself with a join code nobody could spend.
+                // Removing that left «open the only one automatically», which
+                // is still a room the servant did not choose — and worse, it
+                // made the gate unreachable to anyone who had one: no way to
+                // see their other rooms, and no way to type a code they had
+                // been sent, because that field only lives on the gate.
+                //
+                // So the centre stays the centre. A room is one tap from it,
+                // and the tap is theirs.
+                setConference(null);
                 setActiveScreen('conference_hub');
               }}
               onOpenRandomMatch={() => setActiveScreen('random_match')}
@@ -2452,6 +2465,25 @@ export default function App() {
             />
           )}
 
+          {activeScreen === 'conference_hub' && !conference && (
+            <div className="-mx-4 -my-6 sm:mx-0 sm:my-0">
+              <ConferenceGate
+                currentUserId={currentUser.id}
+                onBack={() => goBack('entertainment')}
+                onOpened={async (conferenceId?: string) => {
+                  // The gate says which room it just opened or joined, so the
+                  // servant lands in that one rather than in whichever happens
+                  // to sort first.
+                  const mine = await loadMyConferences(currentUser.id);
+                  setConference(
+                    (conferenceId ? mine.find((c) => c.id === conferenceId) : null) ??
+                    (mine.length === 1 ? mine[0] : null)
+                  );
+                }}
+              />
+            </div>
+          )}
+
           {activeScreen === 'conference_hub' && conference && (
             <div className="-mx-4 -my-6 sm:mx-0 sm:my-0">
               <ConferenceHub
@@ -2462,8 +2494,24 @@ export default function App() {
                   organizationName: currentUser.organizationName,
                 }}
                 conference={conference}
-                onUpdateConference={(updated) => setConference(updated)}
-                onBack={() => goBack('entertainment')}
+                onUpdateConference={(updated) => {
+                  setConference(updated);
+                  // Optimistic on screen, persisted behind it. Without this the
+                  // hub was write-only: a servant could add a schedule item,
+                  // close the tab and find it gone — which reads worse than a
+                  // feature that was never there, because it looked like it
+                  // worked. Only a conference tied to a booking has somewhere
+                  // to be saved; the fallback empty one does not.
+                  if (updated.bookingId) {
+                    void saveConference(updated).then((r) => {
+                      if (!r.ok) console.error('saveConference:', r.error);
+                    });
+                  }
+                }}
+                // Leaving a room lands on the centre, not outside the feature:
+                // from there they can open another, or type a code they were
+                // sent — that field only exists on the gate.
+                onBack={() => setConference(null)}
                 onUpdateUser={(u: { xp?: number; points?: number }) =>
                   setCurrentUser((prev) =>
                     prev ? { ...prev, xp: u.xp ?? prev.xp, points: u.points ?? prev.points } : prev

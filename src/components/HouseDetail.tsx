@@ -5,6 +5,7 @@ import HouseHero from './house/HouseHero';
 import HouseLocationTrust from './house/HouseLocationTrust';
 import HouseReviews from './house/HouseReviews';
 import PimaSheet from './PimaSheet';
+import Disclosure from './ui/Disclosure';
 import { ExploreSection, ExploreCard } from './house/HouseExplore';
 import BookingFlow, { ApplicantDetails } from './house/BookingFlow';
 import { tapFeedback } from '../lib/haptics';
@@ -1344,8 +1345,25 @@ export default function HouseDetail({
                 )}
 
                 {/* Cancellation terms, stated before anything is committed —
-                    THIS house's, which may not be the platform's. */}
-                <PropertyBookingPolicy policy={effectivePolicy} />
+                    THIS house's, which may not be the platform's — and now
+                    folded, because three lines of tiers were pushing the
+                    button off the first screen. The closed row still carries
+                    the one a guest actually decides on: how long they have to
+                    change their mind and get everything back. Hiding that
+                    would be hiding the terms, which is not what «shorter»
+                    is supposed to mean.
+
+                    Both sides of this merge improved the same card: one made
+                    it per-property, the other made it fold. The hint reads
+                    from the resolved policy rather than platform settings, so
+                    the closed row and the opened body cannot disagree. */}
+                <Disclosure
+                  title="سياسة الإلغاء والاسترداد"
+                  hint={`إلغاء مجاني قبل ${arabicNumber(effectivePolicy.freeCancelDays)} أيام`}
+                  icon={<ShieldCheck className="w-4 h-4 text-[var(--ds-accent)]" />}
+                >
+                  <PropertyBookingPolicy policy={effectivePolicy} variant="plain" />
+                </Disclosure>
               </>
             }
           />
