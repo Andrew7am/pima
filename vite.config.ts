@@ -155,6 +155,10 @@ function seoPagesPlugin(supabaseUrl: string, anonKey: string): Plugin {
         { loc: `${SITE_URL}/dalil/best-areas-egypt.html`, lastmod: today, priority: '0.6' },
         { loc: `${SITE_URL}/dalil/budget-service-trip.html`, lastmod: today, priority: '0.6' },
         { loc: `${SITE_URL}/dalil/faq.html`, lastmod: today, priority: '0.6' },
+        // Legal. Google Play requires a publicly reachable privacy policy URL,
+        // and in-app screens are not reachable — routing is state-based, so
+        // /house/:id is the only real path. This is that URL.
+        { loc: `${SITE_URL}/privacy.html`, lastmod: today, priority: '0.3' },
       ];
       let template = '';
       try {
