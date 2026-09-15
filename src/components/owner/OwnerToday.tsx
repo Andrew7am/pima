@@ -5,6 +5,10 @@ import { motion } from 'motion/react';
 import { RetreatHouse, Booking, Room } from '../../types';
 import { Sun, LogIn, LogOut, Sparkles, Banknote, Users, TrendingUp, TrendingDown, CheckCircle2, Wrench, ScanLine } from 'lucide-react';
 import OwnerScanner from './OwnerScanner';
+import StayChecklist from './StayChecklist';
+import OwnerDisclosure from './OwnerDisclosure';
+import { CHECKIN_ITEMS, CHECKOUT_ITEMS, tickedCount } from '../../lib/stayChecklist';
+import type { ChecklistTick } from '../../lib/stayChecklist';
 import { cashDueAtArrival } from '../../lib/paymentLedger';
 
 interface OwnerTodayProps {
@@ -14,6 +18,11 @@ interface OwnerTodayProps {
   todayStr: string;
   onCheckInBooking?: (bookingId: string) => void;
   onCheckOutBooking?: (bookingId: string) => void;
+  /** Persists a ticked box. Absent means the lists render read-only rather
+   *  than pretending to save. */
+  onUpdateChecklist?: (bookingId: string, kind: 'checkin' | 'checkout', ticks: ChecklistTick[]) => void;
+  /** Stamped onto each tick — a house may have staff on the gate. */
+  staffName?: string;
   onUpdateRoom?: (room: Room) => void;
   onViewBooking?: (bookingId: string) => void;
 }
@@ -35,7 +44,7 @@ function Section({ title, icon: Icon, count, children }: { title: string; icon: 
   );
 }
 
-export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckInBooking, onCheckOutBooking, onUpdateRoom, onViewBooking }: OwnerTodayProps) {
+export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckInBooking, onCheckOutBooking, onUpdateRoom, onViewBooking, onUpdateChecklist, staffName }: OwnerTodayProps) {
   const [scannerOpen, setScannerOpen] = useState(false);
   const confirmed = useMemo(() => bookings.filter((b) => b.status === 'approved' || b.status === 'completed'), [bookings]);
   const arrivals = confirmed.filter((b) => b.checkIn === todayStr);
@@ -124,7 +133,8 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
           <p className="text-[11px] text-[var(--color-owner-secondary)] font-bold text-center py-2">لا يوجد وصول اليوم.</p>
         ) : arrivals.map((b) => (
           <motion.div key={b.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] rounded-2xl p-2.5">
+            className="bg-[var(--color-owner-bg)] rounded-2xl p-2.5 space-y-2">
+            <div className="flex items-center justify-between gap-2">
             <button type="button" onClick={() => onViewBooking?.(b.id)} className="min-w-0 text-right">
               <div className="text-[12px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
               <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(b.guestsCount, GUEST_FORMS)} · متبقٍ {arabicNumber(cashDueAtArrival(b))} ج.م</div>
@@ -137,6 +147,20 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
                 <LogIn className="w-3.5 h-3.5" /> تسجيل وصول
               </button>
             )}
+            </div>
+            {onUpdateChecklist && (
+              <OwnerDisclosure
+                title="قائمة الاستلام"
+                hint={`${tickedCount(b.checkinChecklist, CHECKIN_ITEMS)}/${CHECKIN_ITEMS.length}`}
+              >
+                <StayChecklist
+                  kind="checkin"
+                  ticks={b.checkinChecklist}
+                  by={staffName}
+                  onChange={(next) => onUpdateChecklist(b.id, 'checkin', next)}
+                />
+              </OwnerDisclosure>
+            )}
           </motion.div>
         ))}
       </Section>
@@ -146,7 +170,8 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
         {departures.length === 0 ? (
           <p className="text-[11px] text-[var(--color-owner-secondary)] font-bold text-center py-2">لا يوجد مغادرة اليوم.</p>
         ) : departures.map((b) => (
-          <div key={b.id} className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] rounded-2xl p-2.5">
+          <div key={b.id} className="bg-[var(--color-owner-bg)] rounded-2xl p-2.5 space-y-2">
+            <div className="flex items-center justify-between gap-2">
             <button type="button" onClick={() => onViewBooking?.(b.id)} className="min-w-0 text-right">
               <div className="text-[12px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
               <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(b.guestsCount, GUEST_FORMS)}</div>
@@ -158,6 +183,20 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
                 className="flex items-center gap-1 bg-slate-600 text-white text-[11px] font-black px-3 min-h-11.5 rounded-xl shrink-0 active:scale-95 transition-transform">
                 <LogOut className="w-3.5 h-3.5" /> تسجيل خروج
               </button>
+            )}
+            </div>
+            {onUpdateChecklist && (
+              <OwnerDisclosure
+                title="قائمة التسليم"
+                hint={`${tickedCount(b.checkoutChecklist, CHECKOUT_ITEMS)}/${CHECKOUT_ITEMS.length}`}
+              >
+                <StayChecklist
+                  kind="checkout"
+                  ticks={b.checkoutChecklist}
+                  by={staffName}
+                  onChange={(next) => onUpdateChecklist(b.id, 'checkout', next)}
+                />
+              </OwnerDisclosure>
             )}
           </div>
         ))}

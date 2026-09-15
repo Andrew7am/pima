@@ -34,6 +34,7 @@ import { autoAllocate } from './lib/roomAllocation';
 import { resolvePaymentVerdict } from './lib/paymentLedger';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout, ConferenceRoom, PromoBanner } from './types';
 import ConferenceGate from './entertainment/ConferenceGate';
+import type { ChecklistTick } from './lib/stayChecklist';
 import { loadMyConferences, saveConference } from './lib/conferences';
 
 // Component Imports
@@ -1364,6 +1365,19 @@ export default function App() {
       .then(() => { if (target && currentUser?.id === target.userId) refreshCurrentUserPoints(target.userId); });
   };
 
+  // One ticked box on the arrival or departure list. Optimistic on screen and
+  // persisted behind it, like every other owner action — a box that un-ticks
+  // itself when the screen redraws is worse than one that never saved.
+  const handleUpdateChecklist = (
+    bookingId: string,
+    kind: 'checkin' | 'checkout',
+    ticks: ChecklistTick[],
+  ) => {
+    const field = kind === 'checkin' ? 'checkinChecklist' : 'checkoutChecklist';
+    setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, [field]: ticks } : b)));
+    trackWrite(updateBookingFields(bookingId, { [field]: ticks }), 'حفظ قائمة التشييك');
+  };
+
   // Owner marks guest as checked in (arrived on-site). Notification fires
   // server-side (migration 047).
   const handleCheckInBooking = (bookingId: string) => {
@@ -2242,6 +2256,8 @@ export default function App() {
               onConfirmDeposit={handleConfirmDepositReceived}
               onCheckInBooking={handleCheckInBooking}
               onCheckOutBooking={handleCheckOutBooking}
+              onUpdateChecklist={handleUpdateChecklist}
+              staffName={currentUser?.name}
               attendees={attendees}
               allocations={allocations}
               onUpdateAttendees={handleUpdateAttendees}

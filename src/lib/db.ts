@@ -136,6 +136,10 @@ export function mapBooking(r: Record<string, unknown>): Booking {
     conferenceDetails: r.conference_details as Booking['conferenceDetails'] ?? undefined,
     checkedInAt: r.checked_in_at as string ?? undefined,
     checkedOutAt: r.checked_out_at as string ?? undefined,
+    // Guarded rather than trusted: a booking written before 0153 has no column
+    // at all, and the owner's gate screen must not crash on one.
+    checkinChecklist: (r.checkin_checklist as Booking['checkinChecklist']) ?? [],
+    checkoutChecklist: (r.checkout_checklist as Booking['checkoutChecklist']) ?? [],
     ownerNotes: r.owner_notes as string ?? undefined,
     ownerSettledAt: r.owner_settled_at as string ?? undefined,
     assignedRoomIds: (r.assigned_room_ids as string[]) ?? undefined,
@@ -1260,6 +1264,8 @@ export async function updateBookingFields(id: string, fields: Partial<Booking>):
   if (fields.paymentStatus !== undefined) row.payment_status = fields.paymentStatus;
   if (fields.checkedInAt !== undefined) row.checked_in_at = fields.checkedInAt;
   if (fields.checkedOutAt !== undefined) row.checked_out_at = fields.checkedOutAt;
+  if (fields.checkinChecklist !== undefined) row.checkin_checklist = fields.checkinChecklist;
+  if (fields.checkoutChecklist !== undefined) row.checkout_checklist = fields.checkoutChecklist;
   if (fields.checkIn !== undefined) row.check_in = fields.checkIn;
   if (fields.checkOut !== undefined) row.check_out = fields.checkOut;
   if (fields.guestsCount !== undefined) row.guests_count = fields.guestsCount;

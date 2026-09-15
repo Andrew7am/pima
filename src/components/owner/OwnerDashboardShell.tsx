@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { ChecklistTick } from '../../lib/stayChecklist';
 import { arabicNumber, arabicPlural, arabicDateRange, arabicBadge, arabicPercent, arabicDecimal, GUEST_FORMS, ROOM_FORMS, BED_FORMS, DAY_FORMS, PHOTO_FORMS, REVIEW_FORMS, HOUSE_FORMS, TASK_FORMS, BOOKING_FORMS  } from '../../lib/arabic';
 import { occupancyRate, monthWindow, bedsInUseOn } from '../../lib/occupancy';
 import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, RoomType, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification, Expense, Payout } from '../../types';
@@ -66,6 +67,9 @@ interface OwnerDashboardShellProps {
   onConfirmDeposit?: (bookingId: string) => void;
   onCheckInBooking?: (bookingId: string) => void;
   onCheckOutBooking?: (bookingId: string) => void;
+  /** Passed straight through to OwnerToday — see lib/stayChecklist. */
+  onUpdateChecklist?: (bookingId: string, kind: 'checkin' | 'checkout', ticks: ChecklistTick[]) => void;
+  staffName?: string;
   attendees: Attendee[];
   allocations: RoomAllocation[];
   onUpdateAttendees: (bookingId: string, attendees: Attendee[]) => void;
@@ -118,7 +122,7 @@ const OVERFLOW_ITEMS: { key: OverflowTab; label: string; icon: React.ElementType
 
 export default function OwnerDashboardShell({
   owner, houses, bookings, settings = DEFAULT_PLATFORM_SETTINGS,
-  onAddHouse, onDeleteHouse, onApproveBooking, onRejectBooking, onDeleteBooking, onAssignRooms, onConfirmDeposit, onCheckInBooking, onCheckOutBooking,
+  onAddHouse, onDeleteHouse, onApproveBooking, onRejectBooking, onDeleteBooking, onAssignRooms, onConfirmDeposit, onCheckInBooking, onCheckOutBooking, onUpdateChecklist, staffName,
   attendees, allocations, onUpdateAttendees, onUpdateAllocations, onOpenRoomDistribution,
   onUpdateHouse, onPolicySaved, onRequestHouseEdit, reviews = [], onUpdateReview,
   rooms = [], onAddRoom, onUpdateRoom, onDeleteRoom,
@@ -2026,6 +2030,7 @@ export default function OwnerDashboardShell({
         <OwnerToday
           house={ownerHouses[0]} bookings={ownerBookings} rooms={ownerRooms} todayStr={todayStr}
           onCheckInBooking={onCheckInBooking} onCheckOutBooking={onCheckOutBooking} onUpdateRoom={onUpdateRoom}
+          onUpdateChecklist={onUpdateChecklist} staffName={staffName}
           onViewBooking={(id) => { setSelectedBookingId(id); setActiveTab('bookings'); }}
         />
       )}

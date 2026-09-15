@@ -1,3 +1,4 @@
+import type { ChecklistTick } from './lib/stayChecklist';
 export type UserRole = 'individual' | 'servant' | 'owner' | 'admin';
 
 export interface PointsTransaction {
@@ -265,6 +266,11 @@ export interface Booking {
   };
   checkedInAt?: string;
   checkedOutAt?: string;
+  /** What was verified at each end of the stay (migration 0153). Only the
+   *  ticked keys are stored; the labels live in lib/stayChecklist so they can
+   *  be reworded without a migration. Advisory — neither gates check-in. */
+  checkinChecklist?: ChecklistTick[];
+  checkoutChecklist?: ChecklistTick[];
   ownerNotes?: string;
   // Set when the admin has transferred this booking's owner share (25%) to
   // the house owner. NULL/undefined = still owed. See migration 068.
