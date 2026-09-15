@@ -22,8 +22,9 @@ import { getBookingStage } from '../lib/bookingStage';
 import { depositDue } from '../lib/paymentLedger';
 import DepositPayment from './booking/DepositPayment';
 import { downloadBookingIcs } from '../lib/ics';
-import { setAttendeeSharePaid } from '../lib/db';
+import { setAttendeeSharePaid, addAttendee } from '../lib/db';
 import ParticipantsSheet, { ParticipantsCard, tally } from './ParticipantsSheet';
+import BottomSheet from './BottomSheet';
 import { createConferenceForBooking } from '../lib/conferences';
 import { bookingTypeLabel } from '../lib/bookingGroups';
 import { Badge } from './ui';
@@ -246,6 +247,81 @@ export default function UserBookings({
       .map((a) => (a.id === attendee.id ? { ...a, sharePaid: next } : a));
     onUpdateAttendees(booking.id, list);
   };
+  // Which booking is having someone added to it. The form lives in a sheet so
+  // it does not push the roster off screen on a phone.
+  const [addingTo, setAddingTo] = useState<Booking | null>(null);
+
+  // Web Share where the phone offers it, clipboard everywhere else. There is no
+  // self-registration link in Pima yet, so this shares the roster itself rather
+  // than pretending to hand out a sign-up URL that leads nowhere.
+  const shareRoster = async (booking: Booking, list: Attendee[]) => {
+    const text = [
+      'كشف المشاركين — ' + booking.houseName,
+      list.length + ' من ' + booking.guestsCount,
+      '',
+      ...list.map((a, n) => (n + 1) + '. ' + a.name + (a.phone ? ' — ' + a.phone : '')),
+    ].join('\n');
+    try {
+      if (navigator.share) { await navigator.share({ title: booking.houseName, text }); return; }
+      await navigator.clipboard.writeText(text);
+      alert('اتنسخ كشف المشاركين. ابعته لمجموعتك.');
+    } catch {
+      /* they dismissed the share sheet — not an error worth a dialog */
+    }
+  };
+
+  // CSV, so it opens in Excel — which is what a servant actually does with a
+  // roster. The BOM is what makes Excel read the Arabic instead of mojibake.
+  const exportRoster = (booking: Booking, list: Attendee[]) => {
+    const esc = (v: string) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    const rows = [
+      ['الاسم', 'التليفون', 'الفئة', 'حالة الدفع'],
+      ...list.map((a) => [
+        a.name,
+        a.phone ?? '',
+        a.groupType,
+        a.paymentStatus ?? (a.sharePaid ? 'paid' : 'unpaid'),
+      ]),
+    ].map((r) => r.map(esc).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + rows], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'مشاركين-' + booking.houseName + '.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const [addName, setAddName] = useState('');
+  const [addPhone, setAddPhone] = useState('');
+  const [addGender, setAddGender] = useState<'male' | 'female'>('male');
+  const [addBusy, setAddBusy] = useState(false);
+  const [addError, setAddError] = useState('');
+
+  const submitNewAttendee = async () => {
+    if (!addingTo) return;
+    const name = addName.trim();
+    if (!name) { setAddError('اكتب الاسم الأول.'); return; }
+    setAddError('');
+    setAddBusy(true);
+    const row: Attendee = {
+      id: 'att_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      bookingId: addingTo.id,
+      name,
+      gender: addGender,
+      groupType: 'other',
+      phone: addPhone.trim() || undefined,
+      paymentStatus: 'unpaid',
+      registeredAt: new Date().toISOString(),
+    };
+    const r = await addAttendee(row);
+    setAddBusy(false);
+    if (!r.ok) { setAddError(r.error || 'تعذّر الحفظ. حاول تاني.'); return; }
+    onUpdateAttendees(addingTo.id, [...attendees.filter((a) => a.bookingId === addingTo.id), row]);
+    setAddName(''); setAddPhone(''); setAddGender('male');
+    setAddingTo(null);
+  };
+
   const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
   const [tab, setTab] = useState<'all' | 'action' | 'confirmed' | 'completed' | 'archived'>('all');
   const [activeAllocationBooking, setActiveAllocationBooking] = useState<Booking | null>(null);
@@ -1429,6 +1505,10 @@ export default function UserBookings({
                         onOpen={() => setParticipantsFor(booking.id)}
                       />
 
+                      {/* onAdd / onShareLink / onExport were never passed, and
+                          the sheet disables any button whose handler is missing
+                          — so «إضافة مشارك» and «رابط الدعوة» rendered greyed
+                          out, which reads as broken rather than as unbuilt. */}
                       <ParticipantsSheet
                         open={participantsFor === booking.id}
                         onClose={() => setParticipantsFor(null)}
@@ -1436,7 +1516,71 @@ export default function UserBookings({
                         attendees={roster}
                         seats={booking.guestsCount}
                         onSelect={(a) => toggleSharePaid(booking, a)}
+                        onAdd={() => { setParticipantsFor(null); setAddingTo(booking); }}
+                        onShareLink={() => void shareRoster(booking, roster)}
+                        onExport={() => exportRoster(booking, roster)}
                       />
+
+                      {/* «إضافة مشارك» had no handler at all, so the button was
+                          disabled. A servant adding a latecomer at the gate
+                          needs a name and, if they have it, a phone — nothing
+                          else is asked for, because anything else would be
+                          invented on their behalf. */}
+                      <BottomSheet
+                        open={addingTo?.id === booking.id}
+                        onClose={() => { setAddingTo(null); setAddError(''); }}
+                        title="إضافة مشارك"
+                      >
+                        <div className="space-y-3">
+                          <label className="block">
+                            <span className="block text-[11px] font-black text-[var(--ds-text-strong)] mb-1.5">الاسم</span>
+                            <input
+                              value={addName}
+                              onChange={(e) => setAddName(e.target.value)}
+                              placeholder="الاسم كامل"
+                              className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-3.5 py-3 text-[12px] font-bold focus:outline-none focus:border-[var(--ds-accent)]"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="block text-[11px] font-black text-[var(--ds-text-strong)] mb-1.5">التليفون (اختياري)</span>
+                            <input
+                              value={addPhone}
+                              onChange={(e) => setAddPhone(e.target.value)}
+                              inputMode="tel"
+                              dir="ltr"
+                              placeholder="01xxxxxxxxx"
+                              className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-3.5 py-3 text-[12px] font-bold focus:outline-none focus:border-[var(--ds-accent)]"
+                            />
+                          </label>
+                          <div className="flex gap-2">
+                            {([['male', 'ذكر'], ['female', 'أنثى']] as const).map(([v, label]) => (
+                              <button
+                                key={v}
+                                type="button"
+                                onClick={() => setAddGender(v)}
+                                className={`flex-1 py-2.5 rounded-xl text-[12px] font-black border cursor-pointer transition-colors ${
+                                  addGender === v
+                                    ? 'bg-[var(--ds-brand)] text-white border-[var(--ds-brand)]'
+                                    : 'bg-[var(--ds-surface)] text-[var(--ds-text-2)] border-[var(--ds-border)]'
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                          {addError && (
+                            <p className="text-[11px] font-bold text-[var(--ds-danger-ink)] text-center">{addError}</p>
+                          )}
+                          <button
+                            type="button"
+                            disabled={addBusy}
+                            onClick={() => void submitNewAttendee()}
+                            className="w-full bg-[var(--ds-accent-deep)] disabled:opacity-60 text-white py-3 rounded-2xl text-[12.5px] font-black cursor-pointer"
+                          >
+                            {addBusy ? 'جاري الحفظ…' : 'أضف للقائمة'}
+                          </button>
+                        </div>
+                      </BottomSheet>
                     </div>
                   );
                 })()}

@@ -1375,7 +1375,15 @@ export async function recordRefund(args: {
 // roster upsert below, so roster edits keep working (and don't clobber flags)
 // whether or not the column exists yet.
 export async function setAttendeeSharePaid(attendeeId: string, paid: boolean): Promise<boolean> {
-  const { error } = await supabase.from('attendees').update({ share_paid: paid }).eq('id', attendeeId);
+  // Both columns, deliberately. share_paid is 080ʼs flag; payment_status came
+  // with 119 and is what the roster badge actually reads — statusOf prefers it
+  // and only falls back to share_paid when it is null. Writing one while
+  // showing the other meant a servant could tap «لم يدفع» all evening and
+  // watch nothing change: it saved every time, into the column nobody shows.
+  const { error } = await supabase
+    .from('attendees')
+    .update({ share_paid: paid, payment_status: paid ? 'paid' : 'unpaid' })
+    .eq('id', attendeeId);
   if (error) { console.error('setAttendeeSharePaid:', error); return false; }
   return true;
 }
@@ -1385,6 +1393,31 @@ export async function setAttendeeSharePaid(attendeeId: string, paid: boolean): P
 // unchanged rows — an UPDATE, not a DELETE/INSERT, so it doesn't cascade-wipe
 // room_allocations tied to an untouched attendee) then deletes rows that
 // dropped out of the new list.
+/**
+ * Adds one person to a roster.
+ *
+ * Deliberately not saveAttendeesForBooking below: that one takes the whole
+ * list and deletes everything absent from it, so calling it to append a single
+ * name means reconstructing the roster correctly or silently wiping it. It
+ * also upserts only five columns, which would drop the phone this form asks
+ * for. An INSERT of one row can do neither.
+ */
+export async function addAttendee(a: Attendee): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.from('attendees').insert({
+    id: a.id,
+    booking_id: a.bookingId,
+    name: a.name,
+    gender: a.gender,
+    group_type: a.groupType,
+    phone: a.phone ?? null,
+    arrival_method: a.arrivalMethod ?? null,
+    payment_status: a.paymentStatus ?? 'unpaid',
+    registered_at: a.registeredAt ?? new Date().toISOString(),
+  });
+  if (error) { console.error('addAttendee:', error); return { ok: false, error: error.message }; }
+  return { ok: true };
+}
+
 export async function saveAttendeesForBooking(bookingId: string, attendees: Attendee[]): Promise<boolean> {
   if (attendees.length > 0) {
     const rows = attendees.map((a) => ({
