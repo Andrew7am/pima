@@ -165,7 +165,11 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
   // server has not reached.
   const serverIdx = room?.current_question ?? 0;
   const [displayIdx, setDisplayIdx] = useState(0);
-  const lastQuestionIdx = room ? Math.max(0, room.questions.length - 1) : 0;
+  // ?.length, not .length: a room that arrived without its questions array
+  // used to throw a TypeError here and take the whole match screen down —
+  // which is «an error when the game starts» from the player's side, with no
+  // clue as to what happened.
+  const lastQuestionIdx = room ? Math.max(0, (room.questions?.length ?? 0) - 1) : 0;
   const qIdx = Math.min(displayIdx, lastQuestionIdx);
   const q = room?.questions?.[qIdx];
   const myAnswer: number | undefined = myAnswers[String(qIdx)];
@@ -221,14 +225,32 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
     const result = await driver.submitAnswer(qIdx, i);
     setSubmitting(false);
     if (result.ok === false) {
+      // submit_answer raises seven distinct exceptions (0106). Four were
+      // mapped; NOT_AUTHENTICATED, INVALID_QUESTION_INDEX and
+      // QUESTION_NOT_ACTIVE reached the player as bare English identifiers,
+      // which tells them nothing and tells us nothing either — nobody reports
+      // «QUESTION_NOT_ACTIVE», they report «it says an error».
       const map: Record<string, string> = {
         ROOM_NOT_ACTIVE: 'الغرفة مش نشطة دلوقتي — جرّب تحدّث الصفحة.',
         ALREADY_ANSWERED: 'أنت جاوبت على السؤال ده بالفعل.',
         NOT_A_PARTICIPANT: 'مش عضو في الغرفة دي.',
         ROOM_NOT_FOUND: 'الغرفة مش موجودة.',
+        NOT_AUTHENTICATED: 'جلستك انتهت — سجّل دخولك تاني.',
+        QUESTION_NOT_ACTIVE: 'السؤال ده لسه ما بدأش عند الخصم — استنى لحظة.',
+        INVALID_QUESTION_INDEX: 'السؤال ده مش موجود في المباراة — حدّث الصفحة.',
       };
       const readable = Object.entries(map).find(([k]) => result.error.includes(k))?.[1];
-      setAnswerError(readable ?? `تعذر إرسال إجابتك: ${result.error}`);
+      // The unmapped branch is the one we cannot diagnose from a report, so it
+      // says so and puts the code on its own line where it can be read out or
+      // photographed. «تعذر إرسال إجابتك» on its own sent us round the houses.
+      if (readable) {
+        setAnswerError(readable);
+      } else {
+        console.error('submitAnswer unmapped error:', result.error);
+        setAnswerError(`تعذر إرسال إجابتك.
+ابعت الكود ده للدعم:
+${result.error}`);
+      }
       return;
     }
     // Record what happened, for the between-round summary. Correctness is
@@ -331,7 +353,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
   useEffect(() => {
     if (!room || displayInitRef.current) return;
     displayInitRef.current = true;
-    setDisplayIdx(Math.min(room.current_question, Math.max(0, room.questions.length - 1)));
+    setDisplayIdx(Math.min(room.current_question, Math.max(0, (room.questions?.length ?? 0) - 1)));
   }, [room]);
 
   // Hold on the answered question, then move on.
@@ -366,8 +388,8 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
     if (!displayInitRef.current || !room) return;
     if (holdingReveal) return;
     if (serverIdx <= displayIdx) return;
-    setDisplayIdx(Math.min(serverIdx, Math.max(0, room.questions.length - 1)));
-  }, [holdingReveal, serverIdx, displayIdx, room?.questions.length]);
+    setDisplayIdx(Math.min(serverIdx, Math.max(0, (room.questions?.length ?? 0) - 1)));
+  }, [holdingReveal, serverIdx, displayIdx, room?.questions?.length]);
 
   /**
    * Pull the room straight from the table, bypassing the socket.
@@ -568,7 +590,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
     // Let the last question's reveal finish before the summary replaces it.
     if (holdingReveal) return;
 
-    const total = room.questions.length;
+    const total = (room.questions?.length ?? 0);
     const bothDone =
       Object.keys(room.host_answers).length >= total &&
       Object.keys(room.guest_answers).length >= total;
@@ -1187,7 +1209,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
               </span>
             )}
             <span className="text-[11px] font-black text-slate-400 tabular-nums">
-              {qIdx + 1}<span className="text-slate-600"> / </span>{room.questions.length}
+              {qIdx + 1}<span className="text-slate-600"> / </span>{(room.questions?.length ?? 0)}
             </span>
           </div>
         </div>
@@ -1221,7 +1243,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
         <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-l from-amber-400 to-amber-600 rounded-full transition-all duration-300"
-            style={{ width: `${((qIdx) / room.questions.length) * 100}%` }}
+            style={{ width: `${((qIdx) / (room.questions?.length ?? 0)) * 100}%` }}
           />
         </div>
 
@@ -1357,7 +1379,7 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
         </AnimatePresence>
 
         {answerError && (
-          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-200 text-[11px] font-bold rounded-2xl px-3 py-2.5 text-center flex items-center justify-center gap-2">
+          <div className="bg-rose-500/10 border border-rose-500/30 text-rose-200 text-[11px] font-bold rounded-2xl px-3 py-2.5 text-center flex items-center justify-center gap-2 whitespace-pre-line break-all">
             <XIcon className="w-3.5 h-3.5" />
             {answerError}
           </div>
