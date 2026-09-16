@@ -22,7 +22,7 @@ import { getBookingStage } from '../lib/bookingStage';
 import { depositDue } from '../lib/paymentLedger';
 import DepositPayment from './booking/DepositPayment';
 import { downloadBookingIcs } from '../lib/ics';
-import { setAttendeeSharePaid, addAttendee } from '../lib/db';
+import { setAttendeePaymentStatus, addAttendee } from '../lib/db';
 import ParticipantsSheet, { ParticipantsCard, tally } from './ParticipantsSheet';
 import BottomSheet from './BottomSheet';
 import { createConferenceForBooking } from '../lib/conferences';
@@ -235,16 +235,25 @@ export default function UserBookings({
   // lists several bookings and each renders its own sheet, so a boolean would
   // open all of them at once.
   const [participantsFor, setParticipantsFor] = useState<string | null>(null);
-  const toggleSharePaid = async (booking: Booking, attendee: Attendee) => {
+  // Set outright, not toggled. This was wired to the row itself, so a servant
+  // reading down the list to see who had paid was marking them paid — and a
+  // boolean could not express «دفع أونلاين ومستني المراجعة», so anyone in that
+  // state was flattened to unpaid and chased for money already sent.
+  const setAttendeePayment = async (
+    booking: Booking,
+    attendee: Attendee,
+    status: 'unpaid' | 'pending' | 'paid',
+  ) => {
     if (togglingShareId) return;
-    const next = !attendee.sharePaid;
     setTogglingShareId(attendee.id);
-    const ok = await setAttendeeSharePaid(attendee.id, next);
+    const ok = await setAttendeePaymentStatus(attendee.id, status);
     setTogglingShareId(null);
-    if (!ok) { alert('تعذّر حفظ حالة التحصيل. تأكد من اتصالك ثم حاول مرة أخرى.'); return; }
+    if (!ok) { alert('تعذّر حفظ حالة الدفع. تأكد من اتصالك ثم حاول مرة أخرى.'); return; }
     const list = attendees
       .filter((a) => a.bookingId === booking.id)
-      .map((a) => (a.id === attendee.id ? { ...a, sharePaid: next } : a));
+      .map((a) => (a.id === attendee.id
+        ? { ...a, paymentStatus: status, sharePaid: status === 'paid' }
+        : a));
     onUpdateAttendees(booking.id, list);
   };
   // Which booking is having someone added to it. The form lives in a sheet so
@@ -1515,7 +1524,8 @@ export default function UserBookings({
                         houseName={booking.houseName}
                         attendees={roster}
                         seats={booking.guestsCount}
-                        onSelect={(a) => toggleSharePaid(booking, a)}
+                        onSetStatus={(a, status) => void setAttendeePayment(booking, a, status)}
+                        savingId={togglingShareId}
                         onAdd={() => { setParticipantsFor(null); setAddingTo(booking); }}
                         onShareLink={() => void shareRoster(booking, roster)}
                         onExport={() => exportRoster(booking, roster)}

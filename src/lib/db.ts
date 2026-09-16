@@ -1380,6 +1380,23 @@ export async function recordRefund(args: {
 // targeted UPDATE of just this column — the flag never rides in the general
 // roster upsert below, so roster edits keep working (and don't clobber flags)
 // whether or not the column exists yet.
+// The full three states. share_paid is 080's boolean and cannot say «pending»,
+// so writing through it flattened «دفع أونلاين، مستني المراجعة» into unpaid —
+// the servant chased money that had already been sent. Both columns are kept in
+// step: share_paid is true only for 'paid', which is exactly what it has always
+// meant, and payment_status carries the state the roster badge reads.
+export async function setAttendeePaymentStatus(
+  attendeeId: string,
+  status: 'unpaid' | 'pending' | 'paid',
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('attendees')
+    .update({ share_paid: status === 'paid', payment_status: status })
+    .eq('id', attendeeId);
+  if (error) { console.error('setAttendeePaymentStatus:', error); return false; }
+  return true;
+}
+
 export async function setAttendeeSharePaid(attendeeId: string, paid: boolean): Promise<boolean> {
   // Both columns, deliberately. share_paid is 080ʼs flag; payment_status came
   // with 119 and is what the roster badge actually reads — statusOf prefers it

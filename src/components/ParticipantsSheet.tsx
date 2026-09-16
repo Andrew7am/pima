@@ -123,21 +123,150 @@ export function ParticipantsCard({ t, onOpen }: { t: ParticipantTally; onOpen: (
 type StatusFilter = 'all' | 'paid' | 'pending' | 'unpaid';
 type GroupFilter = 'all' | Attendee['groupType'];
 
+const STATUS_CHOICES: { value: 'paid' | 'pending' | 'unpaid'; label: string }[] = [
+  { value: 'paid', label: 'دفع' },
+  { value: 'pending', label: 'تحت المراجعة' },
+  { value: 'unpaid', label: 'لم يدفع' },
+];
+
+const arabicDate = (iso?: string) => {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+};
+
+function Row({ label, value, dir }: { label: string; value: React.ReactNode; dir?: 'ltr' }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 py-2 border-b" style={{ borderColor: LINE }}>
+      <span className="text-[11px] font-bold shrink-0" style={{ color: MUTED }}>{label}</span>
+      <span className="text-[12.5px] font-black text-end min-w-0 break-words" style={{ color: NAVY }} dir={dir}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * One participant, in full.
+ *
+ * The row in the list carried a chevron — the universal promise that tapping
+ * opens something — and tapping it silently flipped the member's payment
+ * status instead. A servant checking who had paid marked people paid by
+ * reading the list. This is what the chevron was promising.
+ *
+ * Payment is set here, deliberately, and as three named buttons rather than a
+ * toggle: «pending» exists because someone paid online and is waiting on
+ * review, and a two-state control could only ever lie about them.
+ */
+export function ParticipantDetail({
+  a, onBack, onSetStatus, busy,
+}: {
+  a: Attendee;
+  onBack: () => void;
+  onSetStatus?: (status: 'unpaid' | 'pending' | 'paid') => void;
+  busy?: boolean;
+}) {
+  const current = statusOf(a);
+  const s = STATUS_STYLE[current];
+  return (
+    <div className="flex flex-col gap-3">
+      <button type="button" onClick={onBack}
+        className="self-start flex items-center gap-1 text-[11px] font-black cursor-pointer min-h-11"
+        style={{ color: MUTED }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M9.5 5 16 12l-6.5 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span>رجوع لقائمة المشاركين</span>
+      </button>
+
+      <div className="flex items-center gap-3">
+        <span className="shrink-0 w-14 h-14 rounded-full grid place-items-center text-[18px] font-black"
+          style={{ backgroundColor: RAISED, color: GOLD }} aria-hidden="true">
+          {a.name.trim().charAt(0) || '؟'}
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-[15px] font-black truncate" style={{ color: NAVY }}>{a.name}</h3>
+          <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold border"
+            style={{ backgroundColor: s.bg, borderColor: s.bd, color: s.fg }}>
+            {s.label}
+          </span>
+        </div>
+      </div>
+
+      {a.phone && (
+        <a href={`tel:${a.phone}`}
+          className="flex items-center justify-center gap-2 rounded-xl border min-h-11 text-[12px] font-black cursor-pointer"
+          style={{ borderColor: LINE, backgroundColor: RAISED, color: NAVY }}>
+          <span dir="ltr">{a.phone}</span>
+          <span>اتصال</span>
+        </a>
+      )}
+
+      <div>
+        {/* «غير محدد» rather than a guess: an attendee added before migration
+            119 genuinely has no phone or arrival on file, and inventing one
+            would send a servant to the wrong bus. */}
+        <Row label="التليفون" value={a.phone || 'غير محدد'} dir={a.phone ? 'ltr' : undefined} />
+        <Row label="الفئة" value={GROUP_LABEL[a.groupType]} />
+        <Row label="النوع" value={a.gender === 'female' ? 'أنثى' : 'ذكر'} />
+        <Row label="طريقة الوصول" value={a.arrivalMethod ? ARRIVAL_LABEL[a.arrivalMethod] : 'غير محدد'} />
+        <Row label="تاريخ التسجيل" value={arabicDate(a.registeredAt) ?? 'غير محدد'} />
+      </div>
+
+      {onSetStatus && (
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-black" style={{ color: MUTED }}>حالة الدفع</span>
+          <div className="grid grid-cols-3 gap-2">
+            {STATUS_CHOICES.map((choice) => {
+              const on = current === choice.value;
+              const cs = STATUS_STYLE[choice.value];
+              return (
+                <button key={choice.value} type="button" disabled={busy}
+                  onClick={() => onSetStatus(choice.value)}
+                  aria-pressed={on}
+                  className="rounded-xl border min-h-11 text-[11.5px] font-black cursor-pointer disabled:opacity-60 transition-colors"
+                  style={on
+                    ? { backgroundColor: cs.bg, borderColor: cs.bd, color: cs.fg }
+                    : { backgroundColor: RAISED, borderColor: LINE, color: MUTED }}>
+                  {choice.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface SheetProps {
   open: boolean;
   onClose: () => void;
   houseName: string;
   attendees: Attendee[];
   seats: number;
+  /** Tapping a row opens their details. It used to flip their payment status
+   *  — under a chevron that promised a detail view. */
   onSelect?: (a: Attendee) => void;
+  /** Called from the detail view. Absent means the three buttons are hidden
+   *  rather than shown dead. */
+  onSetStatus?: (a: Attendee, status: 'unpaid' | 'pending' | 'paid') => void;
+  /** Id of the attendee currently being saved, so their buttons disable. */
+  savingId?: string | null;
   onAdd?: () => void;
   onShareLink?: () => void;
   onExport?: () => void;
 }
 
 export default function ParticipantsSheet({
-  open, onClose, houseName, attendees, seats, onSelect, onAdd, onShareLink, onExport,
+  open, onClose, houseName, attendees, seats, onSelect, onSetStatus, savingId, onAdd, onShareLink, onExport,
 }: SheetProps) {
+  // Which participant is open. Held by id, not by object, so the panel follows
+  // the row as it is re-fetched rather than freezing on a stale copy — the
+  // payment buttons below rewrite exactly this attendee.
+  const [openId, setOpenId] = useState<string | null>(null);
+  const opened = openId ? attendees.find((x) => x.id === openId) ?? null : null;
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [group, setGroup] = useState<GroupFilter>('all');
@@ -165,6 +294,24 @@ export default function ParticipantsSheet({
       on ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)]' : 'bg-[var(--ds-surface)]'}`;
   const chipStyle = (on: boolean) =>
     on ? { borderColor: 'var(--ds-primary)' } : { borderColor: LINE, color: MUTED };
+
+  if (opened) {
+    return (
+      <BottomSheet
+        open={open}
+        onClose={() => { setOpenId(null); onClose(); }}
+        title={opened.name}
+        subtitle={houseName}
+      >
+        <ParticipantDetail
+          a={opened}
+          onBack={() => setOpenId(null)}
+          onSetStatus={onSetStatus ? (st) => onSetStatus(opened, st) : undefined}
+          busy={savingId === opened.id}
+        />
+      </BottomSheet>
+    );
+  }
 
   return (
     <BottomSheet
@@ -255,7 +402,7 @@ export default function ParticipantsSheet({
             const s = STATUS_STYLE[statusOf(a)];
             return (
               <li key={a.id}>
-                <button type="button" onClick={() => onSelect?.(a)}
+                <button type="button" onClick={() => { setOpenId(a.id); onSelect?.(a); }}
                   className="w-full text-start rounded-xl bg-[var(--ds-surface)] border p-3 flex items-start gap-3 min-h-11 cursor-pointer"
                   style={{ borderColor: LINE }}>
                   <span className="shrink-0 w-10 h-10 rounded-full grid place-items-center text-[13px] font-black"
