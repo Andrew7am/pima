@@ -116,3 +116,61 @@ describe('submit_answer cannot become ambiguous again', () => {
     ).toBe(true);
   });
 });
+
+/**
+ * Widening a RETURNS TABLE function needs a DROP first.
+ *
+ * Postgres will not change a function's OUT row type through CREATE OR REPLACE:
+ *
+ *   42P13: cannot change return type of existing function
+ *   HINT: Use DROP FUNCTION my_participations() first.
+ *
+ * 0157 widened my_participations from fourteen output columns to seventeen and
+ * hit exactly that. The whole migration aborts on the offending statement, so
+ * the ALTER TABLE above it never landed either — from the app it looked like
+ * nothing had been applied at all, and it was reported as applied three times
+ * before anyone read the error.
+ *
+ * Only flags a redefinition whose column list actually differs. Redefining a
+ * function with the same signature — submit_answer across 0039/0100/0106/0155 —
+ * is fine and needs no DROP.
+ */
+describe('a widened RETURNS TABLE function drops itself first', () => {
+  const RETURNS_TABLE =
+    /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.(\w+)\s*\([^)]*\)\s*RETURNS\s+TABLE\s*\(([\s\S]*?)\)\s*(?:LANGUAGE|AS|STABLE|IMMUTABLE|VOLATILE|SECURITY)/gi;
+
+  const norm = (t: string) =>
+    t.replace(/--[^\n]*/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+
+  it('every widening carries its DROP', () => {
+    const seen = new Map<string, { cols: string; file: string }>();
+    const problems: string[] = [];
+
+    for (const f of files) {
+      const sql = readFileSync(join(DIR, f), 'utf8');
+      RETURNS_TABLE.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = RETURNS_TABLE.exec(sql)) !== null) {
+        const name = m[1];
+        const cols = norm(m[2]);
+        const prev = seen.get(name);
+        if (prev && prev.cols !== cols) {
+          const dropped = new RegExp(
+            `DROP\\s+FUNCTION\\s+(IF\\s+EXISTS\\s+)?public\\.${name}\\s*\\(`,
+            'i',
+          ).test(sql);
+          if (!dropped) {
+            problems.push(
+              `${f} widens public.${name}() (last defined in ${prev.file}) without ` +
+                `DROP FUNCTION IF EXISTS public.${name}(...). Postgres raises 42P13 ` +
+                'and aborts the whole migration, including the statements above it.',
+            );
+          }
+        }
+        seen.set(name, { cols, file: f });
+      }
+    }
+
+    expect(problems, problems.join('\n')).toEqual([]);
+  });
+});

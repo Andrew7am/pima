@@ -65,6 +65,18 @@ $$;
 -- ---------- The participant sees their own answer ----------
 -- Same narrow projection as 0156, one column wider. Still no price, no roster,
 -- nobody else's anything.
+-- DROP first, and this is not optional. 0156 created my_participations with
+-- fourteen output columns; this widens it to seventeen, and Postgres refuses to
+-- change a function's OUT row type through CREATE OR REPLACE:
+--
+--   42P13: cannot change return type of existing function
+--   HINT: Use DROP FUNCTION my_participations() first.
+--
+-- The whole migration aborts on that line, so the columns above it never
+-- landed either — and from the app it looked like nothing had been applied at
+-- all. The GRANT is re-issued below, because dropping takes it with it.
+DROP FUNCTION IF EXISTS public.my_participations();
+
 CREATE OR REPLACE FUNCTION public.my_participations()
 RETURNS TABLE (
   booking_id      TEXT,
