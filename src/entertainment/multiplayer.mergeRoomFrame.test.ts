@@ -79,3 +79,24 @@ describe('mergeRoomFrame — the frame that opens the match for the host', () =>
     expect(next.id).toBe('rm_abc');
   });
 });
+
+describe('mergeRoomFrame — a frame is not a room', () => {
+  it('fills the shape the screen indexes into when nothing is held yet', () => {
+    // loadRoom failed, and the first thing to arrive is a partial UPDATE.
+    // Returning it raw gave the screen `questions: undefined`, and
+    // `room.questions.length` threw on the next render — «an error when the
+    // game starts», with nothing on screen to explain it.
+    const next = mergeRoomFrame(null, { id: 'rm_x', status: 'active' } as unknown as Partial<GameRoom>);
+    expect(next.questions).toEqual([]);
+    expect(next.host_answers).toEqual({});
+    expect(next.guest_answers).toEqual({});
+    expect(next.current_question).toBe(0);
+    expect(() => next.questions.length).not.toThrow();
+  });
+
+  it('still prefers the frame when it is complete', () => {
+    const next = mergeRoomFrame(null, HOST_ROOM);
+    expect(next.questions).toHaveLength(2);
+    expect(next.id).toBe('rm_abc');
+  });
+});
