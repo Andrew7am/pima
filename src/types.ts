@@ -368,6 +368,12 @@ export interface Attendee {
   /** Three states, not a boolean — unpaid and pending read differently to a servant. */
   paymentStatus?: 'unpaid' | 'pending' | 'paid';
   registeredAt?: string;
+  /** The participant's own answer (migration 0157). null is «has not answered»,
+   *  which a servant needs to tell apart from «apology» — one gets chased, the
+   *  other changes the plan. Only they can set it. */
+  attendance?: 'coming' | 'apology' | null;
+  /** Their account, once linked (0156). null means they have not joined. */
+  userId?: string | null;
 }
 
 export interface RoomAllocation {

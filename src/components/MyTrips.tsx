@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { CalendarDays, MapPin, Phone, Ticket, Loader2, Map } from 'lucide-react';
-import { loadMyParticipations, joinBookingByCode } from '../lib/db';
+import { CalendarDays, MapPin, Phone, Ticket, Loader2, Map, BedDouble } from 'lucide-react';
+import { loadMyParticipations, joinBookingByCode, setMyAttendance } from '../lib/db';
+import { arabicNumber } from '../lib/arabic';
 import type { Participation } from '../lib/db';
 
 /**
@@ -38,6 +39,7 @@ const fmt = (iso: string) => {
 
 export default function MyTrips() {
   const [trips, setTrips] = useState<Participation[] | null>(null);
+  const [answering, setAnswering] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -60,6 +62,18 @@ export default function MyTrips() {
     setCode('');
     setNote(r.alreadyJoined ? 'انت مضاف في الرحلة دي بالفعل.' : 'تمام — الرحلة ظهرت تحت.');
     reload();
+  };
+
+  // Optimistic, then reconciled. A servant watching the count while forty
+  // people answer needs the tap to land immediately; a failure puts it back.
+  const answer = async (t: Participation, next: 'coming' | 'apology') => {
+    const value = t.myAttendance === next ? null : next;
+    setAnswering(t.bookingId);
+    setTrips((prev) => prev?.map((x) =>
+      x.bookingId === t.bookingId ? { ...x, myAttendance: value } : x) ?? prev);
+    const r = await setMyAttendance(t.bookingId, value);
+    setAnswering(null);
+    if (r.ok === false) { setError(r.error); reload(); }
   };
 
   return (
@@ -134,9 +148,49 @@ export default function MyTrips() {
               )}
             </div>
 
-            <span className={`inline-block px-2.5 py-1 rounded-full text-[10.5px] font-black border ${pay.cls}`}>
-              {pay.label}
-            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className={`px-2.5 py-1 rounded-full text-[10.5px] font-black border ${pay.cls}`}>
+                {pay.label}
+              </span>
+              {/* Their bed, which the app has known all along and never said. */}
+              {t.myRoom && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-black border border-[var(--ds-border)] bg-[var(--ds-bg)] text-[var(--ds-brand)]">
+                  <BedDouble className="w-3 h-3" />
+                  {t.myRoom}{t.myBed != null ? ` · سرير ${arabicNumber(t.myBed)}` : ''}
+                </span>
+              )}
+            </div>
+
+            {/* Only worth asking before the trip. «انتهت» and «اتلغت» need no
+                headcount, and offering one then reads as the app not knowing
+                what happened. */}
+            {t.status === 'approved' && (
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold text-[var(--ds-text-2)]">
+                  {t.myAttendance === null ? 'مسؤول الرحلة مستني ردك:' : 'ردك:'}
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" disabled={answering === t.bookingId}
+                    onClick={() => void answer(t, 'coming')}
+                    aria-pressed={t.myAttendance === 'coming'}
+                    className={`min-h-11 rounded-2xl text-[12px] font-black border cursor-pointer disabled:opacity-60 transition-colors ${
+                      t.myAttendance === 'coming'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                        : 'bg-[var(--ds-bg)] border-[var(--ds-border)] text-[var(--ds-text-2)]'}`}>
+                    هجي إن شاء الله
+                  </button>
+                  <button type="button" disabled={answering === t.bookingId}
+                    onClick={() => void answer(t, 'apology')}
+                    aria-pressed={t.myAttendance === 'apology'}
+                    className={`min-h-11 rounded-2xl text-[12px] font-black border cursor-pointer disabled:opacity-60 transition-colors ${
+                      t.myAttendance === 'apology'
+                        ? 'bg-rose-50 border-rose-300 text-rose-700'
+                        : 'bg-[var(--ds-bg)] border-[var(--ds-border)] text-[var(--ds-text-2)]'}`}>
+                    معتذر
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2">
               {/* Coordinates when the house has them, otherwise its name — and

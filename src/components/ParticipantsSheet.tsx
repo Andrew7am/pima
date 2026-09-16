@@ -44,15 +44,26 @@ const STATUS_STYLE = {
 
 export interface ParticipantTally {
   paid: number; pending: number; unpaid: number; registered: number; seats: number;
+  /** 0157. `silent` is the number who have not answered — the ones still worth
+   *  a phone call, and the whole reason the count is useful. */
+  coming: number; apology: number; silent: number;
+  /** 0156. How many have the app, so the servant knows who they can reach in
+   *  it and who they must ring. */
+  linked: number;
 }
 
 export function tally(attendees: Attendee[], seats: number): ParticipantTally {
   let paid = 0, pending = 0, unpaid = 0;
+  let coming = 0, apology = 0, silent = 0, linked = 0;
   for (const a of attendees) {
     const s = statusOf(a);
     if (s === 'paid') paid++; else if (s === 'pending') pending++; else unpaid++;
+    if (a.attendance === 'coming') coming++;
+    else if (a.attendance === 'apology') apology++;
+    else silent++;
+    if (a.userId) linked++;
   }
-  return { paid, pending, unpaid, registered: attendees.length, seats };
+  return { paid, pending, unpaid, registered: attendees.length, seats, coming, apology, silent, linked };
 }
 
 /* ── stat row ─────────────────────────────────────────────────────────────── */
@@ -68,11 +79,21 @@ function Stat({ n, label, fg }: { n: number; label: string; fg: string }) {
 
 function StatRow({ t }: { t: ParticipantTally }) {
   return (
-    <div className="flex gap-1.5">
-      <Stat n={t.paid} label="تم الدفع" fg="var(--ds-success-ink)" />
-      <Stat n={t.pending} label="قيد المراجعة" fg="var(--ds-warning-ink)" />
-      <Stat n={t.unpaid} label="لم يدفعوا" fg="var(--ds-danger-ink)" />
-      <Stat n={t.seats} label="إجمالي" fg={NAVY} />
+    <div className="flex flex-col gap-1.5">
+      <div className="flex gap-1.5">
+        <Stat n={t.paid} label="تم الدفع" fg="var(--ds-success-ink)" />
+        <Stat n={t.pending} label="قيد المراجعة" fg="var(--ds-warning-ink)" />
+        <Stat n={t.unpaid} label="لم يدفعوا" fg="var(--ds-danger-ink)" />
+        <Stat n={t.seats} label="إجمالي" fg={NAVY} />
+      </div>
+      {/* «ما ردوش» is the number the servant acts on — it is the call list.
+          Counting «جاي» alone hides it behind arithmetic done in the head. */}
+      <div className="flex gap-1.5">
+        <Stat n={t.coming} label="جاي" fg="var(--ds-success-ink)" />
+        <Stat n={t.apology} label="معتذر" fg="var(--ds-danger-ink)" />
+        <Stat n={t.silent} label="ما ردوش" fg={MUTED} />
+        <Stat n={t.linked} label="عندهم التطبيق" fg={GOLD} />
+      </div>
     </div>
   );
 }
@@ -256,15 +277,19 @@ interface SheetProps {
   savingId?: string | null;
   onAdd?: () => void;
   onShareLink?: () => void;
+  /** The booking's join code (0156). Absent means the strip is not drawn —
+   *  better than showing a code that opens nothing. */
+  joinCode?: string;
   onExport?: () => void;
 }
 
 export default function ParticipantsSheet({
-  open, onClose, houseName, attendees, seats, onSelect, onSetStatus, savingId, onAdd, onShareLink, onExport,
+  open, onClose, houseName, attendees, seats, onSelect, onSetStatus, savingId, onAdd, onShareLink, onExport, joinCode,
 }: SheetProps) {
   // Which participant is open. Held by id, not by object, so the panel follows
   // the row as it is re-fetched rather than freezing on a stale copy — the
   // payment buttons below rewrite exactly this attendee.
+  const [copied, setCopied] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const opened = openId ? attendees.find((x) => x.id === openId) ?? null : null;
   const [q, setQ] = useState('');
@@ -321,6 +346,22 @@ export default function ParticipantsSheet({
       subtitle={houseName}
       header={(
         <div className="flex flex-col gap-2.5">
+          {/* The code was generated in 0156 and shown nowhere, so nobody could
+              spend it. It is the thing the servant sends; it belongs where
+              they already are. */}
+          {joinCode && (
+            <button type="button"
+              onClick={() => { void navigator.clipboard?.writeText(joinCode); setCopied(true); setTimeout(() => setCopied(false), 1800); }}
+              className="w-full flex items-center justify-between gap-2 rounded-2xl border px-3 min-h-11 cursor-pointer"
+              style={{ borderColor: LINE, backgroundColor: RAISED }}>
+              <span className="text-[10.5px] font-bold" style={{ color: MUTED }}>
+                {copied ? 'اتنسخ ✓' : 'كود الانضمام — ابعته لمجموعتك'}
+              </span>
+              <span className="text-[13px] font-black tracking-widest" dir="ltr" style={{ color: GOLD }}>
+                {joinCode}
+              </span>
+            </button>
+          )}
           <StatRow t={t} />
           <div className="flex gap-2">
             {/* The canonical field, now that it can be. Until the sheet was
@@ -423,6 +464,24 @@ export default function ParticipantsSheet({
                         style={{ backgroundColor: s.bg, borderColor: s.bd, color: s.fg }}>
                         {s.label}
                       </span>
+                      {/* Their answer, and whether they have the app. Both
+                          are about who still needs a phone call. */}
+                      {a.attendance === 'coming' && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border border-emerald-200 bg-emerald-50 text-emerald-700">
+                          جاي
+                        </span>
+                      )}
+                      {a.attendance === 'apology' && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border border-rose-200 bg-rose-50 text-rose-700">
+                          معتذر
+                        </span>
+                      )}
+                      {a.userId && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                          style={{ backgroundColor: RAISED, borderColor: LINE, color: GOLD }}>
+                          عنده التطبيق
+                        </span>
+                      )}
                       {a.arrivalMethod && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border"
                           style={{ backgroundColor: RAISED, borderColor: LINE, color: MUTED }}>

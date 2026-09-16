@@ -257,6 +257,10 @@ export function mapAttendee(r: Record<string, unknown>): Attendee {
     arrivalMethod: (r.arrival_method as Attendee['arrivalMethod']) ?? undefined,
     paymentStatus: (r.payment_status as Attendee['paymentStatus']) ?? undefined,
     registeredAt: (r.registered_at as string) || undefined,
+  // 0156 and 0157 added these and, as with the four before them, the mapper
+  // has to be widened or the columns arrive and are silently dropped.
+  attendance: (r.attendance as Attendee['attendance']) ?? null,
+  userId: (r.user_id as string) ?? null,
   };
 }
 
@@ -1400,6 +1404,13 @@ export interface Participation {
   organizerName: string | null;
   organizerPhone: string | null;
   myPayment: 'unpaid' | 'pending' | 'paid';
+  /** null means unanswered, which is not the same as 'apology' — the servant
+   *  chases the first and re-plans for the second. */
+  myAttendance: 'coming' | 'apology' | null;
+  /** Their own bed. room_allocations has held this since 0001 and the person
+   *  sleeping in it was never shown it. */
+  myRoom: string | null;
+  myBed: number | null;
   joinCode: string;
 }
 
@@ -1427,6 +1438,9 @@ export async function loadMyParticipations(): Promise<Participation[]> {
     organizerName: (r.organizer_name as string) ?? null,
     organizerPhone: (r.organizer_phone as string) ?? null,
     myPayment: (r.my_payment as Participation['myPayment']) ?? 'unpaid',
+    myAttendance: (r.my_attendance as Participation['myAttendance']) ?? null,
+    myRoom: (r.my_room as string) ?? null,
+    myBed: (r.my_bed as number) ?? null,
     joinCode: (r.join_code as string) ?? '',
   }));
 }
@@ -1440,6 +1454,24 @@ export async function linkMyAttendeeRows(): Promise<number> {
   const { data, error } = await supabase.rpc('link_my_attendee_rows');
   if (error) { console.error('linkMyAttendeeRows:', error); return 0; }
   return (data as number) ?? 0;
+}
+
+/**
+ * «جاي ولا لأ», answered by the person it is about.
+ *
+ * Passing null clears the answer back to unanswered, which a participant who
+ * tapped the wrong one needs — and which is a different state from 'apology',
+ * so it cannot be expressed by pressing the other button.
+ */
+export async function setMyAttendance(
+  bookingId: string,
+  attendance: 'coming' | 'apology' | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { error } = await supabase.rpc('set_my_attendance', {
+    p_booking_id: bookingId, p_attendance: attendance,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }
 
 /** The way in when the phone did not match. Errors are Arabic and are shown. */

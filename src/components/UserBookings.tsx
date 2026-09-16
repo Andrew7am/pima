@@ -1524,6 +1524,7 @@ export default function UserBookings({
                         houseName={booking.houseName}
                         attendees={roster}
                         seats={booking.guestsCount}
+                        joinCode={'PB' + booking.id.replace(/[^a-zA-Z0-9]/g, '').slice(-5).toUpperCase()}
                         onSetStatus={(a, status) => void setAttendeePayment(booking, a, status)}
                         savingId={togglingShareId}
                         onAdd={() => { setParticipantsFor(null); setAddingTo(booking); }}
