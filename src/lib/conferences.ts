@@ -37,6 +37,7 @@ type Row = {
   house_lat: number | null;
   house_lng: number | null;
   host_phone: string | null;
+  instant_alert: unknown;
   live_mode: unknown;
   joined_user_ids: unknown;
   notifications_log: unknown;
@@ -72,6 +73,7 @@ const toRoom = (r: Row): ConferenceRoom => ({
   events: (r.events as ConferenceRoom['events']) ?? [],
   announcements: (r.announcements as ConferenceRoom['announcements']) ?? [],
   checklist: (r.checklist as ConferenceRoom['checklist']) ?? [],
+  instantAlert: (r.instant_alert as ConferenceRoom['instantAlert']) ?? undefined,
   liveMode: (r.live_mode as ConferenceRoom['liveMode']) ?? ({} as ConferenceRoom['liveMode']),
   joinedUserIds: (r.joined_user_ids as ConferenceRoom['joinedUserIds']) ?? [],
   notificationsLog: (r.notifications_log as ConferenceRoom['notificationsLog']) ?? [],
@@ -191,6 +193,37 @@ export async function joinConferenceByCode(code: string): Promise<
   }
   const d = data as { conferenceId: string; title: string; alreadyJoined: boolean; needsApproval: boolean };
   return { ok: true, ...d };
+}
+
+
+/**
+ * Send the urgent notice.
+ *
+ * Through the RPC rather than a field on the conference save: only the host may
+ * broadcast, and that has to be checked somewhere a button cannot be bypassed.
+ * The RPC also files a notification for everyone it concerns — hub joiners and
+ * the booking's attendees, who are mostly not the same people.
+ */
+export async function broadcastConferenceAlert(
+  conferenceId: string,
+  message: string,
+): Promise<{ ok: true; alert: NonNullable<ConferenceRoom['instantAlert']>; notified: number }
+  | { ok: false; error: string }> {
+  const { data, error } = await supabase.rpc('broadcast_conference_alert', {
+    p_conference_id: conferenceId, p_message: message,
+  });
+  if (error) { console.error('broadcastConferenceAlert:', error); return { ok: false, error: error.message }; }
+  const d = data as { alert: NonNullable<ConferenceRoom['instantAlert']>; notified: number };
+  return { ok: true, alert: d.alert, notified: d.notified };
+}
+
+/** Take the banner down for everyone. Sent notifications are left as the record. */
+export async function clearConferenceAlert(
+  conferenceId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc('clear_conference_alert', { p_conference_id: conferenceId });
+  if (error) { console.error('clearConferenceAlert:', error); return { ok: false, error: error.message }; }
+  return { ok: true };
 }
 
 /** Leave, or — for the host — remove somebody. */

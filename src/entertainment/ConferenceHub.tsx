@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import JoinConferenceCard from './JoinConferenceCard';
+import { broadcastConferenceAlert, clearConferenceAlert } from '../lib/conferences';
 import { ConferenceRoom, ConferenceAnnouncement, ConferenceChecklistItem, ConferenceEvent, ConferenceLiveChatMessage, ConferenceScheduleItem } from '../types';
 import { QrCode, Search, LogIn, ArrowRight, Gamepad2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -763,27 +764,32 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
     setNotificationInputBody('');
   };
 
-  const handleSendInstantAlert = (e: React.FormEvent) => {
+  // Was a setState and a toast claiming «تم بث التنبيه العاجل لجميع شاشات
+  // الحضور الآن». There was no column for instantAlert and the row mapper never
+  // carried it, so the message lived in the tab it was typed into and did not
+  // survive a reload on the sender's own phone. Nobody else ever saw it.
+  //
+  // 0160 stores it and files a notification for everyone it concerns — hub
+  // joiners and the booking's attendees, who are mostly not the same people.
+  const [alertBusy, setAlertBusy] = useState(false);
+  const handleSendInstantAlert = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!instantAlertInput.trim()) return;
-    
-    const newAlert = {
-      id: 'alert_' + Date.now(),
-      message: instantAlertInput.trim(),
-      sentAt: Date.now(),
-      senderName: currentUser.name || 'المنظم المشرف'
-    };
-
-    onUpdateConference({
-      ...conference,
-      instantAlert: newAlert
-    });
-
-    showToast('🚀 تم بث التنبيه العاجل لجميع شاشات الحضور الآن!');
+    const msg = instantAlertInput.trim();
+    if (!msg || alertBusy) return;
+    setAlertBusy(true);
+    const r = await broadcastConferenceAlert(conference.id, msg);
+    setAlertBusy(false);
+    if (r.ok === false) { showToast(r.error); return; }
+    onUpdateConference({ ...conference, instantAlert: r.alert });
+    // The count is the honest version of the old claim: it says how many people
+    // it actually went to, which is also how a servant notices that half their
+    // group has no account yet.
+    showToast(`🚨 التنبيه اتبعت لـ ${r.notified} مشترك`);
     setInstantAlertInput('');
   };
 
   const handleClearInstantAlert = () => {
+    void clearConferenceAlert(conference.id);
     onUpdateConference({
       ...conference,
       instantAlert: null
