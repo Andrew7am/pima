@@ -254,7 +254,23 @@ export async function loadRoom(roomId: string): Promise<GameRoom | null> {
  * held, and the monotonic fields cannot go backwards.
  */
 export function mergeRoomFrame(prev: GameRoom | null, frame: Partial<GameRoom>): GameRoom {
-  if (!prev) return frame as GameRoom;
+  // With nothing held yet the frame is all there is — but a frame is not a
+  // room. If loadRoom failed and the first thing to arrive is a partial
+  // UPDATE, returning it raw hands the screen an object with no questions
+  // array, and `room.questions.length` throws on the next render. Filled to
+  // the shape the screen expects instead; the 5-second poll replaces it with
+  // the real row shortly after.
+  if (!prev) {
+    return {
+      questions: [],
+      host_answers: {},
+      guest_answers: {},
+      current_question: 0,
+      host_score: 0,
+      guest_score: 0,
+      ...frame,
+    } as GameRoom;
+  }
   const merged = { ...prev, ...frame } as GameRoom;
   return {
     ...merged,

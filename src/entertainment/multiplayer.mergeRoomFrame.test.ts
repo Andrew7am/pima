@@ -100,3 +100,27 @@ describe('mergeRoomFrame — a frame is not a room', () => {
     expect(next.id).toBe('rm_abc');
   });
 });
+
+describe('mergeRoomFrame with nothing held yet', () => {
+  it('fills the shape the screen expects when the first frame is partial', () => {
+    // loadRoom failed and a partial UPDATE arrived first. Returning it raw
+    // handed the screen an object with no questions array, and the next render
+    // read room.questions.length off undefined.
+    const next = mergeRoomFrame(null, { id: 'rm_x', status: 'active' } as unknown as Partial<GameRoom>);
+    expect(next.questions).toEqual([]);
+    expect(next.host_answers).toEqual({});
+    expect(next.guest_answers).toEqual({});
+    expect(next.current_question).toBe(0);
+    expect(next.host_score).toBe(0);
+    expect(next.guest_score).toBe(0);
+    expect(next.id).toBe('rm_x');
+  });
+
+  it('does not overwrite fields the frame does carry', () => {
+    const next = mergeRoomFrame(null, {
+      id: 'rm_y', questions: [{ q: 'س' }], host_score: 4,
+    } as unknown as Partial<GameRoom>);
+    expect(next.questions).toHaveLength(1);
+    expect(next.host_score).toBe(4);
+  });
+});
