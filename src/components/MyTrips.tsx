@@ -152,13 +152,22 @@ export default function MyTrips() {
               <span className={`px-2.5 py-1 rounded-full text-[10.5px] font-black border ${pay.cls}`}>
                 {pay.label}
               </span>
-              {/* Their bed, which the app has known all along and never said. */}
-              {t.myRoom && (
+              {/* Their bed, which the app has known all along and never said.
+                  Rooms are distributed by the servant, often late — so the
+                  absence of one is said out loud rather than rendered as a gap
+                  the participant has to interpret. Only before the trip: after
+                  it, which bed they had is not news. */}
+              {t.myRoom ? (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-black border border-[var(--ds-border)] bg-[var(--ds-bg)] text-[var(--ds-brand)]">
                   <BedDouble className="w-3 h-3" />
                   {t.myRoom}{t.myBed != null ? ` · سرير ${arabicNumber(t.myBed)}` : ''}
                 </span>
-              )}
+              ) : t.status === 'approved' ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold border border-[var(--ds-border)] bg-[var(--ds-bg)] text-[var(--ds-text-2)]">
+                  <BedDouble className="w-3 h-3" />
+                  الغرف لسه ما اتوزعتش
+                </span>
+              ) : null}
             </div>
 
             {/* Only worth asking before the trip. «انتهت» and «اتلغت» need no
