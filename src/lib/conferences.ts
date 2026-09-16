@@ -161,7 +161,28 @@ export async function joinConferenceByCode(code: string): Promise<
   { ok: true; conferenceId: string; title: string; alreadyJoined: boolean; needsApproval: boolean }
   | { ok: false; error: string }
 > {
-  const { data, error } = await supabase.rpc('join_conference_by_code', { code });
+  // A group carries two codes — PB… for the trip, PM… for the hub — and a
+  // servant sending «الكود» to forty people cannot know which box each of them
+  // will type it into. 0159 resolves either form to the conference code, so a
+  // booking code pasted here is no longer a dead end. Only on a miss, so the
+  // normal path is still one call.
+  let resolved = code;
+  {
+    const first = await supabase.rpc('join_conference_by_code', { code });
+    if (!first.error) {
+      const d = first.data as { conferenceId: string; title: string; alreadyJoined: boolean; needsApproval: boolean };
+      return { ok: true, ...d };
+    }
+    const alt = await supabase.rpc('conference_code_for_any_code', { p_code: code });
+    if (!alt.error && typeof alt.data === 'string' && alt.data && alt.data !== code) {
+      resolved = alt.data;
+    } else {
+      console.error('joinConferenceByCode:', first.error);
+      return { ok: false, error: first.error.message };
+    }
+  }
+
+  const { data, error } = await supabase.rpc('join_conference_by_code', { code: resolved });
   if (error) {
     console.error('joinConferenceByCode:', error);
     // The RPC raises Arabic for the cases a guest can actually hit — a wrong
