@@ -22,7 +22,7 @@
  * CI, rather than a new workflow.
  */
 import { describe, it, expect } from 'vitest';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const DIR = join(process.cwd(), 'supabase', 'migrations');
@@ -75,5 +75,44 @@ describe('migration filenames', () => {
     expect(nums[0]).toBe(1);
     const gaps = nums.filter((n, i) => i > 0 && n !== nums[i - 1] + 1);
     expect(gaps, `non-contiguous at: ${gaps.join(', ')}`).toEqual([]);
+  });
+});
+
+/**
+ * submit_answer's OUT names collide with its own columns.
+ *
+ * `RETURNS TABLE(host_score INT, guest_score INT, ...)` creates plpgsql
+ * variables named after two real game_rooms columns, so a bare `host_score` on
+ * the right of `SET host_score = host_score + gained` is ambiguous and Postgres
+ * raises rather than guess. Every answer in every live match fails, and the
+ * match cannot advance because current_question only moves when both players
+ * have answered.
+ *
+ * This has shipped twice. 0039 fixed it by aliasing the table; 0106 rewrote the
+ * body to add the round multiplier and dropped the alias, restoring the bug in
+ * the one line the alias existed to protect. The fix lived only as a habit
+ * inside one function body, so the next rewrite lost it.
+ *
+ * 0155 adds `#variable_conflict use_column`, which resolves the collision at
+ * the language level however the body is written. This test keeps it there.
+ */
+describe('submit_answer cannot become ambiguous again', () => {
+  it('the newest migration defining it declares #variable_conflict use_column', () => {
+    const defining = files.filter((f) =>
+      readFileSync(join(DIR, f), 'utf8').includes('FUNCTION public.submit_answer'));
+
+    expect(defining.length).toBeGreaterThan(0);
+
+    const newest = defining[defining.length - 1];
+    const sql = readFileSync(join(DIR, newest), 'utf8');
+
+    const declared = /^[ 	]*#variable_conflict[ 	]+use_column[ 	]*$/m.test(sql);
+
+    expect(
+      declared,
+      `${newest} redefines submit_answer without "#variable_conflict use_column". ` +
+        'Without it, `SET host_score = host_score + …` is ambiguous between the OUT ' +
+        'parameter and the column, and every answer in a live match fails. See 0039 and 0155.',
+    ).toBe(true);
   });
 });
