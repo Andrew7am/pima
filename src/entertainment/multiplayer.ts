@@ -238,6 +238,36 @@ export async function loadRoom(roomId: string): Promise<GameRoom | null> {
 // dropped on the floor, which meant a socket that died — the normal outcome of
 // backgrounding the app on Android — was indistinguishable from an opponent
 // who simply had not answered yet. The screen sat there believing it was live.
+/**
+ * Fold a realtime frame into the room already held.
+ *
+ * postgres_changes' `payload.new` is not reliably the whole row. `questions`
+ * is a TOASTed JSONB column, and under the default replica identity Postgres
+ * omits unchanged TOASTed columns from an UPDATE payload — so the frame that
+ * told the HOST a guest had joined arrived with the guest's details and no
+ * questions. The screen replaced its room with that, lost the questions, and
+ * could not render the match, while the guest — who had fetched the whole row
+ * itself — played on. That was the whole of «the game opens on one side only».
+ *
+ * Migration 0154 sets REPLICA IDENTITY FULL so frames are complete. This keeps
+ * the room whole even when one is not: an absent field keeps the value already
+ * held, and the monotonic fields cannot go backwards.
+ */
+export function mergeRoomFrame(prev: GameRoom | null, frame: Partial<GameRoom>): GameRoom {
+  if (!prev) return frame as GameRoom;
+  const merged = { ...prev, ...frame } as GameRoom;
+  return {
+    ...merged,
+    questions: frame.questions ?? prev.questions,
+    host_answers: { ...frame.host_answers, ...prev.host_answers },
+    guest_answers: { ...frame.guest_answers, ...prev.guest_answers },
+    current_question: Math.max(frame.current_question ?? 0, prev.current_question),
+    host_score: Math.max(frame.host_score ?? 0, prev.host_score),
+    guest_score: Math.max(frame.guest_score ?? 0, prev.guest_score),
+    status: prev.status === 'finished' ? 'finished' : merged.status,
+  };
+}
+
 export function subscribeToRoom(
   roomId: string,
   onChange: (room: GameRoom) => void,

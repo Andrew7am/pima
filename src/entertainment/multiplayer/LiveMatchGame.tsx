@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { User } from '../../types';
 import { ChevronRight, Check, X as XIcon, Trophy, Users as UsersIcon, Loader2, Home, RotateCcw, Copy, Lightbulb, UserPlus, Zap, Coins } from 'lucide-react';
-import { type GameRoom, type FinalizeResult } from '../multiplayer';
+import { type GameRoom, type FinalizeResult, mergeRoomFrame } from '../multiplayer';
 import { practiceDriver, supabaseDriver, type MatchDriver } from './matchDriver';
 import { getLeague, leagueProgress } from '../leagues';
 import { checkAchievements } from '../../lib/db';
@@ -313,7 +313,9 @@ export default function LiveMatchGame({ currentUser, roomId, practice = false, o
       if (r) setRoom(r);
       setLoading(false);
       const handle = driver.subscribe(
-        (updated) => { setRoom(updated); },
+        // Merged, never replaced — see mergeRoomFrame. A frame that arrives
+        // without `questions` used to wipe them from the host's room.
+        (updated) => { setRoom((prev) => mergeRoomFrame(prev, updated)); },
         (status) => { setLive(status === 'SUBSCRIBED'); },
       );
       if (cancelled) { handle(); return; }
