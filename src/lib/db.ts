@@ -1385,6 +1385,73 @@ export async function recordRefund(args: {
 // the servant chased money that had already been sent. Both columns are kept in
 // step: share_paid is true only for 'paid', which is exactly what it has always
 // meant, and payment_status carries the state the roster badge reads.
+/** One trip somebody is going on but did not book. Migration 0156. */
+export interface Participation {
+  bookingId: string;
+  houseId: string | null;
+  houseName: string;
+  governorate: string | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+  checkIn: string;
+  checkOut: string;
+  status: string;
+  organizerName: string | null;
+  organizerPhone: string | null;
+  myPayment: 'unpaid' | 'pending' | 'paid';
+  joinCode: string;
+}
+
+/**
+ * Trips this account is a participant on.
+ *
+ * Deliberately an RPC and not a select: the projection is fixed server-side, so
+ * this cannot grow to include the price or the roster by someone widening a
+ * query here. What a participant may see is decided in 0156.
+ */
+export async function loadMyParticipations(): Promise<Participation[]> {
+  const { data, error } = await supabase.rpc('my_participations');
+  if (error) { console.error('loadMyParticipations:', error); return []; }
+  return (data ?? []).map((r: Record<string, unknown>) => ({
+    bookingId: r.booking_id as string,
+    houseId: (r.house_id as string) ?? null,
+    houseName: (r.house_name as string) ?? '',
+    governorate: (r.governorate as string) ?? null,
+    address: (r.address as string) ?? null,
+    lat: (r.lat as number) ?? null,
+    lng: (r.lng as number) ?? null,
+    checkIn: r.check_in as string,
+    checkOut: r.check_out as string,
+    status: r.status as string,
+    organizerName: (r.organizer_name as string) ?? null,
+    organizerPhone: (r.organizer_phone as string) ?? null,
+    myPayment: (r.my_payment as Participation['myPayment']) ?? 'unpaid',
+    joinCode: (r.join_code as string) ?? '',
+  }));
+}
+
+/**
+ * Claim any roster rows carrying this account's phone. Called once after
+ * sign-in; silent by design — most people are on no trip, and a toast saying
+ * «linked 0» is noise.
+ */
+export async function linkMyAttendeeRows(): Promise<number> {
+  const { data, error } = await supabase.rpc('link_my_attendee_rows');
+  if (error) { console.error('linkMyAttendeeRows:', error); return 0; }
+  return (data as number) ?? 0;
+}
+
+/** The way in when the phone did not match. Errors are Arabic and are shown. */
+export async function joinBookingByCode(
+  code: string,
+): Promise<{ ok: true; bookingId: string; alreadyJoined: boolean } | { ok: false; error: string }> {
+  const { data, error } = await supabase.rpc('join_booking_by_code', { p_code: code });
+  if (error) return { ok: false, error: error.message };
+  const r = data as { bookingId: string; alreadyJoined: boolean };
+  return { ok: true, bookingId: r.bookingId, alreadyJoined: r.alreadyJoined };
+}
+
 export async function setAttendeePaymentStatus(
   attendeeId: string,
   status: 'unpaid' | 'pending' | 'paid',

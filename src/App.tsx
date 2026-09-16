@@ -28,13 +28,13 @@ import {
   deleteOwnAccount,
   loadAuditLog,
   loadPaymentProofImage,
-  recordHouseView,
-} from './lib/db';
+  recordHouseView, linkMyAttendeeRows } from './lib/db';
 import { autoAllocate } from './lib/roomAllocation';
 import { resolvePaymentVerdict } from './lib/paymentLedger';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout, ConferenceRoom, PromoBanner } from './types';
 import ConferenceGate from './entertainment/ConferenceGate';
 import type { ChecklistTick } from './lib/stayChecklist';
+import MyTrips from './components/MyTrips';
 import { loadMyConferences, saveConference } from './lib/conferences';
 
 // Component Imports
@@ -429,6 +429,10 @@ export default function App() {
     else if (user.role === 'admin') setActiveScreen('admin_panel');
     else setActiveScreen('explore');
     loadAppData(user.id);
+    // Claim any roster rows a servant wrote this person's phone into (0156).
+    // Silent and not awaited: most people are on no trip, and «linked 0» is
+    // noise — what it buys is the trip simply being there when they look.
+    void linkMyAttendeeRows();
     setIsAuthLoading(false);
   }, [loadAppData]);
 
@@ -2225,6 +2229,17 @@ export default function App() {
               autoPayBookingId={pendingPayBookingId}
               onAutoPayConsumed={() => setPendingPayBookingId(null)}
             />
+          )}
+
+          {/* Trips this person is ON but did not book. Below their own
+              bookings, deliberately: these are not theirs to manage — no
+              price, no roster, no cancel — and stacking them into the same
+              list would invite exactly that confusion. */}
+          {activeScreen === 'bookings' && (
+            <div className="mt-6 space-y-3">
+              <h2 className="text-[13px] font-black text-[var(--ds-brand)]">رحلات انت مشارك فيها</h2>
+              <MyTrips />
+            </div>
           )}
 
           {activeScreen === 'messages' && (
