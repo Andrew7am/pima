@@ -831,17 +831,11 @@ export default function UserDashboard({
 
                 {/* Rating, and real popularity beside it (top-3 by confirmed
                     bookings over the last year — see mostBookedIds) */}
-                <div className="absolute top-3 left-3 right-[calc(var(--pima-panel-w)+7.75rem)] max-[374px]:right-[calc(var(--pima-panel-w)+4.5rem)] flex items-center gap-1.5 overflow-hidden">
+                <div className="absolute top-3 left-3 right-[calc(var(--pima-panel-w)+7rem)] max-[374px]:right-[calc(var(--pima-panel-w)+4.5rem)] flex items-center gap-1.5 overflow-hidden">
                   <span className="shrink-0 bg-[var(--ds-surface)]/95 backdrop-blur-sm text-[var(--ds-text)] text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                     <span>{arabicDecimal(house.rating)}</span>
                   </span>
-                  {house.badge && HOUSE_BADGES[house.badge] && (
-                    <span className={`min-w-0 shrink backdrop-blur-sm text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow ${HOUSE_BADGES[house.badge].cls}`}>
-                      <Flame className="w-3 h-3 shrink-0" />
-                      <span className="truncate">{HOUSE_BADGES[house.badge].label}</span>
-                    </span>
-                  )}
                   {/* Only when it is actually live. A discount badge on a
                       house whose offer has ended, or has not started, is a
                       price the guest cannot get — and they find out at the
@@ -882,7 +876,7 @@ export default function UserDashboard({
                     opened the house instead. Offset by the panel's own width
                     so they stay on the photograph at any card size — the one
                     place they can be tapped. */}
-                <div className="absolute top-2.5 right-[calc(var(--pima-panel-w)+1.25rem)] z-10 flex items-center gap-1.5 max-[374px]:flex-col">
+                <div className="absolute top-2.5 right-[calc(var(--pima-panel-w)+0.75rem)] z-10 flex items-center gap-0 max-[374px]:flex-col">
                   <button
                     id={`toggle-fav-card-${house.id}`}
                     type="button"
@@ -891,34 +885,43 @@ export default function UserDashboard({
                       tapFeedback();
                       onToggleFavorite(house.id);
                     }}
-                    className="bg-[var(--ds-surface)]/95 hover:bg-[var(--ds-surface)] text-rose-500 hover:text-rose-600 w-11 h-11 rounded-full grid place-items-center shadow transition-all duration-200 cursor-pointer"
+                    className="w-11 h-11 grid place-items-center cursor-pointer group/fav"
                     title={currentUser?.favorites?.includes(house.id) ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
                     aria-label={currentUser?.favorites?.includes(house.id) ? `إزالة ${house.name} من المفضلة` : `إضافة ${house.name} للمفضلة`}
                   >
-                    <Heart className={`w-3.5 h-3.5 ${currentUser?.favorites?.includes(house.id) ? 'fill-rose-500 text-rose-500' : 'text-[var(--ds-text-faint)]'}`} />
+                    <span className="w-8 h-8 rounded-full bg-[var(--ds-surface)]/95 group-hover/fav:bg-[var(--ds-surface)] grid place-items-center shadow transition-colors duration-200">
+                      <Heart className={`w-3.5 h-3.5 ${currentUser?.favorites?.includes(house.id) ? 'fill-rose-500 text-rose-500' : 'text-[var(--ds-text-faint)]'}`} />
+                    </span>
                   </button>
 
                   <button
                     id={`toggle-compare-card-${house.id}`}
                     type="button"
                     onClick={(e) => handleToggleCompare(house.id, e)}
-                    className={`w-11 h-11 rounded-full grid place-items-center shadow transition-all duration-200 cursor-pointer ${
-                      comparedHouseIds.includes(house.id)
-                        ? 'bg-amber-600 text-white hover:bg-amber-700'
-                        : 'bg-[var(--ds-surface)]/95 text-[var(--ds-text-faint)] hover:text-[var(--ds-primary)] hover:bg-[var(--ds-surface)]'
-                    }`}
+                    className="w-11 h-11 grid place-items-center cursor-pointer group/cmp"
                     title={comparedHouseIds.includes(house.id) ? 'إزالة من المقارنة' : 'إضافة للمقارنة والمفاضلة'}
                     aria-label={comparedHouseIds.includes(house.id) ? `إزالة ${house.name} من المقارنة` : `إضافة ${house.name} للمقارنة`}
                     aria-pressed={comparedHouseIds.includes(house.id)}
                   >
-                    <ArrowLeftRight className="w-3.5 h-3.5" />
+                    <span className={`w-8 h-8 rounded-full grid place-items-center shadow transition-colors duration-200 ${
+                      comparedHouseIds.includes(house.id)
+                        ? 'bg-amber-600 text-white group-hover/cmp:bg-amber-700'
+                        : 'bg-[var(--ds-surface)]/95 text-[var(--ds-text-faint)] group-hover/cmp:text-[var(--ds-primary)] group-hover/cmp:bg-[var(--ds-surface)]'
+                    }`}>
+                      <ArrowLeftRight className="w-3.5 h-3.5" />
+                    </span>
                   </button>
                 </div>
 
                 {/* Status badges — only what the guest is filtering on right now
                     (real availability) and what tells them the listing is a
                     different kind of place. Amenities stay inside. */}
-                <div className="absolute top-11 left-3 right-[calc(var(--pima-panel-w)+7.75rem)] max-[374px]:right-[calc(var(--pima-panel-w)+4.5rem)] flex flex-col gap-1 items-start overflow-hidden">
+                <div className="absolute top-11 left-3 right-[calc(var(--pima-panel-w)+7rem)] max-[374px]:right-[calc(var(--pima-panel-w)+4.5rem)] flex flex-col gap-1 items-start overflow-hidden">
+                  {house.badge && HOUSE_BADGES[house.badge] && (
+                    <span className={`max-w-full backdrop-blur-sm text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow ${HOUSE_BADGES[house.badge].cls}`}>
+                      <span className="truncate">{HOUSE_BADGES[house.badge].label}</span>
+                    </span>
+                  )}
                   {availability !== null && (
                     <span className="bg-[var(--ds-success)]/95 backdrop-blur-sm text-[var(--ds-on-success)] text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
                       ✓ متاح في تواريخك
