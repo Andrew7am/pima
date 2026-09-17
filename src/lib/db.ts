@@ -117,6 +117,18 @@ export function mapBooking(r: Record<string, unknown>): Booking {
     totalPrice: r.total_price as number,
     depositPaid: r.deposit_paid as boolean,
     depositAmount: r.deposit_amount as number,
+    // The rate THIS booking was agreed at. 0113 added the column precisely so
+    // that raising the platform rate could not recompute the commission on
+    // deals already closed — including money already transferred — and the
+    // money layer was written for it: rateOf() prefers booking.commissionRate
+    // and falls back to the live rate only for rows older than the migration.
+    // This line was never added, so it was undefined on every booking and the
+    // fallback ran every time. The migration existed and did nothing.
+    //
+    // NULL stays undefined rather than becoming 0: a booking with no snapshot
+    // must reach the fallback, and a 0 rate would silently hand the owner the
+    // whole total.
+    commissionRate: r.commission_rate == null ? undefined : Number(r.commission_rate),
     discountPctApplied: r.discount_pct_applied != null ? Number(r.discount_pct_applied) : undefined,
     priceBeforeDiscount: r.price_before_discount != null ? Number(r.price_before_discount) : undefined,
     adultsCount: r.adults_count != null ? Number(r.adults_count) : undefined,
