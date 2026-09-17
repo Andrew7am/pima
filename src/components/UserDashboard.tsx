@@ -56,7 +56,7 @@ function PriceBox({ icon: Icon, label, value }: {
           the number and costs a few pixels of height there; not wrapping clips
           the price, which is the one number on the card people are scanning
           for. */}
-      <span className="flex items-baseline justify-center gap-x-0.5 mt-0.5 whitespace-nowrap">
+      <span className="flex flex-wrap items-baseline justify-center gap-x-0.5 mt-0.5">
         <span className="text-[14px] font-black text-[#E8C88A] leading-none [font-variant-numeric:tabular-nums]">{arabicNumber(value)}</span>
         <span className="text-[11px] font-bold text-white/70">ج.م</span>
       </span>
@@ -823,7 +823,7 @@ export default function UserDashboard({
                 // shape of its own — and the brief asks for «نفس مقاس الكارت
                 // الحالي», so it keeps the ratio it already had. min-height is
                 // the floor the panel's own content needs on a narrow phone.
-                className="pima-reveal relative aspect-[1.68/1] min-h-[234px] bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ds-accent)] cursor-pointer group"
+                className="pima-reveal relative w-full aspect-[1.58/1] min-h-[248px] bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ds-accent)] cursor-pointer group"
               >
                 {/* The photo is the whole card; the details panel floats over it. */}
                 <div className="absolute inset-0 overflow-hidden">
@@ -844,15 +844,15 @@ export default function UserDashboard({
 
                 {/* Rating, and real popularity beside it (top-3 by confirmed
                     bookings over the last year — see mostBookedIds) */}
-                <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                  <span className="bg-[var(--ds-surface)]/95 backdrop-blur-sm text-[var(--ds-text)] text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                <div className="absolute top-3 left-3 right-[calc(var(--pima-panel-w)+7.75rem)] max-[374px]:right-[calc(var(--pima-panel-w)+4.5rem)] flex items-center gap-1.5 overflow-hidden">
+                  <span className="shrink-0 bg-[var(--ds-surface)]/95 backdrop-blur-sm text-[var(--ds-text)] text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                     <span>{arabicDecimal(house.rating)}</span>
                   </span>
                   {mostBookedIds.has(house.id) && (
-                    <span className="bg-rose-700/90 backdrop-blur-sm text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
-                      <Flame className="w-3 h-3" />
-                      الأكثر حجزًا
+                    <span className="min-w-0 shrink bg-rose-700/90 backdrop-blur-sm text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                      <Flame className="w-3 h-3 shrink-0" />
+                      <span className="truncate">الأكثر حجزًا</span>
                     </span>
                   )}
                   {/* Only when it is actually live. A discount badge on a
@@ -895,7 +895,7 @@ export default function UserDashboard({
                     opened the house instead. Offset by the panel's own width
                     so they stay on the photograph at any card size — the one
                     place they can be tapped. */}
-                <div className="absolute top-2.5 right-[calc(var(--pima-panel-w)+1.25rem)] z-10 flex items-center gap-1.5">
+                <div className="absolute top-2.5 right-[calc(var(--pima-panel-w)+1.25rem)] z-10 flex items-center gap-1.5 max-[374px]:flex-col">
                   <button
                     id={`toggle-fav-card-${house.id}`}
                     type="button"
@@ -931,14 +931,14 @@ export default function UserDashboard({
                 {/* Status badges — only what the guest is filtering on right now
                     (real availability) and what tells them the listing is a
                     different kind of place. Amenities stay inside. */}
-                <div className="absolute top-11 left-3 flex flex-col gap-1 items-start">
+                <div className="absolute top-11 left-3 right-[calc(var(--pima-panel-w)+7.75rem)] max-[374px]:right-[calc(var(--pima-panel-w)+4.5rem)] flex flex-col gap-1 items-start overflow-hidden">
                   {availability !== null && (
                     <span className="bg-[var(--ds-success)]/95 backdrop-blur-sm text-[var(--ds-on-success)] text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
                       ✓ متاح في تواريخك
                     </span>
                   )}
                   {bookedBeforeIds.has(house.id) && (
-                    <span className="bg-[var(--ds-brand)]/90 backdrop-blur-sm text-[var(--ds-accent)] text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+                    <span className="max-w-full truncate bg-[var(--ds-brand)]/90 backdrop-blur-sm text-[var(--ds-accent)] text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
                       ⭐ حجزتم هنا قبل كده
                     </span>
                   )}
