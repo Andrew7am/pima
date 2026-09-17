@@ -2029,6 +2029,24 @@ export default function UserBookings({
         // names inside those. If nothing's assigned yet, wait for the owner.
         const assignedIds = activeAllocationBooking.assignedRoomIds || [];
         const assignedRooms = assignedIds.map((id) => rooms.find((r) => r.id === id)).filter(Boolean) as Room[];
+        // The owner assigned rooms we cannot resolve yet — they simply have not
+        // been fetched. Say so and stop, because the alternative is what used
+        // to happen: RoomDistribution takes an empty list as «this house has no
+        // real rooms» and generates one bed layout for the entire house, so the
+        // servant is shown more rooms than they were given and distributes
+        // people into rooms that do not exist.
+        if (assignedRooms.length < assignedIds.length) {
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setActiveAllocationBooking(null)}>
+              <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-6 max-w-sm text-center space-y-2" dir="rtl" onClick={(e) => e.stopPropagation()}>
+                <div className="text-3xl">🛏️</div>
+                <h3 className="text-sm font-black text-[var(--ds-text)]">بنحمّل غرفك…</h3>
+                <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">لحظة واحدة، بنجيب الغرف اللي صاحب البيت خصّصها لمجموعتك. لو فضلت كده، اقفل وافتح تاني.</p>
+                <button type="button" onClick={() => setActiveAllocationBooking(null)} className="mt-2 bg-[var(--ds-primary)] text-[var(--ds-on-primary)] text-xs font-black px-5 py-2.5 rounded-2xl">تمام</button>
+              </div>
+            </div>
+          );
+        }
         if (assignedIds.length === 0) {
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setActiveAllocationBooking(null)}>

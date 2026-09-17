@@ -1834,33 +1834,54 @@ export default function App() {
   // comment in db.ts) — pull them in only when RoomDistribution is about to open
   // for a specific booking, not on every login/page load.
   const handleOpenRoomDistribution = useCallback(async (bookingId: string) => {
-    const [bookingAttendees, bookingAllocations] = await Promise.all([
+    // The house's rooms, too. They were loaded only when somebody opened the
+    // house page or when the viewer owned it — never for a servant coming to
+    // this screen from حجوزاتي. So the lookup of assignedRoomIds found nothing,
+    // RoomDistribution fell through to generating the whole house, and the
+    // servant was handed more rooms than the owner had given them.
+    const houseId = bookings.find((b) => b.id === bookingId)?.houseId;
+    const [bookingAttendees, bookingAllocations, houseRooms] = await Promise.all([
       loadAttendeesForBooking(bookingId),
       loadAllocationsForBooking(bookingId),
+      houseId ? loadRoomsForHouses([houseId]) : Promise.resolve([]),
     ]);
     setAttendees(prev => [...prev.filter(a => a.bookingId !== bookingId), ...bookingAttendees]);
     setAllocations(prev => [...prev.filter(al => al.bookingId !== bookingId), ...bookingAllocations]);
-  }, []);
+    if (houseId) {
+      setRooms(prev => [...prev.filter(r => r.houseId !== houseId), ...houseRooms]);
+    }
+  }, [bookings]);
 
   // Owner contact reveal was removed in migration 056 (anti-
   // disintermediation): the guest talks to the owner ONLY through
   // booking_messages. Kept the state field so any stale prop consumers
   // still see an empty map, but no fetch fires.
 
+  // Both of these dropped the save's result on the floor. The screen updated
+  // optimistically, so a refusal — an RLS denial, a unique-bed collision —
+  // looked exactly like success until the servant came back and found the
+  // distribution gone. Now the failure is said out loud, and the local state is
+  // rolled back so the screen stops disagreeing with the database.
   const handleUpdateAttendees = (bookingId: string, bookingAttendees: Attendee[]) => {
-    setAttendees(prev => {
-      const filtered = prev.filter(a => a.bookingId !== bookingId);
-      return [...filtered, ...bookingAttendees];
+    const before = attendees;
+    setAttendees(prev => [...prev.filter(a => a.bookingId !== bookingId), ...bookingAttendees]);
+    void saveAttendeesForBooking(bookingId, bookingAttendees).then((ok) => {
+      if (!ok) {
+        setAttendees(before);
+        alert('تعذّر حفظ قائمة المشاركين. راجع اتصالك وحاول تاني.');
+      }
     });
-    saveAttendeesForBooking(bookingId, bookingAttendees);
   };
 
   const handleUpdateAllocations = (bookingId: string, bookingAllocations: RoomAllocation[]) => {
-    setAllocations(prev => {
-      const filtered = prev.filter(al => al.bookingId !== bookingId);
-      return [...filtered, ...bookingAllocations];
+    const before = allocations;
+    setAllocations(prev => [...prev.filter(al => al.bookingId !== bookingId), ...bookingAllocations]);
+    void saveAllocationsForBooking(bookingId, bookingAllocations).then((ok) => {
+      if (!ok) {
+        setAllocations(before);
+        alert('تعذّر حفظ توزيع الغرف. راجع اتصالك وحاول تاني.');
+      }
     });
-    saveAllocationsForBooking(bookingId, bookingAllocations);
   };
 
   const handleMarkNotificationAsRead = async (id: string) => {
