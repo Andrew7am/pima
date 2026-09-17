@@ -37,6 +37,8 @@ type Row = {
   house_lat: number | null;
   house_lng: number | null;
   host_phone: string | null;
+  presentation_slides: unknown;
+  active_slide_id: string | null;
   instant_alert: unknown;
   live_mode: unknown;
   joined_user_ids: unknown;
@@ -73,6 +75,8 @@ const toRoom = (r: Row): ConferenceRoom => ({
   events: (r.events as ConferenceRoom['events']) ?? [],
   announcements: (r.announcements as ConferenceRoom['announcements']) ?? [],
   checklist: (r.checklist as ConferenceRoom['checklist']) ?? [],
+  presentationSlides: (r.presentation_slides as ConferenceRoom['presentationSlides']) ?? [],
+  activeSlideId: r.active_slide_id ?? undefined,
   instantAlert: (r.instant_alert as ConferenceRoom['instantAlert']) ?? undefined,
   liveMode: (r.live_mode as ConferenceRoom['liveMode']) ?? ({} as ConferenceRoom['liveMode']),
   joinedUserIds: (r.joined_user_ids as ConferenceRoom['joinedUserIds']) ?? [],
@@ -100,6 +104,8 @@ const toRow = (c: ConferenceRoom) => ({
   checklist: c.checklist ?? [],
   live_mode: c.liveMode ?? {},
   joined_user_ids: c.joinedUserIds ?? [],
+  presentation_slides: c.presentationSlides ?? [],
+  active_slide_id: c.activeSlideId ?? null,
   notifications_log: c.notificationsLog ?? [],
 });
 
@@ -224,6 +230,58 @@ export async function clearConferenceAlert(
   const { error } = await supabase.rpc('clear_conference_alert', { p_conference_id: conferenceId });
   if (error) { console.error('clearConferenceAlert:', error); return { ok: false, error: error.message }; }
   return { ok: true };
+}
+
+
+/**
+ * Fold a realtime frame into the conference already held.
+ *
+ * Never a wholesale replace, for the reason 0154 and mergeRoomFrame document:
+ * schedule, announcements and presentation_slides are TOASTed, and a payload
+ * that does not carry one would otherwise blank it. 0161 sets REPLICA IDENTITY
+ * FULL so frames are complete; this keeps the room whole if one is not.
+ */
+export function mergeConferenceFrame(
+  prev: ConferenceRoom,
+  frame: Partial<Row>,
+): ConferenceRoom {
+  const incoming = toRoom({ ...(prev as unknown as Row), ...frame } as Row);
+  return {
+    ...prev,
+    ...incoming,
+    schedule: frame.schedule !== undefined ? incoming.schedule : prev.schedule,
+    events: frame.events !== undefined ? incoming.events : prev.events,
+    announcements: frame.announcements !== undefined ? incoming.announcements : prev.announcements,
+    checklist: frame.checklist !== undefined ? incoming.checklist : prev.checklist,
+    presentationSlides:
+      frame.presentation_slides !== undefined ? incoming.presentationSlides : prev.presentationSlides,
+    joinedUserIds: frame.joined_user_ids !== undefined ? incoming.joinedUserIds : prev.joinedUserIds,
+    notificationsLog:
+      frame.notifications_log !== undefined ? incoming.notificationsLog : prev.notificationsLog,
+  };
+}
+
+/**
+ * Watch one conference.
+ *
+ * The hub read the row once, when the screen opened, and never again — there
+ * was no subscription anywhere in the client. A servant published an
+ * announcement, added a session, advanced a slide, and a participant sitting
+ * on the screen saw none of it until they left and came back.
+ */
+export function subscribeToConference(
+  conferenceId: string,
+  onChange: (frame: Partial<Row>) => void,
+): () => void {
+  const channel = supabase
+    .channel(`conference:${conferenceId}`)
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'conferences', filter: `id=eq.${conferenceId}` },
+      (payload) => { onChange(payload.new as Partial<Row>); },
+    )
+    .subscribe();
+  return () => { void supabase.removeChannel(channel); };
 }
 
 /** Leave, or — for the host — remove somebody. */

@@ -35,7 +35,7 @@ import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation
 import ConferenceGate from './entertainment/ConferenceGate';
 import type { ChecklistTick } from './lib/stayChecklist';
 import MyTrips from './components/MyTrips';
-import { loadMyConferences, saveConference } from './lib/conferences';
+import { loadMyConferences, saveConference, subscribeToConference, mergeConferenceFrame } from './lib/conferences';
 
 // Component Imports
 // Route-level code splitting: heavy, role- or navigation-gated screens load on
@@ -291,6 +291,25 @@ export default function App() {
   const [profileEntry, setProfileEntry] = useState<'hub' | 'rewards'>('hub');
   // Conference Hub state — seeded from the sample conference; the opener acts as its host.
   const [conference, setConference] = useState<ConferenceRoom | null>(null);
+
+  // Watch the open conference.
+  //
+  // The hub read the row once, when the screen opened, and never again — there
+  // was no subscription anywhere in the client. So a servant published an
+  // announcement, added a session, advanced a slide, and a participant sitting
+  // on the screen saw none of it until they left and came back. Most of it did
+  // save; none of it arrived.
+  //
+  // Keyed on the id alone, not the whole object, or every local edit would tear
+  // the channel down and build it again. Merged rather than replaced, for the
+  // reason mergeConferenceFrame explains.
+  const conferenceId = conference?.id;
+  useEffect(() => {
+    if (!conferenceId) return;
+    return subscribeToConference(conferenceId, (frame) => {
+      setConference((prev) => (prev && prev.id === conferenceId ? mergeConferenceFrame(prev, frame) : prev));
+    });
+  }, [conferenceId]);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   // Where a finished live match returns to. Matchmaking can start from the
   // lobby or from the random-match home, and sending everyone back to the
