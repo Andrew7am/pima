@@ -56,7 +56,7 @@ function PriceBox({ icon: Icon, label, value }: {
           the number and costs a few pixels of height there; not wrapping clips
           the price, which is the one number on the card people are scanning
           for. */}
-      <span className="flex flex-wrap items-baseline justify-center gap-x-0.5 mt-0.5">
+      <span className="flex items-baseline justify-center gap-x-0.5 mt-0.5 whitespace-nowrap">
         <span className="text-[14px] font-black text-[#E8C88A] leading-none [font-variant-numeric:tabular-nums]">{arabicNumber(value)}</span>
         <span className="text-[11px] font-bold text-white/70">ج.م</span>
       </span>
@@ -814,13 +814,16 @@ export default function UserDashboard({
                 // offset that keeps the favourite button clear of it. Written
                 // as a literal in both places they drift, and the drift is the
                 // heart sliding back under the glass.
-                // A percentage with a floor, because the panel has a real minimum:
-                // below about 118px «عرض التفاصيل» and «٣٩٥ ج.م» stop fitting, and
-                // on a 320px phone a flat 34% is only 100px. Measured, not chosen.
-                // On a normal phone this is 34% and the photograph gets two thirds;
-                // on the narrowest it widens itself just enough to stay readable.
-                style={{ ['--pima-panel-w' as string]: 'max(34%, 118px)' }}
-                className="pima-reveal relative bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ds-accent)] cursor-pointer group"
+                // A percentage with a floor. 41% is where the information stops
+                // stacking on itself — narrower and «عرض التفاصيل» and «٣٩٥ ج.م»
+                // start wrapping — and the floor keeps a 320px phone above the
+                // same limit, where a flat 41% would be 121px.
+                style={{ ['--pima-panel-w' as string]: 'max(41%, 132px)' }}
+                // The panel used to set this. Now that it floats, the card needs a
+                // shape of its own — and the brief asks for «نفس مقاس الكارت
+                // الحالي», so it keeps the ratio it already had. min-height is
+                // the floor the panel's own content needs on a narrow phone.
+                className="pima-reveal relative aspect-[1.45/1] min-h-[272px] bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ds-accent)] cursor-pointer group"
               >
                 {/* The photo is the whole card; the details panel floats over it. */}
                 <div className="absolute inset-0 overflow-hidden">
@@ -951,9 +954,14 @@ export default function UserDashboard({
                   )}
                 </div>
 
-                {/* Details panel — frosted glass floating over the photo. Its
-                    height is what drives the card's height. */}
-                <div className="relative flex p-2.5">
+                {/* Details panel — frosted glass floating over the photo.
+                    It used to sit in flow and set the card's height, so it ran
+                    the full height edge to edge and read as a grey slab bolted
+                    to the side rather than a pane resting on the photograph.
+                    The card now keeps its own shape and the panel floats inside
+                    it with a margin all round — the 4% top and bottom is what
+                    makes it look like glass laid over the picture. */}
+                <div className="absolute inset-y-[4%] left-2.5 right-2.5 flex pointer-events-none">
                   {/* Frosted glass, not a dark rectangle. The tint is a cool
                       navy rather than plain black: over the warm photographs
                       owners upload, black alone reads as a muddy brown smear
@@ -963,9 +971,9 @@ export default function UserDashboard({
                       shadow-[...] carries both, because Tailwind takes one
                       box-shadow property. */}
                   <div
-                    className="rounded-[22px] border border-white/[0.22] backdrop-blur-[22px] p-2 space-y-1
+                    className="pointer-events-auto self-stretch overflow-hidden rounded-[22px] border border-white/[0.22] backdrop-blur-[24px] p-2.5 space-y-1.5
                                shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_8px_30px_rgba(0,0,0,0.12)]"
-                    style={{ width: 'var(--pima-panel-w)', backgroundColor: 'rgba(20, 32, 40, 0.42)' }}
+                    style={{ width: 'var(--pima-panel-w)', backgroundColor: 'rgba(20, 32, 40, 0.30)' }}
                   >
                     {/* leading-[1.9], not leading-snug. Cairo asks for about
                         1.9× its size in Arabic, and line-clamp clips at the
@@ -975,12 +983,16 @@ export default function UserDashboard({
                       {house.name}
                     </h3>
 
-                    {/* The location used to be repeated here. It is already on the
-                        photograph twice — the governorate pill and the landmark
-                        pill at the bottom left — and saying it a third time
-                        inside the panel cost a line of the card's height for
-                        nothing. The brief asked not to duplicate it; the height
-                        is the reason it matters. */}
+                    {/* Governorate only. The full «landmark — governorate» made
+                        this the longest line in the panel and it truncated on
+                        every card; the landmark already has its own pill on the
+                        photograph, so this says the one thing the pill beside
+                        it does not repeat at a glance. */}
+                    <p className="flex items-center gap-1 text-[11px] font-bold text-white/70 leading-[1.5]">
+                      <MapPin className="w-3 h-3 text-[#E8C88A] shrink-0" />
+                      <span className="truncate">{house.governorate}</span>
+                    </p>
+
                     <span aria-hidden="true" className="block h-px bg-white/20" />
 
                     {/* Three, and only three. A fourth and a fifth turned this
@@ -1011,8 +1023,8 @@ export default function UserDashboard({
                           <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
                             <SquareParking className="w-4 h-4" />
                           </span>
-                          <span className="text-[11px] font-bold text-white/70 text-center">
-                            {house.services.includes('موقف مجاني') ? <>موقف<br />مجاني</> : <>جراج<br />خاص</>}
+                          <span className="text-[11px] font-bold text-white/70 text-center whitespace-nowrap">
+                            {house.services.includes('موقف مجاني') ? 'موقف' : 'جراج'}
                           </span>
                         </div>
                       )}
@@ -1029,7 +1041,7 @@ export default function UserDashboard({
                           <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
                             <Wifi className="w-4 h-4" />
                           </span>
-                          <span className="text-[11px] font-bold text-white/70 text-center">واي<br />فاي</span>
+                          <span className="text-[11px] font-bold text-white/70 text-center whitespace-nowrap">واي فاي</span>
                         </div>
                       )}
                     </div>
@@ -1128,14 +1140,11 @@ export default function UserDashboard({
                       <span className="w-5 h-5 shrink-0 rounded-full bg-black/25 flex items-center justify-center">
                         <ArrowLeft className="w-3 h-3" />
                       </span>
-                      {/* «التفاصيل», not «عرض التفاصيل». Measured: the full
-                          wording needs the panel to be 153px, the short one 116px
-                          — the difference is ten points of photograph on every
-                          card. The arrow beside it says «عرض» already, and the
-                          action behind the button is unchanged.
-                          No truncate: if this ever stops fitting it should be
-                          caught, not quietly shortened to «عرض التفا…». */}
-                      <span className="text-[11px] font-extrabold whitespace-nowrap">التفاصيل</span>
+                      {/* No truncate, deliberately: if this ever stops fitting it
+                          should be caught by the overflow check, not quietly
+                          shortened to «عرض التفا…» — which is how it reached a
+                          screenshot once. */}
+                      <span className="text-[11px] font-extrabold whitespace-nowrap">عرض التفاصيل</span>
                     </div>
                   </div>
                 </div>
