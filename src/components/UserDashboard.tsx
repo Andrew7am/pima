@@ -864,8 +864,14 @@ export default function UserDashboard({
                   )}
                 </div>
 
-                {/* Favourite + compare — the only two actions on the photo */}
-                <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
+                {/* Favourite + compare — the only two actions on the photo.
+                    They sat at right-3, which in RTL is exactly where the
+                    details panel sits: the panel paints over them, and a tap
+                    on the heart landed on the house name inside the glass and
+                    opened the house instead. Offset by the panel's own width
+                    so they stay on the photograph at any card size — the one
+                    place they can be tapped. */}
+                <div className="absolute top-2.5 right-[calc(47%+1.25rem)] z-10 flex items-center gap-1.5">
                   <button
                     id={`toggle-fav-card-${house.id}`}
                     type="button"
@@ -927,7 +933,19 @@ export default function UserDashboard({
                 {/* Details panel — frosted glass floating over the photo. Its
                     height is what drives the card's height. */}
                 <div className="relative flex p-2.5">
-                  <div className="w-[47%] bg-black/35 backdrop-blur-xl rounded-2xl border border-white/25 shadow-sm p-2.5 space-y-1.5">
+                  {/* Frosted glass, not a dark rectangle. The tint is a cool
+                      navy rather than plain black: over the warm photographs
+                      owners upload, black alone reads as a muddy brown smear
+                      and stops looking like glass. The inset highlight is the
+                      lit top edge every real pane has, and it is what keeps the
+                      panel from looking painted on.
+                      shadow-[...] carries both, because Tailwind takes one
+                      box-shadow property. */}
+                  <div
+                    className="w-[47%] rounded-[22px] border border-white/[0.22] backdrop-blur-[22px] p-2.5 space-y-1.5
+                               shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_8px_30px_rgba(0,0,0,0.12)]"
+                    style={{ backgroundColor: 'rgba(20, 32, 40, 0.42)' }}
+                  >
                     {/* leading-[1.9], not leading-snug. Cairo asks for about
                         1.9× its size in Arabic, and line-clamp clips at the
                         line box — so «كينج» lost the tail of its ج on every
