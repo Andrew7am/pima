@@ -799,6 +799,12 @@ export default function UserDashboard({
                 // pima-reveal is an entrance only — the observer adds .is-in as
                 // the card scrolls in and then stops watching it. Nothing about
                 // the card's own layout, colour or type is touched.
+                // --pima-panel-w is the details panel's width, declared once
+                // here because two things depend on it: the panel, and the
+                // offset that keeps the favourite button clear of it. Written
+                // as a literal in both places they drift, and the drift is the
+                // heart sliding back under the glass.
+                style={{ ['--pima-panel-w' as string]: '41%' }}
                 className="pima-reveal relative bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ds-accent)] cursor-pointer group"
               >
                 {/* The photo is the whole card; the details panel floats over it. */}
@@ -871,7 +877,7 @@ export default function UserDashboard({
                     opened the house instead. Offset by the panel's own width
                     so they stay on the photograph at any card size — the one
                     place they can be tapped. */}
-                <div className="absolute top-2.5 right-[calc(47%+1.25rem)] z-10 flex items-center gap-1.5">
+                <div className="absolute top-2.5 right-[calc(var(--pima-panel-w)+1.25rem)] z-10 flex items-center gap-1.5">
                   <button
                     id={`toggle-fav-card-${house.id}`}
                     type="button"
@@ -942,9 +948,9 @@ export default function UserDashboard({
                       shadow-[...] carries both, because Tailwind takes one
                       box-shadow property. */}
                   <div
-                    className="w-[47%] rounded-[22px] border border-white/[0.22] backdrop-blur-[22px] p-2.5 space-y-1.5
+                    className="rounded-[22px] border border-white/[0.22] backdrop-blur-[22px] p-2 space-y-1.5
                                shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_8px_30px_rgba(0,0,0,0.12)]"
-                    style={{ backgroundColor: 'rgba(20, 32, 40, 0.42)' }}
+                    style={{ width: 'var(--pima-panel-w)', backgroundColor: 'rgba(20, 32, 40, 0.42)' }}
                   >
                     {/* leading-[1.9], not leading-snug. Cairo asks for about
                         1.9× its size in Arabic, and line-clamp clips at the
