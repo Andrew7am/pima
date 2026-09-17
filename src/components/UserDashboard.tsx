@@ -46,7 +46,12 @@ function PriceBox({ icon: Icon, label, value }: {
           them — sitting on glass over an uncontrolled photograph, where 70%
           of white is not a reliable 70% of anything. */}
       <span className="block text-[11px] font-black text-white mt-0.5">{label}</span>
-      <span className="flex items-baseline justify-center gap-0.5 mt-1">
+      {/* flex-wrap, because the box is now narrow enough that «٣٩٥ ج.م» does
+          not fit beside itself on a 320px phone. Wrapping drops the unit under
+          the number and costs a few pixels of height there; not wrapping clips
+          the price, which is the one number on the card people are scanning
+          for. */}
+      <span className="flex flex-wrap items-baseline justify-center gap-x-0.5 mt-1">
         <span className="text-[14px] font-black text-[#E8C88A] leading-none [font-variant-numeric:tabular-nums]">{arabicNumber(value)}</span>
         <span className="text-[11px] font-bold text-white/70">ج.م</span>
       </span>
@@ -804,7 +809,12 @@ export default function UserDashboard({
                 // offset that keeps the favourite button clear of it. Written
                 // as a literal in both places they drift, and the drift is the
                 // heart sliding back under the glass.
-                style={{ ['--pima-panel-w' as string]: '41%' }}
+                // A percentage with a floor, because the panel has a real minimum:
+                // below about 118px «عرض التفاصيل» and «٣٩٥ ج.م» stop fitting, and
+                // on a 320px phone a flat 34% is only 100px. Measured, not chosen.
+                // On a normal phone this is 34% and the photograph gets two thirds;
+                // on the narrowest it widens itself just enough to stay readable.
+                style={{ ['--pima-panel-w' as string]: 'max(34%, 118px)' }}
                 className="pima-reveal relative bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ds-accent)] cursor-pointer group"
               >
                 {/* The photo is the whole card; the details panel floats over it. */}
@@ -1109,11 +1119,23 @@ export default function UserDashboard({
                       );
                     })()}
 
-                    <div className="relative flex items-center justify-center bg-gradient-to-l from-[var(--ds-accent-deep)] to-[var(--ds-accent)] text-white rounded-full py-2 mt-1">
-                      <span className="text-[11px] font-extrabold">عرض التفاصيل</span>
-                      <span className="absolute right-1.5 w-5 h-5 rounded-full bg-black/25 flex items-center justify-center">
+                    {/* The arrow was absolutely positioned and the label was
+                        centred under it. That was fine on a wide panel and stops
+                        being fine as the panel narrows for the photograph's sake:
+                        the two meet in the middle and the arrow sits on the ع.
+                        A flex row cannot overlap itself. */}
+                    <div className="flex items-center justify-center gap-1.5 bg-gradient-to-l from-[var(--ds-accent-deep)] to-[var(--ds-accent)] text-white rounded-full px-2 py-2 mt-1">
+                      <span className="w-5 h-5 shrink-0 rounded-full bg-black/25 flex items-center justify-center">
                         <ArrowLeft className="w-3 h-3" />
                       </span>
+                      {/* «التفاصيل», not «عرض التفاصيل». Measured: the full
+                          wording needs the panel to be 153px, the short one 116px
+                          — the difference is ten points of photograph on every
+                          card. The arrow beside it says «عرض» already, and the
+                          action behind the button is unchanged.
+                          No truncate: if this ever stops fitting it should be
+                          caught, not quietly shortened to «عرض التفا…». */}
+                      <span className="text-[11px] font-extrabold whitespace-nowrap">التفاصيل</span>
                     </div>
                   </div>
                 </div>
