@@ -35,23 +35,28 @@ function PriceBox({ icon: Icon, label, value }: {
   value: number;
 }) {
   return (
-    <div className="flex-1 min-w-0 rounded-2xl bg-white/15 border border-white/20 px-1.5 py-1.5 text-center">
+    <div className="flex-1 min-w-0 rounded-2xl bg-white/15 border border-white/20 px-1.5 py-1 text-center">
       {/* The icon sits above the label rather than beside it. Beside it, the
           two together needed a 92px box, and the narrowest real card gives
           barely half that — both labels came out ellipsised, and the ellipsis
           ate the word that says which price this is. */}
-      <Icon className="w-3 h-3 text-[#E8C88A] mx-auto" />
+      {/* The icon moved onto the label's line. Stacked, the box was three
+          rows tall and the two of them set the card's height more than
+          anything else in the panel. */}
       {/* 9.5px and full white, not 8px at 70%. This word is the whole
           difference between the two boxes, and it was the faintest thing in
           them — sitting on glass over an uncontrolled photograph, where 70%
           of white is not a reliable 70% of anything. */}
-      <span className="block text-[11px] font-black text-white mt-0.5">{label}</span>
+      <span className="flex items-center justify-center gap-1 text-[11px] font-black text-white">
+        <Icon className="w-3 h-3 text-[#E8C88A] shrink-0" />
+        {label}
+      </span>
       {/* flex-wrap, because the box is now narrow enough that «٣٩٥ ج.م» does
           not fit beside itself on a 320px phone. Wrapping drops the unit under
           the number and costs a few pixels of height there; not wrapping clips
           the price, which is the one number on the card people are scanning
           for. */}
-      <span className="flex flex-wrap items-baseline justify-center gap-x-0.5 mt-1">
+      <span className="flex flex-wrap items-baseline justify-center gap-x-0.5 mt-0.5">
         <span className="text-[14px] font-black text-[#E8C88A] leading-none [font-variant-numeric:tabular-nums]">{arabicNumber(value)}</span>
         <span className="text-[11px] font-bold text-white/70">ج.م</span>
       </span>
@@ -958,7 +963,7 @@ export default function UserDashboard({
                       shadow-[...] carries both, because Tailwind takes one
                       box-shadow property. */}
                   <div
-                    className="rounded-[22px] border border-white/[0.22] backdrop-blur-[22px] p-2 space-y-1.5
+                    className="rounded-[22px] border border-white/[0.22] backdrop-blur-[22px] p-2 space-y-1
                                shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_8px_30px_rgba(0,0,0,0.12)]"
                     style={{ width: 'var(--pima-panel-w)', backgroundColor: 'rgba(20, 32, 40, 0.42)' }}
                   >
@@ -966,21 +971,16 @@ export default function UserDashboard({
                         1.9× its size in Arabic, and line-clamp clips at the
                         line box — so «كينج» lost the tail of its ج on every
                         card whose name happens to carry a descender. */}
-                    <h3 className="text-[12px] font-black text-white leading-[2] line-clamp-2">
+                    <h3 className="text-[12px] font-black text-white leading-[1.45] pb-0.5 line-clamp-2">
                       {house.name}
                     </h3>
 
-                    {/* The description gave way to this. On a card, where the
-                        place IS matters more than how it describes itself, and
-                        two lines of prose was the crowding the rest of the
-                        panel could not afford. */}
-                    <p className="flex items-center gap-1 text-[11px] font-bold text-white/70 leading-[1.9]">
-                      <MapPin className="w-3 h-3 text-[#E8C88A] shrink-0" />
-                      <span className="truncate">
-                        {house.nearbyLandmark ? `${house.nearbyLandmark} — ${house.governorate}` : house.governorate}
-                      </span>
-                    </p>
-
+                    {/* The location used to be repeated here. It is already on the
+                        photograph twice — the governorate pill and the landmark
+                        pill at the bottom left — and saying it a third time
+                        inside the panel cost a line of the card's height for
+                        nothing. The brief asked not to duplicate it; the height
+                        is the reason it matters. */}
                     <span aria-hidden="true" className="block h-px bg-white/20" />
 
                     {/* Three, and only three. A fourth and a fifth turned this
@@ -1124,7 +1124,7 @@ export default function UserDashboard({
                         being fine as the panel narrows for the photograph's sake:
                         the two meet in the middle and the arrow sits on the ع.
                         A flex row cannot overlap itself. */}
-                    <div className="flex items-center justify-center gap-1.5 bg-gradient-to-l from-[var(--ds-accent-deep)] to-[var(--ds-accent)] text-white rounded-full px-2 py-2 mt-1">
+                    <div className="flex items-center justify-center gap-1.5 bg-gradient-to-l from-[var(--ds-accent-deep)] to-[var(--ds-accent)] text-white rounded-full px-2 py-1.5 mt-0.5">
                       <span className="w-5 h-5 shrink-0 rounded-full bg-black/25 flex items-center justify-center">
                         <ArrowLeft className="w-3 h-3" />
                       </span>
