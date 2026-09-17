@@ -67,6 +67,7 @@ export function mapHouse(r: Record<string, unknown>): RetreatHouse {
     restaurants: (r.restaurants as RetreatHouse['restaurants']) ?? [],
     paymentMethods: (r.payment_methods as RetreatHouse['paymentMethods']) ?? [],
     seasonalRates: (r.seasonal_rates as RetreatHouse['seasonalRates']) ?? [],
+    badge: (r.badge as string) ?? undefined,
     discountPct: r.discount_pct != null ? Number(r.discount_pct) : undefined,
     discountStartsAt: (r.discount_starts_at as string) ?? undefined,
     discountEndsAt: (r.discount_ends_at as string) ?? undefined,
@@ -628,6 +629,23 @@ export async function claimDailyAdPoints(): Promise<boolean> {
  * pct is a FRACTION (0.25 = 25%), matching commissionRate and depositRate
  * rather than the number typed in the field.
  */
+/**
+ * The card badge, admin only — checked in the RPC, not here.
+ *
+ * Its own call rather than a column on the general house update: houses are
+ * saved by owners too, and protect_house_owner_updates (019) reverts every
+ * house column a non-admin touches. The badge would have been reverted with
+ * them.
+ */
+export async function setHouseBadge(
+  houseId: string,
+  badge: string | null,
+): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc('set_house_badge', { p_house_id: houseId, p_badge: badge });
+  if (error) { console.error('setHouseBadge:', error); return { ok: false, error: error.message }; }
+  return { ok: true };
+}
+
 export async function setHouseDiscount(args: {
   houseId: string; pct: number; startsAt: string | null; endsAt: string | null; note: string | null;
 }): Promise<boolean> {

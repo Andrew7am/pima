@@ -28,7 +28,7 @@ import {
   deleteOwnAccount,
   loadAuditLog,
   loadPaymentProofImage,
-  recordHouseView, linkMyAttendeeRows } from './lib/db';
+  recordHouseView, linkMyAttendeeRows, setHouseBadge } from './lib/db';
 import { autoAllocate } from './lib/roomAllocation';
 import { resolvePaymentVerdict } from './lib/paymentLedger';
 import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout, ConferenceRoom, PromoBanner } from './types';
@@ -1537,6 +1537,14 @@ export default function App() {
     trackWrite(setHouseDiscount(args), args.pct > 0 ? 'تفعيل خصم على البيت' : 'إلغاء خصم البيت');
   };
 
+  // The card badge. Optimistic like the discount beside it, and through
+  // its own RPC because protect_house_owner_updates (019) reverts every house
+  // column a non-admin touches — the badge would go back with them.
+  const handleSetHouseBadge = (houseId: string, badge: string | null) => {
+    setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, badge: badge ?? undefined } : h)));
+    trackWrite(setHouseBadge(houseId, badge), badge ? 'وضع شارة على البيت' : 'إزالة شارة البيت');
+  };
+
   // --- Admin Operations ---
   const handleApproveHouse = (houseId: string) => {
     setHouses((prev) => prev.map((h) => (h.id === houseId ? { ...h, status: 'approved' } : h)));
@@ -2364,6 +2372,7 @@ export default function App() {
               onToggleUserRole={handleToggleUserRole}
               onSuspendHouse={handleSuspendHouse}
               onSetHouseDiscount={handleSetHouseDiscount}
+              onSetHouseBadge={handleSetHouseBadge}
               onBanUser={handleBanUser}
               onReleaseUser={handleReleaseUser}
               onCancelBooking={handleAdminCancelBooking}

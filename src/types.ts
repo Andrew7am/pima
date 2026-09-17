@@ -142,6 +142,10 @@ export interface RetreatHouse {
   // Owner-direct (no admin re-approval), like paymentMethods — see
   // migration 055 and lib/pricing.ts for the night-by-night math.
   seasonalRates?: SeasonalRate[];
+  /** An admin-chosen label for the card (0164), from the fixed set in
+   *  HOUSE_BADGES. Replaces two automatic badges: one computed from booking
+   *  counts, one from the viewer's own history. */
+  badge?: string;
   /** A percentage off, applied to stays whose CHECK-IN falls in the window.
    *  Set by the admin at the owner's request; the owner carries the cost.
    *  Owners cannot set it themselves — protect_house_owner_updates (019)

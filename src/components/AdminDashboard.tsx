@@ -31,6 +31,7 @@ import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, 
 import { timeAgo } from '../lib/timeAgo';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import WebPushToggle from './WebPushToggle';
+import { HOUSE_BADGES } from './UserDashboard';
 import { SummerOfferCarousel, CountdownOfferBanner, PROMO_PLATFORMS } from './PromoBanners';
 import BannerStudio from './banner/BannerStudio';
 import BannerCanvas from './banner/BannerCanvas';
@@ -74,6 +75,10 @@ interface AdminDashboardProps {
   /** Set at the OWNER's request — he carries the cost, since the commission is
    *  a percentage of the discounted price. pct is a fraction (0.25 = 25%). */
   onSetHouseDiscount?: (args: { houseId: string; pct: number; startsAt: string | null; endsAt: string | null; note: string | null }) => void;
+  /** The card badge. Beside the discount because both are the admin deciding
+   *  how a house is presented, and both cost the owner something — one money,
+   *  one the platform's word. */
+  onSetHouseBadge?: (houseId: string, badge: string | null) => void;
   onBanUser?: (userId: string, banned: boolean) => void;
   /** Frees the email and anonymises the profile, keeping every record. */
   onReleaseUser?: (userId: string) => Promise<boolean>;
@@ -158,6 +163,7 @@ export default function AdminDashboard({
   onToggleUserRole,
   onSuspendHouse,
   onSetHouseDiscount,
+  onSetHouseBadge,
   onBanUser, onReleaseUser,
   onCancelBooking,
   onDeleteReview,
@@ -575,6 +581,7 @@ export default function AdminDashboard({
   // account. Both were unrepresentable before migration 108.
   const refundQueue = React.useMemo(() => refundsDue({ bookings, payments }), [bookings, payments]);
   const [refundingId, setRefundingId] = useState<string | null>(null);
+  const [badgeHouseId, setBadgeHouseId] = useState<string | null>(null);
   const [discountHouseId, setDiscountHouseId] = useState<string | null>(null);
   const [discountDraft, setDiscountDraft] = useState({ pct: '', from: '', to: '', note: '' });
 
@@ -1984,6 +1991,15 @@ export default function AdminDashboard({
                                   {house.discountPct ? 'تعديل الخصم' : 'حط خصم'}
                                 </button>
                               )}
+                              {onSetHouseBadge && (
+                                <button
+                                  type="button"
+                                  onClick={() => { setBadgeHouseId(house.id); setOpenHouseMenu(null); }}
+                                  className="w-full text-right px-3 min-h-11 text-[12px] font-bold text-[var(--ds-accent-deep)] hover:bg-[var(--ds-raised)] transition-colors cursor-pointer border-t border-[var(--ds-border)]"
+                                >
+                                  {house.badge ? 'غيّر الشارة' : 'حط شارة'}
+                                </button>
+                              )}
                               </div>
                             </>
                           )}
@@ -2069,6 +2085,54 @@ export default function AdminDashboard({
                         {house.discountNote && (
                           <span className="text-[11px] text-[var(--ds-text-2)] truncate">{house.discountNote}</span>
                         )}
+                      </div>
+                    )}
+
+                    {/* The badge the card will carry, and what it is now. */}
+                    {house.badge && HOUSE_BADGES[house.badge] && (
+                      <div className="mt-2 flex items-center gap-2 bg-[var(--ds-raised)] border border-[var(--ds-border)] rounded-xl px-3 py-2">
+                        <span className="text-[11px] font-black text-[var(--ds-accent-deep)]">
+                          الشارة: {HOUSE_BADGES[house.badge].label}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* The badge picker, inline under its card — the same place
+                        and the same shape as the discount editor below it.
+                        A fixed list, not a text box: the badge is Pima
+                        vouching for a house on its own card. */}
+                    {badgeHouseId === house.id && onSetHouseBadge && (
+                      <div className="mt-2 bg-[var(--ds-bg)] border border-[var(--ds-border)] rounded-2xl p-3 space-y-2">
+                        <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">شارة الكارت</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {Object.entries(HOUSE_BADGES).map(([key, b]) => (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => { onSetHouseBadge(house.id, key); setBadgeHouseId(null); }}
+                              aria-pressed={house.badge === key}
+                              className={`px-3 min-h-11 rounded-xl text-[11.5px] font-black cursor-pointer border transition-colors ${
+                                house.badge === key
+                                  ? 'bg-[var(--ds-accent-deep)] text-white border-transparent'
+                                  : 'bg-[var(--ds-surface)] text-[var(--ds-text)] border-[var(--ds-border)] hover:bg-[var(--ds-raised)]'
+                              }`}
+                            >
+                              {b.label}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => { onSetHouseBadge(house.id, null); setBadgeHouseId(null); }}
+                            className="px-3 min-h-11 rounded-xl text-[11.5px] font-black cursor-pointer border border-[var(--ds-border)] bg-[var(--ds-surface)] text-[var(--ds-danger)] hover:bg-[var(--ds-raised)]"
+                          >
+                            بدون شارة
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-[var(--ds-text-2)] leading-relaxed">
+                          الشارة بتظهر على كارت البيت لكل الناس. «حجزتم هنا قبل كده» مش
+                          في القايمة عن قصد — دي جملة عن الزائر نفسه، ولو اتحطت هتقولها
+                          لناس ما حجزتش هنا أصلاً.
+                        </p>
                       </div>
                     )}
 

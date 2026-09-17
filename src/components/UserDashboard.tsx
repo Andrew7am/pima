@@ -29,6 +29,22 @@ import { Card, EmptyState } from './ui';
  * Equal boxes, equal weight — a day and a night are two offers, not a headline
  * and a footnote.
  */
+/**
+ * The badges an admin may put on a card, and nothing else.
+ *
+ * A fixed table rather than free text: a badge is Pima speaking in its own
+ * voice about a house, and «آخر غرفتين!» typed into a box is a claim the
+ * platform cannot stand behind. The database holds the key and enforces the
+ * same list (0164); this holds how it reads.
+ */
+export const HOUSE_BADGES: Record<string, { label: string; cls: string }> = {
+  most_booked: { label: 'الأكثر حجزًا', cls: 'bg-rose-700/90' },
+  featured:    { label: 'مميّز',        cls: 'bg-[var(--ds-accent-deep)]/95' },
+  new:         { label: 'جديد',         cls: 'bg-emerald-700/90' },
+  family:      { label: 'مناسب للعائلات', cls: 'bg-[var(--ds-brand)]/90' },
+  quiet:       { label: 'هادي',          cls: 'bg-sky-800/90' },
+};
+
 function PriceBox({ icon: Icon, label, value }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -225,44 +241,15 @@ export default function UserDashboard({
     return () => { cancelled = true; };
   }, [filterCheckIn, filterCheckOut]);
 
-  // Real popularity (migration-086 RPC, aggregate counts only). The badge goes
-  // to the top three approved houses over the last year, and only when they
-  // have enough bookings for "الأكثر حجزًا" to mean something (≥3). null = RPC
-  // unavailable → no badges, never a guess.
-  const [bookingCounts, setBookingCounts] = useState<Record<string, number> | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    loadHouseBookingCounts().then((result) => {
-      if (!cancelled) setBookingCounts(result);
-    });
-    return () => { cancelled = true; };
-  }, []);
-  const mostBookedIds = React.useMemo(() => {
-    if (!bookingCounts) return new Set<string>();
-    return new Set(
-      Object.entries(bookingCounts)
-        .filter(([, n]) => n >= 3)
-        // Tie-break on id so the badge lands on the same houses every render;
-        // the RPC's row order is not guaranteed and would make it flicker.
-        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .slice(0, 3)
-        .map(([id]) => id),
-    );
-  }, [bookingCounts]);
-
-  // «حجزتم هنا قبل كده» is personal memory, not popularity, so it needs no
-  // server aggregate. The userId filter is not redundant: RLS scopes a plain
-  // guest to their own rows, but an owner or admin browsing this screen also
-  // receives other people's bookings, and without it they would be told they
-  // had stayed somewhere they never booked.
-  const bookedBeforeIds = React.useMemo(() => {
-    if (!currentUser) return new Set<string>();
-    return new Set(
-      bookings
-        .filter((b) => b.userId === currentUser.id && (b.status === 'approved' || b.status === 'completed'))
-        .map((b) => b.houseId),
-    );
-  }, [bookings, currentUser]);
+  // «الأكثر حجزًا» was computed here — top three approved houses by confirmed
+  // bookings over a year — and «حجزتم هنا قبل كده» from the viewer's own
+  // bookings. Both are the admin's to set now (0164), so a badge is a decision
+  // about what to put forward rather than a threshold nobody chose.
+  //
+  // «حجزتم هنا قبل كده» is not among the ones an admin can set, and its
+  // automatic version goes with the rest: it is a statement about the person
+  // reading the card, so an admin switching it on would tell every visitor
+  // they had stayed somewhere they never did.
 
   // Nights in the chosen window, so a card can quote a whole stay rather than a
   // per-person-per-night rate nobody budgets in.
@@ -849,10 +836,10 @@ export default function UserDashboard({
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                     <span>{arabicDecimal(house.rating)}</span>
                   </span>
-                  {mostBookedIds.has(house.id) && (
-                    <span className="min-w-0 shrink bg-rose-700/90 backdrop-blur-sm text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                  {house.badge && HOUSE_BADGES[house.badge] && (
+                    <span className={`min-w-0 shrink backdrop-blur-sm text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow ${HOUSE_BADGES[house.badge].cls}`}>
                       <Flame className="w-3 h-3 shrink-0" />
-                      <span className="truncate">الأكثر حجزًا</span>
+                      <span className="truncate">{HOUSE_BADGES[house.badge].label}</span>
                     </span>
                   )}
                   {/* Only when it is actually live. A discount badge on a
@@ -937,11 +924,7 @@ export default function UserDashboard({
                       ✓ متاح في تواريخك
                     </span>
                   )}
-                  {bookedBeforeIds.has(house.id) && (
-                    <span className="max-w-full truncate bg-[var(--ds-brand)]/90 backdrop-blur-sm text-[var(--ds-accent)] text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
-                      ⭐ حجزتم هنا قبل كده
-                    </span>
-                  )}
+
                   {house.propertyType === 'student' && (
                     <span className={`text-[11px] font-extrabold px-2 py-0.5 rounded-full shadow-sm text-white ${house.studentHousingGender === 'girls' ? 'bg-[#9C4B64]' : 'bg-[#4B6B9C]'}`}>
                       {house.studentHousingGender === 'girls' ? 'سكن طالبات ♀' : 'سكن طلاب ♂'}

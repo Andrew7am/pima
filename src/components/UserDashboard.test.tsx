@@ -328,12 +328,7 @@ describe('the filter sheet', () => {
   });
 });
 
-describe('the two Supabase RPCs behind the list', () => {
-  it('asks for popularity counts once the screen mounts', async () => {
-    renderBrowse();
-    await waitFor(() => expect(loadHouseBookingCounts).toHaveBeenCalled());
-  });
-
+describe('the Supabase RPC behind the list', () => {
   it('does not ask for availability while no date range is set', () => {
     // The effect guards on both dates being present AND checkIn < checkOut,
     // so the default state must not hit the RPC at all.
@@ -341,13 +336,45 @@ describe('the two Supabase RPCs behind the list', () => {
     expect(loadHousesAvailability).not.toHaveBeenCalled();
   });
 
-  it('still lists houses when the popularity RPC returns nothing', async () => {
-    // null means "unavailable" and must degrade to no badges, never to an
-    // empty list or a thrown render.
-    vi.mocked(loadHouseBookingCounts).mockResolvedValue(null);
+  // The popularity RPC used to be called on mount to decide «الأكثر حجزًا».
+  // 0164 made badges the admin's to set, so nothing computes them and nothing
+  // fetches counts for them — asserted, because leaving the call in would be
+  // a request on every visit for a number no longer read.
+  it('no longer asks for popularity counts', async () => {
     renderBrowse();
-    await waitFor(() => expect(loadHouseBookingCounts).toHaveBeenCalled());
-    expect(cardIds()).toEqual(['h1']);
+    await waitFor(() => expect(cardIds()).toEqual(['h1']));
+    expect(loadHouseBookingCounts).not.toHaveBeenCalled();
+  });
+});
+
+describe('badges are the admin\'s, not the data\'s', () => {
+  it('shows the badge an admin set', async () => {
+    renderBrowse({ houses: [house({ badge: 'most_booked' })] });
+    expect(await screen.findByText('الأكثر حجزًا')).toBeInTheDocument();
+  });
+
+  it('shows none when the admin set none', async () => {
+    renderBrowse();
+    await waitFor(() => expect(cardIds()).toEqual(['h1']));
+    expect(screen.queryByText('الأكثر حجزًا')).not.toBeInTheDocument();
+  });
+
+  it('ignores a badge key it does not know', async () => {
+    // The database constrains the column, but a row written before that
+    // constraint — or by a future version — must not render a raw key.
+    renderBrowse({ houses: [house({ badge: 'not_a_badge' })] });
+    await waitFor(() => expect(cardIds()).toEqual(['h1']));
+    expect(screen.queryByText('not_a_badge')).not.toBeInTheDocument();
+  });
+
+  // «حجزتم هنا قبل كده» was shown to a guest who had stayed there. It is gone
+  // rather than moved into the admin's list: it is a statement about the
+  // person reading the card, so an admin switching it on would tell every
+  // visitor they had stayed somewhere they never did.
+  it('never claims the visitor has been here before', async () => {
+    renderBrowse({ bookings: [{ id: 'b1', houseId: 'h1', userId: 'u1', status: 'completed' } as never] });
+    await waitFor(() => expect(cardIds()).toEqual(['h1']));
+    expect(screen.queryByText(/حجزتم هنا قبل كده/)).not.toBeInTheDocument();
   });
 });
 
