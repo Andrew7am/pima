@@ -35,7 +35,7 @@ function PriceBox({ icon: Icon, label, value }: {
   value: number;
 }) {
   return (
-    <div className="flex-1 min-w-0 rounded-2xl bg-white/15 border border-white/20 px-1.5 py-1 text-center">
+    <div className="flex-1 min-w-0 rounded-2xl bg-white/15 border border-white/20 px-1.5 py-0.5 text-center">
       {/* The icon sits above the label rather than beside it. Beside it, the
           two together needed a 92px box, and the narrowest real card gives
           barely half that — both labels came out ellipsised, and the ellipsis
@@ -823,7 +823,7 @@ export default function UserDashboard({
                 // shape of its own — and the brief asks for «نفس مقاس الكارت
                 // الحالي», so it keeps the ratio it already had. min-height is
                 // the floor the panel's own content needs on a narrow phone.
-                className="pima-reveal relative aspect-[1.45/1] min-h-[272px] bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ds-accent)] cursor-pointer group"
+                className="pima-reveal relative aspect-[1.68/1] min-h-[234px] bg-[#2A2A20] rounded-3xl border border-[#3C3C2E] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] overflow-hidden active:scale-[0.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ds-accent)] cursor-pointer group"
               >
                 {/* The photo is the whole card; the details panel floats over it. */}
                 <div className="absolute inset-0 overflow-hidden">
@@ -971,7 +971,7 @@ export default function UserDashboard({
                       shadow-[...] carries both, because Tailwind takes one
                       box-shadow property. */}
                   <div
-                    className="pointer-events-auto self-stretch overflow-hidden rounded-[22px] border border-white/[0.22] backdrop-blur-[24px] p-2.5 space-y-1.5
+                    className="pointer-events-auto self-stretch overflow-hidden rounded-[22px] border border-white/[0.22] backdrop-blur-[24px] px-2.5 py-2 space-y-1
                                shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_8px_30px_rgba(0,0,0,0.12)]"
                     style={{ width: 'var(--pima-panel-w)', backgroundColor: 'rgba(20, 32, 40, 0.30)' }}
                   >
@@ -998,9 +998,9 @@ export default function UserDashboard({
                     {/* Three, and only three. A fourth and a fifth turned this
                         row into a legend to be decoded rather than a glance. */}
                     <div className="flex items-start gap-1.5">
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
-                          <Users className="w-4 h-4" />
+                      <div className="flex flex-col items-center">
+                        <span className="w-6 h-6 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
+                          <Users className="w-3.5 h-3.5" />
                         </span>
                         <span className="text-[11px] font-black text-white leading-none">
                           {arabicNumber(house.propertyType === 'student' || house.propertyType === 'staff' ? house.roomCapacity : house.bedsCount)}
@@ -1010,18 +1010,18 @@ export default function UserDashboard({
                         </span>
                       </div>
 
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
-                          <BedDouble className="w-4 h-4" />
+                      <div className="flex flex-col items-center">
+                        <span className="w-6 h-6 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
+                          <BedDouble className="w-3.5 h-3.5" />
                         </span>
                         <span className="text-[11px] font-black text-white leading-none">{arabicNumber(house.roomsCount)}</span>
                         <span className="text-[11px] font-bold text-white/70">غرف</span>
                       </div>
 
                       {(house.services.includes('موقف مجاني') || house.services.includes('جراج خاص')) && (
-                        <div className="flex flex-col items-center gap-0.5">
-                          <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
-                            <SquareParking className="w-4 h-4" />
+                        <div className="flex flex-col items-center">
+                          <span className="w-6 h-6 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
+                            <SquareParking className="w-3.5 h-3.5" />
                           </span>
                           <span className="text-[11px] font-bold text-white/70 text-center whitespace-nowrap">
                             {house.services.includes('موقف مجاني') ? 'موقف' : 'جراج'}
@@ -1037,9 +1037,9 @@ export default function UserDashboard({
                           it twice was saying it once too many. */}
                       {!(house.services.includes('موقف مجاني') || house.services.includes('جراج خاص'))
                         && house.services.includes('واي فاي') && (
-                        <div className="flex flex-col items-center gap-0.5">
-                          <span className="w-7 h-7 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
-                            <Wifi className="w-4 h-4" />
+                        <div className="flex flex-col items-center">
+                          <span className="w-6 h-6 rounded-full bg-white/15 border border-white/20 flex items-center justify-center text-white">
+                            <Wifi className="w-3.5 h-3.5" />
                           </span>
                           <span className="text-[11px] font-bold text-white/70 text-center whitespace-nowrap">واي فاي</span>
                         </div>
@@ -1136,7 +1136,7 @@ export default function UserDashboard({
                         being fine as the panel narrows for the photograph's sake:
                         the two meet in the middle and the arrow sits on the ع.
                         A flex row cannot overlap itself. */}
-                    <div className="flex items-center justify-center gap-1.5 bg-gradient-to-l from-[var(--ds-accent-deep)] to-[var(--ds-accent)] text-white rounded-full px-2 py-1.5 mt-0.5">
+                    <div className="flex items-center justify-center gap-1.5 bg-gradient-to-l from-[var(--ds-accent-deep)] to-[var(--ds-accent)] text-white rounded-full px-2 py-1 mt-0.5">
                       <span className="w-5 h-5 shrink-0 rounded-full bg-black/25 flex items-center justify-center">
                         <ArrowLeft className="w-3 h-3" />
                       </span>
