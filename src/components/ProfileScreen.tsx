@@ -8,6 +8,7 @@ import RewardsDashboard from './RewardsDashboard';
 import PhotoPickerButtons from './PhotoPickerButtons';
 import { setEmailOptOut } from '../lib/db';
 import WebPushToggle from './WebPushToggle';
+import { iosNeedsHomeScreen } from '../lib/push';
 import { useTheme } from '../lib/useTheme';
 import { Badge, Button, Card, Input } from './ui';
 
@@ -531,6 +532,27 @@ export default function ProfileScreen({
             disabled={p.disabled}
           />
         )} />
+
+        {/* An iPhone in an ordinary Safari tab has no Notification API at all,
+            so the switch above is hidden — correctly, it could not work. But
+            then the user sees nothing and never learns that adding Pima to the
+            Home Screen is what turns notifications on. This is the one place
+            «unsupported» is worth explaining instead of leaving blank. */}
+        {iosNeedsHomeScreen() && (
+          <div className="p-4 flex items-start gap-3 text-right">
+            <span className="w-9 h-9 rounded-2xl bg-[var(--ds-bg)] border border-[var(--ds-border)] flex items-center justify-center shrink-0">
+              <Bell className="w-4 h-4 text-[var(--ds-accent)]" />
+            </span>
+            <div className="min-w-0 space-y-1">
+              <span className="text-xs font-black text-[var(--ds-text)] block">عايز الإشعارات توصلك؟</span>
+              <span className="text-[11px] text-[var(--ds-text-2)] block leading-relaxed">
+                على الآيفون، الإشعارات بتشتغل بس لما تضيف بيما للشاشة الرئيسية:
+                اضغط زرار المشاركة تحت، بعدين «إضافة إلى الشاشة الرئيسية»، وافتح
+                بيما من الأيقونة الجديدة.
+              </span>
+            </div>
+          </div>
+        )}
         {/* Theme. Three segments rather than a switch, because "system" is a
             real third state and a two-way toggle cannot express it. Uses the
             same row metrics as its neighbours — no new control invented. */}

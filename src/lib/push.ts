@@ -72,6 +72,39 @@ export function webPushAvailable(): boolean {
   );
 }
 
+/**
+ * An iPhone that could receive notifications, but not from a Safari tab.
+ *
+ * iOS supports web push only for a site the user has added to the Home Screen;
+ * in an ordinary tab the Notification API is simply absent, so
+ * webPushAvailable() is false and the opt-in is hidden — correctly, because it
+ * could not work. The result is that an iPhone user sees nothing at all and
+ * has no way to learn that two taps would fix it.
+ *
+ * This is the one case where «unsupported» deserves an explanation rather than
+ * silence, so the screens can offer the instructions instead of the switch.
+ */
+export function iosNeedsHomeScreen(): boolean {
+  if (typeof window === 'undefined' || Capacitor.isNativePlatform()) return false;
+  const ua = navigator.userAgent || '';
+  // iPadOS 13+ reports itself as a Mac; the touch points give it away.
+  const isIOS = /iPad|iPhone|iPod/.test(ua)
+    || (/Macintosh/.test(ua) && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1);
+  if (!isIOS) return false;
+  const standalone =
+    window.matchMedia?.('(display-mode: standalone)').matches
+    || (navigator as unknown as { standalone?: boolean }).standalone === true;
+  if (standalone) return false;
+  // The capability, not one API: iOS withholds Notification in a tab, and a
+  // browser missing PushManager is in the same position for the same reason.
+  const canPush = 'Notification' in window && 'PushManager' in window;
+  if (canPush) return false;
+  // And only when there is something to switch on. Without the project keys
+  // nothing can be delivered to an installed app either, so telling somebody
+  // to install it would be sending them to another dead end.
+  return Boolean(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId && VAPID_KEY);
+}
+
 export type WebPushState = 'unsupported' | 'default' | 'granted' | 'denied';
 
 // Browser permission is NOT the same thing as "Pima is sending to this
