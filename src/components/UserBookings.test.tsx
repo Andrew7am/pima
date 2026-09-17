@@ -10,7 +10,15 @@ import { DEFAULT_PLATFORM_SETTINGS } from '../types';
 vi.mock('./RoomDistribution', () => ({ default: () => null }));
 vi.mock('./BookingChatPanel', () => ({ default: () => null }));
 vi.mock('./ReviewWizard', () => ({ default: () => null }));
-vi.mock('../lib/db', () => ({ setAttendeeSharePaid: vi.fn() }));
+// Everything UserBookings imports from db. The mock listed only
+// setAttendeeSharePaid, which the component stopped importing some time ago —
+// stale but harmless while nothing else was called during these tests.
+// loadMyRoomAssignments runs on mount, so it is not harmless any more.
+vi.mock('../lib/db', () => ({
+  setAttendeePaymentStatus: vi.fn(async () => true),
+  addAttendee: vi.fn(async () => ({ ok: true })),
+  loadMyRoomAssignments: vi.fn(async () => []),
+}));
 vi.mock('../lib/ics', () => ({ downloadBookingIcs: vi.fn() }));
 
 const me = { id: 'u1', name: 'أندرو', role: 'individual', email: 'a@b.c' } as User;

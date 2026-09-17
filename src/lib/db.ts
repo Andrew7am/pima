@@ -1450,6 +1450,30 @@ export async function loadMyParticipations(): Promise<Participation[]> {
  * sign-in; silent by design — most people are on no trip, and a toast saying
  * «linked 0» is noise.
  */
+/** Which bed belongs to this account, per booking (0163). */
+export interface MyRoomAssignment {
+  bookingId: string;
+  roomName: string | null;
+  bedNumber: number | null;
+}
+
+/**
+ * The viewer's own bed on each of their bookings.
+ *
+ * Its own small query, not part of the roster load: attendees and allocations
+ * are fetched lazily — only when the distribution screen opens — and pulling
+ * every booking's whole roster to render one line per card would undo that.
+ */
+export async function loadMyRoomAssignments(): Promise<MyRoomAssignment[]> {
+  const { data, error } = await supabase.rpc('my_room_assignments');
+  if (error) { console.error('loadMyRoomAssignments:', error); return []; }
+  return (data ?? []).map((r: Record<string, unknown>) => ({
+    bookingId: r.booking_id as string,
+    roomName: (r.room_name as string) ?? null,
+    bedNumber: (r.bed_number as number) ?? null,
+  }));
+}
+
 export async function linkMyAttendeeRows(): Promise<number> {
   const { data, error } = await supabase.rpc('link_my_attendee_rows');
   if (error) { console.error('linkMyAttendeeRows:', error); return 0; }

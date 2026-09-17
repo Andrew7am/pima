@@ -7,7 +7,8 @@ import {
   Printer, Building, AlertTriangle, Bell, Smartphone, CreditCard, 
   Coins, Upload, ShieldCheck, Image, Check, Sparkles, ListTodo, Plus, Trash2, BookOpen,
   FileDown, MessageCircle, MapPin, CalendarCheck, Wallet, ChevronLeft, CalendarPlus, Star, X, UserPlus,
-  ArrowDownWideNarrow, Copy
+  ArrowDownWideNarrow, Copy,
+  BedDouble,
 } from 'lucide-react';
 import RoomDistribution from './RoomDistribution';
 import SearchInput from './ui/SearchInput';
@@ -22,7 +23,7 @@ import { getBookingStage } from '../lib/bookingStage';
 import { depositDue } from '../lib/paymentLedger';
 import DepositPayment from './booking/DepositPayment';
 import { downloadBookingIcs } from '../lib/ics';
-import { setAttendeePaymentStatus, addAttendee } from '../lib/db';
+import { setAttendeePaymentStatus, addAttendee, loadMyRoomAssignments } from '../lib/db';
 import ParticipantsSheet, { ParticipantsCard, tally } from './ParticipantsSheet';
 import BottomSheet from './BottomSheet';
 import { createConferenceForBooking } from '../lib/conferences';
@@ -330,6 +331,19 @@ export default function UserBookings({
     setAddName(''); setAddPhone(''); setAddGender('male');
     setAddingTo(null);
   };
+
+  // The viewer's own bed, per booking (0163). Its own small query — attendees
+  // and allocations are loaded lazily, and pulling every roster to render one
+  // line per card would undo that.
+  const [myRooms, setMyRooms] = useState<Record<string, { roomName: string | null; bedNumber: number | null }>>({});
+  useEffect(() => {
+    let alive = true;
+    void loadMyRoomAssignments().then((rows) => {
+      if (!alive) return;
+      setMyRooms(Object.fromEntries(rows.map((r) => [r.bookingId, r])));
+    });
+    return () => { alive = false; };
+  }, []);
 
   const [reviewingBooking, setReviewingBooking] = useState<Booking | null>(null);
   const [tab, setTab] = useState<'all' | 'action' | 'confirmed' | 'completed' | 'archived'>('all');
@@ -923,9 +937,25 @@ export default function UserBookings({
                         <span className="truncate">{[h?.address, h?.governorate].filter(Boolean).join(' - ')}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-3 text-[11px] font-bold text-white/85">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-white/85 ps-20">
                       <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{arabicDateRange(nextBooking.checkIn, nextBooking.checkOut)}</span>
                       <span className="flex items-center gap-1"><Users className="w-3 h-3" />{nextBooking.guestsCount.toLocaleString('ar-EG')} فرد</span>
+                      {/* Their own bed. The card carried a button opening the
+                          distribution screen — a tool for placing other people —
+                          and never said where the person holding the phone
+                          sleeps. It belongs here, beside the dates, not inside a
+                          sheet they have to know to open. Only once there is an
+                          answer: «not allocated yet» is news for somebody on the
+                          roster, and the booker is often not on it. */}
+                      {myRooms[nextBooking.id]?.roomName && (
+                        <span className="flex items-center gap-1">
+                          <BedDouble className="w-3 h-3 shrink-0" />
+                          غرفتك: {myRooms[nextBooking.id].roomName}
+                          {myRooms[nextBooking.id].bedNumber != null
+                            ? ` · سرير ${arabicNumber(myRooms[nextBooking.id].bedNumber as number)}`
+                            : ''}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center justify-between gap-2 pt-1.5">
                       <span className="text-[16px] font-black">{nextBooking.totalPrice.toLocaleString('ar-EG')} <span className="text-[11px]">ج.م</span></span>
@@ -1648,6 +1678,7 @@ export default function UserBookings({
                       <div className="text-[11px] text-[var(--ds-success-ink)] font-bold leading-relaxed">١) اضغط «توزيع الغرف» ٢) اكتب أسماء المشاركين ٣) وزّعهم على الغرف (تلقائي أو يدوي) ٤) اطبع الكشف.</div>
                     </div>
                   )}
+
 
                   {/* Primary CTA. Paying is deliberately absent here: the action
                       card at the top and the sticky bar at the foot both carry
