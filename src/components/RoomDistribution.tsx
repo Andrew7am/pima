@@ -171,38 +171,18 @@ function legacyAutoAllocate(
   return tempAllocations;
 }
 
-const COPTIC_MOCK_NAMES = [
-  { name: 'مينا جرجس', gender: 'male', groupType: 'youth' },
-  { name: 'كيرلس مجدي', gender: 'male', groupType: 'youth' },
-  { name: 'مريم يوسف', gender: 'female', groupType: 'youth' },
-  { name: 'ابانوب عادل', gender: 'male', groupType: 'youth' },
-  { name: 'دميانة سمير', gender: 'female', groupType: 'youth' },
-  { name: 'شنودة مكرم', gender: 'male', groupType: 'other' },
-  { name: 'توني أشرف', gender: 'male', groupType: 'youth' },
-  { name: 'يوستينا رافت', gender: 'female', groupType: 'youth' },
-  { name: 'مارك عاطف', gender: 'male', groupType: 'youth' },
-  { name: 'مارينا وحيد', gender: 'female', groupType: 'youth' },
-  { name: 'جون فايز', gender: 'male', groupType: 'youth' },
-  { name: 'فبرونيا عماد', gender: 'female', groupType: 'youth' },
-  { name: 'بيشوي صفوت', gender: 'male', groupType: 'family' },
-  { name: 'مريم صفوت', gender: 'female', groupType: 'family' },
-  { name: 'الطفل ديفيد بيشوي', gender: 'male', groupType: 'child' },
-  { name: 'الطفلة ساندي بيشوي', gender: 'female', groupType: 'child' },
-  { name: 'جرجس ابراهيم', gender: 'male', groupType: 'family' },
-  { name: 'تريزا عزمي', gender: 'female', groupType: 'family' },
-  { name: 'توماس جرجس', gender: 'male', groupType: 'child' },
-  { name: 'روماني نبيل', gender: 'male', groupType: 'youth' },
-  { name: 'ماري منير', gender: 'female', groupType: 'youth' },
-  { name: 'فادي هاني', gender: 'male', groupType: 'youth' },
-  { name: 'كيرلس عماد', gender: 'male', groupType: 'youth' },
-  { name: 'سارة منصف', gender: 'female', groupType: 'youth' },
-  { name: 'مايكل سعيد', gender: 'male', groupType: 'other' },
-  { name: 'سوزان مكرم', gender: 'female', groupType: 'family' },
-  { name: 'الطفل فيلوبتير مايكل', gender: 'male', groupType: 'child' },
-  { name: 'ايرين فوزي', gender: 'female', groupType: 'other' },
-  { name: 'بيتر بهجت', gender: 'male', groupType: 'youth' },
-  { name: 'كرستينا ناصف', gender: 'female', groupType: 'youth' }
-];
+// COPTIC_MOCK_NAMES and handleGenerateMockAttendees lived here: forty
+// invented names and a pulsing «توليد كشف حضور تلقائي» button, shown to a
+// servant whenever their roster was empty — which is every roster, once,
+// and it was the only button there. It was written to make testing easy and
+// it shipped. A servant who pressed it got forty people who are not coming,
+// indistinguishable from the real ones everywhere the roster is read: the
+// room distribution, the collection tracker, the headcount, and now the
+// participant link.
+//
+// Removed rather than hidden behind a dev flag — the CSV import and the add
+// form beside it are the real ways to fill a roster, and they were always
+// there.
 
 interface RoomDistributionProps {
   booking: Booking;
@@ -278,31 +258,6 @@ export default function RoomDistribution({
     setTimeout(() => {
       setToastMessage(null);
     }, 4000);
-  };
-
-  // Generate mock attendees automatically to make it easy for testing
-  const handleGenerateMockAttendees = () => {
-    const needed = booking.guestsCount;
-    const generated: Attendee[] = [];
-    
-    for (let i = 0; i < needed; i++) {
-      const template = COPTIC_MOCK_NAMES[i % COPTIC_MOCK_NAMES.length];
-      // Generate slightly unique names if we exceed list length
-      const nameSuffix = i >= COPTIC_MOCK_NAMES.length ? ` ${Math.floor(i / COPTIC_MOCK_NAMES.length) + 1}` : '';
-      generated.push({
-        id: `att_${booking.id}_${i}_${Date.now()}`,
-        bookingId: booking.id,
-        name: `${template.name}${nameSuffix}`,
-        gender: template.gender as 'male' | 'female',
-        groupType: template.groupType as 'youth' | 'family' | 'child' | 'other'
-      });
-    }
-
-    setAttendees(generated);
-    setAllocations([]); // Reset allocations on regen
-    onUpdateAttendees(booking.id, generated);
-    onUpdateAllocations(booking.id, []);
-    showToast(`تم توليد قائمة حضور تحتوي على ${generated.length} اسم افتراضي بنجاح! 🎉`, 'success');
   };
 
   const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -745,16 +700,6 @@ export default function RoomDistribution({
                 <span>مسجلي المؤتمر ({attendees.length} / {booking.guestsCount} فرد):</span>
               </h4>
               
-              {attendees.length === 0 && (
-                <button
-                  id="generate-mock-attendees"
-                  onClick={handleGenerateMockAttendees}
-                  className="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 font-black px-2.5 py-1 rounded-xl text-[9px] transition-all cursor-pointer flex items-center gap-1 animate-pulse"
-                >
-                  <Sparkles className="w-3 h-3 text-amber-700" />
-                  <span>توليد كشف حضور تلقائي</span>
-                </button>
-              )}
               <label className="bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200/80 font-black px-2.5 py-1 rounded-xl text-[9px] transition-all cursor-pointer flex items-center gap-1">
                 <Upload className="w-3 h-3 text-emerald-700" />
                 <span>استيراد من ملف CSV</span>

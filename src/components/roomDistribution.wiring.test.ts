@@ -56,3 +56,32 @@ describe('room distribution works on real rooms', () => {
     }
   });
 });
+
+/**
+ * No invented people in the roster.
+ *
+ * RoomDistribution shipped with forty hardcoded Coptic names and a pulsing
+ * «توليد كشف حضور تلقائي» button, rendered whenever the roster was empty —
+ * which is every roster, once, and it was the only button in that corner. It
+ * was written to make testing easy. A servant who pressed it got forty people
+ * who are not coming, and nothing downstream can tell them from the real ones:
+ * the room distribution, the collection tracker, the headcount, the
+ * participant links.
+ *
+ * The CSV import and the add form beside it were always the real answer.
+ */
+describe('the roster is never filled with invented names', () => {
+  const rd = readFileSync(join(R, 'src', 'components', 'RoomDistribution.tsx'), 'utf8');
+
+  it('has no mock-attendee generator', () => {
+    const code = rd.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    for (const marker of ['COPTIC_MOCK_NAMES', 'handleGenerateMockAttendees', 'generate-mock-attendees']) {
+      expect(code.includes(marker), `${marker} is back in RoomDistribution.tsx`).toBe(false);
+    }
+  });
+
+  it('still offers the two real ways to fill a roster', () => {
+    expect(rd.includes('استيراد من ملف CSV')).toBe(true);
+    expect(rd.includes('handleAddAttendee')).toBe(true);
+  });
+});
