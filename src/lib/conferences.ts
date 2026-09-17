@@ -37,6 +37,7 @@ type Row = {
   house_lat: number | null;
   house_lng: number | null;
   host_phone: string | null;
+  pending_requests: unknown;
   presentation_slides: unknown;
   active_slide_id: string | null;
   instant_alert: unknown;
@@ -75,6 +76,7 @@ const toRoom = (r: Row): ConferenceRoom => ({
   events: (r.events as ConferenceRoom['events']) ?? [],
   announcements: (r.announcements as ConferenceRoom['announcements']) ?? [],
   checklist: (r.checklist as ConferenceRoom['checklist']) ?? [],
+  pendingUserRequests: (r.pending_requests as ConferenceRoom['pendingUserRequests']) ?? [],
   presentationSlides: (r.presentation_slides as ConferenceRoom['presentationSlides']) ?? [],
   activeSlideId: r.active_slide_id ?? undefined,
   instantAlert: (r.instant_alert as ConferenceRoom['instantAlert']) ?? undefined,
@@ -255,6 +257,8 @@ export function mergeConferenceFrame(
     checklist: frame.checklist !== undefined ? incoming.checklist : prev.checklist,
     presentationSlides:
       frame.presentation_slides !== undefined ? incoming.presentationSlides : prev.presentationSlides,
+    pendingUserRequests:
+      frame.pending_requests !== undefined ? incoming.pendingUserRequests : prev.pendingUserRequests,
     joinedUserIds: frame.joined_user_ids !== undefined ? incoming.joinedUserIds : prev.joinedUserIds,
     notificationsLog:
       frame.notifications_log !== undefined ? incoming.notificationsLog : prev.notificationsLog,
@@ -282,6 +286,38 @@ export function subscribeToConference(
     )
     .subscribe();
   return () => { void supabase.removeChannel(channel); };
+}
+
+
+/**
+ * Approve or refuse one request. Host only, checked in the RPC — a button
+ * cannot enforce it, and letting yourself in is what the setting exists to
+ * stop. Either way the asker is told: a request that vanishes silently is
+ * indistinguishable from a broken app.
+ */
+export async function decideJoinRequest(
+  conferenceId: string,
+  userId: string,
+  approve: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+  const { error } = await supabase.rpc('decide_join_request', {
+    p_conference_id: conferenceId, p_user_id: userId, p_approve: approve,
+  });
+  if (error) { console.error('decideJoinRequest:', error); return { ok: false, error: error.message }; }
+  return { ok: true };
+}
+
+/** Conferences this account has asked to join and is still waiting on. */
+export async function loadMyPendingRequests(): Promise<
+  { conferenceId: string; title: string; askedAt: string }[]
+> {
+  const { data, error } = await supabase.rpc('my_pending_conference_requests');
+  if (error) { console.error('loadMyPendingRequests:', error); return []; }
+  return (data ?? []).map((r: Record<string, unknown>) => ({
+    conferenceId: r.conference_id as string,
+    title: (r.title as string) ?? '',
+    askedAt: (r.asked_at as string) ?? '',
+  }));
 }
 
 /** Leave, or — for the host — remove somebody. */

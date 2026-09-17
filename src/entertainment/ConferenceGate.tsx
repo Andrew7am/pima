@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, Castle, KeyRound, Loader2 } from 'lucide-react';
 import JoinConferenceCard from './JoinConferenceCard';
-import { createConferenceForBooking, loadMyConferences } from '../lib/conferences';
+import { createConferenceForBooking, loadMyConferences, loadMyPendingRequests } from '../lib/conferences';
 import { loadBookings } from '../lib/db';
 import type { Booking, ConferenceRoom } from '../types';
 
@@ -44,6 +44,10 @@ export default function ConferenceGate({ onOpened, onBack, currentUserId }: Prop
   // Rooms already open. App.tsx enters straight into one only when it is the
   // only one; with two it sends the servant here to say which.
   const [mine, setMine] = useState<ConferenceRoom[]>([]);
+  // Requests still waiting on a host. Without these the gate has nothing to
+  // say after a reload: RLS correctly refuses the conference, so the person
+  // sees no trace of having asked and types the code again.
+  const [waiting, setWaiting] = useState<{ conferenceId: string; title: string }[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -64,6 +68,9 @@ export default function ConferenceGate({ onOpened, onBack, currentUserId }: Prop
     loadMyConferences(currentUserId)
       .then((cs) => { if (alive) setMine(cs); })
       .catch(() => { /* the list is an extra; its absence must not blank the gate */ });
+    loadMyPendingRequests()
+      .then((ps) => { if (alive) setWaiting(ps); })
+      .catch(() => { /* same */ });
     return () => { alive = false; };
   }, [currentUserId, reloadKey]);
 
@@ -118,6 +125,22 @@ export default function ConferenceGate({ onOpened, onBack, currentUserId }: Prop
                   {c.isDisabled && ' · مقفول'}
                 </p>
               </button>
+            ))}
+          </div>
+        )}
+
+        {waiting.length > 0 && (
+          <div className="space-y-2">
+            {waiting.map((w) => (
+              <div key={w.conferenceId}
+                className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 text-center">
+                <p className="text-[11.5px] font-black text-amber-200">
+                  طلبك في «{w.title}» تحت المراجعة
+                </p>
+                <p className="text-[10.5px] text-amber-200/70 mt-0.5">
+                  هيوصلك إشعار أول ما مسؤول المؤتمر يقبلك.
+                </p>
+              </div>
             ))}
           </div>
         )}

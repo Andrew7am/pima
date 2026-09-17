@@ -42,7 +42,10 @@ export default function JoinConferenceCard({ onJoined, initialCode = '' }: Props
       : r.needsApproval
         ? `طلبك اتسجّل في «${r.title}» — مسؤول المؤتمر هيوافق.`
         : `أهلاً بيك في «${r.title}».`);
-    onJoined(r.conferenceId);
+    // Not when they are only waiting. RLS refuses a pending person the
+    // conference — correctly — so navigating them into it lands them on a
+    // blank screen right after being told their request was registered.
+    if (!r.needsApproval) onJoined(r.conferenceId);
   };
 
   return (

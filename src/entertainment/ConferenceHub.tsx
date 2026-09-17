@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import JoinConferenceCard from './JoinConferenceCard';
-import { broadcastConferenceAlert, clearConferenceAlert } from '../lib/conferences';
+import { broadcastConferenceAlert, clearConferenceAlert, decideJoinRequest } from '../lib/conferences';
 import { ConferenceRoom, ConferenceAnnouncement, ConferenceChecklistItem, ConferenceEvent, ConferenceLiveChatMessage, ConferenceScheduleItem } from '../types';
 import { QrCode, Search, LogIn, ArrowRight, Gamepad2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -243,24 +243,25 @@ function ActiveConferenceHub({ currentUser, conference, onLeave, onUpdateConfere
   const [showJoinScanner, setShowJoinScanner] = useState(false);
   const [scannedJoinCode, setScannedJoinCode] = useState<string | undefined>(undefined);
 
-  const handleApproveRequest = (reqUserId: string) => {
-    const updated = {
+  // Both buttons edited local state and nothing else — there was no column
+  // behind pendingUserRequests, so approving somebody changed a list that only
+  // existed in this tab. 0162 moves the decision to an RPC that checks the
+  // decider is the host and tells the asker either way.
+  const decide = async (reqUserId: string, approve: boolean) => {
+    const r = await decideJoinRequest(conference.id, reqUserId, approve);
+    if (!r.ok) { showToast(r.error || 'تعذّر حفظ القرار. حاول تاني.'); return; }
+    onUpdateConference({
       ...conference,
       pendingUserRequests: (conference.pendingUserRequests || []).filter(req => req.userId !== reqUserId),
-      joinedUserIds: [...(conference.joinedUserIds || []), reqUserId]
-    };
-    onUpdateConference(updated);
-    showToast('تمت الموافقة على طلب الانضمام بنجاح! 🎉');
+      joinedUserIds: approve
+        ? [...(conference.joinedUserIds || []), reqUserId]
+        : (conference.joinedUserIds || []),
+    });
+    showToast(approve ? 'تمت الموافقة على طلب الانضمام! 🎉' : 'تم رفض طلب الانضمام.');
   };
 
-  const handleRejectRequest = (reqUserId: string) => {
-    const updated = {
-      ...conference,
-      pendingUserRequests: (conference.pendingUserRequests || []).filter(req => req.userId !== reqUserId)
-    };
-    onUpdateConference(updated);
-    showToast('تم رفض طلب الانضمام.');
-  };
+  const handleApproveRequest = (reqUserId: string) => { void decide(reqUserId, true); };
+  const handleRejectRequest = (reqUserId: string) => { void decide(reqUserId, false); };
 
   const handleChangeCode = () => {
     const newCode = prompt('أدخل كود الغرفة الجديد (سهل وقصير):', conference.conferenceCode);
