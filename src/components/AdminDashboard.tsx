@@ -27,6 +27,8 @@ const PLATFORM_PM_TYPES: { value: OwnerPaymentMethod['type']; label: string }[] 
   { value: 'we_cash', label: 'وي كاش' },
   { value: 'bank_transfer', label: 'تحويل بنكي' },
 ];
+import { loadPlaceRequests, setPlaceRequestStatus, demandByGovernorate } from '../lib/placeRequests';
+import type { PlaceRequest } from '../lib/placeRequests';
 import { Check, X, Shield, Users, BarChart3, Building, Clock, Star, TrendingUp, DollarSign, CreditCard, Smartphone, CheckSquare, AlertTriangle, CheckCircle2, Coins, MessageCircle, Calendar, IdCard, Megaphone, Ban, Power, Trash2, Home, Eye, Pencil, Wallet, Download, MessageSquareDashed, ChevronUp, ChevronDown, Wand2, Copy, Settings, ChevronLeft, ChevronRight, XCircle, MoreHorizontal, MapPin, CalendarDays, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { timeAgo } from '../lib/timeAgo';
 import PhotoPickerButtons from './PhotoPickerButtons';
@@ -192,7 +194,18 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
   // Tabs within Admin — "growth" is default: the admin's morning check
   // (what's happening + what needs attention). Older tabs still exist.
-  const [activeTab, setActiveTab] = useState<'growth' | 'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'finance' | 'audience' | 'season' | 'exceptions' | 'payments' | 'payouts' | 'bookings' | 'settings' | 'audit' | 'messages'>('growth');
+  const [activeTab, setActiveTab] = useState<'growth' | 'moderation' | 'accounts' | 'houses' | 'reviews' | 'announcements' | 'users' | 'finance' | 'audience' | 'season' | 'exceptions' | 'payments' | 'payouts' | 'bookings' | 'settings' | 'audit' | 'messages' | 'demand'>('growth');
+  // Who asked for a place Pima has nothing in (0165). Loaded when the tab
+  // is opened rather than with the panel: it is a call list, not a number
+  // anybody needs on the dashboard, and it holds phone numbers.
+  const [placeRequests, setPlaceRequests] = useState<PlaceRequest[]>([]);
+  const [placeRequestsLoading, setPlaceRequestsLoading] = useState(false);
+  useEffect(() => {
+    if (activeTab !== 'demand') return;
+    setPlaceRequestsLoading(true);
+    loadPlaceRequests().then((rows) => { setPlaceRequests(rows); setPlaceRequestsLoading(false); });
+  }, [activeTab]);
+
   // Draft copy of settings for the settings form
   const [settingsDraft, setSettingsDraft] = useState(settings);
   const [settingsSaved, setSettingsSaved] = useState(false);
@@ -752,6 +765,9 @@ export default function AdminDashboard({
     ]},
     { key: 'home', label: 'الرئيسية', icon: BarChart3, tabs: [
       { key: 'growth', label: 'النمو' },
+      // Next to النمو because that is what it is: the only measure Pima has
+      // of demand it did not meet. The badge counts the ones nobody has rung.
+      { key: 'demand', label: 'أماكن مطلوبة', badge: placeRequests.filter((r) => r.status === 'new').length },
       // Money and audience were one «التقارير» page. They answer different
       // questions, so splitting them is what makes either one readable.
       { key: 'finance', label: 'الماليات' },
@@ -3095,6 +3111,173 @@ export default function AdminDashboard({
           value is counted as «غير محدد» rather than dropped: dropping them
           would shrink the denominator and make every share look larger than
           it is. */}
+      {activeTab === 'demand' && (() => {
+        const demand = demandByGovernorate(placeRequests);
+        const waiting = placeRequests.filter((r) => r.status === 'new');
+        const mark = async (id: string, status: PlaceRequest['status']) => {
+          // Optimistic, then reconciled. The row is a note to self about a
+          // phone call; blocking the list on a round trip to record that the
+          // call happened is the wrong thing to make anybody wait for.
+          setPlaceRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+          const ok = await setPlaceRequestStatus(id, status);
+          if (!ok) setPlaceRequests(await loadPlaceRequests());
+        };
+        const fmt = (d: string | null) => (d ? new Date(d).toLocaleDateString('ar-EG') : null);
+
+        return (
+        <div className="space-y-4">
+          <div className="px-1">
+            <h3 className="text-[16px] font-black text-[var(--ds-text)]">أماكن مطلوبة</h3>
+            <p className="text-[12px] text-[var(--ds-text-2)] mt-0.5">
+              ناس دوّرت على مكان بيما مالهاش فيه بيت، وسابت رقمها. دي مش شكاوى — دي بتقولك المحافظة اللي المفروض تجيب منها البيت الجاي.
+            </p>
+          </div>
+
+          {placeRequestsLoading ? (
+            <div className="flex items-center justify-center gap-2 py-10 text-[12px] font-bold text-[var(--ds-text-2)]">
+              <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
+              بنحمّل…
+            </div>
+          ) : placeRequests.length === 0 ? (
+            <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-[20px] p-6 text-center">
+              <MapPin aria-hidden="true" className="w-5 h-5 text-[var(--ds-text-faint)] mx-auto" />
+              <p className="text-[13px] font-bold text-[var(--ds-text)] mt-2">مفيش طلبات لسه.</p>
+              <p className="text-[11.5px] text-[var(--ds-text-2)] mt-1 leading-relaxed">
+                أول ما حد يدور على محافظة مفيهاش بيوت ويسيب رقمه، هيظهر هنا.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* The ranking first. A list of names says who is waiting; this
+                  says where the next house should be, which is the decision
+                  somebody actually has to take. */}
+              <div className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-[20px] p-3.5">
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <TrendingUp aria-hidden="true" className="w-4 h-4 text-[var(--ds-accent)]" />
+                  <h4 className="text-[13px] font-black text-[var(--ds-text)]">الطلب حسب المحافظة</h4>
+                </div>
+                <ul className="space-y-1.5">
+                  {demand.map((d) => {
+                    const pct = Math.round((d.count / demand[0].count) * 100);
+                    return (
+                      <li key={d.governorate} className="flex items-center gap-2">
+                        <span className="text-[12px] font-bold text-[var(--ds-text)] w-24 shrink-0 truncate">{d.governorate}</span>
+                        <span className="flex-1 h-2 rounded-full bg-[var(--ds-raised)] overflow-hidden">
+                          <span className="block h-full rounded-full bg-[var(--ds-accent)]" style={{ width: pct + '%' }} />
+                        </span>
+                        <span className="text-[12px] font-black text-[var(--ds-text)] tabular-nums shrink-0">{arabicNumber(d.count)}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[12px] font-black text-[var(--ds-text)]">
+                  {arabicNumber(waiting.length)} لسه محدش كلمهم
+                </span>
+                <button
+                  id="export-place-requests"
+                  onClick={() => downloadCsv(
+                    'place-requests.csv',
+                    ['التاريخ', 'الاسم', 'الموبايل', 'المحافظة', 'من', 'إلى', 'العدد', 'ملاحظة', 'الحالة'],
+                    placeRequests.map((r) => [
+                      fmt(r.createdAt) ?? '', r.name, r.phone, r.governorate ?? '',
+                      fmt(r.checkIn) ?? '', fmt(r.checkOut) ?? '',
+                      r.guests == null ? '' : String(r.guests), r.note ?? '', r.status,
+                    ]),
+                  )}
+                  className="flex items-center gap-1 text-[11.5px] font-bold text-[var(--ds-primary)] min-h-11 px-2 cursor-pointer"
+                >
+                  <Download aria-hidden="true" className="w-3.5 h-3.5" />
+                  تصدير
+                </button>
+              </div>
+
+              <ul className="space-y-2">
+                {placeRequests.map((r) => (
+                  <li
+                    key={r.id}
+                    className={`bg-[var(--ds-surface)] border rounded-[18px] p-3 ${
+                      r.status === 'new' ? 'border-[var(--ds-accent)]/40' : 'border-[var(--ds-border)] opacity-70'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-black text-[var(--ds-text)] truncate">{r.name}</div>
+                        {/* A link, not text: the admin is reading this on a
+                            phone and the next thing they do is ring it. */}
+                        <a
+                          href={`tel:${r.phone}`}
+                          className="inline-flex items-center gap-1 text-[12px] font-bold text-[var(--ds-primary)] tabular-nums min-h-11"
+                          dir="ltr"
+                        >
+                          <Smartphone aria-hidden="true" className="w-3.5 h-3.5" />
+                          {r.phone}
+                        </a>
+                      </div>
+                      <span className="text-[10.5px] font-bold text-[var(--ds-text-2)] shrink-0">{fmt(r.createdAt)}</span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {r.governorate && (
+                        <span className="flex items-center gap-1 rounded-full bg-[var(--ds-raised)] px-2 py-0.5 text-[11px] font-bold text-[var(--ds-text-2)]">
+                          <MapPin aria-hidden="true" className="w-3 h-3" />{r.governorate}
+                        </span>
+                      )}
+                      {r.checkIn && r.checkOut && (
+                        <span className="flex items-center gap-1 rounded-full bg-[var(--ds-raised)] px-2 py-0.5 text-[11px] font-bold text-[var(--ds-text-2)]">
+                          <CalendarDays aria-hidden="true" className="w-3 h-3" />{fmt(r.checkIn)} ← {fmt(r.checkOut)}
+                        </span>
+                      )}
+                      {r.guests != null && (
+                        <span className="flex items-center gap-1 rounded-full bg-[var(--ds-raised)] px-2 py-0.5 text-[11px] font-bold text-[var(--ds-text-2)]">
+                          <Users aria-hidden="true" className="w-3 h-3" />{arabicNumber(r.guests)}
+                        </span>
+                      )}
+                    </div>
+
+                    {r.note && (
+                      <p className="text-[11.5px] text-[var(--ds-text-2)] mt-1.5 leading-relaxed">
+                        دوّر على: {r.note}
+                      </p>
+                    )}
+
+                    <div className="flex gap-1.5 mt-2">
+                      {r.status !== 'contacted' && (
+                        <button
+                          onClick={() => mark(r.id, 'contacted')}
+                          className="flex items-center gap-1 rounded-full border border-[var(--ds-border)] px-3 min-h-11 text-[11.5px] font-bold text-[var(--ds-text)] hover:bg-[var(--ds-raised)] cursor-pointer"
+                        >
+                          <Check aria-hidden="true" className="w-3.5 h-3.5" />
+                          كلمناه
+                        </button>
+                      )}
+                      {r.status !== 'closed' && (
+                        <button
+                          onClick={() => mark(r.id, 'closed')}
+                          className="flex items-center gap-1 rounded-full border border-[var(--ds-border)] px-3 min-h-11 text-[11.5px] font-bold text-[var(--ds-text-2)] hover:bg-[var(--ds-raised)] cursor-pointer"
+                        >
+                          <X aria-hidden="true" className="w-3.5 h-3.5" />
+                          خلص
+                        </button>
+                      )}
+                      {r.status !== 'new' && (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--ds-text-2)] px-1 self-center">
+                          <Clock aria-hidden="true" className="w-3 h-3" />
+                          {r.status === 'contacted' ? 'اتكلمنا' : 'مقفول'}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+        );
+      })()}
+
       {activeTab === 'audience' && (
         <div className="space-y-4">
 

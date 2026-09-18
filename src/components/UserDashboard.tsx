@@ -17,6 +17,8 @@ import FilterSheet from './FilterSheet';
 import type { FilterDraft } from './FilterSheet';
 import type { BannerLiveData } from './banner/BannerCanvas';
 import { Card, EmptyState } from './ui';
+import NoResultsRequest from './NoResultsRequest';
+import { matchGovernorate } from '../lib/placeRequests';
 
 /**
  * One rate on a listing card.
@@ -900,6 +902,9 @@ export default function UserDashboard({
           })()}
         </div>
 
+        {/* Nothing found is nothing to order. The three buttons sat above
+            «لا يوجد بيت يناسب بحثك» offering to sort it by price. */}
+        {filteredHouses.length > 0 && (
         <div className="flex items-center gap-1.5 px-1 overflow-x-auto pima-no-scrollbar">
           <span className="shrink-0 flex items-center gap-1 text-[11px] font-black text-[var(--ds-text-2)] pe-1">
             <SlidersHorizontal aria-hidden="true" className="w-3.5 h-3.5" />
@@ -926,19 +931,45 @@ export default function UserDashboard({
             </button>
           ))}
         </div>
+        )}
           </div>
         )}
 
         {filteredHouses.length === 0 ? (
-          // Both strings are unchanged; only the surface and type come from
-          // the system now. No action is offered because there is nothing to
-          // offer — the reader already has the filters that produced this.
-          <Card>
-            <EmptyState
-              title="عذراً، لم نجد بيوت مؤتمرات تطابق معايير بحثك الحالية."
-              description="جرب البحث بكلمات أبسط أو تخفيف فلاتر التصفية."
+          hasSearched ? (
+            // This used to be one sentence and a full stop, and its comment
+            // said no action was offered because there was none to offer —
+            // the reader already had the filters that produced the emptiness.
+            //
+            // That was true of the filters and false of the catalogue. Pima
+            // has houses in one governorate and the filter lists twenty-seven,
+            // so an empty result here is usually not a bad search: it is a
+            // place Pima has not reached. The reader is the only one who can
+            // say that place is worth reaching, and this is the one moment
+            // they are certain to be asked.
+            <NoResultsRequest
+              currentUser={currentUser}
+              // The filter's governorate when they used it, and otherwise
+              // whatever place their typing was reaching for. Without the
+              // second half almost every request would arrive with no place
+              // on it: the suggestion list is built from governorates that
+              // have houses, so the one case this screen exists for is the
+              // one case it cannot suggest, and «المنيا» stays free text.
+              governorate={selectedGov || matchGovernorate(searchQuery, GOVERNORATES) || ''}
+              checkIn={filterCheckIn}
+              checkOut={filterCheckOut}
+              guests={guestCount === '' ? null : guestCount}
+              query={searchQuery}
             />
-          </Card>
+          ) : (
+            // Nothing was searched for and the list is still empty, so the
+            // catalogue itself is empty. A different sentence — the old one
+            // blamed «معايير بحثك الحالية» for a search nobody ran — and
+            // nothing to ask for, because there is no place to ask about.
+            <Card>
+              <EmptyState title="لسه مفيش بيوت معروضة." />
+            </Card>
+          )
         ) : (
           // One card per row was fine on a phone but wasted a desktop: each
           // card stretched to the full width and its photo was cropped to a

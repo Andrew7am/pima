@@ -28,6 +28,15 @@ vi.mock('../lib/db', () => ({
   loadHouseBookingCounts: vi.fn().mockResolvedValue(null),
 }));
 
+// The second network edge, added with the request form that now stands where
+// the empty result used to stop (0165). Only the call is stubbed —
+// matchGovernorate is a pure function the screen calls while rendering, and
+// a mock that leaves it out makes it undefined and takes the screen down.
+vi.mock('../lib/placeRequests', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/placeRequests')>()),
+  requestPlace: vi.fn().mockResolvedValue({ ok: true }),
+}));
+
 const house = (over: Partial<RetreatHouse> = {}): RetreatHouse => ({
   id: 'h1',
   name: 'بيت الملاك ميخائيل',
@@ -211,12 +220,18 @@ describe('search matches name, description or address', () => {
 });
 
 describe('the empty state explains itself rather than showing a blank page', () => {
-  it('appears when nothing matches, and suggests what to do', async () => {
+  it('appears when nothing matches, and offers a way out', async () => {
     renderBrowse();
     await userEvent.type(document.getElementById('user-search-query')!, 'لا يوجد بيت بهذا الاسم إطلاقا');
     expect(cardIds()).toEqual([]);
-    expect(screen.getByText(/لم نجد بيوت مؤتمرات تطابق/)).toBeInTheDocument();
-    expect(screen.getByText(/جرب البحث بكلمات أبسط/)).toBeInTheDocument();
+    // The copy this used to pin — «لم نجد بيوت مؤتمرات تطابق معايير بحثك» and
+    // «جرب البحث بكلمات أبسط» — was advice about the search, and the search
+    // was rarely the problem: Pima has houses in one governorate out of the
+    // twenty-seven the filter lists. What is asserted now is what has to
+    // stay true either way — the page says the list is empty, and gives the
+    // reader something to do with that.
+    expect(screen.getByText(/لا يوجد بيت يناسب بحثك/)).toBeInTheDocument();
+    expect(document.getElementById('place-request-submit')).toBeTruthy();
   });
 });
 
@@ -461,3 +476,23 @@ describe('badges are the admin\'s, not the data\'s', () => {
  * without a valid range, and a null result degrades to a full list. The rule
  * itself stays uncovered until the picker exposes a stable handle.
  */
+
+describe('a search that finds nothing', () => {
+  // Pima has houses in one governorate and the filter offers twenty-seven,
+  // so this is not a rare screen — it is most of them. It used to be where
+  // the visit ended.
+  it('asks to call the reader back instead of stopping', async () => {
+    renderBrowse({ houses: [house({ id: 'h1', name: 'بيت الملاك' })] });
+    await userEvent.type(document.getElementById('user-search-query')!, 'زززز');
+    expect(await screen.findByText(/لا يوجد بيت يناسب بحثك/)).toBeInTheDocument();
+    expect(document.getElementById('place-request-submit')).toBeTruthy();
+  });
+
+  it('does not ask when nothing was searched for', async () => {
+    // An empty catalogue is not an unmet request. There is no place to say
+    // «كلموني عن», so there is nothing to ask.
+    renderBrowse({ houses: [] });
+    expect(document.getElementById('place-request-submit')).toBeNull();
+    expect(screen.getByText('لسه مفيش بيوت معروضة.')).toBeInTheDocument();
+  });
+});
