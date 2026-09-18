@@ -264,7 +264,6 @@ export default function UserDashboard({
    */
   const hasSearched =
     searchQuery.trim() !== ''
-    || selectedType !== 'all'
     || selectedGov !== ''
     || Boolean(filterCheckIn && filterCheckOut)
     || guestCount !== ''
@@ -511,22 +510,35 @@ export default function UserDashboard({
       {/* -mx-4 cancels this page's own px-4 so the hero reaches the phone's
           edges; sm:mx-0 hands the margins back where the page becomes a
           centred card. */}
-      <div className="relative mb-13 -mx-4 sm:mx-0">
+      {/* Results are their own page. The hero, the loyalty and guide cards,
+          the category tabs and the at-a-glance strip are all there to help
+          somebody who has not decided yet — once they have searched, every one
+          of them is between them and the answer. The search bar is the only
+          thing here that a result still needs, so it stays and the rest folds
+          away. */}
+      <div className={hasSearched ? 'relative mb-3' : 'relative mb-13 -mx-4 sm:mx-0'}>
         {/* Parallax wraps the hero, not the search bar: the bar has to stay
             welded to the hero's edge, and moving both would just move the
             composition. */}
-        <div ref={heroParallaxRef} className="pima-parallax">
-          <SummerOfferCarousel edgeToEdge slides={carouselSlides} live={bannerLive} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
-        </div>
+        {!hasSearched && (
+          <div ref={heroParallaxRef} className="pima-parallax">
+            <SummerOfferCarousel edgeToEdge slides={carouselSlides} live={bannerLive} onOpenHouse={openHouseById} onCta={() => document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+          </div>
+        )}
 
         {/* -bottom-8 puts the bar's bottom 32px past the hero. It sat at 16
             and covered most of the photograph's bottom band; now it rides the
             edge and leaves the picture whole. mb-13 on the wrapper carries the
-            deeper overhang, so the gap to whatever follows is unchanged. */}
-        {/* inset-x-7 on a phone, not inset-x-3: the hero grew by the 16px of
+            deeper overhang, so the gap to whatever follows is unchanged.
+            inset-x-7 on a phone, not inset-x-3: the hero grew by the 16px of
             page padding it used to sit inside, and the bar has to stay where
             it was rather than follow it out to the screen edge. */}
-        <div className="absolute inset-x-7 sm:inset-x-3 -bottom-8 z-20 pima-rise pima-rise-2">
+
+        {/* Absolutely placed over the hero while there is a hero to sit on,
+            and an ordinary block once there is not. */}
+        <div className={hasSearched
+          ? 'relative z-20'
+          : 'absolute inset-x-7 sm:inset-x-3 -bottom-8 z-20 pima-rise pima-rise-2'}>
           {/* Frosted white: saturated blur is what makes it read as glass over a
               photograph. The shadow is kept tight and low so it does not cast a
               grey band up across the banner it is sitting on. */}
@@ -572,6 +584,31 @@ export default function UserDashboard({
               // time the tap arrives and nothing happens.
               onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
             />
+
+            {hasSearched && (
+              <button
+                id="clear-search-btn"
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedGov('');
+                  setGuestCount('');
+                  setMaxPrice(400);
+                  setDayUseOnly(false);
+                  setSelectedSuitabilities([]);
+                  setSelectedAmenities([]);
+                  setSelectedSeaProximity('all');
+                  setFilterCheckIn('');
+                  setFilterCheckOut('');
+                  setSuggestOpen(false);
+                }}
+                className="shrink-0 w-11 h-11 grid place-items-center text-[var(--ds-text-2)] hover:text-[var(--ds-text)] transition-colors cursor-pointer"
+                title="امسح البحث"
+                aria-label="امسح البحث وارجع للصفحة الرئيسية"
+              >
+                <X aria-hidden="true" className="w-4 h-4" />
+              </button>
+            )}
 
             {suggestOpen && suggestions.length > 0 && (
               <ul
@@ -620,6 +657,8 @@ export default function UserDashboard({
         </div>
       </div>
 
+      {!hasSearched && (
+      <>
       {/* Quick cards, one short row. Loyalty is first so it lands on the RIGHT
           in RTL, with the guide beside it — the approved order. */}
       <div className="grid grid-cols-2 gap-2.5">
@@ -792,6 +831,9 @@ export default function UserDashboard({
           </div>
         );
       })()}
+
+      </>
+      )}
 
       {/* Filters live in their own sheet now. The old inline drawer put every
           control on the page at once, which is what pushed the results below

@@ -54,6 +54,8 @@ const house = (over: Partial<RetreatHouse> = {}): RetreatHouse => ({
   ...over,
 } as unknown as RetreatHouse);
 
+const signedIn = { id: 'u1', name: 'أندرو', role: 'individual', favorites: [] } as unknown as User;
+
 const renderBrowse = (over: Partial<React.ComponentProps<typeof UserDashboard>> = {}) => {
   const onSelectHouse = vi.fn();
   const onToggleFavorite = vi.fn();
@@ -104,6 +106,37 @@ describe('a logged-out visitor can browse', () => {
     expect(document.getElementById('sort-houses-select')).toBeNull();
     await userEvent.type(document.getElementById('user-search-query')!, 'ا');
     expect(document.getElementById('sort-houses-select')).toBeTruthy();
+  });
+
+  // Searching turns the page into a results page: the hero, the loyalty and
+  // guide cards and the at-a-glance strip are all there to help somebody who
+  // has not decided yet, and once they have asked, every one of them sits
+  // between them and the answer.
+  it('folds the browsing furniture away once a search is made', async () => {
+    renderBrowse({ currentUser: signedIn });
+    expect(document.getElementById('loyalty-card-trigger')).toBeTruthy();
+    await userEvent.type(document.getElementById('user-search-query')!, 'ا');
+    expect(document.getElementById('loyalty-card-trigger')).toBeNull();
+  });
+
+  // Without this the only way back is selecting the text and deleting it: the
+  // tabs that would reset the view are among the things that just folded away.
+  it('offers a way back out of the results', async () => {
+    renderBrowse({ currentUser: signedIn });
+    expect(document.getElementById('clear-search-btn')).toBeNull();
+    await userEvent.type(document.getElementById('user-search-query')!, 'ا');
+    await userEvent.click(document.getElementById('clear-search-btn')!);
+    expect(document.getElementById('clear-search-btn')).toBeNull();
+    expect(document.getElementById('loyalty-card-trigger')).toBeTruthy();
+  });
+
+  // A category is a shelf, not a query. Counting it as a search hid the row
+  // that sets it the moment one was picked, leaving no way back to «الكل».
+  it('treats a category as browsing, not searching', async () => {
+    renderBrowse();
+    await userEvent.click(screen.getByRole('button', { name: /مؤتمرات/ }));
+    expect(screen.queryByText(/يناسب بحثك/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /الكل/ })).toBeInTheDocument();
   });
 
   it('says nothing about results before a search', async () => {
