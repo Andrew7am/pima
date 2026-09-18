@@ -1045,25 +1045,16 @@ export default function UserDashboard({
                   )}
                 </div>
 
-                {/* Location, and the owner's landmark line beside it. The row is
-                    capped to the strip left of the details panel and the landmark
-                    truncates — owners write this freely, and a long one would
-                    otherwise slide under the panel. */}
-                <div className="absolute bottom-3 left-3 flex items-center gap-1.5 max-w-[47%]">
-                  <span className="bg-[var(--ds-primary)]/90 backdrop-blur-sm text-[var(--ds-on-primary)] text-[11px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
-                    <MapPin className="w-3 h-3" />
-                    {house.governorate}
-                  </span>
-                  {/* leading-[1.7]: owners write these freely and «كينج» has a
-                      descender a tight line box eats — the pill is `truncate`,
-                      so anything below the line is cut, not merely hidden past
-                      the end. */}
-                  {house.nearbyLandmark && (
-                    <span className="bg-black/45 backdrop-blur-sm text-white text-[11px] font-bold leading-[1.7] px-2 py-1 rounded-full truncate min-w-0">
-                      {house.nearbyLandmark}
-                    </span>
-                  )}
-                </div>
+                {/* The photograph carries no location pills any more.
+                    «الإسكندرية» was on one of them AND on the line under the
+                    house name inside the panel — the same fact twice on a card
+                    the size of a thumbnail, once over the picture it was
+                    hiding. The panel's copy is the one that stays, because it
+                    sits with the name it belongs to.
+
+                    The owner's landmark («المنتزه») went with the row it
+                    shared. It is not repeated anywhere, so if it comes back it
+                    comes back inside the panel, not over the photograph. */}
 
                 {/* Favourite + compare — the only two actions on the photo.
                     They sat at right-3, which in RTL is exactly where the
@@ -1139,11 +1130,17 @@ export default function UserDashboard({
                 {/* Details panel — frosted glass floating over the photo.
                     It used to sit in flow and set the card's height, so it ran
                     the full height edge to edge and read as a grey slab bolted
-                    to the side rather than a pane resting on the photograph.
-                    The card now keeps its own shape and the panel floats inside
-                    it with a margin all round — the 4% top and bottom is what
-                    makes it look like glass laid over the picture. */}
-                <div className="absolute inset-y-[4%] left-2.5 right-2.5 flex pointer-events-none">
+                    to the side. Floating it free of every edge fixed that and
+                    cost something else: a 10px seam of photograph ran down the
+                    outside of the pane and across its top and bottom, too thin
+                    to show anything and enough to make the panel look like it
+                    had come loose.
+
+                    So it is flush on three sides — top, bottom, and the card's
+                    own start edge — and rounded only on the edge that faces the
+                    picture. The card clips the other corners with its own
+                    radius, which is what makes the two read as one shape. */}
+                <div className="absolute inset-0 flex pointer-events-none">
                   {/* Frosted glass, not a dark rectangle. The tint is a cool
                       navy rather than plain black: over the warm photographs
                       owners upload, black alone reads as a muddy brown smear
@@ -1153,7 +1150,7 @@ export default function UserDashboard({
                       shadow-[...] carries both, because Tailwind takes one
                       box-shadow property. */}
                   <div
-                    className="pointer-events-auto self-stretch overflow-hidden rounded-[22px] border border-white/[0.22] backdrop-blur-[24px] px-2.5 py-2 space-y-1
+                    className="pointer-events-auto self-stretch overflow-hidden rounded-e-[22px] border-s-0 border border-white/[0.22] backdrop-blur-[24px] px-2.5 py-2.5 flex flex-col justify-center gap-1
                                shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_8px_30px_rgba(0,0,0,0.12)]"
                     style={{ width: 'var(--pima-panel-w)', backgroundColor: 'rgba(20, 32, 40, 0.30)' }}
                   >
@@ -1165,11 +1162,10 @@ export default function UserDashboard({
                       {house.name}
                     </h3>
 
-                    {/* Governorate only. The full «landmark — governorate» made
-                        this the longest line in the panel and it truncated on
-                        every card; the landmark already has its own pill on the
-                        photograph, so this says the one thing the pill beside
-                        it does not repeat at a glance. */}
+                    {/* Governorate only, and now the only place the card says
+                        where it is. The full «landmark — governorate» made this
+                        the longest line in the panel and it truncated on every
+                        card, which is why it is still only the governorate. */}
                     <p className="flex items-center gap-1 text-[11px] font-bold text-white/70 leading-[1.5]">
                       <MapPin className="w-3 h-3 text-[#E8C88A] shrink-0" />
                       <span className="truncate">{house.governorate}</span>
