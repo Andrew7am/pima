@@ -89,12 +89,30 @@ describe('a logged-out visitor can browse', () => {
     expect(screen.getByText('بيت الملاك ميخائيل')).toBeInTheDocument();
   });
 
-  it('keeps the search, map, filter and sort controls reachable', () => {
+  it('keeps the search, map and filter controls reachable', () => {
     renderBrowse();
     // These ids are what the rest of the app and any future test hangs off.
-    for (const id of ['user-search-query', 'open-map-btn', 'toggle-filters-btn', 'sort-houses-select', 'house-list-anchor']) {
+    for (const id of ['user-search-query', 'open-map-btn', 'toggle-filters-btn', 'house-list-anchor']) {
       expect(document.getElementById(id), id).toBeTruthy();
     }
+  });
+
+  // Sorting is part of a result, and before a search there is no result — only
+  // the catalogue, which nobody asked to have ordered.
+  it('offers sorting only once something has been searched for', async () => {
+    renderBrowse();
+    expect(document.getElementById('sort-houses-select')).toBeNull();
+    await userEvent.type(document.getElementById('user-search-query')!, 'ا');
+    expect(document.getElementById('sort-houses-select')).toBeTruthy();
+  });
+
+  it('says nothing about results before a search', async () => {
+    renderBrowse();
+    // «وجدنا ١٢ مكانًا يناسب بحثك» over the whole catalogue described a
+    // search the visitor had not made.
+    expect(screen.queryByText(/يناسب بحثك/)).not.toBeInTheDocument();
+    await userEvent.type(document.getElementById('user-search-query')!, 'ا');
+    expect(await screen.findByText(/يناسب بحثك/)).toBeInTheDocument();
   });
 
   it('does not offer the loyalty card, which belongs to an account', () => {
@@ -180,14 +198,23 @@ describe('sorting', () => {
     expect(cardIds()).toEqual(['mid', 'dear', 'cheap']);
   });
 
+  // The sort control appears with a search rather than above the whole
+  // catalogue, so these two search first. A single space would not do it —
+  // hasSearched trims — so the query has to match all three houses.
+  const search = async () => {
+    await userEvent.type(document.getElementById('user-search-query')!, 'ا');
+  };
+
   it('sorts by cheapest when asked', async () => {
     renderBrowse({ houses });
+    await search();
     await userEvent.selectOptions(document.getElementById('sort-houses-select')!, 'price_asc');
     expect(cardIds()).toEqual(['cheap', 'mid', 'dear']);
   });
 
   it('sorts by dearest when asked', async () => {
     renderBrowse({ houses });
+    await search();
     await userEvent.selectOptions(document.getElementById('sort-houses-select')!, 'price_desc');
     expect(cardIds()).toEqual(['dear', 'mid', 'cheap']);
   });

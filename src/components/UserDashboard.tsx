@@ -210,6 +210,8 @@ export default function UserDashboard({
   }, [needsLiveKey, reviews.length]);
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
+  /** Open while the field has focus and something typed — the suggestions. */
+  const [suggestOpen, setSuggestOpen] = useState(false);
   const [selectedGov, setSelectedGov] = useState('');
   const [guestCount, setGuestCount] = useState<number | ''>('');
   const [maxPrice, setMaxPrice] = useState<number>(400);
@@ -250,6 +252,62 @@ export default function UserDashboard({
   // automatic version goes with the rest: it is a statement about the person
   // reading the card, so an admin switching it on would tell every visitor
   // they had stayed somewhere they never did.
+
+  /**
+   * Whether this is a search or a browse.
+   *
+   * «وجدنا ١٢ مكانًا يناسب بحثك» and the sort control used to sit above the
+   * list always, so a guest who had asked for nothing was told how many houses
+   * matched a search they had not made — the whole catalogue, described as a
+   * result. Both belong to a search, and this is what says one happened: a
+   * query, a category, a date range, or any filter moved off its default.
+   */
+  const hasSearched =
+    searchQuery.trim() !== ''
+    || selectedType !== 'all'
+    || selectedGov !== ''
+    || Boolean(filterCheckIn && filterCheckOut)
+    || guestCount !== ''
+    || maxPrice !== 400
+    || dayUseOnly
+    || selectedSuitabilities.length > 0
+    || selectedAmenities.length > 0
+    || selectedSeaProximity !== 'all';
+
+  /**
+   * What the typing could mean.
+   *
+   * Built from the governorates that actually have houses, not a list of
+   * Egypt: an offer to search a place with nothing in it is a dead end, and
+   * the guest cannot tell it apart from a place that is simply not on Pima.
+   *
+   * Each match gives one row for the place and one per kind of place that
+   * exists there — «مؤتمرات في الإسكندرية» is only offered when there is a
+   * conference house in Alexandria.
+   */
+  const suggestions = React.useMemo(() => {
+    const q = searchQuery.trim();
+    if (q.length < 1) return [] as { label: string; gov: string; type: 'all' | 'conference' | 'student' | 'staff' }[];
+    const govs = [...new Set(houses.filter((h) => h.status === 'approved').map((h) => h.governorate))]
+      .filter((g) => g && g.includes(q))
+      .slice(0, 2);
+    const KIND: { type: 'conference' | 'student' | 'staff'; word: string }[] = [
+      { type: 'conference', word: 'مؤتمرات' },
+      { type: 'student', word: 'سكن طلاب' },
+      { type: 'staff', word: 'سكن موظفين' },
+    ];
+    const out: { label: string; gov: string; type: 'all' | 'conference' | 'student' | 'staff' }[] = [];
+    for (const gov of govs) {
+      out.push({ label: gov, gov, type: 'all' });
+      out.push({ label: `بيوت في ${gov}`, gov, type: 'all' });
+      for (const k of KIND) {
+        if (houses.some((h) => h.status === 'approved' && h.governorate === gov && h.propertyType === k.type)) {
+          out.push({ label: `${k.word} في ${gov}`, gov, type: k.type });
+        }
+      }
+    }
+    return out.slice(0, 6);
+  }, [searchQuery, houses]);
 
   // Nights in the chosen window, so a card can quote a whole stay rather than a
   // per-person-per-night rate nobody budgets in.
@@ -472,7 +530,7 @@ export default function UserDashboard({
           {/* Frosted white: saturated blur is what makes it read as glass over a
               photograph. The shadow is kept tight and low so it does not cast a
               grey band up across the banner it is sitting on. */}
-          <div className="flex items-center gap-1 bg-[var(--ds-surface)]/85 backdrop-blur-2xl backdrop-saturate-150 border border-[var(--ds-surface)]/80 rounded-full shadow-[0_6px_18px_-6px_rgba(45,45,36,0.22),0_1px_4px_rgba(45,45,36,0.06)] p-2">
+          <div className="relative flex items-center gap-1 bg-[var(--ds-surface)]/85 backdrop-blur-2xl backdrop-saturate-150 border border-[var(--ds-surface)]/80 rounded-full shadow-[0_6px_18px_-6px_rgba(45,45,36,0.22),0_1px_4px_rgba(45,45,36,0.06)] p-2">
             {/* DOM order is right-to-left on screen: map sits at the right end,
                 filter at the left, matching the approved layout. */}
             {onOpenMap && (
@@ -508,7 +566,40 @@ export default function UserDashboard({
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="ابحث عن بيت"
               wrapperClassName="flex-1 min-w-0"
+              onFocus={() => setSuggestOpen(true)}
+              // A blur fires before the click on a suggestion lands, so the
+              // close waits for it. Any shorter and the row is gone by the
+              // time the tap arrives and nothing happens.
+              onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
             />
+
+            {suggestOpen && suggestions.length > 0 && (
+              <ul
+                id="search-suggestions"
+                className="absolute top-full right-0 left-0 mt-2 z-30 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl shadow-lg overflow-hidden py-1"
+              >
+                {suggestions.map((sg) => (
+                  <li key={sg.label}>
+                    <button
+                      type="button"
+                      // onMouseDown, not onClick: the field's blur would
+                      // otherwise unmount this row before the click resolved.
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setSelectedGov(sg.gov);
+                        setSelectedType(sg.type);
+                        setSearchQuery('');
+                        setSuggestOpen(false);
+                      }}
+                      className="w-full text-right flex items-center gap-2 px-3 min-h-11 text-[12px] font-bold text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors cursor-pointer"
+                    >
+                      <MapPin aria-hidden="true" className="w-3.5 h-3.5 text-[var(--ds-text-2)] shrink-0" />
+                      <span className="truncate">{sg.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
 
             <span aria-hidden="true" className="w-px h-6 bg-[var(--ds-border)] shrink-0" />
 
@@ -728,6 +819,22 @@ export default function UserDashboard({
       <div id="house-list-anchor" className="space-y-3.5 text-[var(--ds-text)]">
         {/* Result count and sort. The filter control is not repeated here — it
             lives in the floating search bar, and one entry point is enough. */}
+        {/* Only after a search. This row — «وجدنا ١٢ مكانًا يناسب بحثك» and the
+            sort control — used to sit above the list always, so somebody who
+            had asked for nothing was told how many houses matched a search
+            they never made: the whole catalogue, described as a result. Before
+            a search the page is for looking around, and says nothing about
+            results. */}
+        {hasSearched && (
+          <div className="space-y-2">
+            {/* What was searched for, above the count, so the number has a
+                subject. Only when it is a place — «نتائج البحث في» reads
+                oddly over a free-text query like «واي فاي». */}
+            {selectedGov && (
+              <h2 className="px-1 text-[12.5px] font-black text-[var(--ds-text)]">
+                نتائج البحث في {selectedGov}
+              </h2>
+            )}
         <div className="flex justify-between items-center px-1 gap-2">
           {/* Start of the row in RTL: the label for the control that follows. */}
           <label htmlFor="sort-houses-select" className="shrink-0 flex items-center gap-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-full px-3 min-h-11 text-[11px] font-black text-[var(--ds-text)] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] cursor-pointer">
@@ -763,6 +870,9 @@ export default function UserDashboard({
             <ChevronLeft aria-hidden="true" className="absolute top-1/2 -translate-y-1/2 left-2 w-3 h-3 text-[var(--ds-text-2)] pointer-events-none -rotate-90" />
           </div>
         </div>
+
+          </div>
+        )}
 
         {filteredHouses.length === 0 ? (
           // Both strings are unchanged; only the surface and type come from
