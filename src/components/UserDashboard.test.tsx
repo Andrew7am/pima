@@ -101,11 +101,12 @@ describe('a logged-out visitor can browse', () => {
 
   // Sorting is part of a result, and before a search there is no result — only
   // the catalogue, which nobody asked to have ordered.
+  // Three buttons now, not a <select> behind a system sheet.
   it('offers sorting only once something has been searched for', async () => {
     renderBrowse();
-    expect(document.getElementById('sort-houses-select')).toBeNull();
+    expect(document.getElementById('sort-rating')).toBeNull();
     await userEvent.type(document.getElementById('user-search-query')!, 'ا');
-    expect(document.getElementById('sort-houses-select')).toBeTruthy();
+    expect(document.getElementById('sort-rating')).toBeTruthy();
   });
 
   // Searching turns the page into a results page: the hero, the loyalty and
@@ -241,14 +242,14 @@ describe('sorting', () => {
   it('sorts by cheapest when asked', async () => {
     renderBrowse({ houses });
     await search();
-    await userEvent.selectOptions(document.getElementById('sort-houses-select')!, 'price_asc');
+    await userEvent.click(document.getElementById('sort-price_asc')!);
     expect(cardIds()).toEqual(['cheap', 'mid', 'dear']);
   });
 
   it('sorts by dearest when asked', async () => {
     renderBrowse({ houses });
     await search();
-    await userEvent.selectOptions(document.getElementById('sort-houses-select')!, 'price_desc');
+    await userEvent.click(document.getElementById('sort-price_desc')!);
     expect(cardIds()).toEqual(['dear', 'mid', 'cheap']);
   });
 });

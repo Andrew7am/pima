@@ -877,13 +877,15 @@ export default function UserDashboard({
                 نتائج البحث في {selectedGov}
               </h2>
             )}
-        <div className="flex justify-between items-center px-1 gap-2">
-          {/* Start of the row in RTL: the label for the control that follows. */}
-          <label htmlFor="sort-houses-select" className="shrink-0 flex items-center gap-1 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-full px-3 min-h-11 text-[11px] font-black text-[var(--ds-text)] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] cursor-pointer">
-            <SlidersHorizontal aria-hidden="true" className="w-3.5 h-3.5 text-[var(--ds-text-2)]" />
-            <span>ترتيب</span>
-          </label>
-
+        {/* The count, then the three orderings as buttons.
+            A <select> put them behind a tap and a system sheet: you could not
+            see what the list was sorted by without opening it, and on iOS the
+            sheet covers the results you are about to reorder. Three buttons
+            fit, and the chosen one says so.
+            «المسافة» is deliberately absent. Ordering by it means knowing
+            where the reader is, which is a location permission and a decision
+            about asking for one — not a fourth button. */}
+        <div className="flex items-center justify-between gap-2 px-1">
           {(() => {
             const { count, noun } = resultsLabel(filteredHouses.length);
             // «وجدنا» only when something WAS found. With none, the prefix
@@ -891,28 +893,39 @@ export default function UserDashboard({
             // house — which then ran past the slot and was clipped mid-word.
             const empty = filteredHouses.length === 0;
             return (
-              <span className={`text-[12px] font-black text-[var(--ds-text)] text-center flex-1 min-w-0 ${empty ? 'leading-tight' : 'truncate'}`}>
+              <span className={`text-[12px] font-black text-[var(--ds-text)] min-w-0 ${empty ? 'leading-tight' : 'truncate'}`}>
                 {empty ? noun : <>وجدنا {count && <span className="text-[var(--ds-accent)]">{count}</span>} {noun}</>}
               </span>
             );
           })()}
-
-          <div className="relative shrink-0">
-            <select
-              id="sort-houses-select"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              aria-label="ترتيب النتائج"
-              className="appearance-none bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-full pr-3 pl-7 min-h-11 text-[11px] font-bold text-[var(--ds-text)] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] focus:outline-none cursor-pointer"
-            >
-              <option value="rating">الأفضل تقييماً</option>
-              <option value="price_asc">الأقل سعراً</option>
-              <option value="price_desc">الأعلى سعراً</option>
-            </select>
-            <ChevronLeft aria-hidden="true" className="absolute top-1/2 -translate-y-1/2 left-2 w-3 h-3 text-[var(--ds-text-2)] pointer-events-none -rotate-90" />
-          </div>
         </div>
 
+        <div className="flex items-center gap-1.5 px-1 overflow-x-auto pima-no-scrollbar">
+          <span className="shrink-0 flex items-center gap-1 text-[11px] font-black text-[var(--ds-text-2)] pe-1">
+            <SlidersHorizontal aria-hidden="true" className="w-3.5 h-3.5" />
+            ترتيب
+          </span>
+          {([
+            { key: 'rating', label: 'الأفضل تقييماً' },
+            { key: 'price_asc', label: 'الأقل سعراً' },
+            { key: 'price_desc', label: 'الأعلى سعراً' },
+          ] as const).map((o) => (
+            <button
+              key={o.key}
+              id={`sort-${o.key}`}
+              type="button"
+              onClick={() => { tapFeedback(); setSortBy(o.key); }}
+              aria-pressed={sortBy === o.key}
+              className={`shrink-0 rounded-full px-3 min-h-11 text-[11px] font-black border transition-colors cursor-pointer ${
+                sortBy === o.key
+                  ? 'bg-[var(--ds-accent-deep)] text-white border-transparent'
+                  : 'bg-[var(--ds-surface)] text-[var(--ds-text)] border-[var(--ds-border)] hover:bg-[var(--ds-raised)]'
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
           </div>
         )}
 
