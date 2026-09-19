@@ -211,27 +211,6 @@ export default function UserDashboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsLiveKey, reviews.length]);
   // Filter States
-  /**
-   * Whether this is one of the narrow phones.
-   *
-   * Only the search hint asks. At 375 the bar gives the field 213px and the
-   * full «ابحث باسم البيت، مدينة أو منطقة» fits; at 320 the field is 158 and
-   * the same string loses its last three words. A Tailwind variant cannot
-   * reach a placeholder's TEXT, only its size, and making it smaller still
-   * does not fit — so the short form is chosen here instead of being cut
-   * mid-word on screen.
-   */
-  const [narrowPhone, setNarrowPhone] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 374px)').matches,
-  );
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 374px)');
-    const sync = () => setNarrowPhone(mq.matches);
-    sync();
-    mq.addEventListener('change', sync);
-    return () => mq.removeEventListener('change', sync);
-  }, []);
-
   const [searchQuery, setSearchQuery] = useState('');
   /** Open while the field has focus and something typed — the suggestions. */
   const [suggestOpen, setSuggestOpen] = useState(false);
@@ -579,7 +558,7 @@ export default function UserDashboard({
               resolves when the theme changes — the border would keep the
               previous theme's colour for good. Button, Input and SearchInput
               all document the same refusal. */}
-          <div className="relative flex items-center h-14 bg-[var(--ds-surface)]/80 backdrop-blur-2xl backdrop-saturate-150 border border-[var(--ds-surface)]/80 rounded-full shadow-[0_6px_18px_-6px_rgba(45,45,36,0.22),0_1px_4px_rgba(45,45,36,0.06)] focus-within:border-[var(--ds-accent)] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--ds-accent)_22%,transparent),0_6px_18px_-6px_rgba(45,45,36,0.22)]">
+          <div className="relative flex items-center h-14 bg-white/80 backdrop-blur-[16px] backdrop-saturate-150 border border-white/50 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.08)] focus-within:border-[#D4B06A] focus-within:shadow-[0_0_0_3px_rgba(212,176,106,0.22),0_4px_20px_rgba(0,0,0,0.08)]">
             {/* DOM order is right-to-left on screen: map sits at the right end,
                 filter at the left, matching the approved layout. */}
             {onOpenMap && (
@@ -592,13 +571,18 @@ export default function UserDashboard({
                   id="open-map-btn"
                   type="button"
                   onClick={onOpenMap}
-                  className="shrink-0 grid place-items-center rounded-full w-14 h-14 text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors cursor-pointer"
+                  className="shrink-0 flex items-center justify-center gap-1 rounded-full w-[88px] max-[374px]:w-14 h-14 text-[#1F1F1F] hover:bg-black/[0.04] transition-colors cursor-pointer"
                   title="عرض البيوت على الخريطة"
                   aria-label="عرض البيوت على الخريطة"
                 >
-                  <MapPin className="w-6 h-6" />
+                  <MapPin className="w-6 h-6 shrink-0" />
+                  {/* 12px, not the spec's 16. «الخريطة» at 16px is 60px wide
+                      and an 88px section holding a 24px icon has 44 to give
+                      it. The label or the section had to move, and the
+                      section is the number the spec states twice. */}
+                  <span className="text-[12px] font-bold max-[374px]:hidden">الخريطة</span>
                 </button>
-                <span aria-hidden="true" className="w-px self-stretch my-3 bg-[var(--ds-border)]/60 shrink-0" />
+                <span aria-hidden="true" className="w-px self-stretch my-3 bg-[#E9E4D9] shrink-0" />
               </>
             )}
 
@@ -616,7 +600,19 @@ export default function UserDashboard({
               // The bar is the frosted glass; the field is the brighter pill
               // sitting on it. surface={false} strips the component's own
               // box so this one can be the shape the spec draws.
-              className="bg-[var(--ds-surface)]/55 backdrop-blur-md rounded-full placeholder:text-[11px]"
+              // Input text 16px/#1F1F1F as specified. The hint is 13px, not
+              // 16: at 16 «ابحث باسم البيت» is 102px and the field's text box
+              // is 89 once the 88px sections and the 40px circle have taken
+              // theirs. 13 is the largest that finishes the words.
+              // The colours go in by the two routes that cannot be
+              // out-ordered: inline for the value, and the dedicated prop for
+              // the hint. Passing either through className put a second
+              // utility of equal specificity on the element, and the one that
+              // won was the component's own — #4A4A3A and #948D72 reached the
+              // screen where #1F1F1F and #6B7280 were asked for.
+              className="bg-white/55 backdrop-blur-md rounded-full text-[16px]"
+              style={{ color: '#1F1F1F' }}
+              placeholderClass="placeholder:text-[13px] placeholder:text-[#6B7280]"
               leadingIcon={false}
               leading={
                 // A real button, not an ornament. A filled gold circle is the
@@ -637,7 +633,7 @@ export default function UserDashboard({
                   // the size the spec draws, 44 is the floor a thumb needs.
                   className="absolute start-1 top-1/2 -translate-y-1/2 w-11 h-11 grid place-items-center cursor-pointer"
                 >
-                  <span className="w-10 h-10 rounded-full bg-[var(--ds-accent)] grid place-items-center shadow-sm">
+                  <span className="w-10 h-10 rounded-full bg-[#D4B06A] grid place-items-center shadow-sm">
                     <Search aria-hidden="true" className="w-4 h-4 text-[var(--ds-on-accent)]" />
                   </span>
                 </button>
@@ -654,7 +650,7 @@ export default function UserDashboard({
               // at 11 it finishes. Shrinking the whole field would have
               // shrunk what people type, which is the one thing here that
               // has to stay easy to read back.
-              placeholder={narrowPhone ? 'ابحث باسم البيت' : 'ابحث باسم البيت، مدينة أو منطقة'}
+              placeholder="ابحث باسم البيت"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="ابحث عن بيت"
@@ -719,19 +715,20 @@ export default function UserDashboard({
               </ul>
             )}
 
-            <span aria-hidden="true" className="w-px self-stretch my-3 bg-[var(--ds-border)]/60 shrink-0" />
+            <span aria-hidden="true" className="w-px self-stretch my-3 bg-[#E9E4D9] shrink-0" />
 
             <button
               id="toggle-filters-btn"
               onClick={() => { tapFeedback(); setShowFilters(!showFilters); }}
-              className={`shrink-0 grid place-items-center rounded-full w-14 h-14 transition-colors cursor-pointer ${
-                showFilters ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)]' : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
+              className={`shrink-0 flex items-center justify-center gap-1 rounded-full w-[88px] max-[374px]:w-14 h-14 transition-colors cursor-pointer ${
+                showFilters ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)]' : 'text-[#1F1F1F] hover:bg-black/[0.04]'
               }`}
               title="فلاتر متقدمة"
               aria-label="فلاتر متقدمة"
               aria-expanded={showFilters}
             >
-              <SlidersHorizontal className="w-6 h-6" />
+              <SlidersHorizontal className="w-6 h-6 shrink-0" />
+              <span className="text-[12px] font-bold max-[374px]:hidden">فلتر</span>
             </button>
           </div>
         </div>

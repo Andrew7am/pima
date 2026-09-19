@@ -49,6 +49,12 @@ export interface SearchInputProps
   /** The same, at the logical start. Takes the place of the plain magnifier
    *  rather than sitting beside it, so pass leadingIcon={false} with it. */
   leading?: React.ReactNode;
+  /** Replaces the default `placeholder:*` classes rather than joining them.
+   *  Passing a placeholder colour through `className` puts two
+   *  placeholder:text-* utilities on one element at equal specificity, where
+   *  the winner is whichever Tailwind emits later — not something a caller
+   *  can see or rely on. It is the same trap `surface` exists for. */
+  placeholderClass?: string;
 }
 
 export default function SearchInput({
@@ -61,6 +67,7 @@ export default function SearchInput({
   leadingIcon = true,
   trailing,
   leading,
+  placeholderClass,
   ...rest
 }: SearchInputProps) {
   const auto = useId();
@@ -99,7 +106,7 @@ export default function SearchInput({
             trailing ? 'pe-12' : 'pe-3',
             surface && 'rounded-[12px] bg-[var(--ds-surface)]',
             'text-[var(--ds-text)]',
-            'placeholder:text-[var(--ds-text-faint)]',
+            placeholderClass ?? 'placeholder:text-[var(--ds-text-faint)]',
             // No transition-colors, for the reason Button and Input document:
             // border-color reads an unregistered custom property, and a
             // transition on one never resolves when the theme changes — the
