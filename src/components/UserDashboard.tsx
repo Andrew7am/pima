@@ -211,6 +211,27 @@ export default function UserDashboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsLiveKey, reviews.length]);
   // Filter States
+  /**
+   * Whether this is one of the narrow phones.
+   *
+   * Only the search hint asks. At 375 the bar gives the field 213px and the
+   * full «ابحث باسم البيت، مدينة أو منطقة» fits; at 320 the field is 158 and
+   * the same string loses its last three words. A Tailwind variant cannot
+   * reach a placeholder's TEXT, only its size, and making it smaller still
+   * does not fit — so the short form is chosen here instead of being cut
+   * mid-word on screen.
+   */
+  const [narrowPhone, setNarrowPhone] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 374px)').matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 374px)');
+    const sync = () => setNarrowPhone(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState('');
   /** Open while the field has focus and something typed — the suggestions. */
   const [suggestOpen, setSuggestOpen] = useState(false);
@@ -562,12 +583,11 @@ export default function UserDashboard({
                   id="open-map-btn"
                   type="button"
                   onClick={onOpenMap}
-                  className="shrink-0 flex items-center justify-center gap-1 rounded-full w-[88px] max-[374px]:w-11 h-11 text-[11px] font-black text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-all cursor-pointer"
+                  className="shrink-0 grid place-items-center rounded-full w-11 h-11 text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-all cursor-pointer"
                   title="عرض البيوت على الخريطة"
                   aria-label="عرض البيوت على الخريطة"
                 >
-                  <MapPin className="w-4 h-4" />
-                  <span className="max-[374px]:hidden">الخريطة</span>
+                  <MapPin className="w-[18px] h-[18px]" />
                 </button>
               </>
             )}
@@ -586,7 +606,7 @@ export default function UserDashboard({
               // The bar is the frosted glass; the field is the brighter pill
               // sitting on it. surface={false} strips the component's own
               // box so this one can be the shape the spec draws.
-              className="bg-[var(--ds-surface)] rounded-full"
+              className="bg-[var(--ds-surface)] rounded-full placeholder:text-[11px]"
               leadingIcon={false}
               trailing={
                 // A real button, not an ornament. A filled gold circle is the
@@ -612,13 +632,19 @@ export default function UserDashboard({
                   </span>
                 </button>
               }
-              // «ابحث باسم البيت، مدينة أو منطقة» measures 186px and the
-              // field is 125px wide — the spec asks for two 88px buttons,
-              // 12px padding and 12px gaps on a 375px screen, which leaves
-              // no room for the placeholder the same spec writes. The gold
-              // circle and the two labelled buttons already say what the bar
-              // is, so the hint is the part that gives way.
-              placeholder="ابحث"
+              // The spec's own numbers do not fit a 375px screen: two 88px
+              // buttons, 12px of padding and 12px gaps leave the field 125px,
+              // and the placeholder it writes measures 186. Asked which half
+              // to keep, the answer was the text — so الخريطة and فلتر are
+              // the 44px circles their icons already were, the field takes
+              // what they gave back, and the hint is written in full.
+              //
+              // The hint is 11px and the value stays 14. At 14 the string
+              // needs 186px against the field's 153 and lost its last word;
+              // at 11 it finishes. Shrinking the whole field would have
+              // shrunk what people type, which is the one thing here that
+              // has to stay easy to read back.
+              placeholder={narrowPhone ? 'ابحث باسم البيت' : 'ابحث باسم البيت، مدينة أو منطقة'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="ابحث عن بيت"
@@ -686,15 +712,14 @@ export default function UserDashboard({
             <button
               id="toggle-filters-btn"
               onClick={() => { tapFeedback(); setShowFilters(!showFilters); }}
-              className={`shrink-0 flex items-center justify-center gap-1 rounded-full w-[88px] max-[374px]:w-11 h-11 text-[11px] font-black transition-all cursor-pointer ${
+              className={`shrink-0 grid place-items-center rounded-full w-11 h-11 transition-all cursor-pointer ${
                 showFilters ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)]' : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
               }`}
               title="فلاتر متقدمة"
               aria-label="فلاتر متقدمة"
               aria-expanded={showFilters}
             >
-              <SlidersHorizontal className="w-4 h-4" />
-              <span className="max-[374px]:hidden">فلتر</span>
+              <SlidersHorizontal className="w-[18px] h-[18px]" />
             </button>
           </div>
         </div>
