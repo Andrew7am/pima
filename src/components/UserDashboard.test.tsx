@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import UserDashboard from './UserDashboard';
@@ -494,5 +494,73 @@ describe('a search that finds nothing', () => {
     renderBrowse({ houses: [] });
     expect(document.getElementById('place-request-submit')).toBeNull();
     expect(screen.getByText('لسه مفيش بيوت معروضة.')).toBeInTheDocument();
+  });
+});
+
+describe('the search hint fits the phone it is on', () => {
+  /**
+   * The bar gives the field 211px on a 375 screen and 156 on a 320, and the
+   * full hint needs 146 in the narrow one's 96px text box. A Tailwind variant
+   * can reach a placeholder's SIZE but not its TEXT, so the swap is a media
+   * query held in state.
+   *
+   * This is the only place it can be proved. A viewport emulator changes the
+   * width without dispatching either `change` or `resize`, so the browser
+   * shows the right hint on load at each width and never the swap between
+   * them — which is the path a phone takes when it is rotated.
+   */
+  const installMatchMedia = () => {
+    const listeners = new Set<(e: MediaQueryListEvent) => void>();
+    const mql = {
+      matches: false,
+      media: '(max-width: 374px)',
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: (_: string, fn: (e: MediaQueryListEvent) => void) => { listeners.add(fn); },
+      removeEventListener: (_: string, fn: (e: MediaQueryListEvent) => void) => { listeners.delete(fn); },
+      dispatchEvent: vi.fn(),
+    };
+    const previous = window.matchMedia;
+    window.matchMedia = vi.fn(() => mql as unknown as MediaQueryList) as typeof window.matchMedia;
+    return {
+      setNarrow(v: boolean) {
+        mql.matches = v;
+        act(() => { listeners.forEach((fn) => fn({ matches: v } as MediaQueryListEvent)); });
+      },
+      restore() { window.matchMedia = previous; },
+    };
+  };
+
+  const LONG = 'ابحث باسم البيت، مدينة أو منطقة';
+  const SHORT = 'ابحث باسم البيت';
+
+  it('writes the hint in full, and shortens it when the screen is narrow', () => {
+    const mm = installMatchMedia();
+    try {
+      renderBrowse();
+      const field = document.getElementById('user-search-query') as HTMLInputElement;
+      expect(field.placeholder).toBe(LONG);
+
+      mm.setNarrow(true);
+      expect(field.placeholder).toBe(SHORT);
+
+      // And back, because a phone that turns one way turns the other.
+      mm.setNarrow(false);
+      expect(field.placeholder).toBe(LONG);
+    } finally {
+      mm.restore();
+    }
+  });
+
+  it('starts short when the phone was already narrow before it mounted', () => {
+    const mm = installMatchMedia();
+    try {
+      mm.setNarrow(true);
+      renderBrowse();
+      expect((document.getElementById('user-search-query') as HTMLInputElement).placeholder).toBe(SHORT);
+    } finally {
+      mm.restore();
+    }
   });
 });

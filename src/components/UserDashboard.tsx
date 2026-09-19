@@ -778,7 +778,7 @@ export default function UserDashboard({
             </span>
             <span className="min-w-0">
               <span className="block text-[11px] font-black text-[var(--ds-text)] leading-tight">الولاء والنقاط</span>
-              <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">سجّل واكسب نقاط</span>
+              <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">سجّل واكسب</span>
             </span>
           </div>
         )}
