@@ -561,16 +561,25 @@ export default function UserDashboard({
             and an ordinary block once there is not. */}
         <div className={hasSearched
           ? 'relative z-20'
-          : 'absolute inset-x-3 -bottom-8 z-20 pima-rise pima-rise-2'}>
+          : 'absolute inset-x-6 -bottom-8 z-20 pima-rise pima-rise-2'}>
           {/* Frosted white: saturated blur is what makes it read as glass over a
               photograph. The shadow is kept tight and low so it does not cast a
               grey band up across the banner it is sitting on. */}
-          {/* 56px tall: 44px of control with 6px above and below, which is
-              also what makes rounded-full resolve to the specified 28 radius.
-              The 12px is horizontal — 12px of vertical padding would put the
-              bar at 68px. px-3/gap-3 are the spec's «المسافة الجانبية» and
-              «المسافة بين العناصر». */}
-          <div className="relative flex items-center gap-3 h-14 bg-[var(--ds-surface)]/85 backdrop-blur-2xl backdrop-saturate-150 border border-[var(--ds-surface)]/80 rounded-full shadow-[0_6px_18px_-6px_rgba(45,45,36,0.22),0_1px_4px_rgba(45,45,36,0.06)] px-3">
+          {/* 56px tall, radius 28 — which is what rounded-full resolves to on
+              a 56px box — and 24px in from the screen on each side.
+
+              No padding and no gaps: the three sections run edge to edge and
+              are separated by 1px rules, the way the spec draws them. That is
+              not only cosmetic. Padding plus gaps was 48px of the bar, and
+              the bar is 327px here; giving it back is what lets the field
+              hold «ابحث باسم البيت، مدينة أو منطقة» whole.
+
+              No transition on the focus border. border-color reads an
+              unregistered custom property, and a transition on one never
+              resolves when the theme changes — the border would keep the
+              previous theme's colour for good. Button, Input and SearchInput
+              all document the same refusal. */}
+          <div className="relative flex items-center h-14 bg-[var(--ds-surface)]/80 backdrop-blur-2xl backdrop-saturate-150 border border-[var(--ds-surface)]/80 rounded-full shadow-[0_6px_18px_-6px_rgba(45,45,36,0.22),0_1px_4px_rgba(45,45,36,0.06)] focus-within:border-[var(--ds-accent)] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--ds-accent)_22%,transparent),0_6px_18px_-6px_rgba(45,45,36,0.22)]">
             {/* DOM order is right-to-left on screen: map sits at the right end,
                 filter at the left, matching the approved layout. */}
             {onOpenMap && (
@@ -583,12 +592,13 @@ export default function UserDashboard({
                   id="open-map-btn"
                   type="button"
                   onClick={onOpenMap}
-                  className="shrink-0 grid place-items-center rounded-full w-11 h-11 text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-all cursor-pointer"
+                  className="shrink-0 grid place-items-center rounded-full w-14 h-14 text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors cursor-pointer"
                   title="عرض البيوت على الخريطة"
                   aria-label="عرض البيوت على الخريطة"
                 >
-                  <MapPin className="w-[18px] h-[18px]" />
+                  <MapPin className="w-6 h-6" />
                 </button>
+                <span aria-hidden="true" className="w-px self-stretch my-3 bg-[var(--ds-border)]/60 shrink-0" />
               </>
             )}
 
@@ -709,17 +719,19 @@ export default function UserDashboard({
               </ul>
             )}
 
+            <span aria-hidden="true" className="w-px self-stretch my-3 bg-[var(--ds-border)]/60 shrink-0" />
+
             <button
               id="toggle-filters-btn"
               onClick={() => { tapFeedback(); setShowFilters(!showFilters); }}
-              className={`shrink-0 grid place-items-center rounded-full w-11 h-11 transition-all cursor-pointer ${
+              className={`shrink-0 grid place-items-center rounded-full w-14 h-14 transition-colors cursor-pointer ${
                 showFilters ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)]' : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
               }`}
               title="فلاتر متقدمة"
               aria-label="فلاتر متقدمة"
               aria-expanded={showFilters}
             >
-              <SlidersHorizontal className="w-[18px] h-[18px]" />
+              <SlidersHorizontal className="w-6 h-6" />
             </button>
           </div>
         </div>
