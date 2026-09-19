@@ -38,6 +38,14 @@ export interface SearchInputProps
    *  the 44px floor, the logical padding, the icon, the type, the focus ring —
    *  is unaffected. */
   surface?: boolean;
+  /** The leading magnifier. Turn it off where the field carries its own
+   *  search affordance instead — the homepage pill puts a filled circle at
+   *  the logical end, and two magnifiers in one field is one too many. */
+  leadingIcon?: boolean;
+  /** Rendered inside the field at the logical end, in the padding this opens
+   *  up for it. Absolutely placed by the caller against the same relative
+   *  box the leading icon uses. */
+  trailing?: React.ReactNode;
 }
 
 export default function SearchInput({
@@ -47,6 +55,8 @@ export default function SearchInput({
   className = '',
   wrapperClassName = '',
   surface = true,
+  leadingIcon = true,
+  trailing,
   ...rest
 }: SearchInputProps) {
   const auto = useId();
@@ -64,17 +74,25 @@ export default function SearchInput({
         {/* Decorative: the field is already named by its label or aria-label,
             and announcing "search" twice is noise. pointer-events-none so the
             icon never eats a tap meant for the field. */}
-        <Search
-          aria-hidden="true"
-          className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ds-text-faint)]"
-        />
+        {leadingIcon && (
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ds-text-faint)]"
+          />
+        )}
         <input
           id={inputId}
           type="search"
           disabled={disabled}
           className={[
             // Same box as Input, with the start padding opened for the icon.
-            'min-h-11 ps-10 pe-3 text-[14px] w-full',
+            // The start padding is only opened where there is an icon to
+            // clear, and the end padding only where something sits in it.
+            'min-h-11 text-[14px] w-full',
+            leadingIcon ? 'ps-10' : 'ps-3',
+            // 48px clears a 44px control sitting at end-1; 56 was giving away
+            // 8px of a field that has none to spare.
+            trailing ? 'pe-12' : 'pe-3',
             surface && 'rounded-[12px] bg-[var(--ds-surface)]',
             'text-[var(--ds-text)]',
             'placeholder:text-[var(--ds-text-faint)]',
@@ -96,6 +114,7 @@ export default function SearchInput({
           ].filter(Boolean).join(' ')}
           {...rest}
         />
+        {trailing}
       </div>
     </div>
   );

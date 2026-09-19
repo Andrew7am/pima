@@ -2,7 +2,7 @@
 import { RetreatHouse, User, PromoBanner, Booking, Review } from '../types';
 import { arabicNumber, arabicDecimal, arabicPlural, arabicUnit, HOUSE_FORMS, GUEST_FORMS } from '../lib/arabic';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
-import { MapPin, Map as MapIcon, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Award, ChevronLeft, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking, Flame, Sun } from 'lucide-react';
+import { Search, Gift, MapPin, Map as MapIcon, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking, Flame, Sun } from 'lucide-react';
 import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
 import { loadHousesAvailability, loadHouseBookingCounts } from '../lib/db';
 import { computeStayPrice, offersDayUse , hasLiveDiscount } from '../lib/pricing';
@@ -540,27 +540,35 @@ export default function UserDashboard({
             and an ordinary block once there is not. */}
         <div className={hasSearched
           ? 'relative z-20'
-          : 'absolute inset-x-7 sm:inset-x-3 -bottom-8 z-20 pima-rise pima-rise-2'}>
+          : 'absolute inset-x-3 -bottom-8 z-20 pima-rise pima-rise-2'}>
           {/* Frosted white: saturated blur is what makes it read as glass over a
               photograph. The shadow is kept tight and low so it does not cast a
               grey band up across the banner it is sitting on. */}
-          <div className="relative flex items-center gap-1 bg-[var(--ds-surface)]/85 backdrop-blur-2xl backdrop-saturate-150 border border-[var(--ds-surface)]/80 rounded-full shadow-[0_6px_18px_-6px_rgba(45,45,36,0.22),0_1px_4px_rgba(45,45,36,0.06)] p-2">
+          {/* 56px tall: 44px of control with 6px above and below, which is
+              also what makes rounded-full resolve to the specified 28 radius.
+              The 12px is horizontal — 12px of vertical padding would put the
+              bar at 68px. px-3/gap-3 are the spec's «المسافة الجانبية» and
+              «المسافة بين العناصر». */}
+          <div className="relative flex items-center gap-3 h-14 bg-[var(--ds-surface)]/85 backdrop-blur-2xl backdrop-saturate-150 border border-[var(--ds-surface)]/80 rounded-full shadow-[0_6px_18px_-6px_rgba(45,45,36,0.22),0_1px_4px_rgba(45,45,36,0.06)] px-3">
             {/* DOM order is right-to-left on screen: map sits at the right end,
                 filter at the left, matching the approved layout. */}
             {onOpenMap && (
               <>
+                {/* The hairline rules that used to separate the three are
+                    gone. Three shapes with 12px between them already read as
+                    three; the rules were doing the same job twice and eating
+                    the gap that was supposed to do it. */}
                 <button
                   id="open-map-btn"
                   type="button"
                   onClick={onOpenMap}
-                  className="shrink-0 flex items-center gap-1 rounded-full px-3 min-h-11 text-[11px] font-black text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-all cursor-pointer"
+                  className="shrink-0 flex items-center justify-center gap-1 rounded-full w-[88px] max-[374px]:w-11 h-11 text-[11px] font-black text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-all cursor-pointer"
                   title="عرض البيوت على الخريطة"
                   aria-label="عرض البيوت على الخريطة"
                 >
                   <MapPin className="w-4 h-4" />
-                  <span>الخريطة</span>
+                  <span className="max-[374px]:hidden">الخريطة</span>
                 </button>
-                <span aria-hidden="true" className="w-px h-6 bg-[var(--ds-border)] shrink-0" />
               </>
             )}
 
@@ -575,7 +583,42 @@ export default function UserDashboard({
             <SearchInput
               id="user-search-query"
               surface={false}
-              placeholder="ابحث باسم البيت، المحافظة، الكلمات المفتاحية..."
+              // The bar is the frosted glass; the field is the brighter pill
+              // sitting on it. surface={false} strips the component's own
+              // box so this one can be the shape the spec draws.
+              className="bg-[var(--ds-surface)] rounded-full"
+              leadingIcon={false}
+              trailing={
+                // A real button, not an ornament. A filled gold circle is the
+                // loudest thing in the bar, and the list already filters as
+                // you type — so tapping it does the thing a phone keyboard
+                // cannot: puts the keyboard away and moves to the results.
+                <button
+                  id="search-go-btn"
+                  type="button"
+                  onClick={() => {
+                    tapFeedback();
+                    setSuggestOpen(false);
+                    (document.getElementById('user-search-query') as HTMLInputElement | null)?.blur();
+                    document.getElementById('house-list-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  aria-label="ابحث"
+                  // 44px of tappable area around a 40px circle — the circle is
+                  // the size the spec draws, 44 is the floor a thumb needs.
+                  className="absolute end-1 top-1/2 -translate-y-1/2 w-11 h-11 grid place-items-center cursor-pointer"
+                >
+                  <span className="w-10 h-10 rounded-full bg-[var(--ds-accent)] grid place-items-center shadow-sm">
+                    <Search aria-hidden="true" className="w-4 h-4 text-[var(--ds-on-accent)]" />
+                  </span>
+                </button>
+              }
+              // «ابحث باسم البيت، مدينة أو منطقة» measures 186px and the
+              // field is 125px wide — the spec asks for two 88px buttons,
+              // 12px padding and 12px gaps on a 375px screen, which leaves
+              // no room for the placeholder the same spec writes. The gold
+              // circle and the two labelled buttons already say what the bar
+              // is, so the hint is the part that gives way.
+              placeholder="ابحث"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="ابحث عن بيت"
@@ -640,12 +683,10 @@ export default function UserDashboard({
               </ul>
             )}
 
-            <span aria-hidden="true" className="w-px h-6 bg-[var(--ds-border)] shrink-0" />
-
             <button
               id="toggle-filters-btn"
               onClick={() => { tapFeedback(); setShowFilters(!showFilters); }}
-              className={`shrink-0 flex items-center gap-1 rounded-full px-3 min-h-11 text-[11px] font-black transition-all cursor-pointer ${
+              className={`shrink-0 flex items-center justify-center gap-1 rounded-full w-[88px] max-[374px]:w-11 h-11 text-[11px] font-black transition-all cursor-pointer ${
                 showFilters ? 'bg-[var(--ds-primary)] text-[var(--ds-on-primary)]' : 'text-[var(--ds-text)] hover:bg-[var(--ds-raised)]'
               }`}
               title="فلاتر متقدمة"
@@ -653,7 +694,7 @@ export default function UserDashboard({
               aria-expanded={showFilters}
             >
               <SlidersHorizontal className="w-4 h-4" />
-              <span>فلتر</span>
+              <span className="max-[374px]:hidden">فلتر</span>
             </button>
           </div>
         </div>
@@ -662,33 +703,44 @@ export default function UserDashboard({
       {!hasSearched && (
       <>
       {/* Quick cards, one short row. Loyalty is first so it lands on the RIGHT
-          in RTL, with the guide beside it — the approved order. */}
-      <div className="grid grid-cols-2 gap-2.5">
+          in RTL, with the guide beside it — the approved order.
+
+          To the spec: 56px tall, 16 radius, 12px between them, 12px inside,
+          a 40px disc and a 24px chevron slot. The disc went from a 36px
+          rounded square to a 40px circle, which is the change that makes the
+          pair read as one family with the round controls in the bar above. */}
+      {/* Side by side from 375 up, which is where a 161px card has the 90px
+          of text column its own labels need. At 320 the pair is 138px each
+          and every line wrapped, so below that they stack and each one gets
+          the full width — 56px tall either way, which is the point. */}
+      <div className="grid grid-cols-2 max-[374px]:grid-cols-1 gap-3">
         {currentUser && currentUser.role !== 'owner' ? (
           <button
             id="loyalty-card-trigger"
             type="button"
             onClick={onSelectRewards}
-            className="flex items-center gap-2 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-2.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] transition-shadow duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press text-right cursor-pointer"
+            className="flex items-center gap-3 min-h-14 py-2 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-3 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] transition-shadow duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press text-right cursor-pointer"
           >
-            <span className="shrink-0 w-9 h-9 rounded-xl bg-[var(--ds-raised)] flex items-center justify-center">
-              <Award className="w-4 h-4 text-[var(--ds-accent)]" />
+            <span className="shrink-0 w-10 h-10 rounded-full bg-[var(--ds-accent-soft)]/40 flex items-center justify-center">
+              <Gift className="w-5 h-5 text-[var(--ds-accent-deep)]" />
             </span>
             <span className="min-w-0">
-              <span className="block text-[11px] font-black text-[var(--ds-text)] leading-tight">برنامج الولاء والنقاط</span>
+              <span className="block text-[11px] font-black text-[var(--ds-text)] leading-tight">الولاء والنقاط</span>
               <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">
                 رصيدك: <span className="text-[var(--ds-accent)] font-black">{(currentUser.points || 0).toLocaleString('ar-EG')}</span> نقطة
               </span>
             </span>
-            <ChevronLeft aria-hidden="true" className="w-3.5 h-3.5 text-[var(--ds-text-faint)] shrink-0 mr-auto transition-colors" />
+            {/* A 24px slot, the glyph smaller inside it. The spec's 24 is
+                the space the arrow is given; a 24px chevron drawn edge to
+                edge next to an 11px label is a second headline. */}
           </button>
         ) : (
-          <div className="flex items-center gap-2 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-2.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
-            <span className="shrink-0 w-9 h-9 rounded-xl bg-[var(--ds-raised)] flex items-center justify-center">
-              <Award className="w-4 h-4 text-[var(--ds-accent)]" />
+          <div className="flex items-center gap-3 min-h-14 py-2 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-3 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)]">
+            <span className="shrink-0 w-10 h-10 rounded-full bg-[var(--ds-accent-soft)]/40 flex items-center justify-center">
+              <Gift className="w-5 h-5 text-[var(--ds-accent-deep)]" />
             </span>
             <span className="min-w-0">
-              <span className="block text-[11px] font-black text-[var(--ds-text)] leading-tight">برنامج الولاء والنقاط</span>
+              <span className="block text-[11px] font-black text-[var(--ds-text)] leading-tight">الولاء والنقاط</span>
               <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">سجّل واكسب نقاط</span>
             </span>
           </div>
@@ -696,16 +748,15 @@ export default function UserDashboard({
 
         <a
           href="/dalil/"
-          className="flex items-center gap-2 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-2.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] transition-shadow duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press group"
+          className="flex items-center gap-3 min-h-14 py-2 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl px-3 shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] transition-shadow duration-[250ms] ease-[cubic-bezier(0.33,1,0.68,1)] pima-press group"
         >
-          <span className="shrink-0 w-9 h-9 rounded-xl bg-[var(--ds-raised)] flex items-center justify-center">
-            <BookOpen className="w-4 h-4 text-[var(--ds-accent)]" />
+          <span className="shrink-0 w-10 h-10 rounded-full bg-[var(--ds-accent-soft)]/40 flex items-center justify-center">
+            <BookOpen className="w-5 h-5 text-[var(--ds-accent-deep)]" />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-[11px] font-black text-[var(--ds-text)] leading-tight">دليل المستخدم</span>
-            <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">تعرف على كل المزايا</span>
+            <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">اعرف كل المزايا</span>
           </span>
-          <ChevronLeft aria-hidden="true" className="w-3.5 h-3.5 text-[var(--ds-text-faint)] shrink-0 mr-auto group-hover:text-[var(--ds-accent)] transition-colors" />
         </a>
       </div>
 
