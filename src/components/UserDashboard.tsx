@@ -606,9 +606,9 @@ export default function UserDashboard({
               // The bar is the frosted glass; the field is the brighter pill
               // sitting on it. surface={false} strips the component's own
               // box so this one can be the shape the spec draws.
-              className="bg-[var(--ds-surface)] rounded-full placeholder:text-[11px]"
+              className="bg-[var(--ds-surface)]/55 backdrop-blur-md rounded-full placeholder:text-[11px]"
               leadingIcon={false}
-              trailing={
+              leading={
                 // A real button, not an ornament. A filled gold circle is the
                 // loudest thing in the bar, and the list already filters as
                 // you type — so tapping it does the thing a phone keyboard
@@ -625,7 +625,7 @@ export default function UserDashboard({
                   aria-label="ابحث"
                   // 44px of tappable area around a 40px circle — the circle is
                   // the size the spec draws, 44 is the floor a thumb needs.
-                  className="absolute end-1 top-1/2 -translate-y-1/2 w-11 h-11 grid place-items-center cursor-pointer"
+                  className="absolute start-1 top-1/2 -translate-y-1/2 w-11 h-11 grid place-items-center cursor-pointer"
                 >
                   <span className="w-10 h-10 rounded-full bg-[var(--ds-accent)] grid place-items-center shadow-sm">
                     <Search aria-hidden="true" className="w-4 h-4 text-[var(--ds-on-accent)]" />

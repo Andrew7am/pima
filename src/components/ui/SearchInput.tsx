@@ -46,6 +46,9 @@ export interface SearchInputProps
    *  up for it. Absolutely placed by the caller against the same relative
    *  box the leading icon uses. */
   trailing?: React.ReactNode;
+  /** The same, at the logical start. Takes the place of the plain magnifier
+   *  rather than sitting beside it, so pass leadingIcon={false} with it. */
+  leading?: React.ReactNode;
 }
 
 export default function SearchInput({
@@ -57,6 +60,7 @@ export default function SearchInput({
   surface = true,
   leadingIcon = true,
   trailing,
+  leading,
   ...rest
 }: SearchInputProps) {
   const auto = useId();
@@ -89,7 +93,7 @@ export default function SearchInput({
             // The start padding is only opened where there is an icon to
             // clear, and the end padding only where something sits in it.
             'min-h-11 text-[14px] w-full',
-            leadingIcon ? 'ps-10' : 'ps-3',
+            leading ? 'ps-12' : leadingIcon ? 'ps-10' : 'ps-3',
             // 48px clears a 44px control sitting at end-1; 56 was giving away
             // 8px of a field that has none to spare.
             trailing ? 'pe-12' : 'pe-3',
@@ -114,6 +118,7 @@ export default function SearchInput({
           ].filter(Boolean).join(' ')}
           {...rest}
         />
+        {leading}
         {trailing}
       </div>
     </div>
