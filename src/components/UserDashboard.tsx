@@ -1110,11 +1110,64 @@ export default function UserDashboard({
                   <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/25" />
                 </div>
 
-                {/* Rating, and real popularity beside it (top-3 by confirmed
-                    bookings over the last year — see mostBookedIds) */}
-                <div className="absolute top-3 left-3 right-[calc(var(--pima-panel-w)+7rem)] max-[374px]:right-[calc(var(--pima-panel-w)+4.5rem)] flex items-center gap-1.5 overflow-hidden">
-                  <span className="shrink-0 bg-[var(--ds-surface)]/95 backdrop-blur-sm text-[var(--ds-text)] text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
-                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                {/* The rating and the two actions are ONE row now, 8px in
+                    from the top and the left with 12px between everything.
+                    They used to be two groups that happened to sit at the
+                    same height — the rating pinned to the left edge and the
+                    buttons pinned off the panel's width, with whatever gap
+                    the card size left between them. Nothing held them
+                    together, so the gap changed with every card width.
+
+                    DOM order is reversed from how it reads: the row is RTL,
+                    so the FIRST child lands at its right end. Favourite,
+                    compare, rule, pill here is «4.8 ⭐ | ⇄ ♡» on screen.
+
+                    The right edge still clears the panel, because a row that
+                    can reach it is a row whose last pill is unreadable and
+                    whose first button is untappable. */}
+                <div className="absolute top-2 left-2 right-[calc(var(--pima-panel-w)+0.5rem)] z-10 flex items-center justify-end gap-3 max-[374px]:gap-2 overflow-hidden">
+                  <button
+                    id={`toggle-fav-card-${house.id}`}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation(); // prevent opening house details
+                      tapFeedback();
+                      onToggleFavorite(house.id);
+                    }}
+                    className="relative w-7 h-7 grid place-items-center cursor-pointer group/fav before:absolute before:content-[''] before:-inset-y-2 before:-inset-x-1.5"
+                    title={currentUser?.favorites?.includes(house.id) ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
+                    aria-label={currentUser?.favorites?.includes(house.id) ? `إزالة ${house.name} من المفضلة` : `إضافة ${house.name} للمفضلة`}
+                  >
+                    <span className="w-7 h-7 rounded-full bg-[var(--ds-surface)]/95 group-hover/fav:bg-[var(--ds-surface)] grid place-items-center shadow transition-colors duration-200">
+                      <Heart className={`w-3.5 h-3.5 ${currentUser?.favorites?.includes(house.id) ? 'fill-rose-500 text-rose-500' : 'text-[var(--ds-text-faint)]'}`} />
+                    </span>
+                  </button>
+
+                  <button
+                    id={`toggle-compare-card-${house.id}`}
+                    type="button"
+                    onClick={(e) => handleToggleCompare(house.id, e)}
+                    className="relative w-7 h-7 grid place-items-center cursor-pointer group/cmp before:absolute before:content-[''] before:-inset-y-2 before:-inset-x-1.5"
+                    title={comparedHouseIds.includes(house.id) ? 'إزالة من المقارنة' : 'إضافة للمقارنة والمفاضلة'}
+                    aria-label={comparedHouseIds.includes(house.id) ? `إزالة ${house.name} من المقارنة` : `إضافة ${house.name} للمقارنة`}
+                    aria-pressed={comparedHouseIds.includes(house.id)}
+                  >
+                    <span className={`w-7 h-7 rounded-full grid place-items-center shadow transition-colors duration-200 ${
+                      comparedHouseIds.includes(house.id)
+                        ? 'bg-amber-600 text-white group-hover/cmp:bg-amber-700'
+                        : 'bg-[var(--ds-surface)]/95 text-[var(--ds-text-faint)] group-hover/cmp:text-[var(--ds-primary)] group-hover/cmp:bg-[var(--ds-surface)]'
+                    }`}>
+                      <ArrowLeftRight className="w-3.5 h-3.5" />
+                    </span>
+                  </button>
+
+                  {/* Between the actions and the rating, at the pill's own
+                      height — the two are different kinds of thing and the
+                      spec separates them rather than spacing them further. */}
+                  <span aria-hidden="true" className="w-px h-5 bg-white/60 shrink-0 max-[374px]:hidden" />
+
+                  <span className="shrink-0 bg-[var(--ds-surface)]/95 backdrop-blur-sm text-[var(--ds-text)] text-[14px] font-semibold h-7 px-2.5 rounded-full flex items-center gap-1 shadow">
+                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                     <span>{arabicDecimal(house.rating)}</span>
                   </span>
                   {/* Only when it is actually live. A discount badge on a
@@ -1140,50 +1193,6 @@ export default function UserDashboard({
                     The owner's landmark («المنتزه») went with the row it
                     shared. It is not repeated anywhere, so if it comes back it
                     comes back inside the panel, not over the photograph. */}
-
-                {/* Favourite + compare — the only two actions on the photo.
-                    They sat at right-3, which in RTL is exactly where the
-                    details panel sits: the panel paints over them, and a tap
-                    on the heart landed on the house name inside the glass and
-                    opened the house instead. Offset by the panel's own width
-                    so they stay on the photograph at any card size — the one
-                    place they can be tapped. */}
-                <div className="absolute top-2.5 right-[calc(var(--pima-panel-w)+0.75rem)] z-10 flex items-center gap-0 max-[374px]:flex-col">
-                  <button
-                    id={`toggle-fav-card-${house.id}`}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation(); // prevent opening house details
-                      tapFeedback();
-                      onToggleFavorite(house.id);
-                    }}
-                    className="w-11 h-11 grid place-items-center cursor-pointer group/fav"
-                    title={currentUser?.favorites?.includes(house.id) ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
-                    aria-label={currentUser?.favorites?.includes(house.id) ? `إزالة ${house.name} من المفضلة` : `إضافة ${house.name} للمفضلة`}
-                  >
-                    <span className="w-8 h-8 rounded-full bg-[var(--ds-surface)]/95 group-hover/fav:bg-[var(--ds-surface)] grid place-items-center shadow transition-colors duration-200">
-                      <Heart className={`w-3.5 h-3.5 ${currentUser?.favorites?.includes(house.id) ? 'fill-rose-500 text-rose-500' : 'text-[var(--ds-text-faint)]'}`} />
-                    </span>
-                  </button>
-
-                  <button
-                    id={`toggle-compare-card-${house.id}`}
-                    type="button"
-                    onClick={(e) => handleToggleCompare(house.id, e)}
-                    className="w-11 h-11 grid place-items-center cursor-pointer group/cmp"
-                    title={comparedHouseIds.includes(house.id) ? 'إزالة من المقارنة' : 'إضافة للمقارنة والمفاضلة'}
-                    aria-label={comparedHouseIds.includes(house.id) ? `إزالة ${house.name} من المقارنة` : `إضافة ${house.name} للمقارنة`}
-                    aria-pressed={comparedHouseIds.includes(house.id)}
-                  >
-                    <span className={`w-8 h-8 rounded-full grid place-items-center shadow transition-colors duration-200 ${
-                      comparedHouseIds.includes(house.id)
-                        ? 'bg-amber-600 text-white group-hover/cmp:bg-amber-700'
-                        : 'bg-[var(--ds-surface)]/95 text-[var(--ds-text-faint)] group-hover/cmp:text-[var(--ds-primary)] group-hover/cmp:bg-[var(--ds-surface)]'
-                    }`}>
-                      <ArrowLeftRight className="w-3.5 h-3.5" />
-                    </span>
-                  </button>
-                </div>
 
                 {/* Status badges — only what the guest is filtering on right now
                     (real availability) and what tells them the listing is a

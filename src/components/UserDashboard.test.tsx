@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 import UserDashboard from './UserDashboard';
 import type { RetreatHouse, User } from '../types';
+import { arabicDecimal } from '../lib/arabic';
 import { loadHousesAvailability, loadHouseBookingCounts } from '../lib/db';
 
 /**
@@ -494,5 +495,52 @@ describe('a search that finds nothing', () => {
     renderBrowse({ houses: [] });
     expect(document.getElementById('place-request-submit')).toBeNull();
     expect(screen.getByText('لسه مفيش بيوت معروضة.')).toBeInTheDocument();
+  });
+});
+
+describe('the controls on the photograph', () => {
+  /**
+   * The rating and the two actions used to be two absolutely placed groups
+   * that happened to sit at the same height — one pinned to the card's left
+   * edge, the other pinned off the details panel's width. Nothing held them
+   * together, so the gap between them changed with the card's width.
+   *
+   * They are one row now. What is asserted here is the part jsdom can see:
+   * that it IS one row, and that the order in it is the order it reads in.
+   * The 8px margins, the 12px between and the 28px faces are pixels, and
+   * pixels are measured in a browser, not here.
+   */
+  it('keeps the rating, compare and favourite in a single row', () => {
+    renderBrowse({ houses: [house({ id: 'h1', rating: 4.8 })] });
+
+    const fav = document.getElementById('toggle-fav-card-h1');
+    const cmp = document.getElementById('toggle-compare-card-h1');
+    expect(fav, 'favourite button').toBeTruthy();
+    expect(cmp, 'compare button').toBeTruthy();
+
+    // One parent. Two groups that merely line up is what this replaced.
+    expect(fav!.parentElement).toBe(cmp!.parentElement);
+
+    const row = fav!.parentElement!;
+    expect(row.textContent).toContain(arabicDecimal(4.8));
+
+    // RTL puts the FIRST child at the right end, so favourite before compare
+    // before the rule before the pill reads «٤٫٨ ⭐ | ⇄ ♡» from the left.
+    const order = [...row.children];
+    expect(order.indexOf(fav!)).toBe(0);
+    expect(order.indexOf(cmp!)).toBe(1);
+    expect(order[order.length - 1].textContent).toContain(arabicDecimal(4.8));
+  });
+
+  it('still opens the house when the card itself is tapped', async () => {
+    // The two buttons stop propagation; moving them into a new parent is
+    // exactly the kind of change that can lose that and make the whole row
+    // open the house instead.
+    const onSelectHouse = vi.fn();
+    renderBrowse({ houses: [house({ id: 'h1' })], onSelectHouse });
+    await userEvent.click(document.getElementById('toggle-fav-card-h1')!);
+    expect(onSelectHouse).not.toHaveBeenCalled();
+    await userEvent.click(document.getElementById('house-card-h1')!);
+    expect(onSelectHouse).toHaveBeenCalledTimes(1);
   });
 });
