@@ -95,8 +95,8 @@ BEGIN
   IF v_n > 0 THEN
     v_missing := v_missing ||
       E'\n  - ' || v_n || ' MARKUP agreement(s) still carry a base_rate. Under the new'
-      E'\n    semantics their retail price would change. Close them and re-issue'
-      E'\n    with markup_pct before applying this migration.';
+   || E'\n    semantics their retail price would change. Close them and re-issue'
+   || E'\n    with markup_pct before applying this migration.';
   END IF;
 
   IF v_missing <> '' THEN
