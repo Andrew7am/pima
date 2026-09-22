@@ -8,12 +8,14 @@ import { supabase } from './lib/supabase';
 import { loadUnreadCountsPerBooking } from './lib/bookingMessages';
 import {
   mapUser, loadUsers,
-  loadHouses, deleteHouse, createHouse as createHouseDb, updateHouse as updateHouseDb, houseUpdatePayload as houseUpdatePayloadDb,
+  loadCustomerFinancials, loadOwnerFinancials, loadAdminFinancials,
+  createBookingOnBehalf, loadBookingById,
+  loadHouses, loadHouseCustomerRates, withCustomerRates, createBookingWithFinancials, loadUserById, deleteHouse, createHouse as createHouseDb, updateHouse as updateHouseDb, houseUpdatePayload as houseUpdatePayloadDb,
   loadBookings, loadReviews, loadReviewsForHouses, loadPayments, loadNotifications, subscribeToNotifications, loadPointsHistory,
   subscribeToBookingsForUser, subscribeToBookingsForHouse, subscribeToRoomsForHouse,
   loadRoomsForHouses, loadAnnouncementsForHouses, loadWaitlistForHouses, loadPromoBanners, loadHouseImages, releaseUserAccount,
   loadAttendeesForBooking, loadAllocationsForBooking, saveAttendeesForBooking, saveAllocationsForBooking, loadAllocationsCount,
-  createBooking, updateBookingStatus, updateBookingFields, deleteBooking as deleteBookingDb,
+  updateBookingStatus, updateBookingFields, deleteBooking as deleteBookingDb,
   createReview, updateReview as updateReviewDb, deleteReview as deleteReviewDb, createPayment, updatePaymentStatus,
   markNotificationRead, unsubscribeEmail,
   createRoom, updateRoom as updateRoomDb, deleteRoom as deleteRoomDb,
@@ -30,9 +32,11 @@ import {
   loadPaymentProofImage,
   recordHouseView,
 } from './lib/db';
+import type { CustomerFinancials, OwnerFinancials, AdminFinancials, FinancialsIndex } from './lib/bookingFinancials';
+import { depositSnapshot } from './lib/bookingFinancials';
 import { autoAllocate } from './lib/roomAllocation';
 import { resolvePaymentVerdict } from './lib/paymentLedger';
-import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout, ConferenceRoom, PromoBanner } from './types';
+import { User, RetreatHouse, Booking, Review, UserRole, Attendee, RoomAllocation, AppNotification, Payment, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AuditLogEntry, Expense, Payout, ConferenceRoom, PromoBanner, OwnerBookingIntent } from './types';
 import ConferenceGate from './entertainment/ConferenceGate';
 import { loadMyConferences, saveConference } from './lib/conferences';
 
@@ -163,6 +167,17 @@ export default function App() {
   const showUpdateBanner = newVersionAvailable && !updateBannerDismissed;
 
   const [payments, setPayments] = useState<Payment[]>([]);
+
+  // The financial core's own numbers, by booking id.
+  //
+  // Three role-scoped views, and the app only ever loads the one this role
+  // is entitled to — SQL does the filtering, so a screen cannot leak a
+  // margin field it was never sent. A booking missing from the index has no
+  // snapshot (it predates the cutover, or came in through the owner manual
+  // booking path); the money helpers report that as unknown, never as zero.
+  const [customerFinancials, setCustomerFinancials] = useState<FinancialsIndex<CustomerFinancials>>({});
+  const [ownerFinancials, setOwnerFinancials] = useState<FinancialsIndex<OwnerFinancials>>({});
+  const [adminFinancials, setAdminFinancials] = useState<FinancialsIndex<AdminFinancials>>({});
   const [rooms, setRooms] = useState<Room[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
@@ -375,7 +390,9 @@ export default function App() {
       loadPlatformSettings(), loadAllocationsCount(), loadPromoBanners(),
     ]);
     setUsers(u);
-    setHouses(h);
+    // Customer-facing prices carry any MARKUP; the raw columns stay on the row
+    // for owner and admin screens. A no-op while every agreement is COMMISSION.
+    setHouses(withCustomerRates(h, await loadHouseCustomerRates()));
     setHousesLoaded(true);
     setBookings(b);
     setPayments(p);
@@ -388,6 +405,38 @@ export default function App() {
     }
   }, []);
 
+  // Pull the financial-core snapshot for whichever role is signed in.
+  //
+  // Separate from loadAppData because it is role-dependent and because it
+  // must re-run on the events that change it: a new booking writes a
+  // booking_financials row, and an approved payment moves
+  // deposit_received / owner_cash_payable without touching the bookings
+  // table at all. Keyed on the collection lengths rather than the arrays so
+  // an unrelated local edit does not refetch.
+  const financialsKey = `${bookings.length}|${payments.length}|${payouts.length}`;
+  useEffect(() => {
+    const role = currentUser?.role;
+    if (!currentUser?.id || !role) {
+      setCustomerFinancials({}); setOwnerFinancials({}); setAdminFinancials({});
+      return;
+    }
+    let live = true;
+    (async () => {
+      if (role === 'admin') {
+        const fin = await loadAdminFinancials();
+        if (live) setAdminFinancials(fin);
+      } else if (role === 'owner') {
+        const fin = await loadOwnerFinancials();
+        if (live) setOwnerFinancials(fin);
+      }
+      // Every role can also be a guest — an owner books other houses too.
+      const mine = await loadCustomerFinancials();
+      if (live) setCustomerFinancials(mine);
+    })();
+    return () => { live = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.id, currentUser?.role, financialsKey]);
+
   // What a logged-out visitor needs to browse: approved houses (RLS filters
   // to approved for anon), promo banners, and settings. Reviews/rooms/
   // announcements for one house load lazily when its page opens (the
@@ -396,7 +445,7 @@ export default function App() {
     const [h, st, pb] = await Promise.all([
       loadHouses(), loadPlatformSettings(), loadPromoBanners(),
     ]);
-    setHouses(h);
+    setHouses(withCustomerRates(h, await loadHouseCustomerRates()));
     setHousesLoaded(true);
     setSettings(st);
     setPromoBanners(pb);
@@ -1002,92 +1051,117 @@ export default function App() {
   // Owner records a phone/walk-in booking (source manual/temporary) on their
   // own house. Same server-side capacity check as guest bookings; unlike
   // handleBookHouse it doesn't navigate away or touch points.
-  const handleOwnerCreateBooking = async (newBooking: Booking): Promise<boolean> => {
-    const res = await createBooking(newBooking);
+  /**
+   * LEGACY PATH, DELIBERATELY. An owner recording a phone or walk-in booking.
+   *
+   * create_booking_with_financials books as auth.uid(), so routing this
+   * through it would record the OWNER as the guest — wrong person on the
+   * booking, wrong points balance, wrong contact details. Until the RPC can
+   * take a guest id, this keeps the direct insert and therefore the legacy
+   * 15% deposit and legacy commission stamp. It writes no booking_financials
+   * row, so these bookings stay outside the financial core by design and must
+   * not be counted in owner settlement.
+   */
+  /**
+   * The owner records a booking he took by telephone or at the door.
+   *
+   * This used to be the last booking path that priced itself. It inserted
+   * straight into `bookings` with a total the owner typed, which produced a
+   * booking the financial core had never seen: no agreement resolved, no
+   * owner_entitlement, no settlement hold — so every money screen fell back
+   * to commission arithmetic on a house that might be MARKUP or NET_RATE.
+   *
+   * It now goes through create_booking_on_behalf_with_financials, which
+   * takes the acting owner from auth.uid() and the guest as data. There is
+   * no price in OwnerBookingIntent to send.
+   */
+  const handleOwnerCreateBooking = async (intent: OwnerBookingIntent): Promise<boolean> => {
+    const res = await createBookingOnBehalf(intent);
     if (!res.ok) {
-      if (res.error === 'INSUFFICIENT_CAPACITY') {
-        const avail = res.availableBeds ?? 0;
-        alert(avail === 0
-          ? 'البيت مكتمل الإشغال في هذه التواريخ.'
-          : `لم يتبقَ سوى ${avail} سرير متاح في هذه التواريخ، والحجز يتطلب ${newBooking.guestsCount} فرد.`);
-      } else if (res.error === 'PRICE_TOO_LOW') {
-        // The one error an owner recording a phone booking will actually hit.
-        // validate_booking_price recomputes the stay from the house's own
-        // rates and refuses anything below the floor, and this fell into the
-        // generic branch — so an owner who worked the price out in his head
-        // was told «حاول مرة أخرى» and retried the same number. The booking
-        // simply never existed, and nothing told him why.
-        // The server's OWN floor, parsed from its exception — not a client
-        // recomputation. If the two ever disagree, the number he is told has
-        // to be the one that actually passes.
-        const floor = res.minimumPrice;
-        alert(floor
-          ? `السعر أقل من اللي البيت مسعّر بيه التواريخ دي.\n\nأقل مبلغ مقبول: ${floor.toLocaleString('ar-EG')} ج.م.`
-          : 'السعر أقل من اللي البيت مسعّر بيه التواريخ دي. راجع أسعارك الموسمية.');
-      } else {
-        alert('حدث خطأ في حفظ الحجز. حاول مرة أخرى.');
-      }
+      alert(res.error || 'حصل خطأ في حفظ الحجز. حاول تاني.');
       return false;
     }
-    setBookings((prev) => [res.booking ?? newBooking, ...prev]);
+    // Read the saved row back rather than reconstructing it: the price, the
+    // deposit and the policy snapshot were all decided by the server, and a
+    // replay returns the ORIGINAL booking, not the one just submitted.
+    const saved = res.bookingId ? await loadBookingById(res.bookingId) : null;
+    if (saved) {
+      setBookings((prev) => [saved, ...prev.filter((b) => b.id !== saved.id)]);
+    }
     return true;
   };
 
-  const handleBookHouse = async (newBooking: Booking, pointsRedeemed: number = 0): Promise<boolean> => {
-    // Persist to Supabase first — the DB trigger enforces bed-capacity per dates
-    const res = await createBooking(newBooking);
-    if (!res.ok) {
-      if (res.error === 'INSUFFICIENT_CAPACITY') {
-        const avail = res.availableBeds ?? 0;
-        if (avail === 0) {
-          alert('عذراً، البيت مكتمل الإشغال في هذه التواريخ. الرجاء اختيار تواريخ أخرى.');
-        } else {
-          alert(`عذراً، لم يتبقَ سوى ${avail} سرير متاح في هذه التواريخ، وطلبك يتطلب ${newBooking.guestsCount} فرد. الرجاء تقليل عدد الأفراد أو تغيير التواريخ.`);
-        }
-      } else {
-        alert('حدث خطأ في حفظ الحجز. حاول مرة أخرى.');
-      }
+  /**
+   * A guest booking, priced and recorded by the financial core.
+   *
+   * The client no longer sends a price. It sends the choices — house, dates,
+   * party, points — and create_booking_with_financials prices them against the
+   * house's commercial agreement, writes the booking, the financial snapshot
+   * and the settlement hold, and deducts the points, all in one transaction.
+   *
+   * `idempotencyKey` is generated once per booking attempt by the booking
+   * screen and reused unchanged on every retry. That is what makes a double
+   * click, a flaky network or an impatient second tap return the SAME booking
+   * instead of making another one. Never generate it here.
+   */
+  const handleBookHouse = async (
+    newBooking: Booking,
+    pointsRedeemed: number = 0,
+    idempotencyKey?: string,
+  ): Promise<boolean> => {
+    if (!idempotencyKey) {
+      // Refusing is the safe failure. Inventing a key here would make every
+      // retry a fresh booking, which is the exact defect this replaces.
+      console.error('handleBookHouse called without an idempotency key');
+      alert('حدث خطأ في حفظ الحجز. حاول مرة أخرى.');
       return false;
     }
-    // Use the server-persisted row, not the client's copy — the DB trigger
-    // may have recomputed total_price/deposit_amount against the current
-    // platform settings (e.g. if the deposit rate changed after this form
-    // loaded), and we want the UI to reflect what was actually saved.
-    const savedBooking = res.booking ?? newBooking;
-    setBookings((prev) => [savedBooking, ...prev]);
 
-    // Points are EARNED server-side only when a payment is actually confirmed
-    // (see migration 005) — never at booking time. Redemption goes through the
-    // redeem_points() SECURITY DEFINER function (migration 017), which validates
-    // the balance server-side; the old client-side `update({ points })` path is
-    // now blocked by the privileged-column protection trigger so a user can no
-    // longer just grant themselves points from the browser console.
+    const res = await createBookingWithFinancials({
+      bookingId: newBooking.id,
+      idempotencyKey,
+      houseId: newBooking.houseId,
+      checkIn: newBooking.checkIn,
+      checkOut: newBooking.checkOut,
+      guestsCount: newBooking.guestsCount,
+      childAges: newBooking.childAges ?? null,
+      // No promotion is selectable in the guest flow yet; when one is, it is
+      // passed here and the engine resolves and costs it.
+      promotionId: null,
+      points: pointsRedeemed,
+      details: {
+        userName: newBooking.userName,
+        userPhone: newBooking.userPhone,
+        userEmail: newBooking.userEmail,
+        organizationName: newBooking.organizationName ?? null,
+        isLargeConferenceQuote: newBooking.isLargeConferenceQuote,
+        conferenceDetails: (newBooking.conferenceDetails as Record<string, unknown>) ?? null,
+      },
+    });
+
+    if (!res.ok) {
+      alert(res.error ?? 'حدث خطأ في حفظ الحجز. حاول مرة أخرى.');
+      return false;
+    }
+
+    // The server-stored row, never the client's copy: the engine decided the
+    // price, and bookings.deposit_amount is deliberately 0 because the
+    // authoritative deposit lives in booking_financials.
+    const saved = res.booking;
+    if (saved) {
+      setBookings((prev) => (prev.some((b) => b.id === saved.id)
+        ? prev.map((b) => (b.id === saved.id ? saved : b))   // replay: refresh, never duplicate
+        : [saved, ...prev]));
+    }
+
+    // Points were deducted inside the booking transaction — there is no second
+    // redemption call any more, which is what used to make a retry cost the
+    // guest their points twice. Re-read the balance rather than recomputing it.
     if (pointsRedeemed > 0 && currentUser) {
-      const description = `خصم نقاط لحجز بيت ${newBooking.houseName}`;
-      const { data: remaining, error } = await supabase.rpc('redeem_points', {
-        p_amount: pointsRedeemed,
-        p_description: description,
-      });
-      if (error) {
-        console.error('redeemPoints:', error);
-      } else {
-        const redemptionTx: PointsTransaction = {
-          id: `pt_red_${Date.now()}`,
-          date: new Date().toISOString(),
-          amount: pointsRedeemed,
-          description,
-          type: 'redeemed',
-        };
-        const newPoints = typeof remaining === 'number'
-          ? remaining
-          : Math.max(0, (currentUser.points || 0) - pointsRedeemed);
-        const updatedUser: User = {
-          ...currentUser,
-          points: newPoints,
-          pointsHistory: [...(currentUser.pointsHistory || []), redemptionTx],
-        };
-        setCurrentUser(updatedUser);
-        setUsers((prevUsers) => prevUsers.map((u) => (u.id === currentUser.id ? updatedUser : u)));
+      const fresh = await loadUserById(currentUser.id);
+      if (fresh) {
+        setCurrentUser(fresh);
+        setUsers((prev) => prev.map((u) => (u.id === fresh.id ? fresh : u)));
       }
     }
 
@@ -1305,9 +1379,20 @@ export default function App() {
   // Notification fires server-side (migration 047).
   const handleConfirmDepositReceived = (bookingId: string) => {
     const target = bookings.find((b) => b.id === bookingId);
-    // Fallback only fires if depositAmount was somehow never set — use the
-    // live admin-configured rate (migration 024), not a stale hard-coded one.
-    const depositAmount = target ? (target.depositAmount || Math.round(target.totalPrice * settings.depositRate)) : 0;
+    // The amount filed as received. It goes onto a real payment row, so it
+    // has to be the deposit the booking actually charges.
+    //
+    // `target.depositAmount` is 0 by design under the financial core, which
+    // sent this to the rate fallback — and the rate is wrong whenever PD-16
+    // lifted the deposit to the margin floor. On a NET_RATE stay listed at
+    // 150 against a net of 100 the owner would hand over a receipt for 50
+    // and Pima would record 45, leaving a 5 discrepancy nobody could trace.
+    const finForDeposit = target
+      ? depositSnapshot(ownerFinancials[target.id] ?? customerFinancials[target.id])
+      : undefined;
+    const depositAmount = finForDeposit
+      ? finForDeposit.depositAmount
+      : (target ? (target.depositAmount || Math.round(target.totalPrice * settings.depositRate)) : 0);
     setBookings((prev) =>
       prev.map((b) =>
         b.id === bookingId
@@ -2204,6 +2289,7 @@ export default function App() {
               onOpenRoomDistribution={handleOpenRoomDistribution}
               onNotifyOwnerDistribution={handleNotifyOwnerDistribution}
               payments={payments}
+              financials={customerFinancials}
               onSubmitPayment={handleSubmitPayment}
               settings={settings}
               reviews={reviews}
@@ -2265,6 +2351,8 @@ export default function App() {
               onAddExpense={handleAddExpense}
               onDeleteExpense={handleDeleteExpense}
               payouts={payouts}
+              payments={payments}
+              financials={ownerFinancials}
               onRequestPayout={handleRequestPayout}
               users={users}
               onNavigateSupport={() => setActiveScreen('support')}
@@ -2299,6 +2387,7 @@ export default function App() {
               onDeleteReview={handleDeleteReview}
               allocationsCount={allocationsCount}
               payments={payments}
+              financials={adminFinancials}
               onVerifyPayment={handleVerifyPayment}
               onUpdateBookingDetails={handleUpdateBookingDetails}
               onRecordRefund={handleRecordRefund}

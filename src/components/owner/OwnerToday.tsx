@@ -5,7 +5,8 @@ import { motion } from 'motion/react';
 import { RetreatHouse, Booking, Room } from '../../types';
 import { Sun, LogIn, LogOut, Sparkles, Banknote, Users, TrendingUp, TrendingDown, CheckCircle2, Wrench, ScanLine } from 'lucide-react';
 import OwnerScanner from './OwnerScanner';
-import { cashDueAtArrival } from '../../lib/paymentLedger';
+import { ownerArrivalBalance, sumMoney, moneyOr } from '../../lib/bookingFinancials';
+import type { FinancialsIndex, OwnerFinancials } from '../../lib/bookingFinancials';
 
 interface OwnerTodayProps {
   house?: RetreatHouse;
@@ -16,6 +17,8 @@ interface OwnerTodayProps {
   onCheckOutBooking?: (bookingId: string) => void;
   onUpdateRoom?: (room: Room) => void;
   onViewBooking?: (bookingId: string) => void;
+  /** Financial-core snapshots by booking id. See lib/bookingFinancials. */
+  financials?: FinancialsIndex<OwnerFinancials>;
 }
 
 const guestName = (b: Booking) => b.organizationName || b.userName;
@@ -35,7 +38,7 @@ function Section({ title, icon: Icon, count, children }: { title: string; icon: 
   );
 }
 
-export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckInBooking, onCheckOutBooking, onUpdateRoom, onViewBooking }: OwnerTodayProps) {
+export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckInBooking, onCheckOutBooking, onUpdateRoom, onViewBooking, financials = {} }: OwnerTodayProps) {
   const [scannerOpen, setScannerOpen] = useState(false);
   const confirmed = useMemo(() => bookings.filter((b) => b.status === 'approved' || b.status === 'completed'), [bookings]);
   const arrivals = confirmed.filter((b) => b.checkIn === todayStr);
@@ -44,7 +47,14 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
   const maintenanceRooms = rooms.filter((r) => r.status === 'maintenance');
 
   const guestsToday = arrivals.reduce((s, b) => s + b.guestsCount, 0);
-  const cashExpected = arrivals.reduce((s, b) => s + cashDueAtArrival(b), 0);
+  // What the GUEST still owes and hands over at the door — not what the
+  // house earns. Under the financial core this is the stored
+  // arrival_balance_external; the old totalPrice - depositAmount read the
+  // full retail price, because the core deliberately leaves deposit_amount
+  // at 0. On a 180 booking with 54 already paid to Pima it told the owner
+  // to collect 180.
+  const cashAtDoor = sumMoney(arrivals.map((b) => ownerArrivalBalance(b, financials[b.id])));
+  const cashExpected = cashAtDoor.total;
 
   // Current-month occupancy → a simple pricing nudge.
   const now = new Date();
@@ -127,7 +137,7 @@ export default function OwnerToday({ house, bookings, rooms, todayStr, onCheckIn
             className="flex items-center justify-between gap-2 bg-[var(--color-owner-bg)] rounded-2xl p-2.5">
             <button type="button" onClick={() => onViewBooking?.(b.id)} className="min-w-0 text-right">
               <div className="text-[12px] font-black text-[var(--color-owner-text)] truncate">{guestName(b)}</div>
-              <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(b.guestsCount, GUEST_FORMS)} · متبقٍ {arabicNumber(cashDueAtArrival(b))} ج.م</div>
+              <div className="text-[11px] font-bold text-[var(--color-owner-secondary)]">{arabicPlural(b.guestsCount, GUEST_FORMS)} · متبقٍ {arabicNumber(moneyOr(ownerArrivalBalance(b, financials[b.id]), 0))} ج.م</div>
             </button>
             {b.checkedInAt ? (
               <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-1 shrink-0">وصل ✓</span>

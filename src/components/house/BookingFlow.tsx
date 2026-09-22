@@ -67,7 +67,10 @@ interface BookingFlowProps {
    *  addressed from his own profile, so there is nothing to render without one. */
   onPrintPriestQuote?: () => void;
   totalPrice: number;
-  depositAmount: number;
+ /** null when the financial core could not be reached: the deposit is then
+   *  genuinely unknown, and the sentence below simply omits the figure rather
+   *  than printing a number derived from the legacy 15% rate. */
+  depositAmount: number | null;
   /** Rate bands from lib/pricing — one row per distinct nightly rate. */
   breakdown: { label: string | null; nights: number; rate: number }[];
   /** The calendar, handed in so this file does not own date logic. */

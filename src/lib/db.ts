@@ -1,6 +1,8 @@
 ﻿import { supabase } from './supabase';
-import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, AuditLogEntry, Expense, Payout, PromoBanner } from '../types';
+import type { RetreatHouse, Booking, Review, Payment, User, AppNotification, Attendee, RoomAllocation, PointsTransaction, Room, RoomType, Announcement, WaitlistEntry, PlatformAnnouncement, PlatformSettings, AuditLogEntry, Expense, Payout, PromoBanner, HouseAgreement, HouseAgreementRequest, AgreementModel, OwnerAgreementModel, HouseCustomerRates, SeasonalRate, OwnerBookingIntent } from '../types';
 import { DEFAULT_PLATFORM_SETTINGS } from '../types';
+import type { CustomerFinancials, OwnerFinancials, AdminFinancials, FinancialsIndex } from './bookingFinancials';
+import { mapCustomerFinancials, mapOwnerFinancials, mapAdminFinancials, indexByBooking } from './bookingFinancials';
 
 // ─── Row → Type mappers ────────────────────────────────────────────────────
 
@@ -1055,6 +1057,10 @@ export async function loadPromoBanners(): Promise<PromoBanner[]> {
 export function mapPlatformSettings(data: Record<string, unknown>): PlatformSettings {
   return {
     commissionRate: Number(data.commission_rate) ?? DEFAULT_PLATFORM_SETTINGS.commissionRate,
+    // platform_settings is NOT the financial core. This row still carries the
+    // legacy 0.15; loadPlatformSettings overlays the authoritative value and
+    // sets the flag. A mapper alone can never establish it.
+    depositRateIsAuthoritative: false,
     depositRate: Number(data.deposit_rate) ?? DEFAULT_PLATFORM_SETTINGS.depositRate,
     pointsPerEgp: Number(data.points_per_egp) ?? DEFAULT_PLATFORM_SETTINGS.pointsPerEgp,
     maxRedemptionPct: Number(data.max_redemption_pct) ?? DEFAULT_PLATFORM_SETTINGS.maxRedemptionPct,
@@ -1075,8 +1081,18 @@ export function mapPlatformSettings(data: Record<string, unknown>): PlatformSett
 
 export async function loadPlatformSettings(): Promise<PlatformSettings> {
   const { data, error } = await supabase.from('platform_settings').select('*').eq('id', 1).single();
-  if (error || !data) { if (error) console.error('loadPlatformSettings:', error); return DEFAULT_PLATFORM_SETTINGS; }
-  return mapPlatformSettings(data as Record<string, unknown>);
+  const base = (error || !data)
+    ? (error ? (console.error('loadPlatformSettings:', error), DEFAULT_PLATFORM_SETTINGS) : DEFAULT_PLATFORM_SETTINGS)
+    : mapPlatformSettings(data as Record<string, unknown>);
+
+  // financial_settings is authoritative for the money the guest is quoted.
+  // platform_settings still holds the legacy 0.15 deposit and is the source
+  // for everything non-financial (support number, rate limit, payment
+  // methods), so it is read first and then overlaid — never the reverse.
+  const fin = await loadClientFinancialSettings();
+  // An empty overlay is a FAILURE, not an absence of opinion. Spreading it
+  // would leave base.depositRate (0.15) looking like an answer.
+  return { ...base, ...fin, depositRateIsAuthoritative: fin.depositRate != null };
 }
 
 export async function updatePlatformSettings(s: PlatformSettings): Promise<boolean> {
@@ -1099,39 +1115,10 @@ export async function updatePlatformSettings(s: PlatformSettings): Promise<boole
 }
 
 // ─── Type → Row mappers (for inserts/updates) ──────────────────────────────
-
-function bookingToRow(b: Booking): Record<string, unknown> {
-  return {
-    id: b.id,
-    house_id: b.houseId,
-    house_name: b.houseName,
-    user_id: b.userId,
-    user_name: b.userName,
-    user_phone: b.userPhone,
-    user_email: b.userEmail,
-    user_role: b.userRole,
-    organization_name: b.organizationName ?? null,
-    check_in: b.checkIn,
-    check_out: b.checkOut,
-    guests_count: b.guestsCount,
-    // The TOTAL party above; the ages of the children inside it here. The
-    // server derives adults_count/children_count from these two and stamps the
-    // policy snapshot itself, so neither is sent — see migration 0128.
-    child_ages: b.childAges && b.childAges.length ? b.childAges : null,
-    total_price: b.totalPrice,
-    deposit_paid: b.depositPaid,
-    deposit_amount: b.depositAmount,
-    status: b.status,
-    source: b.source ?? 'platform',
-    is_large_conference_quote: b.isLargeConferenceQuote,
-    payment_status: b.paymentStatus ?? 'unpaid',
-    conference_details: b.conferenceDetails ?? null,
-    checked_in_at: b.checkedInAt ?? null,
-    checked_out_at: b.checkedOutAt ?? null,
-    owner_notes: b.ownerNotes ?? null,
-    created_at: b.createdAt,
-  };
-}
+//
+// bookingToRow was deleted with createBooking below. It existed to turn a
+// client-side Booking — price, deposit and commission included — into an
+// INSERT, and every one of those three is now the database to decide.
 
 function reviewToRow(r: Review): Record<string, unknown> {
   return {
@@ -1202,41 +1189,15 @@ function roomToRow(r: Room): Record<string, unknown> {
 
 // ─── Mutations ─────────────────────────────────────────────────────────────
 
-/**
- * Insert a new booking. The DB trigger enforces bed-capacity for overlapping
- * dates, and (migration 018/024) recomputes total_price/deposit_amount from
- * the house's live rate and the platform's current deposit/redemption
- * settings — so if the client's numbers were stale (e.g. an admin changed
- * the deposit rate while this form was open), the DB silently corrects them
- * rather than trusting what was submitted. We select the row back so the
- * caller reflects the actual persisted (corrected) values, not its own
- * possibly-stale guess.
- * Returns { ok: false, error: 'INSUFFICIENT_CAPACITY', availableBeds } if the
- * requested guests would exceed remaining capacity for these dates.
- */
-export async function createBooking(b: Booking): Promise<{ ok: boolean; error?: string; availableBeds?: number; minimumPrice?: number; booking?: Booking }> {
-  const { data, error } = await supabase.from('bookings').insert(bookingToRow(b)).select().single();
-  if (error) {
-    const msg = error.message || '';
-    if (msg.includes('INSUFFICIENT_CAPACITY')) {
-      const match = msg.match(/Only (\d+) beds/);
-      const availableBeds = match ? parseInt(match[1], 10) : 0;
-      return { ok: false, error: 'INSUFFICIENT_CAPACITY', availableBeds };
-    }
-    // validate_booking_price refuses anything below the floor it computes from
-    // the house's own rates. Unmapped, it fell through as a raw Postgres
-    // string into a generic «حاول مرة أخرى» — which is what an owner pricing
-    // a phone booking by hand hits every time, with nothing telling him the
-    // number is the problem.
-    if (msg.includes('PRICE_TOO_LOW')) {
-      const match = msg.match(/expected at least ([\d.]+)/);
-      return { ok: false, error: 'PRICE_TOO_LOW', minimumPrice: match ? Math.ceil(parseFloat(match[1])) : undefined };
-    }
-    console.error('createBooking:', error);
-    return { ok: false, error: msg };
-  }
-  return { ok: true, booking: data ? mapBooking(data) : b };
-}
+// createBooking() USED TO LIVE HERE, and it was the last path in the app
+// that wrote a booking without the financial core: a plain INSERT carrying
+// a price, a deposit and a commission the client had worked out.
+//
+// Both of its callers are gone. A guest books through
+// create_booking_with_financials; an owner records a walk-in through
+// create_booking_on_behalf_with_financials. Deleting it rather than leaving
+// it unused is the point — an exported helper that inserts a priced booking
+// is how this hole would be reopened by the next person in a hurry.
 
 export async function updateBookingStatus(id: string, status: Booking['status']): Promise<boolean> {
   const { error } = await supabase.from('bookings').update({ status }).eq('id', id);
@@ -1759,4 +1720,593 @@ export async function recordCashDeposit(bookingId: string): Promise<boolean> {
   const { error } = await supabase.rpc('record_cash_deposit', { p_booking_id: bookingId });
   if (error) { console.error('recordCashDeposit:', error); return false; }
   return true;
+}
+
+// ─── Commercial agreements (0139 schema, 0154 workflow) ────────────────────
+//
+// Two tables, and the difference between them is the whole design:
+//
+//   house_agreements          what the financial engine prices against.
+//                             Admin-write only, append-only, immutable terms.
+//   house_agreement_requests  what an owner would LIKE. A proposal. Read-only
+//                             to every client; written only by the RPCs below.
+//
+// None of these functions is a gate. Authorization is the database's — RLS
+// decides what is visible and each RPC decides who may call it — and every one
+// of them refuses a NET_RATE request regardless of what the UI sends.
+
+function mapAgreement(r: Record<string, unknown>): HouseAgreement {
+  return {
+    id: r.id as string,
+    houseId: r.house_id as string,
+    modelType: r.model_type as AgreementModel,
+    netRate: r.net_rate != null ? Number(r.net_rate) : undefined,
+    baseRate: r.base_rate != null ? Number(r.base_rate) : undefined,
+    markupPct: r.markup_pct != null ? Number(r.markup_pct) : undefined,
+    commissionRate: r.commission_rate != null ? Number(r.commission_rate) : undefined,
+    currency: (r.currency as string) ?? 'EGP',
+    effectiveFrom: r.effective_from as string,
+    effectiveTo: (r.effective_to as string) ?? undefined,
+    createdBy: (r.created_by as string) ?? undefined,
+    closedBy: (r.closed_by as string) ?? undefined,
+    note: (r.note as string) ?? undefined,
+    createdAt: (r.created_at as string) ?? undefined,
+  };
+}
+
+function mapAgreementRequest(r: Record<string, unknown>): HouseAgreementRequest {
+  return {
+    id: r.id as string,
+    houseId: r.house_id as string,
+    modelType: r.model_type as OwnerAgreementModel,
+    markupPct: r.markup_pct != null ? Number(r.markup_pct) : undefined,
+    commissionRate: r.commission_rate != null ? Number(r.commission_rate) : undefined,
+    currency: (r.currency as string) ?? 'EGP',
+    ownerNote: (r.owner_note as string) ?? undefined,
+    status: r.status as HouseAgreementRequest['status'],
+    submittedBy: (r.submitted_by as string) ?? undefined,
+    submittedAt: r.submitted_at as string,
+    reviewedBy: (r.reviewed_by as string) ?? undefined,
+    reviewedAt: (r.reviewed_at as string) ?? undefined,
+    adminNotes: (r.admin_notes as string) ?? undefined,
+    agreementId: (r.agreement_id as string) ?? undefined,
+  };
+}
+
+/** RLS narrows this to the houses the caller owns; an admin sees everything. */
+export async function loadHouseAgreements(houseId?: string): Promise<HouseAgreement[]> {
+  let q = supabase.from('house_agreements').select('*');
+  if (houseId) q = q.eq('house_id', houseId);
+  const { data, error } = await q.order('effective_from', { ascending: false });
+  if (error) { console.error('loadHouseAgreements:', error); return []; }
+  return (data ?? []).map((r) => mapAgreement(r as Record<string, unknown>));
+}
+
+export async function loadAgreementRequests(houseId?: string): Promise<HouseAgreementRequest[]> {
+  let q = supabase.from('house_agreement_requests').select('*');
+  if (houseId) q = q.eq('house_id', houseId);
+  const { data, error } = await q.order('submitted_at', { ascending: false });
+  if (error) { console.error('loadAgreementRequests:', error); return []; }
+  return (data ?? []).map((r) => mapAgreementRequest(r as Record<string, unknown>));
+}
+
+/** Arabic for the exceptions these RPCs raise, so a form can say what is wrong. */
+function agreementError(msg: string): string {
+  if (msg.includes('AGREEMENT_MODEL_NOT_SELECTABLE'))
+    return 'النظام ده بيتفق عليه مع إدارة بيما مباشرة، مش من هنا.';
+  if (msg.includes('AGREEMENT_REQUEST_PENDING') || msg.includes('har_one_pending_per_house'))
+    return 'في طلب مقدّم بالفعل ولسه تحت المراجعة.';
+  if (msg.includes('NOT_YOUR_HOUSE')) return 'البيت ده مش تابع لحسابك.';
+  if (msg.includes('ADMIN_ONLY')) return 'الإجراء ده للإدارة فقط.';
+  if (msg.includes('ADMIN_NOTE_REQUIRED')) return 'لازم تكتب سبب يوصل لصاحب البيت.';
+  if (msg.includes('NEGOTIATION_NOTE_REQUIRED')) return 'اتفاق الصافي لازم يتسجل معاه سبب التفاوض.';
+  if (msg.includes('AGREEMENT_SAME_DAY_SUPERSEDE'))
+    return 'الاتفاق الحالي بدأ النهاردة — أقرب تاريخ لاتفاق جديد هو بكرة.';
+  if (msg.includes('REQUEST_NOT_PENDING')) return 'الطلب ده اتراجع فيه بالفعل.';
+  if (msg.includes('NO_ACTIVE_AGREEMENT')) return 'مفيش اتفاق سارٍ على البيت ده.';
+  if (msg.includes('INVALID_AGREEMENT_MODEL')) return 'نظام تعاقد غير معروف.';
+  return 'تعذّر تنفيذ الطلب. حاول مرة أخرى.';
+}
+
+// Flat, not a discriminated union: the project compiles without `strict`, so a
+// boolean-literal discriminant does not narrow. Same shape createBooking and
+// updateHousePolicy already use.
+type AgreementResult<T> = { ok: boolean; data?: T; error?: string };
+
+/**
+ * The owner asks. MARKUP or COMMISSION — the parameter type says so, and the
+ * database says so again three times over.
+ */
+export async function requestHouseAgreement(args: {
+  houseId: string;
+  modelType: OwnerAgreementModel;
+  markupPct?: number | null;
+  commissionRate?: number | null;
+  ownerNote?: string | null;
+}): Promise<AgreementResult<HouseAgreementRequest>> {
+  const { data, error } = await supabase.rpc('request_house_agreement', {
+    p_house_id: args.houseId,
+    p_model_type: args.modelType,
+    p_markup_pct: args.markupPct ?? null,
+    p_commission_rate: args.commissionRate ?? null,
+    p_owner_note: args.ownerNote ?? null,
+  });
+  if (error) {
+    console.error('requestHouseAgreement:', error);
+    return { ok: false, error: agreementError(error.message || '') };
+  }
+  return { ok: true, data: mapAgreementRequest(data as Record<string, unknown>) };
+}
+
+export async function cancelAgreementRequest(
+  requestId: string,
+): Promise<AgreementResult<HouseAgreementRequest>> {
+  const { data, error } = await supabase.rpc('cancel_house_agreement_request', {
+    p_request_id: requestId,
+  });
+  if (error) {
+    console.error('cancelAgreementRequest:', error);
+    return { ok: false, error: agreementError(error.message || '') };
+  }
+  return { ok: true, data: mapAgreementRequest(data as Record<string, unknown>) };
+}
+
+/**
+ * The admin decides. Approving is not accepting: any term left undefined falls
+ * back to what the owner asked for, and an admin who changes the model has to
+ * say why — including a change to NET_RATE, which is how a negotiation is
+ * recorded rather than smuggled.
+ */
+export async function reviewAgreementRequest(args: {
+  requestId: string;
+  decision: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES';
+  adminNotes?: string | null;
+  modelType?: AgreementModel | null;
+  markupPct?: number | null;
+  commissionRate?: number | null;
+  netRate?: number | null;
+  effectiveFrom?: string | null;
+  agreementNote?: string | null;
+}): Promise<AgreementResult<HouseAgreementRequest>> {
+  const { data, error } = await supabase.rpc('review_house_agreement_request', {
+    p_request_id: args.requestId,
+    p_decision: args.decision,
+    p_admin_notes: args.adminNotes ?? null,
+    p_model_type: args.modelType ?? null,
+    p_markup_pct: args.markupPct ?? null,
+    p_commission_rate: args.commissionRate ?? null,
+    p_net_rate: args.netRate ?? null,
+    p_effective_from: args.effectiveFrom ?? null,
+    p_agreement_note: args.agreementNote ?? null,
+  });
+  if (error) {
+    console.error('reviewAgreementRequest:', error);
+    return { ok: false, error: agreementError(error.message || '') };
+  }
+  return { ok: true, data: mapAgreementRequest(data as Record<string, unknown>) };
+}
+
+/** Admin creates or supersedes directly — no request needed. NET_RATE lives here. */
+export async function adminSetHouseAgreement(args: {
+  houseId: string;
+  modelType: AgreementModel;
+  markupPct?: number | null;
+  commissionRate?: number | null;
+  netRate?: number | null;
+  effectiveFrom?: string | null;
+  note?: string | null;
+}): Promise<AgreementResult<HouseAgreement>> {
+  const { data, error } = await supabase.rpc('admin_set_house_agreement', {
+    p_house_id: args.houseId,
+    p_model_type: args.modelType,
+    p_markup_pct: args.markupPct ?? null,
+    p_commission_rate: args.commissionRate ?? null,
+    p_net_rate: args.netRate ?? null,
+    p_effective_from: args.effectiveFrom ?? null,
+    p_note: args.note ?? null,
+  });
+  if (error) {
+    console.error('adminSetHouseAgreement:', error);
+    return { ok: false, error: agreementError(error.message || '') };
+  }
+  return { ok: true, data: mapAgreement(data as Record<string, unknown>) };
+}
+
+/**
+ * Closing without a successor leaves the house with no agreement in force,
+ * which means it cannot be priced or booked on the financial core. That is the
+ * point: it is how a house is commercially suspended.
+ */
+export async function adminCloseHouseAgreement(
+  houseId: string,
+  effectiveTo?: string | null,
+): Promise<AgreementResult<HouseAgreement>> {
+  const { data, error } = await supabase.rpc('admin_close_house_agreement', {
+    p_house_id: houseId,
+    p_effective_to: effectiveTo ?? null,
+  });
+  if (error) {
+    console.error('adminCloseHouseAgreement:', error);
+    return { ok: false, error: agreementError(error.message || '') };
+  }
+  return { ok: true, data: mapAgreement(data as Record<string, unknown>) };
+}
+
+/**
+ * Customer-facing prices for houses, with any MARKUP already applied.
+ *
+ * Under MARKUP the number a guest pays is the house's listed price plus the
+ * agreed percentage, so `houses.price_per_night_per_person` — which is what
+ * every card, map pin and detail page has always rendered — is the OWNER's
+ * figure, not the guest's. Showing it to a guest under a MARKUP agreement
+ * would contradict what checkout then charges.
+ *
+ * fin_house_customer_rates does the arithmetic server-side and returns prices
+ * only: the markup percentage never reaches the browser. For COMMISSION,
+ * NET_RATE, and houses with no agreement the numbers come back untouched,
+ * which is why merging this in changes nothing until a MARKUP agreement
+ * exists.
+ *
+ * Never fails the page: on error it returns an empty map and callers fall back
+ * to the raw listing, which is exactly today's behaviour.
+ */
+export async function loadHouseCustomerRates(
+  houseIds?: string[],
+): Promise<Record<string, HouseCustomerRates>> {
+  const { data, error } = await supabase.rpc('fin_house_customer_rates', {
+    p_house_ids: houseIds && houseIds.length ? houseIds : null,
+  });
+  if (error) { console.warn('loadHouseCustomerRates:', error.message); return {}; }
+  const out: Record<string, HouseCustomerRates> = {};
+  for (const row of (data ?? []) as Record<string, unknown>[]) {
+    const id = row.house_id as string;
+    out[id] = {
+      houseId: id,
+      pricePerNightPerPerson: row.price_per_night_per_person != null
+        ? Number(row.price_per_night_per_person) : undefined,
+      dayUsePricePerPerson: row.day_use_price_per_person != null
+        ? Number(row.day_use_price_per_person) : undefined,
+      monthlyRent: row.monthly_rent != null ? Number(row.monthly_rent) : undefined,
+      seasonalRates: (row.seasonal_rates as SeasonalRate[]) ?? undefined,
+    };
+  }
+  return out;
+}
+
+/** Attach customer rates to houses in place of nothing — raw fields are untouched. */
+export function withCustomerRates(
+  houses: RetreatHouse[],
+  rates: Record<string, HouseCustomerRates>,
+): RetreatHouse[] {
+  if (!Object.keys(rates).length) return houses;
+  return houses.map((h) => (rates[h.id] ? { ...h, customerRates: rates[h.id] } : h));
+}
+
+// ─── Booking creation through the financial core (0153/0155/0156) ──────────
+//
+// This replaces the direct `bookings` insert for every guest booking. The
+// difference is not cosmetic:
+//
+//   legacy insert            create_booking_with_financials
+//   ─────────────            ──────────────────────────────
+//   client sends the price   the server prices it from the agreement
+//   deposit = 15% (trigger)  deposit = the PD-16 rule on financial_settings
+//   points a second call     points deducted in the same transaction
+//   no idempotency           a key, a fingerprint and a safe replay
+//   no snapshot              booking_financials + settlement hold
+//
+// The client no longer sends a price at all. It sends what the guest chose —
+// house, dates, party, promotion, points — and the server decides the money.
+// That is the whole point: a total computed in a browser can disagree with the
+// one the engine would compute, and for MARKUP it always would.
+
+/** Arabic for the exceptions the booking RPC raises. Never show a guest raw SQL. */
+function bookingRpcError(msg: string): { code: string; message: string } {
+  const m = msg || '';
+  const pick = (code: string, message: string) => ({ code, message });
+
+  if (m.includes('NO_AGREEMENT'))
+    return pick('NO_AGREEMENT', 'البيت ده لسه مش جاهز لاستقبال الحجوزات. جرّب بيت تاني أو تواصل معانا.');
+  if (m.includes('INSUFFICIENT_CAPACITY')) {
+    const match = m.match(/Only (\d+) beds/);
+    const beds = match ? Number(match[1]) : 0;
+    return pick('INSUFFICIENT_CAPACITY', beds === 0
+      ? 'البيت مكتمل الإشغال في التواريخ دي. اختار تواريخ تانية.'
+      : `لم يتبقَ سوى ${beds} سرير في التواريخ دي. قلّل عدد الأفراد أو غيّر التواريخ.`);
+  }
+  if (m.includes('OVERRIDE_REQUIRED'))
+    return pick('OVERRIDE_REQUIRED',
+      'الحجز ده محتاج مراجعة من الإدارة قبل التأكيد. تواصل معانا وهنكمّله معاك.');
+  if (m.includes('POINTS_EXCEED_CAP'))
+    return pick('POINTS_EXCEED_CAP', 'النقاط اللي اخترتها أكبر من الحد المسموح خصمه على الحجز ده.');
+  if (m.includes('INSUFFICIENT_POINTS'))
+    return pick('INSUFFICIENT_POINTS', 'رصيد نقاطك مش كافي للخصم ده.');
+  if (m.includes('DISCOUNTS_EXCEED_PRICE'))
+    return pick('DISCOUNTS_EXCEED_PRICE', 'الخصومات أكبر من قيمة الحجز. قلّل النقاط المستخدمة.');
+  if (m.includes('IDEMPOTENCY_CONFLICT'))
+    return pick('IDEMPOTENCY_CONFLICT',
+      'تفاصيل الحجز اتغيرت بعد ما بدأت. اقفل الصفحة وابدأ الحجز من أول وجديد.');
+  if (m.includes('PROMOTION_NOT_FOUND') || m.includes('PROMOTION_EXPIRED'))
+    return pick('PROMOTION_INVALID', 'العرض ده مش متاح دلوقتي.');
+  if (m.includes('NOT_AUTHENTICATED'))
+    return pick('NOT_AUTHENTICATED', 'لازم تسجّل دخولك الأول.');
+  if (m.includes('HOUSE_NOT_FOUND'))
+    return pick('HOUSE_NOT_FOUND', 'البيت ده مش موجود.');
+  if (m.includes('NO_FINANCIAL_SETTINGS'))
+    return pick('NO_FINANCIAL_SETTINGS', 'تعذّر تسعير الحجز دلوقتي. حاول بعد شوية.');
+  if (m.includes('rate limit') || m.includes('MAX_BOOKINGS'))
+    return pick('RATE_LIMITED', 'عملت حجوزات كتير النهارده. حاول بكرة.');
+  return pick('UNKNOWN', 'حدث خطأ في حفظ الحجز. حاول مرة أخرى.');
+}
+
+export interface CreateBookingInput {
+  /** Stable for the whole attempt — reused unchanged on every retry. */
+  bookingId: string;
+  /** Stable for the whole attempt. A NEW key means a NEW booking. */
+  idempotencyKey: string;
+  houseId: string;
+  checkIn: string;
+  checkOut: string;
+  guestsCount: number;
+  childAges?: number[] | null;
+  promotionId?: string | null;
+  /** Deducted inside the booking transaction. Never redeem separately. */
+  points?: number;
+  /** Non-financial metadata the RPC cannot derive; attached straight after. */
+  details?: {
+    userName?: string | null;
+    userPhone?: string | null;
+    userEmail?: string | null;
+    organizationName?: string | null;
+    isLargeConferenceQuote?: boolean;
+    conferenceDetails?: Record<string, unknown> | null;
+  };
+}
+
+export interface CreateBookingResult {
+  ok: boolean;
+  error?: string;
+  code?: string;
+  booking?: Booking;
+  /** True when the RPC recognised the key and returned the original booking. */
+  replayed?: boolean;
+}
+
+/**
+ * Create a booking through the financial core.
+ *
+ * Retry-safe by construction: call it again with the SAME bookingId and
+ * idempotencyKey and the server returns the original booking instead of making
+ * a second one — no second snapshot, no second points deduction. Call it with
+ * a different key and you get a different booking, which is why the key must
+ * be generated once per attempt and held, not regenerated per click.
+ */
+export async function createBookingWithFinancials(
+  input: CreateBookingInput,
+): Promise<CreateBookingResult> {
+  const { data, error } = await supabase.rpc('create_booking_with_financials', {
+    p_booking_id: input.bookingId,
+    p_house_id: input.houseId,
+    p_check_in: input.checkIn,
+    p_check_out: input.checkOut,
+    p_guests_count: input.guestsCount,
+    p_idempotency_key: input.idempotencyKey,
+    p_child_ages: input.childAges && input.childAges.length ? input.childAges : null,
+    p_promotion_id: input.promotionId ?? null,
+    p_points: input.points ?? 0,
+    p_override_reason: null,
+  });
+
+  if (error) {
+    const mapped = bookingRpcError(error.message || '');
+    console.error('createBookingWithFinancials:', error);
+    return { ok: false, code: mapped.code, error: mapped.message };
+  }
+
+  const snapshot = (data ?? {}) as Record<string, unknown>;
+  const bookingId = (snapshot.booking_id as string) ?? input.bookingId;
+  const replayed = snapshot.replayed === true;
+
+  // Metadata the RPC cannot carry. Idempotent, money-free, and deliberately
+  // not fatal: a booking that exists without its conference note is a support
+  // ticket, whereas failing here after the money is committed would be a lie.
+  const d = input.details;
+  if (d) {
+    const { error: detErr } = await supabase.rpc('attach_booking_details', {
+      p_booking_id: bookingId,
+      p_user_name: d.userName ?? null,
+      p_user_phone: d.userPhone ?? null,
+      p_user_email: d.userEmail ?? null,
+      p_organization_name: d.organizationName ?? null,
+      p_is_quote: d.isLargeConferenceQuote ?? false,
+      p_details: d.conferenceDetails ?? null,
+    });
+    if (detErr) console.error('attachBookingDetails (booking is saved):', detErr);
+  }
+
+  // The RPC returns the financial snapshot, not the booking row. Read the row
+  // back so the UI reflects exactly what was stored rather than what we sent.
+  const { data: row, error: readErr } = await supabase
+    .from('bookings').select('*').eq('id', bookingId).single();
+  if (readErr || !row) {
+    console.error('createBookingWithFinancials: booking saved but could not be read back', readErr);
+    return { ok: true, replayed, code: 'SAVED_UNREADABLE' };
+  }
+
+  return { ok: true, replayed, booking: mapBooking(row as Record<string, unknown>) };
+}
+
+/**
+ * The guest-visible slice of financial_settings (migration 0156).
+ *
+ * financial_settings is admin-read-only, so the browser cannot read the
+ * authoritative 30% deposit directly — which is why every checkout screen was
+ * still quoting platform_settings' 0.15. This returns only the fields a guest
+ * legitimately needs; margins, commission and transfer fees stay server-side.
+ */
+export async function loadClientFinancialSettings(): Promise<Partial<PlatformSettings>> {
+  const { data, error } = await supabase.rpc('fin_client_settings');
+  if (error) { console.error('loadClientFinancialSettings — the guest deposit rate is NOT authoritative:', error.message); return {}; }
+  const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | undefined;
+  if (!row) return {};
+  const out: Partial<PlatformSettings> = {};
+  if (row.deposit_rate != null) out.depositRate = Number(row.deposit_rate);
+  if (row.points_per_egp != null) out.pointsPerEgp = Number(row.points_per_egp);
+  if (row.max_redemption_pct != null) out.maxRedemptionPct = Number(row.max_redemption_pct);
+  return out;
+}
+
+/**
+ * One user, read back from the server.
+ *
+ * Used after a booking redeems points: the deduction happens inside the
+ * booking transaction, so the only honest way to know the new balance is to
+ * ask. Recomputing it client-side is what let a retry appear to spend points
+ * twice even when the server had only charged once.
+ */
+export async function loadUserById(id: string): Promise<User | null> {
+  const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
+  if (error || !data) { if (error) console.error('loadUserById:', error); return null; }
+  return mapUser(data as Record<string, unknown>);
+}
+
+// ─── Financial-core snapshots (three role-scoped views) ────────────────────
+
+/**
+ * The booking financials this caller is entitled to see.
+ *
+ * Three views, three audiences, each one filtered in SQL rather than here:
+ *
+ *   fin_booking_summary_customer  guest_user_id = auth.uid()
+ *   fin_booking_summary_owner     owner_id      = auth.uid()
+ *   fin_booking_summary_admin     is_admin(auth.uid())
+ *
+ * The column list differs too, and that is the point. The customer view has
+ * no owner_entitlement and no margin at all; the owner view has no margin and
+ * no other owner's rows. A screen therefore cannot leak a figure by accident
+ * — the field is simply not in the payload. Nothing here filters or widens
+ * what SQL returned.
+ *
+ * An empty result is not an error: every booking made before the financial
+ * core has no snapshot, and the owner's manual booking path still creates
+ * such rows. Callers treat a missing id as "no core figure", never as zero.
+ */
+export async function loadCustomerFinancials(): Promise<FinancialsIndex<CustomerFinancials>> {
+  const { data, error } = await supabase.from('fin_booking_summary_customer').select('*');
+  if (error) { console.warn('loadCustomerFinancials:', error.message); return {}; }
+  return indexByBooking((data || []).map((r) => mapCustomerFinancials(r as Record<string, unknown>)));
+}
+
+export async function loadOwnerFinancials(): Promise<FinancialsIndex<OwnerFinancials>> {
+  const { data, error } = await supabase.from('fin_booking_summary_owner').select('*');
+  if (error) { console.warn('loadOwnerFinancials:', error.message); return {}; }
+  return indexByBooking((data || []).map((r) => mapOwnerFinancials(r as Record<string, unknown>)));
+}
+
+export async function loadAdminFinancials(): Promise<FinancialsIndex<AdminFinancials>> {
+  const { data, error } = await supabase.from('fin_booking_summary_admin').select('*');
+  if (error) { console.warn('loadAdminFinancials:', error.message); return {}; }
+  return indexByBooking((data || []).map((r) => mapAdminFinancials(r as Record<string, unknown>)));
+}
+
+/**
+ * The authoritative price for a stay the guest has not booked yet.
+ *
+ * `fin_quote_booking` and `create_booking_with_financials` both run through
+ * `fin_price_booking`, so the quote and the charge are the same calculation
+ * by construction rather than by agreement between two implementations. That
+ * matters most where they would otherwise diverge: PD-16 can lift the deposit
+ * above the headline rate to cover the margin floor, and a screen doing
+ * `total x rate` would quote the guest less than the booking charges.
+ *
+ * Returns null when nobody is signed in (the function is granted only to
+ * `authenticated`) or when the stay is not yet priceable. Callers keep their
+ * local estimate for that case; it is the same arithmetic the app has always
+ * shown, and the booking itself is priced by the server either way.
+ */
+export async function loadBookingQuote(args: {
+  houseId: string;
+  checkIn: string;
+  checkOut: string;
+  guestsCount: number;
+  childAges?: number[];
+  promotionId?: string | null;
+  points?: number;
+}): Promise<Record<string, unknown> | null> {
+  const { data, error } = await supabase.rpc('fin_quote_booking', {
+    p_house_id: args.houseId,
+    p_check_in: args.checkIn,
+    p_check_out: args.checkOut,
+    p_guests_count: args.guestsCount,
+    p_child_ages: args.childAges ?? null,
+    p_promotion_id: args.promotionId ?? null,
+    p_points: args.points ?? 0,
+  });
+  // Not an error worth surfacing: a house with no agreement, or a stay that
+  // breaches capacity, is a refusal the booking screen already explains.
+  if (error) { console.warn('loadBookingQuote:', error.message); return null; }
+  return (data as Record<string, unknown> | null) ?? null;
+}
+
+/**
+ * Record a booking the owner took off-platform, priced by the financial core.
+ *
+ * The RPC derives the acting identity from auth.uid() and takes the guest
+ * separately, so the booking belongs to the guest while the audit trail
+ * records who typed it in. It accepts no price: see OwnerBookingIntent.
+ */
+export async function createBookingOnBehalf(
+  intent: OwnerBookingIntent,
+): Promise<{ ok: boolean; error?: string; bookingId?: string; replayed?: boolean }> {
+  const { data, error } = await supabase.rpc('create_booking_on_behalf_with_financials', {
+    p_booking_id: intent.bookingId,
+    p_house_id: intent.houseId,
+    p_check_in: intent.checkIn,
+    p_check_out: intent.checkOut,
+    p_guests_count: intent.guestsCount,
+    p_idempotency_key: intent.idempotencyKey,
+    p_guest_name: intent.guestName,
+    p_guest_phone: intent.guestPhone ?? null,
+    p_guest_email: intent.guestEmail ?? null,
+    p_organization: intent.organizationName ?? null,
+    p_guest_user_id: intent.guestUserId ?? null,
+    p_source: intent.source,
+    p_owner_notes: intent.ownerNotes ?? null,
+    p_points: intent.points ?? 0,
+  });
+  if (error) {
+    console.error('createBookingOnBehalf:', error);
+    return { ok: false, error: ownerBookingRpcError(error.message || '') };
+  }
+  const row = (data ?? {}) as Record<string, unknown>;
+  return { ok: true, bookingId: String(row.booking_id ?? intent.bookingId), replayed: row.replayed === true };
+}
+
+/**
+ * The owner-facing Arabic for the refusals this RPC can produce.
+ *
+ * PRICE_TOO_LOW is gone from the list on purpose: the owner no longer supplies
+ * a price, so the floor he used to fall below cannot be hit.
+ */
+function ownerBookingRpcError(msg: string): string {
+  if (msg.includes('NOT_AUTHORIZED_FOR_HOUSE')) return 'مش مسموح لك تسجّل حجز على البيت ده.';
+  if (msg.includes('NO_AGREEMENT')) return 'البيت ده لسه من غير اتفاق تجاري ساري — اطلب الاتفاق الأول من صفحة الاتفاق، وبعدها هتقدر تسجّل حجوزات.';
+  if (msg.includes('INSUFFICIENT_CAPACITY')) return 'مفيش أماكن كفاية في التواريخ دي.';
+  if (msg.includes('IDEMPOTENCY_CONFLICT')) return 'الطلب ده اتبعت قبل كده ببيانات مختلفة. اقفل الفورم وافتحه من جديد.';
+  if (msg.includes('BOOKING_ID_TAKEN')) return 'رقم الحجز ده مستعمل. اقفل الفورم وافتحه من جديد.';
+  if (msg.includes('OVERRIDE_REQUIRED')) return 'الحجز ده هامشه أقل من الحد الأدنى، ومحتاج موافقة الإدارة.';
+  if (msg.includes('POINTS_REQUIRE_REGISTERED_GUEST')) return 'النقاط تتخصم بس لضيف عنده حساب على بيما.';
+  if (msg.includes('GUEST_NAME_REQUIRED')) return 'اكتب اسم الحاجز.';
+  if (msg.includes('GUEST_NOT_FOUND')) return 'الضيف ده مش موجود على بيما.';
+  if (msg.includes('NOT_AUTHENTICATED')) return 'سجّل دخولك الأول.';
+  if (msg.includes('موقوف')) return 'حسابك موقوف من الإدارة.';
+  if (msg.includes('rate_limit')) return 'وصلت للحد الأقصى من الحجوزات النهارده.';
+  return 'حصل خطأ في حفظ الحجز. حاول تاني.';
+}
+
+/** One booking, read back from the server after the server priced it. */
+export async function loadBookingById(id: string): Promise<Booking | null> {
+  const { data, error } = await supabase.from('bookings').select('*').eq('id', id).single();
+  if (error || !data) { if (error) console.error('loadBookingById:', error); return null; }
+  return mapBooking(data as Record<string, unknown>);
 }

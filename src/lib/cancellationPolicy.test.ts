@@ -56,7 +56,27 @@ describe('paidAmountOf', () => {
   // Refunds must never be computed against money that was never received.
   it('counts nothing for unpaid bookings', () => {
     expect(paidAmountOf(booking({ paymentStatus: 'unpaid' }))).toBe(0);
-    expect(paidAmountOf(booking({ paymentStatus: 'paid_deposit', depositAmount: undefined }))).toBe(0);
+  });
+
+  // Changed deliberately with the financial-core cutover. A deposit-paid
+  // booking whose deposit_amount is absent or 0 is UNKNOWN, not zero: under
+  // the financial core bookings.deposit_amount is 0 by design and the real
+  // figure lives in booking_financials. Returning 0 here is what made a paid
+  // guest refundable for nothing.
+  it('reports unknown — not zero — when the row cannot say what was paid', () => {
+    expect(paidAmountOf(booking({ paymentStatus: 'paid_deposit', depositAmount: undefined }))).toBeNull();
+    expect(paidAmountOf(booking({ paymentStatus: 'paid_deposit', depositAmount: 0 }))).toBeNull();
+  });
+
+  it('prefers approved payment rows, which are the only record of real money', () => {
+    const b = booking({ id: 'bk1', paymentStatus: 'paid_deposit', depositAmount: 0 });
+    const payments = [
+      { id: 'p1', bookingId: 'bk1', amount: 300, paymentStatus: 'approved' },
+      { id: 'p2', bookingId: 'bk1', amount: 120, paymentStatus: 'approved' },
+      { id: 'p3', bookingId: 'bk1', amount: 999, paymentStatus: 'pending' },
+      { id: 'p4', bookingId: 'other', amount: 50, paymentStatus: 'approved' },
+    ] as unknown as Parameters<typeof paidAmountOf>[1];
+    expect(paidAmountOf(b, payments)).toBe(420);
   });
 });
 

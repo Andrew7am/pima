@@ -141,6 +141,12 @@ export interface RetreatHouse {
   // Owner-direct (no admin re-approval), like paymentMethods — see
   // migration 055 and lib/pricing.ts for the night-by-night math.
   seasonalRates?: SeasonalRate[];
+  /**
+   * Customer-facing prices for this house, already including any MARKUP.
+   * Merged in at load time from fin_house_customer_rates. Absent until that
+   * fetch lands; every price shown to a guest should prefer it.
+   */
+  customerRates?: HouseCustomerRates;
   /** A percentage off, applied to stays whose CHECK-IN falls in the window.
    *  Set by the admin at the owner's request; the owner carries the cost.
    *  Owners cannot set it themselves — protect_house_owner_updates (019)
@@ -563,6 +569,23 @@ export interface PlatformSettings {
   // exempt, because an owner entering bookings taken by phone is not the thing
   // being rate limited.
   maxBookingsPerDay: number;
+  /**
+   * Whether depositRate, pointsPerEgp and maxRedemptionPct came from the
+   * financial core rather than from platform_settings or a local default.
+   *
+   * platform_settings.deposit_rate is still the legacy 0.15, and it is the
+   * base that fin_client_settings() overlays. If that call fails — the
+   * migration is not applied, the network drops, RLS changes — the overlay
+   * is silently skipped and the app would quote 15% while the server charges
+   * 30%. A guest is told one number and billed another, with nothing in the
+   * UI or the logs marking the moment it started.
+   *
+   * So the absence is made representable. False means "nobody may quote a
+   * deposit from this rate" — screens show an unavailable state instead.
+   * It says nothing about bookings that already have a stored deposit:
+   * those carry their own figure and are unaffected.
+   */
+  depositRateIsAuthoritative: boolean;
 }
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
@@ -573,6 +596,8 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   // already normalised into bookings.deposit_amount, which is what every
   // owner finance screen sums.
   depositRate: 0.15,
+  // Never authoritative: this object only exists because a load failed.
+  depositRateIsAuthoritative: false,
   pointsPerEgp: 100,
   maxRedemptionPct: 0.10,
   referralBonusPoints: 2000,
@@ -823,3 +848,126 @@ export interface SpiritualJournalEntry {
   updatedAt: string;
 }
 
+
+// ─── Commercial agreements (0139 schema, 0154 workflow) ──────────────────────
+
+/**
+ * The three commercial models the financial core prices against.
+ *
+ * NET_RATE is an administrative negotiation instrument, not a menu option. The
+ * owner-facing type below excludes it by construction, so a component that
+ * offers owners a choice cannot even be written with NET_RATE in it — the
+ * compiler refuses before a reviewer has to notice. The database enforces the
+ * same rule three more times (0154); this is the convenience, not the control.
+ */
+export type AgreementModel = 'MARKUP' | 'COMMISSION' | 'NET_RATE';
+
+/** What an owner may ask for. Deliberately narrower than AgreementModel. */
+export type OwnerAgreementModel = Exclude<AgreementModel, 'NET_RATE'>;
+
+/** A row of house_agreements — the authoritative terms the engine reads. */
+export interface HouseAgreement {
+  id: string;
+  houseId: string;
+  modelType: AgreementModel;
+  /** NET_RATE only: the owner's agreed entitlement per chargeable unit. */
+  netRate?: number;
+  /**
+   * Dead since migration 0155 and always undefined. MARKUP takes its base from
+   * the house's own listed price, and ha_model_columns forbids a value here.
+   * Kept only because the column still exists on the row.
+   */
+  baseRate?: number;
+  /** MARKUP only, as a fraction: 0.20 = 20% on top of the listed price. */
+  markupPct?: number;
+  /** COMMISSION only, as a fraction: 0.05 = 5%. */
+  commissionRate?: number;
+  currency: string;
+  effectiveFrom: string;
+  /** null/undefined means in force. Agreements are closed, never deleted. */
+  effectiveTo?: string;
+  createdBy?: string;
+  closedBy?: string;
+  note?: string;
+  createdAt?: string;
+}
+
+export type AgreementRequestStatus =
+  | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CHANGES_REQUESTED' | 'CANCELLED';
+
+/**
+ * An owner's proposal. Never authoritative: approving one creates a separate
+ * house_agreements row, and only that row is priced against.
+ */
+export interface HouseAgreementRequest {
+  id: string;
+  houseId: string;
+  modelType: OwnerAgreementModel;
+  markupPct?: number;
+  commissionRate?: number;
+  currency: string;
+  ownerNote?: string;
+  status: AgreementRequestStatus;
+  submittedBy?: string;
+  submittedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  /** The admin's reason. Shown to the owner on rejection or a change request. */
+  adminNotes?: string;
+  /** Set only on approval: the agreement this request produced. */
+  agreementId?: string;
+}
+
+/**
+ * What a customer should be shown for a house, before any booking exists.
+ *
+ * Under MARKUP the price a guest pays is the house's listed price plus the
+ * agreed percentage, so the raw columns on `houses` are the OWNER's number,
+ * not the guest's. These come from fin_house_customer_rates() and are already
+ * grossed up; for COMMISSION, NET_RATE and houses with no agreement they are
+ * identical to the raw values, which is why merging them in is a no-op today.
+ *
+ * Prices only. The markup itself is never sent to the client.
+ */
+export interface HouseCustomerRates {
+  houseId: string;
+  pricePerNightPerPerson?: number;
+  dayUsePricePerPerson?: number;
+  monthlyRent?: number;
+  seasonalRates?: SeasonalRate[];
+}
+
+/**
+ * What an owner submits when recording a booking he took himself.
+ *
+ * Deliberately NOT a Booking. A Booking carries totalPrice, depositAmount and
+ * commissionRate, and the owner manual form used to fill all three in from a
+ * number he typed — which is how that path ended up creating bookings the
+ * financial core had never priced.
+ *
+ * There is no price here, and no deposit, commission, markup or net rate. The
+ * agreement decides the model and the listed price decides the money; the
+ * owner submits a guest and an intention to book, and the server prices it.
+ * The omission is the mechanism: a field that does not exist cannot be
+ * forged, ignored, or accidentally trusted later.
+ */
+export interface OwnerBookingIntent {
+  /** Generated once per attempt and reused on every retry — with the key. */
+  bookingId: string;
+  idempotencyKey: string;
+  houseId: string;
+  checkIn: string;
+  checkOut: string;
+  guestsCount: number;
+  /** The guest as the owner knows them. Usually no Pima account exists. */
+  guestName: string;
+  guestPhone?: string;
+  guestEmail?: string;
+  organizationName?: string;
+  /** Set only when the guest genuinely has an account; points need one. */
+  guestUserId?: string;
+  /** 'temporary' holds the capacity pending confirmation. */
+  source: 'manual' | 'temporary';
+  ownerNotes?: string;
+  points?: number;
+}

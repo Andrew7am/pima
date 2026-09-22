@@ -1,4 +1,4 @@
-import { Booking } from '../types';
+import { Booking, Payment } from '../types';
 import { paidAmountOf } from './cancellationPolicy';
 import { depositDue } from './paymentLedger';
 
@@ -41,15 +41,40 @@ export interface BookingMoney {
   /** A transfer receipt has been sent and not yet accepted or refused. */
   awaitingProof: boolean;
   fullyPaid: boolean;
+  /**
+   * False when no payment rows were supplied and the row itself cannot say
+   * what was collected. The UI should render — rather than a figure, because
+   * an unknown amount shown as 0 reads as 'the guest has paid nothing'.
+   */
+  collectedKnown: boolean;
 }
 
-export function bookingMoney(booking: Booking, depositRate: number): BookingMoney {
-  const deposit = depositDue(booking, depositRate);
+/** Just enough of a financial-core snapshot to price a deposit. */
+export interface DepositSnapshot { depositAmount: number }
+
+export function bookingMoney(
+  booking: Booking,
+  depositRate: number,
+  payments?: Payment[],
+  /** The core snapshot, when the caller has one. See lib/bookingFinancials. */
+  fin?: DepositSnapshot,
+): BookingMoney {
+  // The stored deposit beats any rate arithmetic: PD-16 can raise it above
+  // the headline rate to cover the margin floor, and depositDue would then
+  // quote the guest less than the booking actually charged. depositDue
+  // stays as the pre-core fallback, where deposit_amount was the truth.
+  const deposit = fin ? fin.depositAmount : depositDue(booking, depositRate);
   // paidAmountOf is the refund math's answer and the one that knows about
   // 'paid_full'. The legacy depositPaid flag is taken alongside it rather than
   // instead of it: rows written before paymentStatus existed carry only the
   // boolean, and reading those as nothing-paid understates what came in.
-  const collected = Math.max(paidAmountOf(booking), booking.depositPaid ? deposit : 0);
+  // null means 'we cannot tell from this row' — under the financial core
+  // bookings.deposit_amount is 0 by design, so a status-only reading of a
+  // deposit-paid booking knows nothing. Treating that as zero collected is
+  // what showed a paid guest an unpaid balance, so it is kept separate.
+  const paid = paidAmountOf(booking, payments);
+  const known = paid !== null;
+  const collected = Math.max(paid ?? 0, booking.depositPaid ? deposit : 0);
   const outstanding = Math.max(0, booking.totalPrice - collected);
   const percent = booking.totalPrice > 0
     ? Math.max(0, Math.min(100, Math.round((collected / booking.totalPrice) * 100)))
@@ -58,6 +83,7 @@ export function bookingMoney(booking: Booking, depositRate: number): BookingMone
   return {
     deposit,
     collected,
+    collectedKnown: known || booking.depositPaid,
     outstanding,
     percent,
     balanceApplies: booking.status === 'approved' || booking.status === 'completed',

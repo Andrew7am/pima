@@ -43,3 +43,6 @@ blob-report/
 # Database backups — a full dump of production, including every user row.
 # Never in git.
 backups/
+
+# Local MCP server config — developer tooling, not application code.
+.mcp.json

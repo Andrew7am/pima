@@ -19,7 +19,8 @@ import { refundAmountFor } from '../lib/cancellationPolicy';
 import { policyForBooking } from '../lib/bookingPolicy';
 import PropertyBookingPolicy from './house/PropertyBookingPolicy';
 import { getBookingStage } from '../lib/bookingStage';
-import { depositDue } from '../lib/paymentLedger';
+import { customerDeposit, customerFinalPrice, customerArrivalBalance, moneyOr, quotableDepositRate } from '../lib/bookingFinancials';
+import type { CustomerFinancials, FinancialsIndex } from '../lib/bookingFinancials';
 import DepositPayment from './booking/DepositPayment';
 import { downloadBookingIcs } from '../lib/ics';
 import { setAttendeeSharePaid } from '../lib/db';
@@ -53,6 +54,9 @@ interface UserBookingsProps {
   // the transfer card instead of having to hunt for it.
   autoPayBookingId?: string | null;
   onAutoPayConsumed?: () => void;
+  /** The guest-safe financial snapshot, by booking id. Carries no owner
+   *  entitlement and no margin — see fin_booking_summary_customer. */
+  financials?: FinancialsIndex<CustomerFinancials>;
 }
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
@@ -197,8 +201,19 @@ export default function UserBookings({
   onSubmitReview,
   autoPayBookingId = null,
   onAutoPayConsumed,
+  financials = {},
 }: UserBookingsProps) {
-  const depositDueFor = (b: Booking) => depositDue(b, settings.depositRate);
+  // Everything the guest is shown about money comes from these three, and
+  // all three read the stored snapshot rather than recomputing it.
+  //
+  // `totalPrice x depositRate` was the old answer everywhere. It is wrong
+  // the moment PD-16's margin floor lifts the deposit above the headline
+  // rate — which is precisely the booking a guest phones up about, because
+  // the screen and the charge disagree.
+  const quotableRate = quotableDepositRate(settings);
+  const depositDueFor = (b: Booking) => moneyOr(customerDeposit(b, financials[b.id], quotableRate), 0);
+  const totalFor = (b: Booking) => moneyOr(customerFinalPrice(b, financials[b.id]), b.totalPrice);
+  const arrivalBalanceFor = (b: Booking) => moneyOr(customerArrivalBalance(b, financials[b.id]), 0);
 
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
   // Which booking's conference is being opened, so the button can say so.
@@ -300,7 +315,7 @@ export default function UserBookings({
       // collapsed card and nothing else.
       setDetailBookingId(fresh.id);
       setIsPaying(fresh.id);
-      setPaymentAmount(Math.round(fresh.totalPrice * settings.depositRate).toString());
+      setPaymentAmount(depositDueFor(fresh).toString());
     }
     onAutoPayConsumed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -611,7 +626,7 @@ export default function UserBookings({
   const handleEgyptianPaymentSubmit = (e: React.FormEvent, booking: Booking) => {
     e.preventDefault();
 
-    const depositMin = Math.round(booking.totalPrice * settings.depositRate);
+    const depositMin = depositDueFor(booking);
     const amount = parseFloat(paymentAmount) || depositMin;
 
     if (amount <= 0) {
@@ -1002,13 +1017,13 @@ export default function UserBookings({
 
                       <div className="flex items-center justify-between gap-2 pt-0.5">
                         <div className="min-w-0">
-                          <span className="text-[12px] font-black text-[var(--ds-brand)]">{booking.totalPrice.toLocaleString('ar-EG')} ج.م</span>
+                          <span className="text-[12px] font-black text-[var(--ds-brand)]">{totalFor(booking).toLocaleString('ar-EG')} ج.م</span>
                           {/* What is still owed, or that nothing is — the number
                               a guest scans this row for. */}
                           <span className={`block text-[11px] font-black ${booking.depositPaid ? 'text-[var(--ds-success-ink)]' : 'text-[var(--ds-accent-deep)]'}`}>
                             {booking.depositPaid
                               ? 'العربون مدفوع'
-                              : `المتبقي ${Math.max(0, booking.totalPrice - (booking.depositPaid ? booking.depositAmount : 0)).toLocaleString('ar-EG')} ج.م`}
+                              : `المتبقي ${arrivalBalanceFor(booking).toLocaleString('ar-EG')} ج.م`}
                           </span>
                         </div>
                         <span className={`flex items-center gap-0.5 text-[11px] font-black shrink-0 ${nextStep.cls}`}>
@@ -1163,11 +1178,11 @@ export default function UserBookings({
                       ) : (
                         <button
                           type="button"
-                          onClick={() => { setIsPaying(booking.id); setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString()); }}
+                          onClick={() => { setIsPaying(booking.id); setPaymentAmount(depositDueFor(booking).toString()); }}
                           className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-[var(--ds-accent)] to-[var(--ds-accent-deep)] text-[var(--ds-on-accent)] font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
                         >
                           <Wallet className="w-4 h-4" />
-                          ادفع العربون الآن · {arabicNumber(Math.round(booking.totalPrice * settings.depositRate))} ج.م
+                          ادفع العربون الآن · {arabicNumber(depositDueFor(booking))} ج.م
                         </button>
                       )}
                     </div>
@@ -1235,7 +1250,7 @@ export default function UserBookings({
                     { icon: Calendar, label: 'الوصول', value: arabicDate(booking.checkIn) },
                     { icon: CalendarCheck, label: 'المغادرة', value: arabicDate(booking.checkOut) },
                     { icon: Users, label: 'عدد الأفراد', value: `${booking.guestsCount.toLocaleString('ar-EG')} فرد` },
-                    { icon: Wallet, label: 'إجمالي التكلفة', value: `${booking.totalPrice.toLocaleString('ar-EG')} ج.م` },
+                    { icon: Wallet, label: 'إجمالي التكلفة', value: `${totalFor(booking).toLocaleString('ar-EG')} ج.م` },
                   ].map((f) => (
                     <div key={f.label} className="rounded-2xl border border-[var(--ds-border)] bg-[var(--ds-bg)] p-3">
                       <span className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--ds-text-2)]">
@@ -1248,10 +1263,11 @@ export default function UserBookings({
                 </div>
 
                 {/* Payment progress toward the house — paid so far vs. total */}
-                {(booking.status === 'approved' || booking.status === 'completed') && booking.totalPrice > 0 && (() => {
+                {(booking.status === 'approved' || booking.status === 'completed') && totalFor(booking) > 0 && (() => {
                   const paid = payments.filter((p) => p.bookingId === booking.id && p.paymentStatus === 'approved').reduce((s, p) => s + p.amount, 0);
-                  const pct = Math.min(100, Math.round((paid / booking.totalPrice) * 100));
-                  const remaining = Math.max(0, booking.totalPrice - paid);
+                  const bookingTotal = totalFor(booking);
+                  const pct = Math.min(100, Math.round((paid / bookingTotal) * 100));
+                  const remaining = Math.max(0, bookingTotal - paid);
                   return (
                     <div className="px-4 pb-4">
                       <div className="rounded-[28px] border border-[var(--ds-border)] bg-[var(--ds-surface)] shadow-[0_8px_24px_rgba(45,45,36,0.06),0_2px_6px_rgba(45,45,36,0.03)] p-4 space-y-2">
@@ -1314,11 +1330,11 @@ export default function UserBookings({
                     block that shows only what matters for the current state. */}
                 {(() => {
                   const house = houses.find((h) => h.id === booking.houseId);
-                  const depositAmt = Math.round(booking.totalPrice * settings.depositRate);
+                  const depositAmt = depositDueFor(booking);
                   const dLeft = daysUntil(booking.checkIn);
                   const nearDate = booking.status === 'approved' && dLeft >= 0 && dLeft <= 3;
                   const paidSoFar = payments.filter((p) => p.bookingId === booking.id && p.paymentStatus === 'approved').reduce((s, p) => s + p.amount, 0);
-                  const remaining = booking.totalPrice - paidSoFar;
+                  const remaining = totalFor(booking) - paidSoFar;
                   const attCount = attendees.filter((a) => a.bookingId === booking.id).length;
                   const showConfirmed = booking.status === 'approved' && booking.depositPaid;
                   if (!(booking.status === 'pending' || canPayDeposit || showConfirmed)) return null;
@@ -1613,14 +1629,14 @@ export default function UserBookings({
                     {canCancel && (
                       <button
                         onClick={() => {
-                          const { tier, pct, daysLeft, paid, refund } = refundAmountFor(booking, settings);
-                          const policyLine = paid <= 0
+                          const { tier, pct, daysLeft, paid, refund } = refundAmountFor(booking, settings, new Date(), payments);
+                          const policyLine = (paid ?? 0) <= 0
                             ? 'لم تدفع أي مبلغ بعد — الإلغاء بدون أي التزامات.'
                             : tier === 'full'
-                              ? `باقي ${daysLeft} يوم على الوصول — يحق لك استرداد كامل المبلغ المدفوع (${paid.toLocaleString('ar-EG')} ج.م).`
+                              ? `باقي ${daysLeft} يوم على الوصول — يحق لك استرداد كامل المبلغ المدفوع (${(paid ?? 0).toLocaleString('ar-EG')} ج.م).`
                               : tier === 'partial'
-                                ? `باقي ${arabicPlural(daysLeft, DAY_FORMS)} على الوصول — يحق لك استرداد ${arabicPercent(Math.round(pct * 100))} من المدفوع (${refund.toLocaleString('ar-EG')} ج.م من أصل ${paid.toLocaleString('ar-EG')} ج.م).`
-                                : `باقي ${daysLeft} يوم فقط على الوصول — وفقاً لسياسة الإلغاء لا يوجد استرداد للمبلغ المدفوع (${paid.toLocaleString('ar-EG')} ج.م).`;
+                                ? `باقي ${arabicPlural(daysLeft, DAY_FORMS)} على الوصول — يحق لك استرداد ${arabicPercent(Math.round(pct * 100))} من المدفوع (${(refund ?? 0).toLocaleString('ar-EG')} ج.م من أصل ${(paid ?? 0).toLocaleString('ar-EG')} ج.م).`
+                                : `باقي ${daysLeft} يوم فقط على الوصول — وفقاً لسياسة الإلغاء لا يوجد استرداد للمبلغ المدفوع (${(paid ?? 0).toLocaleString('ar-EG')} ج.م).`;
                           if (confirm(`هل أنت متأكد من إلغاء هذا الحجز؟\n\n🛡️ سياسة الإلغاء: ${policyLine}`)) onCancelBooking?.(booking.id);
                         }}
                         className="flex items-center gap-1.5 bg-[color-mix(in_srgb,var(--ds-danger)_8%,var(--ds-surface))] hover:bg-[color-mix(in_srgb,var(--ds-danger)_8%,var(--ds-surface))] text-[var(--ds-danger-ink)] border border-[color-mix(in_srgb,var(--ds-danger)_30%,var(--ds-surface))] px-3 min-h-11 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
@@ -1710,12 +1726,12 @@ export default function UserBookings({
                     <div className="shrink-0 leading-tight">
                       <span className="block text-[11px] font-bold text-[var(--ds-text-2)]">المتبقي للدفع</span>
                       <span className="block text-[14px] font-black text-[var(--ds-brand)]">
-                        {Math.round(booking.totalPrice * settings.depositRate).toLocaleString('ar-EG')} ج.م
+                        {depositDueFor(booking).toLocaleString('ar-EG')} ج.م
                       </span>
                     </div>
                     <button
                       type="button"
-                      onClick={() => { setIsPaying(booking.id); setPaymentAmount(Math.round(booking.totalPrice * settings.depositRate).toString()); }}
+                      onClick={() => { setIsPaying(booking.id); setPaymentAmount(depositDueFor(booking).toString()); }}
                       className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-b from-[var(--ds-accent)] to-[var(--ds-accent-deep)] text-[var(--ds-on-accent)] font-black text-[12px] py-3.5 rounded-2xl shadow-[0_4px_14px_rgba(184,148,78,0.35)] transition-transform cursor-pointer pima-press"
                     >
                       <Wallet className="w-4 h-4" />
@@ -1807,20 +1823,20 @@ export default function UserBookings({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[var(--ds-text-2)]">قيمة الدفع الكلية:</span>
-                    <span className="font-extrabold text-[var(--ds-text)]">{arabicNumber(activeReceipt.totalPrice)} ج.م</span>
+                    <span className="font-extrabold text-[var(--ds-text)]">{arabicNumber(totalFor(activeReceipt))} ج.م</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-[var(--ds-border)]">
                     <span className="text-[var(--ds-text-2)]">العربون المدفوع:</span>
                     <span className="font-bold text-[var(--ds-success-ink)]">
-                      {activeReceipt.depositPaid ? `${activeReceipt.depositAmount} ج.م` : 'لم يتم دفع عربون'}
+                      {activeReceipt.depositPaid ? `${arabicNumber(depositDueFor(activeReceipt))} ج.م` : 'لم يتم دفع عربون'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[var(--ds-text-2)]">المبلغ المتبقي للدفع بالبيت:</span>
                     <span className="font-bold text-[var(--ds-primary)]">
-                      {activeReceipt.depositPaid 
-                        ? `${activeReceipt.totalPrice - activeReceipt.depositAmount} ج.م` 
-                        : `${activeReceipt.totalPrice} ج.م`}
+                      {activeReceipt.depositPaid
+                        ? `${arabicNumber(arrivalBalanceFor(activeReceipt))} ج.م`
+                        : `${arabicNumber(totalFor(activeReceipt))} ج.م`}
                     </span>
                   </div>
                 </div>

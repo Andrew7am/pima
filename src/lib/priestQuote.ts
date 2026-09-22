@@ -155,6 +155,21 @@ export function buildPriestQuote(args: {
   settings: PlatformSettings;
   servant: Pick<User, 'name' | 'priestName' | 'churchName'>;
   today?: Date;
+  /**
+   * The server quote for this exact stay, when one is available.
+   *
+   * A priest signs this sheet off as a budget, so its deposit has to be the
+   * deposit that will actually be asked for. Derived locally it is
+   * `total x settings.depositRate`, which is wrong twice over after the
+   * financial-core cutover: PD-16 lifts the deposit to the margin floor when
+   * the rate falls short of it, and under MARKUP the customer price is not
+   * the house's own price at all.
+   *
+   * Both figures are taken together or neither is. Using the server deposit
+   * against a locally-computed total would print two numbers from different
+   * arithmetic and leave the sheet's own subtraction wrong.
+   */
+  authoritative?: { total: number; deposit: number };
 }): PriestQuote {
   const { house, checkIn, checkOut, guestsCount, withMeals, settings, servant } = args;
   const hallFee = args.hallFee ?? 0;
@@ -162,7 +177,7 @@ export function buildPriestQuote(args: {
   const today = args.today ?? new Date();
 
   const p = priceFor(house, checkIn, checkOut, guestsCount, withMeals);
-  const total = Math.max(0, p.total + hallFee - pointsDiscount);
+  const localTotal = Math.max(0, p.total + hallFee - pointsDiscount);
   const nights = nightsBetween(checkIn, checkOut);
   // «يوم روحي» — arrive and leave the same day. computeStayPrice charges the
   // house's day rate, but nights is 0, and the sheet was printing «٠ ليالي»
@@ -198,7 +213,23 @@ export function buildPriestQuote(args: {
   // does not match the one the app then asks for.
   if (pointsDiscount > 0) lines.push({ label: 'خصم النقاط', amount: -pointsDiscount });
 
-  const depositDue = Math.round(total * settings.depositRate);
+  // The line items are the local breakdown — the server quote returns a
+  // price, not a bill of materials, so there is nothing to itemise from it.
+  // Where the agreement makes the authoritative total differ (MARKUP), the
+  // difference is shown as its own line rather than left to make the column
+  // not add up. Under COMMISSION, which is every live house today, the two
+  // totals are equal and no line appears.
+  const total = args.authoritative ? args.authoritative.total : localTotal;
+  if (args.authoritative) {
+    const residual = args.authoritative.total - localTotal;
+    if (residual !== 0) lines.push({ label: 'تعديل حسب الاتفاق التجاري', amount: residual });
+  }
+
+  // The rate is the pre-cutover fallback and stays only for the case where
+  // no server quote could be fetched at all.
+  const depositDue = args.authoritative
+    ? args.authoritative.deposit
+    : Math.round(total * settings.depositRate);
 
   // Written as the dates they actually fall on. A priest reading «قبل ١٢
   // أغسطس» does not have to count backwards from a percentage in a meeting.

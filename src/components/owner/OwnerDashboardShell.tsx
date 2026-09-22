@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { arabicNumber, arabicPlural, arabicDateRange, arabicBadge, arabicPercent, arabicDecimal, GUEST_FORMS, ROOM_FORMS, BED_FORMS, DAY_FORMS, PHOTO_FORMS, REVIEW_FORMS, HOUSE_FORMS, TASK_FORMS, BOOKING_FORMS  } from '../../lib/arabic';
 import { occupancyRate, monthWindow, bedsInUseOn } from '../../lib/occupancy';
-import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, RoomType, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification, Expense, Payout } from '../../types';
+import { RetreatHouse, Booking, User, ConferenceHall, Attendee, RoomAllocation, Review, Room, RoomType, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS, AppNotification, Expense, Payout, Payment, OwnerBookingIntent } from '../../types';
+import { newIdempotencyKey } from '../../lib/idempotency';
+import { loadBookingQuote } from '../../lib/db';
 import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../../mockData';
 import {
   Plus, Check, X, ShieldAlert, Coins, Home, Calendar, Users, Star, ClipboardList, Info, Trash2,
@@ -12,12 +14,17 @@ import { bookingTypeLabel } from '../../lib/bookingGroups';
 import { categorizeBooking as categorize, sortForOwner } from '../../lib/ownerBookingOrder';
 import { bookingRef, bookingAge } from '../../lib/bookingRef';
 import { bookingMoney } from '../../lib/bookingMoney';
-import { availableForTransfer, cashDueAtArrival, commissionTotal } from '../../lib/paymentLedger';
+import { approvedTotalFor } from '../../lib/paymentLedger';
+import {
+  ownerArrivalBalance, entitlementOf, payableOf, sumMoney, moneyOr, depositSnapshot,
+} from '../../lib/bookingFinancials';
+import type { FinancialsIndex, OwnerFinancials } from '../../lib/bookingFinancials';
 import { passwordProblem } from '../../lib/password';
 import { ownerBookingBadge } from '../../lib/ownerBookingBadge';
 import { arabicDay, arabicDayYear, nightsBetween, nightsLabel } from '../../lib/bookingDates';
 import OwnerDisclosure from './OwnerDisclosure';
 import OwnerBookingPolicy from './OwnerBookingPolicy';
+import OwnerCommercialAgreement from './OwnerCommercialAgreement';
 import { editableHouseFields } from '../../lib/houseEdits';
 import RoomDistribution from '../RoomDistribution';
 import PhotoPickerButtons from '../PhotoPickerButtons';
@@ -30,7 +37,6 @@ import OwnerRoomsManager from './OwnerRoomsManager';
 import OwnerReviewsCenter from './OwnerReviewsCenter';
 import OwnerCalendar from './OwnerCalendar';
 import OwnerAssignRooms from './OwnerAssignRooms';
-import { computeStayPrice, applyDiscount, activeDiscountFor } from '../../lib/pricing';
 import OwnerToday from './OwnerToday';
 import { silentHolds, totalSilentHolds } from '../../lib/silentHolds';
 import OwnerSpotlight from './OwnerSpotlight';
@@ -93,10 +99,15 @@ interface OwnerDashboardShellProps {
   onAddExpense?: (expense: Expense) => void;
   onDeleteExpense?: (expenseId: string) => void;
   payouts?: Payout[];
+  /** Approved payment rows. Without them no owner screen can tell money
+   *  actually received from money merely due. */
+  payments?: Payment[];
+  /** Financial-core snapshots by booking id. See lib/bookingFinancials. */
+  financials?: FinancialsIndex<OwnerFinancials>;
   onRequestPayout?: (payout: Payout) => Promise<boolean>;
   users?: User[];
   onNavigateSupport?: () => void;
-  onCreateBooking?: (booking: Booking) => Promise<boolean>;
+  onCreateBooking?: (intent: OwnerBookingIntent) => Promise<boolean>;
   onUpdateBookingDetails?: (bookingId: string, fields: { checkIn?: string; checkOut?: string; guestsCount?: number }) => Promise<boolean>;
   onRecalculateAllocation?: (houseId: string, bookingId?: string) => Promise<void>;
   onLogout?: () => void;
@@ -124,7 +135,7 @@ export default function OwnerDashboardShell({
   rooms = [], onAddRoom, onUpdateRoom, onDeleteRoom,
   roomTypes = [], onAddRoomType, onUpdateRoomType, onDeleteRoomType, waitlist = [], onNotifyWaitlist,
   notifications = [], onMarkNotificationAsRead,
-  expenses = [], onAddExpense, onDeleteExpense, payouts = [], onRequestPayout, users = [], onNavigateSupport, onCreateBooking,
+  expenses = [], onAddExpense, onDeleteExpense, payouts = [], payments = [], financials = {}, onRequestPayout, users = [], onNavigateSupport, onCreateBooking,
   onUpdateBookingDetails, onRecalculateAllocation, onLogout,
 }: OwnerDashboardShellProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>('stats');
@@ -165,7 +176,14 @@ export default function OwnerDashboardShell({
   const [mbCheckIn, setMbCheckIn] = useState('');
   const [mbCheckOut, setMbCheckOut] = useState('');
   const [mbGuests, setMbGuests] = useState(10);
-  const [mbPrice, setMbPrice] = useState('');
+  // The owner no longer types a price. The agreement and the listed price
+  // decide what the guest pays, and this is the server telling him what
+  // that is — the same fin_price_booking the booking itself will run.
+  const [mbQuote, setMbQuote] = useState<{ total: number; deposit: number } | null>(null);
+  const [mbQuoteError, setMbQuoteError] = useState<string | null>(null);
+  // One booking id and one key per attempt, cleared only on success, so a
+  // double-tap or a retry after a timeout replays instead of double-booking.
+  const mbAttemptRef = React.useRef<{ bookingId: string; idempotencyKey: string } | null>(null);
   const [mbType, setMbType] = useState<'manual' | 'temporary'>('manual');
   const [mbSaving, setMbSaving] = useState(false);
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
@@ -269,6 +287,36 @@ export default function OwnerDashboardShell({
   };
 
   const ownerHouses = houses.filter((h) => h.ownerId === owner.id);
+
+  // Debounced, because the owner types a party size a digit at a time.
+  React.useEffect(() => {
+    const house = ownerHouses[0];
+    if (!showAddBooking || !house || !mbCheckIn || !mbCheckOut || mbCheckOut < mbCheckIn || mbGuests < 1) {
+      setMbQuote(null); setMbQuoteError(null);
+      return;
+    }
+    let live = true;
+    const t = setTimeout(async () => {
+      const q = await loadBookingQuote({
+        houseId: house.id, checkIn: mbCheckIn, checkOut: mbCheckOut, guestsCount: mbGuests,
+      });
+      if (!live) return;
+      const total = q?.final_price;
+      const deposit = q?.deposit_amount;
+      if (total == null || deposit == null) {
+        setMbQuote(null);
+        // Most often this is a house with no agreement in force, which is
+        // also why the booking itself would be refused. Saying so here
+        // beats letting him fill the form in and be refused at the end.
+        setMbQuoteError('مش قادرين نحسب السعر للتواريخ دي. اتأكد إن البيت عنده اتفاق تجاري ساري.');
+        return;
+      }
+      setMbQuoteError(null);
+      setMbQuote({ total: Number(total), deposit: Number(deposit) });
+    }, 350);
+    return () => { live = false; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAddBooking, ownerHouses[0]?.id, mbCheckIn, mbCheckOut, mbGuests]);
   const ownerHouseIds = ownerHouses.map((h) => h.id);
   const ownerBookings = bookings.filter((b) => ownerHouseIds.includes(b.houseId));
   const ownerRooms = rooms.filter((r) => ownerHouseIds.includes(r.houseId));
@@ -306,12 +354,29 @@ export default function OwnerDashboardShell({
   const todayBookings = ownerBookings.filter((b) => (b.status === 'approved' || b.status === 'completed') && b.checkIn <= todayStr && b.checkOut >= todayStr);
   const confirmedBookings = ownerBookings.filter((b) => b.status === 'approved' || b.status === 'completed');
   const confirmedRevenue = confirmedBookings.reduce((sum, b) => sum + b.totalPrice, 0);
-  // Each booking at the rate IT was agreed at — see migration 108. Using the
-  // current platform rate here rewrote the commission on closed deals.
-  const platformCommissionAmount = commissionTotal(confirmedBookings, PLATFORM_COMMISSION);
-  const netOwnerPayout = confirmedRevenue - platformCommissionAmount;
-  const depositReceived = confirmedBookings.filter((b) => b.depositPaid).reduce((sum, b) => sum + b.depositAmount, 0);
-  const remainingBalance = confirmedRevenue - depositReceived;
+
+  // Owner money, from the financial core.
+  //
+  // What the house earns is NOT the customer price less a commission. Under
+  // MARKUP the guest pays 180 and the house is entitled to 150; Pima's 30 is
+  // not a rate on anything and no arithmetic on the booking row can find it.
+  // So every figure below comes from booking_financials through
+  // fin_booking_summary_owner, and falls back to the pre-core formula only
+  // for bookings that have no snapshot at all (see lib/bookingFinancials).
+  const entitlementTotals = sumMoney(
+    confirmedBookings.map((b) => entitlementOf(b, financials[b.id], PLATFORM_COMMISSION)),
+  );
+  const netOwnerPayout = entitlementTotals.total;
+  // Pima's share is what is left of the customer price after the house is
+  // paid — a residual, never a rate.
+  const platformCommissionAmount = Math.max(0, confirmedRevenue - netOwnerPayout);
+  // Money Pima has actually banked, from the approved payment rows. The old
+  // sum of `depositAmount` where `depositPaid` counted a figure that is 0 by
+  // design under the core, and counted it whether or not it ever arrived.
+  const depositReceived = confirmedBookings.reduce((sum, b) => sum + approvedTotalFor(b.id, payments), 0);
+  // Cash the guest still hands over at the door, per the core.
+  const atDoorTotals = sumMoney(confirmedBookings.map((b) => ownerArrivalBalance(b, financials[b.id])));
+  const remainingBalance = atDoorTotals.total;
   const ownerExpenses = expenses.filter((e) => ownerHouseIds.includes(e.houseId));
   const totalExpenses = ownerExpenses.reduce((sum, e) => sum + e.amount, 0);
   const netProfit = netOwnerPayout - totalExpenses;
@@ -349,8 +414,12 @@ export default function OwnerDashboardShell({
     : ownerBookings;
   const periodConfirmedBookings = periodBookings.filter((b) => b.status === 'approved' || b.status === 'completed');
   const periodConfirmedRevenue = periodConfirmedBookings.reduce((sum, b) => sum + b.totalPrice, 0);
-  const periodPlatformCommission = commissionTotal(periodConfirmedBookings, PLATFORM_COMMISSION);
-  const periodNetPayout = periodConfirmedRevenue - periodPlatformCommission;
+  // Same basis as the headline figures: the house is paid its entitlement,
+  // and Pima keeps whatever the customer price leaves over.
+  const periodNetPayout = sumMoney(
+    periodConfirmedBookings.map((b) => entitlementOf(b, financials[b.id], PLATFORM_COMMISSION)),
+  ).total;
+  const periodPlatformCommission = Math.max(0, periodConfirmedRevenue - periodNetPayout);
 
   // Categories match the refined mockup's Bookings tabs. Data-backed by existing
   // fields only — no "expenses"-style fabricated categories.
@@ -540,21 +609,33 @@ export default function OwnerDashboardShell({
       alert('يرجى إدخال اسم الحاجز وتواريخ صحيحة.');
       return;
     }
-    const totalPrice = mbPrice ? parseFloat(mbPrice) : 0;
+    // Reused on every retry of the SAME attempt. Cleared only below, on a
+    // confirmed success.
+    if (!mbAttemptRef.current) {
+      mbAttemptRef.current = {
+        bookingId: `booking_${Date.now()}`,
+        idempotencyKey: newIdempotencyKey(),
+      };
+    }
     setMbSaving(true);
+    // No price, no deposit, no commission. See OwnerBookingIntent.
     const ok = await onCreateBooking({
-      id: `booking_${Date.now()}`,
-      houseId: house.id, houseName: house.name,
-      userId: owner.id, userName: mbName.trim(), userPhone: mbPhone.trim() || owner.phone, userEmail: owner.email, userRole: 'individual',
-      checkIn: mbCheckIn, checkOut: mbCheckOut, guestsCount: mbGuests,
-      totalPrice, depositPaid: false, depositAmount: Math.round(totalPrice * settings.depositRate),
-      status: 'approved', source: mbType, isLargeConferenceQuote: false, paymentStatus: 'unpaid',
-      createdAt: new Date().toISOString(),
+      bookingId: mbAttemptRef.current.bookingId,
+      idempotencyKey: mbAttemptRef.current.idempotencyKey,
+      houseId: house.id,
+      checkIn: mbCheckIn,
+      checkOut: mbCheckOut,
+      guestsCount: mbGuests,
+      guestName: mbName.trim(),
+      guestPhone: mbPhone.trim() || undefined,
+      source: mbType,
     });
     setMbSaving(false);
     if (ok) {
+      mbAttemptRef.current = null;
       setShowAddBooking(false);
-      setMbName(''); setMbPhone(''); setMbCheckIn(''); setMbCheckOut(''); setMbGuests(10); setMbPrice('');
+      setMbName(''); setMbPhone(''); setMbCheckIn(''); setMbCheckOut(''); setMbGuests(10);
+      setMbQuote(null); setMbQuoteError(null);
     }
   };
 
@@ -840,15 +921,25 @@ export default function OwnerDashboardShell({
         // finance screen about what the owner is owed is worse than one that
         // stays silent.
         const ownerPayouts = payouts.filter((p) => ownerHouseIds.includes(p.houseId));
-        const transferable = availableForTransfer({
-          depositReceived, platformCommissionAmount, payouts: ownerPayouts,
-          confirmedBookings, commissionRate: PLATFORM_COMMISSION,
-        });
+        // What Pima can actually send: the settlement hold on each booking,
+        // less everything already requested or transferred. NOT the
+        // entitlement — most of the entitlement is collected at the door and
+        // never passes through Pima at all.
+        const payableTotals = sumMoney(
+          confirmedBookings.map((b) => payableOf(b, financials[b.id], PLATFORM_COMMISSION)),
+        );
+        const claimed = ownerPayouts
+          .filter((p) => p.status !== 'rejected')
+          .reduce((sum, p) => sum + p.amount, 0);
+        // Capped at cash genuinely received: a hold is contractual and exists
+        // from the moment the booking is priced, so it must never offer money
+        // the guest has not yet sent.
+        const transferable = Math.max(0, Math.min(payableTotals.total, depositReceived) - claimed);
         // Cash the owner collects at the door, counting only stays that have
         // not ended — money from a finished booking is already in their pocket.
-        const cashAtDoor = confirmedBookings
+        const cashAtDoor = sumMoney(confirmedBookings
           .filter((b) => b.checkOut >= todayStr)
-          .reduce((sum, b) => sum + cashDueAtArrival(b), 0);
+          .map((b) => ownerArrivalBalance(b, financials[b.id]))).total;
         const monthRevenue = confirmedBookings
           .filter((b) => { const d = new Date(b.checkIn); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); })
           .reduce((sum, b) => sum + b.totalPrice, 0);
@@ -1128,7 +1219,7 @@ export default function OwnerDashboardShell({
               // already-terminal ones — active guest bookings stay soft-cancel.
               const canDelete = booking.source === 'manual' || booking.source === 'temporary'
                 || booking.status === 'cancelled' || booking.status === 'rejected';
-              const money = bookingMoney(booking, settings.depositRate);
+              const money = bookingMoney(booking, settings.depositRate, payments, depositSnapshot(financials[booking.id]));
               const depositAmt = money.deposit;
               const badge = ownerBookingBadge(booking, todayStr);
               const nights = nightsBetween(booking.checkIn, booking.checkOut);
@@ -1623,32 +1714,33 @@ export default function OwnerDashboardShell({
                       className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[11px] px-2 min-h-11.5 rounded-xl focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-0.5">إجمالي السعر (ج.م):</label>
-                    <input id="mb-price" type="number" min={0} value={mbPrice} onChange={(e) => setMbPrice(e.target.value)} onFocus={(e) => e.target.select()}
-                      className="w-full bg-[var(--color-owner-surface)] border border-[var(--color-owner-border)] text-[11px] px-2 min-h-11.5 rounded-xl focus:outline-none" />
-                    {/* His own quote, from the same engine the guest booking
-                        uses — this form was the one booking entry point in the
-                        app that never touched it. Doing the sum in his head
-                        against seasonal rates he set in March is how he lands
-                        under the server's floor and gets the booking refused. */}
-                    {(() => {
-                      const h = ownerHouses[0];
-                      if (!h || !mbCheckIn || !mbCheckOut || mbCheckOut < mbCheckIn || mbGuests < 1) return null;
-                      const quoted = applyDiscount(
-                        computeStayPrice(h, mbCheckIn, mbCheckOut, mbGuests).total,
-                        activeDiscountFor(h, mbCheckIn),
-                      );
-                      if (quoted <= 0) return null;
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => setMbPrice(String(quoted))}
-                          className="mt-1 text-[11px] font-bold text-[var(--color-owner-accent,#B8944E)] underline cursor-pointer"
-                        >
-                          حسب أسعارك: {arabicNumber(quoted)} ج.م — استخدمه
-                        </button>
-                      );
-                    })()}
+                    {/* READ ONLY, AND FROM THE SERVER.
+
+                        This was a number the owner typed. It set the price,
+                        the deposit and — through the legacy trigger — the
+                        commission, on a booking the financial core never saw.
+                        Under MARKUP or NET_RATE that number has no defensible
+                        relationship to what the house is owed.
+
+                        fin_quote_booking is the same calculation the booking
+                        will run, so what he reads here is what the guest is
+                        charged. He cannot edit it because it is not his to
+                        set: the agreement and his listed prices decide it. */}
+                    <label className="block text-[11px] font-bold text-[var(--color-owner-secondary)] mb-0.5">سعر العميل (من الاتفاق):</label>
+                    <div className="w-full bg-[var(--color-owner-bg)] border border-[var(--color-owner-border)] text-[11px] px-2 min-h-11.5 rounded-xl flex items-center">
+                      {mbQuoteError ? (
+                        <span className="font-bold text-amber-700 leading-snug py-1">{mbQuoteError}</span>
+                      ) : mbQuote ? (
+                        <span className="font-black text-[var(--color-owner-text)]">{arabicNumber(mbQuote.total)} ج.م</span>
+                      ) : (
+                        <span className="font-bold text-[var(--color-owner-secondary)]">حدّد التواريخ والعدد</span>
+                      )}
+                    </div>
+                    {mbQuote && (
+                      <div className="mt-1 text-[11px] font-bold text-[var(--color-owner-secondary)] leading-snug">
+                        عربون {arabicNumber(mbQuote.deposit)} ج.م لبيما · يتحصّل منك {arabicNumber(Math.max(0, mbQuote.total - mbQuote.deposit))} ج.م عند الوصول
+                      </div>
+                    )}
                   </div>
                 </div>
                 {(() => {
@@ -1670,7 +1762,7 @@ export default function OwnerDashboardShell({
                   disabled={mbSaving}
                   className="w-full bg-[var(--color-owner-primary)] hover:bg-[var(--color-owner-primary-hover)] disabled:opacity-50 text-[var(--color-owner-on-primary)] text-xs font-bold min-h-11.5 rounded-xl cursor-pointer"
                 >
-                  {mbSaving ? 'جارٍ الحفظ...' : mbType === 'manual' ? 'تسجيل الحجز المؤكد' : 'تسجيل الحجز المؤقت'}
+                  {mbSaving ? 'جارٍ الحفظ...' : mbQuoteError ? 'مش قادرين نسعّر الحجز ده' : mbType === 'manual' ? 'تسجيل الحجز المؤكد' : 'تسجيل الحجز المؤقت'}
                 </button>
               </div>
             )}
@@ -1766,7 +1858,7 @@ export default function OwnerDashboardShell({
                   // Shared with the detail panel, so the row and the screen it
                   // opens cannot label the same booking differently.
                   const statusBadge = ownerBookingBadge(booking, todayStr);
-                  const money = bookingMoney(booking, settings.depositRate);
+                  const money = bookingMoney(booking, settings.depositRate, payments, depositSnapshot(financials[booking.id]));
                   const { collected, outstanding, percent: pct } = money;
                   const whatsappLink = `https://wa.me/2${booking.userPhone.replace(/^0/, '')}`;
                   // A stripe down the leading edge, so the list reads before
@@ -2027,6 +2119,7 @@ export default function OwnerDashboardShell({
           house={ownerHouses[0]} bookings={ownerBookings} rooms={ownerRooms} todayStr={todayStr}
           onCheckInBooking={onCheckInBooking} onCheckOutBooking={onCheckOutBooking} onUpdateRoom={onUpdateRoom}
           onViewBooking={(id) => { setSelectedBookingId(id); setActiveTab('bookings'); }}
+          financials={financials}
         />
       )}
 
@@ -2047,6 +2140,8 @@ export default function OwnerDashboardShell({
           depositReceived={depositReceived}
           remainingBalance={remainingBalance}
           commissionRate={PLATFORM_COMMISSION}
+          financials={financials}
+          payments={payments}
           ownerExpenses={ownerExpenses}
           totalExpenses={totalExpenses}
           netProfit={netProfit}
@@ -2428,6 +2523,14 @@ export default function OwnerDashboardShell({
                 own terms, and the database allow-list agrees. */}
             {ownerHouses.length >= 1 && (
               <OwnerBookingPolicy house={ownerHouses[0]} settings={settings} onSaved={onPolicySaved} />
+            )}
+
+            {/* 4c. The commercial partnership (migration 0154). A REQUEST, not
+                a change: the owner proposes a model and an admin decides. Only
+                the admin's approval writes house_agreements, which is the only
+                table the pricing engine reads. */}
+            {ownerHouses.length >= 1 && (
+              <OwnerCommercialAgreement house={ownerHouses[0]} />
             )}
 
 

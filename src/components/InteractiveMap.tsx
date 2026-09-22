@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { customerNightly } from '../lib/pricing';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { RetreatHouse } from '../types';
@@ -92,7 +93,7 @@ export default function InteractiveMap({ houses, onSelectHouse }: InteractiveMap
                     <span style={{ fontSize: 11, color: '#867E65' }}>({house.reviewsCount} تقييم)</span>
                   </div>
                   <p style={{ fontSize: 13, fontWeight: 600, color: '#464E3D', margin: '4px 0' }}>
-                    {house.pricePerNightPerPerson} ج.م / شخص / ليلة
+                    {customerNightly(house)} ج.م / شخص / ليلة
                   </p>
                   <button
                     onClick={() => onSelectHouse(house)}
