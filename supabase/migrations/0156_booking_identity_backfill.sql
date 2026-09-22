@@ -222,14 +222,14 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public, pg_temp
-AS $
+AS $$
   SELECT fs.deposit_rate, fs.points_per_egp, fs.max_redemption_pct, fs.currency,
          fs.free_cancel_days, fs.partial_refund_days, fs.partial_refund_pct
     FROM public.financial_settings fs
    WHERE fs.effective_to IS NULL
    ORDER BY fs.effective_from DESC
    LIMIT 1;
-$;
+$$;
 
 COMMENT ON FUNCTION public.fin_client_settings() IS
   'The guest-visible slice of financial_settings: deposit rate, points conversion and cap, currency, default cancellation window. Withholds every margin, commission and transfer-fee field.';
