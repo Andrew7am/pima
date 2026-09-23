@@ -1,5 +1,7 @@
 import type { Booking, Payment, Payout } from '../types';
-import { approvedTotalFor, ownerShareOf } from './paymentLedger';
+import { approvedTotalFor } from './paymentLedger';
+import { payableOf, depositSnapshot } from './bookingFinancials';
+import type { AdminFinancials, FinancialsIndex } from './bookingFinancials';
 import { arabicNumber } from './arabic';
 
 /**
@@ -65,9 +67,12 @@ export function findFinanceExceptions(args: {
   payouts: Payout[];
   houses: { id: string; name: string }[];
   commissionRate: number;
+  /** Admin-scoped financial-core snapshots, by booking id. */
+  financials?: FinancialsIndex<AdminFinancials>;
   now?: number;
 }): FinanceException[] {
   const { bookings, payments, payouts, houses, commissionRate } = args;
+  const financials = args.financials ?? {};
   const now = args.now ?? Date.now();
   const houseName = (id: string) => houses.find((h) => h.id === id)?.name || id;
   const out: FinanceException[] = [];
@@ -82,7 +87,17 @@ export function findFinanceExceptions(args: {
 
   for (const b of bookings) {
     const received = approvedTotalFor(b.id, payments);
-    const deposit = b.depositAmount || 0;
+    // The deposit that was actually REQUIRED, from the financial core.
+    //
+    // `b.depositAmount` is 0 by design under the core, and every rule below
+    // that compares against it silently stopped firing: a guest who sent 10
+    // of a 54 deposit passed `deposit > 0` and was never flagged as short.
+    // A false negative on an underpayment is worse than a noisy queue,
+    // because nothing else in the product looks for it.
+    const fin = financials[b.id];
+    const deposit = depositSnapshot(fin)?.depositAmount ?? (b.depositAmount || 0);
+    // Likewise the customer price: under the core it is final_price.
+    const bookingTotal = fin ? fin.finalPrice : b.totalPrice;
 
     if (!isLive(b)) {
       // Real cash Pima is still holding on a trip that is not happening.
@@ -98,7 +113,7 @@ export function findFinanceExceptions(args: {
     // and the deposit he is crediting was never actually received.
     if (b.depositPaid && received === 0) {
       push('deposit_paid_but_nothing_received', 'high', b, deposit,
-        `الحجز متسجّل إن العربون اتدفع، ومفيش أي دفعة معتمدة وراه. صاحب البيت هيحصّل ${arabicNumber(Math.max(0, b.totalPrice - deposit))} بدل ${arabicNumber(b.totalPrice)}.`,
+        `الحجز متسجّل إن العربون اتدفع، ومفيش أي دفعة معتمدة وراه. صاحب البيت هيحصّل ${arabicNumber(Math.max(0, bookingTotal - deposit))} بدل ${arabicNumber(bookingTotal)}.`,
         'راجع الإيصال أو شيل علامة العربون');
     }
 
@@ -108,15 +123,18 @@ export function findFinanceExceptions(args: {
         'كلّم الضيف على الفرق');
     }
 
-    if (received > b.totalPrice && b.totalPrice > 0) {
-      push('overpaid_booking', 'high', b, received - b.totalPrice,
-        `وصل ${arabicNumber(received)} ج.م وقيمة الحجز ${arabicNumber(b.totalPrice)} — الضيف ليه ${arabicNumber(received - b.totalPrice)} عندك.`,
+    if (received > bookingTotal && bookingTotal > 0) {
+      push('overpaid_booking', 'high', b, received - bookingTotal,
+        `وصل ${arabicNumber(received)} ج.م وقيمة الحجز ${arabicNumber(b.totalPrice)} — الضيف ليه ${arabicNumber(received - bookingTotal)} عندك.`,
         'رجّع الزيادة للضيف');
     }
 
-    if (b.paymentStatus === 'paid_full' && received < b.totalPrice) {
-      push('marked_paid_full_but_short', 'high', b, b.totalPrice - received,
-        `مكتوب «مدفوع بالكامل» والمحصّل ${arabicNumber(received)} من ${arabicNumber(b.totalPrice)}.`,
+    // Paid in full means the CUSTOMER price. Under PD-04 most of that is
+    // handed to the house at the door and never reaches Pima, so this only
+    // fires on a booking someone explicitly marked settled in full.
+    if (b.paymentStatus === 'paid_full' && received < bookingTotal) {
+      push('marked_paid_full_but_short', 'high', b, bookingTotal - received,
+        `مكتوب «مدفوع بالكامل» والمحصّل ${arabicNumber(received)} من ${arabicNumber(bookingTotal)}.`,
         'صحّح حالة الدفع');
     }
 
@@ -142,7 +160,7 @@ export function findFinanceExceptions(args: {
         (p) => p.status !== 'rejected' && p.houseId === b.houseId && p.completedAt === b.ownerSettledAt,
       );
       if (!matched) {
-        push('settled_without_payout', 'medium', b, ownerShareOf(b, commissionRate),
+        push('settled_without_payout', 'medium', b, payableOf(b, financials[b.id], commissionRate).value ?? 0,
           'الحجز متختوم إنه اتسوّى ومفيش تحويل مسجّل يقابله.',
           'راجع إن كان التحويل اتبعت فعلاً');
       }
@@ -154,7 +172,7 @@ export function findFinanceExceptions(args: {
   for (const b of bookings) {
     if (!isLive(b)) continue;
     if (approvedTotalFor(b.id, payments) <= 0) continue;
-    heldByHouse.set(b.houseId, (heldByHouse.get(b.houseId) || 0) + ownerShareOf(b, commissionRate));
+    heldByHouse.set(b.houseId, (heldByHouse.get(b.houseId) || 0) + (payableOf(b, financials[b.id], commissionRate).value ?? 0));
   }
   const sentByHouse = new Map<string, number>();
   for (const p of payouts) {

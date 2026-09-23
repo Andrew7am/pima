@@ -1,4 +1,7 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { newIdempotencyKey, freshBookingId } from '../lib/idempotency';
+import { loadBookingQuote } from '../lib/db';
+import { quotableDepositRate } from '../lib/bookingFinancials';
 import { arabicNumber } from '../lib/arabic';
 import { RetreatHouse, Booking, Review, User, Room, RoomType, Announcement, WaitlistEntry, PlatformSettings, DEFAULT_PLATFORM_SETTINGS } from '../types';
 import HouseHero from './house/HouseHero';
@@ -10,7 +13,7 @@ import { ExploreSection, ExploreCard } from './house/HouseExplore';
 import BookingFlow, { ApplicantDetails } from './house/BookingFlow';
 import { tapFeedback } from '../lib/haptics';
 import ReviewWizard from './ReviewWizard';
-import { computeStayPrice, offersDayUse, computeMealPlan, activeDiscountFor, applyDiscount } from '../lib/pricing';
+import { computeStayPrice, offersDayUse, computeMealPlan, activeDiscountFor, applyDiscount, customerNightly, customerDayUse, customerMonthly } from '../lib/pricing';
 import { resolvePolicy, chargeableGuests } from '../lib/bookingPolicy';
 import PropertyBookingPolicy from './house/PropertyBookingPolicy';
 import { buildPriestQuote, printPriestQuote } from '../lib/priestQuote';
@@ -27,13 +30,26 @@ import {
 } from 'lucide-react';
 import { SUITABILITY_MAP } from '../mockData';
 
+/** What a booking handler may report back. `void` keeps the preview callers
+ *  (AdminDashboard's no-op, the logged-out login prompt) working unchanged. */
+export type BookOutcome = boolean | void | { ok: boolean; code?: string };
+
 interface HouseDetailProps {
   house: RetreatHouse;
   currentUser: User | null; // null = logged-out visitor browsing publicly
   bookings: Booking[];
   reviews: Review[];
   onBack: () => void;
-  onBook: (booking: Booking, pointsRedeemed?: number) => Promise<boolean> | boolean | void;
+  /** The key is generated once per attempt here and reused on every retry —
+   *  a new key means a new booking, so it must never be regenerated per click. */
+  /**
+   * A bare boolean still means what it always did. The object form lets the
+   * handler say WHY it refused, which matters for exactly one code:
+   * BOOKING_ID_TAKEN cannot be retried with the same booking id, so the
+   * screen has to mint a new one instead of resending the taken one.
+   */
+  onBook: (booking: Booking, pointsRedeemed?: number, idempotencyKey?: string)
+    => Promise<BookOutcome> | BookOutcome;
   onSubmitReview: (review: Review) => void;
   onUpdateMenu?: (houseId: string, updatedMenu: any) => void;
   isFavorited: boolean;
@@ -660,6 +676,9 @@ export default function HouseDetail({
     : house.propertyType === 'staff' ? 'سكن موظفين' : 'بيت مؤتمرات';
 
   const [isQuoteMode, setIsQuoteMode] = useState(false); // Toggle between regular booking & large conference quote
+  // One booking attempt = one id + one idempotency key, both stable until the
+  // attempt succeeds. Cleared on success so the next booking is a new attempt.
+  const attemptRef = useRef<{ bookingId: string; idempotencyKey: string } | null>(null);
 
   // Auto-fill from repeat bookings — if the guest has booked this house
   // before, pre-fill guestsCount from their most recent booking here.
@@ -913,6 +932,9 @@ export default function HouseDetail({
   // children already entered, the extra ages simply stop counting. Deriving it
   // means the two can never be out of step, which an effect could not promise.
   const effectiveChildAges = childAges.slice(0, Math.max(0, guestsCount - 1));
+  // A stable dep for the quote effect: the array identity changes on every
+  // render, the contents rarely do.
+  const effectiveChildAgesKey = effectiveChildAges.join(',');
   // Who actually pays. MUST equal what validate_booking_price computes from the
   // booking's stamped rule, or the server rejects the total with PRICE_TOO_LOW.
   const payingGuests = chargeableGuests(guestsCount, effectiveChildAges, effectivePolicy.childFreeUnderAge);
@@ -998,8 +1020,56 @@ export default function HouseDetail({
   const maxRedeemablePoints = Math.min(currentUser?.points || 0, maxDiscountByPolicy * POINTS_PER_EGP);
   const pointsToRedeem = usePoints ? maxRedeemablePoints : 0;
   const redemptionDiscount = Math.round(pointsToRedeem / POINTS_PER_EGP);
-  const totalPrice = Math.max(0, originalTotalPrice - redemptionDiscount);
-  const depositAmount = Math.round(totalPrice * settings.depositRate); // configurable deposit
+  const localTotalPrice = Math.max(0, originalTotalPrice - redemptionDiscount);
+
+  // The server quote, which is the SAME calculation the booking will run.
+  //
+  // fin_quote_booking and create_booking_with_financials both call
+  // fin_price_booking, so the figure quoted here and the figure charged
+  // cannot drift. The arithmetic below it stays as the instant estimate —
+  // it keeps the points slider responsive and it is all an anonymous
+  // visitor can be shown, since the quote is granted to authenticated only.
+  //
+  // The difference is not cosmetic. PD-16 lifts the deposit above the
+  // headline rate whenever it would otherwise fall below the margin floor,
+  // and `total x depositRate` cannot know that: on a NET_RATE stay listed
+  // at 150 against a net of 100 it quotes 45 where the booking charges 50.
+  const [quote, setQuote] = useState<{ finalPrice: number; depositAmount: number } | null>(null);
+  useEffect(() => {
+    if (!currentUser || !checkIn || !checkOut || guestsCount <= 0) { setQuote(null); return; }
+    let live = true;
+    // Debounced: the guest drags the points slider and changes the party
+    // size, and each keystroke would otherwise be a round trip.
+    const t = setTimeout(async () => {
+      const q = await loadBookingQuote({
+        houseId: house.id, checkIn, checkOut, guestsCount,
+        childAges: effectiveChildAges.length ? effectiveChildAges : undefined,
+        points: pointsToRedeem,
+      });
+      if (!live) return;
+      const fp = q?.final_price;
+      const dp = q?.deposit_amount;
+      setQuote(fp == null || dp == null ? null : { finalPrice: Number(fp), depositAmount: Number(dp) });
+    }, 350);
+    return () => { live = false; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [house.id, checkIn, checkOut, guestsCount, effectiveChildAgesKey, pointsToRedeem, currentUser?.id]);
+
+  const totalPrice = quote ? quote.finalPrice : localTotalPrice;
+
+  // The server's figure, or the rate — but ONLY if the rate is authoritative.
+  //
+  // platform_settings still holds the legacy 0.15 and is what
+  // loadPlatformSettings starts from; the 0.30 arrives as an overlay from
+  // fin_client_settings(). If that call fails the overlay is skipped, and
+  // without this guard the guest would be quoted 15% of the stay while the
+  // booking charges 30% — quietly, on the one screen where the number is a
+  // promise. null propagates to the booking panel, which shows an unavailable
+  // state instead of a wrong number.
+  const quotableRate = quotableDepositRate(settings);
+  const depositAmount = quote
+    ? quote.depositAmount
+    : quotableRate === null ? null : Math.round(localTotalPrice * quotableRate);
 
   // Returns the new booking's id on success, or null if it was refused — the
   // flow needs the id to show the guest their request number, and needs the
@@ -1156,7 +1226,17 @@ export default function HouseDetail({
     // What the applicant typed wins over what the account holds: a servant
     // often books on behalf of a church whose details differ from their own.
     // Blank fields fall back to the account rather than writing an empty name.
-    const bookingId = `book_${Date.now()}`;
+    // One booking id and one idempotency key per ATTEMPT, held in refs so a
+    // second tap, a retry after a timeout, or a re-render reuses them. The
+    // server recognises the key and returns the original booking instead of
+    // creating a second one; regenerating either here would defeat that.
+    if (!attemptRef.current) {
+      attemptRef.current = {
+        bookingId: `book_${Date.now()}`,
+        idempotencyKey: newIdempotencyKey(),
+      };
+    }
+    const bookingId = attemptRef.current.bookingId;
     const trimmed = {
       fullName: applicant.fullName.trim(),
       phone: applicant.phone.trim(),
@@ -1206,7 +1286,8 @@ export default function HouseDetail({
       childAges: effectiveChildAges.length ? effectiveChildAges : undefined,
       totalPrice,
       depositPaid: false,
-      depositAmount,
+      // The RPC prices the booking; this is only carried for the optimistic row.
+      depositAmount: depositAmount ?? 0,
       status: 'pending', // Pending owner approval
       isLargeConferenceQuote: isQuoteMode,
       conferenceDetails: details,
@@ -1216,9 +1297,28 @@ export default function HouseDetail({
     // Wait for the DB write. If the capacity trigger rejects, App.tsx has
     // already shown a specific error, so stay on the confirmation step.
     setSubmitting(true);
-    const result = await onBook(newBooking, pointsToRedeem);
+    const result = await onBook(newBooking, pointsToRedeem, attemptRef.current.idempotencyKey);
+    const detail = typeof result === 'object' && result !== null ? result : null;
+    const outcome: boolean | undefined = detail ? detail.ok : (result as boolean | undefined);
+    const code = detail?.code;
+    // Only a success ends the attempt. A failure keeps the same key so the
+    // guest pressing the button again retries rather than double-books.
+    if (outcome) attemptRef.current = null;
+    // One refusal cannot be retried as-is. BOOKING_ID_TAKEN means this id
+    // already belongs to a booking, so resending it fails identically for
+    // ever — and the ref is what would resend it. Mint a fresh id and KEEP
+    // the idempotency key: the key is what the server fingerprints, so if the
+    // first attempt did commit, the retry still returns that same booking
+    // rather than making a second one. Nothing was committed here anyway —
+    // the RPC is atomic, so a refusal leaves no idempotency row behind.
+    else if (code === 'BOOKING_ID_TAKEN' && attemptRef.current) {
+      attemptRef.current = {
+        bookingId: freshBookingId(attemptRef.current.bookingId),
+        idempotencyKey: attemptRef.current.idempotencyKey,
+      };
+    }
     setSubmitting(false);
-    if (result === false) return null;
+    if (outcome === false) return null;
     // The same reference the owner's screens show — see lib/bookingRef. It was
     // built inline here and nowhere else, so the number the guest reads off
     // their confirmation could not be looked up by the person they read it to.
@@ -1253,6 +1353,9 @@ export default function HouseDetail({
               house, checkIn, checkOut, guestsCount, withMeals: !!withMeals,
               pointsDiscount: redemptionDiscount,
               settings, servant: currentUser,
+              // The same server quote the screen is showing. Taken as a pair,
+              // so the printed total and deposit come from one arithmetic.
+              authoritative: quote ? { total: quote.finalPrice, deposit: quote.depositAmount } : undefined,
             })) : undefined}
             totalPrice={totalPrice}
             depositAmount={depositAmount}
@@ -1268,7 +1371,7 @@ export default function HouseDetail({
             withMeals={withMeals}
             onSetWithMeals={(v) => { tapFeedback(); setWithMeals(v); }}
             dayUseAvailable={offersDayUse(house)}
-            dayUsePrice={house.dayUsePricePerPerson}
+            dayUsePrice={customerDayUse(house)}
             onSetStayMode={setStayMode}
             datePicker={
               <DateRangePicker
@@ -2246,7 +2349,7 @@ export default function HouseDetail({
                 <span className="block text-[11px] font-black text-[var(--ds-accent)]">ابتداءً من</span>
                 <span className="flex items-baseline justify-center gap-1 my-2">
                   <span className="text-[40px] font-black text-[var(--ds-brand)] [font-variant-numeric:tabular-nums]">
-                    {arabicNumber(isMonthlyHousing ? (house.monthlyRent || 0) : house.pricePerNightPerPerson)}
+                    {arabicNumber(isMonthlyHousing ? (customerMonthly(house) || 0) : customerNightly(house))}
                   </span>
                   <span className="text-[12px] font-black text-[var(--ds-brand)]">ج.م</span>
                 </span>
@@ -2258,7 +2361,7 @@ export default function HouseDetail({
                     answer to the same question, not a competing headline. */}
                 {offersDayUse(house) && (
                   <span className="block text-[11px] font-bold text-[var(--ds-accent-deep)] mt-2 leading-snug">
-                    أو {arabicNumber(house.dayUsePricePerPerson as number)} ج.م
+                    أو {arabicNumber(customerDayUse(house) as number)} ج.م
                     <br />
                     <span className="font-medium text-[var(--ds-text-2)]">لليوم بدون مبيت</span>
                   </span>

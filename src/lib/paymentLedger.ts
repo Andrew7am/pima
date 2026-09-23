@@ -1,4 +1,6 @@
 import type { Booking, Payment, Payout } from '../types';
+import { payableOf } from './bookingFinancials';
+import type { AdminFinancials, FinancialsIndex } from './bookingFinancials';
 
 /**
  * The money questions, answered in one place.
@@ -49,8 +51,35 @@ export function depositDue(booking: Booking, depositRate: number): number {
   return booking.depositAmount || Math.round(booking.totalPrice * depositRate);
 }
 
+// ===========================================================================
+// LEGACY — no live caller as of the financial-core cutover
+// ===========================================================================
+//
+// Everything from here to ownerShareOf answers the same question one way:
+// take the customer price and apply a commission rate to it. That question
+// has three different answers now, one per agreement model, and only the
+// database can give them — so every money screen was moved onto
+// lib/bookingFinancials, which reads booking_financials through the
+// role-scoped views.
+//
+// These are kept rather than deleted for two reasons, and neither of them is
+// "something might still need it":
+//
+//   1. legacyOwnerEntitlement / legacyOwnerPayable need this arithmetic for
+//      bookings that have no snapshot, which are pre-cutover rows and so
+//      genuinely were commission deals.
+//   2. The tests around them record what the old arrangement was, and that
+//      record is worth keeping while pre-cutover bookings are still live.
+//
+// Do not add a caller. If a screen needs a money figure, it needs
+// lib/bookingFinancials.
 /**
  * Cash the owner collects at the door.
+ *
+ * LEGACY. Replaced by bookingFinancials.ownerArrivalBalance, which reads
+ * `arrival_balance_external`. Under the core `deposit_amount` is 0, so this
+ * returns the full retail price and tells the house to collect 180 on a
+ * booking where the guest already paid Pima 54.
  *
  * `depositAmount` is set on every booking whether or not it was ever paid, so
  * it only comes off the total once `depositPaid` is true. Without that guard
@@ -153,6 +182,20 @@ export function ownerNetOfCollected(
   );
 }
 
+/**
+ * LEGACY ONLY. Do not call this from a money screen.
+ *
+ * `depositAmount - totalPrice x rate` describes one arrangement: a
+ * commission house, before the financial core existed. Under MARKUP there
+ * is no rate to apply and under the core `depositAmount` is 0, so this
+ * returns 0 for every booking made since the cutover — which is how the
+ * owner payout silently became nothing.
+ *
+ * The live answer is bookingFinancials.payableOf, which reads
+ * `owner_cash_payable` from the database. This stays only because
+ * legacyOwnerPayable needs the same arithmetic for pre-core rows, and
+ * because its tests document what the old arrangement was.
+ */
 export function ownerShareOf(booking: Booking, commissionRate: number): number {
   return Math.max(0, Math.round((booking.depositAmount || 0) - (booking.totalPrice || 0) * rateOf(booking, commissionRate)));
 }
@@ -182,9 +225,13 @@ export function unclaimedOwedBookings(args: {
   owed: Booking[];
   allBookings: Booking[];
   payouts: Payout[];
+  /** Only reached for bookings with no financial snapshot. */
   commissionRate: number;
+  /** Admin-scoped financial-core snapshots, by booking id. */
+  financials?: FinancialsIndex<AdminFinancials>;
 }): { remaining: Booking[]; coveredAmount: number } {
   const { owed, allBookings, payouts, commissionRate } = args;
+  const financials = args.financials ?? {};
 
   const settledStamps = new Set(
     allBookings.filter((b) => b.ownerSettledAt).map((b) => `${b.houseId}|${b.ownerSettledAt}`),
@@ -204,7 +251,8 @@ export function unclaimedOwedBookings(args: {
   const remaining: Booking[] = [];
   let coveredAmount = 0;
   for (const b of byOldest) {
-    const share = ownerShareOf(b, commissionRate);
+    // owner_cash_payable, not a rate on the booking value.
+    const share = payableOf(b, financials[b.id], commissionRate).value ?? 0;
     const budget = claimedByHouse.get(b.houseId) || 0;
     if (budget >= share && share > 0) {
       claimedByHouse.set(b.houseId, budget - share);

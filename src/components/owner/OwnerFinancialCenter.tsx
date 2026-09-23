@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { arabicNumber, arabicPlural, arabicDate, arabicPercent, EXPENSE_FORMS, BOOKING_FORMS, GUEST_FORMS } from '../../lib/arabic';
 import { motion } from 'motion/react';
-import { Booking, Expense, Payout, User } from '../../types';
+import { Booking, Expense, Payment, Payout, User } from '../../types';
 import {
   Wallet, Info, ArrowUpRight, ArrowDownRight, CreditCard, Receipt, Banknote,
   CheckCircle2, TrendingUp, Search, Plus, ChevronDown, Sparkles, Wrench,
@@ -10,7 +10,12 @@ import {
 import BottomSheet from './BottomSheet';
 import OwnerDisclosure from './OwnerDisclosure';
 import { downloadCsv } from '../../lib/exportCsv';
-import { availableForTransfer as availableForTransferOf, cashDueAtArrival, commissionOf, commissionTotal } from '../../lib/paymentLedger';
+import { approvedTotalFor } from '../../lib/paymentLedger';
+import {
+  ownerArrivalBalance, entitlementOf, payableOf, ownerHold, ownerReceivable, depositToPima,
+  holdState, HOLD_LABEL, sumMoney, moneyOr, DASH,
+} from '../../lib/bookingFinancials';
+import type { FinancialsIndex, OwnerFinancials } from '../../lib/bookingFinancials';
 import { printMonthlyStatement } from '../../lib/invoice';
 
 interface OwnerFinancialCenterProps {
@@ -32,6 +37,10 @@ interface OwnerFinancialCenterProps {
   payoutDestination?: string;
   owner?: User;
   payouts?: Payout[];
+  /** Approved payment rows — the only record of money actually received. */
+  payments?: Payment[];
+  /** Financial-core snapshots by booking id. See lib/bookingFinancials. */
+  financials?: FinancialsIndex<OwnerFinancials>;
   onRequestPayout?: (payout: Payout) => Promise<boolean>;
   onAddExpense?: (expense: Expense) => void;
   onDeleteExpense?: (expenseId: string) => void;
@@ -123,7 +132,7 @@ export default function OwnerFinancialCenter({
   ownerBookings, confirmedBookings, confirmedRevenue, platformCommissionAmount, netOwnerPayout,
   depositReceived, remainingBalance, commissionRate, ownerExpenses, totalExpenses, netProfit,
   houseId,
-  payoutDestination, owner, payouts = [], onRequestPayout, onAddExpense, onDeleteExpense, onNavigateSupport,
+  payoutDestination, owner, payouts = [], payments = [], financials = {}, onRequestPayout, onAddExpense, onDeleteExpense, onNavigateSupport,
 }: OwnerFinancialCenterProps) {
   const [period, setPeriod] = useState<PeriodKey>('all');
   const [search, setSearch] = useState('');
@@ -158,13 +167,16 @@ export default function OwnerFinancialCenter({
       const d = new Date(b.checkIn);
       return d.getFullYear() === m.year && d.getMonth() === m.month;
     });
-    const revenue = list.reduce((s, b) => s + b.totalPrice, 0);
-    const deposit = list.filter((b) => b.depositPaid).reduce((s, b) => s + b.depositAmount, 0);
-    const commission = commissionTotal(list, commissionRate);
-    const net = revenue - commission;
-    const remaining = revenue - deposit;
+    const revenue = list.reduce((s, b) => s + (financials[b.id]?.finalPrice ?? b.totalPrice), 0);
+    // Banked, not merely due.
+    const deposit = list.reduce((s, b) => s + approvedTotalFor(b.id, payments), 0);
+    // The house's own entitlement, and Pima's share as what is left over.
+    const net = sumMoney(list.map((b) => entitlementOf(b, financials[b.id], commissionRate))).total;
+    const commission = Math.max(0, revenue - net);
+    const remaining = sumMoney(list.map((b) => ownerArrivalBalance(b, financials[b.id]))).total;
     return { ...m, count: list.length, revenue, deposit, commission, net, remaining };
-  }), [months, confirmedBookings, commissionRate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [months, confirmedBookings, commissionRate, financials, payments]);
 
   // Month-over-month %, but only when the previous month has enough bookings
   // to be a meaningful base — otherwise a single booking swings it to a
@@ -194,10 +206,12 @@ export default function OwnerFinancialCenter({
   // ── Guests arriving today, cash expected in-hand ──
   const arrivalsToday = confirmedBookings.filter((b) => b.checkIn === todayStr);
   const guestsToday = arrivalsToday.reduce((s, b) => s + b.guestsCount, 0);
-  // Only subtract a deposit that was actually received — depositAmount is set
-  // on every booking regardless. This screen used to show two different
-  // "المتبقي" figures because line 154 guarded on depositPaid and these did not.
-  const cashExpectedToday = arrivalsToday.reduce((s, b) => s + cashDueAtArrival(b), 0);
+  // What the GUEST hands over at the door, from the core snapshot. The old
+  // totalPrice - depositAmount reads the full retail price now that the
+  // financial core leaves bookings.deposit_amount at 0 by design.
+  const cashExpectedToday = sumMoney(
+    arrivalsToday.map((b) => ownerArrivalBalance(b, financials[b.id])),
+  ).total;
 
   // ── Top booking this month (a real, derivable "insight") ──
   const topBookingThisMonth = useMemo(() => {
@@ -256,9 +270,18 @@ export default function OwnerFinancialCenter({
     .filter((p) => p.status === 'pending' || p.status === 'processing')
     .reduce((s, p) => s + p.amount, 0);
 
-  const availableForTransfer = availableForTransferOf({
-    depositReceived, platformCommissionAmount, payouts, confirmedBookings, commissionRate,
-  });
+  // The settlement hold on each booking, less everything already requested
+  // or transferred, and never more than Pima has actually banked. This is
+  // the ONE figure the transfer button may offer.
+  const payableTotals = sumMoney(
+    confirmedBookings.map((b) => payableOf(b, financials[b.id], commissionRate)),
+  );
+  const claimedByPayouts = payouts
+    .filter((p) => p.status !== 'rejected')
+    .reduce((s, p) => s + p.amount, 0);
+  const availableForTransfer = Math.max(
+    0, Math.min(payableTotals.total, depositReceived) - claimedByPayouts,
+  );
 
   const submitTransfer = async () => {
     if (!houseId || !owner || availableForTransfer <= 0 || !onRequestPayout) return;
@@ -286,13 +309,25 @@ export default function OwnerFinancialCenter({
   // Export the current (filtered) transactions to an Excel-friendly CSV.
   const exportTransactions = () => {
     const rows: (string | number)[][] = [[
-      'الضيف', 'رقم الحجز', 'الوصول', 'المغادرة', 'الأفراد', 'قيمة الحجز', 'العربون', 'المتبقي', 'عمولة Pima', 'صافيك', 'الحالة',
+      'الضيف', 'رقم الحجز', 'الوصول', 'المغادرة', 'الأفراد', 'سعر العميل', 'العربون لدى Pima',
+      'يُحصَّل عند الوصول', 'مستحقك', 'محجوز للتسوية', 'متاح للتحويل', 'حالة التسوية', 'الحالة',
     ]];
     filteredBookings.forEach((b) => {
-      const comm = commissionOf(b, commissionRate);
+      const fin = financials[b.id];
+      // Every money column is the core snapshot. The old export carried
+      // «عمولة Pima» and «صافيك» = total - total x rate, which is simply not
+      // what the house earns under MARKUP or NET_RATE.
+      const atDoor = ownerArrivalBalance(b, fin);
+      const entitle = entitlementOf(b, fin, commissionRate);
+      const hold = ownerHold(fin);
+      const payable = payableOf(b, fin, commissionRate);
+      const dash = (m: { value: number | null }) => (m.value === null ? DASH : m.value);
       rows.push([
         bookingGuestName(b), bookingRef(b), b.checkIn, b.checkOut, b.guestsCount,
-        b.totalPrice, b.depositAmount, cashDueAtArrival(b), comm, b.totalPrice - comm,
+        fin ? fin.finalPrice : b.totalPrice,
+        fin ? fin.finalPrice - fin.arrivalBalanceExternal : (b.depositAmount || 0),
+        dash(atDoor), dash(entitle), dash(hold), dash(payable),
+        HOLD_LABEL[holdState(fin)],
         bookingStatusBadge(b).label,
       ]);
     });
@@ -303,15 +338,18 @@ export default function OwnerFinancialCenter({
   const printMonthlyStatement2 = () => {
     const d = new Date();
     const inMonth = confirmedBookings.filter((b) => { const c = new Date(b.checkIn); return c.getFullYear() === d.getFullYear() && c.getMonth() === d.getMonth(); });
-    const revenue = inMonth.reduce((s, b) => s + b.totalPrice, 0);
-    const commission = commissionTotal(inMonth, commissionRate);
-    const deposits = inMonth.filter((b) => b.depositPaid).reduce((s, b) => s + b.depositAmount, 0);
-    const remaining = inMonth.reduce((s, b) => s + cashDueAtArrival(b), 0);
+    const revenue = inMonth.reduce((s, b) => s + (financials[b.id]?.finalPrice ?? b.totalPrice), 0);
+    // The house's own figure, then Pima's as the residual — not a rate.
+    const ownerDue = sumMoney(inMonth.map((b) => entitlementOf(b, financials[b.id], commissionRate))).total;
+    const commission = Math.max(0, revenue - ownerDue);
+    // Money genuinely banked, not the deposit that was merely due.
+    const deposits = inMonth.reduce((s, b) => s + approvedTotalFor(b.id, payments), 0);
+    const remaining = sumMoney(inMonth.map((b) => ownerArrivalBalance(b, financials[b.id]))).total;
     const expenses = ownerExpenses.filter((e) => { const c = new Date(e.expenseDate); return c.getFullYear() === d.getFullYear() && c.getMonth() === d.getMonth(); }).reduce((s, e) => s + e.amount, 0);
     printMonthlyStatement({
       houseName: confirmedBookings[0]?.houseName || ownerBookings[0]?.houseName || 'بيتك',
       monthLabel: d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' }),
-      revenue, commission, deposits, remaining, expenses, net: revenue - commission - expenses,
+      revenue, commission, deposits, remaining, expenses, net: ownerDue - expenses,
       bookings: inMonth.map((b) => ({ guest: bookingGuestName(b), date: b.checkIn, total: b.totalPrice })),
     });
   };
@@ -715,9 +753,14 @@ export default function OwnerFinancialCenter({
             لا توجد عمليات مطابقة.
           </div>
         ) : filteredBookings.map((b) => {
-          const comm = b.totalPrice * commissionRate;
-          const net = b.totalPrice - comm;
-          const remaining = cashDueAtArrival(b);
+          // Four figures that mean four different things, and used to mean
+          // two: «صافيك» was total - total x rate, which is the customer
+          // price wearing the owner's label under MARKUP.
+          const fin = financials[b.id];
+          const net = entitlementOf(b, fin, commissionRate);
+          const remaining = ownerArrivalBalance(b, fin);
+          const payableHere = payableOf(b, fin, commissionRate);
+          const customerPrice = fin ? fin.finalPrice : b.totalPrice;
           const badge = bookingStatusBadge(b);
           return (
             <button key={b.id} type="button" onClick={() => { closeAllSheets(); setOpenBookingId(b.id); }}
@@ -731,14 +774,16 @@ export default function OwnerFinancialCenter({
               </div>
               <div className="grid grid-cols-4 gap-1.5 text-center">
                 {[
-                  { label: 'القيمة', value: b.totalPrice },
-                  { label: 'العربون', value: b.depositAmount },
-                  { label: 'المتبقي', value: remaining },
-                  { label: 'صافيك', value: net },
+                  { label: 'سعر العميل', value: { value: customerPrice, source: 'core' as const } },
+                  { label: 'يُحصَّل عند الوصول', value: remaining },
+                  { label: 'مستحقك', value: net },
+                  { label: 'متاح للتحويل', value: payableHere },
                 ].map((c) => (
                   <div key={c.label} className="bg-[var(--color-owner-bg)] rounded-xl py-1.5">
                     <div className="text-[11px] text-[var(--color-owner-secondary)] font-bold">{c.label}</div>
-                    <div className="text-[11px] font-black text-[var(--color-owner-text)]">{arabicNumber(c.value)}</div>
+                    <div className="text-[11px] font-black text-[var(--color-owner-text)]">
+                      {c.value.value === null ? DASH : arabicNumber(c.value.value)}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -820,9 +865,20 @@ export default function OwnerFinancialCenter({
       {/* ── Booking bottom sheet ─────────────────────────────────── */}
       <BottomSheet open={!!openBooking} onClose={() => setOpenBookingId(null)} title="ملخص الحجز">
         {openBooking && (() => {
-          const comm = openBooking.totalPrice * commissionRate;
-          const net = openBooking.totalPrice - comm;
-          const remaining = Math.max(0, openBooking.totalPrice - openBooking.depositAmount);
+          // FIVE DIFFERENT QUANTITIES, which this sheet used to collapse
+          // into two. Under MARKUP the customer pays 180, the house is
+          // entitled to 150, the guest hands over 126 at the door and Pima
+          // forwards 24 — and «صافي مستحقاتك» used to print 171 (180 less
+          // 5%), a number that belongs to nobody.
+          const finOpen = financials[openBooking.id];
+          const customerPays = finOpen ? finOpen.finalPrice : openBooking.totalPrice;
+          const depositHeld = depositToPima(finOpen);
+          const atDoor = ownerArrivalBalance(openBooking, finOpen);
+          const entitled = entitlementOf(openBooking, finOpen, commissionRate);
+          const held = ownerHold(finOpen);
+          const payableNow = payableOf(openBooking, finOpen, commissionRate);
+          const receivable = ownerReceivable(finOpen);
+          const settlement = holdState(finOpen);
           const steps = [
             { label: 'تم إنشاء الحجز', done: true, date: arabicDate(openBooking.createdAt) },
             { label: 'تم دفع العربون', done: openBooking.depositPaid, date: null },
@@ -832,20 +888,33 @@ export default function OwnerFinancialCenter({
           return (
             <div className="space-y-4">
               <div className="bg-[var(--color-owner-bg)] rounded-2xl p-3.5 space-y-2 text-[12px] font-bold">
-                {[
-                  { label: 'قيمة الحجز', value: openBooking.totalPrice },
-                  { label: 'العربون', value: openBooking.depositAmount },
-                  { label: 'المتبقي', value: remaining },
-                  { label: 'عمولة Pima', value: -comm },
-                  { label: 'صافي مستحقاتك', value: net, bold: true },
-                ].map((row) => (
-                  <div key={row.label} className={`flex items-center justify-between ${row.bold ? 'pt-2 border-t border-[var(--color-owner-border)]' : ''}`}>
-                    <span className={row.bold ? 'text-[var(--color-owner-text)] font-black' : 'text-[var(--color-owner-secondary)]'}>{row.label}</span>
-                    <span className={row.bold ? 'text-emerald-700 font-black text-sm' : 'text-[var(--color-owner-text)]'}>
-                      {row.value < 0 ? '− ' : ''}{arabicNumber(Math.abs(row.value))} ج.م
+                {([
+                  { label: 'سعر العميل', hint: 'اللي الضيف دافعه إجمالاً', money: { value: customerPays, source: 'core' as const } },
+                  { label: 'عربون عند بيما', hint: 'وصل لحسابات بيما، مش لك', money: depositHeld },
+                  { label: 'يُحصَّل عند الوصول', hint: 'كاش من الضيف ليك مباشرة', money: atDoor },
+                  { label: 'مستحق البيت', hint: 'حقك الكامل عن الحجز ده', money: entitled, bold: true },
+                  { label: 'محجوز للتسوية', hint: 'الجزء اللي بيما لسه ماسكاه', money: held },
+                  { label: 'متاح للتحويل', hint: 'اللي بيما تقدر تبعته دلوقتي', money: payableNow, bold: true },
+                  ...((receivable.value ?? 0) > 0
+                    ? [{ label: 'مستحق لبيما عليك', hint: 'حصّلت عند الباب أكتر من حقك', money: receivable }]
+                    : []),
+                ]).map((row) => (
+                  <div key={row.label} className={`flex items-start justify-between gap-3 ${row.bold ? 'pt-2 border-t border-[var(--color-owner-border)]' : ''}`}>
+                    <span className="min-w-0">
+                      <span className={`block ${row.bold ? 'text-[var(--color-owner-text)] font-black' : 'text-[var(--color-owner-secondary)]'}`}>{row.label}</span>
+                      <span className="block text-[11px] font-bold text-[var(--color-owner-secondary)]">{row.hint}</span>
+                    </span>
+                    <span className={`shrink-0 ${row.bold ? 'text-emerald-700 font-black text-sm' : 'text-[var(--color-owner-text)]'}`}>
+                      {/* A dash, never a zero: an unknown amount printed as 0
+                          reads as «مفيش حاجة مستحقة». */}
+                      {row.money.value === null ? DASH : `${arabicNumber(row.money.value)} ج.م`}
                     </span>
                   </div>
                 ))}
+                <div className="flex items-center justify-between pt-2 border-t border-[var(--color-owner-border)]">
+                  <span className="text-[var(--color-owner-secondary)]">حالة التسوية</span>
+                  <span className="text-[var(--color-owner-text)]">{HOLD_LABEL[settlement]}</span>
+                </div>
               </div>
 
               <div className="space-y-3">

@@ -5,7 +5,7 @@ import { GOVERNORATES, AMENITIES_LIST, SUITABILITY_MAP } from '../mockData';
 import { Search, Gift, MapPin, Map as MapIcon, SlidersHorizontal, Grid, Star, Sparkles, Building, Waves, Trees, Check, GraduationCap, Briefcase, Home, Wifi, Wind, Users, Heart, Scale, Layers, X, ArrowLeftRight, CalendarCheck, BookOpen, BedDouble, ArrowLeft, SquareParking, Flame, Sun } from 'lucide-react';
 import { SummerOfferCarousel, CountdownOfferBanner } from './PromoBanners';
 import { loadHousesAvailability, loadHouseBookingCounts } from '../lib/db';
-import { computeStayPrice, offersDayUse , hasLiveDiscount } from '../lib/pricing';
+import { computeStayPrice, offersDayUse, hasLiveDiscount, customerNightly, customerDayUse, customerMonthly } from '../lib/pricing';
 import { isBannerLive, matchesAudience, pickExperimentVariants } from '../lib/bannerVisibility';
 import { bannerSeed } from '../lib/bannerEvents';
 import { copticSeason } from '../lib/copticSeason';
@@ -394,7 +394,7 @@ export default function UserDashboard({
     const matchesGuests = c.guestCount ? house.bedsCount >= c.guestCount : true;
 
     // Price match
-    const matchesPrice = house.pricePerNightPerPerson <= c.maxPrice;
+    const matchesPrice = customerNightly(house) <= c.maxPrice;
 
     // «يوم روحي» — only houses that have actually priced a day. A house whose
     // owner set the price back to 0 has withdrawn the offer, and offersDayUse
@@ -454,8 +454,8 @@ export default function UserDashboard({
   };
 
   const filteredHouses = houses.filter((h) => matchesCriteria(h, committed)).sort((a, b) => {
-    if (sortBy === 'price_asc') return a.pricePerNightPerPerson - b.pricePerNightPerPerson;
-    if (sortBy === 'price_desc') return b.pricePerNightPerPerson - a.pricePerNightPerPerson;
+    if (sortBy === 'price_asc') return customerNightly(a) - customerNightly(b);
+    if (sortBy === 'price_desc') return customerNightly(b) - customerNightly(a);
     return b.rating - a.rating;
   });
 
@@ -876,7 +876,7 @@ export default function UserDashboard({
           ? (rated.reduce((s, h) => s + h.rating, 0) / rated.length).toFixed(1)
           : null;
         const nightly = filteredHouses.filter((h) => h.propertyType !== 'student' && h.propertyType !== 'staff');
-        const from = nightly.length ? Math.min(...nightly.map((h) => h.pricePerNightPerPerson)) : null;
+        const from = nightly.length ? Math.min(...nightly.map((h) => customerNightly(h))) : null;
         const cover = filteredHouses.find((h) => h.images[0])?.images[0];
 
         return (
@@ -1328,9 +1328,9 @@ export default function UserDashboard({
                         <PriceBox icon={BedDouble} label="شهر" value={house.monthlyRent ?? 0} />
                       ) : (
                         <>
-                          <PriceBox icon={BedDouble} label="ليلة" value={house.pricePerNightPerPerson} />
+                          <PriceBox icon={BedDouble} label="ليلة" value={customerNightly(house)} />
                           {offersDayUse(house) && (
-                            <PriceBox icon={Sun} label="يوم" value={house.dayUsePricePerPerson as number} />
+                            <PriceBox icon={Sun} label="يوم" value={customerDayUse(house) as number} />
                           )}
                         </>
                       )}
@@ -1516,7 +1516,7 @@ export default function UserDashboard({
               // beds and per-room capacity. Only crown a winner when every house
               // in the set is quoted on the same basis.
               const sameBasis = picked.every(isMonthly) || picked.every((h) => !isMonthly(h));
-              const priceOf = (h: RetreatHouse) => (isMonthly(h) ? h.monthlyRent ?? 0 : h.pricePerNightPerPerson);
+              const priceOf = (h: RetreatHouse) => (isMonthly(h) ? customerMonthly(h) ?? 0 : customerNightly(h));
               const capacityOf = (h: RetreatHouse) => (isMonthly(h) ? h.roomCapacity ?? 0 : h.bedsCount);
               // A "best" that every house ties on tells the guest nothing.
               const bestOf = (pick: (h: RetreatHouse) => number, mode: 'min' | 'max') => {

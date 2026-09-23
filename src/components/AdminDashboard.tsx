@@ -4,10 +4,14 @@ import SearchInput from './ui/SearchInput';
 // The owner's policy editor, worn in admin colours. One implementation, so an
 // admin edit is the same authorized five-column write the owner's is.
 import OwnerBookingPolicy from './owner/OwnerBookingPolicy';
+import OwnerCommercialAgreement from './owner/OwnerCommercialAgreement';
+import AdminAgreementRequests from './AdminAgreementRequests';
 import { byAgeBand, byGovernorate, coverage, medianAge } from '../lib/demographics';
 import { topHousesByBookings } from '../lib/topHouses';
 import { summarizeFinances, accountBalances, refundsDue } from '../lib/adminFinance';
-import { commissionTotal, ownerShareOf, rateOf, unclaimedOwedBookings } from '../lib/paymentLedger';
+import { unclaimedOwedBookings, approvedTotalFor } from '../lib/paymentLedger';
+import { payableOf, transferableOf, ownerArrivalBalance, entitlementOf, holdState, HOLD_LABEL, DASH } from '../lib/bookingFinancials';
+import type { AdminFinancials, FinancialsIndex } from '../lib/bookingFinancials';
 import { findFinanceExceptions } from '../lib/adminExceptions';
 import { pendingRenewals, emptyBedNightsAhead, returnCohorts } from '../lib/seasonPlanning';
 import { loadHouseImages, saveHouseImages, loadHouseViewCounts } from '../lib/db';
@@ -62,8 +66,18 @@ function DemoBar({ label, count, pct, tint }: { label: string; count: number; pc
   );
 }
 
+/** The three agreement models, as the admin screens name them. */
+const MODEL_LABEL: Record<'MARKUP' | 'COMMISSION' | 'NET_RATE', string> = {
+  MARKUP: 'هامش فوق سعر البيت',
+  COMMISSION: 'عمولة من السعر',
+  NET_RATE: 'سعر صافي متفاوض',
+};
 interface AdminDashboardProps {
   currentUser: User;
+  /** The complete financial picture, by booking id — admin only.
+   *  Sourced from fin_booking_summary_admin, which is gated on
+   *  is_admin(auth.uid()) in SQL rather than here. */
+  financials?: FinancialsIndex<AdminFinancials>;
   houses: RetreatHouse[];
   users: User[];
   bookings: Booking[];
@@ -189,6 +203,7 @@ export default function AdminDashboard({
   onUpdateHouse,
   onDeleteHouse,
   payouts = [],
+  financials = {},
   onUpdatePayoutStatus,
   onSettleBookings,
 }: AdminDashboardProps) {
@@ -457,6 +472,7 @@ export default function AdminDashboard({
   // Filter pending houses
   const pendingHouses = houses.filter((h) => h.status === 'pending');
   // Already-approved houses with an owner-submitted edit awaiting review
+  const [agreementRefresh, setAgreementRefresh] = useState(0);
   const pendingHouseEdits = houses.filter((h) => h.pendingEdit);
 
   // Only the fields that actually changed vs. the live house, for a clean diff
@@ -574,8 +590,8 @@ export default function AdminDashboard({
   // overpaid is owed a refund and the row is correct until it is paid — and a
   // screen that can never be emptied is a screen nobody opens twice.
   const financeExceptions = React.useMemo(
-    () => findFinanceExceptions({ bookings, payments, payouts, houses, commissionRate: settings.commissionRate }),
-    [bookings, payments, payouts, houses, settings.commissionRate],
+    () => findFinanceExceptions({ bookings, payments, payouts, houses, commissionRate: settings.commissionRate, financials }),
+    [bookings, payments, payouts, houses, settings.commissionRate, financials],
   );
   const [dismissedExceptions, setDismissedExceptions] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem('pima_admin_dismissed_exceptions') || '[]')); }
@@ -615,6 +631,7 @@ export default function AdminDashboard({
     houses,
     users,
     commissionRate: PLATFORM_COMMISSION,
+    financials,
     window: finBounds,
     platformCollects,
   });
@@ -1253,6 +1270,13 @@ export default function AdminDashboard({
             </div>
           </div>
 
+          {/* Commercial requests live here rather than only inside each house:
+              an owner submits from their dashboard and nothing else surfaces it,
+              so without a queue a request reaches nobody. Same reason pending
+              house edits are counted and listed rather than hidden per-house. */}
+          <AdminAgreementRequests houses={houses} refreshKey={agreementRefresh}
+            onChanged={() => setAgreementRefresh((n) => n + 1)} />
+
           <div className="text-xs font-bold text-[var(--ds-text-2)] px-1">البيوت الجديدة المرسلة بانتظار الاعتماد للظهور:</div>
 
           {pendingHouses.length === 0 && pendingHouseEdits.length === 0 ? (
@@ -1490,13 +1514,36 @@ export default function AdminDashboard({
             </div>
           )} />
 
-          <div className="text-xs font-bold text-[var(--ds-text-2)] px-1">التحكم في اقتصاد المنصة — يُطبَّق فوراً على الحسابات والأسعار:</div>
+          {/* FOUR CONTROLS WERE REMOVED FROM THIS PANEL AT THE FINANCIAL-CORE
+              CUTOVER: commissionRate, depositRate, maxRedemptionPct and
+              pointsPerEgp.
+
+              They wrote to platform_settings, and the panel promised the edit
+              «يُطبَّق فوراً على الحسابات والأسعار». That stopped being true.
+              The commission now comes from each house’s agreement, and the
+              other three are read from financial_settings through
+              fin_client_settings() — which loadPlatformSettings overlays on
+              top of platform_settings on every load. So an admin editing
+              them would save a value, watch the field revert on the next
+              load, and change nothing about what any guest is charged.
+
+              A control that silently does nothing is worse than an absent
+              one: it invites someone to believe they have adjusted the
+              deposit and to stop looking. Removing them is not removing the
+              capability — financial_settings is versioned and admin-only by
+              design, and editing it needs a UI that understands effective
+              dating. That is the follow-up; this is the part that must not
+              ship misleading.
+
+              The policy fields below are untouched: free/partial cancellation
+              windows are still genuinely owned by platform_settings. */}
+          <div className="text-xs font-bold text-[var(--ds-text-2)] px-1">سياسات المنصة الافتراضية — تُطبَّق على البيوت اللي محددتش سياستها:</div>
           <div className="bg-[var(--ds-surface)] rounded-3xl border border-[var(--ds-border)] p-4 space-y-4">
+            <div className="bg-[var(--ds-raised)]/40 border border-[var(--ds-border)] rounded-2xl p-3 text-[11px] font-bold text-[var(--ds-text-2)] leading-relaxed">
+              نسبة العمولة والعربون والنقاط بقت من النواة المالية: العمولة من اتفاق كل بيت،
+              والعربون ونسب النقاط من إعدادات النواة المالية. مش بتتغيّر من هنا.
+            </div>
             {([
-              { key: 'commissionRate', label: 'نسبة عمولة المنصة', suffix: '%', factor: 100, hint: 'حصتك من كل حجز (على المستحقات والتقارير).' },
-              { key: 'depositRate', label: 'نسبة العربون المقدّم', suffix: '%', factor: 100, hint: 'النسبة اللي يدفعها العميل مقدماً لتأكيد الحجز.' },
-              { key: 'maxRedemptionPct', label: 'أقصى خصم بالنقاط من الحجز', suffix: '%', factor: 100, hint: 'أقصى نسبة من قيمة الحجز ممكن تتدفع بالنقاط.' },
-              { key: 'pointsPerEgp', label: 'نقاط مقابل الجنيه (الاستبدال)', suffix: 'نقطة = ١ ج.م', factor: 1, hint: 'كل كام نقطة تساوي جنيه عند الخصم.' },
               { key: 'referralBonusPoints', label: 'مكافأة دعوة صديق', suffix: 'نقطة', factor: 1, hint: 'نقاط تُمنح للمُحيل عند أول حجز مدفوع لصديقه.' },
               { key: 'freeCancelDays', label: 'السياسة الافتراضية للمنصة — إلغاء مجاني قبل الوصول بـ', suffix: 'يوم', factor: 1, hint: 'تُطبَّق على أي بيت لم يحدّد سياسته الخاصة. البيت اللي محدّد رقم مختلف بيمشي على رقمه.' },
               { key: 'partialRefundDays', label: 'السياسة الافتراضية للمنصة — استرداد جزئي قبل الوصول بـ', suffix: 'يوم', factor: 1, hint: 'الإلغاء قبل الوصول بهذه المدة أو أكثر = استرداد جزئي. أقل منها = لا استرداد. افتراضي فقط — البيت يقدر يغيّرها.' },
@@ -2962,7 +3009,7 @@ export default function AdminDashboard({
           <div className="grid grid-cols-2 gap-2.5">
             {([
               { label: 'حصّلته بيما', hint: 'عرابين وصلت لحسابات بيما', value: fin.collectedByPima, Icon: CheckCircle2, tint: 'text-emerald-700', num: 'text-emerald-800' },
-              { label: 'عمولة بيما', hint: `${arabicNumber(Math.round(PLATFORM_COMMISSION * 100))}٪ من قيمة الحجز`, value: fin.platformCommission, Icon: Coins, tint: 'text-[var(--ds-accent)]', num: 'text-[var(--ds-brand)]' },
+              { label: 'ربح بيما', hint: 'سعر العميل ناقص مستحق البيت', value: fin.platformCommission, Icon: Coins, tint: 'text-[var(--ds-accent)]', num: 'text-[var(--ds-brand)]' },
               { label: 'لسه عندك للملّاك', hint: 'رصيد مستحق — مش رقم الفترة', value: fin.ownersOwed, Icon: Wallet, tint: 'text-amber-600', num: 'text-amber-700' },
               { label: 'حوّلته للملّاك', hint: 'خرج فعلاً من حساباتك', value: fin.ownersPaid, Icon: DollarSign, tint: 'text-[var(--ds-primary)]', num: 'text-[var(--ds-text)]' },
             ] as const).map((k) => (
@@ -2999,6 +3046,84 @@ export default function AdminDashboard({
             ))}
           </div>
 
+          {/* ── التفاصيل المالية لكل حجز ──
+              Straight from fin_booking_summary_admin. Nothing on this panel
+              is computed here: the margin, the hold and the transfer-fee
+              projection are all columns, because a second accounting engine
+              in React is how the four figures on this page came to disagree
+              in the first place. Bookings with no snapshot are left out
+              rather than filled in — they predate the financial core and it
+              has nothing to say about them. */}
+          {(() => {
+            const priced = bookings
+              .map((b) => ({ b, f: financials[b.id] }))
+              .filter((x): x is { b: Booking; f: NonNullable<typeof x.f> } => !!x.f)
+              .sort((a, z) => z.b.checkIn.localeCompare(a.b.checkIn))
+              .slice(0, 25);
+            const legacyCount = bookings.length - priced.length;
+            if (priced.length === 0) return null;
+            return (
+              <div className="space-y-2">
+                <div className="px-1 pt-1 flex items-center justify-between">
+                  <span className="text-[11px] font-black text-[var(--ds-text-2)]">تفاصيل النواة المالية</span>
+                  {legacyCount > 0 && (
+                    <span className="text-[11px] font-bold text-[var(--ds-text-2)]">
+                      {arabicPlural(legacyCount, BOOKING_FORMS)} من قبل النواة المالية — مش معروضة هنا
+                    </span>
+                  )}
+                </div>
+                {priced.map(({ b, f }) => (
+                  <div key={b.id} className="bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-[20px] p-3.5 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[12px] font-black text-[var(--ds-text)] truncate">{b.houseName || b.houseId}</div>
+                        <div className="text-[11px] text-[var(--ds-text-2)] font-bold">{b.userName} · {arabicDate(b.checkIn)}</div>
+                      </div>
+                      <span className="text-[11px] font-black px-2 py-1 rounded-full border border-[var(--ds-border)] text-[var(--ds-text-2)] shrink-0">
+                        {MODEL_LABEL[f.modelType] ?? f.modelType}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5 text-center">
+                      {([
+                        { label: 'سعر العميل', v: f.retailPrice },
+                        { label: 'خصومات', v: -(f.promoDiscount + f.pointsDiscount) },
+                        { label: 'الصافي للعميل', v: f.finalPrice },
+                        { label: 'مستحق البيت', v: f.ownerEntitlement },
+                        { label: 'ربح بيما', v: f.pimaGrossMargin },
+                        { label: 'العربون', v: f.depositAmount },
+                        { label: 'عند الوصول', v: f.arrivalBalanceExternal },
+                        { label: 'محجوز للتسوية', v: f.ownerCashHeld },
+                        { label: 'متاح للتحويل', v: f.ownerCashPayable },
+                        { label: 'رسوم تحويل متوقعة', v: f.assumedTransferFee },
+                        { label: 'صافي متوقع', v: f.projectedNetMargin },
+                        { label: 'وصل لبيما', v: f.pimaCashReceived },
+                      ] as const).map((c) => (
+                        <div key={c.label} className="bg-[var(--ds-raised)]/40 rounded-xl py-1.5 px-1">
+                          <div className="text-[11px] text-[var(--ds-text-2)] font-bold leading-tight">{c.label}</div>
+                          <div className="text-[11px] font-black text-[var(--ds-text)] tabular-nums">
+                            {c.v < 0 ? '− ' : ''}{arabicNumber(Math.abs(Math.round(c.v)))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                      <span className="text-[var(--ds-text-2)]">{HOLD_LABEL[holdState(f)]}</span>
+                      <span className="flex items-center gap-1.5">
+                        {f.depositBasis === 'MARGIN_FLOOR' && (
+                          <span className="text-[var(--ds-accent-deep)]">العربون مرفوع لحد الهامش</span>
+                        )}
+                        {f.marginWarning && <span className="text-amber-700">هامش منخفض</span>}
+                        {f.overrideRequired && <span className="text-rose-700">محتاج موافقة استثنائية</span>}
+                        {f.ownerReceivableOutstanding > 0 && (
+                          <span className="text-rose-700">مستحق على البيت {arabicNumber(Math.round(f.ownerReceivableOutstanding))}</span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           {/* ── الخزنة ──
               payment_method records the KIND of transfer — instapay, vodafone,
               bank — not WHICH account, and Pima has several. Without this
@@ -3970,7 +4095,16 @@ export default function AdminDashboard({
         // (deposit received, not cancelled/rejected, not already settled).
         // Grouped by house so the admin can transfer each booking separately
         // or all of a house's bookings in one payment.
-        const ownerShare = (b: Booking) => ownerShareOf(b, settings.commissionRate);
+        // owner_cash_payable, straight from the financial core: the
+        // settlement hold less anything already settled. The old
+        // `depositAmount - total x rate` returns 0 on every booking made
+        // since the cutover, so this list quietly emptied itself.
+        // Capped at cash actually banked. The payable is contractual and says
+        // what Pima will owe once the guest pays; it is not a claim about what
+        // Pima is holding. An underpaid deposit makes the two differ, and this
+        // list drives a real transfer.
+        const ownerShare = (b: Booking) =>
+          transferableOf(b, financials[b.id], settings.commissionRate, approvedTotalFor(b.id, payments)).value ?? 0;
         // Only transfer money the PLATFORM actually holds. In owner-direct mode
         // (no platform payment numbers) the platform never received the deposit;
         // and a cash-at-house deposit was handed to the owner. Prompting a payout
@@ -3988,7 +4122,7 @@ export default function AdminDashboard({
         // it stayed here looking unpaid, and the admin could send the same
         // money a second time. Net them off before listing.
         const { remaining: unclaimedOwed, coveredAmount: alreadyClaimed } = unclaimedOwedBookings({
-          owed: owedBookings, allBookings: bookings, payouts, commissionRate: settings.commissionRate,
+          owed: owedBookings, allBookings: bookings, payouts, commissionRate: settings.commissionRate, financials,
         });
         const owedByHouse = unclaimedOwed.reduce<Record<string, Booking[]>>((acc, b) => {
           (acc[b.houseId] ??= []).push(b); return acc;
@@ -4593,6 +4727,11 @@ export default function AdminDashboard({
                     also apply to. It saves on its own button, not with the rest
                     of this form, because it writes its own five columns. */}
                 <OwnerBookingPolicy house={previewHouse} settings={settings} variant="admin" onSaved={onPolicySaved} />
+                {/* The same commercial-agreement panel the owner sees, with the
+                    negotiated net rate unlocked. Reviewing a request and
+                    recording a negotiation both happen here, so an admin never
+                    has to reach for SQL to price a house. */}
+                <OwnerCommercialAgreement house={previewHouse} variant="admin" />
                 <div>
                   <p className="text-[11px] font-bold text-[var(--ds-text-2)] mb-1.5">الخدمات:</p>
                   <div className="grid grid-cols-2 gap-1.5">

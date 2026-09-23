@@ -11,13 +11,46 @@ function isValidRate(r: SeasonalRate): boolean {
   return DATE_RE.test(r.startDate) && DATE_RE.test(r.endDate) && Number.isFinite(r.pricePerNight) && r.pricePerNight >= 0;
 }
 
-export function nightlyRateFor(house: RetreatHouse, dateStr: string): { rate: number; label: string | null } {
-  for (const r of house.seasonalRates ?? []) {
+/**
+ * Which set of rates to read.
+ *
+ * `customer` (the default) is the price a guest pays: under a MARKUP agreement
+ * that is the house's listed price plus the agreed percentage, computed
+ * server-side and merged onto the house as `customerRates`. `owner` is the
+ * house's own number, which is what the owner dashboard and the printed quote
+ * must show.
+ *
+ * The default is deliberate. If a customer screen forgot to ask for customer
+ * rates a guest would be quoted one price and charged another; if an owner
+ * screen forgets to ask for raw ones the owner merely sees a figure that is
+ * higher than they expect. Only one of those is a pricing contradiction, so
+ * the safe direction is the default.
+ *
+ * Until a MARKUP agreement exists the two are identical and this is inert.
+ */
+export type RateAudience = 'customer' | 'owner';
+
+function ratesFor(house: RetreatHouse, audience: RateAudience) {
+  const c = audience === 'customer' ? house.customerRates : undefined;
+  return {
+    base: c?.pricePerNightPerPerson ?? house.pricePerNightPerPerson,
+    dayUse: c?.dayUsePricePerPerson ?? house.dayUsePricePerPerson,
+    seasonal: c?.seasonalRates ?? house.seasonalRates ?? [],
+  };
+}
+
+export function nightlyRateFor(
+  house: RetreatHouse,
+  dateStr: string,
+  audience: RateAudience = 'customer',
+): { rate: number; label: string | null } {
+  const rates = ratesFor(house, audience);
+  for (const r of rates.seasonal) {
     if (isValidRate(r) && dateStr >= r.startDate && dateStr <= r.endDate) {
       return { rate: r.pricePerNight, label: r.label };
     }
   }
-  return { rate: house.pricePerNightPerPerson, label: null };
+  return { rate: rates.base, label: null };
 }
 
 export interface StayPriceBreakdownRow {
@@ -39,7 +72,7 @@ export const isDayUse = (checkIn: string, checkOut: string) =>
 // the trigger's generate_series(check_in, check_out - 1). The one exception
 // is a stay with no night at all, which that series cannot express: see
 // migration 089, whose same-day branch this mirrors.
-export function computeStayPrice(house: RetreatHouse, checkIn: string, checkOut: string, guestsCount: number): { total: number; breakdown: StayPriceBreakdownRow[] } {
+export function computeStayPrice(house: RetreatHouse, checkIn: string, checkOut: string, guestsCount: number, audience: RateAudience = 'customer'): { total: number; breakdown: StayPriceBreakdownRow[] } {
   if (guestsCount <= 0) return { total: 0, breakdown: [] };
 
   // A day is not a short night: it has its own rate, no seasonal table, and
@@ -47,7 +80,8 @@ export function computeStayPrice(house: RetreatHouse, checkIn: string, checkOut:
   // breakdown that there is no night to count.
   if (isDayUse(checkIn, checkOut)) {
     if (!offersDayUse(house)) return { total: 0, breakdown: [] };
-    const rate = house.dayUsePricePerPerson as number;
+    const rate = ((audience === 'customer' ? house.customerRates?.dayUsePricePerPerson : undefined)
+      ?? house.dayUsePricePerPerson) as number;
     return { total: rate * guestsCount, breakdown: [{ label: 'يوم واحد بدون مبيت', nights: 0, rate }] };
   }
 
@@ -59,7 +93,7 @@ export function computeStayPrice(house: RetreatHouse, checkIn: string, checkOut:
   const end = new Date(`${checkOut}T00:00:00`);
   while (cursor < end) {
     const dateStr = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
-    const { rate, label } = nightlyRateFor(house, dateStr);
+    const { rate, label } = nightlyRateFor(house, dateStr, audience);
     perPerson += rate;
     const key = `${label ?? ''}|${rate}`;
     const row = rows.get(key);
@@ -206,3 +240,22 @@ export function hasLiveDiscount(house: RetreatHouse, today = new Date()): boolea
   if (house.discountEndsAt && iso > house.discountEndsAt) return false;
   return true;
 }
+
+/**
+ * The single price a customer screen should show for a house, outside a
+ * specific stay: cards, map pins, "from X / night" headlines, price filters
+ * and price sorting.
+ *
+ * Same rule as nightlyRateFor — prefer the server-computed customer rate,
+ * fall back to the raw listing. Identical numbers until a MARKUP agreement
+ * exists. Owner and admin screens want the raw field and should read it
+ * directly rather than calling these.
+ */
+export const customerNightly = (h: RetreatHouse): number =>
+  h.customerRates?.pricePerNightPerPerson ?? h.pricePerNightPerPerson;
+
+export const customerDayUse = (h: RetreatHouse): number | undefined =>
+  h.customerRates?.dayUsePricePerPerson ?? h.dayUsePricePerPerson;
+
+export const customerMonthly = (h: RetreatHouse): number | undefined =>
+  h.customerRates?.monthlyRent ?? h.monthlyRent;

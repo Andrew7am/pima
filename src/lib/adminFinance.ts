@@ -1,5 +1,7 @@
 import type { Booking, Payment, Payout } from '../types';
-import { approvedTotalFor, cashDueAtArrival, ownerShareOf, rateOf } from './paymentLedger';
+import { approvedTotalFor } from './paymentLedger';
+import { ownerArrivalBalance, entitlementOf, transferableOf, sumMoney } from './bookingFinancials';
+import type { AdminFinancials, FinancialsIndex } from './bookingFinancials';
 
 /**
  * The admin finance page's figures, in one testable place.
@@ -11,9 +13,10 @@ import { approvedTotalFor, cashDueAtArrival, ownerShareOf, rateOf } from './paym
  * booking value. On a 20,000 booking with a 15% deposit and a 5% rate it
  * printed 150 where the payout engine transfers on a commission of 1,000, and
  * told the admin the owner was owed 2,850 where the button next door pays
- * 2,000. Everything here therefore routes through ownerShareOf() so the two
- * screens cannot disagree again: whatever the payout tab transfers is what
- * this reports.
+ * 2,000. Everything here therefore routed through ownerShareOf() so the two
+ * screens could not disagree again: whatever the payout tab transferred was
+ * what this reported. (That shared helper is now the database — see the
+ * cutover note below.)
  *
  * TWO THINGS THIS ENCODES that the old inline version did not:
  *
@@ -27,6 +30,15 @@ import { approvedTotalFor, cashDueAtArrival, ownerShareOf, rateOf } from './paym
  *    figure was a running total of everything ever collected, presented as a
  *    live liability, so it never moved no matter how many transfers the admin
  *    made.
+ *
+ * WHAT CHANGED AT THE FINANCIAL-CORE CUTOVER. Every figure below used to
+ * be `total x rate` in one form or another, routed through ownerShareOf so
+ * the screens could not disagree. They cannot disagree now either — but
+ * they agree on the database's answer rather than on a shared formula,
+ * because there is no longer a formula that works. Pima's share of a MARKUP
+ * booking is retail minus the entitlement and is not a rate on anything.
+ * So the commission is computed as a RESIDUAL, and the residual is taken
+ * from booking_financials via fin_booking_summary_admin.
  *
  * Everything is scoped by WHEN THE MONEY MOVED — payment date, payout
  * completion date — not by the trip's check-in date. A deposit banked today
@@ -100,7 +112,11 @@ export function summarizeFinances(args: {
   payouts: Payout[];
   houses: { id: string; name: string; ownerId: string }[];
   users: { id: string; name: string }[];
+  /** Only reached for bookings with no financial snapshot. See
+   *  lib/bookingFinancials on why that is the pre-core era and safe. */
   commissionRate: number;
+  /** Admin-scoped financial-core snapshots, by booking id. */
+  financials?: FinancialsIndex<AdminFinancials>;
   window: FinanceWindow | null;
   /**
    * False when Pima has no collection accounts configured, in which case it
@@ -110,6 +126,7 @@ export function summarizeFinances(args: {
   platformCollects: boolean;
 }): FinanceSummary {
   const { bookings, payments, payouts, houses, users, commissionRate, window: w, platformCollects } = args;
+  const financials = args.financials ?? {};
 
   const bookingById = new Map(bookings.map((b) => [b.id, b]));
   const houseById = new Map(houses.map((h) => [h.id, h]));
@@ -135,21 +152,19 @@ export function summarizeFinances(args: {
 
   const heldBookings = [...heldBookingIds].map((id) => bookingById.get(id)!).filter(Boolean);
 
-  // Commission is charged on the whole booking, but Pima cannot keep more than
-  // it is actually holding — hence the cap. Without it a booking whose deposit
-  // came in below the nominal amount would report a commission larger than the
-  // cash received.
+  // Pima's share, as a residual of the customer price after the house is
+  // paid. Capped at what actually came in, because Pima cannot keep more
+  // than it is holding — a deposit that arrived short would otherwise report
+  // a commission larger than the cash received.
   let platformCommission = 0;
   let bookingValue = 0;
   for (const b of heldBookings) {
+    const fin = financials[b.id];
     const received = approvedTotalFor(b.id, payments);
-    // rateOf, not the bare rate: `owed` below goes through ownerShareOf, which
-    // already honours the rate stamped on the booking (migration 108). Charging
-    // commission at TODAY's rate while owing at the AGREED one made the two
-    // columns stop adding up the moment the rate was edited — collected minus
-    // commission no longer equalled owed. Both anchored to the same rate now.
-    platformCommission += Math.min(received, Math.round(b.totalPrice * rateOf(b, commissionRate)));
-    bookingValue += b.totalPrice;
+    const price = fin ? fin.finalPrice : b.totalPrice;
+    const entitle = entitlementOf(b, fin, commissionRate).value ?? 0;
+    platformCommission += Math.min(received, Math.max(0, Math.round(price - entitle)));
+    bookingValue += price;
   }
 
   // What Pima still owes owners — a BALANCE AT A DATE, not a flow.
@@ -176,7 +191,12 @@ export function summarizeFinances(args: {
       && (!asAt || (!!p.paymentDate && new Date(p.paymentDate) <= asAt)));
     return held && !settledByThen(b);
   }) : [];
-  const ownersOwed = heldAsAt.reduce((s, b) => s + ownerShareOf(b, commissionRate), 0);
+  // owner_cash_payable: the settlement hold less anything already settled.
+  // NOT the entitlement — most of the entitlement is collected at the door
+  // and never passes through Pima, so reporting it as a liability would
+  // overstate what Pima owes by roughly the whole arrival balance.
+  const ownersOwed = sumMoney(heldAsAt.map((b) =>
+    transferableOf(b, financials[b.id], commissionRate, approvedTotalFor(b.id, payments)))).total;
 
   // What has already left, counted ONCE, from the payouts table only.
   //
@@ -197,7 +217,7 @@ export function summarizeFinances(args: {
     .filter((p) => p.status === 'completed' && inWindow(p.completedAt, w))
     .reduce((s, p) => s + p.amount, 0);
 
-  const cashAtDoor = heldBookings.reduce((s, b) => s + cashDueAtArrival(b), 0);
+  const cashAtDoor = sumMoney(heldBookings.map((b) => ownerArrivalBalance(b, financials[b.id]))).total;
 
   // Per owner, from the same per-booking numbers, so the rows add up to the
   // page totals instead of rounding independently.
@@ -218,9 +238,12 @@ export function summarizeFinances(args: {
     const house = houseById.get(b.houseId);
     if (!house) continue;
     const row = rowFor(house.ownerId);
+    const fin = financials[b.id];
     const received = approvedTotalFor(b.id, payments);
+    const price = fin ? fin.finalPrice : b.totalPrice;
+    const entitle = entitlementOf(b, fin, commissionRate).value ?? 0;
     row.collected += received;
-    row.commission += Math.min(received, Math.round(b.totalPrice * rateOf(b, commissionRate)));
+    row.commission += Math.min(received, Math.max(0, Math.round(price - entitle)));
     houseAgg.set(b.houseId, (houseAgg.get(b.houseId) || 0) + received);
   }
 
@@ -232,7 +255,8 @@ export function summarizeFinances(args: {
   for (const b of heldAsAt) {
     const house = houseById.get(b.houseId);
     if (!house) continue;
-    rowFor(house.ownerId).owed += ownerShareOf(b, commissionRate);
+    rowFor(house.ownerId).owed +=
+      transferableOf(b, financials[b.id], commissionRate, approvedTotalFor(b.id, payments)).value ?? 0;
   }
 
   // The single source for money that left, matching the page total.
