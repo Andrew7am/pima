@@ -1,5 +1,5 @@
 ﻿import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { newIdempotencyKey } from '../lib/idempotency';
+import { newIdempotencyKey, freshBookingId } from '../lib/idempotency';
 import { loadBookingQuote } from '../lib/db';
 import { quotableDepositRate } from '../lib/bookingFinancials';
 import { arabicNumber } from '../lib/arabic';
@@ -30,6 +30,10 @@ import {
 } from 'lucide-react';
 import { SUITABILITY_MAP } from '../mockData';
 
+/** What a booking handler may report back. `void` keeps the preview callers
+ *  (AdminDashboard's no-op, the logged-out login prompt) working unchanged. */
+export type BookOutcome = boolean | void | { ok: boolean; code?: string };
+
 interface HouseDetailProps {
   house: RetreatHouse;
   currentUser: User | null; // null = logged-out visitor browsing publicly
@@ -38,7 +42,14 @@ interface HouseDetailProps {
   onBack: () => void;
   /** The key is generated once per attempt here and reused on every retry —
    *  a new key means a new booking, so it must never be regenerated per click. */
-  onBook: (booking: Booking, pointsRedeemed?: number, idempotencyKey?: string) => Promise<boolean> | boolean | void;
+  /**
+   * A bare boolean still means what it always did. The object form lets the
+   * handler say WHY it refused, which matters for exactly one code:
+   * BOOKING_ID_TAKEN cannot be retried with the same booking id, so the
+   * screen has to mint a new one instead of resending the taken one.
+   */
+  onBook: (booking: Booking, pointsRedeemed?: number, idempotencyKey?: string)
+    => Promise<BookOutcome> | BookOutcome;
   onSubmitReview: (review: Review) => void;
   onUpdateMenu?: (houseId: string, updatedMenu: any) => void;
   isFavorited: boolean;
@@ -1287,11 +1298,27 @@ export default function HouseDetail({
     // already shown a specific error, so stay on the confirmation step.
     setSubmitting(true);
     const result = await onBook(newBooking, pointsToRedeem, attemptRef.current.idempotencyKey);
+    const detail = typeof result === 'object' && result !== null ? result : null;
+    const outcome: boolean | undefined = detail ? detail.ok : (result as boolean | undefined);
+    const code = detail?.code;
     // Only a success ends the attempt. A failure keeps the same key so the
     // guest pressing the button again retries rather than double-books.
-    if (result) attemptRef.current = null;
+    if (outcome) attemptRef.current = null;
+    // One refusal cannot be retried as-is. BOOKING_ID_TAKEN means this id
+    // already belongs to a booking, so resending it fails identically for
+    // ever — and the ref is what would resend it. Mint a fresh id and KEEP
+    // the idempotency key: the key is what the server fingerprints, so if the
+    // first attempt did commit, the retry still returns that same booking
+    // rather than making a second one. Nothing was committed here anyway —
+    // the RPC is atomic, so a refusal leaves no idempotency row behind.
+    else if (code === 'BOOKING_ID_TAKEN' && attemptRef.current) {
+      attemptRef.current = {
+        bookingId: freshBookingId(attemptRef.current.bookingId),
+        idempotencyKey: attemptRef.current.idempotencyKey,
+      };
+    }
     setSubmitting(false);
-    if (result === false) return null;
+    if (outcome === false) return null;
     // The same reference the owner's screens show — see lib/bookingRef. It was
     // built inline here and nowhere else, so the number the guest reads off
     // their confirmation could not be looked up by the person they read it to.

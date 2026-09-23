@@ -70,16 +70,19 @@ describe('buildPriestQuote', () => {
   });
 
   it('splits the money into what is due now and what is due on arrival', () => {
-    const q = build();
-    expect(q.depositDue).toBe(1800);          // 15% of 12,000
+    // The split needs a server deposit; without one there is nothing to split
+    // (see «refuses to invent a deposit» below). 1800 is the figure the
+    // financial core returned for this stay.
+    const q = build({ authoritative: { total: 12000, deposit: 1800 } });
+    expect(q.depositDue).toBe(1800);
     expect(q.balanceAtArrival).toBe(10200);
-    expect(q.depositDue + q.balanceAtArrival).toBe(q.total);
+    expect((q.depositDue as number) + (q.balanceAtArrival as number)).toBe(q.total);
   });
 
   it('writes the cancellation terms as dates and pounds, not percentages', () => {
     // The whole point: a priest should not have to count backwards from a
     // percentage in a meeting.
-    const q = build();
+    const q = build({ authoritative: { total: 12000, deposit: 1800 } });
     expect(q.cancellation).toHaveLength(3);
     expect(q.cancellation[0]).toMatchObject({ when: '2026-08-27', edge: 'until', refund: 1800 });
     expect(q.cancellation[1]).toMatchObject({ when: '2026-09-03', edge: 'until', refund: 900 });
@@ -131,7 +134,7 @@ describe('defects an adversarial review found after this shipped', () => {
     // The sheet quoted the price BEFORE redemption while the guest is charged
     // after it — a budget approved too high, and a deposit that would not
     // match what the app then asked for.
-    const q = build({ pointsDiscount: 2000 });
+    const q = build({ pointsDiscount: 2000, authoritative: { total: 10000, deposit: 1500 } });
     expect(q.total).toBe(10000);
     expect(q.depositDue).toBe(1500);
     expect(q.lines.some((l) => l.label === 'خصم النقاط' && l.amount === -2000)).toBe(true);

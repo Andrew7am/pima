@@ -17,6 +17,7 @@ import { bookingMoney } from '../../lib/bookingMoney';
 import { approvedTotalFor } from '../../lib/paymentLedger';
 import {
   ownerArrivalBalance, entitlementOf, payableOf, sumMoney, moneyOr, depositSnapshot,
+  quotableDepositRate, DASH,
 } from '../../lib/bookingFinancials';
 import type { FinancialsIndex, OwnerFinancials } from '../../lib/bookingFinancials';
 import { passwordProblem } from '../../lib/password';
@@ -599,9 +600,14 @@ export default function OwnerDashboardShell({
   };
 
   // Owner records a phone/walk-in booking. Guest identity here is just a
-  // name+phone (no account) — user_id points at the owner so the existing
-  // bookings_insert_user RLS policy applies; the capacity trigger (003)
-  // still enforces bed availability server-side.
+  // name+phone, because a walk-in has no Pima account.
+  //
+  // Nothing on this path inserts into bookings from the client — since 0158
+  // the authenticated role has no INSERT privilege on the table at all. It
+  // goes through create_booking_on_behalf_with_financials, a SECURITY DEFINER
+  // RPC that takes the acting owner from auth.uid(), checks server-side that
+  // he owns the house, and prices the stay through the financial core. The
+  // capacity trigger still enforces bed availability inside that transaction.
   const handleCreateManualBooking = async () => {
     const house = ownerHouses[0];
     if (!house || !onCreateBooking) return;
@@ -1219,7 +1225,7 @@ export default function OwnerDashboardShell({
               // already-terminal ones — active guest bookings stay soft-cancel.
               const canDelete = booking.source === 'manual' || booking.source === 'temporary'
                 || booking.status === 'cancelled' || booking.status === 'rejected';
-              const money = bookingMoney(booking, settings.depositRate, payments, depositSnapshot(financials[booking.id]));
+              const money = bookingMoney(booking, quotableDepositRate(settings), payments, depositSnapshot(financials[booking.id]));
               const depositAmt = money.deposit;
               const badge = ownerBookingBadge(booking, todayStr);
               const nights = nightsBetween(booking.checkIn, booking.checkOut);
@@ -1345,7 +1351,13 @@ export default function OwnerDashboardShell({
                       return (
                         <div className={`p-2 rounded-xl border bg-[var(--color-owner-${tone.token})]/10 border-[var(--color-owner-${tone.token})]/30`}>
                           <div className={`font-bold text-[11px] mb-0.5 text-[var(--color-owner-${tone.token}-ink)]`}>{tone.label}</div>
-                          <div className={`font-extrabold text-[var(--color-owner-${tone.token}-ink)]`}>{arabicNumber(tone.amount)} ج.م</div>
+                          {/* A dash, not a figure: money.deposit is null when the
+                              financial snapshot is unavailable, and the number
+                              that used to stand in was the legacy rate applied
+                              to the total. */}
+                          <div className={`font-extrabold text-[var(--color-owner-${tone.token}-ink)]`}>
+                            {tone.amount === null ? DASH : `${arabicNumber(tone.amount)} ج.م`}
+                          </div>
                         </div>
                       );
                     })()}
@@ -1444,7 +1456,17 @@ export default function OwnerDashboardShell({
                   {isApproved && (
                     <div className="flex gap-2 flex-wrap">
                       {!booking.depositPaid && onConfirmDeposit && (
-                        <button onClick={() => { if (confirm(`تأكيد استلام عربون بمبلغ ${arabicNumber(depositAmt)} ج.م؟`)) onConfirmDeposit(booking.id); }}
+                        <button onClick={() => {
+                          // The amount is named only when it is known. With no
+                          // snapshot it is null, and record_cash_deposit derives
+                          // the real figure server-side anyway — so the prompt
+                          // asks the question without quoting a number nobody
+                          // here can vouch for.
+                          const ask = depositAmt === null
+                            ? 'تأكيد استلام العربون؟'
+                            : `تأكيد استلام عربون بمبلغ ${arabicNumber(depositAmt)} ج.م؟`;
+                          if (confirm(ask)) onConfirmDeposit(booking.id);
+                        }}
                           className="flex items-center gap-1 bg-[var(--color-owner-warning)]/10 hover:bg-[var(--color-owner-warning)]/20 text-[var(--color-owner-warning-ink)] border border-[var(--color-owner-warning)]/30 px-3 min-h-11.5 rounded-xl text-xs font-bold transition-all cursor-pointer">
                           <Coins className="w-4 h-4" /><span>تأكيد استلام العربون</span>
                         </button>
@@ -1858,7 +1880,7 @@ export default function OwnerDashboardShell({
                   // Shared with the detail panel, so the row and the screen it
                   // opens cannot label the same booking differently.
                   const statusBadge = ownerBookingBadge(booking, todayStr);
-                  const money = bookingMoney(booking, settings.depositRate, payments, depositSnapshot(financials[booking.id]));
+                  const money = bookingMoney(booking, quotableDepositRate(settings), payments, depositSnapshot(financials[booking.id]));
                   const { collected, outstanding, percent: pct } = money;
                   const whatsappLink = `https://wa.me/2${booking.userPhone.replace(/^0/, '')}`;
                   // A stripe down the leading edge, so the list reads before

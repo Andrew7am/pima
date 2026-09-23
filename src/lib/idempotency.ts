@@ -24,3 +24,22 @@ export function newIdempotencyKey(): string {
   // Last resort. Reached only where neither crypto API exists at all.
   return `k_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
 }
+
+/**
+ * A booking id that is definitely not the one that was just refused.
+ *
+ * Only reached on BOOKING_ID_TAKEN. Ids are minted as book_<epoch-ms>, so
+ * regenerating inside the same millisecond would hand back the very id the
+ * server just rejected and the retry would fail identically. The suffix is
+ * added only in that case, so the ordinary id keeps its usual shape.
+ *
+ * The idempotency key is deliberately NOT regenerated alongside it — see the
+ * call site in HouseDetail. A new key would make the retry a new booking;
+ * keeping it is what lets the server recognise a first attempt that did
+ * commit and return that booking instead of making a second one.
+ */
+export function freshBookingId(previous: string): string {
+  const candidate = 'book_' + Date.now();
+  if (candidate !== previous) return candidate;
+  return candidate + '_' + Math.random().toString(36).slice(2, 6);
+}

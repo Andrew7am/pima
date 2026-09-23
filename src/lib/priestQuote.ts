@@ -48,8 +48,12 @@ export interface CancellationStep {
    * day on every rung. «لغاية ٢٧ أغسطس» is what the policy actually says.
    */
   edge: 'until' | 'after';
-  /** What comes back, in pounds — not a percentage. */
-  refund: number;
+  /**
+   * What comes back, in pounds — not a percentage. NULL when the deposit
+   * itself is unknown: a refund of an unknown deposit is not a number, and
+   * printing one would be the same invention by another route.
+   */
+  refund: number | null;
   label: string;
   /** False once the date has passed — printed struck through, not as an offer. */
   stillAvailable: boolean;
@@ -73,8 +77,19 @@ export interface PriestQuote {
   lines: QuoteLine[];
   total: number;
   perHead: number;
-  depositDue: number;
-  balanceAtArrival: number;
+  /**
+   * NULL when no server quote could be fetched.
+   *
+   * A priest signs this sheet off as a budget and may carry it into a meeting,
+   * so a deposit on it has to be the deposit that will actually be asked for.
+   * Derived locally it would be `total x settings.depositRate` — the legacy
+   * 0.15 whenever the fin_client_settings() overlay failed, and wrong anyway
+   * whenever PD-16 lifts the deposit to the margin floor. The sheet prints
+   * «يتأكد عند الحجز» instead of inventing a figure.
+   */
+  depositDue: number | null;
+  /** NULL for the same reason, and together with it: total minus an unknown. */
+  balanceAtArrival: number | null;
   discountPct: number;
   cancellation: CancellationStep[];
   alternatives: AlternativeWeek[];
@@ -225,11 +240,11 @@ export function buildPriestQuote(args: {
     if (residual !== 0) lines.push({ label: 'تعديل حسب الاتفاق التجاري', amount: residual });
   }
 
-  // The rate is the pre-cutover fallback and stays only for the case where
-  // no server quote could be fetched at all.
-  const depositDue = args.authoritative
-    ? args.authoritative.deposit
-    : Math.round(total * settings.depositRate);
+  // No server quote, no deposit. There is no local arithmetic that can stand
+  // in for it: settings.depositRate is the legacy 0.15 whenever the overlay
+  // failed, and even when it is right PD-16 can lift the real deposit above
+  // it. An unknown deposit is printed as unknown.
+  const depositDue = args.authoritative ? args.authoritative.deposit : null;
 
   // Written as the dates they actually fall on. A priest reading «قبل ١٢
   // أغسطس» does not have to count backwards from a percentage in a meeting.
@@ -242,10 +257,12 @@ export function buildPriestQuote(args: {
     { when: freeUntil, edge: 'until', refund: depositDue, label: 'يرجع العربون كامل', stillAvailable: todayISO <= freeUntil },
     {
       when: partialUntil, edge: 'until',
-      refund: Math.round(depositDue * settings.partialRefundPct),
+      refund: depositDue === null ? null : Math.round(depositDue * settings.partialRefundPct),
       label: `يرجع ${Math.round(settings.partialRefundPct * 100)}٪ من العربون`,
       stillAvailable: todayISO <= partialUntil,
     },
+    // Zero, not unknown: nothing comes back at this rung whatever the deposit
+    // turns out to be, so the promise is true without knowing the figure.
     { when: partialUntil, edge: 'after', refund: 0, label: 'مايرجعش عربون', stillAvailable: true },
   ];
 
@@ -268,7 +285,7 @@ export function buildPriestQuote(args: {
     lines, total,
     perHead: guestsCount > 0 ? Math.round(total / guestsCount) : 0,
     depositDue,
-    balanceAtArrival: total - depositDue,
+    balanceAtArrival: depositDue === null ? null : total - depositDue,
     discountPct: p.discountPct,
     cancellation, alternatives,
     priestName: servant.priestName,
@@ -304,10 +321,15 @@ export function printPriestQuote(q: PriestQuote): void {
       <td class="val${l.amount < 0 ? ' minus' : ''}">${l.amount < 0 ? '− ' : ''}${money(l.amount)}</td>
     </tr>`).join('');
 
+  // The sheet never prints a deposit figure it was not given. Where the server
+  // quote was unavailable the row says so in words, which a priest can act on
+  // («نتأكد وقت الحجز») in a way a wrong number does not allow.
+  const PENDING = 'يتأكد عند الحجز';
+
   const ladder = q.cancellation.map((c) => `
     <tr${c.stillAvailable ? '' : ' class="gone"'}>
       <td class="lbl">${c.edge === 'until' ? 'لغاية' : 'بعد'} ${escapeHtml(day(c.when))}${c.stillAvailable ? '' : '<small>الموعد ده عدّى</small>'}</td>
-      <td class="val">${escapeHtml(c.label)} — <b>${money(c.refund)}</b></td>
+      <td class="val">${escapeHtml(c.label)} — <b>${c.refund === null ? PENDING : money(c.refund)}</b></td>
     </tr>`).join('');
 
   // Only shown when it says something. A row reading «نفس السعر» is noise.
@@ -337,9 +359,10 @@ export function printPriestQuote(q: PriestQuote): void {
 
     <h2>الدفع</h2>
     <table>
-      <tr><td class="lbl">عربون دلوقتي</td><td class="val"><b>${money(q.depositDue)}</b></td></tr>
-      <tr><td class="lbl">الباقي عند الوصول</td><td class="val">${money(q.balanceAtArrival)}</td></tr>
-    </table>
+      <tr><td class="lbl">عربون دلوقتي</td><td class="val"><b>${q.depositDue === null ? PENDING : money(q.depositDue)}</b></td></tr>
+      <tr><td class="lbl">الباقي عند الوصول</td><td class="val">${q.balanceAtArrival === null ? PENDING : money(q.balanceAtArrival)}</td></tr>
+    </table>${q.depositDue === null ? `
+    <p class="foot">السعر النهائي وقيمة العربون بيتأكدوا عند الحجز على بيما.</p>` : ''}
 
     <h2>لو اضطرينا نلغي</h2>
     <table>${ladder}</table>

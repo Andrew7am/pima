@@ -50,6 +50,7 @@ const OwnerDashboardShell = lazy(() => import('./components/owner/OwnerDashboard
 const OwnerFoodMenu = lazy(() => import('./components/owner/OwnerFoodMenu'));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
 import HouseDetail from './components/HouseDetail';
+import type { BookOutcome } from './components/HouseDetail';
 import UserDashboard from './components/UserDashboard';
 import WebLayout from './components/WebLayout';
 import AuthScreen from './components/AuthScreen';
@@ -1052,17 +1053,6 @@ export default function App() {
   // own house. Same server-side capacity check as guest bookings; unlike
   // handleBookHouse it doesn't navigate away or touch points.
   /**
-   * LEGACY PATH, DELIBERATELY. An owner recording a phone or walk-in booking.
-   *
-   * create_booking_with_financials books as auth.uid(), so routing this
-   * through it would record the OWNER as the guest — wrong person on the
-   * booking, wrong points balance, wrong contact details. Until the RPC can
-   * take a guest id, this keeps the direct insert and therefore the legacy
-   * 15% deposit and legacy commission stamp. It writes no booking_financials
-   * row, so these bookings stay outside the financial core by design and must
-   * not be counted in owner settlement.
-   */
-  /**
    * The owner records a booking he took by telephone or at the door.
    *
    * This used to be the last booking path that priced itself. It inserted
@@ -1108,7 +1098,7 @@ export default function App() {
     newBooking: Booking,
     pointsRedeemed: number = 0,
     idempotencyKey?: string,
-  ): Promise<boolean> => {
+  ): Promise<BookOutcome> => {
     if (!idempotencyKey) {
       // Refusing is the safe failure. Inventing a key here would make every
       // retry a fresh booking, which is the exact defect this replaces.
@@ -1141,7 +1131,10 @@ export default function App() {
 
     if (!res.ok) {
       alert(res.error ?? 'حدث خطأ في حفظ الحجز. حاول مرة أخرى.');
-      return false;
+      // The code travels with the refusal so the booking screen can react to
+      // the one that needs reacting to: BOOKING_ID_TAKEN is unretryable with
+      // the same id, and the screen holds that id.
+      return { ok: false, code: res.code };
     }
 
     // The server-stored row, never the client's copy: the engine decided the
@@ -1387,16 +1380,25 @@ export default function App() {
     // lifted the deposit to the margin floor. On a NET_RATE stay listed at
     // 150 against a net of 100 the owner would hand over a receipt for 50
     // and Pima would record 45, leaving a 5 discrepancy nobody could trace.
+    //
+    // null, not a rate-derived guess. The snapshot is the only authority for
+    // this number; a stored figure on a pre-core booking is the second. With
+    // neither, the amount is unknown and stays unknown here — record_cash_deposit
+    // derives it server-side anyway, so inventing one locally would only put a
+    // wrong figure on the screen and, in the branch below, into a write.
     const finForDeposit = target
       ? depositSnapshot(ownerFinancials[target.id] ?? customerFinancials[target.id])
       : undefined;
-    const depositAmount = finForDeposit
+    const depositAmount: number | null = finForDeposit
       ? finForDeposit.depositAmount
-      : (target ? (target.depositAmount || Math.round(target.totalPrice * settings.depositRate)) : 0);
+      : (target && target.depositAmount > 0 ? target.depositAmount : null);
     setBookings((prev) =>
       prev.map((b) =>
         b.id === bookingId
-          ? { ...b, depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' }
+          // An unknown amount leaves the stored one alone rather than
+          // overwriting it with a fabricated one.
+          ? { ...b, depositPaid: true, paymentStatus: 'paid_deposit',
+              ...(depositAmount === null ? {} : { depositAmount }) }
           : b
       )
     );
@@ -1418,7 +1420,10 @@ export default function App() {
         bookingId,
         userId: target.userId,
         userName: target.userName,
-        amount: depositAmount,
+        // Optimistic only: record_cash_deposit files the real row with the
+        // amount the server derives. 0 is the honest placeholder for "not
+        // known yet here" — it is never sent anywhere.
+        amount: depositAmount ?? 0,
         paymentMethod: 'cash',
         paymentStatus: 'approved',
         paymentDate: new Date().toISOString(),
@@ -1445,7 +1450,13 @@ export default function App() {
       return;
     }
 
-    trackWrite(updateBookingFields(bookingId, { depositPaid: true, depositAmount, paymentStatus: 'paid_deposit' }), 'تأكيد استلام العربون')
+    // depositAmount is written only when it is known. Writing a rate-derived
+    // figure onto bookings.deposit_amount would put a number the financial
+    // core never produced into the row it deliberately keeps at 0.
+    trackWrite(updateBookingFields(bookingId, {
+      depositPaid: true, paymentStatus: 'paid_deposit',
+      ...(depositAmount === null ? {} : { depositAmount }),
+    }), 'تأكيد استلام العربون')
       .then(() => { if (target && currentUser?.id === target.userId) refreshCurrentUserPoints(target.userId); });
   };
 

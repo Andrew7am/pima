@@ -308,6 +308,30 @@ export function quotableDepositRate(settings: { depositRate: number; depositRate
   return settings.depositRateIsAuthoritative ? settings.depositRate : null;
 }
 
+/**
+ * What share of THIS booking the deposit actually is, for a label beside it.
+ *
+ * Screens used to print `settings.depositRate` next to a deposit they had
+ * read from the snapshot. The two come from different places and disagree in
+ * two ordinary cases:
+ *
+ *   - the fin_client_settings() overlay fails, so the rate is still the
+ *     legacy 0.15 while the amount beside it is the real 30%;
+ *   - PD-16 lifts the deposit to the margin floor, so the booking's deposit
+ *     is deliberately NOT the headline rate at all.
+ *
+ * A percentage derived from the booking's own two numbers cannot contradict
+ * them, because it is a description of them. Where they are not both known —
+ * no snapshot, an unpriced booking — there is no honest percentage to give,
+ * and null tells the caller to print the amount alone rather than guess.
+ */
+export function depositPercentOf(deposit: number | null, total: number | null): number | null {
+  if (deposit == null || total == null) return null;
+  if (!(total > 0) || !(deposit > 0)) return null;
+  if (deposit > total) return null;
+  return Math.round((deposit / total) * 100);
+}
+
 /** The total the guest owes. Retail less promotion and points, as stored. */
 export function customerFinalPrice(booking: Booking, fin?: CustomerFinancials): Money {
   return fin ? core(fin.finalPrice) : legacy(booking.totalPrice);

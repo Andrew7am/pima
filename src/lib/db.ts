@@ -2026,6 +2026,13 @@ function bookingRpcError(msg: string): { code: string; message: string } {
   if (m.includes('IDEMPOTENCY_CONFLICT'))
     return pick('IDEMPOTENCY_CONFLICT',
       'تفاصيل الحجز اتغيرت بعد ما بدأت. اقفل الصفحة وابدأ الحجز من أول وجديد.');
+  // The client picks the booking id, so a collision is reachable. It used to
+  // fall through to the generic «حاول مرة أخرى» — advice that cannot work,
+  // because the booking screen holds the id across retries and would send the
+  // same taken one for ever. The code travels so the screen can mint a fresh
+  // id; the idempotency key is kept, which is what stops a retry double-booking.
+  if (m.includes('BOOKING_ID_TAKEN'))
+    return pick('BOOKING_ID_TAKEN', 'حصل تعارض في رقم الحجز. اضغط تأكيد الحجز تاني.');
   if (m.includes('PROMOTION_NOT_FOUND') || m.includes('PROMOTION_EXPIRED'))
     return pick('PROMOTION_INVALID', 'العرض ده مش متاح دلوقتي.');
   if (m.includes('NOT_AUTHENTICATED'))

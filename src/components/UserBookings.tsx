@@ -19,7 +19,7 @@ import { refundAmountFor } from '../lib/cancellationPolicy';
 import { policyForBooking } from '../lib/bookingPolicy';
 import PropertyBookingPolicy from './house/PropertyBookingPolicy';
 import { getBookingStage } from '../lib/bookingStage';
-import { customerDeposit, customerFinalPrice, customerArrivalBalance, moneyOr, quotableDepositRate } from '../lib/bookingFinancials';
+import { customerDeposit, customerFinalPrice, customerArrivalBalance, moneyOr, quotableDepositRate, depositPercentOf } from '../lib/bookingFinancials';
 import type { CustomerFinancials, FinancialsIndex } from '../lib/bookingFinancials';
 import DepositPayment from './booking/DepositPayment';
 import { downloadBookingIcs } from '../lib/ics';
@@ -214,6 +214,11 @@ export default function UserBookings({
   const depositDueFor = (b: Booking) => moneyOr(customerDeposit(b, financials[b.id], quotableRate), 0);
   const totalFor = (b: Booking) => moneyOr(customerFinalPrice(b, financials[b.id]), b.totalPrice);
   const arrivalBalanceFor = (b: Booking) => moneyOr(customerArrivalBalance(b, financials[b.id]), 0);
+  // The share THIS booking's deposit is of THIS booking's total, so the label
+  // can never contradict the amount printed beside it. null where the two are
+  // not both known, and the screen then prints the amount on its own — see
+  // depositPercentOf. settings.depositRate is deliberately not consulted.
+  const depositPercentFor = (b: Booking) => depositPercentOf(depositDueFor(b) || null, totalFor(b) || null);
 
   const [activeReceipt, setActiveReceipt] = useState<Booking | null>(null);
   // Which booking's conference is being opened, so the button can say so.
@@ -812,7 +817,11 @@ export default function UserBookings({
               <div className="flex-1 space-y-1">
                 <h4 className="font-extrabold text-[var(--ds-warning-deep)]">تذكير هام بسداد العربون!</h4>
                 <p className="text-[11px] text-[color-mix(in_srgb,var(--ds-warning-deep)_90%,transparent)] leading-relaxed">
-                  لديك {unpaidApprovedCount === 1 ? 'حجز مقبول ومؤكد' : `${arabicPlural(unpaidApprovedCount, BOOKING_FORMS)} مقبولة ومؤكدة`} بانتظار سداد عربون الجدية ({arabicPercent(Math.round(settings.depositRate * 100))}) لتثبيت المواعيد والغرف نهائياً وتجنب إلغاء الطلب تلقائياً من بيت المؤتمرات.
+                  {/* No percentage here on purpose: this banner covers SEVERAL
+                      bookings, whose deposits are each a share of their own
+                      total and need not be the same share. One rate printed
+                      over all of them would be wrong for any that differ. */}
+                  لديك {unpaidApprovedCount === 1 ? 'حجز مقبول ومؤكد' : `${arabicPlural(unpaidApprovedCount, BOOKING_FORMS)} مقبولة ومؤكدة`} بانتظار سداد عربون الجدية لتثبيت المواعيد والغرف نهائياً وتجنب إلغاء الطلب تلقائياً من بيت المؤتمرات.
                 </p>
               </div>
             </div>
@@ -1331,6 +1340,7 @@ export default function UserBookings({
                 {(() => {
                   const house = houses.find((h) => h.id === booking.houseId);
                   const depositAmt = depositDueFor(booking);
+                  const depositPct = depositPercentFor(booking);
                   const dLeft = daysUntil(booking.checkIn);
                   const nearDate = booking.status === 'approved' && dLeft >= 0 && dLeft <= 3;
                   const paidSoFar = payments.filter((p) => p.bookingId === booking.id && p.paymentStatus === 'approved').reduce((s, p) => s + p.amount, 0);
@@ -1344,7 +1354,7 @@ export default function UserBookings({
                       {canPayDeposit && (
                         <div className="flex items-start gap-2 bg-[color-mix(in_srgb,var(--ds-warning)_6%,var(--ds-surface))] border border-[color-mix(in_srgb,var(--ds-warning)_24%,var(--ds-surface))] rounded-2xl p-2.5 text-[var(--ds-warning-deep)]">
                           <AlertTriangle className="w-4 h-4 text-[var(--ds-warning)] shrink-0 mt-0.5" />
-                          <span className="font-bold leading-relaxed">ثبّت حجزك بسداد عربون الجدية <strong className="text-[var(--ds-warning-deep)]">{depositAmt.toLocaleString('ar-EG')} ج.م</strong> ({arabicPercent(Math.round(settings.depositRate * 100))}) — استخدم زر السداد بالأسفل.</span>
+                          <span className="font-bold leading-relaxed">ثبّت حجزك بسداد عربون الجدية <strong className="text-[var(--ds-warning-deep)]">{depositAmt.toLocaleString('ar-EG')} ج.م</strong>{depositPct === null ? '' : ` (${arabicPercent(depositPct)})`} — استخدم زر السداد بالأسفل.</span>
                         </div>
                       )}
 
@@ -1464,6 +1474,7 @@ export default function UserBookings({
                     <span className="text-[11px] font-bold text-[var(--ds-text-2)]">حالة السداد والمالية:</span>
                     {(() => {
                       const payStatus = booking.paymentStatus || 'unpaid';
+                      const paidPct = depositPercentFor(booking);
                       if (payStatus === 'pending_verification') {
                         return (
                           <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[color-mix(in_srgb,var(--ds-warning)_8%,var(--ds-surface))] text-[var(--ds-warning-deep)] border border-[color-mix(in_srgb,var(--ds-warning)_30%,var(--ds-surface))] px-2.5 py-1 rounded-full shadow-sm">
@@ -1475,7 +1486,7 @@ export default function UserBookings({
                         return (
                           <span className="inline-flex items-center gap-1 text-[11px] font-extrabold bg-[color-mix(in_srgb,var(--ds-success)_8%,var(--ds-surface))] text-[var(--ds-success-deep)] border border-[color-mix(in_srgb,var(--ds-success)_30%,var(--ds-surface))] px-2.5 py-1 rounded-full shadow-sm">
                             <CheckCircle2 className="w-3 h-3 text-[var(--ds-success-ink)]" />
-                            <span>تم تأكيد دفع العربون ({arabicPercent(Math.round(settings.depositRate * 100))}) 🎉</span>
+                            <span>تم تأكيد دفع العربون{paidPct === null ? '' : ` (${arabicPercent(paidPct)})`} 🎉</span>
                           </span>
                         );
                       } else if (payStatus === 'paid_full') {

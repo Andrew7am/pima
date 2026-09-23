@@ -213,9 +213,45 @@ describe('the priest quote prints the deposit that will be charged', () => {
     expect(q.depositDue).toBe(90);
   });
 
-  it('falls back to the local computation when no quote could be fetched', () => {
+  it('refuses to invent a deposit when no quote could be fetched', () => {
+    // It used to print `total x settings.depositRate`. That is the legacy
+    // 0.15 whenever the fin_client_settings() overlay failed, and wrong even
+    // when the rate is right, because PD-16 can lift the real deposit above
+    // it. This sheet gets handed to a priest, so an unknown deposit is
+    // printed as unknown rather than guessed.
     const q = buildPriestQuote(base);
-    expect(q.depositDue).toBe(Math.round(q.total * 0.30));
+    expect(q.depositDue).toBeNull();
+    expect(q.balanceAtArrival).toBeNull();
+    // The number it would have invented, and the one the settings rate implies:
+    expect(Math.round(q.total * 0.30)).toBeGreaterThan(0);
+  });
+
+  it('leaves the cancellation ladder unpriced too, but keeps its dates', () => {
+    // A refund of an unknown deposit is not a number either — printing one
+    // would be the same invention by another route. The DATES are still true
+    // and still useful, so they stay.
+    const q = buildPriestQuote(base);
+    expect(q.cancellation).toHaveLength(3);
+    expect(q.cancellation[0].refund).toBeNull();
+    expect(q.cancellation[1].refund).toBeNull();
+    // Nothing comes back at the last rung whatever the deposit turns out to
+    // be, so that promise is true without knowing the figure.
+    expect(q.cancellation[2].refund).toBe(0);
+    expect(q.cancellation.every((c) => !!c.when)).toBe(true);
+  });
+
+  it('prints neutral wording on the sheet instead of a figure', () => {
+    // The HTML is assembled inside printPriestQuote and not exported, so the
+    // rendering contract is asserted on the source rather than by refactoring
+    // a print path this change has no other reason to touch.
+    const src = read('src', 'lib', 'priestQuote.ts');
+    expect(src).toContain("const PENDING = 'يتأكد عند الحجز'");
+    expect(src).toContain('q.depositDue === null ? PENDING : money(q.depositDue)');
+    expect(src).toContain('q.balanceAtArrival === null ? PENDING : money(q.balanceAtArrival)');
+    expect(src).toContain('c.refund === null ? PENDING : money(c.refund)');
+    expect(src).toContain('السعر النهائي وقيمة العربون بيتأكدوا عند الحجز');
+    // And the arithmetic that used to invent the figure is gone entirely.
+    expect(src).not.toContain('total * settings.depositRate');
   });
 
   it('refunds the deposit that was actually quoted, not a recomputed one', () => {
