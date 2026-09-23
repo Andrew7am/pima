@@ -1,4 +1,4 @@
--- 0158_lock_direct_booking_insert.sql
+-- 0171_lock_direct_booking_insert.sql
 --
 -- THE LAST WAY INTO public.bookings THAT THE FINANCIAL CORE DOES NOT GUARD.
 --
@@ -75,7 +75,7 @@
 -- changing those would affect every table this project will ever create and
 -- is a separate decision.
 --
--- APPLIES AFTER: 0157_booking_on_behalf.sql
+-- APPLIES AFTER: 0170_booking_on_behalf.sql
 -- TOUCHES: one table privilege, on one table, for two roles.
 -- DOES NOT TOUCH: any row, column, policy, trigger, function or ownership.
 

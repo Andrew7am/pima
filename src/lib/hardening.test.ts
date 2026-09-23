@@ -82,7 +82,7 @@ describe('the deposit rate is never guessed', () => {
 
 // ── §1 The 0156 x 0157 interaction ────────────────────────────────────────
 describe('0157 guards 0156 backfill against borrowing the owner identity', () => {
-  const m = read('supabase', 'migrations', '0157_booking_on_behalf.sql');
+  const m = read('supabase', 'migrations', '0170_booking_on_behalf.sql');
 
   it('keys the guard on source AND self-authorship, not on created_by alone', () => {
     // created_by <> user_id is the obvious test and it is WRONG: on a walk-in
@@ -107,7 +107,7 @@ describe('0157 guards 0156 backfill against borrowing the owner identity', () =>
 
 // ── §2 Preconditions ──────────────────────────────────────────────────────
 describe('0157 refuses to install against an incomplete database', () => {
-  const m = read('supabase', 'migrations', '0157_booking_on_behalf.sql');
+  const m = read('supabase', 'migrations', '0170_booking_on_behalf.sql');
 
   it.each(['fin_price_booking', 'booking_idempotency', 'settlement_holds',
            'booking_financials', 'is_admin', 'bookings_backfill_identity'])(

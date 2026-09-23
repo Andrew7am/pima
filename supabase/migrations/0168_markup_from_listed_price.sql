@@ -1,4 +1,4 @@
--- 0155_markup_from_listed_price.sql
+-- 0168_markup_from_listed_price.sql
 --
 -- MARKUP means "the house's own price, plus an agreed percentage".
 -- It did not, and this migration makes it so.
@@ -64,7 +64,7 @@
 -- no margin. COMMISSION and NET_RATE houses come back unchanged, so wiring it
 -- up is a no-op until a MARKUP agreement exists.
 --
--- APPLIES AFTER: 0154_agreement_requests.sql
+-- APPLIES AFTER: 0167_agreement_requests.sql
 -- TOUCHES: ha_model_columns (CHECK), fin_price_booking (MARKUP branch only),
 --          adds fin_house_customer_rates.
 -- DOES NOT TOUCH: deposit, transfer fee, margin floor, settlement, promotions,

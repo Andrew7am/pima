@@ -1,4 +1,4 @@
--- 0154_agreement_requests.sql
+-- 0167_agreement_requests.sql
 --
 -- The commercial agreement workflow: owner proposes, admin decides, and only
 -- the admin's decision reaches the financial core.
@@ -59,7 +59,7 @@
 -- call it. Same reasoning as 0153's fin_price_booking: one writer, so the two
 -- routes cannot drift.
 --
--- APPLIES AFTER: 0153_fin_quote_booking.sql
+-- APPLIES AFTER: 0166_fin_quote_booking.sql
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- 1. PRECONDITIONS

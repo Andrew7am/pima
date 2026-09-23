@@ -20,7 +20,7 @@ import { join } from 'node:path';
 const root = process.cwd();
 const read = (...p: string[]) => readFileSync(join(root, ...p), 'utf8');
 
-const MIGRATION = read('supabase', 'migrations', '0157_booking_on_behalf.sql');
+const MIGRATION = read('supabase', 'migrations', '0170_booking_on_behalf.sql');
 const TYPES = read('src', 'types.ts');
 const DB = read('src', 'lib', 'db.ts');
 const SHELL = read('src', 'components', 'owner', 'OwnerDashboardShell.tsx');

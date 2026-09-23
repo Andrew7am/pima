@@ -1,4 +1,4 @@
--- 0156_booking_identity_backfill.sql
+-- 0169_booking_identity_backfill.sql
 --
 -- What create_booking_with_financials does not carry, and how the cutover
 -- keeps it without a second booking path.
@@ -53,7 +53,7 @@
 --    and fix. That is the one non-atomic seam in the cutover and it is confined
 --    to metadata that carries no money.
 --
--- APPLIES AFTER: 0155_markup_from_listed_price.sql
+-- APPLIES AFTER: 0168_markup_from_listed_price.sql
 -- TOUCHES: adds a BEFORE INSERT trigger on public.bookings, adds one RPC.
 -- DOES NOT TOUCH: any financial column, formula, RLS policy or existing row.
 
