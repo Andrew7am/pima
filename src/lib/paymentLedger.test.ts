@@ -239,6 +239,16 @@ describe('unclaimedOwedBookings', () => {
     expect(r.remaining).toHaveLength(1);
   });
 
+  it('does not net a payout that carries its own booking linkage (0173)', () => {
+    // A payout completed by the server names the bookings it paid; that is
+    // already in owner_settled_amount. Netting it again would hide a booking
+    // that is still genuinely owed.
+    const owed = [bk({ id: 'b2' })];
+    const r = unclaimedOwedBookings({ owed, allBookings: owed, payouts: [po({ id: 'x1', bookingIds: ['b1'] })], commissionRate: 0.05 });
+    expect(r.remaining.map((b) => b.id)).toEqual(['b2']);
+    expect(r.coveredAmount).toBe(0);
+  });
+
   it('does not double-net the payout row a per-booking settlement writes', () => {
     // settleBookingsPayout writes the payout AND stamps owner_settled_at with
     // the same timestamp. b1 is already out of `owed` because it is stamped;

@@ -1021,10 +1021,45 @@ export async function updatePayoutStatus(id: string, status: Payout['status']): 
   return !error;
 }
 
-// Admin settles one or more bookings' owner share in a single transfer: records
-// one completed payout (the ledger the owner's Financial Center reads, and the
-// row whose INSERT trigger — migration 068 — pings the owner in realtime), then
-// stamps each booking settled so it drops out of the admin's "to transfer" list.
+/** What the payout RPCs answer with (0173 fin_payout_result). */
+export interface PayoutResult {
+  ok: boolean;
+  payoutId?: string;
+  completedAt?: string;
+  net?: number;
+  bookingIds?: string[];
+  /** Bookings whose whole hold is now paid out. Only these are stamped settled. */
+  fullySettled: string[];
+  error?: string;
+}
+
+function toPayoutResult(data: unknown): PayoutResult {
+  const r = (data ?? {}) as { payout_id?: string; completed_at?: string; net?: number | string;
+    bookings?: { booking_id: string; fully_settled: boolean }[] };
+  const bookings = r.bookings ?? [];
+  return {
+    ok: true, payoutId: r.payout_id, completedAt: r.completed_at, net: Number(r.net),
+    bookingIds: bookings.map((b) => b.booking_id),
+    fullySettled: bookings.filter((b) => b.fully_settled).map((b) => b.booking_id),
+  };
+}
+
+// Stamp the bookings a payout FULLY settled with the payout's own completion
+// time. adminExceptions and paymentLedger pair a stamp with its payout by that
+// exact timestamp. A booking that was only advanced part of its share (the
+// deposit is not fully paid yet) is left unstamped so it stays in the list.
+async function stampSettled(r: PayoutResult): Promise<void> {
+  if (!r.completedAt || r.fullySettled.length === 0) return;
+  const { error } = await supabase.from('bookings').update({ owner_settled_at: r.completedAt }).in('id', r.fullySettled);
+  if (error) console.error('stampSettled:', error);
+}
+
+// Admin transfers the owner share of one or more bookings. Since 0173 the
+// payout is written by fin_create_owner_payout, never by the browser: the server
+// locks the holds, computes what is payable from the ledger, refuses a
+// different figure from the one the admin is about to record as sent, and
+// writes owner_payouts, payout_bookings, the ledger entries and the transfer
+// fee in one transaction.
 // bookingIds with one element => a per-booking transfer; many => a batch.
 export async function settleBookingsPayout(args: {
   houseId: string; ownerId: string; amount: number; bookingIds: string[]; method?: string; note?: string;
@@ -1034,25 +1069,38 @@ export async function settleBookingsPayout(args: {
   transactionReference?: string;
   /** Which of Pima's accounts it left from, so الخزنة can subtract it. */
   paidFromAccount?: string;
-}): Promise<boolean> {
-  const now = new Date().toISOString();
-  const payoutId = `payout_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-  const { error: pErr } = await supabase.from('owner_payouts').insert({
-    id: payoutId, house_id: args.houseId, owner_id: args.ownerId, amount: args.amount,
-    status: 'completed', method: args.method ?? null, note: args.note ?? null,
-    transaction_reference: args.transactionReference ?? null,
-    paid_from_account: args.paidFromAccount ?? null,
-    requested_at: now, completed_at: now,
-    // What this transfer actually paid for. The pairing was previously implicit
-    // — the same timestamp on the payout and on each booking — which is exact
-    // but unreadable: an owner asking "what is this transfer?" could only be
-    // answered by an admin reconstructing it by hand.
-    booking_ids: args.bookingIds,
+  /** One per attempt, so a retried request can never pay twice. */
+  idempotencyKey: string;
+}): Promise<PayoutResult> {
+  const { data, error } = await supabase.rpc('fin_create_owner_payout', {
+    p_booking_ids: args.bookingIds,
+    p_expected_amount: args.amount,
+    p_transaction_reference: args.transactionReference ?? '',
+    p_paid_from_account: args.paidFromAccount ?? null,
+    p_idempotency_key: args.idempotencyKey,
+    p_note: args.note ?? null,
   });
-  if (pErr) { console.error('settleBookingsPayout(payout):', pErr); return false; }
-  const { error: bErr } = await supabase.from('bookings').update({ owner_settled_at: now }).in('id', args.bookingIds);
-  if (bErr) { console.error('settleBookingsPayout(bookings):', bErr); return false; }
-  return true;
+  if (error) { console.error('settleBookingsPayout:', error); return { ok: false, fullySettled: [], error: error.message }; }
+  const r = toPayoutResult(data);
+  await stampSettled(r);
+  return r;
+}
+
+// Admin completes an owner's own transfer REQUEST. The server applies the
+// requested amount to that owner's bookings oldest check-in first and records
+// the linkage; the browser can no longer mark a payout completed itself.
+export async function completePayoutRequest(args: {
+  payoutId: string; transactionReference: string; paidFromAccount?: string;
+}): Promise<PayoutResult> {
+  const { data, error } = await supabase.rpc('fin_complete_payout_request', {
+    p_payout_id: args.payoutId,
+    p_transaction_reference: args.transactionReference,
+    p_paid_from_account: args.paidFromAccount ?? null,
+  });
+  if (error) { console.error('completePayoutRequest:', error); return { ok: false, fullySettled: [], error: error.message }; }
+  const r = toPayoutResult(data);
+  await stampSettled(r);
+  return r;
 }
 
 export async function loadAnnouncementsForHouses(houseIds: string[]): Promise<Announcement[]> {

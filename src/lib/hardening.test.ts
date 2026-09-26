@@ -139,10 +139,34 @@ describe('transferableOf caps a payout at cash actually banked', () => {
     expect(transferableOf(booking(), fin.bk1, 0.05, 54).value).toBe(24);
   });
 
-  it('offers only what arrived when the deposit was underpaid', () => {
+  it('offers only the owner\'s proportional share of what arrived when the deposit was underpaid', () => {
     // The booking reads deposit-paid on a 10 EGP payment, and the contractual
     // payable is 24. Transferring 24 would send money Pima never received.
-    expect(transferableOf(booking(), fin.bk1, 0.05, 10).value).toBe(10);
+    // Since 0173 (locked rule 12) the 10 is split like the deposit it is part
+    // of: the owner holds 24 of 54, so round(24 x 10 / 54, 2) = 4.44 — the
+    // figure fin_create_owner_payout will accept. It used to offer all 10.
+    expect(transferableOf(booking(), fin.bk1, 0.05, 10).value).toBe(4.44);
+  });
+
+  it('subtracts what was already settled, and before the hold date never exceeds the cash itself', () => {
+    const partlyPaid = indexByBooking([mapAdminFinancials({
+      booking_id: 'bk2', house_id: 'h1', owner_id: 'o1', model_type: 'COMMISSION',
+      retail_price: '10000.00', final_price: '10000.00', deposit_amount: '3000.00',
+      owner_cash_held: '2400.00', owner_settled_amount: '800.00', owner_cash_payable: '1600.00',
+      settlement_hold_until: '2099-01-01',
+    })]);
+    // 2000 received -> owner share 1600, 800 already sent -> 800 left.
+    expect(transferableOf(booking({ id: 'bk2' }), partlyPaid.bk2, 0.05, 2000, '2026-09-25').value).toBe(800);
+    // A cash-shortfall booking: the owner's share (340) exceeds the deposit (240).
+    // Before the hold date only the customer's cash can be advanced.
+    const shortfall = indexByBooking([mapAdminFinancials({
+      booking_id: 'bk3', house_id: 'h1', owner_id: 'o1', model_type: 'COMMISSION',
+      retail_price: '1000.00', final_price: '800.00', deposit_amount: '240.00',
+      owner_cash_held: '340.00', owner_settled_amount: '0', owner_cash_payable: '340.00',
+      settlement_hold_until: '2026-10-01',
+    })]);
+    expect(transferableOf(booking({ id: 'bk3' }), shortfall.bk3, 0.05, 240, '2026-09-25').value).toBe(240);
+    expect(transferableOf(booking({ id: 'bk3' }), shortfall.bk3, 0.05, 240, '2026-10-01').value).toBe(340);
   });
 
   it('offers nothing when no money arrived at all', () => {
@@ -164,7 +188,8 @@ describe('transferableOf caps a payout at cash actually banked', () => {
       users: [{ id: 'o1', name: 'مالك' }],
       commissionRate: 0.05, financials: fin, window: null, platformCollects: true,
     });
-    expect(s.ownersOwed).toBe(10);
+    // The owner's proportional share of the 10 received (0173), not the 24 held.
+    expect(s.ownersOwed).toBe(4.44);
     expect(s.ownersOwed).not.toBe(24);
     expect(s.perOwner[0].owed).toBe(s.ownersOwed);
   });

@@ -532,6 +532,12 @@ export const DASH = '—';
  * 24 — and an admin prompted to transfer 24 of the 10 that arrived.
  *
  * The cap is the whole function. Everything else it delegates.
+ *
+ * With the admin snapshot (which carries the deposit) the cap is the one
+ * fin_create_owner_payout enforces (0173): the owner's PROPORTIONAL share of
+ * the deposit cash received — round(held x received / deposit) — less what was
+ * already settled, and before the hold date never more than the cash itself.
+ * The server refuses any other figure, so this is the figure the admin is shown.
  */
 export function transferableOf(
   booking: Booking,
@@ -539,8 +545,23 @@ export function transferableOf(
   fallbackRate: number,
   /** Approved payments banked against this booking. */
   cashReceived: number,
+  today: string = new Date().toISOString().slice(0, 10),
 ): Money {
   const payable = payableOf(booking, fin, fallbackRate);
   if (payable.value === null) return payable;
-  return { value: Math.max(0, Math.min(payable.value, cashReceived)), source: payable.source };
+  if (!fin || !('depositAmount' in fin)) {
+    return { value: Math.max(0, Math.min(payable.value, cashReceived)), source: payable.source };
+  }
+  if (!(fin.depositAmount > 0)) return { value: 0, source: payable.source };
+  const received = Math.min(Math.max(0, cashReceived), fin.depositAmount);
+  const ownerShare = roundMoney((fin.ownerCashHeld * received) / fin.depositAmount);
+  const beforeHold = fin.settlementHoldUntil != null && fin.settlementHoldUntil > today;
+  const backed = beforeHold ? Math.min(ownerShare, received) : ownerShare;
+  const value = roundMoney(Math.min(payable.value, backed - fin.ownerSettledAmount));
+  return { value: Math.max(0, value), source: payable.source };
+}
+
+/** Two-decimal money rounding, half away from zero, as Postgres ROUND(x, 2). */
+function roundMoney(x: number): number {
+  return Math.sign(x) * Math.round((Math.abs(x) + Number.EPSILON) * 100) / 100;
 }

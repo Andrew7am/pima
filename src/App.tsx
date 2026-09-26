@@ -22,7 +22,7 @@ import {
   createWaitlistEntry, notifyWaitlist as notifyWaitlistDb, notifyOwnerDistributionDone as notifyOwnerDistributionDoneDb,
   loadExpensesForHouses, createExpense as createExpenseDb, deleteExpense as deleteExpenseDb,
   setHouseDiscount,
-  loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb, settleBookingsPayout,
+  loadPayoutsForHouses, createPayout as createPayoutDb, loadAllPayouts, updatePayoutStatus as updatePayoutStatusDb, settleBookingsPayout, completePayoutRequest,
   recordRefund as recordRefundDb, setPaymentAccount, recordCashDeposit,
   loadRoomTypesForHouses, createRoomType as createRoomTypeDb, updateRoomType as updateRoomTypeDb, deleteRoomType as deleteRoomTypeDb,
   createPromoBanner, setPromoBannerActive, deletePromoBanner, updatePromoBanner,
@@ -94,6 +94,7 @@ const RewardsScreen = lazy(() => import('./entertainment/RewardsScreen'));
 import AchievementToast from './entertainment/AchievementToast';
 import WriteFailureBanner from './components/WriteFailureBanner';
 import { trackWrite, trackQuery } from './lib/writeFeedback';
+import { newIdempotencyKey } from './lib/idempotency';
 const FriendsScreen = lazy(() => import('./entertainment/FriendsScreen'));
 const ChatThreadScreen = lazy(() => import('./entertainment/ChatThreadScreen'));
 import ResetPasswordScreen from './components/ResetPasswordScreen';
@@ -922,23 +923,44 @@ export default function App() {
     loadAllPayouts().then(setPayouts);
   }, [activeScreen, currentUser?.role]);
 
+  // processing / rejected only. Completing a payout moves money, and since
+  // 0173 only the server does that (handleCompletePayoutRequest below).
   const handleUpdatePayoutStatus = (id: string, status: Payout['status']) => {
-    setPayouts((prev) => prev.map((p) => (p.id === id ? { ...p, status, completedAt: status === 'completed' ? new Date().toISOString() : undefined } : p)));
+    if (status === 'completed') return;
+    setPayouts((prev) => prev.map((p) => (p.id === id ? { ...p, status, completedAt: undefined } : p)));
     trackWrite(updatePayoutStatusDb(id, status), 'تحديث حالة التحويل');
   };
 
+  // Admin completes an owner's own transfer request. The server applies it to
+  // the owner's bookings and posts the ledger; nothing is marked done locally
+  // until it agrees.
+  const handleCompletePayoutRequest = async (id: string, transactionReference: string, paidFromAccount?: string) => {
+    const r = await completePayoutRequest({ payoutId: id, transactionReference, paidFromAccount });
+    if (!r.ok) { alert(`تعذّر تسجيل التحويل.\n${r.error ?? ''}`); return; }
+    setPayouts((prev) => prev.map((p) => (p.id === id
+      ? { ...p, status: 'completed', completedAt: r.completedAt, transactionReference, paidFromAccount, bookingIds: r.bookingIds }
+      : p)));
+    if (r.completedAt && r.fullySettled.length > 0) {
+      setBookings((prev) => prev.map((b) => (r.fullySettled.includes(b.id) ? { ...b, ownerSettledAt: r.completedAt } : b)));
+    }
+  };
+
   // Admin transfers a house's owner share for one booking or several at once:
-  // records a completed payout (owner gets a realtime "تم تحويل مستحقاتك"
-  // notification via trigger 068) and marks those bookings settled so they
-  // drop out of the "ready to transfer" list.
+  // the server records the completed payout, its booking linkage and the
+  // ledger entries (owner gets a realtime "تم تحويل مستحقاتك" notification via
+  // trigger 068). Only bookings whose whole share is now paid are marked
+  // settled; one advanced part of its share stays in the list for the rest.
   const handleSettleBookings = async (args: { houseId: string; ownerId: string; amount: number; bookingIds: string[]; note?: string; transactionReference?: string; paidFromAccount?: string }) => {
-    const now = new Date().toISOString();
-    const ok = await settleBookingsPayout(args);
-    if (!ok) { alert('تعذّر تسجيل التحويل. حاول مرة أخرى.'); return; }
-    setBookings((prev) => prev.map((b) => (args.bookingIds.includes(b.id) ? { ...b, ownerSettledAt: now } : b)));
+    const r = await settleBookingsPayout({ ...args, idempotencyKey: newIdempotencyKey() });
+    if (!r.ok) { alert(`تعذّر تسجيل التحويل.\n${r.error ?? ''}`); return; }
+    const now = r.completedAt ?? new Date().toISOString();
+    if (r.fullySettled.length > 0) {
+      setBookings((prev) => prev.map((b) => (r.fullySettled.includes(b.id) ? { ...b, ownerSettledAt: now } : b)));
+    }
     setPayouts((prev) => [{
-      id: `payout_local_${Date.now()}`, houseId: args.houseId, ownerId: args.ownerId, amount: args.amount,
-      status: 'completed', note: args.note, requestedAt: now, completedAt: now,
+      id: r.payoutId ?? `payout_local_${Date.now()}`, houseId: args.houseId, ownerId: args.ownerId, amount: r.net ?? args.amount,
+      status: 'completed', note: args.note, requestedAt: now, completedAt: now, bookingIds: r.bookingIds,
+      transactionReference: args.transactionReference, paidFromAccount: args.paidFromAccount,
     } as Payout, ...prev]);
   };
 
@@ -1287,9 +1309,17 @@ export default function App() {
     trackWrite(updateBookingStatus(bookingId, 'approved'), 'قبول الحجز');
   };
 
-  const handleRejectBooking = (bookingId: string) => {
+  // Declining a request. Since 0173 the server allows it only for a pending
+  // booking with no customer money against it — once the guest has paid, only
+  // the guest can cancel — so the local state waits for the server's answer.
+  const handleRejectBooking = async (bookingId: string) => {
+    const previousStatus = bookings.find((b) => b.id === bookingId)?.status;
     setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'rejected' } : b)));
-    trackWrite(updateBookingStatus(bookingId, 'rejected'), 'رفض الحجز');
+    const ok = await trackWrite(updateBookingStatus(bookingId, 'rejected'), 'رفض الحجز');
+    if (!ok) {
+      if (previousStatus) setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: previousStatus } : b)));
+      return;
+    }
     freeBookingAllocations(bookingId);
   };
 
@@ -1561,16 +1591,22 @@ export default function App() {
     // recipient that never existed.
   };
 
-  const handleVerifyPayment = (paymentId: string, status: 'approved' | 'rejected' | 'pending', adminNotes?: string) => {
+  const handleVerifyPayment = async (paymentId: string, status: 'approved' | 'rejected' | 'pending', adminNotes?: string) => {
+    const payment = payments.find((p) => p.id === paymentId);
     setPayments((prevPayments) =>
       prevPayments.map((p) => (p.id === paymentId ? { ...p, paymentStatus: status, adminNotes } : p))
     );
-
-    const payment = payments.find((p) => p.id === paymentId);
     if (!payment) return;
-    // Persist updated payment to Supabase
+    // Persist updated payment to Supabase. Since 0173 approving a payment posts
+    // it to the ledger in the same write, and a payment already in the ledger
+    // cannot be moved back — so the server can refuse, and the booking must
+    // only change once the payment verdict has actually been saved.
     const verb = status === 'approved' ? 'اعتماد الإيصال' : status === 'rejected' ? 'رفض الإيصال' : 'إرجاع الإيصال للمراجعة';
-    trackWrite(updatePaymentStatus(paymentId, status, adminNotes), verb);
+    const saved = await trackWrite(updatePaymentStatus(paymentId, status, adminNotes), verb);
+    if (!saved) {
+      setPayments((prevPayments) => prevPayments.map((p) => (p.id === paymentId ? payment : p)));
+      return;
+    }
     const b = bookings.find((bk) => bk.id === payment.bookingId);
     if (!b) return;
 
@@ -1747,20 +1783,9 @@ export default function App() {
     trackQuery(supabase.from('users').update({ avatar_url: avatarUrl }).eq('id', currentUser.id), 'تغيير الصورة الشخصية');
   };
 
-  // Cancel any booking (fraud / dispute). Admin-only via bookings_update_admin.
-  const handleAdminCancelBooking = (bookingId: string) => {
-    setBookings((prev) => prev.map((b) => (b.id === bookingId ? { ...b, status: 'rejected' } : b)));
-    trackWrite(updateBookingStatus(bookingId, 'rejected'), 'إلغاء الحجز');
-    const b = bookings.find((bk) => bk.id === bookingId);
-    if (b) {
-      pushNotification({
-        id: `notif_${Date.now()}`, userId: b.userId, bookingId: b.id,
-        title: 'تم إلغاء الحجز من الإدارة',
-        message: `نأسف لإبلاغك بأن إدارة المنصة قامت بإلغاء حجزك في "${b.houseName}". للاستفسار تواصل مع الدعم الفني.`,
-        type: 'danger', isRead: false, createdAt: new Date().toISOString(),
-      });
-    }
-  };
+  // There is deliberately no admin "cancel booking" here any more. Only the
+  // customer cancels (0173 enforces it server-side); for fraud or a dispute
+  // PIMA contacts the customer and asks them to.
 
   // Delete a spam / abusive review. Admin-only via reviews_delete_admin.
   // Re-pulls the house's real rating from the server (migration-020 trigger)
@@ -2463,6 +2488,7 @@ export default function App() {
               bookings={bookings}
               payouts={payouts}
               onUpdatePayoutStatus={handleUpdatePayoutStatus}
+              onCompletePayoutRequest={handleCompletePayoutRequest}
               onSettleBookings={handleSettleBookings}
               reviews={reviews}
               onApproveHouse={handleApproveHouse}
@@ -2475,7 +2501,6 @@ export default function App() {
               onSetHouseBadge={handleSetHouseBadge}
               onBanUser={handleBanUser}
               onReleaseUser={handleReleaseUser}
-              onCancelBooking={handleAdminCancelBooking}
               onDeleteReview={handleDeleteReview}
               allocationsCount={allocationsCount}
               payments={payments}

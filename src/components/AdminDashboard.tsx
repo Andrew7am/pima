@@ -130,6 +130,8 @@ interface AdminDashboardProps {
   onDeleteHouse?: (houseId: string) => void;
   payouts?: Payout[];
   onUpdatePayoutStatus?: (id: string, status: Payout['status']) => void;
+  /** Completes an owner's payout request server-side (0173). The only way a payout becomes completed. */
+  onCompletePayoutRequest?: (id: string, transactionReference: string, paidFromAccount?: string) => void | Promise<void>;
   // Settle one booking's owner share (bookingIds length 1) or several at once.
   onSettleBookings?: (args: { houseId: string; ownerId: string; amount: number; bookingIds: string[]; note?: string; transactionReference?: string; paidFromAccount?: string }) => void;
 }
@@ -205,6 +207,7 @@ export default function AdminDashboard({
   payouts = [],
   financials = {},
   onUpdatePayoutStatus,
+  onCompletePayoutRequest,
   onSettleBookings,
 }: AdminDashboardProps) {
   // Tabs within Admin — "growth" is default: the admin's morning check
@@ -4262,8 +4265,10 @@ export default function AdminDashboard({
                               <button type="button" onClick={() => onUpdatePayoutStatus(p.id, 'processing')}
                                 className="text-[12px] font-bold bg-sky-50 text-sky-800 border border-sky-200 px-2.5 min-h-11.5 rounded-lg cursor-pointer">بدء التحويل</button>
                             )}
-                            <button type="button" onClick={() => { if (confirm(`تأكيد تحويل ${arabicNumber(p.amount)} ج.م لـ${ownerName}؟`)) onUpdatePayoutStatus(p.id, 'completed'); }}
-                              className="text-[12px] font-bold bg-emerald-600 text-white px-2.5 min-h-11.5 rounded-lg cursor-pointer">تم التحويل ✓</button>
+                            {onCompletePayoutRequest && (
+                              <button type="button" onClick={() => { const t = askTransfer(`تحويل ${arabicNumber(p.amount)} ج.م لـ${ownerName}`, p.amount); if (t) onCompletePayoutRequest(p.id, t.reference, t.account || undefined); }}
+                                className="text-[12px] font-bold bg-emerald-600 text-white px-2.5 min-h-11.5 rounded-lg cursor-pointer">تم التحويل ✓</button>
+                            )}
                             <button type="button" onClick={() => { if (confirm('رفض طلب التحويل؟')) onUpdatePayoutStatus(p.id, 'rejected'); }}
                               className="text-[12px] font-bold bg-[var(--ds-surface)] text-rose-700 border border-rose-200 px-2.5 min-h-11.5 rounded-lg cursor-pointer">رفض</button>
                           </div>
@@ -4450,7 +4455,7 @@ export default function AdminDashboard({
                           className="flex items-center gap-1 bg-[var(--ds-raised)] hover:bg-[var(--ds-raised)] text-[var(--ds-text)] text-xs font-bold min-h-11 px-3 rounded-xl transition-all cursor-pointer">
                           <MessageSquareDashed className="w-3.5 h-3.5" /> الشات
                         </button>
-                        {booking.status !== 'rejected' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
+                        {onCancelBooking && booking.status !== 'rejected' && booking.status !== 'completed' && booking.status !== 'cancelled' && (
                           <button
                             id={`admin-cancel-booking-${booking.id}`}
                             onClick={() => { if (confirm(`إلغاء حجز "${booking.userName}" في "${booking.houseName}" نهائياً؟`)) onCancelBooking && onCancelBooking(booking.id); }}

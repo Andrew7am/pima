@@ -241,6 +241,10 @@ export function unclaimedOwedBookings(args: {
   for (const p of payouts) {
     if (p.status === 'rejected') continue;
     if (p.completedAt && settledStamps.has(`${p.houseId}|${p.completedAt}`)) continue;
+    // Since 0173 every completed payout carries its booking linkage
+    // (payout_bookings), which already lowers owner_settled_amount. Netting it
+    // again here would count the same transfer twice.
+    if (p.bookingIds && p.bookingIds.length > 0) continue;
     claimedByHouse.set(p.houseId, (claimedByHouse.get(p.houseId) || 0) + p.amount);
   }
 
