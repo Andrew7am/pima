@@ -52,6 +52,7 @@ const PAYOUT_STATUS: Record<Payout['status'], { label: string; className: string
   processing: { label: 'جارٍ التحويل', className: 'bg-sky-50 text-sky-800 border-sky-200' },
   completed: { label: 'تم التحويل', className: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
   rejected: { label: 'مرفوض', className: 'bg-rose-50 text-rose-800 border-rose-200' },
+  voided: { label: 'مُلغى', className: 'bg-slate-100 text-slate-700 border-slate-300' },
 };
 
 // ── Small reusable primitives ──────────────────────────────────────
@@ -276,8 +277,9 @@ export default function OwnerFinancialCenter({
   const payableTotals = sumMoney(
     confirmedBookings.map((b) => payableOf(b, financials[b.id], commissionRate)),
   );
+  // A voided payout (0174) never moved money, so it claims nothing.
   const claimedByPayouts = payouts
-    .filter((p) => p.status !== 'rejected')
+    .filter((p) => p.status !== 'rejected' && p.status !== 'voided')
     .reduce((s, p) => s + p.amount, 0);
   const availableForTransfer = Math.max(
     0, Math.min(payableTotals.total, depositReceived) - claimedByPayouts,

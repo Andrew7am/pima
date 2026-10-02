@@ -669,7 +669,8 @@ export interface Payout {
   houseId: string;
   ownerId: string;
   amount: number;
-  status: 'pending' | 'processing' | 'completed' | 'rejected';
+  /** 'voided' (0174): a payout recorded in error and reversed in the ledger. History, not money paid. */
+  status: 'pending' | 'processing' | 'completed' | 'rejected' | 'voided';
   method?: string;
   note?: string;
   requestedAt: string;

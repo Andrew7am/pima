@@ -4092,6 +4092,7 @@ export default function AdminDashboard({
           processing: { label: 'جارٍ التحويل', cls: 'bg-sky-50 text-sky-800 border-sky-200' },
           completed: { label: 'تم التحويل', cls: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
           rejected: { label: 'مرفوض', cls: 'bg-rose-50 text-rose-800 border-rose-200' },
+          voided: { label: 'مُلغى', cls: 'bg-slate-100 text-slate-700 border-slate-300' },
         };
         const pendingTotal = payouts.filter((p) => p.status === 'pending' || p.status === 'processing').reduce((s, p) => s + p.amount, 0);
         // Per-booking owner shares that Pima holds and hasn't transferred yet
