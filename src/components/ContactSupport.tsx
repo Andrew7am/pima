@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { supportWhatsAppUrl } from '../lib/support';
+import React from 'react';
+import { supportWhatsAppUrl, supportWhatsAppNumber, SUPPORT_EMAIL, SUPPORT_PHONES } from '../lib/support';
 import {
-  Phone, Mail, Facebook, Instagram, MessageCircle,
-  Send, AlertCircle, Info, CheckCircle2, ShieldCheck, HeartHandshake, ChevronRight
+  Phone, Mail, Facebook, Instagram, MessageCircle, ShieldCheck, HeartHandshake, ChevronRight
 } from 'lucide-react';
 
 interface ContactSupportProps {
+  // Still passed by App; unused since the screen stopped pre-filling a form.
   currentUser: {
     name: string;
     phone: string;
@@ -14,72 +14,10 @@ interface ContactSupportProps {
   onBack?: () => void;
 }
 
-interface SupportTicket {
-  id: string;
-  type: string;
-  subject: string;
-  details: string;
-  status: 'pending' | 'resolved';
-  createdAt: string;
-}
+// What the WhatsApp chat opens with when someone reports a problem or sends an idea.
+const REPORT_MESSAGE = 'سلام ونعمة، عندي مشكلة أو اقتراح بخصوص تطبيق بيما: ';
 
-export default function ContactSupport({ currentUser, onBack }: ContactSupportProps) {
-  const [ticketType, setTicketType] = useState<'technical' | 'suggestion' | 'feedback'>('technical');
-  const [subject, setSubject] = useState('');
-  const [details, setDetails] = useState('');
-  const [name, setName] = useState(currentUser.name || '');
-  const [phone, setPhone] = useState(currentUser.phone || '');
-  const [email, setEmail] = useState(currentUser.email || '');
-  
-  const [submittedTickets, setSubmittedTickets] = useState<SupportTicket[]>([
-    {
-      id: 'PIMA-8821',
-      type: 'اقتراح لتطوير التطبيق',
-      subject: 'إضافة فلتر مخصص لبيوت الإسكندرية القريبة من البحر',
-      details: 'نقترح إضافة خيار تصفية للبحث السريع عن البيوت التي تقع مباشرة على البحر أو تمتلك شاطئ خاص في العجمي وأبوقير.',
-      status: 'resolved',
-      createdAt: '2026-06-25T11:20:00Z'
-    }
-  ]);
-
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [newTicketId, setNewTicketId] = useState('');
-
-  const handleSubmitReport = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!subject.trim() || !details.trim()) {
-      alert('الرجاء كتابة عنوان وبلاغ المشكلة بالتفصيل.');
-      return;
-    }
-
-    const ticketId = `PIMA-${Math.floor(10000 + Math.random() * 90000)}`;
-    const typeLabel = 
-      ticketType === 'technical' ? 'مشكلة تقنية في التطبيق' : 
-      ticketType === 'suggestion' ? 'اقتراح لتطوير التطبيق' : 'تقييم وملاحظات عامة';
-
-    const newTicket: SupportTicket = {
-      id: ticketId,
-      type: typeLabel,
-      subject,
-      details,
-      status: 'pending',
-      createdAt: new Date().toISOString()
-    };
-
-    setSubmittedTickets(prev => [newTicket, ...prev]);
-    setNewTicketId(ticketId);
-    setShowSuccessToast(true);
-
-    // Reset fields
-    setSubject('');
-    setDetails('');
-
-    // Hide toast after 8 seconds
-    setTimeout(() => {
-      setShowSuccessToast(false);
-    }, 8000);
-  };
-
+export default function ContactSupport({ onBack }: ContactSupportProps) {
   return (
     <div className="space-y-4 pb-12 text-right text-[var(--ds-text)]" dir="rtl">
 
@@ -103,7 +41,7 @@ export default function ContactSupport({ currentUser, onBack }: ContactSupportPr
           </div>
           <div>
             <h1 className="text-sm font-extrabold text-[var(--ds-brand)]">التواصل والدعم الفني وخدمة عملاء بيما</h1>
-            <p className="text-[10px] text-[var(--ds-text-2)] font-bold">نسعد بخدمتكم وتلقي آرائكم واستفساراتكم على مدار الساعة</p>
+            <p className="text-[10px] text-[var(--ds-text-2)] font-bold">نسعد بخدمتكم وتلقي آرائكم واستفساراتكم</p>
           </div>
         </div>
         <p className="text-xs text-[var(--ds-text)] leading-relaxed mt-2 font-medium">
@@ -118,54 +56,61 @@ export default function ContactSupport({ currentUser, onBack }: ContactSupportPr
         <div className="bg-[var(--ds-surface)] rounded-3xl p-5 border border-[var(--ds-border)] shadow-sm space-y-4">
           <div className="border-b border-[var(--ds-border)]/40 pb-2">
             <h2 className="text-xs font-black text-[var(--ds-brand)]">قنوات التواصل المباشر</h2>
-            <p className="text-[9px] text-[var(--ds-text-2)] font-bold">انقر على الرقم للاتصال بنا مباشرة</p>
+            <p className="text-[9px] text-[var(--ds-text-2)] font-bold">ابعتلنا على واتساب وفريق الدعم هيرد عليك</p>
           </div>
 
+          {/* WhatsApp is the one channel with a confirmed number — the admin sets it
+              in platform settings. Phone lines and an email appear here only once
+              they are filled in SUPPORT_PHONES / SUPPORT_EMAIL (lib/support). */}
           <div className="space-y-2.5">
-            {/* Click to Call 1 */}
-            <a 
-              href="tel:01234567890" 
+            <a
+              href={supportWhatsAppUrl()}
+              target="_blank"
+              rel="noreferrer"
               className="flex items-center justify-between p-3 rounded-2xl bg-[var(--ds-surface)] border border-[var(--ds-border)]/60 hover:border-[var(--ds-accent)] transition-all group"
             >
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100 group-hover:bg-emerald-100">
-                  <Phone className="w-4 h-4" />
+                  <MessageCircle className="w-4 h-4" />
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-[var(--ds-text-2)] font-bold block leading-none">تليفون الحجوزات وخدمة العملاء</span>
-                  <span className="text-xs font-black text-[var(--ds-brand)] mt-1 block tracking-wider" dir="ltr">0123 456 7890</span>
+                  <span className="text-[10px] text-[var(--ds-text-2)] font-bold block leading-none">واتساب الدعم الفني وخدمة العملاء</span>
+                  <span className="text-xs font-black text-[var(--ds-brand)] mt-1 block tracking-wider" dir="ltr">+{supportWhatsAppNumber()}</span>
                 </div>
               </div>
-              <span className="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-2.5 py-1 rounded-xl group-hover:scale-105 transition-all">اتصل الآن 📞</span>
+              <span className="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-2.5 py-1 rounded-xl group-hover:scale-105 transition-all">راسلنا</span>
             </a>
 
-            {/* Click to Call 2 */}
-            <a 
-              href="tel:01112223334" 
-              className="flex items-center justify-between p-3 rounded-2xl bg-[var(--ds-surface)] border border-[var(--ds-border)]/60 hover:border-[var(--ds-accent)] transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 group-hover:bg-blue-100">
-                  <Phone className="w-4 h-4" />
+            {SUPPORT_PHONES.map((p) => (
+              <a
+                key={p.tel}
+                href={`tel:${p.tel}`}
+                className="flex items-center justify-between p-3 rounded-2xl bg-[var(--ds-surface)] border border-[var(--ds-border)]/60 hover:border-[var(--ds-accent)] transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100 group-hover:bg-blue-100">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-[var(--ds-text-2)] font-bold block leading-none">{p.label}</span>
+                    <span className="text-xs font-black text-[var(--ds-brand)] mt-1 block tracking-wider" dir="ltr">{p.display}</span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-[var(--ds-text-2)] font-bold block leading-none">الدعم الفني والشكاوى</span>
-                  <span className="text-xs font-black text-[var(--ds-brand)] mt-1 block tracking-wider" dir="ltr">0111 222 3334</span>
-                </div>
-              </div>
-              <span className="text-[9px] bg-blue-100 text-blue-800 font-extrabold px-2.5 py-1 rounded-xl group-hover:scale-105 transition-all">اتصل الآن 📞</span>
-            </a>
+                <span className="text-[9px] bg-blue-100 text-blue-800 font-extrabold px-2.5 py-1 rounded-xl group-hover:scale-105 transition-all">اتصل الآن 📞</span>
+              </a>
+            ))}
 
-            {/* Official Email */}
-            <div className="flex items-center gap-3 p-3 rounded-2xl bg-[var(--ds-surface)] border border-[var(--ds-border)]/60">
-              <div className="w-9 h-9 rounded-xl bg-[var(--ds-brand)]/5 text-[var(--ds-brand)] flex items-center justify-center border border-[var(--ds-brand)]/10">
-                <Mail className="w-4 h-4" />
+            {SUPPORT_EMAIL && (
+              <div className="flex items-center gap-3 p-3 rounded-2xl bg-[var(--ds-surface)] border border-[var(--ds-border)]/60">
+                <div className="w-9 h-9 rounded-xl bg-[var(--ds-brand)]/5 text-[var(--ds-brand)] flex items-center justify-center border border-[var(--ds-brand)]/10">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div className="text-right flex-1">
+                  <span className="text-[10px] text-[var(--ds-text-2)] font-bold block leading-none">البريد الإلكتروني الرسمي للمنصة</span>
+                  <span className="text-xs font-black text-[var(--ds-brand)] mt-1 block tracking-normal select-all" dir="ltr">{SUPPORT_EMAIL}</span>
+                </div>
               </div>
-              <div className="text-right flex-1">
-                <span className="text-[10px] text-[var(--ds-text-2)] font-bold block leading-none">البريد الإلكتروني الرسمي للمنصة</span>
-                <span className="text-xs font-black text-[var(--ds-brand)] mt-1 block tracking-normal select-all" dir="ltr">support@pima-retreats.eg</span>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Social Platforms */}
@@ -213,7 +158,7 @@ export default function ContactSupport({ currentUser, onBack }: ContactSupportPr
           <div>
             <div className="border-b border-[var(--ds-border)]/40 pb-2 mb-3">
               <h2 className="text-xs font-black text-[var(--ds-brand)]">حول التطبيق والخدمة</h2>
-              <p className="text-[9px] text-[var(--ds-text-2)] font-bold">تفاصيل وتراخيص الإصدار الحالي</p>
+              <p className="text-[9px] text-[var(--ds-text-2)] font-bold">تعرّف على بيما</p>
             </div>
 
             <p className="text-xs text-[var(--ds-text)] leading-relaxed font-medium">
@@ -226,14 +171,6 @@ export default function ContactSupport({ currentUser, onBack }: ContactSupportPr
               <span className="text-[var(--ds-text-2)] font-bold">اسم التطبيق:</span>
               <span className="text-[var(--ds-brand)] font-extrabold">بيما | PiMa لبيوت المؤتمرات</span>
             </div>
-            <div className="flex justify-between items-center text-[10.5px]">
-              <span className="text-[var(--ds-text-2)] font-bold">رقم الإصدار:</span>
-              <span className="text-amber-800 font-extrabold" dir="ltr">Version 2.4.0 (استقرار)</span>
-            </div>
-            <div className="flex justify-between items-center text-[10.5px]">
-              <span className="text-[var(--ds-text-2)] font-bold">تاريخ التحديث:</span>
-              <span className="text-[var(--ds-text)] font-extrabold">يوليو ٢٠٢٦ م.</span>
-            </div>
             <div className="flex justify-between items-center text-[10.5px] border-t border-[var(--ds-border)]/40 pt-1.5 mt-1.5">
               <span className="text-[var(--ds-text-2)] font-bold">المطور التقني:</span>
               <span className="text-[var(--ds-brand)] font-black flex items-center gap-1">
@@ -245,200 +182,32 @@ export default function ContactSupport({ currentUser, onBack }: ContactSupportPr
         </div>
       </div>
 
-      {/* Success Submission Notification Toast */}
-      {showSuccessToast && (
-        <div role="status" aria-live="polite" className="bg-emerald-50 border-2 border-emerald-300 text-emerald-950 p-4 rounded-3xl shadow-lg flex items-start gap-3 animate-bounce">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-          <div className="space-y-1 flex-1">
-            <h4 className="text-xs font-black text-emerald-800">تم إرسال بلاغكم بنجاح!</h4>
-            <p className="text-[10.5px] leading-relaxed font-bold">
-              نشكر محبتكم واهتمامكم بتطوير الخدمة! تم تسجيل البلاغ/الاقتراح برقم تذكرة <strong className="text-emerald-900 underline font-black" dir="ltr">#{newTicketId}</strong> بنجاح. سيقوم مهندسو الدعم بمراجعة طلبكم والتواصل معكم عبر التليفون المسجل خلال ٢٤ ساعة كحد أقصى.
-            </p>
-          </div>
-          <button aria-label="إغلاق رسالة التأكيد" 
-            type="button" 
-            onClick={() => setShowSuccessToast(false)} 
-            className="text-xs font-bold text-emerald-700 hover:text-emerald-900 cursor-pointer"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      {/* Report a Problem or Submit Feedback Form */}
-      <div className="bg-[var(--ds-surface)] rounded-3xl p-5 border border-[var(--ds-border)] shadow-md relative overflow-hidden">
+      {/* Report a problem or send an idea. There is no ticket system behind this
+          screen, so it does not pretend to be one: it hands the person to the same
+          support WhatsApp every other "contact us" in the app uses. */}
+      <div className="bg-[var(--ds-surface)] rounded-3xl p-5 border border-[var(--ds-border)] shadow-md relative overflow-hidden space-y-3">
         <div className="absolute top-0 right-0 h-1 bg-[var(--ds-accent)] w-32" />
-        
-        <div className="border-b border-[var(--ds-border)]/40 pb-2.5 mb-4">
-          <h2 className="text-xs font-black text-[var(--ds-brand)]">إرسال بلاغ أو اقتراح للدعم الفني</h2>
-          <p className="text-[9px] text-[var(--ds-text-2)] font-bold">مساحتك لإبداء رأيك أو الإبلاغ عن مشكلة تواجهك في تصفح التطبيق</p>
+
+        <div className="border-b border-[var(--ds-border)]/40 pb-2.5">
+          <h2 className="text-xs font-black text-[var(--ds-brand)]">إبلاغ عن مشكلة أو إرسال اقتراح</h2>
+          <p className="text-[9px] text-[var(--ds-text-2)] font-bold">مساحتك لإبداء رأيك أو الإبلاغ عن مشكلة تواجهك في التطبيق</p>
         </div>
 
-        <form onSubmit={handleSubmitReport} className="space-y-3">
-          
-          {/* Ticket Type */}
-          <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-[var(--ds-text-2)]">نوع البلاغ الموجه للخدمة:</label>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                id="type-tech"
-                type="button"
-                onClick={() => setTicketType('technical')}
-                className={`py-2 px-1.5 rounded-xl text-[9.5px] font-extrabold transition-all cursor-pointer text-center border ${
-                  ticketType === 'technical'
-                    ? 'bg-[var(--ds-brand)] text-[var(--ds-on-brand)] border-[var(--ds-brand)] shadow-sm'
-                    : 'bg-[var(--ds-surface)] text-[var(--ds-text)] border-[var(--ds-border)] hover:bg-[var(--ds-surface)]'
-                }`}
-              >
-                ⚠️ مشكلة تقنية
-              </button>
-              
-              <button
-                id="type-sug"
-                type="button"
-                onClick={() => setTicketType('suggestion')}
-                className={`py-2 px-1.5 rounded-xl text-[9.5px] font-extrabold transition-all cursor-pointer text-center border ${
-                  ticketType === 'suggestion'
-                    ? 'bg-[var(--ds-brand)] text-[var(--ds-on-brand)] border-[var(--ds-brand)] shadow-sm'
-                    : 'bg-[var(--ds-surface)] text-[var(--ds-text)] border-[var(--ds-border)] hover:bg-[var(--ds-surface)]'
-                }`}
-              >
-                💡 اقتراح فكرة جديد
-              </button>
+        <p className="text-xs text-[var(--ds-text)] leading-relaxed font-medium">
+          ابعت لفريق الدعم على واتساب واكتب المشكلة أو الاقتراح بالتفصيل. ولو المشكلة في حجز معيّن، اذكر اسم البيت وتاريخ الحجز علشان نقدر نساعدك أسرع.
+        </p>
 
-              <button
-                id="type-feed"
-                type="button"
-                onClick={() => setTicketType('feedback')}
-                className={`py-2 px-1.5 rounded-xl text-[9.5px] font-extrabold transition-all cursor-pointer text-center border ${
-                  ticketType === 'feedback'
-                    ? 'bg-[var(--ds-brand)] text-[var(--ds-on-brand)] border-[var(--ds-brand)] shadow-sm'
-                    : 'bg-[var(--ds-surface)] text-[var(--ds-text)] border-[var(--ds-border)] hover:bg-[var(--ds-surface)]'
-                }`}
-              >
-                ⭐ رأي وتقييم عام
-              </button>
-            </div>
-          </div>
-
-          {/* Subject */}
-          <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-[var(--ds-text-2)]">عنوان الموضوع / التذكرة:</label>
-            <input
-              id="ticket-subject"
-              type="text"
-              required
-              placeholder="مثال: مشكلة في تصفح المنيو الأسبوعي للبيت الكنسي"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl px-3 py-2 text-xs text-[var(--ds-text)] focus:outline-none focus:ring-1 focus:ring-[#C5A059] focus:border-[var(--ds-accent)] font-bold text-right"
-            />
-          </div>
-
-          {/* Details */}
-          <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-[var(--ds-text-2)]">تفاصيل الشكوى أو الاقتراح بالتفصيل:</label>
-            <textarea
-              id="ticket-details"
-              required
-              rows={4}
-              placeholder="الرجاء وصف ما واجهته أو فكرتك بالتفصيل لمساعدتنا على معالجة المشكلة أو تضمين اقتراحك بأسرع وقت..."
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl px-3 py-2 text-xs text-[var(--ds-text)] focus:outline-none focus:ring-1 focus:ring-[#C5A059] focus:border-[var(--ds-accent)] font-medium text-right leading-relaxed"
-            />
-          </div>
-
-          {/* Grid Contact Details */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-[var(--ds-text-2)]">الاسم الكامل:</label>
-              <input
-                id="ticket-name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl px-2.5 py-1.5 text-xs text-[var(--ds-text)] focus:outline-none font-bold text-right"
-              />
-            </div>
-            
-            <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-[var(--ds-text-2)]">رقم الموبايل للمتابعة:</label>
-              <input
-                id="ticket-phone"
-                type="text"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl px-2.5 py-1.5 text-xs text-[var(--ds-text)] focus:outline-none font-bold text-right tracking-wider"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-[var(--ds-text-2)]">البريد الإلكتروني:</label>
-              <input
-                id="ticket-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-xl px-2.5 py-1.5 text-xs text-[var(--ds-text)] focus:outline-none font-bold text-left"
-                dir="ltr"
-              />
-            </div>
-          </div>
-
-          {/* Submit button */}
-          <button
-            id="submit-ticket-btn"
-            type="submit"
-            className="w-full mt-2 bg-[var(--ds-brand)] hover:bg-[#071930] text-[var(--ds-on-brand)] py-2.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
-          >
-            <Send className="w-4 h-4 text-[var(--ds-accent)]" />
-            <span>إرسال التذكرة لفريق الدعم الفني</span>
-          </button>
-        </form>
+        <a
+          id="support-report-whatsapp"
+          href={supportWhatsAppUrl(REPORT_MESSAGE)}
+          target="_blank"
+          rel="noreferrer"
+          className="w-full bg-[var(--ds-brand)] hover:opacity-90 text-[var(--ds-on-brand)] min-h-11 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+        >
+          <MessageCircle className="w-4 h-4 text-[var(--ds-accent)]" />
+          <span>راسل الدعم الفني على واتساب</span>
+        </a>
       </div>
-
-      {/* Submitted Tickets History */}
-      <div className="bg-[var(--ds-surface)] rounded-3xl p-5 border border-[var(--ds-border)] shadow-sm space-y-3">
-        <div className="border-b border-[var(--ds-border)]/40 pb-2 flex items-center justify-between">
-          <h2 className="text-xs font-black text-[var(--ds-brand)]">تاريخ بلاغاتك واقتراحاتك السابقة</h2>
-          <span className="text-[9px] text-[var(--ds-text-2)] font-bold">جلسة العمل الحالية</span>
-        </div>
-
-        {submittedTickets.length === 0 ? (
-          <p className="text-[11px] text-[var(--ds-text-2)] text-center py-4">لا توجد بلاغات مسجلة بعد في هذه الجلسة.</p>
-        ) : (
-          <div className="space-y-3">
-            {submittedTickets.map((ticket) => (
-              <div 
-                key={ticket.id} 
-                className="bg-[var(--ds-surface)] border border-[var(--ds-border)]/50 rounded-2xl p-3 text-right space-y-1.5 relative overflow-hidden"
-              >
-                {/* Status ribbon */}
-                <div className="absolute top-2 left-2 flex items-center gap-1.5">
-                  <span className={`text-[8.5px] px-2 py-0.5 rounded-full font-black ${
-                    ticket.status === 'resolved' 
-                      ? 'bg-emerald-100 text-emerald-800' 
-                      : 'bg-amber-100 text-amber-800 animate-pulse'
-                  }`}>
-                    {ticket.status === 'resolved' ? '✓ تم الحل' : '⏳ جاري المراجعة'}
-                  </span>
-                </div>
-
-                <div className="text-[10px] text-[var(--ds-accent)] font-black">{ticket.type}</div>
-                <h4 className="text-xs font-extrabold text-[var(--ds-text)] pl-16 leading-tight">{ticket.subject}</h4>
-                <p className="text-[10px] text-[var(--ds-text-2)] leading-relaxed font-semibold">{ticket.details}</p>
-                
-                <div className="flex items-center justify-between text-[8.5px] text-[var(--ds-text-faint)] pt-2 border-t border-[var(--ds-border)]/30 mt-1">
-                  <span>رقم التذكرة: {ticket.id}</span>
-                  <span>تاريخ التسجيل: {new Date(ticket.createdAt).toLocaleDateString('ar-EG')}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
     </div>
   );
 }

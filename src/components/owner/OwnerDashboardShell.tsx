@@ -22,6 +22,8 @@ import {
 } from '../../lib/bookingFinancials';
 import type { FinancialsIndex, OwnerFinancials } from '../../lib/bookingFinancials';
 import { passwordProblem } from '../../lib/password';
+import { supportWhatsAppUrl } from '../../lib/support';
+import { openExternal } from '../../lib/openExternal';
 import { ownerBookingBadge } from '../../lib/ownerBookingBadge';
 import { arabicDay, arabicDayYear, nightsBetween, nightsLabel } from '../../lib/bookingDates';
 import OwnerDisclosure from './OwnerDisclosure';
@@ -2853,6 +2855,25 @@ export default function OwnerDashboardShell({
               <HelpCircle className="w-3.5 h-3.5" /><span>تواصل مع الدعم الفني</span>
             </button>
           )}
+
+          {/* Account deletion — a REQUEST, not a self-service delete:
+              delete_own_account refuses owners (ACCOUNT_TYPE_NOT_SELF_DELETABLE)
+              because open bookings and payouts have to be settled first, and
+              the admin carries it out. The request goes to the support WhatsApp
+              number the admin configures. openExternal, not an <a>, because the
+              Android WebView swallows a plain new-window link. */}
+          <div className="bg-[var(--color-owner-surface)] p-5 rounded-3xl border border-[var(--color-owner-border)] text-right space-y-3">
+            <div className="flex items-center gap-1.5"><Trash2 className="w-4 h-4 text-[var(--color-owner-danger-ink)]" /><h3 className="text-xs font-black text-[var(--color-owner-text)]">حذف الحساب</h3></div>
+            <p className="text-[11px] text-[var(--color-owner-secondary)] leading-relaxed">
+              حساب مالك البيت لا يُحذف مباشرة من التطبيق، لأنه مرتبط بحجوزات ومستحقات مالية لازم تتقفل الأول.
+              ابعت طلب الحذف للدعم الفني، والإدارة هتراجع الحجوزات والمستحقات المفتوحة قبل تنفيذ الحذف.
+            </p>
+            <button type="button" id="owner-delete-request-btn"
+              onClick={() => { void openExternal(supportWhatsAppUrl('سلام ونعمة، أنا مالك بيت على بيما وأريد طلب حذف حسابي. البريد الإلكتروني المسجّل بالحساب: ')); }}
+              className="w-full flex items-center justify-center gap-1.5 text-[12px] font-bold text-[var(--color-owner-danger-ink)] hover:bg-[var(--color-owner-hover)] border border-[var(--color-owner-border)] rounded-xl min-h-11.5 transition-colors cursor-pointer bg-[var(--color-owner-surface)]">
+              <MessageCircle className="w-3.5 h-3.5" /><span>طلب حذف الحساب</span>
+            </button>
+          </div>
         </div>
       )}
 

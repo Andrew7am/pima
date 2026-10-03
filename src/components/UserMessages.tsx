@@ -5,6 +5,7 @@ import BookingChatPanel from './BookingChatPanel';
 import { loadLatestMessagePerBooking, loadUnreadCountsPerBooking } from '../lib/bookingMessages';
 import { formatChatTime } from '../lib/chatTime';
 import { tapFeedback } from '../lib/haptics';
+import { supportWhatsAppUrl } from '../lib/support';
 import {
   PimaAvatar, PimaReceipt, PimaLoadingRow, PimaEmptyState, PimaFilterChip,
   PimaSearchBar, PimaSectionTitle,
@@ -222,7 +223,7 @@ export default function UserMessages({ currentUser, bookings, houses, users }: U
 
       {/* Support entry — a real destination rather than a dead filter. */}
       {!loading && filter !== 'support' && (
-        <a href="https://wa.me/201234567890" target="_blank" rel="noreferrer"
+        <a href={supportWhatsAppUrl('')} target="_blank" rel="noreferrer"
           className="flex items-center gap-3 bg-[var(--ds-surface)] border border-[var(--ds-border)] rounded-2xl p-3.5 min-h-[64px] shadow-[0_8px_24px_rgba(0,0,0,0.08),0_2px_6px_rgba(0,0,0,0.03)] pima-press">
           <span className="w-11 h-11 rounded-full bg-[var(--ds-raised)] flex items-center justify-center shrink-0">
             <Headphones className="w-5 h-5 text-[var(--ds-accent)]" />

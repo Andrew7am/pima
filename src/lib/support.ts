@@ -27,6 +27,16 @@ export function setSupportWhatsApp(value: string | null | undefined): void {
   supportWhatsApp = /^\d{8,15}$/.test(digits) ? digits : FALLBACK_WHATSAPP;
 }
 
+/**
+ * Contact channels other than WhatsApp, for the support screen. Empty until the
+ * real ones are confirmed: the screen renders a row only for a value that is
+ * set, so an unconfirmed channel shows nothing instead of a made-up number.
+ * `tel` is what the dialler gets (digits, optional leading +); `display` is
+ * what the person reads.
+ */
+export const SUPPORT_EMAIL: string | null = null;
+export const SUPPORT_PHONES: ReadonlyArray<{ label: string; display: string; tel: string }> = [];
+
 /** The number currently in use — for screens that show it as text. */
 export function supportWhatsAppNumber(): string {
   return supportWhatsApp;

@@ -370,7 +370,9 @@ export default function ProfileScreen({
             {!isConfirmingDelete ? (
               <>
                 <p className="text-[11px] leading-relaxed" style={{ color: 'var(--ds-text-2)' }}>
-                  سيتم حذف حسابك وكل بياناتك (الحجوزات، التقييمات، النقاط) نهائياً ولا يمكن التراجع عن هذا الإجراء.
+                  سيتم قفل حسابك نهائياً ومسح بياناتك الشخصية من ملفك (الاسم، البريد، الهاتف، الصورة، تاريخ الميلاد، العنوان).
+                  سجلات حجوزاتك ودفعاتك ورسائلك وتقييماتك لا تُحذف لأنها مشتركة مع ملاك البيوت، ونقاطك لن يمكن استخدامها بعد الحذف.
+                  لا يمكن التراجع عن هذا الإجراء.
                 </p>
                 <Button variant="danger-quiet" fullWidth onClick={() => setIsConfirmingDelete(true)}>
                   حذف حسابي نهائياً
