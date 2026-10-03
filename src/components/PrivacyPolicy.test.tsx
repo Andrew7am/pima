@@ -31,6 +31,17 @@ describe('account deletion section', () => {
     expect(appItems).toEqual(publicItems);
   });
 
+  // Nothing in the backend deletes retained records on a timer (no purge job),
+  // and the financial records are append-only by design. A fixed-period
+  // deletion promise would be false, so the section must not make one.
+  it('promises no fixed deletion period for retained records', () => {
+    const section = norm(html.getElementById('delete-account')?.nextElementSibling?.textContent);
+
+    expect(section).not.toMatch(/[٦6]\s*(شهور|أشهر|شهر)/);
+    expect(section).toContain('مش بتتحذف بعد مدة ثابتة');
+    expect(section).toContain('مفيش حالياً عملية تلقائية بتحذفها');
+  });
+
   it('sends deletion requests to the support WhatsApp number the app uses', () => {
     const numbers = [...html.querySelectorAll('a[href^="https://wa.me/"]')]
       .map((a) => new URL(a.getAttribute('href')!).pathname.slice(1));
